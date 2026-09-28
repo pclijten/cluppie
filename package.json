@@ -1,0 +1,20 @@
+{
+  "name": "cluppie",
+  "version": "2.0.0",
+  "description": "Multi-tenant coaching platform",
+  "main": "functions/index.js",
+  "scripts": {
+    "serve": "firebase serve",
+    "deploy": "firebase deploy",
+    "deploy:hosting": "firebase deploy --only hosting",
+    "deploy:functions": "firebase deploy --only functions",
+    "emulate": "firebase emulators:start"
+  },
+  "keywords": ["coaching", "football", "saas"],
+  "author": "Paul Clijten",
+  "license": "MIT",
+  "devDependencies": {
+    "firebase-tools": "^13.0.0",
+    "node": "20.x"
+  }
+}

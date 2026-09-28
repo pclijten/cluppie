@@ -1,0 +1,61 @@
+{
+  "name": "Cluppie - Club Management System",
+  "short_name": "Cluppie",
+  "description": "Multi-tenant youth football club management platform",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#4CAF50",
+  "icons": [
+    {
+      "src": "/icons/icon192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon192maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon512maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/icons/icon192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["sports", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Teams",
+      "short_name": "Teams",
+      "description": "View and manage teams",
+      "url": "/?tab=teams",
+      "icons": [{ "src": "/icons/icon192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Players",
+      "short_name": "Players",
+      "description": "View and manage players",
+      "url": "/?tab=players",
+      "icons": [{ "src": "/icons/icon192.png", "sizes": "192x192" }]
+    }
+  ]
+}
