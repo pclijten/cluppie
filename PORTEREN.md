@@ -23,6 +23,7 @@ Pure bugfixes die alleen voor de ASV'33-code gelden, krijgen `nvt`. Een bugfix i
 |---|---|---|---|---|---|
 | 20260928a | Te laat met minuut: tijd vóór aankomst telt niet mee in speeltijd-% | functie + rekenregel | [notitie](porteren/20260928a-telaat-minuut.md) | te doen | |
 | 20260928b | "Komt later" ook in Presentie → Wedstrijd, optie hernoemd | functie | [notitie](porteren/20260928b-komt-later-presentie.md) | te doen | |
+| 20260928c | Selectie & afwezigheid aanpassen in Achteraf bijwerken + waarschuwing bij dataverlies | functie | [notitie](porteren/20260928c-selectie-achteraf.md) | te doen | |
 
 ## Sjabloon voor een nieuwe notitie
 
