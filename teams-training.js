@@ -1,0 +1,947 @@
+/* ==================== TRAININGEN / VIDEO'S / INSTELLINGEN (teams.js-split) ====================
+   Onderdeel van de teams.js-modulaire split. Alles rond de Training- en
+   Instellingen-tabbladen van een team: gedeelde trainingen + video's tonen,
+   presentie bijhouden (incl. eigen/geplande dagen), en teaminstellingen
+   (naam wijzigen, teamcode, uitnodigen — modalUitnodig komt uit club.js). */
+import { voorbeeldTeamcode } from './clubconfig.js?v=20260929z';
+import {
+  db, collection, doc, addDoc, deleteDoc, updateDoc, setDoc, getDocs, query, where, serverTimestamp
+} from './firebase.js?v=20260922c';
+import {
+  S, $, $$, esc, meld, datumNL, speler, initialen, openModal, sluitModal, toon, isBeheerder
+} from './state.js?v=20260929z';
+import { telGebruik } from './tracker.js?v=20260929z';
+import { ico } from './icons.js?v=20260922c';
+
+import {
+  CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, youtubeId, youtubeThumb, youtubeWatch,
+  SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo, isoWeek
+} from './config.js?v=20260929z';
+import { htmlKompas } from './teams-leerlijn.js?v=20260929z';
+import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
+
+/* ---------- Afgelaste training (banner + WhatsApp-deeltekst) ----------
+   Hierheen verplaatst (i.p.v. in de hub) omdat dit uitsluitend door de
+   Training-tab wordt gebruikt: htmlTeamTrainingen() hieronder, en de
+   "stuur door"-knop die de hub (teams.js/koppelTeamTab) aansluit — de hub
+   importeert afgelastGeldig/afgelastWhatsappTekst vandaar terug, en
+   re-exporteert afgelastDatumTekst voor externe consumenten. */
+function afgelastGeldig(){
+  const a = S.team && S.team.afgelast;
+  if (!a || !a.datum) return null;
+  const vandaag = new Date().toISOString().slice(0,10);
+  return (a.datum >= vandaag) ? a : null;   // alleen vandaag of in de toekomst
+}
+
+/* 'YYYY-MM-DD' -> 'donderdag 25 juni' (met hoofdletter) */
+export function afgelastDatumTekst(datum){
+  const d = new Date(datum+'T12:00').toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'});
+  return d.charAt(0).toUpperCase()+d.slice(1);
+}
+
+/* de WhatsApp-tekst die de trainer doorstuurt naar zijn eigen teamgroep — zonder naam */
+export function afgelastWhatsappTekst(a){
+  const dag = afgelastDatumTekst(a.datum);
+  let t = `⛔ *Training afgelast*\n`;
+  t += `De training van ${dag} gaat *niet* door.`;
+  if (a.reden && a.reden.trim()) t += `\n\n${a.reden.trim()}`;
+  return t;
+}
+
+/* de rode banner bovenaan de trainingen-tab (zichtbaar voor alle teamleden) */
+function afgelastBannerHtml(a){
+  const dag = afgelastDatumTekst(a.datum);
+  return `
+    <div class="afgelast-banner">
+      <div class="ab-kop"><span class="ab-ico">⛔</span><h2>Training afgelast</h2></div>
+      <div class="ab-tekst">De training van <b>${esc(dag)}</b> gaat <b>niet</b> door.
+        ${a.reden && a.reden.trim() ? `<div class="ab-reden">${esc(a.reden.trim())}</div>` : ''}</div>
+      <button class="ab-wa-vol" id="afgelastDeel">📲 Stuur door in mijn teamgroep</button>
+    </div>`;
+}
+
+export { afgelastGeldig };
+
+
+/* Maandnaam-hulpje, gedeeld door de presentie- en oefenstof-lijsten. */
+function maandNaam(ym){
+  const [j,m] = ym.split('-');
+  const d = new Date(parseInt(j), parseInt(m)-1, 1);
+  const s = d.toLocaleDateString('nl-NL', {month:'long', year:'numeric'});
+  return s.charAt(0).toUpperCase()+s.slice(1);
+}
+
+/* ---------- Week-groepering van de oefenstof ----------
+   De oefenstof wordt getoond per (ISO-)week i.p.v. per maand. Het weeknummer
+   komt uit het vrije `week`-veld dat de clubadmin invult ("Week 35", "wk 35",
+   "35"); we plukken het eerste getal 1–53 eruit. Trainingen zonder herkenbaar
+   weeknummer belanden in de groep 'onbekend' (onderaan). */
+function weekNrUit(weekTekst){
+  const m = String(weekTekst || '').match(/\b([1-9]|[1-4]\d|5[0-3])\b/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+/* Het jaar bij een weeknummer schatten uit de uploaddatum: de week hoort bij
+   het jaar waarin die upload viel. Zo klopt de datum ook rond de jaarwisseling
+   (week 1 in januari, week 52 in december) zonder los jaarveld. */
+function jaarVoorWeek(weekNr, gemaaktSeconds){
+  const nu = gemaaktSeconds ? new Date(gemaaktSeconds*1000) : new Date();
+  let jaar = nu.getFullYear();
+  const maand = nu.getMonth();            // 0 = jan
+  // upload in januari maar hoge week → hoort nog bij vorig jaar
+  if (maand === 0 && weekNr >= 50) jaar -= 1;
+  // upload in december maar lage week → hoort al bij volgend jaar
+  if (maand === 11 && weekNr <= 2) jaar += 1;
+  return jaar;
+}
+
+/* De maandag (ISO) van gegeven weeknummer + jaar, als Date op 12:00 lokaal. */
+function maandagVanIsoWeek(weekNr, jaar){
+  // 4 januari zit altijd in ISO-week 1; van daaruit terugrekenen naar de maandag.
+  const vierJan = new Date(jaar, 0, 4, 12);
+  const dagNr = (vierJan.getDay() + 6) % 7;               // 0 = maandag
+  const maandagWeek1 = new Date(vierJan);
+  maandagWeek1.setDate(vierJan.getDate() - dagNr);
+  const maandag = new Date(maandagWeek1);
+  maandag.setDate(maandagWeek1.getDate() + (weekNr - 1) * 7);
+  return maandag;
+}
+
+/* Datum van de n-de trainingsdag (0-based) binnen een week.
+   `trainingsdagen` is een oplopende array [1..7] (1 = ma … 7 = zo) op het team.
+   Geeft null als er geen dag voor die index is. */
+function datumVoorTraining(weekNr, jaar, trainingsdagen, index){
+  if (!Array.isArray(trainingsdagen) || !trainingsdagen.length) return null;
+  const dag = trainingsdagen[index];
+  if (!dag) return null;                                  // meer PDF's dan trainingsdagen
+  const maandag = maandagVanIsoWeek(weekNr, jaar);
+  const d = new Date(maandag);
+  d.setDate(maandag.getDate() + (dag - 1));               // ma+0 … zo+6
+  return d;
+}
+
+/* 'Ma 25 aug' — korte dag-chip. */
+function dagChipTekst(datum){
+  const s = datum.toLocaleDateString('nl-NL', {weekday:'short', day:'numeric', month:'short'});
+  return s.charAt(0).toUpperCase() + s.slice(1).replace('.', '');
+}
+
+/* ---------- Tab: Presentie training ----------
+   Eigen tabblad sinds de hub-navigatie (voorheen een sectie bovenaan de
+   Training-tab). Zelfde gedrag: "Wie is er vandaag?"-knop, lijst per maand
+   in-/uitklapbaar, plus de afgelast-banner als die geldt. */
+export function htmlPresentieTraining(){
+  const vandaag = new Date().toISOString().slice(0,10);
+
+  // afgelasting: toon banner als die geldt (geen aflast-knop hier; dat doet de beheerder op het clubscherm)
+  const afg = afgelastGeldig();
+  const afgelastSectie = afg ? afgelastBannerHtml(afg) : '';
+
+  // welke maanden zijn opengeklapt? standaard alles dicht; zetTeamTab reset dit
+  // bij elk bezoek aan dit tabblad. Hier alleen een vangnet als de sets nog niet bestaan.
+  if (!S._presentieOpen){
+    S._presentieOpen = new Set();                       // 'YYYY-MM' van opengeklapte maanden
+    S._presentieToonAlles = new Set();                  // maanden waar alle items getoond worden
+  }
+  const TOON_PER_MAAND = 4;   // standaard aantal per maand voordat "toon meer" verschijnt
+
+  const rijHtml = (p) => {
+    const afw = (p.afwezig || []);
+    const laat = (p.telaat || []);
+    const aanwezig = Math.max(0, S.spelers.length - afw.length);
+    const dat = new Date(p.datum+'T12:00').toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short'});
+    const datMooi = dat.charAt(0).toUpperCase()+dat.slice(1);
+    const afwNamen = afw.length
+      ? afw.map(id => {
+          const sp = S.spelers.find(s => s.id === id); if (!sp) return null;
+          const reden = (p.afwezigRedenen||{})[id];
+          const icoon = reden?.type === 'blessure' ? ' 🩹' : reden?.type === 'reden' ? ' 📋' : '';
+          const opm = reden?.notitie ? ` <span style="color:var(--ink-2);font-style:italic">“${esc(reden.notitie)}”</span>` : '';
+          return esc(sp.naam) + icoon + opm;
+        }).filter(Boolean).join(', ')
+      : '';
+    return `
+      <div class="presentie-rij" data-presentie="${p.id}" style="cursor:pointer">
+        <div class="pr-datum"><span class="pr-dag">${datMooi}</span></div>
+        <div class="pr-info">
+          ${afw.length
+            ? `<span class="pr-afw">${aanwezig} aanwezig${laat.length?` · ${laat.length} te laat`:''} · ${afw.length} afwezig</span><span class="pr-namen">${afwNamen}</span>`
+            : `<span class="pr-allen">✓ Iedereen aanwezig (${aanwezig})${laat.length?` · ${laat.length} te laat`:''}</span>`}
+        </div>
+        <span class="acties"><button title="Aanpassen">${ico('admin-edit', 16)}</button></span>
+      </div>`;
+  };
+
+  // [20260921] De eerstvolgende geregistreerde training (vandaag óf een
+  // vooraf ingevulde afmelding voor een latere datum) apart bovenaan, los
+  // van de "nieuw → oud"-geschiedenislijst hieronder. Zonder dit zakte een
+  // net ingevulde afmelding voor vanavond onder een langer geleden ingevulde
+  // afmelding voor bv. woensdag — puur omdat die datum later valt en de
+  // geschiedenis nu eenmaal aflopend sorteert. Feedback van Paul: de
+  // dienstdoende trainer kijkt naar het bovenste blok en moet daar dus
+  // altijd de eerstvolgende training zien, niet de verst-vooruit-geplande.
+  const toekomstig = S.presentie
+    .filter(p => (p.datum||'') >= vandaag)
+    .sort((a,b) => (a.datum||'').localeCompare(b.datum||''));
+  const eerstvolgende = toekomstig[0] || null;
+
+  // groepeer presentie per maand (S.presentie is al gesorteerd nieuw → oud) —
+  // de eerstvolgende (hierboven al apart getoond) blijft hier buiten beeld.
+  let presentieLijst;
+  const historie = eerstvolgende ? S.presentie.filter(p => p.id !== eerstvolgende.id) : S.presentie;
+  if (!historie.length){
+    presentieLijst = eerstvolgende ? '' : `<div class="kaart leeg" style="margin-bottom:14px">Nog geen presentie geregistreerd.</div>`;
+  } else {
+    const perMaand = new Map();
+    for (const p of historie){
+      const ym = (p.datum||'').slice(0,7);
+      if (!perMaand.has(ym)) perMaand.set(ym, []);
+      perMaand.get(ym).push(p);
+    }
+    presentieLijst = [...perMaand.entries()].map(([ym, items]) => {
+      const open = S._presentieOpen.has(ym);
+      const toonAlles = S._presentieToonAlles.has(ym);
+      const afwTotaal = items.reduce((n,p) => n + (p.afwezig||[]).length, 0);
+      const zichtbaar = (open && !toonAlles) ? items.slice(0, TOON_PER_MAAND) : items;
+      const meer = items.length - TOON_PER_MAAND;
+      return `
+        <div class="maand-groep">
+          <button class="maand-kop" data-maand="${ym}">
+            <span class="maand-naam">${maandNaam(ym)}</span>
+            <span class="maand-tel">${items.length} training${items.length>1?'en':''}${afwTotaal?` · ${afwTotaal} afm.`:''}</span>
+            <span class="maand-pijl ${open?'open':''}">▾</span>
+          </button>
+          ${open ? `
+            <div class="maand-inhoud">
+              ${zichtbaar.map(rijHtml).join('')}
+              ${(!toonAlles && meer > 0) ? `<button class="toon-meer" data-toonmeer="${ym}">Toon ${meer} eerdere uit deze maand</button>` : ''}
+            </div>` : ''}
+        </div>`;
+    }).join('');
+  }
+
+  const eerstvolgendeSectie = eerstvolgende ? `
+    <div class="sectie-kop" style="margin-top:0">${eerstvolgende.datum===vandaag ? 'Vandaag' : 'Eerstvolgende training'}</div>
+    <div class="kaart" style="padding:0;margin-bottom:14px;overflow:hidden">${rijHtml(eerstvolgende)}</div>
+    <button class="knop licht vol" id="presentieAndereDatum" style="margin-bottom:16px">${ico('planning-calendar',18)} Andere datum invullen</button>`
+    : `<button class="knop vol" id="presentieVandaag" style="margin-bottom:8px">Wie is er vandaag?</button>
+    <button class="knop licht vol" id="presentieAndereDatum" style="margin-bottom:12px">${ico('planning-calendar',18)} Andere datum invullen</button>`;
+
+  return `${afgelastSectie}
+    ${eerstvolgendeSectie}
+    ${presentieLijst}`;
+}
+
+/* ---------- Tab: Oefenstof ----------
+   Het ASV-kompas + de gedeelde oefenstof-PDF's. De presentie-sectie die hier
+   vroeger tussen stond woont nu op zijn eigen tabblad (htmlPresentieTraining
+   hierboven, tegel Presentie → Training op de hub). */
+export function htmlTeamTrainingen(){
+  const pdfs = S.trainingen.filter(t => (t.teams||[]).includes(S.teamId));
+
+  // afgelasting: banner ook hier tonen — een coach die oefenstof komt kijken
+  // moet net zo goed zien dat de training niet doorgaat
+  const afg = afgelastGeldig();
+  const afgelastSectie = afg ? afgelastBannerHtml(afg) : '';
+
+  // --- PDF-sectie (per week; huidige week bovenaan en open) ---
+  // hergebruikt de open/dicht-set (_pdfDicht) en "toon meer"-set (_pdfToonAlles),
+  // nu met week-sleutels ('2026-35', of 'onbekend') i.p.v. maand-sleutels.
+  if (!S._pdfDicht){ S._pdfDicht = new Set(); S._pdfToonAlles = new Set(); }
+
+  const trainingsdagen = Array.isArray(S.team?.trainingsdagen) ? S.team.trainingsdagen : [];
+  const huidigeWeek = isoWeek();
+
+  // één trainingsrij; `dagChip` wordt per week meegegeven (kan leeg zijn).
+  const pdfRijHtml = (t, dagChip) => {
+    const ongelezen = !S.trainingenGelezen[t.id];
+    const heeftAi = Array.isArray(t.oefeningen) && t.oefeningen.length;
+    const chip = dagChip
+      ? `<span class="dag-chip">${esc(dagChip)}</span>`
+      : `<span class="dag-chip mist">dag onbekend</span>`;
+    return `
+      <div class="training-rij ${ongelezen?'ongelezen':''}" data-open-training="${t.id}" data-url="${esc(t.url)}" style="cursor:pointer">
+        <div class="ico${heeftAi?' ai':''}">${heeftAi?`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.2 5.2 6 18h12L13.8 5.2a1.9 1.9 0 0 0-3.6 0Z"/><path d="M8.3 11.5h7.4"/><path d="M4.5 18h15"/></svg>`:'PDF'}</div>
+        <div class="t"><div class="t-titel">${esc(t.titel || t.bestandsnaam)}</div>
+          <div class="t-meta">${chip}${t.clubNaam?' · '+esc(t.clubNaam):''}</div></div>
+        <div class="acties">
+          <button title="Openen">↗</button>
+        </div>
+      </div>`;
+  };
+
+  let pdfLijst;
+  if (!pdfs.length){
+    pdfLijst = `<div class="kaart leeg">Nog geen oefenstof gedeeld.<br>Elke zondag zet je clubadmin hier de oefenstof voor de komende week klaar.</div>`;
+  } else {
+    // groepeer per weeknummer; binnen een week oud → nieuw (training 1 eerst),
+    // zodat de eerste PDF op de eerste trainingsdag valt.
+    const perWeek = new Map();   // key -> {weekNr, jaar, items[]}
+    for (const t of pdfs){
+      const wn = weekNrUit(t.week);
+      const jaar = wn ? jaarVoorWeek(wn, t.gemaakt?.seconds) : null;
+      const key = wn ? `${jaar}-${String(wn).padStart(2,'0')}` : 'onbekend';
+      if (!perWeek.has(key)) perWeek.set(key, {weekNr:wn, jaar, items:[]});
+      perWeek.get(key).items.push(t);
+    }
+    for (const g of perWeek.values()){
+      g.items.sort((a,b) => (a.gemaakt?.seconds||0) - (b.gemaakt?.seconds||0));
+    }
+
+    // sorteer de weken: bekende weken nieuw → oud, 'onbekend' altijd onderaan.
+    const keys = [...perWeek.keys()].sort((a,b) => {
+      if (a === 'onbekend') return 1;
+      if (b === 'onbekend') return -1;
+      return b.localeCompare(a);
+    });
+
+    // welke week staat standaard open? de huidige week als die er is, anders de nieuwste.
+    const huidigeKey = keys.find(k => perWeek.get(k).weekNr === huidigeWeek);
+    const standaardOpenKey = huidigeKey || keys.find(k => k !== 'onbekend') || keys[0];
+    const TOON_PDF = 5;
+
+    pdfLijst = keys.map(key => {
+      const g = perWeek.get(key);
+      const items = g.items;
+      const isHuidig = g.weekNr === huidigeWeek;
+      const standaardOpen = (key === standaardOpenKey);
+      const open = standaardOpen ? !S._pdfDicht.has(key) : S._pdfDicht.has('open:'+key);
+      const toonAlles = S._pdfToonAlles.has(key);
+      const ongelezenInWeek = items.filter(t => !S.trainingenGelezen[t.id]).length;
+
+      // titel + datumbereik van de week
+      let titel, periode = '';
+      if (key === 'onbekend'){
+        titel = 'Zonder week';
+      } else {
+        titel = `Week ${g.weekNr}`;
+        const ma = maandagVanIsoWeek(g.weekNr, g.jaar);
+        const zo = new Date(ma); zo.setDate(ma.getDate()+6);
+        const f = d => d.toLocaleDateString('nl-NL',{day:'numeric',month:'short'}).replace('.', '');
+        periode = `${f(ma)} – ${f(zo)}`;
+      }
+
+      const zichtbaar = (open && !toonAlles) ? items.slice(0, TOON_PDF) : items;
+      const meer = items.length - TOON_PDF;
+
+      // dag-chip per training: een vaste dag op de PDF zelf (upload-override)
+      // wint; anders bepaalt de index binnen de week welke trainingsdag van het
+      // team erbij hoort (training 1 → eerste dag, enz.).
+      const rijen = zichtbaar.map((t, i) => {
+        let chip = '';
+        if (g.weekNr){
+          const d = t.trainingsdag
+            ? datumVoorTraining(g.weekNr, g.jaar, [t.trainingsdag], 0)
+            : datumVoorTraining(g.weekNr, g.jaar, trainingsdagen, i);
+          if (d) chip = dagChipTekst(d);
+        }
+        return pdfRijHtml(t, chip);
+      }).join('');
+
+      return `
+        <div class="week-groep${isHuidig?' huidig':''}">
+          <button class="maand-kop week-kop" data-pdfmaand="${key}">
+            <span class="maand-naam">${esc(titel)}</span>
+            ${isHuidig ? '<span class="week-nu">Deze week</span>' : (periode ? `<span class="week-periode">${esc(periode)}</span>` : '')}
+            <span class="maand-tel">${ongelezenInWeek?`<b style="color:var(--uit)">${ongelezenInWeek} nieuw</b>`:`${items.length}× oefenstof`}</span>
+            <span class="maand-pijl ${open?'open':''}">▾</span>
+          </button>
+          ${open ? `
+            <div class="maand-inhoud">
+              ${rijen}
+              ${(!toonAlles && meer > 0) ? `<button class="toon-meer" data-pdftoonmeer="${key}">Toon ${meer} eerdere uit deze week</button>` : ''}
+            </div>` : ''}
+        </div>`;
+    }).join('');
+  }
+
+  const pdfSectie = `
+    <div class="sectie-kop">${ico('admin-document',15)} Gedeelde oefenstof</div>
+    ${pdfLijst}`;
+
+  return htmlKompas() + afgelastSectie + pdfSectie;
+}
+
+/* ---------- Tab: video's ---------- */
+export function htmlTeamVideos(){
+  const lijst = S.videos.filter(t => (t.teams||[]).includes(S.teamId));
+  if (!lijst.length) return `<div class="kaart leeg">Nog geen video's.<br>Vraag je clubadmin om video's te delen met dit team.</div>`;
+  return lijst.map(vid => {
+    const upload = vid.bron === 'upload';
+    const id = upload ? null : youtubeId(vid.url);
+    const href = upload ? vid.url : (youtubeWatch(id) || vid.url);
+    const thumbInner = id
+      ? `<img src="${esc(youtubeThumb(id))}" alt="" loading="lazy"><span class="play">▶</span>`
+      : `<span class="play">▶</span>${upload ? '<span style="position:absolute;bottom:2px;right:3px;font-size:calc(8px * var(--fs));font-weight:700;letter-spacing:.5px;color:#fff;background:rgba(0,0,0,.55);padding:1px 3px;border-radius:3px;line-height:1">MP4</span>' : ''}`;
+    return `
+    <div class="video-rij" data-open-video="${esc(href)}" data-video-type="${upload ? 'upload' : 'youtube'}" data-video-titel="${esc(vid.titel || 'Video')}" style="cursor:pointer">
+      <div class="thumb">${thumbInner}</div>
+      <div class="v"><div class="v-titel">${esc(vid.titel || 'Video')}</div>
+        <div class="v-meta">${upload ? (vid.clubNaam ? esc(vid.clubNaam) + ' · geüpload' : 'Geüpload') : (vid.clubNaam ? esc(vid.clubNaam) : 'YouTube')}</div></div>
+      <div class="acties">
+        <button class="rij-wa" data-deel-video="${esc(href)}" data-deel-type="${upload ? 'upload' : 'youtube'}" data-deel-titel="${esc(vid.titel || 'Video')}" title="Delen via WhatsApp">${ico('action-whatsapp',18)}</button>
+        <button title="Afspelen">▶</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* [20260929b] Teamnaam en teamcode wijzigen mag alleen een beheerder: de
+   app-beheerder of een admin van de club waar dit team bij hoort. Gewone
+   coaches zien die opties niet (de echte afdwinging hoort in de Firestore-regels). */
+export function magTeamBeheren(){
+  if (isBeheerder()) return true;
+  const clubId = S.team && S.team.club;
+  return !!clubId && (S.clubs || []).some(c => c.id === clubId);
+}
+
+/* ---------- Tab: instellingen (incl. ledenbeheer) ---------- */
+export function htmlInstellingen(){
+  const beheer = magTeamBeheren();
+  const ledenInfo = S.team.ledenInfo || {};
+  const ledenIds = Object.keys(S.team.leden || {});
+  const ledenHtml = ledenIds.length ? ledenIds.map(uid => {
+    const naam = (ledenInfo[uid]?.naam) || 'Coach';
+    const jij = uid === S.user.uid;
+    return `
+      <div class="lid-rij">
+        <div class="lid-avatar">${esc(initialen(naam))}</div>
+        <div class="lid-naam">${esc(naam)}${jij?'<span class="jij">(jij)</span>':''}</div>
+        ${jij ? '' : `<button class="lid-weg" data-lid-weg="${uid}" data-lid-naam="${esc(naam)}" title="Coach verwijderen">🗑</button>`}
+      </div>`;
+  }).join('') : '<p style="font-size:calc(14px * var(--fs))">—</p>';
+
+  return `
+    ${beheer ? `<div class="kaart">
+      <div class="sectie-kop" style="margin-top:0">Teamnaam</div>
+      <input class="invoer" id="iTeamNaam" value="${esc(S.team.naam)}" autocomplete="off" style="margin-bottom:10px">
+      <label class="lid-rij" style="cursor:pointer;margin-bottom:10px">
+        <input type="checkbox" id="iCodeVolgtNaam" checked style="width:19px;height:19px;accent-color:var(--grass)">
+        <div class="lid-naam" style="font-weight:500">Code aanpassen aan de nieuwe naam
+          <span style="display:block;font-size:calc(11.5px * var(--fs));color:var(--ink-2);font-weight:400">Bijv. ${esc(voorbeeldTeamcode())} — let op: oude uitnodigingslinks werken dan niet meer</span></div>
+      </label>
+      <button class="knop vol" id="iNaamOk">Naam opslaan</button>
+    </div>` : ''}
+    <div class="kaart">
+      <div class="sectie-kop" style="margin-top:0">Teamcode voor coaches</div>
+      <p style="font-size:calc(13.5px * var(--fs));color:var(--ink-2)">Deel deze code of een uitnodigingslink met collega-coaches. Zij loggen in met e-mail of Google en zitten direct in dit team.</p>
+      <div class="teamcode">${esc(S.team.code)}</div>
+      <div class="rij">
+        <button class="knop licht vol" id="deelCode">Code kopiëren</button>
+        <button class="knop fluo vol" id="deelLink">📲 Uitnodigen</button>
+      </div>
+      ${beheer ? `<button class="knop licht vol" id="wijzigCode" style="margin-top:8px">✏️ Code handmatig wijzigen</button>` : ''}
+    </div>
+    <div class="kaart">
+      <div class="sectie-kop" style="margin-top:0">Coaches (${ledenIds.length})</div>
+      <p style="font-size:calc(12.5px * var(--fs));color:var(--ink-2);margin-bottom:10px">Staat er iemand dubbel of verkeerd in de lijst? Verwijder die met 🗑.</p>
+      ${ledenHtml}
+      <button class="knop licht vol" id="wijzigMijnNaam" style="margin-top:10px">✏️ Mijn weergavenaam wijzigen</button>
+    </div>
+    <div class="kaart">
+      <div class="sectie-kop" style="margin-top:0">Categorie & speelregels</div>
+      <select class="invoer" id="iCategorie" style="margin-bottom:8px">
+        <option value="">— geen categorie —</option>
+        <optgroup label="Jongens">${Object.keys(CATEGORIEEN).map(c => `<option value="${c}" ${S.team.categorie===c?'selected':''}>${c}</option>`).join('')}</optgroup>
+        <optgroup label="Meiden">${Object.keys(CATEGORIEEN_MEIDEN).map(c => `<option value="${c}" ${S.team.categorie===c?'selected':''}>${c}</option>`).join('')}</optgroup>
+      </select>
+      <p style="font-size:calc(12.5px * var(--fs));color:var(--ink-2)" id="iCatInfo">${S.team.categorie && catInfo(S.team.categorie)
+        ? 'KNVB: ' + esc(catInfo(S.team.categorie).knvb) + '. Nieuwe wedstrijden krijgen automatisch de juiste speeltijd en periodes.'
+        : 'Kies de categorie zodat nieuwe wedstrijden automatisch de juiste KNVB-speeltijd en het juiste aantal helften/kwarten krijgen.'}</p>
+
+      <div class="veldlabel" style="margin-top:16px">Wedstrijdvorm</div>
+      <div class="vxv-opties" id="iWedstrijdvorm">
+        ${['6','8','9','11'].map(f => `<button class="vxv-opt ${String(S.team.format)===f?'aan':''}" data-vorm="${f}">${f} tegen ${f}</button>`).join('')}
+      </div>
+      <p class="hint" style="font-size:calc(12px * var(--fs));color:var(--ink-2);margin-top:10px;line-height:1.5">Standaard volgt dit de categorie, maar je kunt zelf wisselen — handig als je team de ene fase 11v11 en de andere 9v9 speelt. Wijzigen geldt voor <b>nieuwe</b> wedstrijden; bestaande wedstrijden houden hun eigen vorm.</p>
+    </div>
+    ${(() => {
+      const magThema = coachMagKiezen();          // thema alleen bij coachKiest
+      const v = eigenVoorkeur();
+      const g = huidigeLettergrootte();
+      const themaBlok = magThema ? `
+        <p style="font-size:calc(12.5px * var(--fs));color:var(--ink-2);margin-bottom:10px">Kies het thema voor de app op dit toestel. Je keuze wordt onthouden.</p>
+        <div class="segment" id="themaKeuze" style="margin-bottom:16px">
+          <button data-thema-kies="donker" class="${v==='donker'?'actief':''}">Donker</button>
+          <button data-thema-kies="licht" class="${v==='licht'?'actief':''}">Licht</button>
+        </div>` : '';
+      return `
+      <div class="kaart">
+        <div class="sectie-kop" style="margin-top:0">Weergave</div>
+        ${themaBlok}
+        <p style="font-size:calc(12.5px * var(--fs));color:var(--ink-2);margin-bottom:10px">Lettergrootte op dit toestel. Handig als je langs de lijn snel iets wilt lezen.</p>
+        <div class="segment" id="grootteKeuze">
+          <button data-grootte="0.9" class="${g==='0.9'?'actief':''}">Klein</button>
+          <button data-grootte="1" class="${g==='1'?'actief':''}">Normaal</button>
+          <button data-grootte="1.15" class="${g==='1.15'?'actief':''}">Groot</button>
+        </div>
+      </div>`;
+    })()}
+    <button class="knop gevaar vol" id="verlaatTeam">Team verlaten</button>`;
+}
+
+/* ---------- Tab: handleiding ---------- */
+
+export function modalWijzigCode(){
+  openModal(`
+    <h2>Teamcode wijzigen</h2>
+    <p style="font-size:calc(13.5px * var(--fs));color:var(--ink-2);margin-bottom:6px">De code is wat coaches invullen om aan te sluiten. Houd 'm herkenbaar (bijv. <b>${esc(voorbeeldTeamcode())}</b>) of juist moeilijk te raden.</p>
+    <p style="font-size:calc(12px * var(--fs));color:var(--ink-2);margin-bottom:12px">Let op: bestaande uitnodigingslinks met de oude code werken daarna niet meer.</p>
+    <div class="veldgroep"><label>Nieuwe code</label>
+      <input class="invoer" id="mWcCode" value="${esc(S.team.code)}" maxlength="20"
+        style="text-transform:uppercase;font-family:'Barlow Condensed';font-size:calc(20px * var(--fs));letter-spacing:1px"></div>
+    <button class="knop vol" id="mWcOk">Code opslaan</button>`);
+  $('#mWcOk').onclick = async () => {
+    const nieuw = $('#mWcCode').value.trim().toUpperCase().replace(/[^A-Z0-9-]+/g,'');
+    if (nieuw.length < 4) return meld('Een code is minstens 4 tekens');
+    if (nieuw === S.team.code){ sluitModal(); return; }
+    $('#mWcOk').disabled = true; $('#mWcOk').textContent = 'Controleren...';
+    try {
+      const snap = await getDocs(query(collection(db,'teams'), where('code','==',nieuw)));
+      if (!snap.empty){
+        $('#mWcOk').disabled = false; $('#mWcOk').textContent = 'Code opslaan';
+        return meld('Die code is al in gebruik bij een ander team');
+      }
+      await updateDoc(doc(db,'teams',S.teamId), {code: nieuw});
+      sluitModal(); meld('Teamcode gewijzigd naar ' + nieuw);
+    } catch(e){
+      $('#mWcOk').disabled = false; $('#mWcOk').textContent = 'Code opslaan';
+      meld('Wijzigen mislukt: ' + (e.code || e.message));
+    }
+  };
+}
+
+/* De ingelogde coach past zijn eigen weergavenaam aan. Dit werkt door in
+   ALLE teams waar hij lid van is, zodat hij overal met dezelfde naam staat. */
+export function modalMijnNaam(){
+  const huidige = (S.team.ledenInfo?.[S.user.uid]?.naam) || S.user.displayName || '';
+  const aantalTeams = S.teams.length;
+  openModal(`
+    <h2>Mijn weergavenaam</h2>
+    <p style="font-size:calc(13.5px * var(--fs));color:var(--ink-2);margin-bottom:12px">Zo verschijn je in de coachlijst. ${aantalTeams > 1 ? `De naam wordt aangepast in al je <b>${aantalTeams}</b> teams.` : ''}</p>
+    <div class="veldgroep"><label>Je naam</label>
+      <input class="invoer" id="mMnNaam" value="${esc(huidige)}" placeholder="Bijv. Paul Lijten" autocomplete="name"></div>
+    <button class="knop vol" id="mMnOk">Opslaan</button>`);
+  $('#mMnNaam').focus();
+  $('#mMnOk').onclick = async () => {
+    const naam = $('#mMnNaam').value.trim();
+    if (naam.length < 2) return meld('Vul je naam in (minstens 2 tekens)');
+    const knop = $('#mMnOk');
+    knop.disabled = true; knop.textContent = 'Opslaan...';
+    try {
+      // bijwerken in elk team waar deze gebruiker lid van is
+      const mijnTeams = S.teams.filter(t => (t.leden||{})[S.user.uid]);
+      for (const t of mijnTeams){
+        await updateDoc(doc(db,'teams',t.id), {
+          ['ledenInfo.'+S.user.uid+'.naam']: naam,
+        });
+      }
+      sluitModal();
+      meld(mijnTeams.length > 1 ? `Naam aangepast in ${mijnTeams.length} teams` : 'Naam aangepast');
+    } catch(e){
+      knop.disabled = false; knop.textContent = 'Opslaan';
+      meld('Opslaan mislukt: ' + (e.code || e.message));
+    }
+  };
+}
+
+/* ---------- Presentie registreren / aanpassen ----------
+   Iedereen staat standaard op AANWEZIG. De coach tikt alleen de afwezigen aan.
+   Bij een nieuwe registratie (bestaande=null) kan de datum gekozen worden
+   (standaard vandaag). Voor afwezige spelers kan optioneel een reden
+   aangevinkt worden: geblesseerd of "met reden" (+ vrije notitie). Geen van
+   beide aangevinkt = "zonder reden". */
+
+export function modalPresentie(bestaande = null, opties = {}){
+  if (!S.spelers.length) return meld('Voeg eerst spelers toe onder het tabblad Spelers');
+  const vandaag = new Date().toISOString().slice(0,10);
+  let datum = bestaande ? bestaande.datum : vandaag;
+  let afwezig = new Set(bestaande ? (bestaande.afwezig || []) : []);
+  let telaat  = new Set(bestaande ? (bestaande.telaat  || []) : []);  // aanwezig, maar te laat
+  let redenen = bestaande ? JSON.parse(JSON.stringify(bestaande.afwezigRedenen || {})) : {};
+  const kanDatumWijzigen = !bestaande;
+  const startAnder = kanDatumWijzigen && !!opties.startAnder;
+
+  const datLeesbaar = (d) => {
+    const s = new Date(d+'T12:00').toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'});
+    return s.charAt(0).toUpperCase()+s.slice(1);
+  };
+
+  const rijenHtml = () => S.spelers.map(p => {
+    const isAfw = afwezig.has(p.id);
+    const isLaat = telaat.has(p.id);
+    const klasse = isAfw ? 'afwezig' : (isLaat ? 'telaat' : 'aanwezig');
+    const statusTxt = isAfw ? 'Afwezig' : (isLaat ? 'Te laat' : 'Aanwezig');
+    const info = redenen[p.id] ? afwezigRedenInfo(redenen[p.id]) : null;
+    return `
+    <div class="pres-speler ${klasse}">
+      <button type="button" class="pres-speler-kop" data-toggle="${p.id}">
+        <span class="pres-shirt">${esc(p.nummer ?? '·')}</span>
+        <span class="pres-naam">${esc(p.naam)}</span>
+        <span class="pres-status">${statusTxt}</span>
+      </button>
+      ${isAfw ? `
+      <div class="pres-reden-rij">${AFWEZIG_REDENEN.map(r =>
+        `<button type="button" class="pres-reden-chip ${info?.id===r.id?'actief':''}" data-reden="${r.id}" data-pid="${p.id}">${r.ico?ico(r.ico,16):r.emoji} ${r.label}</button>`).join('')}<button type="button" class="pres-reden-chip telaat-chip" data-telaat="${p.id}">⏱ Te laat</button></div>
+      ${info ? `<input class="invoer pres-reden-notitie" data-pid="${p.id}" placeholder="Toelichting (optioneel) — bv. 'last van hamstring' of 'trein gemist'" value="${esc(redenen[p.id]?.notitie||'')}">` : ''}
+      ` : isLaat ? `
+      <div class="pres-telaat-rij"><button type="button" class="pres-reden-chip telaat-chip actief" data-telaat="${p.id}">⏱ Te laat — tik om te wissen</button></div>
+      ` : ''}
+    </div>`;
+  }).join('');
+
+  openModal(`
+    <h2>Presentie training</h2>
+    ${kanDatumWijzigen ? `
+    <div class="veldgroep" style="margin-bottom:10px">
+      <label>Datum</label>
+      <div class="segment" id="mPresDatumSeg">
+        <button type="button" data-d="vandaag" class="${startAnder?'':'actief'}">Vandaag</button>
+        <button type="button" data-d="ander" class="${startAnder?'actief':''}">Andere dag</button>
+      </div>
+      <input class="invoer" type="date" id="mPresDatumInput" value="${datum}" style="${startAnder?'':'display:none;'}margin-top:8px">
+    </div>` : ''}
+    <p style="font-size:calc(13px * var(--fs));color:var(--ink-2);margin-bottom:4px;text-transform:capitalize" id="mPresDatumTekst">${esc(datLeesbaar(datum))}</p>
+    <p style="font-size:calc(12px * var(--fs));color:var(--warn);margin-bottom:4px;display:none" id="mPresBestaatMelding">Let op: voor deze dag is al presentie geregistreerd — je past de bestaande registratie aan.</p>
+    <p style="font-size:calc(12.5px * var(--fs));color:var(--ink-2);margin-bottom:8px">Iedereen staat op <b>aanwezig</b>. Tik wie er <b>niet</b> is — elke wijziging wordt meteen bewaard. Is iedereen er? Tik dan onderaan op bevestigen.</p>
+    <div class="pres-opslag rust" id="mPresOpslag" aria-live="polite">
+      <span class="pres-opslag-stip"></span>
+      <span id="mPresOpslagTekst">Alles bewaard</span>
+    </div>
+    <div class="pres-lijst" id="mPresLijst">${rijenHtml()}</div>
+    <div class="rij" style="margin-top:14px">
+      ${bestaande ? '<button class="knop licht vol" id="mPresWeg" style="color:var(--uit)">Verwijderen</button>' : ''}
+      <button class="knop vol" id="mPresKlaar">Klaar</button>
+    </div>`);
+
+  /* ---------- Directe opslag (geen Opslaan-knop meer) ----------
+     Elke tik (afwezig/reden/notitie) wordt automatisch bewaard, net als bij de
+     wedstrijdselectie. Om te voorkomen dat snel achter elkaar tikken tientallen
+     Firestore-writes veroorzaakt (kosten + zwak bereik langs de lijn), wordt
+     het schrijven ge-debounced. Zodra het document bestaat onthouden we de id,
+     zodat vervolgwijzigingen datzelfde document bijwerken i.p.v. een nieuwe
+     registratie aan te maken. */
+  let bewaarTimer = null;          // debounce-timer
+  let statusRustTimer = null;      // "Bewaard" → "Alles bewaard" na even
+  let docId = bestaande ? bestaande.id : (S.presentie.find(p => p.datum === datum)?.id || null);
+  let bezigMetSchrijven = false;   // voorkomt overlappende writes
+  let opnieuwNodig = false;        // er kwam een wijziging binnen tijdens een write
+  let eersteKeerGeteld = false;    // telGebruik('presentie') slechts één keer per sessie
+  // Is er voor deze datum al iets vastgelegd? Bij het bewerken van een bestaande
+  // registratie (of als er al een record voor de datum bestaat) is dat zo; op een
+  // verse dag nog niet. Bepaalt de tekst van de knop onderaan: zolang er nog niks
+  // is vastgelegd nodigt de knop uit om te bevestigen ("Iedereen aanwezig —
+  // bewaren" / "Presentie bewaren"), daarna wordt het simpelweg "Klaar".
+  let ietsOpgeslagen = !!bestaande || !!docId;
+
+  const zetStatus = (klasse, tekst) => {
+    const b = $('#mPresOpslag'); if (!b) return;
+    b.className = 'pres-opslag ' + klasse;
+    $('#mPresOpslagTekst').textContent = tekst;
+  };
+
+  // Knoptekst onderaan afstemmen op de situatie.
+  const werkKnopBij = () => {
+    const knop = $('#mPresKlaar'); if (!knop) return;
+    if (ietsOpgeslagen){
+      knop.textContent = 'Klaar';
+    } else if (afwezig.size === 0){
+      knop.textContent = 'Iedereen aanwezig — bewaren';
+    } else {
+      knop.textContent = 'Presentie bewaren';
+    }
+  };
+
+  const schrijfNu = async () => {
+    if (bezigMetSchrijven){ opnieuwNodig = true; return; }
+    bezigMetSchrijven = true;
+    zetStatus('bezig', 'Bewaren…');
+    // momentopname van de datum waarvoor we schrijven (kan wisselen tijdens await)
+    const schrijfDatum = datum;
+    const data = {
+      datum: schrijfDatum,
+      afwezig: Array.from(afwezig),
+      telaat: Array.from(telaat),
+      afwezigRedenen: redenen,
+      /* Wie zat er op dit moment in de selectie? Zonder deze lijst geldt
+         "niet afwezig" als aanwezig, en krijgt een speler die later
+         instroomt met terugwerkende kracht 100% over trainingen waar hij
+         nog niet bij het team was. Zie js/opkomst.js. */
+      selectie: S.spelers.map(p => p.id),
+      aantalAanwezig: S.spelers.length - afwezig.size,
+      aantalTeLaat: telaat.size,
+      aantalSpelers: S.spelers.length,
+      door: S.user.displayName || S.user.email || '',
+      gewijzigd: serverTimestamp(),
+    };
+    try {
+      if (docId){
+        await updateDoc(doc(db,'teams',S.teamId,'presentie',docId), data);
+      } else {
+        // dubbelcheck of er intussen (via de listener) al een record voor deze
+        // datum bestaat, zodat we er geen tweede naast maken
+        const zelfde = S.presentie.find(p => p.datum === schrijfDatum);
+        if (zelfde){
+          docId = zelfde.id;
+          await updateDoc(doc(db,'teams',S.teamId,'presentie',docId), data);
+        } else {
+          const ref = await addDoc(collection(db,'teams',S.teamId,'presentie'),
+            {...data, gemaakt: serverTimestamp(), seizoen: S.huidigSeizoen || SEIZOEN_FALLBACK});
+          docId = ref.id;
+        }
+      }
+      if (!eersteKeerGeteld){ telGebruik('presentie'); eersteKeerGeteld = true; }
+      ietsOpgeslagen = true;
+      werkKnopBij();
+      // Meteen het presentie-overzicht (maandlijst) opnieuw tekenen zodat een
+      // net-geregistreerde datum direct zichtbaar is — ook bij een andere dag,
+      // zonder te wachten op de serverbevestiging van de listener. De maandlijst
+      // woont op het tabblad 'presentietraining'; 'trainingen' toont de knoppen.
+      if (!S.wedstrijdId && (S.teamTab === 'presentietraining' || S.teamTab === 'trainingen')) S._navRerender?.();
+      zetStatus('klaar', 'Bewaard');
+      clearTimeout(statusRustTimer);
+      statusRustTimer = setTimeout(() => zetStatus('rust', 'Alles bewaard'), 1500);
+    } catch(e){
+      zetStatus('fout', 'Bewaren mislukt — probeer opnieuw');
+      meld('Opslaan mislukt: ' + (e.code || e.message));
+    } finally {
+      bezigMetSchrijven = false;
+      if (opnieuwNodig){ opnieuwNodig = false; schrijfNu(); }
+    }
+  };
+
+  const planBewaar = () => {
+    zetStatus('bezig', 'Bewaren…');
+    clearTimeout(bewaarTimer);
+    bewaarTimer = setTimeout(schrijfNu, 600);
+  };
+
+  // Direct doorschrijven zonder op de debounce te wachten (bij datumwissel).
+  const flushBewaar = () => {
+    if (bewaarTimer){ clearTimeout(bewaarTimer); bewaarTimer = null; schrijfNu(); }
+  };
+
+  const koppelRijen = () => {
+    $$('[data-toggle]').forEach(b => b.onclick = () => {
+      const id = b.dataset.toggle;
+      if (afwezig.has(id)){ afwezig.delete(id); delete redenen[id]; }
+      else { afwezig.add(id); telaat.delete(id); }   // afwezig sluit te-laat uit
+      $('#mPresLijst').innerHTML = rijenHtml();
+      koppelRijen();
+      werkKnopBij();
+      planBewaar();
+    });
+    // Te-laat chip: zet een afwezige speler terug op aanwezig+vlag, of haal de
+    // vlag weer weg. Telt mee als aanwezig.
+    $$('[data-telaat]').forEach(b => b.onclick = () => {
+      const id = b.dataset.telaat;
+      if (telaat.has(id)){ telaat.delete(id); }
+      else { afwezig.delete(id); delete redenen[id]; telaat.add(id); }
+      $('#mPresLijst').innerHTML = rijenHtml();
+      koppelRijen();
+      werkKnopBij();
+      planBewaar();
+    });
+    $$('.pres-reden-chip[data-reden]').forEach(b => b.onclick = () => {
+      const id = b.dataset.pid, type = b.dataset.reden;
+      const huidig = redenen[id];
+      if (huidig && afwezigRedenInfo(huidig).id === type) delete redenen[id];
+      else redenen[id] = {type, notitie: huidig?.notitie || ''};
+      $('#mPresLijst').innerHTML = rijenHtml();
+      koppelRijen();
+      planBewaar();
+    });
+    $$('.pres-reden-notitie').forEach(inp => inp.oninput = () => {
+      const id = inp.dataset.pid;
+      if (redenen[id]) redenen[id].notitie = inp.value;
+      planBewaar();
+    });
+  };
+  koppelRijen();
+
+  const werkMeldingBij = () => {
+    const bestaandRecord = S.presentie.find(p => p.datum === datum);
+    $('#mPresBestaatMelding').style.display = (bestaandRecord && !bestaande) ? '' : 'none';
+  };
+
+  const zetDatum = (nieuweDatum) => {
+    // eerst een eventuele wachtende write voor de oude datum wegschrijven,
+    // zodat die niet per ongeluk op de nieuwe datum belandt
+    flushBewaar();
+    datum = nieuweDatum;
+    $('#mPresDatumTekst').textContent = datLeesbaar(datum);
+    const bestaandRecord = S.presentie.find(p => p.datum === datum);
+    docId = bestaandRecord ? bestaandRecord.id : null;
+    afwezig = new Set(bestaandRecord ? (bestaandRecord.afwezig || []) : []);
+    telaat  = new Set(bestaandRecord ? (bestaandRecord.telaat  || []) : []);
+    redenen = bestaandRecord ? JSON.parse(JSON.stringify(bestaandRecord.afwezigRedenen || {})) : {};
+    // op een datum met een bestaand record is er al iets vastgelegd → knop "Klaar";
+    // op een lege datum nog niet → knop nodigt uit om te bevestigen
+    ietsOpgeslagen = !!bestaandRecord;
+    $('#mPresLijst').innerHTML = rijenHtml();
+    koppelRijen();
+    werkMeldingBij();
+    werkKnopBij();
+    zetStatus('rust', 'Alles bewaard');
+  };
+
+  if (kanDatumWijzigen){
+    werkMeldingBij();
+    const seg = $('#mPresDatumSeg'), input = $('#mPresDatumInput');
+    // [20260922] Bugfix: input.focus()/showPicker() werden synchroon aangeroepen
+    // in dezelfde klik die het veld net van display:none naar zichtbaar zette —
+    // op mobiel is dat element dan nog niet "geschilderd", waardoor de
+    // datumkiezer niet opende en Paul een tweede keer moest tikken. Een frame
+    // laten verstrijken (requestAnimationFrame) voordat de picker geopend wordt
+    // lost dat op.
+    const openPicker = () => {
+      input.focus();
+      if (input.showPicker){ try { input.showPicker(); } catch(e){} }
+    };
+    seg.querySelectorAll('button').forEach(b => b.onclick = () => {
+      seg.querySelectorAll('button').forEach(x=>x.classList.remove('actief'));
+      b.classList.add('actief');
+      if (b.dataset.d === 'vandaag'){ input.style.display = 'none'; zetDatum(vandaag); }
+      else {
+        input.style.display = '';
+        input.value = datum;
+        requestAnimationFrame(openPicker);
+      }
+    });
+    input.onchange = () => { if (input.value) zetDatum(input.value); };
+    // Geopend via de knop "Andere datum invullen": meteen de datumkiezer tonen.
+    if (startAnder){
+      input.value = datum;
+      requestAnimationFrame(openPicker);
+    }
+  }
+
+  const weg = $('#mPresWeg');
+  if (weg) weg.onclick = async () => {
+    if (!confirm('Deze presentieregistratie verwijderen?')) return;
+    clearTimeout(bewaarTimer);   // geen wachtende write meer uitvoeren
+    try {
+      await deleteDoc(doc(db,'teams',S.teamId,'presentie',bestaande.id));
+      sluitModal(); meld('Presentie verwijderd');
+    } catch(e){ meld('Verwijderen mislukt: ' + (e.code || e.message)); }
+  };
+
+  /* Knop onderaan: bevestigt de huidige stand en sluit. Onmisbaar voor het geval
+     dat iedereen aanwezig is en de coach dus niks aantikt — dan zou er zonder
+     deze knop niets worden vastgelegd. Is er nog niks bewaard, dan forceert de
+     knop één opslag (ook "iedereen aanwezig"); is er al bewaard, dan sluit hij
+     gewoon (alles staat immers al vast). */
+  $('#mPresKlaar').onclick = async () => {
+    const knop = $('#mPresKlaar');
+    // eventuele nog wachtende debounce-write nu uitvoeren
+    if (bewaarTimer){ clearTimeout(bewaarTimer); bewaarTimer = null; }
+    if (!ietsOpgeslagen){
+      knop.disabled = true;
+      await schrijfNu();               // legt de huidige stand vast
+      if (!ietsOpgeslagen){            // schrijven mislukt → modal openhouden
+        knop.disabled = false;
+        return;                        // foutmelding is al getoond door schrijfNu
+      }
+    } else if (bezigMetSchrijven){
+      // laat een lopende write nog even afronden, maar blokkeer de UI niet lang
+      await schrijfNu();
+    }
+    sluitModal();
+    meld(afwezig.size ? `${afwezig.size} afwezig genoteerd` : 'Iedereen aanwezig genoteerd');
+  };
+
+  werkKnopBij();   // begintekst zetten
+}
+
+/* ---------- Planning: eigen dag toevoegen ---------- */
+export function modalEigenDag(){
+  const vandaag = new Date().toISOString().slice(0,10);
+  openModal(`
+    <h2>Eigen dag toevoegen</h2>
+    <p style="font-size:calc(13.5px * var(--fs));color:var(--ink-2);margin-bottom:12px">Voeg een eigen datum toe aan de planning — bijvoorbeeld een toernooi, teamuitje of trainingskamp.</p>
+    <div class="veldgroep"><label>Datum</label>
+      <input class="invoer" id="mEdDatum" type="date" value="${vandaag}"></div>
+    <div class="veldgroep"><label>Omschrijving</label>
+      <input class="invoer" id="mEdLabel" placeholder="Bijv. Teamfoto, toernooi, vrij" autocomplete="off"></div>
+    <div class="veldgroep"><label>Notitie (optioneel)</label>
+      <input class="invoer" id="mEdOpm" placeholder="Extra info" autocomplete="off"></div>
+    <button class="knop vol" id="mEdOk">Toevoegen</button>`);
+  $('#mEdOk').onclick = async () => {
+    const datum = $('#mEdDatum').value;
+    const label = $('#mEdLabel').value.trim();
+    if (!datum) return meld('Kies een datum');
+    if (!label) return meld('Geef een omschrijving');
+    try {
+      await addDoc(collection(db,'teams',S.teamId,'planning'), {
+        bron: 'eigen', datum, type: 'eigen', label,
+        opmerking: $('#mEdOpm').value.trim(),
+        seizoen: S.huidigSeizoen || SEIZOEN_FALLBACK,
+        gemaakt: serverTimestamp(),
+      });
+      // zorg dat de maand zichtbaar is na toevoegen
+      if (S._planningDichteMaanden) S._planningDichteMaanden.delete(datum.slice(0,7));
+      sluitModal(); meld('Dag toegevoegd');
+    } catch(e){ meld('Toevoegen mislukt: ' + (e.code || e.message)); }
+  };
+}
+
+/* ---------- Planning: KNVB-dag aanpassen/verbergen of eigen dag bewerken ---------- */
+export function modalPlanDag(it){
+  const isEigen = it.bron === 'eigen';
+  const typeOpties = [['wd','Wedstrijddag'],['beker','Beker'],['inhaal','Inhaal'],['vrij','Vrij'],['eigen','Eigen dag']];
+  openModal(`
+    <h2>${datumNL(it.datum)}</h2>
+    <p style="font-size:calc(13px * var(--fs));color:var(--ink-2);margin-bottom:12px">${isEigen ? 'Eigen dag bewerken of verwijderen.' : 'KNVB-speeldag aanpassen of verbergen voor dit team. De originele kalender blijft bewaard.'}</p>
+    <div class="veldgroep"><label>Type</label>
+      <select class="invoer" id="mPdType">${typeOpties.map(([v,l]) => `<option value="${v}" ${it.type===v?'selected':''}>${l}</option>`).join('')}</select></div>
+    <div class="veldgroep"><label>Omschrijving</label>
+      <input class="invoer" id="mPdLabel" value="${esc(it.label||'')}" autocomplete="off"></div>
+    <div class="veldgroep"><label>Notitie (optioneel)</label>
+      <input class="invoer" id="mPdOpm" value="${esc(it.opmerking||'')}" autocomplete="off"></div>
+    <button class="knop vol" id="mPdOk">Opslaan</button>
+    <div class="rij" style="margin-top:8px">
+      ${it.aangepast && !isEigen ? `<button class="knop licht" id="mPdReset" style="flex:1">Herstel KNVB</button>` : ''}
+      <button class="knop gevaar" id="mPdWeg" style="flex:1">${isEigen ? 'Verwijderen' : 'Verbergen'}</button>
+    </div>`);
+  $('#mPdOk').onclick = async () => {
+    const type = $('#mPdType').value;
+    const label = $('#mPdLabel').value.trim() || (PLAN_TYPE[type]?.naam || 'Dag');
+    const opmerking = $('#mPdOpm').value.trim();
+    try {
+      if (isEigen){
+        await updateDoc(doc(db,'teams',S.teamId,'planning',it.docId), {type, label, opmerking});
+      } else {
+        await setDoc(doc(db,'teams',S.teamId,'planning','knvb_'+it.datum), {
+          bron:'knvb', datum: it.datum, type, label, opmerking, verborgen:false,
+          seizoen: S.huidigSeizoen || SEIZOEN_FALLBACK,
+        });
+      }
+      sluitModal(); meld('Opgeslagen');
+    } catch(e){ meld('Opslaan mislukt: ' + (e.code || e.message)); }
+  };
+  const reset = $('#mPdReset');
+  if (reset) reset.onclick = async () => {
+    try {
+      await deleteDoc(doc(db,'teams',S.teamId,'planning','knvb_'+it.datum));
+      sluitModal(); meld('KNVB-dag hersteld');
+    } catch(e){ meld('Mislukt: ' + (e.code || e.message)); }
+  };
+  $('#mPdWeg').onclick = async () => {
+    if (isEigen){
+      if (!confirm('Deze eigen dag verwijderen?')) return;
+      try {
+        await deleteDoc(doc(db,'teams',S.teamId,'planning',it.docId));
+        sluitModal(); meld('Verwijderd');
+      } catch(e){ meld('Mislukt: ' + (e.code || e.message)); }
+    } else {
+      if (!confirm('Deze KNVB-dag verbergen voor dit team?')) return;
+      try {
+        await setDoc(doc(db,'teams',S.teamId,'planning','knvb_'+it.datum), {
+          bron:'knvb', datum: it.datum, verborgen:true,
+          seizoen: S.huidigSeizoen || SEIZOEN_FALLBACK,
+        });
+        sluitModal(); meld('Verborgen');
+      } catch(e){ meld('Mislukt: ' + (e.code || e.message)); }
+    }
+  };
+}
