@@ -1,0 +1,264 @@
+rules_version = '2';
+/* Cluppie — Firestore-regels (AVG-aangescherpt: leesrechten per club, geen open collecties) voor het datamodel van de app (teams/{id} met
+   club + leden{uid}; clubs/{id} met admins, leden, bouwCoordinatoren).
+   LET OP: opgesteld uit de client-code, NIET getest tegen de emulator en
+   NIET gedeployed. Draai eerst `firebase emulators:start` (zie README). */
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ---------- basis ---------- */
+    function ingelogd() { return request.auth != null; }
+    function anoniem() { return ingelogd() && request.auth.token.firebase.sign_in_provider == 'anonymous'; }
+    function echt() { return ingelogd() && !anoniem(); }
+    function uid() { return request.auth.uid; }
+    function wijzigt(sleutels) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(sleutels); }
+
+    /* ---------- platform ---------- */
+    function platformDoc() { return get(/databases/$(database)/documents/platform/instellingen).data; }
+    function isPlatform() {
+      return echt() && request.auth.token.email_verified == true && (
+        (exists(/databases/$(database)/documents/platform/instellingen)
+          && platformDoc().get('beheerders', []).hasAny([request.auth.token.email]))
+        || request.auth.token.email == 'pclijten@gmail.com');
+    }
+
+    /* ---------- club-rollen ---------- */
+    function club(c) { return get(/databases/$(database)/documents/clubs/$(c)).data; }
+    function clubBestaat(c) { return c != null && exists(/databases/$(database)/documents/clubs/$(c)); }
+    function isClubAdmin(c) { return echt() && clubBestaat(c) && club(c).get('admins', {}).get(uid(), false) == true; }
+    function isClubLid(c) { return echt() && clubBestaat(c) && (club(c).get('leden', {}).get(uid(), false) == true || isClubAdmin(c)); }
+    function isCoordinatorVanBouw(c, bouw) {
+      return echt() && clubBestaat(c) && club(c).get('bouwCoordinatoren', {}).get(bouw, {}).get(uid(), false) == true;
+    }
+
+    /* ---------- team-rollen ---------- */
+    function team(t) { return get(/databases/$(database)/documents/teams/$(t)).data; }
+    function teamBestaat(t) { return t != null && exists(/databases/$(database)/documents/teams/$(t)); }
+    function isTeamLid(t) { return echt() && teamBestaat(t) && team(t).get('leden', {}).get(uid(), false) == true; }
+    /* volledige coach = teamlid dat geen 'assistent' is (ontbrekende rol = coach, oude data) */
+    function isVolCoach(t) { return isTeamLid(t) && team(t).get('rollen', {}).get(uid(), 'coach') != 'assistent'; }
+    function teamClub(t) { return team(t).get('club', null); }
+    /* schrijfrechten per team: teamlid, clubadmin of coördinator van de bouw van het team */
+    function magSchrijven(t) {
+      return isVolCoach(t)
+        || (teamBestaat(t) && teamClub(t) != null && (isClubAdmin(teamClub(t))
+            || isCoordinatorVanBouw(teamClub(t), team(t).get('bouw', '_'))));
+    }
+    /* leesrechten: schrijvers + clublid (coördinatoren zien andere teams read-only) */
+    function magLezen(t) {
+      return magSchrijven(t) || (teamBestaat(t) && teamClub(t) != null && isClubLid(teamClub(t)));
+    }
+    /* anonieme deel-link: toegangsbewijs voor precies dit team */
+    function heeftDeelToegang(t) {
+      let d = /databases/$(database)/documents/trainingToegang/$(uid());
+      return anoniem() && exists(d)
+        && get(d).data.teamId == t
+        && get(d).data.vervaltOp > request.time;
+    }
+
+    /* ======================= platform ======================= */
+    match /platform/{doc} {
+      allow read: if echt();
+      allow write: if false;            /* alleen handmatig in de console (zie PORTEREN.md) */
+    }
+
+    /* ======================= clubs ======================= */
+    match /clubs/{clubId} {
+      /* lezen: alleen leden van de club (aansluiten loopt via de Cloud Function sluitAan).
+         De twee extra voorwaarden dekken de queries admins.<uid>==true en eigenBouwCoaches. */
+      allow read: if isPlatform()
+        || (echt() && (resource.data.get('leden', {}).get(uid(), false) == true
+                       || resource.data.get('admins', {}).get(uid(), false) == true
+                       || uid() in resource.data.get('eigenBouwCoaches', [])));
+      /* aanmaken: alleen platformbeheerder (zoals de client-gating), maker is zelf admin en lid */
+      allow create: if isPlatform()
+        && request.resource.data.admins.get(uid(), false) == true
+        && request.resource.data.leden.get(uid(), false) == true;
+      /* clubadmin of platformbeheerder: alles */
+      allow update: if isClubAdmin(clubId) || isPlatform()
+        /* teamaanmaker registreert een nieuw team bij de club */
+        || (echt() && isClubLid(clubId) && wijzigt(['teams']));
+      allow delete: if isClubAdmin(clubId) || isPlatform();
+
+      /* uitleningen: club-breed voor leden; schrijven door clubadmin, coördinator of teamlid */
+      match /uitleningen/{id} {
+        allow read: if isClubLid(clubId) || isClubAdmin(clubId);
+        allow create, update, delete: if isClubLid(clubId) || isClubAdmin(clubId);
+      }
+      match /kalender/{id} {
+        allow read: if isClubLid(clubId);
+        allow write: if isClubAdmin(clubId);
+      }
+      match /afgelastingen/{id} {
+        allow read: if isClubLid(clubId);
+        allow write: if isClubAdmin(clubId);
+      }
+      /* club-eigen leerinhoud (content): gepubliceerd = leden, rest = admin */
+      match /content/{id} {
+        allow read: if isClubLid(clubId);
+        allow write: if isClubAdmin(clubId) || isPlatform();
+      }
+      /* Sportlink-gegevens: ALLEEN clubadmins (clientId + teamkoppelingen).
+         Cloud Functions lezen/schrijven hier via Admin SDK. */
+      match /geheim/{id} {
+        allow read, write: if isClubAdmin(clubId);
+      }
+      /* AI-verbruik per maand: alleen lezen voor admins, schrijven door functions */
+      match /aiGebruik/{maand} {
+        allow read: if isClubAdmin(clubId);
+        allow write: if false;
+      }
+    }
+
+    /* ======================= teams ======================= */
+    match /teams/{teamId} {
+      /* lezen: teamleden en leden van de club van het team (resource-gebaseerd, dus ook voor
+         list-queries leden.<uid>==true en club==…). Aansluiten via teamcode loopt via de
+         Cloud Function sluitAan; niet-leden kunnen teams dus niet meer opzoeken. */
+      allow read: if (echt() && (resource.data.get('leden', {}).get(uid(), false) == true
+                                 || (resource.data.get('club', null) != null && isClubLid(resource.data.club))))
+                  || heeftDeelToegang(teamId);
+      allow create: if echt()
+        && request.resource.data.leden.get(uid(), false) == true
+        && (request.resource.data.get('club', null) == null
+            || isClubLid(request.resource.data.club) || isClubAdmin(request.resource.data.club));
+      allow update: if magSchrijven(teamId);
+      allow delete: if isVolCoach(teamId)
+        || (resource.data.get('club', null) != null && isClubAdmin(resource.data.club));
+
+      /* wildcard: dekt spelers, wedstrijden, presentie, beoordelingen, teamevaluaties,
+         planning, poule, sjablonen, lijsten, trainingAantekeningen, … ook nieuwe. */
+      match /{sub=**} {
+        allow read, write: if magSchrijven(teamId);      /* teamleden, clubadmin, coördinator van de bouw */
+      }
+      /* assistent (en iedere coach): rooster en poule zijn niet gevoelig, alleen lezen */
+      match /wedstrijden/{id} { allow read: if isTeamLid(teamId); }
+      match /planning/{id}    { allow read: if isTeamLid(teamId); }
+      match /poule/{id}       { allow read: if isTeamLid(teamId); }
+      /* spelerslijst (naam, nummer, positie): ook leesbaar voor clubleden (uitleen-flow) en
+         via een anonieme deel-link; beoordelingen/presentie/evaluaties blijven teamgebonden. */
+      match /spelers/{id} {
+        allow read: if magLezen(teamId) || heeftDeelToegang(teamId);
+      }
+      match /presentie/{id} {
+        allow read: if heeftDeelToegang(teamId);          /* naast de wildcard hierboven */
+      }
+      /* poule/* wordt door Cloud Functions geschreven (Admin SDK); coaches lezen via de wildcard */
+    }
+
+    /* Club-inhoud: elk document draagt `club`; lezen/schrijven alleen voor leden van die club
+       (de client queryt met where('club','==',…), zie teams.js clubChunks). Documenten zonder
+       `club` (oude data) zijn alleen voor de platformbeheerder bereikbaar. */
+    function clubInhoudLezen() { return isPlatform() || (echt() && resource.data.get('club', null) != null && isClubLid(resource.data.club)); }
+    function clubInhoudNieuw() { return echt() && request.resource.data.get('club', null) != null && isClubLid(request.resource.data.club); }
+    function clubInhoudBeheer() { return isPlatform() || (echt() && resource.data.get('club', null) != null && isClubAdmin(resource.data.club)); }
+    function clubInhoudNieuwBeheer() { return echt() && request.resource.data.get('club', null) != null && isClubAdmin(request.resource.data.club); }
+    function trainingClub(id) { return get(/databases/$(database)/documents/trainingen/$(id)).data.get('club', null); }
+
+    match /trainingen/{id} {
+      allow read: if clubInhoudLezen()
+        || (anoniem() && exists(/databases/$(database)/documents/trainingToegang/$(uid()))
+            && get(/databases/$(database)/documents/trainingToegang/$(uid())).data.trainingId == id
+            && get(/databases/$(database)/documents/trainingToegang/$(uid())).data.vervaltOp > request.time);
+      allow create: if clubInhoudNieuw();
+      allow update, delete: if clubInhoudLezen();
+      match /{sub=**} {
+        allow read, write: if echt() && trainingClub(id) != null && isClubLid(trainingClub(id));
+      }
+    }
+    match /videos/{id} {
+      allow read: if clubInhoudLezen();
+      allow create: if clubInhoudNieuw();
+      allow update, delete: if clubInhoudBeheer();
+    }
+    match /documenten/{id} {
+      allow read: if clubInhoudLezen();
+      allow create: if clubInhoudNieuwBeheer();
+      allow update, delete: if clubInhoudBeheer();
+    }
+    match /berichten/{id} {
+      allow read: if clubInhoudLezen();
+      allow create: if clubInhoudNieuwBeheer();
+      allow update, delete: if clubInhoudBeheer();
+    }
+
+    /* platform-brede leerinhoud (kaarten e.d.) */
+    match /content/{id} {
+      allow read: if echt();
+      allow write: if isPlatform();
+    }
+
+    /* ======================= deel-links (ouders, anoniem) ======================= */
+    match /trainingDeel/{id} {
+      allow get: if ingelogd();
+      allow list: if false;
+      allow create: if echt() && request.resource.data.gemaaktDoor == uid() && magSchrijven(request.resource.data.teamId);
+      allow update, delete: if echt() && resource.data.gemaaktDoor == uid();
+    }
+    match /trainingToegang/{u} {
+      /* upsert door de anonieme gebruiker zelf, mits de deel-link bestaat, past en niet verlopen is */
+      allow read: if ingelogd() && u == uid();
+      allow create, update: if ingelogd() && u == uid()
+        && exists(/databases/$(database)/documents/trainingDeel/$(request.resource.data.deelId))
+        && get(/databases/$(database)/documents/trainingDeel/$(request.resource.data.deelId)).data.teamId == request.resource.data.teamId
+        && get(/databases/$(database)/documents/trainingDeel/$(request.resource.data.deelId)).data.trainingId == request.resource.data.trainingId
+        && get(/databases/$(database)/documents/trainingDeel/$(request.resource.data.deelId)).data.vervaltOp > request.time;
+      allow delete: if ingelogd() && u == uid();
+    }
+
+    /* ======================= gebruikers & statistiek ======================= */
+    /* ======================= onboarding & toegang ======================= */
+    /* Alles hieronder wordt uitsluitend door Cloud Functions geschreven (Admin SDK). */
+    match /uitnodigingen/{id} {
+      allow read: if isPlatform()
+        || (echt() && isClubAdmin(resource.data.clubId))
+        || (echt() && resource.data.get('teamId', null) != null && isVolCoach(resource.data.teamId));
+      allow write: if false;
+    }
+    match /aanvragen/{id} {
+      allow read: if echt() && (resource.data.uid == uid()
+        || isClubAdmin(resource.data.clubId)
+        || (resource.data.get('teamId', null) != null && isVolCoach(resource.data.teamId)));
+      allow write: if false;
+    }
+    match /toegangslog/{id} {
+      allow read: if isPlatform() || (echt() && isClubAdmin(resource.data.clubId));
+      allow write: if false;
+    }
+    match /privacyKennisname/{u} {
+      allow read: if echt() && u == uid();
+      allow write: if false;
+    }
+    match /rateLimit/{id} {
+      allow read, write: if false;
+    }
+
+    match /gebruikers/{u} {
+      allow read, write: if echt() && u == uid();
+      match /{sub=**} {
+        allow read, write: if echt() && u == uid();
+      }
+    }
+    /* logins: alleen uid + datum; niet leesbaar voor clients (alleen platformbeheerder / functions) */
+    match /logins/{id} {
+      allow create: if echt() && request.resource.data.uid == uid()
+        && request.resource.data.keys().hasOnly(['uid', 'datum', 'tijd']);
+      allow read, update, delete: if isPlatform();
+    }
+    /* gebruik + navpaden: schrijven door de eigenaar; lezen alleen door beheerders van de EIGEN club */
+    match /gebruik/{id} {
+      allow read: if isPlatform() || (echt() && resource.data.get('clubId', null) != null && isClubAdmin(resource.data.clubId));
+      allow create, update: if echt() && id.matches(uid() + '_.*') && request.resource.data.uid == uid();
+      allow delete: if isPlatform();
+    }
+    match /navpaden/{id} {
+      allow read: if isPlatform() || (echt() && resource.data.get('clubId', null) != null && isClubAdmin(resource.data.clubId));
+      allow create, update: if echt() && id.matches(uid() + '_.*') && request.resource.data.uid == uid();
+      allow delete: if isPlatform();
+    }
+    match /gebruikstats/{clubId} {
+      allow read: if isClubAdmin(clubId) || isPlatform();
+      allow write: if false;            /* alleen de (nog ontbrekende) aggregeerGebruik-function */
+    }
+  }
+}

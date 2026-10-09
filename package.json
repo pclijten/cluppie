@@ -1,0 +1,18 @@
+{
+  "name": "cluppie",
+  "version": "2.0.0",
+  "description": "Multi-tenant coachplatform voor jeugdvoetbal (PWA + Firebase)",
+  "private": true,
+  "scripts": {
+    "serve": "firebase serve --only hosting",
+    "emulate": "firebase emulators:start",
+    "deploy:hosting": "firebase deploy --only hosting",
+    "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes",
+    "deploy:functions": "echo 'Gebruik: firebase deploy --only functions:<naam>,…' && exit 1"
+  },
+  "author": "Paul Lijten",
+  "license": "MIT",
+  "devDependencies": {
+    "firebase-tools": "^13.0.0"
+  }
+}
