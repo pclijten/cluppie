@@ -32,3 +32,5 @@ Runtime: Node 22. Deploy per functie, niet in één keer.
 
 ## Nog niet aanwezig
 `aggregeerGebruik` (vult `gebruikstats/{clubId}`; de regels laten alleen de function schrijven).
+
+| `analyseerBeleidsplan` | club-admin | zelfde AI-regels; analyseert een beleidsplan-stuk tot content-voorstellen |

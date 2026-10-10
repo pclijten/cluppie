@@ -62,3 +62,9 @@ Uitnodigingen, aanvragen met goedkeuring, rollen (assistent/coach), toegangslog,
 - Wizard stap 4: platformbeheerder ziet alle clubs als kopie-bron; hint als er geen bronnen zijn.
 - `functions/toegang.js`: `bevestigPrivacy` logt de echte fout (`logger.error`) en geeft een leesbare melding i.p.v. `internal`. **Deploy functions opnieuw.**
 - Jaarlijks: voor augustus per district het volgende seizoen invoeren in het platformscherm; clubs pakken hem op zodra hun huidige seizoen overeenkomt.
+
+## Release 20261010i — beleidsplan-import en desktopfix
+- `styles.css` regel ~4398: `html.desk #view-team.dk-na` kreeg `!important display:block` ook zonder `.actief`, waardoor teaminstellingen onder het clubscherm bleven staan. Nu alleen met `.actief`.
+- `functions/index.js`: nieuwe `analyseerBeleidsplan` (club_admin, AI-limiet/-schakelaar via `vereisAI`, stukken ≤14.000 tekens, geeft voorstellen voor leercurve/kompas/gouden regel). **Deploy functions.** Werkt pas als de Anthropic-limiet het weer toelaat.
+- `public/js/club-beleidsplan.js` (nieuw): PDF/tekst → AI-analyse of handmatig splitsen op koppen → controleren → opslaan als concept in `clubs/{id}/content` (`bron:'beleidsplan-import'`). Knop in Club → Content.
+- Bewust niet gebouwd: delen van plannen tussen clubs (vereist expliciete toestemming per club).

@@ -531,6 +531,71 @@ exports.samenvatHotspot = onCall(
   }
 );
 
+/* ---------- 2e. BELEIDSPLAN ANALYSEREN ====================
+   Een clubbeheerder importeert het eigen (jeugd)beleidsplan. De client stuurt de tekst in stukken
+   (max ~12.000 tekens); deze functie haalt er voorstellen voor clubcontent uit: leerlijn-thema's,
+   kompas-tips en gouden regels. Het resultaat wordt in de app ALTIJD als concept opgeslagen en door
+   de beheerder gecontroleerd. Alleen de plantekst gaat mee (geen spelers- of ledengegevens). */
+const BELEIDSPLAN_SYSTEEM = `Je helpt een voetbalclub haar jeugdbeleidsplan om te zetten naar teksten voor een coachapp. Je krijgt een stuk uit dat plan. Haal er uitsluitend uit wat er staat; verzin niets en voeg geen eigen adviezen toe.
+
+Maak voorstellen in drie categorieën:
+1. "leercurve": een leerthema met een korte achtergrond (1-3 zinnen, dicht bij de brontekst) en 2-5 praktische tips voor coaches. "thema" moet EXACT een van de toegestane thema's zijn die je krijgt; past een passage bij geen enkel thema, gebruik dan categorie "kompas".
+2. "kompas": een korte, losse coachtip of kernzin uit het plan (max ~200 tekens).
+3. "gouden-regel": een afspraak/gedragsregel van de club, kort (max ~120 tekens).
+Domein-tags (optioneel, uit TE, TA, FY, ME, GE): TE techniek, TA tactiek, FY fysiek, ME mentaal, GE gedrag/groepsdynamiek.
+
+Regels:
+- Neem formuleringen zoveel mogelijk over; herschrijf alleen om een tekst op zichzelf leesbaar te maken.
+- Geen namen van personen. Laat passages weg die alleen organisatie, financiën of contactgegevens betreffen.
+- Staat er niets bruikbaars in het stuk, geef een lege lijst.
+
+UITVOER — uitsluitend geldige JSON, geen uitleg of markdown:
+{"items":[{"categorie":"leercurve","thema":"<exact toegestaan thema>","achtergrond":"...","tips":["..."],"tags":["TE"]},
+{"categorie":"kompas","titel":"<korte tip>","tags":[]},
+{"categorie":"gouden-regel","titel":"<korte regel>","tags":[]}]}`;
+
+exports.analyseerBeleidsplan = onCall(
+  { region: REGIO, secrets: [ANTHROPIC_API_KEY], cors: true },
+  async (request) => {
+    const { clubId } = await vereisAI(request, ['club_admin']);
+    const tekst = String(request.data?.tekst || '').replace(/\s+\n/g, '\n').trim().slice(0, 14000);
+    if (tekst.length < 80) throw new HttpsError('invalid-argument', 'Te weinig tekst om te analyseren.');
+    const themas = Array.isArray(request.data?.themas)
+      ? request.data.themas.map(t => String(t).slice(0, 60)).filter(Boolean).slice(0, 40) : [];
+    const vraag = `Toegestane thema's voor "leercurve": ${themas.join(' | ') || '(geen opgegeven)'}\n\n--- STUK UIT HET BELEIDSPLAN ---\n${tekst}`;
+    const { tekst: rauw, stopReason } = await claude({
+      apiKey: ANTHROPIC_API_KEY.value(),
+      system: [{ type: 'text', text: BELEIDSPLAN_SYSTEEM, cache_control: { type: 'ephemeral' } }],
+      messages: [{ role: 'user', content: vraag }],
+      maxTokens: 4096, temperature: 0.2, metaTerug: true,
+    });
+    if (stopReason === 'max_tokens') throw new HttpsError('resource-exhausted', 'Dit stuk levert te veel op in één keer; probeer een kleiner stuk.');
+    let json;
+    try {
+      let t = rauw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+      const a = t.indexOf('{'), b = t.lastIndexOf('}');
+      json = JSON.parse(a >= 0 ? t.slice(a, b + 1) : t);
+    } catch (e) {
+      console.error('[analyseerBeleidsplan] JSON-parse mislukt:', e.message, rauw.slice(0, 200));
+      throw new HttpsError('internal', 'De analyse kon niet gelezen worden. Probeer opnieuw.');
+    }
+    const toegestaan = new Set(themas);
+    const items = (Array.isArray(json.items) ? json.items : []).slice(0, 60).map(i => {
+      const categorie = ['leercurve', 'kompas', 'gouden-regel'].includes(i?.categorie) ? i.categorie : null;
+      if (!categorie) return null;
+      const tags = (Array.isArray(i.tags) ? i.tags : []).map(String).filter(t => ['TE', 'TA', 'FY', 'ME', 'GE'].includes(t));
+      if (categorie === 'leercurve'){
+        if (!toegestaan.has(i.thema)) return null;
+        return { categorie, thema: i.thema, titel: i.thema, achtergrond: String(i.achtergrond || '').slice(0, 1200),
+          tips: (Array.isArray(i.tips) ? i.tips : []).map(x => String(x).slice(0, 300)).filter(Boolean).slice(0, 6), tags };
+      }
+      const titel = String(i.titel || '').trim().slice(0, 300);
+      return titel ? { categorie, titel, achtergrond: '', tips: [], tags } : null;
+    }).filter(Boolean);
+    return { items };
+  }
+);
+
 /* ==================== 3. SPORTLINK CLUB.DATASERVICE-SYNC ====================
    Per club één client_id (clubs/{c}.sportlinkClientId, in de app in te stellen
    onder Club → Instellingen → Sportlink).

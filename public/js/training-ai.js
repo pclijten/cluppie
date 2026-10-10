@@ -171,7 +171,7 @@ function bitmapNaarBlob(img){
    letterhoogte, zodat het ook klopt bij grotere/kleinere lettertypes. Binnen
    een regel sorteren we op X (links → rechts). pdf.js geeft in v3 ook 'hasEOL'
    mee; dat gebruiken we als extra hint voor een regeleinde. */
-function regelsUitTekstItems(items){
+export function regelsUitTekstItems(items){
   const frags = items
     .filter(it => it.str != null)
     .map(it => ({

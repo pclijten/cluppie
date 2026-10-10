@@ -21,6 +21,7 @@ const categorieLabel = () => ({
 });
 
 let _huidigeLijst = [];
+export const huidigeContentLijst = () => _huidigeLijst;
 
 export function startClubContentListener(onData){
   return startContentAdminListener(lijst => { _huidigeLijst = lijst; onData(lijst); }, scope(), S.clubId);
@@ -41,6 +42,7 @@ export function htmlClubContent(lijst){
         voor coaches totdat je hem op <b>gepubliceerd</b> zet.
       </p>
       <button class="knop licht vol" id="btnContentNieuw">+ Nieuwe tekst</button>
+      ${sc === 'club' ? `<button class="knop licht vol" id="btnBeleidsplan" style="margin-top:8px">📄 ${esc(beleidsplanNaam())} importeren</button>` : ''}
       ${lijst.length === 0 ? (sc === 'club'
         ? `<button class="knop licht vol" id="btnContentKopie" style="margin-top:8px">📥 Begin met een kopie van de standaard</button>`
         : `<button class="knop licht vol" id="btnContentSeed" style="margin-top:8px">📥 Seed content vanuit jeugdbeleidsplan</button>`) : ''}
@@ -137,6 +139,7 @@ export function koppelClubContent(v, herteken){
     catch(e){ meld('Kopiëren mislukt: ' + (e.code || e.message)); }
   });
   v.querySelector('#btnContentNieuw')?.addEventListener('click', () => modalContentBewerk(null));
+  v.querySelector('#btnBeleidsplan')?.addEventListener('click', () => import('./club-beleidsplan.js?v=20261010i').then(m => m.openBeleidsplanImport()));
   v.querySelector('#btnContentSeed')?.addEventListener('click', async () => {
     meld('Bezig met seeden…');
     try {
