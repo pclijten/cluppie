@@ -12,11 +12,11 @@
 import {
   db, doc, collection, addDoc, updateDoc, setDoc, deleteDoc, getDocs, query, where, writeBatch, serverTimestamp
 } from './firebase.js?v=20260922c';
-import { S, $, esc, meld, openModal, sluitModal, nieuweCode } from './state.js?v=20261010c';
-import { SEIZOEN_FALLBACK, parseFormatie, aantalVeldspelers, SKILLS, LEERCURVE } from './config.js?v=20261010c';
+import { S, $, esc, meld, openModal, sluitModal, nieuweCode, isPlatformBeheerder } from './state.js?v=20261010c';
+import { ACTIEF, SEIZOEN_FALLBACK, parseFormatie, aantalVeldspelers, SKILLS, LEERCURVE } from './config.js?v=20261010c';
 import {
   effectief, isLegacy, mergeLijst, LIJST_DEFS, ORIGINEEL, NEUTRAAL, CLUPPIE_LOGO, ICOONNAMEN,
-  valideerKalender, herlaadKalender, pasClubConfigToe, clubAfk
+  valideerKalender, herlaadKalender, pasClubConfigToe, clubAfk, DISTRICTEN
 } from './clubconfig.js?v=20261010c';
 import { MODULE_DEFS } from './club-beheer.js?v=20261010c';
 
@@ -557,11 +557,23 @@ function tabCompetitie(eff){
       ${plaatsZoeker('cp', l.plaats)}
       ${l.plaats ? '<button class="cb-inklap" id="cpWis">Plaats wissen <span>›</span></button>' : ''}`)}
     ${kaart('KNVB-district en speeldagen', '', `
-      ${veldGroep('Kalender', `<select class="invoer" id="cpDistrict">
-          <option value="zuid" ${!eigen ? 'selected' : ''}>Ingebouwd: districten Zuid I en II (2026/’27)</option>
-          <option value="eigen" ${eigen ? 'selected' : ''}>Eigen kalender importeren</option></select>`,
-        'De speeldagen (competitie, beker, inhaal, vrij) verschillen per district. Kies “eigen” als je club buiten Zuid I/II speelt: zolang er dan geen kalender is geïmporteerd tonen we geen KNVB-speeldagen, in plaats van verkeerde data.')}
+      ${veldGroep('District', `<select class="invoer" id="cpDistrict">${districtOpties(l.district)}</select>`,
+        'De speeldagen (competitie, beker, inhaal, vrij) verschillen per district en per seizoen. Cluppie zet de kalender van jouw district automatisch klaar zodra die is ingevoerd; elk nieuw seizoen komt hij vanzelf bij jullie. Kies “eigen kalender” alleen als je zelf een afwijkende kalender wilt gebruiken.')}
+      ${kalenderStatus()}
       ${eigen ? kalenderImport() : ''}`)}`;
+}
+function districtOpties(huidig){
+  const h = huidig === 'zuid' ? 'zuid1' : huidig;
+  return DISTRICTEN.map(d => `<option value="${d.id}" ${h === d.id ? 'selected' : ''}>${esc(d.naam)}</option>`).join('')
+    + `<option value="eigen" ${h === 'eigen' ? 'selected' : ''}>Eigen kalender importeren</option>`;
+}
+function kalenderStatus(){
+  const k = ACTIEF.kalender || {};
+  const bron = { platform: 'door Cluppie klaargezet', standaard: 'ingebouwd', club: 'eigen kalender van de club', ontbreekt: '' }[k.bron] || '';
+  const tekst = k.bron === 'ontbreekt'
+    ? `Voor dit district is nog geen kalender voor het seizoen <b>${esc(S.club.huidigSeizoen || '')}</b> beschikbaar. Zodra Cluppie die toevoegt, verschijnt hij hier vanzelf; tot die tijd tonen we geen speeldagen in plaats van verkeerde data.`
+    : `Actieve kalender: <b>${esc(k.seizoen || '')}</b> (${bron}).`;
+  return `<p class="cb-uitleg" style="margin:8px 0 0">${tekst}</p>`;
 }
 function kalenderImport(){
   return `
@@ -739,8 +751,16 @@ export function koppelAlgemeenMelding(v, herteken){
 /* ==================== WIZARD: NIEUWE CLUB ==================== */
 export function modalNieuweClub(naCreatie){
   const bronnen = (S.clubs || []).slice();
+  /* de platformbeheerder kan elke club als startpunt gebruiken, niet alleen de clubs die hij zelf beheert */
+  if (isPlatformBeheerder()){
+    getDocs(collection(db, 'clubs')).then(ss => {
+      for (const d of ss.docs) if (!bronnen.some(c => c.id === d.id)) bronnen.push({ id: d.id, ...d.data() });
+      bronnen.sort((a, b) => (a.naam || '').localeCompare(b.naam || ''));
+      if (W.stap === 4) teken();
+    }).catch(() => {});
+  }
   const W = {
-    stap: 1, naam: '', plaats: '', lat: null, lon: null, district: 'zuid', afk: '', afkHandmatig: false,
+    stap: 1, naam: '', plaats: '', lat: null, lon: null, district: 'zuid1', afk: '', afkHandmatig: false,
     logo: '', kleur: '#e2342f', clientId: '', seizoen: seizoenVoorDatum(), ai: false, kopie: '', pvNaam: '', pvMail: '', vo: false,
   };
   openModal(`<h2>🏛 Nieuwe club</h2><div id="wzBody"></div>`);
@@ -758,7 +778,7 @@ export function modalNieuweClub(naCreatie){
         <p class="cb-uitleg" style="margin-bottom:12px">Als clubbeheerder maak je teams aan en deel je trainingen met alle teams. Coaches nodig je uit met een persoonlijke teamlink. Alle onderdelen kun je later nog aanpassen.</p>
         ${veldGroep('Clubnaam', `<input class="invoer" id="wzNaam" maxlength="60" placeholder="Bijv. RKVV Mifano" value="${esc(W.naam)}" autocomplete="off">`)}
         ${veldGroep('Plaats', plaatsZoeker('wz', W.plaats), W.plaats ? `Gekozen: <b>${esc(W.plaats)}</b> — voor het weer op het startscherm. Optioneel.` : 'Voor het weer op het startscherm. Optioneel.')}
-        ${veldGroep('KNVB-kalender', `<select class="invoer" id="wzDistrict"><option value="zuid" ${W.district === 'zuid' ? 'selected' : ''}>Districten Zuid I en II (ingebouwd)</option><option value="eigen" ${W.district === 'eigen' ? 'selected' : ''}>Ander district — kalender later importeren</option></select>`)}
+        ${veldGroep('KNVB-district', `<select class="invoer" id="wzDistrict">${districtOpties(W.district)}</select>`, 'De speeldagen van jullie district worden automatisch bij de club gezet, ook in de komende seizoenen.')}
         ${knoppen(false)}`;
       koppelPlaatsZoeker(b, 'wz', p => { W.plaats = p.plaats; W.lat = p.lat; W.lon = p.lon; W.naam = b.querySelector('#wzNaam').value; W.district = b.querySelector('#wzDistrict').value; teken(); });
     } else if (W.stap === 2){
@@ -792,7 +812,7 @@ export function modalNieuweClub(naCreatie){
     } else {
       const opties = [`<label class="ci-schakel"><input type="radio" name="wzKopie" value="" ${W.kopie === '' ? 'checked' : ''}><span><b>Cluppie-standaard</b><br><small>Standaard domeinen, tags, leercurve en KNVB-regels. Je past alles daarna aan.</small></span></label>`]
         .concat(bronnen.map(c => `<label class="ci-schakel"><input type="radio" name="wzKopie" value="${esc(c.id)}" ${W.kopie === c.id ? 'checked' : ''}><span><b>Kopie van ${esc(c.naam)}</b><br><small>Neemt lijsten, regels, formatie en namen over. Teams, spelers en koppelingen niet.</small></span></label>`));
-      b.innerHTML = kop() + `<p class="cb-uitleg" style="margin-bottom:10px">Waarmee begint ${esc(W.naam)}?</p>${opties.join('')}${knoppen(true)}`;
+      b.innerHTML = kop() + `<p class="cb-uitleg" style="margin-bottom:10px">Waarmee begint ${esc(W.naam)}?</p>${opties.join('')}${bronnen.length ? '' : '<p class="cb-uitleg">Zodra er andere clubs zijn waarvan je beheerder bent, kun je hier ook de instellingen van een bestaande club overnemen.</p>'}${knoppen(true)}`;
     }
     b.querySelector('#wzTerug')?.addEventListener('click', () => { lees(b); W.stap--; teken(); });
     b.querySelector('#wzVerder')?.addEventListener('click', () => volgende(b));

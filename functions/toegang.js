@@ -17,6 +17,7 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 const admin = require('firebase-admin');
+const logger = require('firebase-functions/logger');
 const crypto = require('crypto');
 const { schoonNaam, verwijderQuery } = require('./avg');
 
@@ -313,7 +314,13 @@ exports.verwijderLid = onCall({ region: REGIO, cors: true }, async (request) => 
 /* ---------- kennisname privacyregels ---------- */
 exports.bevestigPrivacy = onCall({ region: REGIO, cors: true }, async (request) => {
   vereisIngelogd(request);
-  await getFirestore().doc(`privacyKennisname/${request.auth.uid}`).set({ versie: PRIVACY_VERSIE, tijd: FieldValue.serverTimestamp() });
+  try {
+    await getFirestore().doc(`privacyKennisname/${request.auth.uid}`).set({ versie: PRIVACY_VERSIE, tijd: FieldValue.serverTimestamp() });
+  } catch (e) {
+    /* zonder dit ziet de gebruiker alleen "internal"; nu staat de echte oorzaak in de Functions-logs */
+    logger.error('bevestigPrivacy mislukt', { code: e.code, message: e.message });
+    throw new HttpsError('failed-precondition', 'Opslaan mislukt (' + (e.code || e.message || 'onbekend') + '). Controleer of de database (Firestore) bestaat en of de functions opnieuw zijn gedeployed.');
+  }
   return { versie: PRIVACY_VERSIE };
 });
 

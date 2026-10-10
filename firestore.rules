@@ -63,6 +63,13 @@ service cloud.firestore {
     }
 
     /* ======================= clubs ======================= */
+    /* KNVB-speeldagen per district en seizoen (id "2026-27_zuid1"): elke ingelogde gebruiker leest,
+       alleen de platformbeheerder schrijft. Clubs krijgen hun kalender hier automatisch uit. */
+    match /kalenders/{id} {
+      allow read: if request.auth != null;
+      allow write: if isPlatform();
+    }
+
     match /clubs/{clubId} {
       /* lezen: alleen leden van de club (aansluiten loopt via de Cloud Function sluitAan).
          De twee extra voorwaarden dekken de queries admins.<uid>==true en eigenBouwCoaches. */

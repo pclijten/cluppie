@@ -631,7 +631,7 @@ export function renderTeams(){
 
   v.querySelector('#uitloggen').onclick = () => { stopAlleListeners(); doSignOut(); };
   const platformKnop = v.querySelector('#platformKnop');
-  if (platformKnop) platformKnop.onclick = () => import('./platform.js?v=20261010g').then(m => m.openPlatform());
+  if (platformKnop) platformKnop.onclick = () => import('./platform.js?v=20261010h').then(m => m.openPlatform());
   v.querySelector('#privacyKnop').onclick = () => import('./privacy.js?v=20261010c').then(m => m.openPrivacy());
   const maEl = v.querySelector('#mijnAanvragen');
   if (maEl) import('./toegang.js?v=20261010c').then(m => m.laadMijnAanvragen(maEl));
@@ -1115,6 +1115,10 @@ export function verlaatTeamView(){
    Coach-vriendelijk overzicht van wat er nieuw is in de app. Nieuwste bovenaan.
    Voeg een nieuwe release toe door bovenaan UPDATES een item te plaatsen. */
 const UPDATES = [
+  { datum:'2026-10-10', titel:'Alle KNVB-districten', punten:[
+    'Bij een nieuwe club en onder Instellingen → Competitie kies je nu je KNVB-district: Noord, Oost, West I, West II, Zuid I of Zuid II.',
+    'De speeldagen van je district worden automatisch klaargezet, ook in volgende seizoenen. Je hoeft niets meer te importeren.',
+  ]},
   { datum:'2026-10-10', titel:'Nieuw Cluppie-logo', punten:[
     'Cluppie heeft een eigen logo: een open C met de bal in de opening. Je ziet het als app-icoon, in het browsertabblad, op het laad- en inlogscherm en op de uitlegpagina.',
     'Er staat geen ander clublogo meer in de app: elke club ziet alleen het eigen logo dat in Club → Instellingen is gekozen.',

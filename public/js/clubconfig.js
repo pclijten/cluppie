@@ -46,10 +46,21 @@ export const NEUTRAAL = Object.freeze({
   privacy: { contactNaam: '', contactEmail: '', achternamen: true, verwerkersovereenkomst: null },
 });
 export const CLUPPIE_LOGO = 'icons/icon-192.png';
+/* KNVB-districten (amateurvoetbal). 'zuid' is de oude gezamenlijke waarde voor Zuid I en II en blijft werken.
+   De speeldagen komen per district en seizoen uit het platform (kalenders/{seizoen}_{district});
+   alleen voor Zuid is voor 2026/'27 een kalender ingebouwd. */
 export const DISTRICTEN = [
-  { id: 'zuid',   naam: 'Zuid I / Zuid II', ingebouwd: true },
-  { id: 'eigen',  naam: 'Ander district (eigen kalender importeren)', ingebouwd: false },
+  { id: 'noord',  naam: 'Noord',  ingebouwd: false },
+  { id: 'oost',   naam: 'Oost',   ingebouwd: false },
+  { id: 'west1',  naam: 'West I', ingebouwd: false },
+  { id: 'west2',  naam: 'West II', ingebouwd: false },
+  { id: 'zuid1',  naam: 'Zuid I', ingebouwd: true },
+  { id: 'zuid2',  naam: 'Zuid II', ingebouwd: true },
 ];
+export const districtNaam = id => (id === 'zuid' ? 'Zuid I / II' : (DISTRICTEN.find(d => d.id === id) || {}).naam || (id === 'eigen' ? 'Eigen kalender' : id || ''));
+export const districtId = id => (id === 'zuid' || !id ? 'zuid1' : id);
+/* Document-id van een platformkalender: "2026-27_zuid1" (zuid → zuid1 en zuid2 delen dezelfde kalender via zuid1). */
+export const kalenderId = (seizoen, district) => String(seizoen).replace(/[^0-9]+/g, '-').replace(/^-|-$/g, '') + '_' + (district === 'zuid2' ? 'zuid1' : districtId(district));
 
 /* ---------- Definities van de bewerkbare lijsten (gedeeld met de UI) ---------- */
 export const LIJST_DEFS = {
@@ -176,7 +187,7 @@ const stripUit = p => { const { uit, ...rest } = p || {}; return rest; };
 const schoon = x => { const { _uit, _extra, ...rest } = x; return rest; };
 
 /* ---------- Actieve toestand ---------- */
-let HUIDIG = null;          // { clubId, naam, eff }
+let HUIDIG = null;          // { clubId, naam, eff, huidigSeizoen }
 let _sig = null;
 const LOGO_CACHE = {};      // clubId → logo-src (van elke club waarvan we het document zagen)
 const NAAM_CACHE = {};
@@ -193,12 +204,12 @@ export function cfg(){ return HUIDIG ? HUIDIG.eff : diep(NEUTRAAL, {}); }
 export function pasClubConfigToe(club){
   if (!club || !club.id) return;
   const eff = effectief(club);
-  const sig = club.id + '|' + (club.naam || '') + '|' + JSON.stringify(eff);
+  const sig = club.id + '|' + (club.naam || '') + '|' + (club.huidigSeizoen || '') + '|' + JSON.stringify(eff);
   LOGO_CACHE[club.id] = veiligUrl(eff.identiteit.logo) || CLUPPIE_LOGO;
   NAAM_CACHE[club.id] = club.naam || '';
   if (sig === _sig) return;
   _sig = sig;
-  HUIDIG = { clubId: club.id, naam: club.naam || '', eff };
+  HUIDIG = { clubId: club.id, naam: club.naam || '', eff, huidigSeizoen: club.huidigSeizoen || '' };
 
   /* lijsten */
   const L = eff.lijsten || {};
@@ -294,19 +305,35 @@ function kalenderZet(bron, label, soort){
   C.ACTIEF.kalender.seizoen = label; C.ACTIEF.kalender.bron = soort;
 }
 async function zetKalender(clubId, eff){
-  const district = (eff.locatie && eff.locatie.district) || 'zuid';
-  if (district === 'zuid'){ kalenderZet(ORIG.kalender, C.KNVB_SEIZOEN, 'standaard'); C.ACTIEF.kalender.district = 'zuid'; }
-  else { kalenderZet({}, '', 'ontbreekt'); C.ACTIEF.kalender.district = district; }
-  /* een door de club zelf geïmporteerde kalender (clubs/{id}/kalender/huidig) gaat altijd voor;
-     alleen clubs buiten Zuid hebben er een nodig */
+  const district = districtId((eff.locatie && eff.locatie.district) || 'zuid');
+  const club = HUIDIG && HUIDIG.clubId === clubId ? HUIDIG : null;
+  const seizoen = (club && club.huidigSeizoen) || null;
+  const ingebouwd = district === 'zuid1' || district === 'zuid2';
+  kalenderZet({}, '', 'ontbreekt'); C.ACTIEF.kalender.district = district;
+  /* 1. platformkalender voor het huidige seizoen van de club (daarna dat van vandaag) */
+  let gevonden = false;
+  const kandidaten = [...new Set([seizoen, seizoenNu()].filter(Boolean))];
+  for (const sz of kandidaten){
+    try {
+      const snap = await getDoc(doc(db, 'kalenders', kalenderId(sz, district)));
+      if (snap.exists()){ const d = snap.data(); kalenderZet(d, d.label || sz, 'platform'); gevonden = true; break; }
+    } catch (e) { /* offline of regels niet gedeployed: val terug op ingebouwd */ break; }
+  }
+  /* 2. ingebouwd (alleen Zuid, alleen het seizoen waarvoor het is ingevoerd) */
+  if (!gevonden && ingebouwd) kalenderZet(ORIG.kalender, C.KNVB_SEIZOEN, 'standaard');
+  /* 3. een door de club zelf geïmporteerde kalender (clubs/{id}/kalender/huidig) gaat altijd voor */
   try {
     const snap = await getDoc(doc(db, 'clubs', clubId, 'kalender', 'huidig'));
     if (snap.exists() && HUIDIG && HUIDIG.clubId === clubId){
       const d = snap.data();
       kalenderZet(d, d.label || 'eigen kalender', 'club');
     }
-  } catch (e) { /* geen rechten of offline: de standaard (of lege) kalender blijft staan */ }
+  } catch (e) { /* geen rechten of offline */ }
   herteken();
+}
+function seizoenNu(d = new Date()){
+  const y = d.getMonth() >= 7 ? d.getFullYear() : d.getFullYear() - 1;
+  return `${y}/'${String(y + 1).slice(-2)}`;
 }
 export async function herlaadKalender(){ if (HUIDIG) await zetKalender(HUIDIG.clubId, HUIDIG.eff); }
 function herteken(){

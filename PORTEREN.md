@@ -54,3 +54,11 @@ Uitnodigingen, aanvragen met goedkeuring, rollen (assistent/coach), toegangslog,
 
 ## Testen voor livegang
 - Nieuwe club via wizard → team → speler → wedstrijd; controleer dat er nergens een andere clubnaam of logo dan die van de club zelf verschijnt.
+
+## Release 20261010h — districten en kalenders
+- `clubconfig.js`: `DISTRICTEN` (noord, oost, west1, west2, zuid1, zuid2; oude waarde `zuid` blijft werken als zuid1), `kalenderId(seizoen, district)`. `zetKalender` volgorde: platformkalender `kalenders/{seizoen}_{district}` (huidigSeizoen van de club, daarna seizoen van vandaag) → ingebouwd (alleen Zuid, 2026/'27) → club-eigen `clubs/{id}/kalender/huidig` gaat altijd voor. Zuid I en II delen de kalender (id eindigt op `_zuid1`).
+- `platform.js`: knop "KNVB-kalenders per district beheren": matrix district × (dit en volgend seizoen), JSON plakken/uploaden, opslaan voor alle clubs.
+- `firestore.rules`: nieuwe collectie `kalenders` (lezen: ingelogd, schrijven: platform). **Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.**
+- Wizard stap 4: platformbeheerder ziet alle clubs als kopie-bron; hint als er geen bronnen zijn.
+- `functions/toegang.js`: `bevestigPrivacy` logt de echte fout (`logger.error`) en geeft een leesbare melding i.p.v. `internal`. **Deploy functions opnieuw.**
+- Jaarlijks: voor augustus per district het volgende seizoen invoeren in het platformscherm; clubs pakken hem op zodra hun huidige seizoen overeenkomt.
