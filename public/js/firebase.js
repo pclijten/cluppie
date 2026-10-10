@@ -14,13 +14,12 @@
       LEES-MIJ-DEPLOY.md in de root van deze zip.
 ==================================================================== */
 const firebaseConfig = {
-  apiKey: "AIzaSyBA_bCwzw_sggWBo53GiEOdmMahUEFTJLo",
-  authDomain: "cluppieasv33.firebaseapp.com",
-  projectId: "cluppieasv33",
-  storageBucket: "cluppieasv33.firebasestorage.app",
-  messagingSenderId: "883305195610",
-  appId: "1:883305195610:web:81b08d8a450184404cd063",
- 
+  apiKey: "AIzaSyCQdUHv2TjMyPbWYuR9b8ChAe_Z1o8Fmqk",
+  authDomain: "cluppie-ad329.firebaseapp.com",
+  projectId: "cluppie-ad329",
+  storageBucket: "cluppie-ad329.firebasestorage.app",
+  messagingSenderId: "776624143952",
+  appId: "1:776624143952:web:2fc01a748f5a5a7c415b55",
 };
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
