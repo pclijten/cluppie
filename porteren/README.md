@@ -1,7 +1,7 @@
 # Porteren: assists + 1e/2e elftal (ASV'33 release 20260928e)
 
 **Status in cluppie.io:** klaar om in te bouwen zodra de wedstrijd- en stats-schermen er zijn (fase 2).
-De logica staat al klaar in `elftallen.js` en kan nu al mee naar `public/js/` en `src/`.
+De logica staat al klaar in `elftallen.js` en kan nu al mee naar `public/js/`.
 
 ## Wat de feature doet
 1. **Assists** — na de scorer kiest de coach wie de assist gaf, of "Geen assist". De minuut wordt vastgelegd bij de eerste tik. Assists zijn aan te passen bij *Doelpunt corrigeren* en *Doelpunt toevoegen*. Ze staan in de stats (kolom A), in het spelersprofiel, in het wedstrijdverslag, in de Excel-export en in de gepseudonimiseerde AI-verslagdata (`assists: [{speler:'Speler N', aantal}]`).
@@ -24,12 +24,12 @@ De logica staat al klaar in `elftallen.js` en kan nu al mee naar `public/js/` en
 Firestore-rules: in cluppie.io is niets nodig, want coaches schrijven al teams, players en matches. Wil je dat alleen de clubadmin `tweedeElftal` aanzet (zoals in ASV'33), maak dat dan een aparte regel of een Cloud Function.
 
 ## Bestanden in deze map
-- `elftallen.js` — **cluppie.io-versie**: alleen logica en opslaan, met paden `clubs/{clubId}/…`. Geen DOM. Neerzetten als `public/js/elftallen.js` (en `src/elftallen.js`).
+- `elftallen.js` — **cluppie.io-versie**: alleen logica en opslaan, met paden `clubs/{clubId}/…`. Geen DOM. Neerzetten als `public/js/elftallen.js`.
 - `asv33-elftallen.js` — het origineel uit ASV'33 (met dashboard-HTML en toewijs-modal), als referentie voor de UI.
 - `asv33-assists-elftallen.patch` — de volledige ASV'33-diff zonder de versie-bumps. Laat precies zien waar in wedstrijd.js, stats, profiel, hub, desktop en club-beheer iets veranderde.
 
 ## Inbouwen in cluppie.io (checklist, fase 2)
-- [ ] `elftallen.js` in `public/js/` + `src/`
+- [ ] `elftallen.js` in `public/js/`
 - [ ] Goal loggen: scorer → assist-stap (`maakGoal`)
 - [ ] Doelpunt corrigeren/toevoegen: assist-keuze; bij "Toch een tegendoelpunt" `assist` weghalen
 - [ ] Stats: kolom A, filter 1e/2e/Totaal (`filterOpElftal`)

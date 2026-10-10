@@ -1,84 +1,90 @@
-const CACHE_NAME = 'cluppie-v1';
-const URLS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/styles.css',
-  '/manifest.webmanifest',
-  '/icons/icon192.png',
-  '/icons/icon512.png'
+/* sw.js — Cluppie service worker
+   ================================================================
+   Doel: de app-schil (HTML/CSS/JS/iconen) offline beschikbaar maken,
+   zodat Cluppie ook langs de lijn zonder bereik opstart. De wedstrijd-
+   en teamdata zelf worden al offline afgehandeld door de Firestore-
+   persistence in firebase.js — deze worker raakt die verzoeken niet aan.
+
+   Strategie: NETWORK-FIRST.
+   • Online → altijd vers van het net halen en een kopie in de cache
+     leggen. Je ziet dus nooit een verouderde versie zolang er bereik is.
+   • Offline → terugvallen op de laatst gecachte versie.
+   Dit is bewust géén cache-first: dat gaf in het verleden hardnekkige
+   problemen met verouderde bestanden na een deploy.
+
+   Bij een nieuwe release: verhoog CACHE_VERSIE hieronder. De oude cache
+   wordt dan bij activatie automatisch opgeruimd. skipWaiting() +
+   clients.claim() zorgen dat de nieuwe worker direct het stuur overneemt,
+   zonder dat de coach alle tabbladen hoeft te sluiten.
+   ================================================================ */
+
+const CACHE_VERSIE = 'cluppie-v20261010a';
+
+/* Minimale schil die we bij installatie alvast klaarzetten. De overige
+   bestanden (JS-modules, iconen, fonts van gstatic) worden vanzelf
+   gecachet zodra ze één keer online zijn opgevraagd — zo hoeft deze
+   lijst niet in sync te blijven met elke ?v=-versiewijziging. */
+const SCHIL = [
+  './',
+  'index.html',
+  'manifest.webmanifest',
 ];
 
-// Install service worker and cache assets
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(URLS_TO_CACHE))
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE_VERSIE)
+      .then(cache => cache.addAll(SCHIL))
+      .catch(() => {})          // installatie mag nooit stranden op één bestand
       .then(() => self.skipWaiting())
   );
 });
 
-// Activate service worker and clean up old caches
-self.addEventListener('activate', event => {
-  event.waitUntil(
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
     caches.keys()
-      .then(cacheNames => {
-        return Promise.all(
-          cacheNames
-            .filter(cacheName => cacheName !== CACHE_NAME)
-            .map(cacheName => caches.delete(cacheName))
-        );
-      })
+      .then(keys => Promise.all(
+        keys.filter(k => k.startsWith('cluppie-') && k !== CACHE_VERSIE)
+            .map(k => caches.delete(k))
+      ))
       .then(() => self.clients.claim())
   );
 });
 
-// Fetch event - serve from cache, fallback to network
-self.addEventListener('fetch', event => {
-  // Skip non-GET requests
-  if (event.request.method !== 'GET') {
-    return;
-  }
+/* Bepaalt of een verzoek door deze worker gecachet mag worden.
+   Alleen GET-verzoeken naar de eigen site of naar de Firebase-SDK op
+   www.gstatic.com. Al het andere (Firestore-data, Auth, Cloud Functions,
+   Open-Meteo, YouTube-thumbnails, …) laten we volledig met rust. */
+function cachebaar(req){
+  if (req.method !== 'GET') return false;
+  const url = new URL(req.url);
+  if (url.origin === self.location.origin) return true;
+  if (url.hostname === 'www.gstatic.com' && url.pathname.startsWith('/firebasejs/')) return true;
+  return false;
+}
 
-  // Skip Firebase requests
-  if (event.request.url.includes('firebase') || 
-      event.request.url.includes('googleapis')) {
-    return;
-  }
+self.addEventListener('fetch', (e) => {
+  if (!cachebaar(e.request)) return;   // niet afhandelen → browser doet z'n gewone werk
 
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Return cached response if available
-        if (response) {
-          return response;
+  e.respondWith(
+    fetch(e.request)
+      .then(antwoord => {
+        // Alleen volwaardige antwoorden bewaren (geen fouten of opaque redirects)
+        if (antwoord && antwoord.ok){
+          const kopie = antwoord.clone();
+          caches.open(CACHE_VERSIE).then(cache => cache.put(e.request, kopie)).catch(() => {});
         }
-
-        // Otherwise, fetch from network
-        return fetch(event.request)
-          .then(response => {
-            // Cache successful responses
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-
-            const responseToCache = response.clone();
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
-
-            return response;
-          })
-          .catch(() => {
-            // Return offline page or default response
-            return new Response('Offline - Page not cached', {
-              status: 503,
-              statusText: 'Service Unavailable',
-              headers: new Headers({
-                'Content-Type': 'text/plain'
-              })
-            });
-          });
+        return antwoord;
+      })
+      .catch(async () => {
+        // Offline: pak de laatst bekende versie uit de cache.
+        const uitCache = await caches.match(e.request, { ignoreSearch: false });
+        if (uitCache) return uitCache;
+        // Navigatie zonder cache-hit (bv. diepe link): val terug op de schil.
+        if (e.request.mode === 'navigate'){
+          const schil = await caches.match('index.html') || await caches.match('./');
+          if (schil) return schil;
+        }
+        return new Response('Offline en niet in cache', { status: 503, statusText: 'Offline' });
       })
   );
 });

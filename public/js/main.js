@@ -1,241 +1,114 @@
-import { S, updateState } from './state.js';
-import { setupAuthListener, loginUser, registerUser, selectClub, logoutUser } from './auth.js';
-import { loadBouwen, loadTeams, loadPlayers } from './firestore.js';
-import { t } from './i18n.js';
+import { auth, onAuthStateChanged } from './firebase.js?v=20260922c';
+import { S, $, initModalSluiten, meld, initTerugknop, initGlobaleFoutafhandeling } from './state.js?v=20261010a';
+import {
+  initAuthUI, checkUitnodiging, handelPendingJoin, verwerkDeeplink, registreerLogin
+} from './auth.js?v=20261010a';
+import { startTeams, openTeam, renderTeam, verlaatTeamView, teamTabTerug } from './teams.js?v=20261010a';
+import { sluitWedstrijd } from './wedstrijd.js?v=20261010a';
+import { initChatbot } from './chatbot.js?v=20261010a';
 
-/**
- * Main app initialization
- */
-export function initApp(rootElement) {
-  // Register render function in global state
-  updateState({ _render: () => render(rootElement) });
-  
-  // Setup auth listener
-  setupAuthListener(() => {
-    render(rootElement);
-  });
+/* [20260921] Training gedeeld met een ouder (?deel=<id>): volledig losse,
+   sterk vereenvoudigde flow — geen normale login, geen navigatie, alleen de
+   ene gedeelde training + de presentie ervan. Zie js/deel-boot.js voor de
+   uitwerking (anonieme login, link inwisselen, tonen). Deze tak stopt hier:
+   de rest van dit bestand (normale coach-login/app-boot) draait dan niet. */
+const _deelId = new URLSearchParams(location.search).get('deel');
+if (_deelId){
+  document.getElementById('opstart')?.remove();
+  import('./deel-boot.js?v=20261010a').then(m => m.bootDeelPagina(_deelId));
+} else {
+
+/* club.js is alleen nodig voor club-admins die het clubdashboard openen —
+   dynamisch laden scheelt elke jeugdcoach het downloaden/parsen van het
+   hele adminscherm. Eén keer geladen blijft de module door de browser
+   gecached, dus latere aanroepen zijn instant. */
+const openClubLazy = id => import('./club.js?v=20261010a').then(m => m.openClub(id));
+
+/* knoppen en modal-gedrag één keer registreren */
+initModalSluiten();
+initAuthUI();
+initGlobaleFoutafhandeling();
+
+/* Opstart-laadscherm: standaard zichtbaar in index.html zodat een coach nooit
+   naar een leeg zwart scherm kijkt terwijl Firebase Auth de sessie herstelt.
+   Duurt dat langer dan 8 s (zwak bereik langs de lijn), dan verschijnt een
+   geduld-melding. Zodra onAuthStateChanged een scherm toont fadet het weg. */
+const opstartGeduldTimer = setTimeout(() => {
+  $('#opstartGeduld')?.classList.add('zichtbaar');
+}, 8000);
+function verbergOpstart(){
+  clearTimeout(opstartGeduldTimer);
+  const o = $('#opstart');
+  if (!o) return;
+  o.classList.add('weg');
+  setTimeout(() => o.remove(), 450);   // na de fade helemaal opruimen
 }
 
-/**
- * Main render function
- */
-function render(rootElement) {
-  const html = getViewHtml();
-  rootElement.innerHTML = html;
-  attachEventListeners(rootElement);
-}
+/* Terugknop-afhandeling: koppel de abstracte hooks uit state.js aan de
+   echte navigatiefuncties (voorkomt circulaire imports in state.js).
+   _navVerlaatClub laadt club.js pas op het moment dat hij echt wordt
+   aangeroepen — dat gebeurt alleen als de club-view al open was, dus dan
+   is club.js sowieso al geladen en is dit een instant cache-hit. */
+S._navRerender       = renderTeam;
+S._navTeamTabTerug   = teamTabTerug;
+S._navVerlaatTeam    = verlaatTeamView;
+S._navVerlaatClub    = () => import('./club.js?v=20261010a').then(m => m.verlaatClubView());
+S._navClubTerug      = () => import('./club.js?v=20261010a').then(m => m.clubTerugEen());
+S._navTerugWedstrijd = sluitWedstrijd;
+initTerugknop();
 
-/**
- * Get HTML for current view
- */
-function getViewHtml() {
-  switch (S.view) {
-    case 'login':
-      return renderLoginView();
-    case 'club-picker':
-      return renderClubPickerView();
-    case 'home':
-      return renderHomeView();
-    default:
-      return '<p>Unknown view</p>';
+/* [20260922d] Desktop-schil (zijbalk links). Alleen op schermen van minstens
+   1100 × 520 px wordt js/desktop.js geladen; een telefoon downloadt die
+   module nooit. Wordt het venster later breder (of smaller), dan pakt de
+   change-listener dat op; desktop.js zelf zet html.desk aan/uit. */
+const _deskMq = window.matchMedia('(min-width:1100px) and (min-height:520px)');
+function _laadDesktop(){
+  if (!_deskMq.matches) return;
+  import('./desktop.js?v=20261010a')
+    .then(m => m.initDesktop(_deskMq))
+    .catch(e => console.warn('[Cluppie] desktop-schil niet geladen', e));
+}
+_laadDesktop();
+_deskMq.addEventListener?.('change', _laadDesktop);
+
+onAuthStateChanged(auth, async user => {
+  S.user = user;
+  if (user){
+    $('#login').style.display = 'none';
+    $('#uitnodiging').style.display = 'none';
+    $('#app').style.display = '';
+    verbergOpstart();
+    startTeams();
+    registreerLogin();
+
+    /* Hulp-chatbot: paneel klaarzetten. Openen gebeurt via de "Hulpchat"-tegel
+       onder Meer (er is geen zwevende knop meer). */
+    initChatbot();
+
+    /* De interactieve rondleiding start NIET meer automatisch. Coaches starten
+       hem zelf via de tegel "Rondleiding opnieuw" onder Meer → Handleiding. */
+
+    /* openstaande teamkoppeling (uit uitnodiging) afhandelen */
+    const t = await handelPendingJoin();
+    if (t){ meld('Welkom bij ' + t.data().naam); openTeam(t.id); }
+
+    /* deep-link in de URL verwerken na inloggen */
+    setTimeout(() => verwerkDeeplink(openTeam, openClubLazy), 800);
+  } else {
+    $('#app').style.display = 'none';
+    for (const k of Object.keys(S.unsub)){ try { S.unsub[k](); } catch(e){} delete S.unsub[k]; }
+
+    const heeftUitnodiging = await checkUitnodiging();
+    if (heeftUitnodiging){
+      $('#login').style.display = 'none';
+      $('#uitnodiging').style.display = '';
+      setTimeout(() => $('#uitnodigEmail')?.focus(), 100);
+    } else {
+      $('#login').style.display = '';
+      $('#uitnodiging').style.display = 'none';
+    }
+    verbergOpstart();
   }
-}
+});
 
-/**
- * Login view
- */
-function renderLoginView() {
-  return `
-    <div class="view login-view">
-      <div class="container">
-        <h1>Cluppie</h1>
-        <p>${t('welcome_coach')}</p>
-        
-        <form id="loginForm">
-          <div class="form-group">
-            <label>${t('email')}:</label>
-            <input type="email" id="email" required />
-          </div>
-          
-          <div class="form-group">
-            <label>${t('password')}:</label>
-            <input type="password" id="password" required />
-          </div>
-          
-          <button type="submit" class="btn btn-primary">${t('login')}</button>
-        </form>
-        
-        <p class="text-center">
-          ${t('no_account')} <a href="#" id="switchToRegister">${t('register')}</a>
-        </p>
-        
-        ${S.error ? `<div class="alert alert-danger">${S.error}</div>` : ''}
-      </div>
-    </div>
-  `;
-}
-
-/**
- * Club picker view
- */
-function renderClubPickerView() {
-  return `
-    <div class="view club-picker-view">
-      <div class="container">
-        <h1>${t('select_club')}</h1>
-        <p>${t('user_email')}: ${S.user?.email}</p>
-        
-        <div class="club-list">
-          ${S.clubs.map(club => `
-            <div class="club-card" data-club-id="${club.id}">
-              <h3>${club.name}</h3>
-              <p>${t('role')}: ${club.role}</p>
-              <button class="btn btn-primary select-club">${t('select')}</button>
-            </div>
-          `).join('')}
-        </div>
-        
-        <button id="logoutBtn" class="btn btn-secondary">${t('logout')}</button>
-        
-        ${S.error ? `<div class="alert alert-danger">${S.error}</div>` : ''}
-      </div>
-    </div>
-  `;
-}
-
-/**
- * Home view
- */
-function renderHomeView() {
-  return `
-    <div class="view home-view">
-      <div class="container">
-        <h1>${S.clubConfig?.name || 'Cluppie'}</h1>
-        
-        <nav class="nav-tabs">
-          <button class="nav-tab active" data-tab="teams">${t('teams')}</button>
-          <button class="nav-tab" data-tab="players">${t('players')}</button>
-          <button class="nav-tab" data-tab="bouwen">${t('coaching_layers')}</button>
-          <button class="nav-tab" data-tab="admin">${t('admin')}</button>
-        </nav>
-        
-        <div id="teamsTab" class="tab-content active">
-          <h2>${t('teams')}</h2>
-          <div class="team-list">
-            ${S.teams.map(team => `
-              <div class="team-card">
-                <h3>${team.name}</h3>
-                <p>${team.age_group || ''}</p>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-        
-        <div id="playersTab" class="tab-content">
-          <h2>${t('players')}</h2>
-          <p>${t('select_team_for_players')}</p>
-        </div>
-        
-        <div id="bouweTab" class="tab-content">
-          <h2>${t('coaching_layers')}</h2>
-          <div class="bouwen-list">
-            ${S.bouwen.map(bouw => `
-              <div class="bouw-card">
-                <h3>${bouw.name}</h3>
-                <p>${bouw.description || ''}</p>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-        
-        <div id="adminTab" class="tab-content">
-          <h2>${t('admin')}</h2>
-          <p>${t('club_settings_here')}</p>
-        </div>
-        
-        <button id="backBtn" class="btn btn-secondary">${t('back_to_clubs')}</button>
-      </div>
-    </div>
-  `;
-}
-
-/**
- * Attach event listeners
- */
-function attachEventListeners(rootElement) {
-  switch (S.view) {
-    case 'login':
-      attachLoginListeners(rootElement);
-      break;
-    case 'club-picker':
-      attachClubPickerListeners(rootElement);
-      break;
-    case 'home':
-      attachHomeListeners(rootElement);
-      break;
-  }
-}
-
-function attachLoginListeners(root) {
-  const form = root.querySelector('#loginForm');
-  const switchLink = root.querySelector('#switchToRegister');
-  
-  if (form) {
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = form.email.value;
-      const password = form.password.value;
-      const result = await loginUser(email, password);
-      if (!result.success) {
-        // Error already in state
-      }
-    });
-  }
-  
-  if (switchLink) {
-    switchLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      // TODO: Switch to register view
-    });
-  }
-}
-
-function attachClubPickerListeners(root) {
-  root.querySelectorAll('.select-club').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      const clubId = e.target.closest('.club-card').dataset.clubId;
-      await selectClub(clubId);
-      await loadBouwen();
-      await loadTeams();
-    });
-  });
-  
-  const logoutBtn = root.querySelector('#logoutBtn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
-      await logoutUser();
-    });
-  }
-}
-
-function attachHomeListeners(root) {
-  root.querySelectorAll('.nav-tab').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      root.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-      root.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      e.target.classList.add('active');
-      const tabId = e.target.dataset.tab + 'Tab';
-      const tabEl = root.querySelector('#' + tabId);
-      if (tabEl) tabEl.classList.add('active');
-    });
-  });
-  
-  const backBtn = root.querySelector('#backBtn');
-  if (backBtn) {
-    backBtn.addEventListener('click', () => {
-      updateState({ view: 'club-picker', clubId: null });
-    });
-  }
-}
-
-export { S, updateState };
+} // einde van de normale (niet-?deel=) boot-tak
