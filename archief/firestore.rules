@@ -1,0 +1,108 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function: check if user is member of club
+    function isClubMember(clubId) {
+      return exists(/databases/$(database)/documents/clubs/$(clubId)) &&
+             request.auth.uid in resource.data.members;
+    }
+    
+    // Helper function: get user role in club
+    function getUserRole(clubId) {
+      return get(/databases/$(database)/documents/clubs/$(clubId)).data.memberRoles[request.auth.uid];
+    }
+    
+    // Helper function: check if user has at least role in club
+    function hasRole(clubId, role) {
+      let userRole = getUserRole(clubId);
+      let roles = ['reader', 'coach', 'bouwcoordinator', 'club_admin', 'admin'];
+      let userIndex = roles.indexOf(userRole);
+      let requiredIndex = roles.indexOf(role);
+      return userIndex >= requiredIndex;
+    }
+    
+    // Clubs collection
+    match /clubs/{clubId} {
+      // Read: user must be member
+      allow read: if request.auth != null && isClubMember(clubId);
+      
+      // Write: only admins and club admins
+      allow write: if request.auth != null && hasRole(clubId, 'club_admin');
+      
+      // Create: only authenticated users (first club setup via cloud function)
+      allow create: if request.auth != null;
+      
+      // Bouwen subcollection
+      match /bouwen/{bouwId} {
+        allow read: if request.auth != null && isClubMember(clubId);
+        allow write: if request.auth != null && hasRole(clubId, 'bouwcoordinator');
+        
+        // Teams under Bouwen
+        match /teams/{teamId} {
+          allow read: if request.auth != null && isClubMember(clubId);
+          allow write: if request.auth != null && hasRole(clubId, 'coach');
+          
+          // Players under Team
+          match /players/{playerId} {
+            allow read: if request.auth != null && isClubMember(clubId);
+            allow write: if request.auth != null && hasRole(clubId, 'coach');
+          }
+          
+          // Matches under Team
+          match /matches/{matchId} {
+            allow read: if request.auth != null && isClubMember(clubId);
+            allow write: if request.auth != null && hasRole(clubId, 'coach');
+            
+            // Match evaluations
+            match /evaluations/{evaluationId} {
+              allow read: if request.auth != null && isClubMember(clubId);
+              allow write: if request.auth != null && hasRole(clubId, 'coach');
+            }
+          }
+        }
+      }
+      
+      // Teams subcollection (flat structure)
+      match /teams/{teamId} {
+        allow read: if request.auth != null && isClubMember(clubId);
+        allow write: if request.auth != null && hasRole(clubId, 'coach');
+        
+        // Players under Team
+        match /players/{playerId} {
+          allow read: if request.auth != null && isClubMember(clubId);
+          allow write: if request.auth != null && hasRole(clubId, 'coach');
+        }
+        
+        // Matches under Team
+        match /matches/{matchId} {
+          allow read: if request.auth != null && isClubMember(clubId);
+          allow write: if request.auth != null && hasRole(clubId, 'coach');
+        }
+      }
+      
+      // Members subcollection
+      match /members/{memberId} {
+        allow read: if request.auth != null && isClubMember(clubId);
+        allow write: if request.auth != null && hasRole(clubId, 'club_admin');
+      }
+      
+      // Settings
+      match /settings/{settingsId} {
+        allow read: if request.auth != null && isClubMember(clubId);
+        allow write: if request.auth != null && hasRole(clubId, 'club_admin');
+      }
+    }
+    
+    // User profiles
+    match /users/{userId} {
+      allow read: if request.auth.uid == userId;
+      allow write: if request.auth.uid == userId;
+    }
+    
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

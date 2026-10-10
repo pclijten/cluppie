@@ -7,6 +7,7 @@ Fundament (fase 1, client) is klaar: alle clubwaarden staan in `clubs/{id}.inste
 ## Porteer-log (ASV'33 → cluppie.io)
 | Datum | Release | Wat | Status | Notitie |
 |---|---|---|---|---|
+| 2026-10-10 | 20261010b | Speler definitief overzetten met bevroren overdrachtsdossier (bron: ASV'33 PR #4) + tenant-controle en naam-fallback voor gearchiveerde spelers | ingebouwd, wacht op review/deploy | [porteren/20261010b-speler-overdracht](porteren/20261010b-speler-overdracht.md) |
 | 2026-10-10 | 20261010a | Verwachte speeltijd bij geplande wissels (bron: ASV'33 PR #2) | ingebouwd, wacht op review/deploy | [porteren/20261010a-verwachte-speeltijd](porteren/20261010a-verwachte-speeltijd.md) |
 
 ## Firestore rules (nog te doen)
