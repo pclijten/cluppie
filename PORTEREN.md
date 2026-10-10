@@ -15,6 +15,7 @@ Vergelijking van de complete cluppieasv33-zip (t/m release 2026-10-05) met deze 
 | 2026-10-10 | Verwachte speeltijd bij geplande wissels (ASV'33 PR #2, release 20261010a) | **gepoort** ([notitie](porteren/20261010a-verwachte-speeltijd.md)) |
 | 2026-10-10 | Speler definitief overzetten met bevroren dossier (ASV'33 PR #4, release 20261010b) + tenant-controle, naam-fallback, dossier wissen bij speler verwijderen | **gepoort** ([notitie](porteren/20261010b-speler-overdracht.md)) |
 | 2026-10-10 | Lokale AVG/onboarding-lijn samengevoegd met GitHub, app weer in `public/js/` (release 20261010c) | **klaar** ([notitie](porteren/20261010c-samenvoegen.md)) |
+| 2026-10-10 | Nieuw Cluppie-logo (open C met bal): app-iconen, favicon (`icons/icon.svg`), laad- en loginscherm, `over.html` (release 20261010d). Ook in ASV'33 doorgevoerd | **klaar** |
 
 Twee typefouten in de nieuwe ASV'33-code zijn hier meteen hersteld (ontbrekend `"` in `aria-label` van `#presentieLater`; los `"` in "Geen toekomstige afmeldingen"). Zet die ook recht in ASV'33.
 
@@ -24,7 +25,7 @@ Harde ASV-teksten naar de clubinstellingen: onboarding-stap kompas, handleiding 
 
 ## Structuur (opgelost 2026-10-08)
 - App staat nu in `public/` (modules in `public/js/`, `icons/`, `content/seed.json`); het oude fase-1-skelet staat in `_fase1-backup/`.
-- Icons en `over.html`/`readme.html` zijn nog de ASV'33-versies: vervang door Cluppie-eigen beeld voordat andere clubs ze zien (`clubconfig.js` verwijst naar `icons/asv-schild.png` als ASV-logo).
+- Icons en `over.html` tonen sinds 2026-10-10 het Cluppie-logo; `icons/asv-schild.png` blijft alleen het ASV-clublogo (`clubconfig.js`). `readme.html` bevat geen logo.
 - Datamodel = dat van de app (zie `functions/LEESMIJ-deploy.md`); het fase-1-model (`clubs/{id}/bouwen/.../players`) is vervallen.
 
 ## AVG (okt 2026) — zie AVG.md
