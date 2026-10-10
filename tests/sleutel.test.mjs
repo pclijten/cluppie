@@ -23,23 +23,23 @@ const { naamSleutel, clubVoorvoegsel } = new Function(
   haalFunctie('clubVoorvoegsel') + haalFunctie('naamSleutel') + '; return { naamSleutel, clubVoorvoegsel };'
 )();
 
-const CLUB = "ASV'33", AFK = 'ASV';
+const CLUB = "FC Voorbeeld", AFK = 'FCV';
 const lijst = [
-  "ASV'33 1", "ASV'33 2", "ASV'33 3 (zondag)", "ASV'33 O8-1JM", "ASV'33 JO9-2", "ASV'33 JO11-1",
-  "ASV'33 O11-2 (zat)", "ASV'33 JO12-1JM", "ASV'33 MO15-1", "ASV'33 VR30+1", "ASV'33 VR35+1", "ASV'33 Selectie",
+  "FC Voorbeeld 1", "FC Voorbeeld 2", "FC Voorbeeld 3 (zondag)", "FC Voorbeeld O8-1JM", "FC Voorbeeld JO9-2", "FC Voorbeeld JO11-1",
+  "FC Voorbeeld O11-2 (zat)", "FC Voorbeeld JO12-1JM", "FC Voorbeeld MO15-1", "FC Voorbeeld VR30+1", "FC Voorbeeld VR35+1", "FC Voorbeeld Selectie",
 ];
 const voorvoegsel = clubVoorvoegsel(lijst.map(teamnaam => ({ teamnaam })));
-assert.equal(voorvoegsel, "ASV'33 ");
+assert.equal(voorvoegsel, "FC Voorbeeld ");
 
 const gevallen = [...lijst, 'JO8-1', '1', 'MO15-1', 'VR30+1', 'Selectie', 'O11-2 (zat)'];
 for (const naam of gevallen){
   assert.equal(teamSleutel(naam, CLUB, AFK), naamSleutel(naam, voorvoegsel), 'verschil bij ' + JSON.stringify(naam));
 }
 // VR30+1 en VR35+1 mogen niet botsen met het 1e senioren-elftal
-assert.notEqual(teamSleutel("ASV'33 VR30+1", CLUB, AFK), teamSleutel("ASV'33 1", CLUB, AFK));
+assert.notEqual(teamSleutel("FC Voorbeeld VR30+1", CLUB, AFK), teamSleutel("FC Voorbeeld 1", CLUB, AFK));
 
 // Bekend verschil (bewust nog niet aangepast): een toevoeging als "Futsal" achter de teamnaam.
-// Client: "ASV'33 O13-1 Futsal" -> o13-1 (botst met het veldteam); server: o131futsal (aparte sleutel).
+// Client: "FC Voorbeeld O13-1 Futsal" -> o13-1 (botst met het veldteam); server: o131futsal (aparte sleutel).
 console.log('bekend verschil futsal: client=%s server=%s',
-  teamSleutel("ASV'33 O13-1 Futsal", CLUB, AFK), naamSleutel("ASV'33 O13-1 Futsal", voorvoegsel));
+  teamSleutel("FC Voorbeeld O13-1 Futsal", CLUB, AFK), naamSleutel("FC Voorbeeld O13-1 Futsal", voorvoegsel));
 console.log(gevallen.length + ' teamnamen: client en server geven dezelfde sleutel');

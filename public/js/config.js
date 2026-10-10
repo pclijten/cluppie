@@ -16,7 +16,7 @@ import { S } from './state.js?v=20261010c';
 export const ACTIEF_STANDAARD = Object.freeze({
   tijdstraf: Object.freeze({ pupilSec: 300, jeugdSec: 600, jeugdVanaf: 16 }),   // KNVB: 5 min t/m O15, daarna 10
   bouwGrenzen: Object.freeze({ onderTm: 11, middenTm: 15 }),                    // Onder t/m O11, Midden t/m O15, rest Boven
-  formatie11: '',                    // leeg = geen club-uitgangspunt tonen (ASV: '4-3-3')
+  formatie11: '',                    // leeg = geen club-uitgangspunt tonen (bijv. '4-3-3')
   kalender: Object.freeze({ district: 'zuid', seizoen: "2026/'27", bron: 'standaard' }),
   dashboard: Object.freeze({ dagenInactief: 14, opkomstLaag: 50 }),
   maxVideoMB: 100,
@@ -546,9 +546,9 @@ export function knvbKalenderVoorTeam(team){
   return KNVB_KALENDER[kol] || KNVB_KALENDER.jun;
 }
 
-/* ==================== ONTWIKKELDOMEINEN (ASV'33 hybride model) ====================
+/* ==================== ONTWIKKELDOMEINEN (hybride model) ====================
    De 4 voetbal-skills (Technisch/Tactisch/Fysiek/Mentaal) + een pedagogische laag
-   (Gedrag & beleving), zoals 4-Skills en het Jeugdbeleidsplan ASV'33 voorstaan:
+   (Gedrag & beleving), zoals 4-Skills en een jeugdbeleidsplan voorstaan:
    "Leren voetballen, met plezier als basis en groei als doel."
    De pedagogische laag komt uit §5 (normen & waarden, teamgevoel, inzet, plezier). */
 export const SKILLS = [
@@ -612,7 +612,7 @@ export function leercurveRelevant(thema, categorie){
   return lft >= thema.vanaf;
 }
 
-/* Gouden regels en ASV-kompas-tips (§3.1/§3.4) zijn verplaatst naar de
+/* Gouden regels en kompas-tips (§3.1/§3.4) zijn verplaatst naar de
    Firestore-collectie 'content' (zie content.js) — daar zijn ze te bewerken
    via het clubdashboard-tabblad "Content", zonder JS aan te passen.
    isoWeek()/kompasIndexVoorWeek() blijven hier staan: dit is pure logica
@@ -635,7 +635,7 @@ export function kompasIndexVoorWeek(aantal, week = isoWeek()){
 }
 
 /* Formatie-uitgangspunt van de club (§3.2): 1:4:3:3, omschakelend naar 1:3:4:3 bij balbezit.
-   Dit is de ASV'33-waarde (legacy-standaard). Nieuwe code gebruikt clubFormatie11():
+   Dit is de oorspronkelijke standaardwaarde. Nieuwe code gebruikt clubFormatie11():
    die geeft de instelling van de actieve club, of '' als die er geen heeft. */
 export const CLUB_FORMATIE_11 = '4-3-3';
 export function clubFormatie11(){ return ACTIEF.formatie11 || ''; }

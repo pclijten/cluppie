@@ -1150,7 +1150,7 @@ export function clubTerugEen(){
 /* ==================== SPORTLINK-KOPPELING PER TEAM ====================
    [20260928] De clubbeheerder kan per team de weergavenaam in Cluppie los van
    Sportlink kiezen (bv. "Selectie") en het team koppelen aan een echt
-   Sportlink-team uit de keuzelijst (bv. "ASV'33 1").
+   Sportlink-team uit de keuzelijst (bv. "Club 1").
 
    Opslag op teams/{id}: naam, sportlinkNaam (leeg = automatisch op naam),
    sportlinkTeamcode (alleen weergave). De nachtelijke sync matcht op
@@ -1163,7 +1163,7 @@ export function clubTerugEen(){
 /* Moet gelijk lopen met teamSleutel() in functions/index.js: bepaalt welk
    Sportlink-team een Cluppie-naam automatisch matcht. [20261008] De logica staat nu
    in sportlink-sleutel.js (pure module, ook voor de Cloud Function bedoeld) en gebruikt
-   de naam en afkorting van de actieve club in plaats van een vast ASV'33-voorvoegsel. */
+   de naam en afkorting van de actieve club in plaats van een vast voorvoegsel. */
 function slTeamSleutel(naam){
   return teamSleutelClub(naam, S.club?.naam || '', S.club ? clubAfk(S.club) : '');
 }
@@ -1199,7 +1199,7 @@ async function modalSportlinkTeam(team, teams){
   let lijst = await slTeamlijstOphalen();
   const gekoppeld = !!S.club.sportlinkClientId;
   /* [20260929a] Het vinkje "1e én 2e elftal" is weg: de selectie werkt nu met een
-     eigen bouw (ASV33-1 + ASV33-2). Een bestaand tweedeElftal-veld laten we staan. */
+     eigen bouw (Club 1 + Club 2). Een bestaand tweedeElftal-veld laten we staan. */
 
   const teken = () => {
     const huidig = String(team.sportlinkNaam || '').trim();

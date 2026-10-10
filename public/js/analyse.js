@@ -210,7 +210,7 @@ export function persoonlijkeNoemer(a, pid, disc = 0, laat = 0){
 /* ==================== VERWACHTE SPEELTIJD ====================
    Alleen weergave in het wedstrijdscherm. Voedt NIETS anders: statistieken,
    profielen, verslag, selectie-bouw en bank-sortering blijven op analyseKwart /
-   analyseWedstrijd. [20261010b] Geport uit ASV'33 PR #2. */
+   analyseWedstrijd. [20261010b] */
 export const WISSEL_BEURT = '__beurt__'; // één bron: wedstrijd.js en teams-hub.js importeren deze
 
 /* Opstelling (slot -> speler) op tijdstip t, uit startopstelling + echte events. */

@@ -1,6 +1,6 @@
 /* ==================== SELECTIE-BOUW (1e + 2e als twee teams) ====================
    [20260928f] Voor een eigen bouw die een seniorenselectie is (bv. bouw
-   "Selectie" met ASV33-1 en ASV33-2). Op het bouw-dashboard:
+   "Selectie" met Club 1 en Club 2). Op het bouw-dashboard:
      - onder elke teamtegel een radar: laatste evaluatie + seizoensgemiddelde
      - een tegel "Selectie maken" → scherm met alle spelers van beide teams
        (plus wie is ingeleend van buiten de bouw), per speler 1e / 2e / beide,
@@ -195,7 +195,7 @@ function teamRegel(r){
   const ook = r.el === 'b' ? ' + ' + esc(anderTeam[r.teamId] || 'ander team') : '';
   return `<small class="sbw-team ${r.open ? 'open' : ''}">${esc(r.teamNaam)}${ook}${r.open ? ` · gekozen: ${r.wens === 'b' ? 'beide' : r.wens + 'e'}` : ''}</small>`;
 }
-let anderTeam = {};   // teamId → naam van het ándere team (voor "ASV33-1 + ASV33-2"), gezet in selectieRijen
+let anderTeam = {};   // teamId → naam van het ándere team (voor "Club 1 + Club 2"), gezet in selectieRijen
 function openHtml(rijen){
   const n = rijen.filter(r => r.open).length;
   return n ? `<div class="sbw-melding"><span><b>${n} speler${n === 1 ? '' : 's'}</b> ${n === 1 ? 'staat' : 'staan'} nog niet in het team dat je koos.</span>

@@ -25,10 +25,8 @@
    IN PLAATS (arrays/objecten worden gewijzigd, niet vervangen), zodat alle
    modules die ze importeren automatisch de juiste waarden zien zonder aanpassing.
 
-   LEGACY: een club-document zonder instellingen.v krijgt (alleen als de naam met
-   "ASV" begint) de vroegere ASV'33-waarden, zodat er voor die club niets
-   verandert totdat de beheerder ze in Instellingen "vastlegt". Elke andere
-   club zonder instellingen krijgt de neutrale standaard. */
+   Een club-document zonder instellingen.v krijgt de neutrale standaard totdat de
+   beheerder de waarden in Instellingen "vastlegt". */
 import { S, clubAfkorting } from './state.js?v=20261010c';
 import * as C from './config.js?v=20261010c';
 import { db, doc, getDoc } from './firebase.js?v=20260922c';
@@ -47,14 +45,6 @@ export const NEUTRAAL = Object.freeze({
   toegang: { goedkeuring: true, standaardRol: 'assistent', vasteCodes: true },
   privacy: { contactNaam: '', contactEmail: '', achternamen: true, verwerkersovereenkomst: null },
 });
-/* De waarden die vóór deze release hard in de code stonden. */
-export const LEGACY_ASV = Object.freeze({
-  v: 1,
-  identiteit: { afkorting: 'ASV', logo: 'icons/asv-schild.png', kleur: '#e2342f', kompasNaam: 'ASV-kompas', beleidsplanNaam: 'jeugdbeleidsplan' },
-  locatie: { plaats: 'Aarle-Rixtel', lat: 51.52, lon: 5.62, district: 'zuid' },
-  pedagogiek: { formatie11: '4-3-3' },
-});
-const LEGACY_HERKENNING = /^\s*asv\b/i;
 export const CLUPPIE_LOGO = 'icons/icon-192.png';
 export const DISTRICTEN = [
   { id: 'zuid',   naam: 'Zuid I / Zuid II', ingebouwd: true },
@@ -164,7 +154,6 @@ function donker(hex){   // voor de tweede tint (--grass-2): iets donkerder
 export function effectief(club){
   const i = club && club.instellingen;
   if (i && i.v) return diep(NEUTRAAL, i);
-  if (club && LEGACY_HERKENNING.test(club.naam || '')) return diep(NEUTRAAL, diep(LEGACY_ASV, i || {}));
   return diep(NEUTRAAL, i || {});
 }
 /* Heeft dit club-document nog geen eigen (vastgelegde) instellingen? */
@@ -383,15 +372,15 @@ export function logoImg(klasse, clubId){
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   return `<img src="${esc(logoSrc(clubId))}" alt="${esc(naam)}" class="${esc(klasse || '')}">`;
 }
-/* Voorbeeldnaam voor placeholders, bv. "ASV JO11-2" of "Jouw club JO11-2". */
+/* Voorbeeldnaam voor placeholders, bv. "FC JO11-2" of "Jouw club JO11-2". */
 export function voorbeeldTegenstander(cat){
   const af = clubAfk() || (HUIDIG && HUIDIG.naam) || 'Club';
   return `${af} ${cat || 'JO11'}-2`;
 }
 export function voorbeeldTeamcode(){ return `${clubAfk() || 'CLUB'}JO11-1`; }
 /* De eigen clubnaam genormaliseerd (alleen a-z0-9, kleine letters), om hem uit
-   tegenstandernamen te halen zodat "ASV'33 JO11-2" en "jo11 2" als dezelfde
-   tegenstander gelden. Vroeger stond hier hard /asv'?33/. */
+   tegenstandernamen te halen zodat "Club JO11-2" en "jo11 2" als dezelfde
+   tegenstander gelden. */
 export function eigenClubTokens(){
   const woorden = String(HUIDIG ? HUIDIG.naam : '').toLowerCase().split(/\s+/).filter(Boolean);
   const norm = a => a.join('').replace(/[^a-z0-9]+/g, '');

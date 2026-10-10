@@ -1,8 +1,7 @@
 # PORTEREN.md — open punten multi-tenant (fase 2: Firebase + Cloud Functions)
 
 Fundament (fase 1, client) is klaar: alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar
-(Club → Instellingen; wizard "Nieuwe club"). Zonder wijziging blijft ASV'33 werken via de legacy-shim in `clubconfig.js`
-(knop "Waarden vastleggen" schrijft de ASV-waarden expliciet weg).
+(Club → Instellingen; wizard "Nieuwe club"). Een club zonder vastgelegde instellingen krijgt de neutrale standaard (knop "Waarden vastleggen" schrijft die expliciet weg). Sinds 2026-10-10 bevat de app zelf geen ASV-verwijzingen meer (geen legacy-shim, logo of teksten); die staan alleen nog in deze portering-geschiedenis.
 
 ## Gepoort uit ASV'33 (bijgewerkt 2026-10-10, cache-versie 20261010c)
 Vergelijking van de complete cluppieasv33-zip (t/m release 2026-10-05) met deze repo. Alle andere verschillen zijn bewuste multi-tenant-aanpassingen (clubconfig, instellingen per club).
@@ -15,7 +14,8 @@ Vergelijking van de complete cluppieasv33-zip (t/m release 2026-10-05) met deze 
 | 2026-10-10 | Verwachte speeltijd bij geplande wissels (ASV'33 PR #2, release 20261010a) | **gepoort** ([notitie](porteren/20261010a-verwachte-speeltijd.md)) |
 | 2026-10-10 | Speler definitief overzetten met bevroren dossier (ASV'33 PR #4, release 20261010b) + tenant-controle, naam-fallback, dossier wissen bij speler verwijderen | **gepoort** ([notitie](porteren/20261010b-speler-overdracht.md)) |
 | 2026-10-10 | Lokale AVG/onboarding-lijn samengevoegd met GitHub, app weer in `public/js/` (release 20261010c) | **klaar** ([notitie](porteren/20261010c-samenvoegen.md)) |
-| 2026-10-10 | Nieuw Cluppie-logo (open C met bal): app-iconen, favicon (`icons/icon.svg`), laad- en loginscherm, `over.html` (release 20261010d). Ook in ASV'33 doorgevoerd | **klaar** |
+| 2026-10-10 | Alle ASV-verwijzingen uit de app gehaald: schild, legacy-shim, seed-teksten, over.html, voorbeelden en wijzigingenlijst (release 20261010e) | **klaar** |
+| 2026-10-10 | Nieuw Cluppie-logo (open C met bal): app-iconen, favicon (`icons/icon.svg`), laad- en loginscherm, `over.html` (release 20261010d) | **klaar** |
 
 Twee typefouten in de nieuwe ASV'33-code zijn hier meteen hersteld (ontbrekend `"` in `aria-label` van `#presentieLater`; los `"` in "Geen toekomstige afmeldingen"). Zet die ook recht in ASV'33.
 
@@ -25,7 +25,7 @@ Harde ASV-teksten naar de clubinstellingen: onboarding-stap kompas, handleiding 
 
 ## Structuur (opgelost 2026-10-08)
 - App staat nu in `public/` (modules in `public/js/`, `icons/`, `content/seed.json`); het oude fase-1-skelet staat in `_fase1-backup/`.
-- Icons en `over.html` tonen sinds 2026-10-10 het Cluppie-logo; `icons/asv-schild.png` blijft alleen het ASV-clublogo (`clubconfig.js`). `readme.html` bevat geen logo.
+- Icons en `over.html` tonen sinds 2026-10-10 het Cluppie-logo; `readme.html` bevat geen logo.
 - Datamodel = dat van de app (zie `functions/LEESMIJ-deploy.md`); het fase-1-model (`clubs/{id}/bouwen/.../players`) is vervallen.
 
 ## AVG (okt 2026) — zie AVG.md
@@ -47,11 +47,9 @@ Uitnodigingen, aanvragen met goedkeuring, rollen (assistent/coach), toegangslog,
 - Open: `aggregeerGebruik` ontbreekt (club.js roept hem aan, `functions/index.js` exporteert hem niet); Anthropic-limiet t/m oktober blokkeert AI; Node 22 is al ingesteld.
 
 ## Bewust nog statisch
-- Onboarding-, handleiding- en updateteksten noemen soms nog ASV-voorbeelden (bijv. "ASVJO11-1").
 - `over.html`/`readme.html`, PWA-manifest en icons: één per domein, niet per club.
-- Standaard-content (kompas-tips, leercurve-teksten) = ASV-beleidsplan; clubs kunnen een eigen kopie maken of "Cluppie-standaard" gebruiken.
-- `firebase.js` project-id `cluppieasv33` (één Firebase-project voor alle clubs; bewuste keuze).
+- Standaard-content (kompas-tips, leercurve-teksten) is neutraal geformuleerd; clubs kunnen een eigen kopie maken of "Cluppie-standaard" gebruiken.
+- `firebase.js` gebruikt het eigen Firebase-project van Cluppie (`cluppie-ad329`), gedeeld door alle clubs op cluppie.io.
 
 ## Testen voor livegang
-- Nieuwe club via wizard → team → speler → wedstrijd; controleer dat er geen ASV-namen/logo verschijnen.
-- ASV'33 ongewijzigd controleren (dashboard, weer, planning, kompas).
+- Nieuwe club via wizard → team → speler → wedstrijd; controleer dat er nergens een andere clubnaam of logo dan die van de club zelf verschijnt.

@@ -19,7 +19,7 @@
      Onderhoud
        • cleanupDeletedItems – maandelijks opruimen (nog TODO)
 
-   DATAMODEL: dat van de app (ASV'33-structuur, zie PADEN hieronder):
+   DATAMODEL: dat van de app (zie PADEN hieronder):
      clubs/{id}: naam, admins{uid:true}, leden{uid:true}, bouwCoordinatoren,
                  sportlinkClientId, instellingen{ai{aan,maandLimiet}, …}
      teams/{id}: club, naam, leden{uid:true}, sportlinkNaam?, sportlinkTeamcode?
@@ -27,7 +27,7 @@
      memberRoles); de functies zijn daarop aangepast zodat client, functions
      en rules één model delen.
 
-   CONTRACT MET DE CLIENT (let op, anders dan in ASV'33):
+   CONTRACT MET DE CLIENT (let op):
      Alle callables verwachten `clubId` in de data. Daarmee checkt de server of
      de aanroeper lid (of admin) is van díe club. Region bij de client:
      getFunctions(app, 'europe-west1'). De client roept de handmatige sync aan
@@ -36,7 +36,7 @@
    Secret (in het cluppie.io-Firebase-project):
      firebase functions:secrets:set ANTHROPIC_API_KEY
 
-   Herkomst: AI-functies overgenomen uit cluppieasv33 (28-09-2026), met
+   Herkomst: AI-functies overgenomen uit de eerste versie (28-09-2026), met
    lidmaatschapscheck. Sportlink-sync herschreven voor multi-tenant: matcht op
    Sportlink-TEAMCODE (thuisteamid/uitteamid), niet op clubnaam — zie
    porteren/2026-09-28-sportlink-koppeling-per-team.md.
@@ -111,7 +111,7 @@ async function vereisLid(request, rollen = null){
 }
 
 /* AI-instellingen van de club: clubs/{id}.instellingen.ai = { aan, maandLimiet }.
-   Ontbreekt het (bestaande ASV'33-club zonder instellingen) → AI aan, geen limiet. */
+   Ontbreekt het (bestaande club zonder instellingen) → AI aan, geen limiet. */
 async function vereisAI(request, rollen = null){
   const r = await vereisLid(request, rollen);
   const db = getFirestore();
@@ -495,7 +495,7 @@ const HOTSPOT_SYSTEEM = `Je bent een assistent voor Cluppie, een app voor jeugdv
 exports.samenvatHotspot = onCall(
   { region: REGIO, secrets: [ANTHROPIC_API_KEY], cors: true },
   async (request) => {
-    // Alleen beheerders/coördinatoren van de club (was: vast e-mailadres in ASV'33).
+    // Alleen beheerders/coördinatoren van de club (was: vast e-mailadres).
     const { clubId, rol } = await vereisAI(request, BEHEER_ROLLEN);
     const namen = await namenVoorScrub(clubId, request.auth.uid, rol);
 
@@ -537,7 +537,7 @@ exports.samenvatHotspot = onCall(
 
    Koppeling team ↔ Sportlink: op TEAMCODE.
      • teams/{t}.sportlinkTeamcode gezet → die wordt gebruikt.
-     • anders automatisch op naam: het clubvoorvoegsel ("ASV'33 ") wordt uit de
+     • anders automatisch op naam: het clubvoorvoegsel ("FC Voorbeeld ") wordt uit de
        Sportlink-teamlijst afgeleid, dus werkt voor elke club. Alleen een
        UNIEKE naam-match telt; bij twijfel geen koppeling.
    In programma/uitslagen staat het team in thuisteamid/uitteamid (= teamcode,
@@ -625,7 +625,7 @@ async function haalTeamlijst(clientId){
 }
 
 /* Gemeenschappelijk voorvoegsel van alle teamnamen, afgekapt op een spatie:
-   ["ASV'33 1","ASV'33 O11-2",…] → "ASV'33 ". Zo is geen clubnaam-regex nodig. */
+   ["Club 1","Club O11-2",…] → "FC Voorbeeld ". Zo is geen clubnaam-regex nodig. */
 function clubVoorvoegsel(lijst){
   const namen = lijst.map(t => t.teamnaam);
   if (namen.length < 2) return '';
@@ -636,7 +636,7 @@ function clubVoorvoegsel(lijst){
 }
 
 /* Vergelijkbare sleutel voor een teamnaam, zonder clubvoorvoegsel.
-   "ASV'33 O8-1JM" / "JO8-1" → "o8-1"; "MO15-1" → "mo15-1"; "ASV'33 1" / "1" →
+   "Club O8-1JM" / "JO8-1" → "o8-1"; "MO15-1" → "mo15-1"; "Club 1" / "1" →
    "sen1"; "VR30+1" → "vr30+1" (botst dus niet met "sen1"). */
 function naamSleutel(naam, voorvoegsel){
   let s = String(naam || '').trim();

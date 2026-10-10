@@ -144,7 +144,7 @@ export function htmlHub(updInfo){
 
   return `
     <div class="welkom-kop hub-kop">
-      <div class="asv-streep" aria-hidden="true"></div>
+      <div class="club-streep" aria-hidden="true"></div>
       ${logoImg('welkom-schild', primaireClubId())}
       <div class="welkom-tekst">
         <div class="welkom-datum">${esc(vandaagMooi)}</div>

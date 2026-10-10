@@ -11,12 +11,12 @@ clubbeheerder in de beheeromgeving aanpast.
 public/            hosting-root (firebase.json → "public")
 ├── index.html, styles.css, sw.js, manifest.webmanifest, over.html, readme.html
 ├── js/            alle app-modules (main.js is de ingang)
-├── icons/         PWA-iconen (let op: nu nog de ASV'33-set)
+├── icons/         PWA-iconen en favicon (Cluppie-logo)
 └── content/       seed.json (standaardinhoud voor "begin met een kopie")
 functions/         Cloud Functions (AI, Sportlink-sync, opruimen) — zie LEESMIJ-deploy.md
 firestore.rules    beveiligingsregels (ONGETEST — eerst in de emulator draaien)
 _fase1-backup/     het oude fase-1-skelet (src/, oude public/, oude rules)
-porteren/          patches en notities uit ASV'33
+porteren/          patches en notities uit de eerste versie van de app
 PORTEREN.md        open punten
 ```
 

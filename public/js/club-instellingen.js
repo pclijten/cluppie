@@ -613,7 +613,7 @@ function tabPedagogiek(eff){
         'Als een coach bij 11v11 deze formatie kiest, ziet hij een hint dat dit het clubuitgangspunt is. Leeg = geen hint.')}
       <button class="knop vol klein" id="pdFormatieOpslaan">Opslaan</button>`)}
     ${kaart('Namen in de app', '', `
-      ${veldGroep('Naam van de wekelijkse tip', `<input class="invoer" id="pdKompas" maxlength="30" value="${esc(id.kompasNaam || '')}" autocomplete="off">`, 'Bijvoorbeeld “ASV-kompas”. Zo heet het onderdeel op de Training-tab en in het beheer.')}
+      ${veldGroep('Naam van de wekelijkse tip', `<input class="invoer" id="pdKompas" maxlength="30" value="${esc(id.kompasNaam || '')}" autocomplete="off">`, 'Bijvoorbeeld “Club-kompas”. Zo heet het onderdeel op de Training-tab en in het beheer.')}
       ${veldGroep('Naam van het beleidsdocument', `<input class="invoer" id="pdBeleid" maxlength="30" value="${esc(id.beleidsplanNaam || '')}" autocomplete="off">`, 'Bijvoorbeeld “jeugdbeleidsplan” of “opleidingsplan”; verschijnt als bronvermelding.')}
       <button class="knop vol klein" id="pdNamenOpslaan">Opslaan</button>`)}
     ${kaart('Teksten van Cluppie', '', `
@@ -718,9 +718,8 @@ function koppelAI(v, herteken){
 export function htmlAlgemeenMelding(){
   const club = S.club; let uit = '';
   if (isLegacy(club)){
-    const asv = effectief(club).identiteit.logo === 'icons/asv-schild.png';
     uit += `<div class="cb-kaart" data-legacy><div class="cb-kaart-kop"><b>Instellingen nog niet vastgelegd</b></div>
-      <p class="cb-uitleg" style="margin:0 0 10px">${asv ? 'Deze club draait nu op de ingebouwde ASV’33-waarden (logo, kleur, plaats, formatie, kompas). ' : 'Deze club gebruikt de neutrale standaard. '}Leg de huidige waarden vast om ze onder Identiteit, Competitie en Pedagogiek te kunnen aanpassen. Er verandert niets zichtbaars.</p>
+      <p class="cb-uitleg" style="margin:0 0 10px">Deze club gebruikt de neutrale standaard. Leg de huidige waarden vast om ze onder Identiteit, Competitie en Pedagogiek te kunnen aanpassen. Er verandert niets zichtbaars.</p>
       <button class="knop vol klein" id="legacyVastleggen">Waarden vastleggen</button></div>`;
   }
   if (!club.huidigSeizoen){

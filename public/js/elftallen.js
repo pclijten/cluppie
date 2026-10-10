@@ -1,10 +1,10 @@
 /* ==================== ELFTALLEN (1e + 2e binnen één team) ====================
    [20260928e] Voor een selectie die met twee elftallen speelt (bv. "Selectie"
-   = ASV'33 1 + ASV'33 2). Eén Cluppie-team, twee elftallen, zodat spelers die
+   = Club 1 + Club 2). Eén Cluppie-team, twee elftallen, zodat spelers die
    wisselen geen uitlening nodig hebben en hun cijfers bij elkaar blijven.
 
    Datamodel (alles optioneel, bestaande teams merken er niets van):
-     teams/{id}.tweedeElftal = { sportlinkNaam: "ASV'33 2" | null }
+     teams/{id}.tweedeElftal = { sportlinkNaam: "Club 2" | null }
          aanwezig = dit team heeft een 1e én 2e elftal. Het 1e elftal gebruikt
          de bestaande koppeling (sportlinkNaam || naam).
      teams/{id}/spelers/{pid}.elftal = '1' | '2' | 'b'   (leeg = '1')

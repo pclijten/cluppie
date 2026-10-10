@@ -556,7 +556,7 @@ export function renderTeams(){
 
   v.innerHTML = `
     <div class="welkom-kop">
-      <div class="asv-streep" aria-hidden="true"></div>
+      <div class="club-streep" aria-hidden="true"></div>
       ${logoImg('welkom-schild', primaireClubId())}
       <div class="welkom-tekst">
         <div class="welkom-datum">${esc(vandaag)}</div>
@@ -1112,6 +1112,10 @@ export function verlaatTeamView(){
    Coach-vriendelijk overzicht van wat er nieuw is in de app. Nieuwste bovenaan.
    Voeg een nieuwe release toe door bovenaan UPDATES een item te plaatsen. */
 const UPDATES = [
+  { datum:'2026-10-10', titel:'Nieuw Cluppie-logo', punten:[
+    'Cluppie heeft een eigen logo: een open C met de bal in de opening. Je ziet het als app-icoon, in het browsertabblad, op het laad- en inlogscherm en op de uitlegpagina.',
+    'Er staat geen ander clublogo meer in de app: elke club ziet alleen het eigen logo dat in Club → Instellingen is gekozen.',
+  ]},
   { datum:'2026-10-10', titel:'Speler definitief overzetten zonder zijn geschiedenis kwijt te raken', punten:[
     'Zet je een uitgeleende speler definitief over, dan krijg je nu een overzichtelijk scherm waarin je kiest wat er meegaat: wedstrijden, beoordelingen, trainingsaanwezigheid per datum, leerpunten en de notitie. Standaard gaat alles mee.',
     'De spelerskaart heeft een schakelaar “Bij dit team / Heel seizoen / Carrière”. Standaard zie je alleen wat hij bij jullie team heeft gedaan, dus de cijfers van het team worden niet vervuild. Kies je Heel seizoen of Carrière, dan tellen ook de wedstrijden en trainingen bij zijn vorige team mee.',
@@ -1138,7 +1142,7 @@ const UPDATES = [
   { datum:'2026-09-30', titel:'Clubinstellingen voor elke club', punten:[
     'Elke club stelt nu zelf in de browser in: naam, afkorting, logo, kleur, plaats en district, speeltijden, bouwgrenzen en de lijsten met thema\'s, tags en redenen.',
     'Nieuwe clubs maak je met een stappenplan (Club, Uiterlijk, Koppeling, Start), eventueel met een kopie van de instellingen van een bestaande club.',
-    'Bestaande ASV\'33-instellingen blijven ongewijzigd werken.',
+    'Bestaande instellingen blijven ongewijzigd werken.',
   ]},
   { datum:'2026-09-29', titel:'Evaluatierondes', punten:[
     'Zet de club een evaluatieronde klaar voor je team, zoals de Najaarsevaluatie, dan zie je die bovenaan je teampagina met hoeveel spelers al klaar zijn.',
@@ -1151,7 +1155,7 @@ const UPDATES = [
     'Het aantal open evaluaties op de teamkaart telt overgeslagen wedstrijden niet meer mee, net als in het menu.',
   ]},
   { datum:'2026-09-28', titel:'Selectie-dashboard voor 1e en 2e', punten:[
-    'Een eigen bouw kan nu een selectie zijn, bijvoorbeeld de bouw Selectie met ASV33-1 en ASV33-2. Zet dit aan in Club → Instellingen → Eigen bouwen.',
+    'Een eigen bouw kan nu een selectie zijn, bijvoorbeeld de bouw Selectie met het eerste en tweede elftal. Zet dit aan in Club → Instellingen → Eigen bouwen.',
     'Op het dashboard van zo\'n bouw staat onder elk team de evaluatie-radar: de laatste evaluatie in rood, het seizoensgemiddelde in blauw, met per domein het cijfer.',
     'Nieuwe tegel Selectie maken: alle spelers van beide teams in één lijst, met positie, wedstrijden, speeltijd, goals, assists, opkomst en score. Het pijltje bij de score laat zien of een speler stijgt, gelijk blijft of daalt.',
     'Per speler kies je 1e, 2e of Beide. Bij 1e of 2e verhuist de speler direct naar dat team, bij Beide staat hij via een uitlening in beide teams. Opstellingen, goals en beoordelingen blijven aan hem gekoppeld.',
@@ -1346,7 +1350,7 @@ const UPDATES = [
     ]},
   { datum:'2026-08-16', titel:'Frisse, moderne look', punten:[
       'De hele app heeft een strakkere, rustigere uitstraling gekregen.',
-      'Nieuw ASV\'33-tintje op het startscherm: het clublogo en de clubkleuren.',
+      'Nieuw clubtintje op het startscherm: het clublogo en de clubkleuren.',
       'Overal nieuwe, eigen iconen in plaats van emoji.',
     ]},
   { datum:'2026-08-15', titel:'Sneller en stabieler', punten:[
@@ -1388,9 +1392,9 @@ const UPDATES = [
       'Bij een nieuwe wedstrijd loop je vier korte stappen door: aanvoerder, aantal spelers, speelwijze en wedstrijddoel.',
       'Geen tijd? Overslaan kan altijd, en later aanpassen via "Wijzig opzet".',
     ]},
-  { datum:'2026-07-04', titel:'Seizoenen & ASV-kompas', punten:[
+  { datum:'2026-07-04', titel:'Seizoenen & kompas', punten:[
       'Alle wedstrijden, trainingen en beoordelingen worden nu per seizoen bewaard, zodat de historie netjes gescheiden blijft.',
-      'Bovenaan de Training-tab verschijnt wekelijks een ASV-kompas-tip uit het jeugdbeleidsplan.',
+      'Bovenaan de Training-tab verschijnt wekelijks een kompas-tip uit het jeugdbeleidsplan.',
       'Bij de leercurve-thema\'s en wedstrijddoelen kun je doortikken naar achtergrond en concrete oefentips.',
     ]},
   { datum:'2026-06-28', titel:'Seizoensplanning', punten:[

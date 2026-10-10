@@ -189,7 +189,7 @@ function laatsteOpstelling(format, elftal = null){
 
 /* ---- Vorige confrontatie tegen dezelfde tegenstander ----
    Genormaliseerde naamvergelijking: negeert hoofdletters, spaties, leestekens
-   en het eigen clubvoorvoegsel (ASV'33), zodat "ASV'33 JO11-2" en "jo11 2"
+   en het eigen clubvoorvoegsel (bijv. FC Voorbeeld), zodat "Club JO11-2" en "jo11 2"
    als dezelfde tegenstander gelden. */
 function normTegenstander(naam){
   if (!naam) return '';

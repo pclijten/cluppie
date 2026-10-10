@@ -1,6 +1,5 @@
 /* sportlink-sleutel.js — teamsleutel voor het koppelen van een Cluppie-team aan een Sportlink-team.
-   [20261008] Generiek gemaakt: eerder stond hier hard het voorvoegsel van ASV'33 in
-   (/asv['’`]?\s*33/). Nu komt de eigen clubnaam (en afkorting) van de actieve club.
+   [20261008] Generiek: het voorvoegsel komt van de eigen clubnaam (en afkorting) van de actieve club.
 
    PURE module (geen DOM, geen Firebase): bedoeld om ongewijzigd ook in de Cloud Function
    (functions/index.js → syncClub / schrijfTeamlijst) te gebruiken, zodat client en server
@@ -8,14 +7,14 @@
 
    Voorbeeld (club "SV Brandevoort", afkorting "SVB"):
      "SV Brandevoort JO11-1" → "o11-1"      "Selectie" → "selectie"      "SVB 1" → "sen1"
-   Bug uit ASV'33 (release 20260928d) is meegenomen: een senioren-sleutel "sen#" ontstaat alleen als
+   Bug (release 20260928d) is meegenomen: een senioren-sleutel "sen#" ontstaat alleen als
    er na de clubnaam enkel een nummer staat; "VR30+1" wordt dus niet "sen1". */
 
 const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /* Regexen die de eigen clubnaam in een teamnaam herkennen: volledige naam, eerste twee woorden,
    eerste woord en de afkorting. Tekens ertussen (apostrof, spatie, streepje) zijn optioneel,
-   zodat "ASV'33", "asv 33" en "ASV33" hetzelfde zijn. Langste variant eerst. */
+   zodat "FC Voorbeeld '33", "fc voorbeeld 33" en "FCVoorbeeld33" hetzelfde zijn. Langste variant eerst. */
 export function eigenClubPatronen(clubNaam, afkorting){
   const woorden = String(clubNaam || '').toLowerCase().split(/\s+/).filter(Boolean);
   const varianten = new Set();

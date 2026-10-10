@@ -1,4 +1,4 @@
-// icons.js — CluppieASV33 centraal iconensysteem
+// icons.js — Cluppie centraal iconensysteem
 // Een bron voor alle UI-iconen. Vervangt losse inline-SVG's en icoon-emoji.
 // Conventie: 24x24 grid, stroke 1.8, currentColor, round caps/joins.
 // Gebruik: ico('navigation-home') / ico('football-ball', 20) / ico('action-add', 24, 'class="x"')

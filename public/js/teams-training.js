@@ -316,7 +316,7 @@ export function htmlPresentieTraining(){
 }
 
 /* ---------- Tab: Oefenstof ----------
-   Het ASV-kompas + de gedeelde oefenstof-PDF's. De presentie-sectie die hier
+   Het kompas + de gedeelde oefenstof-PDF's. De presentie-sectie die hier
    vroeger tussen stond woont nu op zijn eigen tabblad (htmlPresentieTraining
    hierboven, tegel Presentie → Training op de hub). */
 export function htmlTeamTrainingen(){

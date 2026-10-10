@@ -1,6 +1,6 @@
-/* ==================== CONTENT (leercurve-teksten, ASV-kompas, gouden regels) ====================
+/* ==================== CONTENT (leercurve-teksten, kompas, gouden regels) ====================
    Doel: teksten uit het jeugdbeleidsplan (achtergrond + tips per leerthema, de
-   roterende ASV-kompas-tips, de gouden regels) staan niet langer hardcoded in
+   roterende kompas-tips, de gouden regels) staan niet langer hardcoded in
    config.js, maar in de Firestore-collectie 'content'. Zo kan een tekst worden
    aangepast via het clubdashboard-tabblad "Content" (zie club-content.js),
    zonder ooit JS te hoeven aanpassen, valideren of opnieuw te uploaden.

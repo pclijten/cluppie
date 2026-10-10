@@ -1,8 +1,8 @@
-/* ==================== LEERLIJN / ASV-KOMPAS INFOSCHERMEN ====================
+/* ==================== LEERLIJN / KOMPAS INFOSCHERMEN ====================
    Onderdeel van de teams.js-modulaire split (voorheen: sectie "LEERCURVE/
    KOMPAS-INFOSCHERMEN" in het monolithische teams.js).
 
-   De roterende ASV-kompas-banner (getoond op de Training-tab) en de gedeelde
+   De roterende kompas-banner (getoond op de Training-tab) en de gedeelde
    infobladen die de achtergrond + tips tonen voor een leercurve-thema (§3.3)
    of een losse kompas-tip (§3.1/§3.4). De bewerkbare TEKST komt niet meer uit
    config.js maar uit content.js (Firestore-collectie 'content') — zie
@@ -14,9 +14,9 @@ import { skillDomein, leercurveThema, isoWeek, kompasIndexVoorWeek,
 import { contentVoorThema, kompasTips } from './content.js?v=20261010c';
 import { beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261010c';
 
-/* ---------- Leerlijn-blok: ASV-kompas + leerlijn (Training-tab) ----------
+/* ---------- Leerlijn-blok: kompas + leerlijn (Training-tab) ----------
    Eén rustig blok waarin de coach met de pijltjes door twee series bladert:
-   eerst de wekelijkse ASV-kompas-tips (§3.1/§3.4), daarna de leercurve-thema's
+   eerst de wekelijkse kompas-tips (§3.1/§3.4), daarna de leercurve-thema's
    (§3.3) die bij de leeftijd van dit team horen. Het label + icoon bovenin
    bewegen mee, en bij een leerlijn-item toont de bron-tag de domein-badge.
    Beide series staan los per team uit te zetten: kompas via de 'kompas'-module,
@@ -108,7 +108,7 @@ export function htmlKompas(){
 /* ==================== LEERCURVE/KOMPAS-INFOSCHERMEN ====================
    Gedeelde onderbladen die de achtergrond (jeugdbeleidsplan) en concrete
    verbetertips tonen voor een leercurve-thema (§3.3) of een losse
-   ASV-kompas-tip (§3.1/§3.4). Overal waar de app nu al een thema of tip
+   kompas-tip (§3.1/§3.4). Overal waar de app nu al een thema of tip
    toont, opent dit dezelfde soort blad — zie de aanroepen bij het
    trainingsthema-advies, de leerpunt-kiezer, de Leerlijn-tab en het kompas. */
 function htmlThemaInfoBlad(t, metTerug){

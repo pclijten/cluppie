@@ -356,7 +356,7 @@ export function presentiePctWedstrijdTeam(team){
       uitslagen-doc, terwijl de sync inmiddels vooral het programma bijwerkt.
    2. Eigen teamnaam komt niet meer uitsluitend uit de poulestand. Zonder stand
       (onderbouw, begin seizoen) viel ALLES weg; nu wordt per regel de kant
-      herkend die op de teamcode eindigt (O11-1 ↔ "ASV '33 JO11-1").
+      herkend die op de teamcode eindigt (O11-1 ↔ "Club JO11-1").
    3. Aanvulling met in de app gelogde wedstrijden (doelpunten) op data waar
       Sportlink niets heeft — voor O7–O10 publiceert de KNVB geen uitslagen.
    4. knvbVerborgen: true bij O10 en jonger / mini's, zodat het dashboard kan
@@ -393,7 +393,7 @@ export function uitslagenTeam(team){
   const alleRijen = [...(d.uitslagen?.rijen || []), ...(d.programma?.rijen || [])];
   // Zonder stand: de eigen naam is de naam die op de teamcode eindigt én in
   // de meeste regels voorkomt (tegenstanders wisselen, wij niet). Voorkomt
-  // verwarring bij bv. "Bavos O11-3" tegen "ASV JO11-3".
+  // verwarring bij bv. "Bavos O11-3" tegen "Club JO11-3".
   let eigenSleutel = eigenNaam ? norm(eigenNaam) : null;
   if (!eigenSleutel && code){
     const tel = new Map();

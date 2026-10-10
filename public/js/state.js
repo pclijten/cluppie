@@ -72,8 +72,8 @@ export function nieuweCode(){
   const t = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   return Array.from({length:6}, () => t[Math.floor(Math.random()*t.length)]).join('');
 }
-/* Leesbare teamcode op basis van de teamnaam, bijv. "JO11-1" → "ASVJO11-1".
-   - clubAfkorting wordt vooraan geplakt (bijv. ASV) zodat codes clubbreed uniek zijn.
+/* Leesbare teamcode op basis van de teamnaam, bijv. "JO11-1" → "CLUBJO11-1".
+   - clubAfkorting wordt vooraan geplakt (bijv. CLUB) zodat codes clubbreed uniek zijn.
    - alles naar hoofdletters; alleen letters, cijfers en streepjes blijven over.
    - bestaandeCodes (array) voorkomt dubbele codes: bij botsing komt er -2, -3, ... achter. */
 export function teamCode(teamnaam, clubAfkorting = '', bestaandeCodes = []){
@@ -104,7 +104,7 @@ export function initialen(naam){ return String(naam||'?').trim().slice(0,1).toUp
    Ontbreekt het veld of staat het niet expliciet op false, dan is de module AAN
    — zo merken bestaande teams niets en wist "uit" nooit data. Sleutels:
    'evaluaties' (Stats-tab + na-wedstrijd-evaluatie), 'leerlijn' (thema-koppeling
-   + leerpunten), 'kompas' (wekelijkse ASV-kompas-tip op de Training-tab). */
+   + leerpunten), 'kompas' (wekelijkse kompas-tip op de Training-tab). */
 export function modAan(sleutel, team = S.team){
   /* [20260929c] volgorde: expliciete keuze van het team → clubstandaard
      (S._modulesStandaard, gezet door clubconfig.js) → aan. */
@@ -113,7 +113,7 @@ export function modAan(sleutel, team = S.team){
   return S._modulesStandaard?.[sleutel] !== false;
 }
 /* korte afkorting uit een clubnaam.
-   "ASV'33" → "ASV", "RKVV Mifano" → "RKVV", "SV Brandevoort" → "SV".
+   "FC Voorbeeld '33" → "FC", "RKVV Mifano" → "RKVV", "SV Brandevoort" → "SV".
    Aanpak: pak het eerste woord; bestaat dat (vooral) uit hoofdletters, dan is
    dat al de clubafkorting. Anders initialen van de woorden. */
 export function clubAfkorting(clubnaam){
