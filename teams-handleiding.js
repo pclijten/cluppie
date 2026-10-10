@@ -4,7 +4,7 @@
    wat hierboven al in dit bestand staat. De zoekfunctionaliteit
    (#helpZoek) wordt door de hub (teams.js/koppelTeamTab) aangesloten,
    want die werkt direct op het gerenderde DOM-element. */
-import { onboardingHerstartBlok } from './onboarding.js?v=20260929z';
+import { onboardingHerstartBlok } from './onboarding.js?v=20261010a';
 
 export function htmlHandleiding(){
   return `<div class="hl">
@@ -141,10 +141,11 @@ export function htmlHandleiding(){
     <div class="tip"><b>Slim:</b> de naamvergelijking negeert hoofdletters, spaties en het eigen clubvoorvoegsel, zodat dezelfde tegenstander altijd herkend wordt — ook als de schrijfwijze net iets verschilt.</div>
     </section>
 
-    <section class="hl-sec" data-zoek="📅 wissels vooraf plannen onder het wisselvak staat + wissel plannen : kies wie erin, wie eruit en na hoeveel minuten. zodra de klok dat moment passeert, knippert de geplande wissel en trilt je telefoon. tik op ✓ om hem door te voeren. wie aan de beurt is minst gespeeld: in plaats van een vaste speler kun je bij erin kiezen voor wie aan de beurt is. de app brengt dan op het wisselmoment automatisch de speler met de minste speeltijd van de bank in, zodat de speeltijd eerlijk verdeeld blijft.">
+    <section class="hl-sec" data-zoek="📅 wissels vooraf plannen onder het wisselvak staat + wissel plannen : kies wie erin, wie eruit en na hoeveel minuten. zodra de klok dat moment passeert, knippert de geplande wissel en trilt je telefoon. tik op ✓ om hem door te voeren. wie aan de beurt is minst gespeeld: in plaats van een vaste speler kun je bij erin kiezen voor wie aan de beurt is. de app brengt dan op het wisselmoment automatisch de speler met de minste speeltijd van de bank in, zodat de speeltijd eerlijk verdeeld blijft. verwachte speeltijd: onder speeltijd deze wedstrijd staat bij geplande wissels de verwachte speeltijd met een ~, met uit- en in-labels in één kleur per wissel. dit telt niet mee in statistieken, profielen of verslag. met de schakelaar verwachte speeltijd tonen zet je het uit. bij wie aan de beurt is telt alleen de speler die eruit gaat.">
     <h3>📅 Wissels vooraf plannen</h3>
     <p>Onder het wisselvak staat <b>+ Wissel plannen</b>: kies wie erin, wie eruit en na hoeveel minuten. Zodra de klok dat moment passeert, knippert de geplande wissel en trilt je telefoon. Tik op <kbd>✓</kbd> om hem door te voeren.</p>
     <div class="tip"><b>★ Wie aan de beurt is:</b> in plaats van een vaste speler kies je bij <b>Erin</b> voor <b>“wie aan de beurt is (minst gespeeld)”</b>. De app brengt dan op het wisselmoment automatisch de bankspeler met de minste speeltijd in — zo verdeel je de speeltijd eerlijk zonder vooraf te rekenen.</div>
+    <p><b>Verwachte speeltijd:</b> onder <b>Speeltijd deze wedstrijd</b> zie je bij geplande wissels hoeveel minuten iemand naar verwachting speelt. Die tijden staan schuin met een <b>~</b>, met een label <b>uit</b> of <b>in</b> in één kleur per wissel. Dit telt niet mee in de statistieken, spelersprofielen of het verslag. Met de schakelaar <b>Verwachte speeltijd tonen</b> zet je het uit. Bij <b>wie aan de beurt is</b> telt alleen de speler die eruit gaat; de invaller telt pas mee zodra de wissel is doorgevoerd.</p>
     </section>
 
     <section class="hl-sec" data-zoek="⚽ doelpunten registreren & corrigeren tik op de ⚽-knop aan jouw kant van het scorebord en kies de speler die scoorde. tegendoelpunt: één tik op de andere ⚽-knop. verkeerd getikt? tik op het doelpunt in het gebeurtenissen-log. je kunt dan de juiste scorer kiezen, de kant omdraaien (voor ↔ tegen) of het doelpunt verwijderen. doelpunten verschijnen in het log en in de seizoenstatistieken (topscorer).">

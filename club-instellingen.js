@@ -12,13 +12,13 @@
 import {
   db, doc, collection, addDoc, updateDoc, setDoc, deleteDoc, getDocs, query, where, writeBatch, serverTimestamp
 } from './firebase.js?v=20260922c';
-import { S, $, esc, meld, openModal, sluitModal, nieuweCode } from './state.js?v=20260929z';
-import { SEIZOEN_FALLBACK, parseFormatie, aantalVeldspelers, SKILLS, LEERCURVE } from './config.js?v=20260929z';
+import { S, $, esc, meld, openModal, sluitModal, nieuweCode } from './state.js?v=20261010a';
+import { SEIZOEN_FALLBACK, parseFormatie, aantalVeldspelers, SKILLS, LEERCURVE } from './config.js?v=20261010a';
 import {
   effectief, isLegacy, mergeLijst, LIJST_DEFS, ORIGINEEL, NEUTRAAL, CLUPPIE_LOGO, ICOONNAMEN,
   valideerKalender, herlaadKalender, pasClubConfigToe, clubAfk
-} from './clubconfig.js?v=20260929z';
-import { MODULE_DEFS } from './club-beheer.js?v=20260929z';
+} from './clubconfig.js?v=20261010a';
+import { MODULE_DEFS } from './club-beheer.js?v=20261010a';
 
 /* ---------- Tabs ---------- */
 export const INSTEL_TABS = [

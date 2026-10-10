@@ -11,20 +11,17 @@
    alleen HTML + de opslaghulpjes voor de wedstrijd-presentie. Het importeert
    bewust NIET terug uit teams.js (geen circulaire import). */
 import { db, doc, updateDoc } from './firebase.js?v=20260922c';
-import { S, esc, meld, datumNL, modAan } from './state.js?v=20260929z';
-import { AFWEZIG_REDENEN, afwezigRedenInfo } from './config.js?v=20260929z';
+import { S, esc, meld, datumNL, modAan } from './state.js?v=20261010a';
+import { AFWEZIG_REDENEN, afwezigRedenInfo } from './config.js?v=20261010a';
 import { ico } from './icons.js?v=20260922c';
-import { logoImg, primaireClubId } from './clubconfig.js?v=20260929z';
-import { analyseWedstrijd } from './analyse.js?v=20260929z';
-import { telGebruik } from './tracker.js?v=20260929z';
-import { ongelezenBerichten } from './berichten.js?v=20260929z';
-import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20260929z';
-import { htmlRondeBalk } from './evaluatierondes.js?v=20260929z';
-import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20260929z';
+import { logoImg, primaireClubId } from './clubconfig.js?v=20261010a';
+import { analyseWedstrijd, WISSEL_BEURT } from './analyse.js?v=20261010a';
+import { telGebruik } from './tracker.js?v=20261010a';
+import { ongelezenBerichten } from './berichten.js?v=20261010a';
+import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261010a';
+import { htmlRondeBalk } from './evaluatierondes.js?v=20261010a';
+import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261010a';
 
-/* Zelfde sentinel als in wedstrijd.js (daar niet geëxporteerd): geplande
-   wissel met "wie aan de beurt is" i.p.v. een concrete speler. */
-const WISSEL_BEURT = '__beurt__';
 
 /* ---------- Hulpjes ---------- */
 function voornaamCoach(){

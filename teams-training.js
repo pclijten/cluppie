@@ -3,21 +3,21 @@
    Instellingen-tabbladen van een team: gedeelde trainingen + video's tonen,
    presentie bijhouden (incl. eigen/geplande dagen), en teaminstellingen
    (naam wijzigen, teamcode, uitnodigen — modalUitnodig komt uit club.js). */
-import { voorbeeldTeamcode } from './clubconfig.js?v=20260929z';
+import { voorbeeldTeamcode } from './clubconfig.js?v=20261010a';
 import {
   db, collection, doc, addDoc, deleteDoc, updateDoc, setDoc, getDocs, query, where, serverTimestamp
 } from './firebase.js?v=20260922c';
 import {
   S, $, $$, esc, meld, datumNL, speler, initialen, openModal, sluitModal, toon, isBeheerder
-} from './state.js?v=20260929z';
-import { telGebruik } from './tracker.js?v=20260929z';
+} from './state.js?v=20261010a';
+import { telGebruik } from './tracker.js?v=20261010a';
 import { ico } from './icons.js?v=20260922c';
 
 import {
   CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, youtubeId, youtubeThumb, youtubeWatch,
   SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo, isoWeek
-} from './config.js?v=20260929z';
-import { htmlKompas } from './teams-leerlijn.js?v=20260929z';
+} from './config.js?v=20261010a';
+import { htmlKompas } from './teams-leerlijn.js?v=20261010a';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
 
 /* ---------- Afgelaste training (banner + WhatsApp-deeltekst) ----------
