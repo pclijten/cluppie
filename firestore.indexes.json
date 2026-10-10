@@ -1,47 +1,11 @@
 {
   "indexes": [
-    {
-      "collectionGroup": "players",
-      "queryScope": "Collection",
-      "fields": [
-        {
-          "fieldPath": "clubId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "matches",
-      "queryScope": "Collection",
-      "fields": [
-        {
-          "fieldPath": "clubId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "date",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "teams",
-      "queryScope": "Collection",
-      "fields": [
-        {
-          "fieldPath": "clubId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "name",
-          "order": "ASCENDING"
-        }
-      ]
-    }
+    { "collectionGroup": "gebruik",   "queryScope": "COLLECTION", "fields": [ { "fieldPath": "clubId", "order": "ASCENDING" }, { "fieldPath": "datum", "order": "ASCENDING" } ] },
+    { "collectionGroup": "navpaden",  "queryScope": "COLLECTION", "fields": [ { "fieldPath": "clubId", "order": "ASCENDING" }, { "fieldPath": "datum", "order": "ASCENDING" } ] },
+    { "collectionGroup": "trainingen", "queryScope": "COLLECTION", "fields": [ { "fieldPath": "club", "order": "ASCENDING" }, { "fieldPath": "teams", "arrayConfig": "CONTAINS" } ] },
+    { "collectionGroup": "berichten",  "queryScope": "COLLECTION", "fields": [ { "fieldPath": "club", "order": "ASCENDING" }, { "fieldPath": "teams", "arrayConfig": "CONTAINS" } ] },
+    { "collectionGroup": "videos",     "queryScope": "COLLECTION", "fields": [ { "fieldPath": "club", "order": "ASCENDING" }, { "fieldPath": "teams", "arrayConfig": "CONTAINS" } ] },
+    { "collectionGroup": "documenten", "queryScope": "COLLECTION", "fields": [ { "fieldPath": "club", "order": "ASCENDING" }, { "fieldPath": "teams", "arrayConfig": "CONTAINS" } ] }
   ],
   "fieldOverrides": []
 }

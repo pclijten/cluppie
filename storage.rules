@@ -1,0 +1,41 @@
+rules_version = '2';
+/* Cluppie — Storage-regels (ONGETEST). Bestanden staan onder clubs/{clubId}/…;
+   toegang volgt het clublidmaatschap in Firestore. */
+service firebase.storage {
+  match /b/{bucket}/o {
+    function ingelogd() { return request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous'; }
+    function club(c) { return firestore.get(/databases/(default)/documents/clubs/$(c)).data; }
+    function lid(c) {
+      return ingelogd() && firestore.exists(/databases/(default)/documents/clubs/$(c))
+        && (club(c).get('leden', {}).get(request.auth.uid, false) == true
+            || club(c).get('admins', {}).get(request.auth.uid, false) == true);
+    }
+    function beheerder(c) {
+      return ingelogd() && firestore.exists(/databases/(default)/documents/clubs/$(c))
+        && club(c).get('admins', {}).get(request.auth.uid, false) == true;
+    }
+
+    match /clubs/{clubId}/videos/{f} {
+      allow read: if lid(clubId);
+      allow write: if lid(clubId) && request.resource.size < 300 * 1024 * 1024 && request.resource.contentType.matches('video/.*');
+      allow delete: if beheerder(clubId);
+    }
+    match /clubs/{clubId}/trainingvideos/{t}/{f} {
+      allow read: if lid(clubId);
+      allow write: if lid(clubId) && request.resource.size < 300 * 1024 * 1024 && request.resource.contentType.matches('video/.*');
+      allow delete: if lid(clubId);
+    }
+    match /clubs/{clubId}/documenten/{f} {
+      allow read: if lid(clubId);
+      allow write: if beheerder(clubId) && request.resource.size < 50 * 1024 * 1024 && request.resource.contentType == 'application/pdf';
+      allow delete: if beheerder(clubId);
+    }
+    match /clubs/{clubId}/trainingen/{m}/{f} {
+      allow read: if lid(clubId);
+      allow write: if lid(clubId) && request.resource.size < 50 * 1024 * 1024;
+      allow delete: if lid(clubId);
+    }
+    /* alles anders (oude paden zonder club) is dicht */
+    match /{ander=**} { allow read, write: if false; }
+  }
+}

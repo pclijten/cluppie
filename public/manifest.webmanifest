@@ -1,61 +1,37 @@
 {
-  "name": "Cluppie - Club Management System",
+  "name": "Cluppie — Coach je team",
   "short_name": "Cluppie",
-  "description": "Multi-tenant youth football club management platform",
-  "start_url": "/",
-  "scope": "/",
+  "description": "Coach je team: opstelling per kwart, wissels, presentie en speeltijd eerlijk verdeeld.",
+  "start_url": ".",
+  "scope": ".",
   "display": "standalone",
-  "orientation": "portrait-primary",
-  "background_color": "#ffffff",
-  "theme_color": "#4CAF50",
+  "orientation": "any",
+  "background_color": "#0e1116",
+  "theme_color": "#0e1116",
   "icons": [
     {
-      "src": "/icons/icon192.png",
+      "src": "icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon192maskable.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/icons/icon512.png",
+      "src": "icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon512maskable.png",
+      "src": "icons/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/icon-512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/icons/icon192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    }
-  ],
-  "categories": ["sports", "productivity"],
-  "shortcuts": [
-    {
-      "name": "Teams",
-      "short_name": "Teams",
-      "description": "View and manage teams",
-      "url": "/?tab=teams",
-      "icons": [{ "src": "/icons/icon192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Players",
-      "short_name": "Players",
-      "description": "View and manage players",
-      "url": "/?tab=players",
-      "icons": [{ "src": "/icons/icon192.png", "sizes": "192x192" }]
     }
   ]
 }
