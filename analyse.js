@@ -1,5 +1,5 @@
-import { S } from './state.js?v=20260929z';
-import { periodeNrs, slotLijn, slotPositieNaam } from './config.js?v=20260929z';
+import { S } from './state.js?v=20261010a';
+import { periodeNrs, slotLijn, slotPositieNaam } from './config.js?v=20261010a';
 
 /* ==================== SPEELTIJD-BEREKENING ====================
    Losse module zonder UI-afhankelijkheden, zodat zowel het wedstrijdscherm
@@ -205,4 +205,86 @@ export function persoonlijkeNoemer(a, pid, disc = 0, laat = 0){
   const l = Math.min(laat, ruimte);
   const straf = Math.min(disc, ruimte - l);
   return {gespeeld, laat: l, straf, speelbaar: Math.max(gespeeld, a.matchduur - l - straf)};
+}
+
+/* ==================== VERWACHTE SPEELTIJD ====================
+   Alleen weergave in het wedstrijdscherm. Voedt NIETS anders: statistieken,
+   profielen, verslag, selectie-bouw en bank-sortering blijven op analyseKwart /
+   analyseWedstrijd. [20261010a] Geport uit ASV'33 PR #2. */
+export const WISSEL_BEURT = '__beurt__'; // één bron: wedstrijd.js en teams-hub.js importeren deze
+
+/* Opstelling (slot -> speler) op tijdstip t, uit startopstelling + echte events. */
+function veldBijTijd(k, t){
+  const l = {...(k.lineup||{})};
+  for (const e of [...(k.events||[])].sort((a,b) => a.sec - b.sec)){
+    if (e.sec > t) break;
+    if (e.in) l[e.slot] = e.in; else delete l[e.slot];
+  }
+  return l;
+}
+
+/* Afgelopen = klok staat stil op/voorbij de periodeduur. Wissels die dan nog in
+   het plan staan zijn vergeten door te voeren: niet als uitgevoerd behandelen. */
+function kwartAfgelopen(w, k){
+  const duur = Math.round((w.kwartduur || 0) * 60);
+  return duur > 0 && !k.klok.running && klokSecRaw(k) >= duur - 1;
+}
+
+/* Geplande wissels die nog kunnen doorgaan, op volgorde van minuut.
+   Per wissel: set (0,1,2…), min, t (sec), uit, in (null bij beurt), beurt, slot. */
+export function geplandeWissels(w, k){
+  const lijst = [];
+  if (!k || !Array.isArray(k.plan) || !k.plan.length) return lijst;
+  if (kwartAfgelopen(w, k)) return lijst;
+  const D = kwartDuurSec(w, k);
+  const events = k.events || [];
+  const uitGebruikt = new Set(), inGebruikt = new Set();
+  for (const p of [...k.plan].sort((a,b) => a.min - b.min)){
+    const t = Math.round(p.min * 60);
+    if (!(t >= 0 && t < D)) continue;
+    const veld = veldBijTijd(k, t);
+    const slot = Object.keys(veld).find(s => veld[s] === p.uit);
+    if (!slot || uitGebruikt.has(p.uit)) continue;
+    if (events.some(e => e.uit === p.uit && e.sec > t)) continue;
+    const beurt = p.in === WISSEL_BEURT;
+    if (!beurt){
+      if (Object.values(veld).includes(p.in) || inGebruikt.has(p.in)) continue;
+      if (events.some(e => e.in === p.in && e.sec > t)) continue;
+      inGebruikt.add(p.in);
+    }
+    uitGebruikt.add(p.uit);
+    lijst.push({set: lijst.length, min: p.min, t, uit: p.uit, in: beurt ? null : p.in, beurt, slot});
+  }
+  return lijst;
+}
+
+/* Verwachte speeltijd van één periode = gewone berekening + geplande wissels alsof ze doorgaan.
+   Geeft {tijd, keeper, wissels, rol, verschilt}. Bij "beurt" wordt alleen de uitgaande speler
+   ingekort (invaller staat pas op het wisselmoment vast). */
+export function analyseKwartVerwacht(w, k){
+  const echt = analyseKwart(w, k);
+  const wissels = geplandeWissels(w, k);
+  if (!wissels.length) return {tijd: echt.tijd, keeper: echt.keeper, wissels, rol: {}, verschilt: new Set()};
+  const extra = wissels.map(x => { const e = {uit: x.uit, slot: x.slot, sec: x.t}; if (x.in) e.in = x.in; return e; });
+  const a = analyseKwart(w, {...k, events: [...(k.events||[]), ...extra]});
+  const rol = {};
+  for (const x of wissels){
+    rol[x.uit] = {soort: 'uit', min: x.min, set: x.set, beurt: x.beurt};
+    if (x.in) rol[x.in] = {soort: 'in', min: x.min, set: x.set, beurt: false};
+  }
+  const verschilt = new Set();
+  for (const pid of new Set([...Object.keys(echt.tijd), ...Object.keys(a.tijd)]))
+    if (Math.round(a.tijd[pid]||0) !== Math.round(echt.tijd[pid]||0)) verschilt.add(pid);
+  return {tijd: a.tijd, keeper: a.keeper, wissels, rol, verschilt};
+}
+
+export function analyseWedstrijdVerwacht(w){
+  const tot = {tijd: {}, wissels: 0};
+  for (const nr of periodeNrs(w)){
+    const k = w.kwarten?.[nr]; if (!k || !kwartGespeeld(k)) continue;
+    const a = analyseKwartVerwacht(w, k);
+    tot.wissels += a.wissels.length;
+    for (const [pid, s] of Object.entries(a.tijd)) tot.tijd[pid] = (tot.tijd[pid]||0) + s;
+  }
+  return tot;
 }

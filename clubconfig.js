@@ -27,10 +27,10 @@
    "ASV" begint) de vroegere ASV'33-waarden, zodat er voor die club niets
    verandert totdat de beheerder ze in Instellingen "vastlegt". Elke andere
    club zonder instellingen krijgt de neutrale standaard. */
-import { S, clubAfkorting } from './state.js?v=20260929z';
-import * as C from './config.js?v=20260929z';
+import { S, clubAfkorting } from './state.js?v=20261010a';
+import * as C from './config.js?v=20261010a';
 import { db, doc, getDoc } from './firebase.js?v=20260922c';
-import { zetContentClub } from './content.js?v=20260929z';
+import { zetContentClub } from './content.js?v=20261010a';
 
 /* ---------- Standaardwaarden ---------- */
 export const NEUTRAAL = Object.freeze({

@@ -7,11 +7,11 @@
    De platformbeheerder kan daarnaast de standaard zelf bewerken (schakelaar).
    Zichtbaar voor elke clubbeheerder (isBeheerder(), zie club.js). De echte
    afdwinging van wie waar mag schrijven staat in de Firestore-regels. */
-import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20260929z';
+import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261010a';
 import {
   startContentAdminListener, opslaanContent, verwijderContent, seedContentNaarFirestore, kopieerStandaardNaarClub
-} from './content.js?v=20260929z';
-import { kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20260929z';
+} from './content.js?v=20261010a';
+import { kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261010a';
 
 const scope = () => (S._contentScope === 'globaal' && isPlatformBeheerder()) ? 'globaal' : 'club';
 const categorieLabel = () => ({

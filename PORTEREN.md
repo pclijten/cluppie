@@ -4,6 +4,11 @@ Fundament (fase 1, client) is klaar: alle clubwaarden staan in `clubs/{id}.inste
 (Club → Instellingen; wizard "Nieuwe club"). Zonder wijziging blijft ASV'33 werken via de legacy-shim in `clubconfig.js`
 (knop "Waarden vastleggen" schrijft de ASV-waarden expliciet weg).
 
+## Porteer-log (ASV'33 → cluppie.io)
+| Datum | Release | Wat | Status | Notitie |
+|---|---|---|---|---|
+| 2026-10-10 | 20261010a | Verwachte speeltijd bij geplande wissels (bron: ASV'33 PR #2) | ingebouwd, wacht op review/deploy | [porteren/20261010a-verwachte-speeltijd](porteren/20261010a-verwachte-speeltijd.md) |
+
 ## Firestore rules (nog te doen)
 - `clubs/{id}`: clubbeheerders (admins) mogen `instellingen` schrijven; niet-leden geen lees/schrijf.
 - `clubs/{id}/kalender/huidig` en `clubs/{id}/content/*`: lezen voor leden van de club, schrijven voor clubadmin.
