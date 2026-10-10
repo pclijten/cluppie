@@ -37,12 +37,13 @@ Uitnodigingen, aanvragen met goedkeuring, rollen (assistent/coach), toegangslog,
 - `firestore.rules` is opgesteld uit de client-code en is niet in de emulator doorlopen. Test: join via teamcode/clubcode, nieuw team, uitlening, deel-link (anoniem), Sportlink-sleutel (alleen admin), club aanmaken (alleen platformbeheerder).
 - Bekende zwakte: lezen van `clubs`, `teams`, `trainingen`, `videos`, `documenten`, `berichten` is open voor elke ingelogde coach (client-queries op `code==` en `teams array-contains-any` laten niets strakkers toe). Isolatie per club vraagt een club-filter in die queries.
 - `platform/instellingen` schrijven kan alleen via de console; platformbeheerder-check eist een geverifieerd e-mailadres.
-- Storage-regels bestaan nog niet (`storage.rules`).
+- `storage.rules` bestaat (clublidmaatschap via Firestore), maar is ongetest in de emulator.
 
 ## Cloud Functions (omgezet naar het app-model, ONGETEST tegen echte Firestore)
 - Sportlink: `sportlinkSyncNu` (admin) + `syncSportlink` (nacht) schrijven `teams/{id}/poule/*`, `teams/{id}/wedstrijden/sl_*` en `clubs/{id}/geheim/*` in het schema van de app.
 - AI: `instellingen.ai.aan` en `maandLimiet` worden server-side afgedwongen; clubId verplicht.
-- Open: `aggregeerGebruik` ontbreekt; `teamSleutel` (client) vs `naamSleutel` (server) moeten dezelfde uitkomst geven; Anthropic-limiet t/m oktober blokkeert AI; Node 22 is al ingesteld.
+- `teamSleutel` (client) en `naamSleutel` (server) getest met `node tests/sleutel.test.mjs` (2026-10-10): gelijk voor alle gangbare teamnamen. Bekend verschil: een toevoeging als "Futsal" ("ASV'33 O13-1 Futsal"): client `o13-1` (botst met het veldteam), server `o131futsal`. Server is hier strikter en veiliger; client nog niet aangepast, beslis welke leidend is.
+- Open: `aggregeerGebruik` ontbreekt (club.js roept hem aan, `functions/index.js` exporteert hem niet); Anthropic-limiet t/m oktober blokkeert AI; Node 22 is al ingesteld.
 
 ## Bewust nog statisch
 - Onboarding-, handleiding- en updateteksten noemen soms nog ASV-voorbeelden (bijv. "ASVJO11-1").
