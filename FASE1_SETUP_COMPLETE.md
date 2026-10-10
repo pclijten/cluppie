@@ -1,3 +1,5 @@
+> **Verouderd (2026-10-08):** dit document beschrijft het fase-1-skelet. De actuele structuur en het datamodel staan in README.md, PORTEREN.md en functions/LEESMIJ-deploy.md.
+
 # Cluppie 2.0 - Phase 1 Setup Complete ✓
 
 **Date**: September 26, 2026  

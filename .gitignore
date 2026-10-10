@@ -1,0 +1,17 @@
+node_modules/
+.env*
+!.env.example
+dist/
+build/
+*.log
+.DS_Store
+.vscode/
+.firebase/
+.firebaserc
+functions/node_modules/
+
+node_modules/
+_to_delete/
+_fase1-backup/
+*.zip
+.env
