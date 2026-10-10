@@ -631,7 +631,7 @@ export function renderTeams(){
 
   v.querySelector('#uitloggen').onclick = () => { stopAlleListeners(); doSignOut(); };
   const platformKnop = v.querySelector('#platformKnop');
-  if (platformKnop) platformKnop.onclick = () => import('./platform.js?v=20261010e').then(m => m.openPlatform());
+  if (platformKnop) platformKnop.onclick = () => import('./platform.js?v=20261010g').then(m => m.openPlatform());
   v.querySelector('#privacyKnop').onclick = () => import('./privacy.js?v=20261010c').then(m => m.openPrivacy());
   const maEl = v.querySelector('#mijnAanvragen');
   if (maEl) import('./toegang.js?v=20261010c').then(m => m.laadMijnAanvragen(maEl));

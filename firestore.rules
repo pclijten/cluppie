@@ -216,7 +216,7 @@ service cloud.firestore {
       allow write: if false;
     }
     match /aanvragen/{id} {
-      allow read: if echt() && (resource.data.uid == uid()
+      allow read: if isPlatform() || echt() && (resource.data.uid == uid()
         || isClubAdmin(resource.data.clubId)
         || (resource.data.get('teamId', null) != null && isVolCoach(resource.data.teamId)));
       allow write: if false;
