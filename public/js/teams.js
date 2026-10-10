@@ -624,11 +624,14 @@ export function renderTeams(){
       <button class="knop vol" id="nieuwTeam">+ Nieuw team</button>
       <button class="knop licht vol" id="joinTeam">Code invoeren</button>
     </div>
-    <button class="knop club-knop vol" id="nieuwClub" style="margin-top:8px">🏛 Nieuwe club aanmaken</button>`
+    <button class="knop club-knop vol" id="nieuwClub" style="margin-top:8px">🏛 Nieuwe club aanmaken</button>
+    <button class="knop licht vol" id="platformKnop" style="margin-top:8px">Platform: alle clubs</button>`
     : `
     <button class="knop licht vol" id="joinTeam" style="margin-top:14px">Aansluiten met teamcode</button>`}`;
 
   v.querySelector('#uitloggen').onclick = () => { stopAlleListeners(); doSignOut(); };
+  const platformKnop = v.querySelector('#platformKnop');
+  if (platformKnop) platformKnop.onclick = () => import('./platform.js?v=20261010e').then(m => m.openPlatform());
   v.querySelector('#privacyKnop').onclick = () => import('./privacy.js?v=20261010c').then(m => m.openPrivacy());
   const maEl = v.querySelector('#mijnAanvragen');
   if (maEl) import('./toegang.js?v=20261010c').then(m => m.laadMijnAanvragen(maEl));

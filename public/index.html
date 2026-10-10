@@ -3,17 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <script>
-/* Merk-gate (vóór paint): laatst gebruikte clubkleur en -logo uit localStorage, zodat
-   opstartscherm en login niet in een vaste kleur flitsen. clubconfig.js zet de echte waarden. */
-(function(){try{
-  var m=JSON.parse(localStorage.getItem('cluppieMerk')||'null'); if(!m) return;
-  if(/^#[0-9a-fA-F]{6}$/.test(m.kleur||'')) document.documentElement.style.setProperty('--accent',m.kleur);
-  if(m.logo && /^(icons\/|data:image\/(png|jpeg|webp|svg\+xml)|https:\/\/)/.test(m.logo)){
-    document.addEventListener('DOMContentLoaded',function(){
-      ['.opstart-logo','#loginLogo'].forEach(function(q){var e=document.querySelector(q); if(e){e.src=m.logo; if(m.naam) e.alt=m.naam;}});
-    });
-  }
-}catch(e){}})();
+/* Loginscherm en opstartscherm zijn altijd neutraal Cluppie: vóór het inloggen is de club nog onbekend,
+   dus geen logo of kleur van de laatst gebruikte club tonen. clubconfig.js zet het clubmerk ná het inloggen. */
 </script>
 <script>
 /* Landingspagina-gate: wie de app al geïnstalleerd heeft (standalone), al eerder
@@ -92,7 +83,7 @@
 .opstart-geduld.zichtbaar{opacity:1;transform:translateY(0)}
 @media (prefers-reduced-motion: reduce){.opstart-logo,.opstart-dots span{animation:none}}
 </style>
-<link rel="stylesheet" href="styles.css?v=20261010e">
+<link rel="stylesheet" href="styles.css?v=20261010f">
 </head>
 <body>
 <div id="opstart" role="status" aria-label="Cluppie wordt geladen">

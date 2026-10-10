@@ -14,6 +14,7 @@ Vergelijking van de complete cluppieasv33-zip (t/m release 2026-10-05) met deze 
 | 2026-10-10 | Verwachte speeltijd bij geplande wissels (ASV'33 PR #2, release 20261010a) | **gepoort** ([notitie](porteren/20261010a-verwachte-speeltijd.md)) |
 | 2026-10-10 | Speler definitief overzetten met bevroren dossier (ASV'33 PR #4, release 20261010b) + tenant-controle, naam-fallback, dossier wissen bij speler verwijderen | **gepoort** ([notitie](porteren/20261010b-speler-overdracht.md)) |
 | 2026-10-10 | Lokale AVG/onboarding-lijn samengevoegd met GitHub, app weer in `public/js/` (release 20261010c) | **klaar** ([notitie](porteren/20261010c-samenvoegen.md)) |
+| 2026-10-10 | Platformscherm "Platform: alle clubs" (`js/platform.js`, alleen platformbeheerder): alle clubs met teams, leden, admins en wachtende aanvragen, club openen. Loginscherm en opstartscherm tonen altijd het neutrale Cluppie-logo (release 20261010f) | **klaar** |
 | 2026-10-10 | Alle ASV-verwijzingen uit de app gehaald: schild, legacy-shim, seed-teksten, over.html, voorbeelden en wijzigingenlijst (release 20261010e) | **klaar** |
 | 2026-10-10 | Nieuw Cluppie-logo (open C met bal): app-iconen, favicon (`icons/icon.svg`), laad- en loginscherm, `over.html` (release 20261010d) | **klaar** |
 
