@@ -1,3 +1,5 @@
+> Historisch document (fase 1). De mapindeling is daarna aangepast: de app staat nu in `public/` en `public/js/`, `src/` bestaat niet meer. Zie README.md.
+
 # Cluppie 2.0 - Phase 1 Setup Complete ✓
 
 **Date**: September 26, 2026  

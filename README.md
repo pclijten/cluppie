@@ -27,19 +27,23 @@ firebase serve
 ## Project Structure
 
 ```
-src/              # Frontend code
+public/            # Alles wat Firebase Hosting serveert (firebase.json: "public")
 ├── index.html
-├── main.js
-├── firebase.js
-├── auth.js
-├── state.js
-├── firestore.js
 ├── styles.css
+├── sw.js          # service worker: moet in de hosting-root staan
 ├── manifest.webmanifest
-├── sw.js
-├── locales/       # i18n files
-└── ui/            # UI components
-
-functions/        # Cloud Functions
-public/           # Static assets
+└── js/            # alle ES-modules, één map (imports: ./naam.js?v=<release>)
+functions/         # Cloud Functions
+porteren/          # porteernotities uit ASV'33 (zie PORTEREN.md)
+docs/              # achtergronddocumenten
+firebase.json  firestore.rules  firestore.indexes.json
+PORTEREN.md        # open punten + porteer-log
 ```
+
+Een release = één versiestring: `?v=` in alle imports en `index.html`, plus `CACHE_VERSIE` in `public/sw.js`.
+
+## Nog niet in de repo
+
+De app verwijst naar bestanden die hier (nog) niet staan. Zonder deze start de app niet:
+`public/js/firebase.js` (de echte; de aanwezige is een fase-1 placeholder met een ander exports-set),
+`icons.js`, `opkomst.js`, `leerinhoud.js`, `thema.js`, `pwa.js`, de map `icons/`, `content/seed.json` en `over.html`.
