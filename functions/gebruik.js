@@ -153,7 +153,10 @@ async function aggregeerClub(db, clubId){
     .map(n => ({ uid: n.uid, teamId: n.teamId && teams[n.teamId] ? n.teamId : null, start: Number(n.start), stappen: n.stappen }));
 
   const stats = bouwStats({ sessies, teams, namen, vanaf, tot });
-  await db.doc(`gebruikstats/${clubId}`).set({ ...stats, bijgewerkt: FieldValue.serverTimestamp() });
+  /* wie mag dit document lezen naast clubadmins (rules: `lezers`): bouwcoördinatoren */
+  const lezers = new Set(Object.keys(club.admins || {}));
+  for (const m of Object.values(club.bouwCoordinatoren || {})) for (const [u, aan] of Object.entries(m || {})) if (aan) lezers.add(u);
+  await db.doc(`gebruikstats/${clubId}`).set({ ...stats, lezers: [...lezers], bijgewerkt: FieldValue.serverTimestamp() });
   return sessies.length;
 }
 

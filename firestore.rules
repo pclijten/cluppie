@@ -1,8 +1,7 @@
 rules_version = '2';
 /* Cluppie — Firestore-regels (AVG-aangescherpt: leesrechten per club, geen open collecties) voor het datamodel van de app (teams/{id} met
    club + leden{uid}; clubs/{id} met admins, leden, bouwCoordinatoren).
-   LET OP: opgesteld uit de client-code, NIET getest tegen de emulator en
-   NIET gedeployed. Draai eerst `firebase emulators:start` (zie README). */
+   Testen: `npm run test:rules` (start de emulator en draait tests/rules.test.mjs). */
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -209,7 +208,10 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/trainingDeel/$(request.resource.data.deelId))
         && get(/databases/$(database)/documents/trainingDeel/$(request.resource.data.deelId)).data.teamId == request.resource.data.teamId
         && get(/databases/$(database)/documents/trainingDeel/$(request.resource.data.deelId)).data.trainingId == request.resource.data.trainingId
-        && get(/databases/$(database)/documents/trainingDeel/$(request.resource.data.deelId)).data.vervaltOp > request.time;
+        && get(/databases/$(database)/documents/trainingDeel/$(request.resource.data.deelId)).data.vervaltOp > request.time
+        /* [20261011d] vervaldatum moet gelijk zijn aan die van de deel-link: anders kan een anonieme
+           gebruiker zijn eigen toegang eindeloos verlengen */
+        && request.resource.data.vervaltOp == get(/databases/$(database)/documents/trainingDeel/$(request.resource.data.deelId)).data.vervaltOp;
       allow delete: if ingelogd() && u == uid();
     }
 
@@ -264,8 +266,20 @@ service cloud.firestore {
       allow delete: if isPlatform();
     }
     match /gebruikstats/{clubId} {
-      allow read: if isClubAdmin(clubId) || isPlatform();
-      allow write: if false;            /* alleen de (nog ontbrekende) aggregeerGebruik-function */
+      /* `lezers` (admins + bouwcoördinatoren) zet aggregeerGebruik zelf: rules kunnen niet over
+         alle bouwen van bouwCoordinatoren itereren */
+      allow read: if isClubAdmin(clubId) || isPlatform() || (echt() && uid() in resource.data.get('lezers', []));
+      allow write: if false;            /* alleen aggregeerGebruik (Admin SDK) */
+    }
+    /* aanmeldingen van nieuwe clubs (publieke aanmeldpagina → Cloud Function meldClubAan) */
+    match /clubAanmeldingen/{id} {
+      allow read: if isPlatform();
+      allow write: if false;
+    }
+    /* platformcijfers per club (platformdashboard): alleen de platformbeheerder */
+    match /platformstats/{id} {
+      allow read: if isPlatform();
+      allow write: if false;
     }
   }
 }
