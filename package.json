@@ -10,7 +10,7 @@
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes",
     "deploy:functions": "echo 'Gebruik: firebase deploy --only functions:<naam>,…' && exit 1",
     "test:rules": "firebase emulators:exec --only firestore --project cluppie-rules-test \"node --test tests/rules.test.mjs\"",
-    "test": "node --no-warnings tests/sleutel.test.mjs && node --no-warnings tests/gebruik.test.mjs && node --no-warnings tests/startlijst.test.mjs && node --no-warnings tests/aanmelding.test.mjs && node --no-warnings --import ./tests/hulp/stub-loader.mjs tests/sportlink-import.test.mjs"
+    "test": "node --no-warnings tests/sleutel.test.mjs && node --no-warnings tests/gebruik.test.mjs && node --no-warnings tests/startlijst.test.mjs && node --no-warnings tests/aanmelding.test.mjs && node --no-warnings --import ./tests/hulp/stub-loader.mjs tests/seizoen.test.mjs && node --no-warnings --import ./tests/hulp/stub-loader.mjs tests/sportlink-import.test.mjs"
   },
   "author": "Paul Lijten",
   "license": "MIT",

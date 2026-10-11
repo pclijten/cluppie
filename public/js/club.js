@@ -1931,6 +1931,7 @@ function htmlClubInstel(teams = [], syncStatus = {}){
           <button class="knop fluo klein" id="btnNieuwSeizoen">Nieuw seizoen →</button>
         </div>
         <p class="cb-uitleg">Nieuwe wedstrijden, trainingen, beoordelingen en teamevaluaties van alle teams tellen vanaf de start mee voor het nieuwe seizoen. Oude data blijft bewaard en is terug te zien via het seizoenfilter in de statistieken.</p>
+        <button class="cb-inklap" id="btnSeizoensovergang">⏭️ Seizoensovergang: spelers doorschuiven <span>›</span></button>
         <button class="cb-inklap" id="migreerSeizoen">🗂️ Oude data zonder seizoen labelen <span>›</span></button>
       </div>
       <div class="cb-kaart">
@@ -2383,6 +2384,8 @@ function koppelClubTab(v, tab, teams, trainingen, videos, documenten){
     const slAlles = v.querySelector('#slAlles');
     if (slAlles) slAlles.onclick = () => { S._clubSlAlles = !S._clubSlAlles; hertekenClub(); };
     v.querySelectorAll('[data-sl-koppel]').forEach(b => b.onclick = () => { S._cbTeam = b.dataset.slKoppel; S._cbUitnodig = null; naarClubTab('teambeheer'); });
+    v.querySelector('#btnSeizoensovergang')?.addEventListener('click', () =>
+      import('./club-seizoen.js?v=20261011d').then(m => m.modalSeizoensovergang(teams, () => renderClub())));
     const nieuwSeizoenBtn = v.querySelector('#btnNieuwSeizoen');
     if (nieuwSeizoenBtn) nieuwSeizoenBtn.onclick = () => modalNieuwSeizoen();
     const migreerBtn = v.querySelector('#migreerSeizoen');

@@ -5622,3 +5622,17 @@ button.cb-mnaam{height:44px}
 .cb-citaat{background:var(--surface-2);border-left:3px solid var(--accent);border-radius:8px;padding:10px 12px;font-size:calc(13px * var(--fs));line-height:1.45}
 .vo-punten{margin:0 0 10px 18px;padding:0;font-size:calc(13.5px * var(--fs));line-height:1.5}
 .vo-punten li{margin-bottom:4px}
+
+/* ==================== SEIZOENSOVERGANG (20261011d) ==================== */
+.so-team{background:var(--surface);border:1px solid var(--line-d);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px}
+.so-kop{display:flex;align-items:center;gap:10px}
+.so-naam{flex:1;min-width:0;display:flex;flex-direction:column;text-align:left;color:var(--ink)}
+.so-naam b{font-size:calc(15px * var(--fs))}
+.so-naam small{color:var(--ink-2);font-size:calc(12px * var(--fs));overflow:hidden;text-overflow:ellipsis}
+.so-doel{width:auto;max-width:46%;padding:7px 9px;font-size:calc(13px * var(--fs))}
+.so-coach{margin-top:8px;font-size:calc(12.5px * var(--fs))}
+.so-spelers{margin-top:8px;border-top:1px solid var(--hair);padding-top:6px}
+.so-speler{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 0;font-size:calc(13.5px * var(--fs))}
+.so-speler small{color:var(--ink-2)}
+.so-speler select{width:auto;max-width:55%;padding:6px 8px;font-size:calc(13px * var(--fs))}
+.so-team.open{border-color:color-mix(in srgb, var(--accent) 40%, var(--line-d))}
