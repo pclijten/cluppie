@@ -9,6 +9,14 @@
 
 De app ligt tijdens stap 5 t/m 10 zo'n 15 à 30 minuten stil. Doe het op een rustig moment, niet rond 03:30–04:30 (dan draaien de nachtelijke functies), en niet op een wedstrijddag.
 
+## Snelste weg: één script
+```
+git fetch origin
+git checkout eu-database
+powershell -ExecutionPolicy Bypass -File tools\overstap-eu.ps1
+```
+Het script doet alle stappen hieronder, stopt bij elke fout en vraagt twee keer om bevestiging: vóór het op slot zetten van de app (typ `JA`) en vóór het verwijderen van de oude database (typ `VERWIJDER cluppie-ad329`). Voor stap 1 t/m 4 ligt de app nog niet stil; je kunt na stap 4 stoppen (iets anders dan `JA` typen) en later verder.
+
 ## Voorbereiden (kan nu, app blijft draaien)
 
 1. **Inloggen voor het script** (eenmalig): `gcloud auth application-default login`

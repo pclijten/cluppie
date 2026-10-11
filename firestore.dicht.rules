@@ -1,0 +1,8 @@
+rules_version = '2';
+/* Tijdelijk tijdens de overstap naar de EU (tools/overstap-eu.ps1, stap 5): niemand kan lezen of schrijven,
+   zodat er tijdens het kopiëren niets verloren gaat. Admin SDK (kopieerscript, functions) gaat hier langs. */
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} { allow read, write: if false; }
+  }
+}
