@@ -12,7 +12,7 @@ import {
   collection, doc, getDoc, getDocs, query, where
 } from './firebase.js?v=20260922c';
 import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261010c';
-import { bewaar } from './club-instellingen.js?v=20261010c';
+import { bewaar } from './club-instellingen.js?v=20261011d';
 import { effectief } from './clubconfig.js?v=20261010c';
 
 export const PRIVACY_VERSIE = '2026-10';

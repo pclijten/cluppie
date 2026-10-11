@@ -13,7 +13,7 @@ import { db, doc, getDoc, collection, writeBatch, serverTimestamp, functions, ht
 import { S, esc, meld, openModal, sluitModal, teamCode } from './state.js?v=20261010c';
 import { CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, bouwVanCategorie } from './config.js?v=20261010c';
 import { clubAfk } from './clubconfig.js?v=20261010c';
-import { eigenClubPatronen, teamSleutel } from './sportlink-sleutel.js?v=20261011c';
+import { eigenClubPatronen, teamSleutel } from './sportlink-sleutel.js?v=20261011d';
 
 const BOUW_NAAM = { onder: 'Onderbouw', midden: 'Middenbouw', boven: 'Bovenbouw' };
 

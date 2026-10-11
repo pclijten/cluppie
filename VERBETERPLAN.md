@@ -102,17 +102,21 @@ Je ziet niet of een club *gezond* is: wordt de app gebruikt, is de koppeling in 
 
 ---
 
-## 6. Vandaag gedaan (release 20261011c, branch — nog deployen)
-- `aggregeerGebruik` gebouwd (`functions/gebruik.js`) + nachtelijke variant voor alle clubs. Het Inzicht-dashboard had geen bron; de knop "Synchroniseer" gaf een fout. Getest met `node tests/gebruik.test.mjs`.
-- Futsal-sleutel: de client volgt nu de server (`o131futsal`), geen botsing meer met het veldteam. `node tests/sleutel.test.mjs` uitgebreid.
+## 6. Status: uitgevoerd op 11 oktober 2026 (releases 20261011c + 20261011d)
+Akkoord van Paul ("top voor alles"); alles hieronder zit in PR #7. Deploy-volgorde: zie `PORTEREN.md`.
 
-## 7. Voorgestelde volgorde
-| Prio | Wat | Soort |
-|---|---|---|
-| 1 | Rules + functions testen in de emulator en deployen (blokkeert livegang) | techniek |
-| 2 | Platformdashboard (5) | mockup eerst |
-| 3 | Startlijst + teams uit Sportlink (O2, O3) | mockup eerst |
-| 4 | Club aanmelden + VO digitaal (O1, O6) | mockup eerst |
-| 5 | Seizoensovergang-assistent | mockup eerst |
-| 6 | Kleurcontrast + voorbeeld, belangrijk/geavanceerd (P1–P3) | mockup eerst |
-| 7 | ASV'33 als tenant op cluppie.io | migratie |
+| Onderdeel | Status |
+|---|---|
+| Inzicht-cijfers (`aggregeerGebruik`, nachtelijk) en futsal-sleutel | gebouwd, getest |
+| Rules-testsuite (20 scenario's) + twee rules-fixes (deel-link verlengen, coördinator leest stats) | geschreven; **draaien op de pc** met `npm run test:rules` (emulator kon hier niet downloaden) |
+| Platformdashboard (5) | gebouwd, schermtest 414 + desktop |
+| Startlijst, teams uit Sportlink, uitleg Client ID (O2–O4) | gebouwd, schermtest |
+| Club zelf aanmelden, VO digitaal, e-mail bij aanvragen (O1, O5, O6) | gebouwd; mail vraagt de Trigger Email-extensie |
+| Seizoensovergang-assistent (4.1) | gebouwd, schermtest |
+| Kleurcontrast + voorbeeld, basis/geavanceerd, sjablonen (P1–P4) | gebouwd, schermtest |
+| Coördinator-weekbrief (4.4) en beleidsplan meetbaar (4.3, als % leerthema's per team) | gebouwd, schermtest |
+| Speeltijd-eerlijkheid over het seizoen (4.2) | bestond al (eerlijkheidskaart in Stats); in de weekbrief zichtbaar voor de coördinator |
+| Anonieme clubvergelijking (4.5) | gebouwd, opt-in, vanaf 3 clubs |
+| Pariteitsscript ASV'33 (1) | `tools/pariteit.mjs`: "Gelijk" |
+| Domeinen 3–6 (P5) | bewust niet: pas als een club erom vraagt |
+| ASV'33 als tenant (1.2) | aparte migratie, nog te plannen |

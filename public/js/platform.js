@@ -109,7 +109,7 @@ function aanmeldKaart(a){
     ${a.bericht ? `<div class="pf-aanmeld-bericht">${esc(a.bericht)}</div>` : ''}
     <div class="rij" style="margin-top:8px">
       <button class="knop licht klein" data-aanmeld-af="${esc(a.id)}">Afwijzen</button>
-      <button class="knop vol klein" data-aanmeld-ok="${esc(a.id)}">Goedkeuren en club aanmaken</button></div>
+      <button class="knop fluo klein" data-aanmeld-ok="${esc(a.id)}">Goedkeuren en club aanmaken</button></div>
   </div>`;
 }
 
@@ -135,7 +135,7 @@ function tekenPlatform(o, aanmeldingen){
         <span class="pf-knoppen">
           <button class="knop licht klein" id="pfVernieuw">Vernieuwen</button>
           <button class="knop licht klein" id="pfKalenders">KNVB-kalenders</button>
-          <button class="knop vol klein" id="pfNieuweClub">+ Nieuwe club</button></span>
+          <button class="knop fluo klein" id="pfNieuweClub">+ Nieuwe club</button></span>
       </div>
       <div class="pf-kpis">${kpis.join('')}</div>
       ${aanmeldingen.length ? `<div class="kaart"><div class="sectie-kop" style="margin-top:0">Nieuwe clubs die zich aanmeldden</div>${aanmeldingen.map(aanmeldKaart).join('')}</div>` : ''}

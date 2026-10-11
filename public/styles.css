@@ -5533,6 +5533,8 @@ button.cb-mnaam{height:44px}
 .modal-achter[data-vorm="breed"] .modal{max-width:1120px}
 .pf-balk{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
 .pf-knoppen{display:flex;gap:6px;flex-wrap:wrap}
+.pf-knoppen .knop{width:auto;flex:0 0 auto}
+.pf-filter .segment small{display:inline;opacity:.7;margin-left:3px}
 .pf-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
 .pf-kpi{background:var(--surface);border:1px solid var(--line-d);border-radius:var(--radius);padding:12px 14px}
 .pf-kpi .g{font-family:'Barlow Condensed';font-weight:800;font-size:calc(34px * var(--fs));line-height:1;color:var(--ink)}
@@ -5548,6 +5550,7 @@ button.cb-mnaam{height:44px}
 .pf-sigrij{display:flex;align-items:center;gap:10px;padding:8px 6px;border-radius:10px;text-align:left;width:100%;color:var(--ink);font-size:calc(13px * var(--fs))}
 .pf-sigrij:hover{background:var(--surface-2)}
 .pf-sigrij span:last-child{color:var(--ink-2)}
+.pf-sigrij b{white-space:nowrap}
 .pf-filter{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 10px}
 .pf-filter .segment{flex:0 1 auto;margin:0}
 .pf-filter .invoer{flex:1 1 200px;min-width:0}
@@ -5580,6 +5583,8 @@ button.cb-mnaam{height:44px}
   .pf-act{display:none}
   .pf-chips,.pf-sig,.pf-open{margin-left:0}
   .pf-kpis{grid-template-columns:1fr 1fr}
+  .pf-sigrij{flex-wrap:wrap;row-gap:0}
+  .pf-sigrij span:last-child{flex-basis:100%;padding-left:20px}
 }
 
 /* ==================== STARTLIJST, SPORTLINK-IMPORT, VO (20261011d) ==================== */
@@ -5616,6 +5621,8 @@ button.cb-mnaam{height:44px}
   .sli-naam{grid-column:2}
   .sli-cat{grid-column:3}
   .sli-bouw{display:none}
+  .sli-rij.bestaat{grid-template-columns:22px 1fr auto}
+  .sli-rij.bestaat .sli-sl{grid-column:auto}
 }
 .cb-uitklap{margin-top:10px;border-top:1px solid var(--hair);padding-top:8px}
 .cb-uitklap summary{cursor:pointer;font-weight:600;font-size:calc(13px * var(--fs));color:var(--accent)}
@@ -5676,3 +5683,4 @@ button.cb-mnaam{height:44px}
 .vg-leg i,.vg-leg em{display:inline-block;vertical-align:-2px;margin-right:4px;position:static}
 .vg-leg i.vg-eigen{width:12px;height:8px;border-radius:4px;background:var(--accent)}
 .vg-leg em{width:2px;height:12px}
+.ci-schakel a{color:var(--accent)}

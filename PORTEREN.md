@@ -80,3 +80,37 @@ Uitnodigingen, aanvragen met goedkeuring, rollen (assistent/coach), toegangslog,
   **Deploy:** `firebase deploy --only functions:aggregeerGebruik,functions:aggregeerGebruikNacht --project cluppie-ad329`, daarna invoker openzetten: `gcloud run services add-iam-policy-binding aggregeergebruik --region=europe-west1 --member=allUsers --role=roles/run.invoker --project=cluppie-ad329`. Pas daarna de branch mergen (de wijzigingenlijst belooft werkende cijfers).
 - `sportlink-sleutel.js`: zelfde verankering als `naamSleutel` op de server; "O13-1 Futsal" → `o131futsal`. Let op: een team dat in Cluppie bewust "… Futsal" heet en tot nu toe automatisch op het veldteam matchte, koppelt nu aan het futsalteam (zoals de nachtelijke sync al deed).
 - Review en verbeterplan: zie `VERBETERPLAN.md`.
+
+## Release 20261011d — verbeterplan uitgevoerd (zelfde branch/PR als 20261011c)
+Alle onderdelen uit `VERBETERPLAN.md` zijn gebouwd. Cache-versie `cluppie-v20261011d`; alle gewijzigde modules en hun importeurs staan op `?v=20261011d` (gezet met `node tools/versie.mjs 20261011d`).
+
+**Nieuw (client)**
+- Platformdashboard (`platform.js`): breed scherm, KPI's, "Vraagt aandacht", stoplicht per club, filter/zoek, clubaanmeldingen goedkeuren. Valt terug op een basislijst zolang `platformOverzichtNu` niet gedeployed is.
+- Startlijst "Aan de slag" op de club-hub (`startlijst.js`), teams uit Sportlink in één batch (`club-sportlink-import.js`), uitleg Client ID, verwerkersovereenkomst digitaal (`modalVerwerkersovereenkomst` in `club.js`, ook vanuit Toegang & privacy).
+- Club aanmelden (`club-aanmelden.js`) op het startscherm, deelbare link `/?aanmelden`, knop op `over.html`.
+- Seizoensovergang-assistent (`club-seizoen.js` + `verhuisSpelersSeizoen` in `teams-spelers.js`), knop in Instellingen → Algemeen.
+- Clubkleur met contrastcheck en voorbeeld (identiteit + wizard), Instellingen basis/Geavanceerd, sjablonen publiceren/overnemen (Pedagogiek); de wizard kopieert niet meer vrij uit elke club.
+- Weekbrief (`club-weekbrief.js`): tegel op de club-hub (per bouw) en knop op beide bouw-dashboards.
+- Anonieme clubvergelijking (`club-vergelijk.js`): Inzicht → Vergelijk, opt-in via `instellingen.benchmark`.
+
+**Nieuw (functions)** — `platform.js` (`platformOverzichtNu`), `aanmelding.js` (`meldClubAan`, `beoordeelClubAanmelding`, `meldNieuweAanvraag`), uitbreiding `gebruik.js` (nachtelijk ook platformoverzicht + vergelijking).
+
+**Rules** — nieuw: `platformstats`, `clubAanmeldingen`, `mail`, `sjablonen`, `benchmark`; `gebruikstats` ook voor bouwcoördinatoren (`lezers`); clubbeheerder mag een team aanmaken zonder zelf lid te worden; `trainingToegang.vervaltOp` moet gelijk zijn aan die van de deel-link (beveiligingsfix).
+
+### Deploy-volgorde (alles in project `cluppie-ad329`)
+1. **Rules testen:** `npm install && npm run test:rules` (Java nodig; start de Firestore-emulator en draait `tests/rules.test.mjs`, 20 scenario's). Hier in de cloudsessie kon de emulator niet worden gedownload, dus deze stap is nog niet gedraaid.
+2. **Functions:** `cd functions && npm install`, dan
+   `firebase deploy --only functions:aggregeerGebruik,functions:aggregeerGebruikNacht,functions:platformOverzichtNu,functions:meldClubAan,functions:beoordeelClubAanmelding,functions:meldNieuweAanvraag --project cluppie-ad329`
+   en per callable de invoker openzetten (zoals bij `privacyoverzicht`): `aggregeergebruik`, `platformoverzichtnu`, `meldclubaan`, `beoordeelclubaanmelding`.
+3. **Rules en indexen:** `firebase deploy --only firestore:rules,firestore:indexes --project cluppie-ad329`.
+4. **E-mail:** installeer de extensie *Trigger Email from Firestore* (collectie `mail`, SMTP van bijvoorbeeld Strato of SendGrid). Zonder extensie werkt alles, alleen gaan er geen mails uit.
+5. **Mergen** naar `main` (GitHub Pages zet de client live).
+6. Eén keer **Vernieuwen** in het platformscherm, zodat `platformstats/overzicht` direct gevuld is.
+
+### Testen
+`npm test` (9 suites: sleutel, gebruik, startlijst/stoplicht/vergelijking, aanmelding, seizoen, kleur, weekbrief, Sportlink-import) en `node tools/pariteit.mjs ../cluppieasv33` (moet "Gelijk" geven). Alle nieuwe schermen zijn met Playwright gerenderd op 414×896 en desktop met een nep-Firestore, zonder consolefouten.
+
+### Open
+- Domeinen 3–6 (variabel aantal beoordelingsdomeinen): bewust niet gebouwd; pas als een club erom vraagt.
+- ASV'33 als tenant op cluppie.io: aparte migratie.
+- `bouwOverdrachtDossier` en de seizoensovergang schrijven vanaf de client; een Cloud Function maakt het atomair (zelfde open punt als bij speler-overdracht).

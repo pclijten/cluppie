@@ -18,7 +18,7 @@ import {
   effectief, isLegacy, mergeLijst, LIJST_DEFS, ORIGINEEL, NEUTRAAL, CLUPPIE_LOGO, ICOONNAMEN,
   valideerKalender, herlaadKalender, pasClubConfigToe, clubAfk, DISTRICTEN
 } from './clubconfig.js?v=20261010c';
-import { MODULE_DEFS } from './club-beheer.js?v=20261010c';
+import { MODULE_DEFS } from './club-beheer.js?v=20261011d';
 
 /* ---------- Tabs ---------- */
 export const INSTEL_TABS = [
@@ -510,7 +510,7 @@ export function koppelInstelNieuw(v, herteken){
   else if (sub === 'pedagogiek') koppelPedagogiek(v, herteken);
   else if (sub === 'regels') koppelRegels(v, herteken);
   else if (sub === 'ai') koppelAI(v, herteken);
-  else if (sub === 'toegang') import('./toegang.js?v=20261010c').then(m => m.koppelToegang(v, herteken));
+  else if (sub === 'toegang') import('./toegang.js?v=20261011d').then(m => m.koppelToegang(v, herteken));
 }
 
 /* ---------- Identiteit ---------- */
