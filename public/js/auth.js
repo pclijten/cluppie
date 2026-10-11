@@ -2,9 +2,9 @@ import {
   auth, db, GoogleAuthProvider, signInWithPopup, signOut,
   signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail,
   collection, doc, addDoc, setDoc, getDoc, serverTimestamp, increment, functions, httpsCallable, sendEmailVerification
-} from './firebase.js?v=20261011e';
-import { S, $, meld } from './state.js?v=20261011f';
-import { startTracker } from './tracker.js?v=20261011f';
+} from './firebase.js?v=20261011g';
+import { S, $, meld } from './state.js?v=20261011g';
+import { startTracker } from './tracker.js?v=20261011g';
 
 /* ====================================================================
    AANMELD-FLOW — Google of e-mail+wachtwoord.
@@ -202,7 +202,7 @@ export async function joinMetCode(code, naam = null){
   }
   if (res.status === 'aanvraag'){
     S._aanvraagVerstuurd = { club: res.clubNaam, team: res.naam };
-    import('./toegang.js?v=20261011f').then(m => m.toonAanvraagVerstuurd(res));
+    import('./toegang.js?v=20261011g').then(m => m.toonAanvraagVerstuurd(res));
     return null;
   }
   if (!res.teamId){ if (res.clubNaam) meld('Gekoppeld aan ' + res.clubNaam); return null; }

@@ -130,3 +130,7 @@ Gevonden bij de functions-deploy: Firestore `(default)` staat in `nam5` (VS), de
 - Zwart clubscherm (permission-denied in renderClub): een id in `club.teams` van een niet-bestaand team liet de `documentId in`-query falen. Nu `teams-ophalen.js` (`teamsOpId`) met per-team terugval, en de clubbeheerder ruimt spook-ids op.
 - **Rules deployen** (nieuw: niet-bestaand team mag gelezen worden, lekt niets): `firebase deploy --only firestore:rules --project cluppie-ad329`. Zonder deploy werkt het scherm ook, maar wordt het spookteam niet opgeruimd.
 
+
+## Release 20261011g — App Check aan (meten)
+- reCAPTCHA Enterprise-sleutel in `firebase.js` (ReCaptchaEnterpriseProvider), niet op localhost. CSP (report-only) staat www.google.com/recaptcha toe.
+- **Open:** na een paar dagen in Firebase-console → App Check → APIs kijken; bij ~100% geldige verzoeken Enforce aan voor Firestore, Storage en Cloud Functions.

@@ -10,17 +10,17 @@
    Event-koppeling gebeurt in teams.js (koppelTeamTab) — dit bestand levert
    alleen HTML + de opslaghulpjes voor de wedstrijd-presentie. Het importeert
    bewust NIET terug uit teams.js (geen circulaire import). */
-import { db, doc, updateDoc } from './firebase.js?v=20261011e';
-import { S, esc, meld, datumNL, modAan } from './state.js?v=20261011f';
-import { AFWEZIG_REDENEN, afwezigRedenInfo } from './config.js?v=20261011f';
+import { db, doc, updateDoc } from './firebase.js?v=20261011g';
+import { S, esc, meld, datumNL, modAan } from './state.js?v=20261011g';
+import { AFWEZIG_REDENEN, afwezigRedenInfo } from './config.js?v=20261011g';
 import { ico } from './icons.js?v=20260922c';
-import { logoImg, primaireClubId } from './clubconfig.js?v=20261011f';
-import { analyseWedstrijd, WISSEL_BEURT } from './analyse.js?v=20261011f';
-import { telGebruik } from './tracker.js?v=20261011f';
-import { ongelezenBerichten } from './berichten.js?v=20261011f';
-import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261011f';
-import { htmlRondeBalk } from './evaluatierondes.js?v=20261011f';
-import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261011f';
+import { logoImg, primaireClubId } from './clubconfig.js?v=20261011g';
+import { analyseWedstrijd, WISSEL_BEURT } from './analyse.js?v=20261011g';
+import { telGebruik } from './tracker.js?v=20261011g';
+import { ongelezenBerichten } from './berichten.js?v=20261011g';
+import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261011g';
+import { htmlRondeBalk } from './evaluatierondes.js?v=20261011g';
+import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261011g';
 
 
 /* ---------- Hulpjes ---------- */

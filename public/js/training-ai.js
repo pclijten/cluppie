@@ -16,10 +16,10 @@
 import {
   storage, sRef, uploadBytes, getDownloadURL,
   functions, httpsCallable
-} from './firebase.js?v=20261011e';
-import { laadPdfJs } from './pdf-viewer.js?v=20261011f';
-import { aiAan } from './clubconfig.js?v=20261011f';
-import { S } from './state.js?v=20261011f';
+} from './firebase.js?v=20261011g';
+import { laadPdfJs } from './pdf-viewer.js?v=20261011g';
+import { aiAan } from './clubconfig.js?v=20261011g';
+import { S } from './state.js?v=20261011g';
 
 /* ---------- PDF → tekst per pagina + diagram-PNG's ---------- */
 

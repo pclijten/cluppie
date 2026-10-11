@@ -30,8 +30,8 @@
 
 import {
   db, collection, doc, setDoc, deleteDoc, getDocs, query, where, onSnapshot
-} from './firebase.js?v=20261011e';
-import { listenMet } from './state.js?v=20261011f';
+} from './firebase.js?v=20261011g';
+import { listenMet } from './state.js?v=20261011g';
 
 /* [20260929c] CONTENT PER CLUB
    De collectie 'content' is de Cluppie-STANDAARD (gedeeld). Een club kan eigen

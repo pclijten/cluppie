@@ -30,7 +30,7 @@ Status: technische maatregelen doorgevoerd (okt 2026). **Niet getest** tegen de 
 | Oude codes | Vaste team-/clubcodes werken nog en lopen óók via goedkeuring; per club uit te zetten (`vasteCodes`). Nieuwe clubs: uit. |
 | Toegangslog | `toegangslog/`: aanvraag, aangesloten, goedgekeurd, afgewezen, rol gewijzigd, uitgeschreven, uitnodiging gemaakt/ingetrokken. Alleen lezen voor clubbeheerder. |
 | Melding | In-app: melding bij het openen van de club als er aanvragen wachten. **Geen e-mailmelding** (daar is nog geen mailkanaal voor). |
-| Misbruik | Rate limiting op `sluitAan` (10 per 10 min per account, 40 per IP) en `uitnodigingInfo` (30 per IP); e-mail moet geverifieerd zijn om aan te sluiten; App Check-haakje in `firebase.js` (zet site key + Enforce in de console). |
+| Misbruik | Rate limiting op `sluitAan` (10 per 10 min per account, 40 per IP) en `uitnodigingInfo` (30 per IP); e-mail moet geverifieerd zijn om aan te sluiten; App Check met reCAPTCHA Enterprise staat aan in `firebase.js` (sinds 2026-10-11, eerst alleen meten; Enforce volgt in de console). |
 | Kennisname | Eerste gebruik: privacyafspraken bevestigen (`bevestigPrivacy` → `privacyKennisname/{uid}`, versie `2026-10`). |
 | Nieuwe club (wizard) | AI uit, achternamen uit, aanvragen goedkeuren aan, vaste codes uit, privacycontactpersoon + verwerkersovereenkomst vastleggen. Nooit gekopieerd uit een bronclub. |
 | Uitschrijven | `verwijderLid` (clubbeheerder), met voorstel voor coaches zonder activiteit in 9 maanden. |
