@@ -98,7 +98,7 @@ Alle onderdelen uit `VERBETERPLAN.md` zijn gebouwd. Cache-versie `cluppie-v20261
 **Rules** — nieuw: `platformstats`, `clubAanmeldingen`, `mail`, `sjablonen`, `benchmark`; `gebruikstats` ook voor bouwcoördinatoren (`lezers`); clubbeheerder mag een team aanmaken zonder zelf lid te worden; `trainingToegang.vervaltOp` moet gelijk zijn aan die van de deel-link (beveiligingsfix).
 
 ### Deploy-volgorde (alles in project `cluppie-ad329`)
-1. **Rules testen:** `npm install && npm run test:rules` (Java nodig; start de Firestore-emulator en draait `tests/rules.test.mjs`, 20 scenario's). Hier in de cloudsessie kon de emulator niet worden gedownload, dus deze stap is nog niet gedraaid.
+1. **Rules testen:** `npm install && npm run test:rules` (Java nodig; start de Firestore-emulator en draait `tests/rules.test.mjs`, 20 scenario's). Gedraaid op 11-10-2026 op Pauls pc: 20/20 groen (één testfout hersteld: de coach schreef dezelfde kleur als de admin, wat geen wijziging is).
 2. **Functions:** `cd functions && npm install`, dan
    `firebase deploy --only functions:aggregeerGebruik,functions:aggregeerGebruikNacht,functions:platformOverzichtNu,functions:meldClubAan,functions:beoordeelClubAanmelding,functions:meldNieuweAanvraag --project cluppie-ad329`
    en per callable de invoker openzetten (zoals bij `privacyoverzicht`): `aggregeergebruik`, `platformoverzichtnu`, `meldclubaan`, `beoordeelclubaanmelding`.
