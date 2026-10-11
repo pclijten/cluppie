@@ -5636,3 +5636,18 @@ button.cb-mnaam{height:44px}
 .so-speler small{color:var(--ink-2)}
 .so-speler select{width:auto;max-width:55%;padding:6px 8px;font-size:calc(13px * var(--fs))}
 .so-team.open{border-color:color-mix(in srgb, var(--accent) 40%, var(--line-d))}
+
+/* ==================== KLEURVOORBEELD, INSTELLINGEN, SJABLONEN (20261011d) ==================== */
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kv-vlak{border-radius:12px;padding:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;border:1px solid var(--line-d)}
+.kv-knop{color:#fff;font-weight:700;font-size:calc(12.5px * var(--fs));padding:7px 12px;border-radius:9px}
+.kv-tab{font-weight:700;font-size:calc(12.5px * var(--fs));border-bottom:2px solid;padding-bottom:2px}
+.kv-badge{color:#fff;font-family:'Barlow Condensed';font-weight:800;font-size:calc(16px * var(--fs));padding:2px 8px;border-radius:8px}
+.kv-stip{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:-1px;margin:0 2px}
+@media (max-width:420px){ .kv{grid-template-columns:1fr} }
+.cb-instel-meer{color:var(--ink-2)!important;font-weight:600}
+.cb-instel-meer.open{color:var(--accent)!important}
+.cb-instel-adv{margin-top:-6px;opacity:.95}
+.sj-optie{display:flex;flex-direction:column;align-items:flex-start;width:100%;text-align:left;padding:10px 12px;border-radius:10px;background:var(--surface-2);color:var(--ink);margin-bottom:6px}
+.sj-optie small{color:var(--ink-2);font-size:calc(12px * var(--fs))}
+.sj-optie:hover{outline:1px solid var(--accent)}

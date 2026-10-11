@@ -17,7 +17,7 @@ import { startClubContentListener, htmlClubContent, koppelClubContent } from './
 import { htmlInzichtTabs, htmlInzichtTab, openRapport } from './club-inzicht.js?v=20261010c';
 import { telGebruik, telNav } from './tracker.js?v=20261010c';
 import { ico } from './icons.js?v=20260922c';
-import { INSTEL_TABS, NIEUWE_TABS, htmlInstelNieuw, koppelInstelNieuw, htmlAlgemeenMelding, koppelAlgemeenMelding, modalNieuweClub } from './club-instellingen.js?v=20261010c';
+import { INSTEL_TABS, INSTEL_BASIS, NIEUWE_TABS, htmlInstelNieuw, koppelInstelNieuw, htmlAlgemeenMelding, koppelAlgemeenMelding, modalNieuweClub } from './club-instellingen.js?v=20261010c';
 import { pasClubConfigToe, clubAfk, effectief } from './clubconfig.js?v=20261010c';
 import { startlijstStatus } from './startlijst.js?v=20261011d';
 import { teamSleutel as teamSleutelClub } from './sportlink-sleutel.js?v=20261011c';
@@ -1908,8 +1908,12 @@ function modalNieuwBericht(teams, bestaand = null){
    Coördinatoren en bouwen staan onder Club → Bouwen. */
 function htmlClubInstel(teams = [], syncStatus = {}){
   const sub = S._clubInstelTab || 'algemeen';
-  const seg = `<div class="segment cb-instel-seg">${INSTEL_TABS
-    .map(([id, n]) => `<button class="${sub === id ? 'actief' : ''}" data-instel-tab="${id}">${n}</button>`).join('')}</div>`;
+  /* [20261011d] basis vooraan; geavanceerde tabbladen achter een schakelaar (open als je er al bent) */
+  const meer = S._instelMeer || !INSTEL_BASIS.has(sub);
+  const knop = ([id, n]) => `<button class="${sub === id ? 'actief' : ''}" data-instel-tab="${id}">${n}</button>`;
+  const seg = `<div class="segment cb-instel-seg">${INSTEL_TABS.filter(([id]) => INSTEL_BASIS.has(id)).map(knop).join('')}
+      <button class="cb-instel-meer ${meer ? 'open' : ''}" id="instelMeer">Geavanceerd ${meer ? '▴' : '▾'}</button></div>
+    ${meer ? `<div class="segment cb-instel-seg cb-instel-adv">${INSTEL_TABS.filter(([id]) => !INSTEL_BASIS.has(id)).map(knop).join('')}</div>` : ''}`;
   let inhoud = '';
 
   if (sub === 'algemeen'){
@@ -2379,6 +2383,7 @@ function koppelClubTab(v, tab, teams, trainingen, videos, documenten){
   }
   if (tab === 'instel'){
     v.querySelectorAll('[data-instel-tab]').forEach(b => b.onclick = () => { S._clubInstelTab = b.dataset.instelTab; hertekenClub(); });
+    v.querySelector('#instelMeer')?.addEventListener('click', () => { S._instelMeer = !(S._instelMeer || !INSTEL_BASIS.has(S._clubInstelTab || 'algemeen')); if (!S._instelMeer && !INSTEL_BASIS.has(S._clubInstelTab)) S._clubInstelTab = 'algemeen'; hertekenClub(); });
     koppelAlgemeenMelding(v, hertekenClub);       // [20260929c] banners bovenaan Algemeen
     koppelInstelNieuw(v, hertekenClub);           // [20260929c] Identiteit, Competitie, Pedagogiek, Lijsten, Regels, AI
     const slAlles = v.querySelector('#slAlles');

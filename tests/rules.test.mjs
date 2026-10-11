@@ -142,6 +142,12 @@ test('platformstats en clubaanmeldingen: alleen platformbeheerder', async () => 
   await assertFails(setDoc(doc(als('nieuweling'), 'clubAanmeldingen/nieuweling'), { status: 'goedgekeurd' }));
   await assertSucceeds(getDocs(collection(als('paul', PLATFORM), 'clubAanmeldingen')));
 });
+test('sjabloon: alleen eigen club publiceren, iedereen lezen', async () => {
+  await assertSucceeds(setDoc(doc(als('adminA'), 'sjablonen/A'), { clubId: 'A', titel: 'Opzet A', instellingen: {} }));
+  await assertFails(setDoc(doc(als('adminA'), 'sjablonen/B'), { clubId: 'B', titel: 'Nep', instellingen: {} }));
+  await assertFails(setDoc(doc(als('coachA'), 'sjablonen/A'), { clubId: 'A', titel: 'x', instellingen: {} }));
+  await assertSucceeds(getDoc(doc(als('coachB'), 'sjablonen/A')));
+});
 test('club-inhoud: training van andere club niet zichtbaar', async () => {
   await assertSucceeds(getDoc(doc(als('coachA'), 'trainingen/tr1')));
   await assertFails(getDoc(doc(als('coachB'), 'trainingen/tr1')));

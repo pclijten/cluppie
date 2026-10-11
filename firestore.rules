@@ -273,6 +273,12 @@ service cloud.firestore {
       allow read: if isClubAdmin(clubId) || isPlatform() || (echt() && uid() in resource.data.get('lezers', []));
       allow write: if false;            /* alleen aggregeerGebruik (Admin SDK) */
     }
+    /* gepubliceerde clubsjablonen: elke ingelogde gebruiker leest, alleen de clubbeheerder van die club schrijft */
+    match /sjablonen/{clubId} {
+      allow read: if echt();
+      allow create, update: if isClubAdmin(clubId) && request.resource.data.clubId == clubId;
+      allow delete: if isClubAdmin(clubId) || isPlatform();
+    }
     /* aanmeldingen van nieuwe clubs (publieke aanmeldpagina → Cloud Function meldClubAan) */
     match /clubAanmeldingen/{id} {
       allow read: if isPlatform() || (echt() && id == uid());
