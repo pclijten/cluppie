@@ -58,7 +58,8 @@ test('club lezen: alleen eigen club', async () => {
 });
 test('clubinstellingen wijzigen: alleen clubadmin', async () => {
   await assertSucceeds(updateDoc(doc(als('adminA'), 'clubs/A'), { 'instellingen.identiteit.kleur': '#123456' }));
-  await assertFails(updateDoc(doc(als('coachA'), 'clubs/A'), { 'instellingen.identiteit.kleur': '#123456' }));
+  /* andere waarde dan hierboven: dezelfde waarde nog eens schrijven is geen wijziging en mag de rule terecht doorlaten */
+  await assertFails(updateDoc(doc(als('coachA'), 'clubs/A'), { 'instellingen.identiteit.kleur': '#654321' }));
   await assertFails(updateDoc(doc(als('adminB'), 'clubs/A'), { naam: 'Gekaapt' }));
 });
 test('coach registreert nieuw team bij club (alleen veld teams)', async () => {
