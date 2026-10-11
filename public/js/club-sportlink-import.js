@@ -9,10 +9,10 @@
    De clubbeheerder wordt NIET automatisch lid van de teams (rules: clubadmin mag een
    team zonder zichzelf aanmaken); coaches komen binnen via de teamlink. */
 
-import { db, doc, getDoc, collection, writeBatch, serverTimestamp, functions, httpsCallable } from './firebase.js?v=20260922c';
-import { S, esc, meld, openModal, sluitModal, teamCode } from './state.js?v=20261010c';
-import { CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, bouwVanCategorie } from './config.js?v=20261010c';
-import { clubAfk } from './clubconfig.js?v=20261010c';
+import { db, doc, getDoc, collection, writeBatch, serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011e';
+import { S, esc, meld, openModal, sluitModal, teamCode } from './state.js?v=20261011e';
+import { CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, bouwVanCategorie } from './config.js?v=20261011e';
+import { clubAfk } from './clubconfig.js?v=20261011e';
 import { eigenClubPatronen, teamSleutel } from './sportlink-sleutel.js?v=20261011d';
 
 const BOUW_NAAM = { onder: 'Onderbouw', midden: 'Middenbouw', boven: 'Bovenbouw' };

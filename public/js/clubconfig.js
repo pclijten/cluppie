@@ -27,10 +27,10 @@
 
    Een club-document zonder instellingen.v krijgt de neutrale standaard totdat de
    beheerder de waarden in Instellingen "vastlegt". */
-import { S, clubAfkorting } from './state.js?v=20261010c';
-import * as C from './config.js?v=20261010c';
-import { db, doc, getDoc } from './firebase.js?v=20260922c';
-import { zetContentClub } from './content.js?v=20261010c';
+import { S, clubAfkorting } from './state.js?v=20261011e';
+import * as C from './config.js?v=20261011e';
+import { db, doc, getDoc } from './firebase.js?v=20261011e';
+import { zetContentClub } from './content.js?v=20261011e';
 
 /* ---------- Standaardwaarden ---------- */
 export const NEUTRAAL = Object.freeze({

@@ -43,7 +43,7 @@ Status: technische maatregelen doorgevoerd (okt 2026). **Niet getest** tegen de 
 - `scrubPII` leest alle spelersdocumenten van het team, dus ook gearchiveerde namen worden uit AI-invoer gehaald.
 
 ## Bewuste restpunten (kies/regel zelf)
-1. **Verwerkersovereenkomst** per club + verwerkersovereenkomsten/DPA met Google (Firebase DPA, regio europe-west1 controleren voor Firestore én Storage-bucket) en Anthropic (DPA + zero-data-retention overwegen; VS-doorgifte via SCC/DPF).
+1. **Verwerkersovereenkomst** per club + verwerkersovereenkomsten/DPA met Google (Firebase DPA; Firestore stond in nam5 en de standaard-bucket in de VS: overstap naar europe-west1 volgens MIGRATIE-EU.md) en Anthropic (DPA + zero-data-retention overwegen; VS-doorgifte via SCC/DPF).
 2. **DPIA**: verwerking van gegevens van minderjarigen op schaal (30 clubs) → doe een DPIA vóór uitrol; dit document is de basis. Verwerkingsregister: gebruik de tabel hierboven.
 3. **Bewaartermijn spelers**: er is nog geen automatische opruiming van vertrokken spelers/oude seizoenen. Advies: einde seizoen + 1 jaar; bouw een "seizoen archiveren/wissen"-actie voor clubadmins.
 4. **Clubadmin kan geen spelerverzoeken afhandelen vanuit de app** (inzage/wissen van één speler): nu handmatig via de speler verwijderen. Doorloop dit met een club als proef.

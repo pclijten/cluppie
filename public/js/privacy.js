@@ -4,8 +4,8 @@
    - verwijderen: haalt je uit teams en clubs, wist je gebruiksgegevens en je account
    Dit draait via Cloud Functions (exporteerMijnGegevens, verwijderMijnAccount).
 ==================================================================== */
-import { auth, functions, httpsCallable, signOut } from './firebase.js?v=20260922c';
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261010c';
+import { auth, functions, httpsCallable, signOut } from './firebase.js?v=20261011e';
+import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261011e';
 
 export function openPrivacy(){
   openModal(`

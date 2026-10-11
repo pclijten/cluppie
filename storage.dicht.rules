@@ -1,0 +1,7 @@
+rules_version = '2';
+/* Oude bucket (cluppie-ad329.firebasestorage.app): sinds de overstap naar cluppie-ad329-eu niet meer in gebruik. */
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{alles=**} { allow read, write: if false; }
+  }
+}

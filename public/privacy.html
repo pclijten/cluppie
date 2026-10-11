@@ -38,14 +38,15 @@ Voor jouw <strong>coach-account</strong> (naam, inlog, gebruik van de app) is Cl
 <p><strong>Horen niet in Cluppie:</strong> medische gegevens, BSN, adressen, telefoonnummers of foto's van kinderen. De app waarschuwt hiervoor en we vragen coaches dit niet in te voeren.</p>
 
 <h2>Aansluiten bij een club</h2>
-<p>Coaches sluiten aan met een persoonlijke uitnodiging die verloopt, een maximaal aantal keer te gebruiken is en kan worden ingetrokken. Standaard beoordeelt een coach of beheerder van de club elke aanvraag; nieuwe coaches starten als <strong>assistent</strong> (meekijken) en krijgen pas daarna volledige rechten. Wie wanneer is toegevoegd, goedgekeurd of uitgeschreven, ziet de clubbeheerder in een toegangslog. Wie met een wachtwoord-account werkt, moet eerst het e-mailadres bevestigen. Bij het eerste gebruik bevestig je de privacyafspraken; datum en versie bewaren we.</p>
+<p>Coaches sluiten aan met een persoonlijke uitnodiging die verloopt, een maximaal aantal keer te gebruiken is en kan worden ingetrokken. Standaard beoordeelt een coach of beheerder van de club elke aanvraag. Wie wanneer is toegevoegd, goedgekeurd of uitgeschreven, ziet de clubbeheerder in een toegangslog. Wie met een wachtwoord-account werkt, moet eerst het e-mailadres bevestigen. Bij het eerste gebruik bevestig je de privacyafspraken; datum en versie bewaren we.</p>
 
 <h2>Kunstmatige intelligentie</h2>
 <p>De AI-functies (trainingen structureren, wedstrijdverslag, hulp-chat) gebruiken Claude van Anthropic. Voordat tekst wordt verstuurd, worden namen van spelers en coaches, e-mailadressen, telefoonnummers en postcodes automatisch vervangen. Spelers komen alleen als "Speler 1, 2, …" voor. Clubs kunnen AI uitzetten of een maandlimiet instellen.</p>
 
 <h2>Waar staan de gegevens, en wie werkt mee?</h2>
 <ul>
-<li><strong>Google Firebase</strong> (database, inloggen, bestanden, hosting) — regio Europa (België, europe-west1).</li>
+<li><strong>Google Firebase</strong> — de database, de bestanden (video's, documenten) en de serverfuncties staan in de EU (België, europe-west1). Voor het inloggen (Firebase Authentication) verwerkt Google je naam en e-mailadres mogelijk ook buiten de EU, op basis van het EU-VS Data Privacy Framework en standaardcontractbepalingen.</li>
+<li><strong>GitHub Pages</strong> (hosting van de app-bestanden zelf) — levert alleen de programmacode; er gaan geen gegevens uit Cluppie naartoe. Zoals elke webserver ziet GitHub je IP-adres.</li>
 <li><strong>Anthropic</strong> (AI) — Verenigde Staten, op basis van standaardcontractbepalingen; geen spelersnamen.</li>
 <li><strong>Sportlink</strong> (KNVB-wedstrijdgegevens, per club ingesteld) — alleen teamniveau.</li>
 <li><strong>Open-Meteo</strong> (weer) — alleen de locatie van de club, geen persoonsgegevens.</li>

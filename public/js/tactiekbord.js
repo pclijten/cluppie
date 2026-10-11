@@ -24,10 +24,10 @@
    ========================================================================== */
 
 import { db, collection, doc, addDoc, updateDoc, deleteDoc, setDoc,
-         onSnapshot, serverTimestamp } from './firebase.js?v=20260922c';
-import { S, esc, meld, spelerNaam, spelerNr, modAan, bewaakTerug, vangnetStilTerugAlsNodig } from './state.js?v=20261010c';
-import { bouwSlots } from './config.js?v=20261010c';
-import { telNav } from './tracker.js?v=20261010c';
+         onSnapshot, serverTimestamp } from './firebase.js?v=20261011e';
+import { S, esc, meld, spelerNaam, spelerNr, modAan, bewaakTerug, vangnetStilTerugAlsNodig } from './state.js?v=20261011e';
+import { bouwSlots } from './config.js?v=20261011e';
+import { telNav } from './tracker.js?v=20261011e';
 
 const NS = 'http://www.w3.org/2000/svg';
 
@@ -215,7 +215,7 @@ export function openTactiekLijst(w){
   if (toonLeerplein){
     host.querySelector('#tbLeerplein').onclick = () => {
       sluit();
-      import('./leerplein.js?v=20261010c').then(m => m.openLeerplein(w));
+      import('./leerplein.js?v=20261011e').then(m => m.openLeerplein(w));
     };
   }
 

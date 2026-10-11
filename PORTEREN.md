@@ -114,3 +114,12 @@ Alle onderdelen uit `VERBETERPLAN.md` zijn gebouwd. Cache-versie `cluppie-v20261
 - Domeinen 3–6 (variabel aantal beoordelingsdomeinen): bewust niet gebouwd; pas als een club erom vraagt.
 - ASV'33 als tenant op cluppie.io: aparte migratie.
 - `bouwOverdrachtDossier` en de seizoensovergang schrijven vanaf de client; een Cloud Function maakt het atomair (zelfde open punt als bij speler-overdracht).
+
+## Release 20261011e — overstap naar de EU (branch `eu-database`, NIET zomaar mergen)
+Gevonden bij de functions-deploy: Firestore `(default)` staat in `nam5` (VS), de standaard-bucket ook. Draaiboek en volgorde: **`MIGRATIE-EU.md`**. Kort:
+- Firestore: `(default)` → tijdelijke database `cluppie-overzet` (EU) → `(default)` verwijderen en opnieuw aanmaken in `europe-west1` → terugkopiëren. Geen codewijziging nodig; een aparte EU-database kan niet, want Storage-rules lezen alleen `(default)`.
+- Storage: nieuwe bucket `cluppie-ad329-eu` (`europe-west1`); `public/js/firebase.js` uploadt daar via `STORAGE_BUCKET`. De oude bucket gaat dicht (`storage.dicht.rules`, deploy-doel `oud`).
+- `tools/migreer-eu.mjs`: kopie (Firestore recursief, alle subcollecties; bestanden met download-tokens; download-URL's herschreven) en controle.
+- `privacy.html`: locaties kloppend gemaakt (Firebase Auth mogelijk buiten de EU, GitHub Pages als host); verouderde zin over de assistent-rol weg.
+- Versie `20261011e` (firebase.js gewijzigd, dus alle modules opnieuw geversioneerd).
+**Deze PR wordt pas in stap 10 van het draaiboek gemerged**, nadat de bestanden en de database gekopieerd zijn.

@@ -5,19 +5,19 @@
    (naam wijzigen, teamcode, uitnodigen — modalUitnodig komt uit club.js). */
 import {
   db, collection, doc, addDoc, deleteDoc, updateDoc, setDoc, getDocs, query, where, serverTimestamp, functions, httpsCallable
-} from './firebase.js?v=20260922c';
+} from './firebase.js?v=20261011e';
 import {
   S, $, $$, esc, meld, datumNL, speler, initialen, openModal, sluitModal, toon, isBeheerder
-} from './state.js?v=20261010c';
-import { telGebruik } from './tracker.js?v=20261010c';
-import { voorbeeldTeamcode } from './clubconfig.js?v=20261010c';
+} from './state.js?v=20261011e';
+import { telGebruik } from './tracker.js?v=20261011e';
+import { voorbeeldTeamcode } from './clubconfig.js?v=20261011e';
 import { ico } from './icons.js?v=20260922c';
 
 import {
   CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, youtubeId, youtubeThumb, youtubeWatch,
   SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo, isoWeek
-} from './config.js?v=20261010c';
-import { htmlKompas } from './teams-leerlijn.js?v=20261010c';
+} from './config.js?v=20261011e';
+import { htmlKompas } from './teams-leerlijn.js?v=20261011e';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
 
 /* ---------- Afgelaste training (banner + WhatsApp-deeltekst) ----------

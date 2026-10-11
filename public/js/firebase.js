@@ -7,7 +7,8 @@
 
    Vergeet niet in datzelfde nieuwe project:
    1. Authentication → Sign-in method → Google én E-mail/Wachtwoord aanzetten.
-   2. Firestore Database aanmaken (production mode, regio europe-west1).
+   2. Firestore-database (default) in europe-west1 en een extra Storage-bucket 'cluppie-ad329-eu' in
+      europe-west1 (zie MIGRATIE-EU.md); de standaard-bucket wordt niet gebruikt.
    3. firestore.rules deployen (Firebase CLI: `firebase deploy --only firestore:rules`,
       of plak de inhoud handmatig in Firebase Console → Firestore → Rules).
    4. (optioneel, voor de voetbal.nl-sync) cloud.functions deployen — zie
@@ -21,6 +22,11 @@ const firebaseConfig = {
   messagingSenderId: "776624143952",
   appId: "1:776624143952:web:2fc01a748f5a5a7c415b55",
 };
+
+/* [20261011e] AVG: alles in de EU. De database (default) is opnieuw aangemaakt in europe-west1 (België);
+   de standaard-bucket van dit project staat in de VS en kan niet verhuizen, dus bestanden staan in een
+   extra bucket in europe-west1. Overstap en kopie: zie MIGRATIE-EU.md en tools/migreer-eu.mjs. */
+export const STORAGE_BUCKET = 'gs://cluppie-ad329-eu';
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, GoogleAuthProvider, OAuthProvider, signInWithPopup, signInAnonymously, updateProfile, signOut, onAuthStateChanged,         signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, fetchSignInMethodsForEmail, sendEmailVerification }
@@ -60,7 +66,7 @@ try {
   db = getFirestore(app);
 }
 
-const storage = getStorage(app);
+const storage = getStorage(app, STORAGE_BUCKET);
 const functions = getFunctions(app, 'europe-west1');
 
 export {

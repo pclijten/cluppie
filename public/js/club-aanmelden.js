@@ -3,9 +3,9 @@
    platformscherm; daarna is de aanvrager clubbeheerder en leidt de startlijst hem verder.
    Server: functions/aanmelding.js (meldClubAan). Link om te delen: https://www.cluppie.io/?aanmelden */
 
-import { db, doc, getDoc, functions, httpsCallable } from './firebase.js?v=20260922c';
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261010c';
-import { DISTRICTEN } from './clubconfig.js?v=20261010c';
+import { db, doc, getDoc, functions, httpsCallable } from './firebase.js?v=20261011e';
+import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261011e';
+import { DISTRICTEN } from './clubconfig.js?v=20261011e';
 
 export async function laadMijnAanmelding(el){
   if (!el || !S.user) return;

@@ -12,12 +12,12 @@
    (modules.<sleutel>), zodat een onderdeel dat hier niet getoond wordt nooit
    per ongeluk wordt overschreven. Dit bestand importeert niets uit club.js
    (geen kringimport): club.js geeft een api-object mee. */
-import { db, doc, updateDoc } from './firebase.js?v=20260922c';
-import { S, esc, meld, modAan } from './state.js?v=20261010c';
-import { BOUWEN } from './config.js?v=20261010c';
-import { kompasNaam } from './clubconfig.js?v=20261010c';
+import { db, doc, updateDoc } from './firebase.js?v=20261011e';
+import { S, esc, meld, modAan } from './state.js?v=20261011e';
+import { BOUWEN } from './config.js?v=20261011e';
+import { kompasNaam } from './clubconfig.js?v=20261011e';
 import { ico } from './icons.js?v=20260922c';
-import { eigenBouwenVanTeam, bouwVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261010c';
+import { eigenBouwenVanTeam, bouwVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261011e';
 
 /* [sleutel, naam, kort, icoon, uitleg] — 'lijstjes' was eerder niet door de beheerder te regelen */
 export const MODULE_DEFS = [
