@@ -4,7 +4,7 @@
    Nu: per blok van 30 de snelle query; faalt die, dan per team apart en worden de
    onleesbare overgeslagen. Ids van teams die echt niet (meer) bestaan staan in het resultaat .ontbreekt;
    onleesbare teams worden alleen overgeslagen. */
-import { db, doc, getDoc, getDocs, query, collection, where, documentId } from './firebase.js?v=20261011e';
+import { db, doc, getDoc, getDocs, query, collection, where, documentId } from './firebase.js?v=20261011g';
 
 export async function teamsOpId(ids){
   const lijst = [...new Set((ids || []).filter(Boolean))];

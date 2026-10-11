@@ -29,9 +29,9 @@
    veldpaden (eigenRijen.<id>), zodat twee coaches tegelijk namen kunnen
    toevoegen. Mobiel toont lijsten met ≤3 korte kolommen (✓/✗, keuze, datum)
    compact: naam en waarden op één regel, opmerking achter een potloodje. */
-import { db, doc, collection, addDoc, updateDoc, deleteDoc, deleteField, onSnapshot } from './firebase.js?v=20261011e';
-import { S, $, $$, esc, meld, openModal, sluitModal } from './state.js?v=20261011f';
-import { SEIZOEN_FALLBACK } from './config.js?v=20261011f';
+import { db, doc, collection, addDoc, updateDoc, deleteDoc, deleteField, onSnapshot } from './firebase.js?v=20261011g';
+import { S, $, $$, esc, meld, openModal, sluitModal } from './state.js?v=20261011g';
+import { SEIZOEN_FALLBACK } from './config.js?v=20261011g';
 import { ico } from './icons.js?v=20260922c';
 
 /* ---------- Sjablonen ---------- */

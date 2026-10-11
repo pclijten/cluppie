@@ -42,13 +42,14 @@ import { getFunctions, httpsCallable }
 
 const app  = initializeApp(firebaseConfig);
 
-/* App Check (reCAPTCHA v3): zet hier de site key uit Firebase Console → App Check om misbruik van
-   aansluiten/uitnodigingen door scripts tegen te gaan. Leeg = uit. Zet daarna in de console
-   "Enforce" aan voor Cloud Functions, Firestore en Storage (zie AVG.md). */
-const APP_CHECK_SITE_KEY = '';
-if (APP_CHECK_SITE_KEY){
+/* App Check (reCAPTCHA Enterprise / Fraud Defense, score-sleutel voor cluppie.io): gaat misbruik van
+   aansluiten/uitnodigingen door scripts tegen. De sleutel is publiek (staat in elke pagina).
+   Pas na een paar dagen meekijken in de console "Enforce" aanzetten voor Functions, Firestore en
+   Storage (zie AVG.md). Op localhost geen App Check, anders werkt lokaal testen niet zonder debug-token. */
+const APP_CHECK_SITE_KEY = '6LdTROotAAAAAKaG8_4_GAdYfwwlBaPBCnmcz_iN';
+if (APP_CHECK_SITE_KEY && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){
   import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js")
-    .then(m => m.initializeAppCheck(app, { provider: new m.ReCaptchaV3Provider(APP_CHECK_SITE_KEY), isTokenAutoRefreshEnabled: true }))
+    .then(m => m.initializeAppCheck(app, { provider: new m.ReCaptchaEnterpriseProvider(APP_CHECK_SITE_KEY), isTokenAutoRefreshEnabled: true }))
     .catch(e => console.warn('[Cluppie] App Check niet gestart', e));
 }
 const auth = getAuth(app);
