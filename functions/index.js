@@ -53,7 +53,7 @@ const toegang = require('./toegang');
 const { scrubPII, namenVoorScrub } = avg;
 Object.assign(exports, { uitnodigingInfo: toegang.uitnodigingInfo, sluitAan: toegang.sluitAan, maakUitnodiging: toegang.maakUitnodiging,
   trekUitnodigingIn: toegang.trekUitnodigingIn, beoordeelAanvraag: toegang.beoordeelAanvraag, wijzigRol: toegang.wijzigRol,
-  verwijderLid: toegang.verwijderLid, bevestigPrivacy: toegang.bevestigPrivacy, codeBezet: avg.codeBezet,
+  verwijderLid: toegang.verwijderLid, bevestigPrivacy: toegang.bevestigPrivacy, privacyOverzicht: toegang.privacyOverzicht, codeBezet: avg.codeBezet,
   exporteerMijnGegevens: avg.exporteerMijnGegevens, verwijderMijnAccount: avg.verwijderMijnAccount, bewaartermijnen: avg.bewaartermijnen });
 
 if (!admin.apps.length) admin.initializeApp();

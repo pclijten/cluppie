@@ -324,6 +324,22 @@ exports.bevestigPrivacy = onCall({ region: REGIO, cors: true }, async (request) 
   return { versie: PRIVACY_VERSIE };
 });
 
+/* ---------- overzicht: wie heeft de privacyregels bevestigd (alleen clubbeheerder) ---------- */
+exports.privacyOverzicht = onCall({ region: REGIO, cors: true }, async (request) => {
+  const db = getFirestore();
+  vereisIngelogd(request);
+  const clubId = String(request.data?.clubId || '');
+  const club = (await clubRef(db, clubId).get()).data();
+  if (!club) throw new HttpsError('not-found', 'Club bestaat niet.');
+  if (!isClubAdminDoc(club, request.auth.uid)) throw new HttpsError('permission-denied', 'Alleen een clubbeheerder.');
+  const uids = [...new Set([...Object.keys(club.leden || {}), ...Object.keys(club.admins || {})])];
+  const refs = uids.map(u => db.doc(`privacyKennisname/${u}`));
+  const snaps = refs.length ? await db.getAll(...refs) : [];
+  const per = {};
+  snaps.forEach((sn, i) => { const d = sn.data(); if (d) per[uids[i]] = { versie: d.versie || null, tijd: d.tijd ? d.tijd.toMillis() : null }; });
+  return { huidigeVersie: PRIVACY_VERSIE, per };
+});
+
 /* ---------- voorstel: inactieve leden (alleen lezen, voor de beheerder) ---------- */
 exports.PRIVACY_VERSIE = PRIVACY_VERSIE;
 module.exports.verwijderUidUitAlles = verwijderUidUitAlles;

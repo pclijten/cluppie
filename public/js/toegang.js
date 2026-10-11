@@ -221,6 +221,15 @@ export async function koppelToegang(v, herteken){
     l.teams.push({ id: t.id, naam: t.naam, rol: t.rollen?.[uid] || 'coach' }); leden.set(uid, l);
   }
   for (const uid of Object.keys(S.club.admins || {})) if (!leden.has(uid)) leden.set(uid, { uid, naam: S.club.adminsInfo?.[uid]?.naam || 'Beheerder', teams: [] });
+  let kennis = null;
+  try { kennis = await roep('privacyOverzicht', { clubId }); } catch (e) { console.warn('[Cluppie] privacyoverzicht niet beschikbaar (functions niet gedeployed?)', e.code); }
+  const akkoordTekst = uid => {
+    if (!kennis) return '';
+    const k = kennis.per[uid];
+    if (!k) return ' · <b style="color:var(--accent)">privacyregels nog niet bevestigd</b>';
+    const dat = k.tijd ? datumKort(k.tijd) : '';
+    return k.versie === kennis.huidigeVersie ? ` · privacy akkoord ${dat}` : ` · <b style="color:var(--accent)">akkoord op oudere versie</b> ${dat}`;
+  };
   const grens = new Date(Date.now() - 270 * 86400000).toISOString().slice(0, 10);
   const html4 = kaart(`Coaches (${leden.size})`, `
     ${gebruikDocs ? '<p class="cb-uitleg" style="margin:0 0 6px">Coaches zonder activiteit in 9 maanden staan als voorstel om te verwijderen.</p>' : ''}
@@ -229,7 +238,7 @@ export async function koppelToegang(v, herteken){
       const inactief = gebruikDocs && !isAdmin && (!last || last < grens);
       return `<div style="${rijStijl};flex-wrap:wrap">
         <div style="flex:1;min-width:150px"><b>${esc(l.naam)}</b>${isAdmin ? ' <span class="cb-uitleg">· beheerder</span>' : ''}
-          <div class="cb-uitleg" style="margin:0">${l.teams.map(t => `${esc(t.naam)}${t.rol === 'assistent' ? ' (assistent)' : ''}`).join(', ') || 'geen team'}${gebruikDocs ? ' · laatst actief ' + (last ? datumKort(last) : 'niet in 9 mnd') : ''}${inactief ? ' <b style="color:var(--accent)">· inactief</b>' : ''}</div></div>
+          <div class="cb-uitleg" style="margin:0">${l.teams.map(t => `${esc(t.naam)}${t.rol === 'assistent' ? ' (assistent)' : ''}`).join(', ') || 'geen team'}${gebruikDocs ? ' · laatst actief ' + (last ? datumKort(last) : 'niet in 9 mnd') : ''}${inactief ? ' <b style="color:var(--accent)">· inactief</b>' : ''}${akkoordTekst(l.uid)}</div></div>
         ${l.teams.some(t => t.rol === 'assistent') ? `<button class="knop klein" data-lid-rol="${esc(l.uid)}" data-rol="coach">Maak coach</button>` : ''}
         ${!isAdmin ? `<button class="knop licht klein" data-lid-weg="${esc(l.uid)}" data-lid-naam="${esc(l.naam)}">Uitschrijven</button>` : ''}
       </div>`;

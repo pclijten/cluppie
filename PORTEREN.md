@@ -71,3 +71,6 @@ Uitnodigingen, aanvragen met goedkeuring, rollen (assistent/coach), toegangslog,
 
 ## Release 20261011a — geen assistent-rol meer
 - Standaardrol is overal `coach` (functions `toegangInst`, clubconfig, wizard). Keuzelijsten voor rol uit Instellingen → Toegang verwijderd; bij bestaande assistenten staat een knop 'Maak coach'. De rol `assistent` blijft technisch in rules/functions bestaan voor oude data. **Deploy functions.**
+
+## Release 20261011b — privacy-akkoord zichtbaar
+- Nieuwe callable `privacyOverzicht` (alleen clubadmin; leest `privacyKennisname/{uid}` van alle leden/admins). In de coachlijst (Toegang & privacy) staat per persoon akkoord + datum, of 'nog niet bevestigd'/'oudere versie'. **Deploy functions; daarna per nieuwe functie invoker openzetten: `gcloud run services add-iam-policy-binding privacyoverzicht --region=europe-west1 --member=allUsers --role=roles/run.invoker --project=cluppie-ad329`.**

@@ -631,7 +631,7 @@ export function renderTeams(){
 
   v.querySelector('#uitloggen').onclick = () => { stopAlleListeners(); doSignOut(); };
   const platformKnop = v.querySelector('#platformKnop');
-  if (platformKnop) platformKnop.onclick = () => import('./platform.js?v=20261011a').then(m => m.openPlatform());
+  if (platformKnop) platformKnop.onclick = () => import('./platform.js?v=20261011b').then(m => m.openPlatform());
   v.querySelector('#privacyKnop').onclick = () => import('./privacy.js?v=20261010c').then(m => m.openPrivacy());
   const maEl = v.querySelector('#mijnAanvragen');
   if (maEl) import('./toegang.js?v=20261010c').then(m => m.laadMijnAanvragen(maEl));
@@ -1115,6 +1115,9 @@ export function verlaatTeamView(){
    Coach-vriendelijk overzicht van wat er nieuw is in de app. Nieuwste bovenaan.
    Voeg een nieuwe release toe door bovenaan UPDATES een item te plaatsen. */
 const UPDATES = [
+  { datum:'2026-10-11', titel:'Privacy-akkoord zichtbaar', punten:[
+    'Clubbeheerders zien in Instellingen → Toegang & privacy bij elke coach of die de privacyregels heeft bevestigd, en wanneer.',
+  ]},
   { datum:'2026-10-11', titel:'Alle coaches gelijk', punten:[
     'Nieuwe coaches komen binnen als volwaardig coach; de rol assistent wordt niet meer aangeboden. Bestaande assistenten kun je in Club → Instellingen → Toegang met één tik coach maken.',
   ]},
