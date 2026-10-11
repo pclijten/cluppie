@@ -860,7 +860,7 @@ async function maakClub(W, bronnen){
   eff.locatie = { plaats: W.plaats || '', lat: W.lat, lon: W.lon, district: W.district };
   eff.ai = { ...(eff.ai || {}), aan: W.ai };
   /* toegang en privacy horen bij DEZE club en worden nooit uit een bronclub gekopieerd */
-  eff.toegang = { goedkeuring: true, standaardRol: 'assistent', vasteCodes: false };
+  eff.toegang = { goedkeuring: true, standaardRol: 'coach', vasteCodes: false };
   eff.privacy = { contactNaam: W.pvNaam || '', contactEmail: W.pvMail || '', achternamen: false,
     verwerkersovereenkomst: W.vo ? { geaccepteerd: true, uid: S.user.uid, naam: S.user.displayName || '', tijd: new Date().toISOString(), versie: '2026-10' } : null };
   const data = {

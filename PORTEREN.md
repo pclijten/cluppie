@@ -68,3 +68,6 @@ Uitnodigingen, aanvragen met goedkeuring, rollen (assistent/coach), toegangslog,
 - `functions/index.js`: nieuwe `analyseerBeleidsplan` (club_admin, AI-limiet/-schakelaar via `vereisAI`, stukken ≤14.000 tekens, geeft voorstellen voor leercurve/kompas/gouden regel). **Deploy functions.** Werkt pas als de Anthropic-limiet het weer toelaat.
 - `public/js/club-beleidsplan.js` (nieuw): PDF/tekst → AI-analyse of handmatig splitsen op koppen → controleren → opslaan als concept in `clubs/{id}/content` (`bron:'beleidsplan-import'`). Knop in Club → Content.
 - Bewust niet gebouwd: delen van plannen tussen clubs (vereist expliciete toestemming per club).
+
+## Release 20261011a — geen assistent-rol meer
+- Standaardrol is overal `coach` (functions `toegangInst`, clubconfig, wizard). Keuzelijsten voor rol uit Instellingen → Toegang verwijderd; bij bestaande assistenten staat een knop 'Maak coach'. De rol `assistent` blijft technisch in rules/functions bestaan voor oude data. **Deploy functions.**

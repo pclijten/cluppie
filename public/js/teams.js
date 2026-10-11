@@ -631,7 +631,7 @@ export function renderTeams(){
 
   v.querySelector('#uitloggen').onclick = () => { stopAlleListeners(); doSignOut(); };
   const platformKnop = v.querySelector('#platformKnop');
-  if (platformKnop) platformKnop.onclick = () => import('./platform.js?v=20261010i').then(m => m.openPlatform());
+  if (platformKnop) platformKnop.onclick = () => import('./platform.js?v=20261011a').then(m => m.openPlatform());
   v.querySelector('#privacyKnop').onclick = () => import('./privacy.js?v=20261010c').then(m => m.openPrivacy());
   const maEl = v.querySelector('#mijnAanvragen');
   if (maEl) import('./toegang.js?v=20261010c').then(m => m.laadMijnAanvragen(maEl));
@@ -1115,6 +1115,9 @@ export function verlaatTeamView(){
    Coach-vriendelijk overzicht van wat er nieuw is in de app. Nieuwste bovenaan.
    Voeg een nieuwe release toe door bovenaan UPDATES een item te plaatsen. */
 const UPDATES = [
+  { datum:'2026-10-11', titel:'Alle coaches gelijk', punten:[
+    'Nieuwe coaches komen binnen als volwaardig coach; de rol assistent wordt niet meer aangeboden. Bestaande assistenten kun je in Club → Instellingen → Toegang met één tik coach maken.',
+  ]},
   { datum:'2026-10-10', titel:'Beleidsplan importeren', punten:[
     'Clubbeheerders kunnen onder Club → Content het eigen beleidsplan (PDF of tekst) importeren. Cluppie stelt leerlijn-teksten, tips en gouden regels voor; jij controleert ze en publiceert.',
     'Op desktop kon het clubscherm soms onder het teamscherm blijven staan. Dat is opgelost.',

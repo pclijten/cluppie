@@ -50,7 +50,7 @@ const toegangInst = (club) => {
   const t = club?.instellingen?.toegang || {};
   return {
     goedkeuring: t.goedkeuring !== false,
-    standaardRol: t.standaardRol === 'coach' ? 'coach' : 'assistent',
+    standaardRol: 'coach',   // elke coach mag evenveel; de assistent-rol wordt niet meer aangeboden (bestaande assistenten blijven werken)
     vasteCodes: t.vasteCodes !== false,
   };
 };

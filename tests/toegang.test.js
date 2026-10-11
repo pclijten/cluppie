@@ -32,10 +32,11 @@ const throws = async (f, code, m) => { try { await f(); ok(false, m + ' (geen fo
   await throws(() => T.beoordeelAanvraag(req('rand', { clubId: 'c1', uid: 'nieuw', besluit: 'goed' })), 'permission-denied', 'vreemde mag niet beoordelen');
   await T.beoordeelAanvraag(req('coachA', { clubId: 'c1', uid: 'nieuw', besluit: 'goed' }));
   const t1 = store.get('teams/t1');
-  ok(t1.leden.nieuw === true && t1.rollen.nieuw === 'assistent', 'goedgekeurd als assistent (default)');
+  ok(t1.leden.nieuw === true && t1.rollen.nieuw === 'coach', 'goedgekeurd als coach (default)');
   ok(store.get('clubs/c1').leden.nieuw === true, 'ook clublid');
   ok(!store.get('aanvragen/c1_nieuw'), 'aanvraag opgeruimd');
-  // 4 assistent mag niet uitnodigen
+  // 4 assistent (oude data) mag niet uitnodigen
+  store.get('teams/t1').rollen.nieuw = 'assistent';
   await throws(() => T.maakUitnodiging(req('nieuw', { clubId: 'c1', teamId: 't1' })), 'permission-denied', 'assistent mag niet uitnodigen');
   // 5 rol wijzigen
   await T.wijzigRol(req('adm', { clubId: 'c1', teamId: 't1', uid: 'nieuw', rol: 'coach' }));

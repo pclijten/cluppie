@@ -184,9 +184,6 @@ export async function koppelToegang(v, herteken){
   /* --- instellingen --- */
   const html1 = kaart('Hoe sluiten coaches aan?', `
     <label class="ci-schakel"><input type="checkbox" id="tgGoed" ${T.goedkeuring ? 'checked' : ''}><span><b>Aanvragen goedkeuren</b> — nieuwe coaches komen pas binnen na jouw goedkeuring (aanbevolen)</span></label>
-    <div class="veldgroep" style="margin-top:10px"><label>Startrol zonder goedkeuring, en voorgestelde rol bij goedkeuren</label>
-      <select class="invoer" id="tgRol"><option value="assistent" ${T.standaardRol === 'assistent' ? 'selected' : ''}>Assistent — meekijken: rooster, spelerslijst, poule</option>
-      <option value="coach" ${T.standaardRol === 'coach' ? 'selected' : ''}>Coach — volledig, incl. beoordelingen en aanwezigheid</option></select></div>
     <label class="ci-schakel" style="margin-top:8px"><input type="checkbox" id="tgVast" ${T.vasteCodes ? 'checked' : ''}><span>Oude vaste team- en clubcodes blijven werken (zet uit zodra alle coaches zijn aangesloten)</span></label>
     <button class="knop vol klein" id="tgOpslaan" style="margin-top:10px">Opslaan</button>`);
 
@@ -194,7 +191,6 @@ export async function koppelToegang(v, herteken){
   const html2 = kaart(`Aanvragen${aanvragen.length ? ` (${aanvragen.length})` : ''}`, aanvragen.length ? aanvragen.map(a => `
     <div style="${rijStijl};flex-wrap:wrap">
       <div style="flex:1;min-width:150px"><b>${esc(a.naam)}</b><div class="cb-uitleg" style="margin:0">${esc(a.teamNaam || 'club')} · ${datumKort(a.gemaakt)}</div></div>
-      <select class="invoer" data-ar-rol="${esc(a.uid)}" style="width:auto"><option value="assistent" ${T.standaardRol === 'assistent' ? 'selected' : ''}>Assistent</option><option value="coach" ${T.standaardRol === 'coach' ? 'selected' : ''}>Coach</option></select>
       <button class="knop klein" data-ar-goed="${esc(a.uid)}">Goedkeuren</button>
       <button class="knop licht klein" data-ar-af="${esc(a.uid)}">Afwijzen</button>
     </div>`).join('') : '<p class="cb-uitleg" style="margin:0">Geen openstaande aanvragen.</p>');
@@ -234,7 +230,7 @@ export async function koppelToegang(v, herteken){
       return `<div style="${rijStijl};flex-wrap:wrap">
         <div style="flex:1;min-width:150px"><b>${esc(l.naam)}</b>${isAdmin ? ' <span class="cb-uitleg">· beheerder</span>' : ''}
           <div class="cb-uitleg" style="margin:0">${l.teams.map(t => `${esc(t.naam)}${t.rol === 'assistent' ? ' (assistent)' : ''}`).join(', ') || 'geen team'}${gebruikDocs ? ' · laatst actief ' + (last ? datumKort(last) : 'niet in 9 mnd') : ''}${inactief ? ' <b style="color:var(--accent)">· inactief</b>' : ''}</div></div>
-        ${l.teams.length ? `<select class="invoer" data-lid-rol="${esc(l.uid)}" style="width:auto"><option value="">Rol…</option><option value="assistent">Assistent</option><option value="coach">Coach</option></select>` : ''}
+        ${l.teams.some(t => t.rol === 'assistent') ? `<button class="knop klein" data-lid-rol="${esc(l.uid)}" data-rol="coach">Maak coach</button>` : ''}
         ${!isAdmin ? `<button class="knop licht klein" data-lid-weg="${esc(l.uid)}" data-lid-naam="${esc(l.naam)}">Uitschrijven</button>` : ''}
       </div>`;
     }).join('')}`);
@@ -265,10 +261,10 @@ export async function koppelToegang(v, herteken){
   };
 
   q('#tgOpslaan').onclick = (e) => klaar(() => bewaar([['toegang', {
-    goedkeuring: q('#tgGoed').checked, standaardRol: q('#tgRol').value, vasteCodes: q('#tgVast').checked }]]), e.currentTarget, 'Opgeslagen');
+    goedkeuring: q('#tgGoed').checked, standaardRol: 'coach', vasteCodes: q('#tgVast').checked }]]), e.currentTarget, 'Opgeslagen');
 
   qa('[data-ar-goed]').forEach(b => b.onclick = () => klaar(() =>
-    roep('beoordeelAanvraag', { clubId, uid: b.dataset.arGoed, besluit: 'goed', rol: root.querySelector(`[data-ar-rol="${b.dataset.arGoed}"]`).value }), b, 'Goedgekeurd'));
+    roep('beoordeelAanvraag', { clubId, uid: b.dataset.arGoed, besluit: 'goed', rol: 'coach' }), b, 'Goedgekeurd'));
   qa('[data-ar-af]').forEach(b => b.onclick = () => klaar(() => roep('beoordeelAanvraag', { clubId, uid: b.dataset.arAf, besluit: 'af' }), b, 'Afgewezen'));
 
   q('#tgInvMaak').onclick = (e) => klaar(async () => {
@@ -282,10 +278,9 @@ export async function koppelToegang(v, herteken){
   });
   qa('[data-inv-weg]').forEach(b => b.onclick = () => klaar(() => roep('trekUitnodigingIn', { id: b.dataset.invWeg }), b, 'Ingetrokken'));
 
-  qa('[data-lid-rol]').forEach(s => s.onchange = () => {
-    if (!s.value) return;
+  qa('[data-lid-rol]').forEach(s => s.onclick = () => {
     const l = leden.get(s.dataset.lidRol);
-    klaar(async () => { for (const t of l.teams) await roep('wijzigRol', { clubId, teamId: t.id, uid: l.uid, rol: s.value }); }, s, 'Rol aangepast');
+    klaar(async () => { for (const t of l.teams.filter(x => x.rol === 'assistent')) await roep('wijzigRol', { clubId, teamId: t.id, uid: l.uid, rol: 'coach' }); }, s, 'Nu coach');
   });
   qa('[data-lid-weg]').forEach(b => b.onclick = () => {
     if (!confirm(`${b.dataset.lidNaam} uitschrijven? Die verliest de toegang tot de club en alle teams.`)) return;

@@ -42,7 +42,7 @@ export const NEUTRAAL = Object.freeze({
   regels: {},
   modules: { standaard: {} },
   ai: { aan: true, maandLimiet: null },
-  toegang: { goedkeuring: true, standaardRol: 'assistent', vasteCodes: true },
+  toegang: { goedkeuring: true, standaardRol: 'coach', vasteCodes: true },
   privacy: { contactNaam: '', contactEmail: '', achternamen: true, verwerkersovereenkomst: null },
 });
 export const CLUPPIE_LOGO = 'icons/icon-192.png';
