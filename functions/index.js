@@ -16,6 +16,9 @@
      Sportlink (Club.Dataservice)
        • sportlinkSyncNu     – handmatige sync of alleen de teamlijst (club-admin)
        • syncSportlink       – nachtelijke sync, alle clubs (03:30 NL)
+     Gebruik
+       • aggregeerGebruik    – Inzicht-cijfers van één club (admin/coördinator)
+       • aggregeerGebruikNacht – idem voor alle clubs (04:15 NL)
      Onderhoud
        • cleanupDeletedItems – maandelijks opruimen (nog TODO)
 
@@ -130,6 +133,11 @@ async function vereisAI(request, rollen = null){
   }
   return r;
 }
+
+/* ==================== 1b. GEBRUIKSSTATISTIEKEN ==================== */
+const gebruik = require('./gebruik');
+exports.aggregeerGebruik = gebruik.maakCallable(vereisLid);
+exports.aggregeerGebruikNacht = gebruik.aggregeerGebruikNacht;
 
 /* ==================== 2. AI-FUNCTIES ==================== */
 

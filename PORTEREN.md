@@ -44,8 +44,8 @@ Uitnodigingen, aanvragen met goedkeuring, rollen (assistent/coach), toegangslog,
 ## Cloud Functions (omgezet naar het app-model, ONGETEST tegen echte Firestore)
 - Sportlink: `sportlinkSyncNu` (admin) + `syncSportlink` (nacht) schrijven `teams/{id}/poule/*`, `teams/{id}/wedstrijden/sl_*` en `clubs/{id}/geheim/*` in het schema van de app.
 - AI: `instellingen.ai.aan` en `maandLimiet` worden server-side afgedwongen; clubId verplicht.
-- `teamSleutel` (client) en `naamSleutel` (server) getest met `node tests/sleutel.test.mjs` (2026-10-10): gelijk voor alle gangbare teamnamen. Bekend verschil: een toevoeging als "Futsal" ("ASV'33 O13-1 Futsal"): client `o13-1` (botst met het veldteam), server `o131futsal`. Server is hier strikter en veiliger; client nog niet aangepast, beslis welke leidend is.
-- Open: `aggregeerGebruik` ontbreekt (club.js roept hem aan, `functions/index.js` exporteert hem niet); Anthropic-limiet t/m oktober blokkeert AI; Node 22 is al ingesteld.
+- `teamSleutel` (client) en `naamSleutel` (server) getest met `node tests/sleutel.test.mjs` (2026-10-10): gelijk voor alle gangbare teamnamen. Futsal-verschil opgelost in 20261011c: de server is leidend, de client geeft nu ook `o131futsal`.
+- `aggregeerGebruik` gebouwd in release 20261011c (zie onder). Open: Anthropic-limiet t/m oktober blokkeert AI; Node 22 is al ingesteld.
 
 ## Bewust nog statisch
 - `over.html`/`readme.html`, PWA-manifest en icons: één per domein, niet per club.
@@ -74,3 +74,9 @@ Uitnodigingen, aanvragen met goedkeuring, rollen (assistent/coach), toegangslog,
 
 ## Release 20261011b — privacy-akkoord zichtbaar
 - Nieuwe callable `privacyOverzicht` (alleen clubadmin; leest `privacyKennisname/{uid}` van alle leden/admins). In de coachlijst (Toegang & privacy) staat per persoon akkoord + datum, of 'nog niet bevestigd'/'oudere versie'. **Deploy functions; daarna per nieuwe functie invoker openzetten: `gcloud run services add-iam-policy-binding privacyoverzicht --region=europe-west1 --member=allUsers --role=roles/run.invoker --project=cluppie-ad329`.**
+
+## Release 20261011c — Inzicht-cijfers en futsal-sleutel
+- `functions/gebruik.js` (nieuw): `aggregeerGebruik` (callable, club_admin/coördinator) en `aggregeerGebruikNacht` (04:15 NL, alle clubs) vullen `gebruikstats/{clubId}` uit `navpaden` van de laatste 90 dagen, in precies de vorm die `club-inzicht.js` leest (teams, paginas, coaches, dag, heatmap plat, voorbereiding, wedstrijd, bron, periode). Index `navpaden(clubId, datum)` stond er al. Test: `node tests/gebruik.test.mjs`.
+  **Deploy:** `firebase deploy --only functions:aggregeerGebruik,functions:aggregeerGebruikNacht --project cluppie-ad329`, daarna invoker openzetten: `gcloud run services add-iam-policy-binding aggregeergebruik --region=europe-west1 --member=allUsers --role=roles/run.invoker --project=cluppie-ad329`. Pas daarna de branch mergen (de wijzigingenlijst belooft werkende cijfers).
+- `sportlink-sleutel.js`: zelfde verankering als `naamSleutel` op de server; "O13-1 Futsal" → `o131futsal`. Let op: een team dat in Cluppie bewust "… Futsal" heet en tot nu toe automatisch op het veldteam matchte, koppelt nu aan het futsalteam (zoals de nachtelijke sync al deed).
+- Review en verbeterplan: zie `VERBETERPLAN.md`.

@@ -19,7 +19,7 @@ import { telGebruik, telNav } from './tracker.js?v=20261010c';
 import { ico } from './icons.js?v=20260922c';
 import { INSTEL_TABS, NIEUWE_TABS, htmlInstelNieuw, koppelInstelNieuw, htmlAlgemeenMelding, koppelAlgemeenMelding, modalNieuweClub } from './club-instellingen.js?v=20261010c';
 import { pasClubConfigToe, clubAfk } from './clubconfig.js?v=20261010c';
-import { teamSleutel as teamSleutelClub } from './sportlink-sleutel.js?v=20261010c';
+import { teamSleutel as teamSleutelClub } from './sportlink-sleutel.js?v=20261011c';
 import { htmlTeamsBeheer, koppelTeamsBeheer, htmlTeamBeheer, koppelTeamBeheer, htmlCoaches, koppelCoaches, aandachtRedenen, groepen as beheerGroepen } from './club-beheer.js?v=20261010c';
 import { rondesVan, voortgangOphalen, htmlEvalRondes, htmlRondeDetail, htmlRondeFormulier, koppelRondeFormulier, koppelRondeDetail, startConcept } from './evaluatierondes.js?v=20261010c';
 

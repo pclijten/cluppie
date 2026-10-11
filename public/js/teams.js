@@ -1115,6 +1115,10 @@ export function verlaatTeamView(){
    Coach-vriendelijk overzicht van wat er nieuw is in de app. Nieuwste bovenaan.
    Voeg een nieuwe release toe door bovenaan UPDATES een item te plaatsen. */
 const UPDATES = [
+  { datum:'2026-10-11', titel:'Inzicht-cijfers werken', punten:[
+    'Club → Inzicht vult zich nu echt: de knop Synchroniseer haalt de cijfers op, en elke nacht worden ze automatisch bijgewerkt.',
+    'Sportlink-koppeling: een futsalteam wordt niet meer verward met het veldteam met hetzelfde nummer.',
+  ]},
   { datum:'2026-10-11', titel:'Privacy-akkoord zichtbaar', punten:[
     'Clubbeheerders zien in Instellingen → Toegang & privacy bij elke coach of die de privacyregels heeft bevestigd, en wanneer.',
   ]},
