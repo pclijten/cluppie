@@ -43,6 +43,28 @@ async function isPlatformBeheerder(request){
 }
 
 const dagStr = ms => new Date(ms).toISOString().slice(0, 10);
+
+/* ---- anonieme clubvergelijking (opt-in: instellingen.benchmark === true) ----
+   Per club, laatste 30 dagen, per team: hoe vaak wordt er geëvalueerd, presentie bijgehouden,
+   een wedstrijd live gevolgd en aan leerpunten gewerkt; plus % actieve coaches. Alleen tellingen. */
+const BENCH_EVENTS = {
+  evaluaties: ['snel_beoordeling', 'volledige_beoordeling', 'snel_ronde', 'ronde_beoordeling', 'team_evaluatie'],
+  presentie: ['presentie'], wedstrijden: ['wedstrijd_start'], leerpunten: ['leerpunt_nieuw', 'leerpunt_klaar'],
+};
+const MIN_DEELNEMERS = 3;
+function benchmarkWaarden(gebruikDocs, teams, coaches30, leden){
+  const som = {}; for (const g of gebruikDocs) for (const [ev, n] of Object.entries(g.tellingen || {})) som[ev] = (som[ev] || 0) + (Number(n) || 0);
+  const perTeam = evs => teams > 0 ? Math.round(10 * evs.reduce((s, e) => s + (som[e] || 0), 0) / teams) / 10 : 0;
+  return { evaluaties: perTeam(BENCH_EVENTS.evaluaties), presentie: perTeam(BENCH_EVENTS.presentie), wedstrijden: perTeam(BENCH_EVENTS.wedstrijden),
+    leerpunten: perTeam(BENCH_EVENTS.leerpunten), actiefPct: leden > 0 ? Math.round(100 * coaches30 / leden) : 0 };
+}
+function kwantiel(a, q){ if (!a.length) return null; const s = [...a].sort((x, y) => x - y), p = (s.length - 1) * q, l = Math.floor(p); return Math.round(10 * (s[l] + (s[Math.ceil(p)] - s[l]) * (p - l))) / 10; }
+function benchmarkOverzicht(waardenLijst){
+  if (waardenLijst.length < MIN_DEELNEMERS) return { aantal: waardenLijst.length, metrics: null };
+  const metrics = {};
+  for (const k of Object.keys(waardenLijst[0])){ const a = waardenLijst.map(w => w[k]); metrics[k] = { mediaan: kwantiel(a, 0.5), p75: kwantiel(a, 0.75) }; }
+  return { aantal: waardenLijst.length, metrics };
+}
 const tsMs = v => (v && typeof v.toMillis === 'function') ? v.toMillis() : (typeof v === 'number' ? v : null);
 
 /* PURE: stoplicht + signalen uit de kerncijfers (getest). */
@@ -96,6 +118,7 @@ async function clubKerncijfers(db, clubDoc, aanvragenPerClub, nuMs){
     if (refs.length) for (const s of await db.getAll(...refs)) if (s.exists && s.data().versie === PRIVACY_VERSIE) akkoord++;
   }
 
+  const gebruikDocs = (await db.collection('gebruik').where('clubId', '==', id).where('datum', '>=', vanaf).get()).docs.map(d => d.data());
   const pv = c.instellingen?.privacy || {};
   const sl = startlijstKlaar(c, teams);
   const k = {
@@ -108,7 +131,9 @@ async function clubKerncijfers(db, clubDoc, aanvragenPerClub, nuMs){
     ai: { aan: ai.aan === true, maand: aiDoc.aantal || 0, limiet: Number(ai.maandLimiet) > 0 ? Number(ai.maandLimiet) : 0 },
     privacy: { vo: !!pv.verwerkersovereenkomst?.geaccepteerd, contact: !!pv.contactEmail, akkoord, totaal: personen.length },
     startlijst: { gedaan: STARTLIJST_IDS.filter(s => sl[s]).length, totaal: STARTLIJST_IDS.length, open: STARTLIJST_IDS.filter(s => !sl[s]) },
+    benchmarkAan: c.instellingen?.benchmark === true,
   };
+  k._bench = benchmarkWaarden(gebruikDocs, teams.length, uids.size, personen.length);
   return { ...k, ...beoordeelClub(k, nuMs) };
 }
 
@@ -137,6 +162,12 @@ async function bouwPlatformOverzicht(db = getFirestore(), nuMs = Date.now()){
     },
     bijgewerkt: FieldValue.serverTimestamp(),
   };
+  /* vergelijking: alleen deelnemende clubs, per club de eigen waarden apart (alleen voor die club leesbaar) */
+  const deelnemers = lijst.filter(k => k.benchmarkAan && k._bench);
+  const bo = benchmarkOverzicht(deelnemers.map(k => k._bench));
+  await db.doc('benchmark/overzicht').set({ ...bo, bijgewerkt: FieldValue.serverTimestamp() });
+  for (const k of deelnemers) await db.doc(`benchmark/${k.id}`).set({ waarden: k._bench, bijgewerkt: FieldValue.serverTimestamp() });
+  for (const k of lijst) delete k._bench;
   await db.doc('platformstats/overzicht').set(overzicht);
   return overzicht;
 }
@@ -147,4 +178,4 @@ const platformOverzichtNu = onCall({ region: REGIO, timeoutSeconds: 300, memory:
   return { clubs: o.clubs.length };
 });
 
-module.exports = { bouwPlatformOverzicht, platformOverzichtNu, beoordeelClub, startlijstKlaar, STARTLIJST_IDS, isPlatformBeheerder };
+module.exports = { benchmarkWaarden, benchmarkOverzicht, bouwPlatformOverzicht, platformOverzichtNu, beoordeelClub, startlijstKlaar, STARTLIJST_IDS, isPlatformBeheerder };

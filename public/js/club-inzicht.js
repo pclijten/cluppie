@@ -57,7 +57,7 @@ const CAT_KLEUR = { Trainingen:'#e2342f', Wedstrijden:'#2b6cb0', Spelers:'#3fb95
 
 /* Segment-control voor de tabkeuze binnen Inzicht. */
 export function htmlInzichtTabs(actief){
-  const tabs = [['teams','Teams'],['gebruik','Gebruik'],['paginas','Pagina\u2019s'],['tijd','Tijd'],['rapporten','Rapporten']];
+  const tabs = [['teams','Teams'],['gebruik','Gebruik'],['paginas','Pagina\u2019s'],['tijd','Tijd'],['rapporten','Rapporten'],['vergelijk','Vergelijk']];
   return `<div class="segment inzicht-tabs">${tabs.map(([id,label]) =>
     `<button data-inztab="${id}" class="${actief===id?'actief':''}">${label}</button>`).join('')}</div>`;
 }
@@ -248,6 +248,7 @@ export function htmlInzichtRapporten(stats){
 
 /* Router: geeft de juiste tab-HTML terug. */
 export function htmlInzichtTab(tab, stats){
+  if (tab === 'vergelijk') return '<div id="inzVergelijk"><div class="kaart leeg">Laden…</div></div>';   // [20261011d] gevuld door club-vergelijk.js
   switch(tab){
     case 'gebruik':   return htmlInzichtGebruik(stats);
     case 'paginas':   return htmlInzichtPaginas(stats);

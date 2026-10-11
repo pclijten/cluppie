@@ -288,6 +288,12 @@ service cloud.firestore {
     match /mail/{id} {
       allow read, write: if false;
     }
+    /* anonieme clubvergelijking: het overzicht (alleen mediaan/p75, geen clubnamen) leest iedereen,
+       de eigen waarden alleen de clubbeheerder; schrijven doet alleen de Cloud Function */
+    match /benchmark/{id} {
+      allow read: if (id == 'overzicht' && echt()) || isClubAdmin(id) || isPlatform();
+      allow write: if false;
+    }
     /* platformcijfers per club (platformdashboard): alleen de platformbeheerder */
     match /platformstats/{id} {
       allow read: if isPlatform();

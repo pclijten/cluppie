@@ -148,6 +148,12 @@ test('sjabloon: alleen eigen club publiceren, iedereen lezen', async () => {
   await assertFails(setDoc(doc(als('coachA'), 'sjablonen/A'), { clubId: 'A', titel: 'x', instellingen: {} }));
   await assertSucceeds(getDoc(doc(als('coachB'), 'sjablonen/A')));
 });
+test('clubvergelijking: overzicht voor iedereen, eigen waarden alleen voor de clubbeheerder', async () => {
+  await assertSucceeds(getDoc(doc(als('coachB'), 'benchmark/overzicht')));
+  await assertSucceeds(getDoc(doc(als('adminA'), 'benchmark/A')));
+  await assertFails(getDoc(doc(als('adminB'), 'benchmark/A')));
+  await assertFails(setDoc(doc(als('adminA'), 'benchmark/A'), { waarden: {} }));
+});
 test('club-inhoud: training van andere club niet zichtbaar', async () => {
   await assertSucceeds(getDoc(doc(als('coachA'), 'trainingen/tr1')));
   await assertFails(getDoc(doc(als('coachB'), 'trainingen/tr1')));

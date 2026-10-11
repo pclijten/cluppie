@@ -5651,3 +5651,28 @@ button.cb-mnaam{height:44px}
 .sj-optie{display:flex;flex-direction:column;align-items:flex-start;width:100%;text-align:left;padding:10px 12px;border-radius:10px;background:var(--surface-2);color:var(--ink);margin-bottom:6px}
 .sj-optie small{color:var(--ink-2);font-size:calc(12px * var(--fs))}
 .sj-optie:hover{outline:1px solid var(--accent)}
+
+/* ==================== WEEKBRIEF EN CLUBVERGELIJKING (20261011d) ==================== */
+.wb-team{background:var(--surface);border:1px solid var(--line-d);border-left:3px solid var(--warn);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px}
+.wb-team.ok{border-left-color:var(--ok)}
+.wb-kop{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px}
+.wb-kop b{font-size:calc(15px * var(--fs))}
+.wb-kop span{font-size:calc(12px * var(--fs));color:var(--ink-2)}
+.wb-team ul{margin:6px 0 0 18px;padding:0;font-size:calc(13px * var(--fs))}
+.wb-team li.e2{color:var(--accent)}
+.wb-team li.e1{color:var(--warn)}
+.wb-ok{font-size:calc(12.5px * var(--fs));color:var(--ok);margin-top:4px}
+.vg-rij{padding:10px 0;border-top:1px solid var(--hair)}
+.vg-rij:first-child{border-top:none}
+.vg-kop{display:flex;align-items:baseline;gap:8px}
+.vg-kop small{color:var(--ink-2);font-size:calc(11.5px * var(--fs));flex:1}
+.vg-w{font-family:'Barlow Condensed';font-weight:800;font-size:calc(22px * var(--fs))}
+.vg-w.top{color:var(--ok)} .vg-w.onder{color:var(--warn)}
+.vg-balk{position:relative;height:10px;border-radius:99px;background:var(--surface-2);margin-top:6px}
+.vg-balk .vg-eigen{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:var(--accent)}
+.vg-med,.vg-p75{position:absolute;top:-3px;width:2px;height:16px;background:var(--ink)}
+.vg-p75{background:var(--ok)}
+.vg-leg{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:calc(11.5px * var(--fs));color:var(--ink-2)}
+.vg-leg i,.vg-leg em{display:inline-block;vertical-align:-2px;margin-right:4px;position:static}
+.vg-leg i.vg-eigen{width:12px;height:8px;border-radius:4px;background:var(--accent)}
+.vg-leg em{width:2px;height:12px}

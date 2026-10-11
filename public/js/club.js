@@ -833,6 +833,7 @@ function htmlClubHub(teams){
   secties.push(['Club', [
     clubTegel('evals',    'Evaluaties',   'attendance-evaluatie', rondesOpen || null),
     clubTegel('inzicht',  'Inzicht',      'navigation-dashboard'),
+    clubTegel('weekbrief','Weekbrief',    'planning-week'),
     clubTegel('instel',   'Instellingen', 'navigation-settings'),
   ]]);
 
@@ -1065,7 +1066,7 @@ async function renderClub(opts = {}){
   v.querySelector('#clubTerug').onclick = () => { if (!clubTerugEen()) verlaatClubView(); };
 
   // hub-tegels (en de banner) koppelen
-  v.querySelectorAll('[data-club-open]').forEach(b => b.onclick = () => naarClubTab(b.dataset.clubOpen));
+  v.querySelectorAll('[data-club-open]').forEach(b => b.onclick = () => b.dataset.clubOpen === 'weekbrief' ? kiesWeekbrief(teams) : naarClubTab(b.dataset.clubOpen));
   if (isHub) koppelStartlijst(v, teams);
   if (tab === 'instel') koppelClientIdUitleg(v);
 
@@ -1093,10 +1094,11 @@ async function renderClub(opts = {}){
       S.clubInzichtTab = nieuw;
       v.querySelectorAll('.inzicht-tabs [data-inztab]').forEach(b => b.classList.toggle('actief', b === btn));
       const bak = v.querySelector('#inzichtInhoud');
-      if (bak){ bak.innerHTML = htmlInzichtTab(nieuw, S._gebruikstats); koppelInzichtRapporten(v); }
+      if (bak){ bak.innerHTML = htmlInzichtTab(nieuw, S._gebruikstats); koppelInzichtRapporten(v); if (nieuw === 'vergelijk') laadVergelijk(v); }
     };
   });
   koppelInzichtRapporten(v);
+  if (isInzicht && (S.clubInzichtTab || 'teams') === 'vergelijk') laadVergelijk(v);
 
   const openBeheer = id => { S._cbTeam = id; S._cbUitnodig = null; naarClubTab('teambeheer'); };
   if (tab === 'teams') koppelTeamsBeheer(v, {
@@ -3712,3 +3714,19 @@ export function modalVerwerkersovereenkomst(){
     };
   }
 }
+
+/* [20261011d] Weekbrief: kies hele club of één bouw. */
+function kiesWeekbrief(teams){
+  const groepen = BOUWEN.map(b => ({ id: b.id, naam: b.naam, teams: teams.filter(t => (t.bouw || bouwVanCategorie(t.categorie)) === b.id) })).filter(g => g.teams.length);
+  const open = (lijst, naam) => import('./club-weekbrief.js?v=20261011d').then(m => m.openWeekbrief(lijst, naam));
+  if (groepen.length <= 1) return open(teams, S.club.naam);
+  openModal(`<h2>Weekbrief</h2>
+    <button class="lijst-item" data-wb="__club"><div class="li-tekst"><div class="titel">Hele club</div><div class="meta">${teams.length} teams</div></div><span class="pijl">›</span></button>
+    ${groepen.map(g => `<button class="lijst-item" data-wb="${esc(g.id)}"><div class="li-tekst"><div class="titel">${esc(g.naam)}</div><div class="meta">${g.teams.length} teams</div></div><span class="pijl">›</span></button>`).join('')}`);
+  $$('#modalInhoud [data-wb]').forEach(b => b.onclick = () => {
+    const g = groepen.find(x => x.id === b.dataset.wb);
+    open(g ? g.teams : teams, g ? g.naam : S.club.naam);
+  });
+}
+
+function laadVergelijk(v){ import('./club-vergelijk.js?v=20261011d').then(m => m.vulVergelijk(v, hertekenClub)); }

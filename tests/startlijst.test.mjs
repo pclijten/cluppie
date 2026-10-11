@@ -28,3 +28,11 @@ assert.equal(beoordeelClub({ ...basis, wachtend: 1 }, nu).status, 'oranje');
 assert.equal(beoordeelClub({ ...basis, sportlink: { gekoppeld: true, fouten: 0, laatsteSync: nu - 4 * 86400000 } }, nu).status, 'rood');
 assert.equal(beoordeelClub({ ...basis, privacy: { vo: false } }, nu).signalen[0].tekst, 'geen verwerkersovereenkomst');
 console.log('startlijst en stoplicht: alle controles geslaagd');
+
+const { benchmarkWaarden, benchmarkOverzicht } = require('../functions/platform.js');
+const bw = benchmarkWaarden([{ tellingen: { snel_beoordeling: 10, volledige_beoordeling: 2, presentie: 8 } }, { tellingen: { presentie: 4, wedstrijd_start: 3 } }], 4, 3, 6);
+assert.deepEqual(bw, { evaluaties: 3, presentie: 3, wedstrijden: 0.8, leerpunten: 0, actiefPct: 50 });
+assert.equal(benchmarkOverzicht([bw, bw]).metrics, null, 'minder dan 3 clubs: geen vergelijking');
+const bo = benchmarkOverzicht([{ a: 1 }, { a: 2 }, { a: 3 }, { a: 10 }]);
+assert.equal(bo.metrics.a.mediaan, 2.5); assert.equal(bo.metrics.a.p75, 4.8);
+console.log('clubvergelijking: alle controles geslaagd');
