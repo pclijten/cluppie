@@ -33,7 +33,7 @@ import { heeftElftallen, filterOpElftal, elftalPillen } from './elftallen.js?v=2
    import). Dynamic import() binnen de aanroepende functie is het patroon
    dat de rest van de app ook al gebruikt (zie club.js/wedstrijd.js). */
 async function herrenderTeam(){
-  const m = await import('./teams.js?v=20261010c');
+  const m = await import('./teams.js?v=20261011d');
   m.renderTeam();
 }
 
@@ -1502,11 +1502,13 @@ function isoDatum(x){
 const vandaagIso = () => isoDatum(new Date());
 
 /* Berekent het ruwe dossier van één speler uit het bronteam. Leest alleen; schrijft niets. */
-async function bouwOverdrachtDossier({ vanTeam, vanTeamNaam, spelerId, speler: bron, uitleen }){
+async function bouwOverdrachtDossier({ vanTeam, vanTeamNaam, spelerId, speler: bron, uitleen, cache }){
   const pid = spelerId;
+  /* [20261011d] cache = { w, p }: bij de seizoensovergang lezen we de wedstrijden en presentie
+     van een team één keer voor alle spelers i.p.v. per speler. */
   const [wSnap, pSnap, bSnap] = await Promise.all([
-    getDocs(collection(db,'teams',vanTeam,'wedstrijden')),
-    getDocs(collection(db,'teams',vanTeam,'presentie')),
+    cache?.w || getDocs(collection(db,'teams',vanTeam,'wedstrijden')),
+    cache?.p || getDocs(collection(db,'teams',vanTeam,'presentie')),
     getDocs(query(collection(db,'teams',vanTeam,'beoordelingen'), where('spelerId','==',pid))),
   ]);
 
@@ -1878,4 +1880,45 @@ export function modalKoppelGast(gastId){
       meld('Koppelen mislukt: ' + (e.code||e.message));
     }
   };
+}
+
+/* ==================== [20261011d] SEIZOENSOVERGANG ====================
+   Verhuist meerdere spelers van één team naar hun nieuwe team(s) voor het nieuwe seizoen,
+   met hetzelfde bevroren dossier als bij definitief overzetten (alles gaat mee).
+   verhuizingen: [{ spelerId, naarTeam, naarTeamNaam }] — naarTeam null = speler verlaat de club
+   (alleen archiveren). Geeft { gelukt, mislukt: [{spelerId, fout}] } terug; nooit UI-meldingen,
+   zodat de assistent de voortgang zelf toont. Alle writes zijn merge, dus opnieuw draaien is veilig. */
+export async function verhuisSpelersSeizoen({ clubId, vanTeam, vanTeamNaam, verhuizingen, datum, opVoortgang }){
+  const res = { gelukt: 0, mislukt: [] };
+  const vanT = await getDoc(doc(db,'teams',vanTeam));
+  if (!vanT.exists() || vanT.data().club !== clubId) throw new Error('Team hoort niet bij deze club');
+  const cache = { w: await getDocs(collection(db,'teams',vanTeam,'wedstrijden')), p: await getDocs(collection(db,'teams',vanTeam,'presentie')) };
+  const clubTeams = new Map();
+  const mee = { wed:true, beo:true, tr:true, lp:true, not:true };
+  for (const v of verhuizingen){
+    try {
+      const bronRef = doc(db,'teams',vanTeam,'spelers',v.spelerId);
+      const snap = await getDoc(bronRef);
+      if (!snap.exists() || snap.data().gearchiveerd){ res.gelukt++; opVoortgang && opVoortgang(res); continue; }
+      const bron = snap.data();
+      if (v.naarTeam){
+        if (!clubTeams.has(v.naarTeam)){ const t = await getDoc(doc(db,'teams',v.naarTeam)); clubTeams.set(v.naarTeam, t.exists() && t.data().club === clubId); }
+        if (!clubTeams.get(v.naarTeam)) throw new Error('Doelteam hoort niet bij deze club');
+        const raw = await bouwOverdrachtDossier({ vanTeam, vanTeamNaam, spelerId: v.spelerId, speler: bron, uitleen: null, cache });
+        const stintenRef = collection(db,'teams',v.naarTeam,'spelers',v.spelerId,'vorigeTeams');
+        const eerdere = await getDocs(collection(db,'teams',vanTeam,'spelers',v.spelerId,'vorigeTeams'));
+        for (const d of eerdere.docs) await setDoc(doc(stintenRef, d.id), d.data(), { merge:true });
+        await setDoc(doc(stintenRef, `${vanTeam}_${datum}`), dossierDoc(raw, mee, datum), { merge:true });
+        const data = { ...bron, meetelVanaf: datum, heeftVorigeTeams: true };
+        data.gast = deleteField(); data.gearchiveerd = deleteField(); data.naarTeam = deleteField();
+        data.naarTeamNaam = deleteField(); data.gearchiveerdOp = deleteField();
+        await setDoc(doc(db,'teams',v.naarTeam,'spelers',v.spelerId), data, { merge:true });
+      }
+      await updateDoc(bronRef, { gearchiveerd:true, naarTeam: v.naarTeam || null, naarTeamNaam: v.naarTeamNaam || (v.naarTeam ? null : 'Verlaat de club'), gearchiveerdOp: datum });
+      res.gelukt++;
+    } catch(e){ res.mislukt.push({ spelerId: v.spelerId, fout: e.code || e.message }); }
+    opVoortgang && opVoortgang(res);
+  }
+  telGebruik('seizoen_doorstroom');
+  return res;
 }

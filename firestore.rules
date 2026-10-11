@@ -1,8 +1,7 @@
 rules_version = '2';
 /* Cluppie — Firestore-regels (AVG-aangescherpt: leesrechten per club, geen open collecties) voor het datamodel van de app (teams/{id} met
    club + leden{uid}; clubs/{id} met admins, leden, bouwCoordinatoren).
-   LET OP: opgesteld uit de client-code, NIET getest tegen de emulator en
-   NIET gedeployed. Draai eerst `firebase emulators:start` (zie README). */
+   Testen: `npm run test:rules` (start de emulator en draait tests/rules.test.mjs). */
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -125,10 +124,12 @@ service cloud.firestore {
       allow read: if (echt() && (resource.data.get('leden', {}).get(uid(), false) == true
                                  || (resource.data.get('club', null) != null && isClubLid(resource.data.club))))
                   || heeftDeelToegang(teamId);
-      allow create: if echt()
-        && request.resource.data.leden.get(uid(), false) == true
-        && (request.resource.data.get('club', null) == null
-            || isClubLid(request.resource.data.club) || isClubAdmin(request.resource.data.club));
+      allow create: if echt() && (
+        (request.resource.data.leden.get(uid(), false) == true
+          && (request.resource.data.get('club', null) == null
+              || isClubLid(request.resource.data.club) || isClubAdmin(request.resource.data.club)))
+        /* [20261011d] clubbeheerder maakt teams aan zonder er zelf lid van te worden (Sportlink-import) */
+        || (request.resource.data.get('club', null) != null && isClubAdmin(request.resource.data.club)));
       allow update: if magSchrijven(teamId);
       allow delete: if isVolCoach(teamId)
         || (resource.data.get('club', null) != null && isClubAdmin(resource.data.club));
@@ -209,7 +210,10 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/trainingDeel/$(request.resource.data.deelId))
         && get(/databases/$(database)/documents/trainingDeel/$(request.resource.data.deelId)).data.teamId == request.resource.data.teamId
         && get(/databases/$(database)/documents/trainingDeel/$(request.resource.data.deelId)).data.trainingId == request.resource.data.trainingId
-        && get(/databases/$(database)/documents/trainingDeel/$(request.resource.data.deelId)).data.vervaltOp > request.time;
+        && get(/databases/$(database)/documents/trainingDeel/$(request.resource.data.deelId)).data.vervaltOp > request.time
+        /* [20261011d] vervaldatum moet gelijk zijn aan die van de deel-link: anders kan een anonieme
+           gebruiker zijn eigen toegang eindeloos verlengen */
+        && request.resource.data.vervaltOp == get(/databases/$(database)/documents/trainingDeel/$(request.resource.data.deelId)).data.vervaltOp;
       allow delete: if ingelogd() && u == uid();
     }
 
@@ -264,8 +268,36 @@ service cloud.firestore {
       allow delete: if isPlatform();
     }
     match /gebruikstats/{clubId} {
-      allow read: if isClubAdmin(clubId) || isPlatform();
-      allow write: if false;            /* alleen de (nog ontbrekende) aggregeerGebruik-function */
+      /* `lezers` (admins + bouwcoördinatoren) zet aggregeerGebruik zelf: rules kunnen niet over
+         alle bouwen van bouwCoordinatoren itereren */
+      allow read: if isClubAdmin(clubId) || isPlatform() || (echt() && uid() in resource.data.get('lezers', []));
+      allow write: if false;            /* alleen aggregeerGebruik (Admin SDK) */
+    }
+    /* gepubliceerde clubsjablonen: elke ingelogde gebruiker leest, alleen de clubbeheerder van die club schrijft */
+    match /sjablonen/{clubId} {
+      allow read: if echt();
+      allow create, update: if isClubAdmin(clubId) && request.resource.data.clubId == clubId;
+      allow delete: if isClubAdmin(clubId) || isPlatform();
+    }
+    /* aanmeldingen van nieuwe clubs (publieke aanmeldpagina → Cloud Function meldClubAan) */
+    match /clubAanmeldingen/{id} {
+      allow read: if isPlatform() || (echt() && id == uid());
+      allow write: if false;
+    }
+    /* uitgaande e-mail (Firebase-extensie Trigger Email); alleen Cloud Functions schrijven */
+    match /mail/{id} {
+      allow read, write: if false;
+    }
+    /* anonieme clubvergelijking: het overzicht (alleen mediaan/p75, geen clubnamen) leest iedereen,
+       de eigen waarden alleen de clubbeheerder; schrijven doet alleen de Cloud Function */
+    match /benchmark/{id} {
+      allow read: if (id == 'overzicht' && echt()) || isClubAdmin(id) || isPlatform();
+      allow write: if false;
+    }
+    /* platformcijfers per club (platformdashboard): alleen de platformbeheerder */
+    match /platformstats/{id} {
+      allow read: if isPlatform();
+      allow write: if false;
     }
   }
 }

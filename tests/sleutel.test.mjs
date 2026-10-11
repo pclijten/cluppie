@@ -31,15 +31,14 @@ const lijst = [
 const voorvoegsel = clubVoorvoegsel(lijst.map(teamnaam => ({ teamnaam })));
 assert.equal(voorvoegsel, "FC Voorbeeld ");
 
-const gevallen = [...lijst, 'JO8-1', '1', 'MO15-1', 'VR30+1', 'Selectie', 'O11-2 (zat)'];
+const gevallen = [...lijst, 'FC Voorbeeld O13-1 Futsal', 'FC Voorbeeld JO11-1 (zat)', 'JO8-1', '1', 'MO15-1', 'VR30+1', 'Selectie', 'O11-2 (zat)'];
 for (const naam of gevallen){
   assert.equal(teamSleutel(naam, CLUB, AFK), naamSleutel(naam, voorvoegsel), 'verschil bij ' + JSON.stringify(naam));
 }
 // VR30+1 en VR35+1 mogen niet botsen met het 1e senioren-elftal
 assert.notEqual(teamSleutel("FC Voorbeeld VR30+1", CLUB, AFK), teamSleutel("FC Voorbeeld 1", CLUB, AFK));
 
-// Bekend verschil (bewust nog niet aangepast): een toevoeging als "Futsal" achter de teamnaam.
-// Client: "FC Voorbeeld O13-1 Futsal" -> o13-1 (botst met het veldteam); server: o131futsal (aparte sleutel).
-console.log('bekend verschil futsal: client=%s server=%s',
-  teamSleutel("FC Voorbeeld O13-1 Futsal", CLUB, AFK), naamSleutel("FC Voorbeeld O13-1 Futsal", voorvoegsel));
+// Futsal e.d.: client volgt de server (eigen sleutel, geen botsing met het veldteam).
+assert.equal(teamSleutel("FC Voorbeeld O13-1 Futsal", CLUB, AFK), naamSleutel("FC Voorbeeld O13-1 Futsal", voorvoegsel));
+assert.notEqual(teamSleutel("FC Voorbeeld O13-1 Futsal", CLUB, AFK), teamSleutel("FC Voorbeeld O13-1", CLUB, AFK));
 console.log(gevallen.length + ' teamnamen: client en server geven dezelfde sleutel');

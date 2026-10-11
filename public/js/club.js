@@ -14,13 +14,14 @@ import { htmlEigenBouwenBeheer, koppelEigenBouwenBeheer } from './eigen-bouwen.j
 import { htmlBouwIndeling, koppelBouwIndeling, standaardBouwVoorStof, bouwGroepen } from './bouw-indeling.js?v=20261010c';
 import { clubEvaluatiesOphalen, htmlClubEvaluaties, koppelClubEvaluaties } from './club-evaluaties.js?v=20261010c';
 import { startClubContentListener, htmlClubContent, koppelClubContent } from './club-content.js?v=20261010c';
-import { htmlInzichtTabs, htmlInzichtTab, openRapport } from './club-inzicht.js?v=20261010c';
+import { htmlInzichtTabs, htmlInzichtTab, openRapport } from './club-inzicht.js?v=20261011d';
 import { telGebruik, telNav } from './tracker.js?v=20261010c';
 import { ico } from './icons.js?v=20260922c';
-import { INSTEL_TABS, NIEUWE_TABS, htmlInstelNieuw, koppelInstelNieuw, htmlAlgemeenMelding, koppelAlgemeenMelding, modalNieuweClub } from './club-instellingen.js?v=20261010c';
-import { pasClubConfigToe, clubAfk } from './clubconfig.js?v=20261010c';
-import { teamSleutel as teamSleutelClub } from './sportlink-sleutel.js?v=20261010c';
-import { htmlTeamsBeheer, koppelTeamsBeheer, htmlTeamBeheer, koppelTeamBeheer, htmlCoaches, koppelCoaches, aandachtRedenen, groepen as beheerGroepen } from './club-beheer.js?v=20261010c';
+import { INSTEL_TABS, INSTEL_BASIS, NIEUWE_TABS, htmlInstelNieuw, koppelInstelNieuw, htmlAlgemeenMelding, koppelAlgemeenMelding, modalNieuweClub } from './club-instellingen.js?v=20261011d';
+import { pasClubConfigToe, clubAfk, effectief } from './clubconfig.js?v=20261010c';
+import { startlijstStatus } from './startlijst.js?v=20261011d';
+import { teamSleutel as teamSleutelClub } from './sportlink-sleutel.js?v=20261011d';
+import { htmlTeamsBeheer, koppelTeamsBeheer, htmlTeamBeheer, koppelTeamBeheer, htmlCoaches, koppelCoaches, aandachtRedenen, groepen as beheerGroepen } from './club-beheer.js?v=20261011d';
 import { rondesVan, voortgangOphalen, htmlEvalRondes, htmlRondeDetail, htmlRondeFormulier, koppelRondeFormulier, koppelRondeDetail, startConcept } from './evaluatierondes.js?v=20261010c';
 
 /* drempels voor het clubdashboard ("aandacht nodig") — [20260929c] per club
@@ -32,7 +33,7 @@ const DASH_OPKOMST_LAAG = () => ACTIEF.dashboard.opkomstLaag;
 
 /* openTeam en modalNieuwTeam komen uit teams.js; om kringverwijzing te
    vermijden importeren we ze lui binnen de functies die ze nodig hebben. */
-async function teamsModule(){ return await import('./teams.js?v=20261010c'); }
+async function teamsModule(){ return await import('./teams.js?v=20261011d'); }
 
 /* ==================== CLUB AANMAKEN ==================== */
 /* [20260929c] Aanmaken in vier stappen (club, uiterlijk, koppeling, startinhoud):
@@ -51,7 +52,7 @@ export function openClub(clubId){
     if (!snap.exists()){ verlaatClubView(); return; }
     const eersteKeer = !S.club || S.club.id !== snap.id;
     S.club = {id:snap.id, ...snap.data()};
-    if (eersteKeer && S.club.admins?.[S.user?.uid]) import('./toegang.js?v=20261010c').then(m => m.meldOpenAanvragen(clubId));
+    if (eersteKeer && S.club.admins?.[S.user?.uid]) import('./toegang.js?v=20261011d').then(m => m.meldOpenAanvragen(clubId));
     pasClubConfigToe(S.club);      // [20260929c] club-instellingen → config.js, vóór het renderen
     renderClub();
   }, (err) => {
@@ -65,7 +66,7 @@ export function openClub(clubId){
 export function verlaatClubView(){
   stopUnsubs('club', 'clubContent');
   S.clubId = null; S.club = null;
-  import('./teams.js?v=20261010c').then(m => { m.renderTeams(); toon('teams'); });
+  import('./teams.js?v=20261011d').then(m => { m.renderTeams(); toon('teams'); });
 }
 
 async function clubTeamsOphalen(){
@@ -832,6 +833,7 @@ function htmlClubHub(teams){
   secties.push(['Club', [
     clubTegel('evals',    'Evaluaties',   'attendance-evaluatie', rondesOpen || null),
     clubTegel('inzicht',  'Inzicht',      'navigation-dashboard'),
+    clubTegel('weekbrief','Weekbrief',    'planning-week'),
     clubTegel('instel',   'Instellingen', 'navigation-settings'),
   ]]);
 
@@ -840,7 +842,7 @@ function htmlClubHub(teams){
       <div class="cb-banner-t"><b>Training afgelast — ${esc(afgKort(actief.datum))}</b>${actief.reden ? `<small>${esc(actief.reden)}</small>` : ''}</div>
       <button class="knop licht klein" data-club-open="afgelasten">Bekijk</button></div>` : '';
 
-  return banner + secties.map(([kop, tegels]) => `
+  return banner + htmlStartlijst(teams) + secties.map(([kop, tegels]) => `
     <section class="hub-sectie">
       <div class="hub-sectie-kop">${esc(kop)}</div>
       <div class="hub-grid">${tegels.join('')}</div>
@@ -1064,7 +1066,9 @@ async function renderClub(opts = {}){
   v.querySelector('#clubTerug').onclick = () => { if (!clubTerugEen()) verlaatClubView(); };
 
   // hub-tegels (en de banner) koppelen
-  v.querySelectorAll('[data-club-open]').forEach(b => b.onclick = () => naarClubTab(b.dataset.clubOpen));
+  v.querySelectorAll('[data-club-open]').forEach(b => b.onclick = () => b.dataset.clubOpen === 'weekbrief' ? kiesWeekbrief(teams) : naarClubTab(b.dataset.clubOpen));
+  if (isHub) koppelStartlijst(v, teams);
+  if (tab === 'instel') koppelClientIdUitleg(v);
 
   // statistieken-sync (handmatig)
   const btnSyncStats = v.querySelector('#btnSyncStats');
@@ -1090,16 +1094,18 @@ async function renderClub(opts = {}){
       S.clubInzichtTab = nieuw;
       v.querySelectorAll('.inzicht-tabs [data-inztab]').forEach(b => b.classList.toggle('actief', b === btn));
       const bak = v.querySelector('#inzichtInhoud');
-      if (bak){ bak.innerHTML = htmlInzichtTab(nieuw, S._gebruikstats); koppelInzichtRapporten(v); }
+      if (bak){ bak.innerHTML = htmlInzichtTab(nieuw, S._gebruikstats); koppelInzichtRapporten(v); if (nieuw === 'vergelijk') laadVergelijk(v); }
     };
   });
   koppelInzichtRapporten(v);
+  if (isInzicht && (S.clubInzichtTab || 'teams') === 'vergelijk') laadVergelijk(v);
 
   const openBeheer = id => { S._cbTeam = id; S._cbUitnodig = null; naarClubTab('teambeheer'); };
   if (tab === 'teams') koppelTeamsBeheer(v, {
     teams, herteken: hertekenClub, openBeheer,
     nieuwTeam: async () => (await teamsModule()).modalNieuwTeam(S.clubId),
     importPdf: () => modalImporteerPDF(),
+    importSportlink: () => import('./club-sportlink-import.js?v=20261011d').then(m => m.modalTeamsUitSportlink(teams, () => renderClub())),
     alleLinks: () => modalAlleLinks(teams),
   });
   if (tab === 'teambeheer') koppelTeamBeheer(v, {
@@ -1904,8 +1910,12 @@ function modalNieuwBericht(teams, bestaand = null){
    Coördinatoren en bouwen staan onder Club → Bouwen. */
 function htmlClubInstel(teams = [], syncStatus = {}){
   const sub = S._clubInstelTab || 'algemeen';
-  const seg = `<div class="segment cb-instel-seg">${INSTEL_TABS
-    .map(([id, n]) => `<button class="${sub === id ? 'actief' : ''}" data-instel-tab="${id}">${n}</button>`).join('')}</div>`;
+  /* [20261011d] basis vooraan; geavanceerde tabbladen achter een schakelaar (open als je er al bent) */
+  const meer = S._instelMeer || !INSTEL_BASIS.has(sub);
+  const knop = ([id, n]) => `<button class="${sub === id ? 'actief' : ''}" data-instel-tab="${id}">${n}</button>`;
+  const seg = `<div class="segment cb-instel-seg">${INSTEL_TABS.filter(([id]) => INSTEL_BASIS.has(id)).map(knop).join('')}
+      <button class="cb-instel-meer ${meer ? 'open' : ''}" id="instelMeer">Geavanceerd ${meer ? '▴' : '▾'}</button></div>
+    ${meer ? `<div class="segment cb-instel-seg cb-instel-adv">${INSTEL_TABS.filter(([id]) => !INSTEL_BASIS.has(id)).map(knop).join('')}</div>` : ''}`;
   let inhoud = '';
 
   if (sub === 'algemeen'){
@@ -1927,6 +1937,7 @@ function htmlClubInstel(teams = [], syncStatus = {}){
           <button class="knop fluo klein" id="btnNieuwSeizoen">Nieuw seizoen →</button>
         </div>
         <p class="cb-uitleg">Nieuwe wedstrijden, trainingen, beoordelingen en teamevaluaties van alle teams tellen vanaf de start mee voor het nieuwe seizoen. Oude data blijft bewaard en is terug te zien via het seizoenfilter in de statistieken.</p>
+        <button class="cb-inklap" id="btnSeizoensovergang">⏭️ Seizoensovergang: spelers doorschuiven <span>›</span></button>
         <button class="cb-inklap" id="migreerSeizoen">🗂️ Oude data zonder seizoen labelen <span>›</span></button>
       </div>
       <div class="cb-kaart">
@@ -1979,6 +1990,8 @@ function htmlClubInstel(teams = [], syncStatus = {}){
         </div>
         ${gekoppeld ? `<p style="font-size:calc(11.5px * var(--fs));color:var(--in);margin:8px 0 0">✓ Gekoppeld met Client ID <code style="font-size:calc(11px * var(--fs))">${esc(clientId)}</code></p>` : ''}
         <p class="cb-uitleg">De Client ID van jullie Sportlink Club.Dataservice. Daarmee haalt Cluppie het programma, de uitslagen en de standen op voor alle teams. Teams koppelen automatisch op naam; heet een team anders, koppel het dan in Teambeheer.</p>
+        ${htmlClientIdUitleg()}
+        ${gekoppeld ? `<button class="knop licht klein" id="slTeamsImport" style="margin-top:10px">${ico('football-competition',16)} Teams uit Sportlink aanmaken</button>` : ''}
       </div>`;
     inhoud = gekoppeld ? `
       <div class="cb-samenvat">
@@ -2372,11 +2385,14 @@ function koppelClubTab(v, tab, teams, trainingen, videos, documenten){
   }
   if (tab === 'instel'){
     v.querySelectorAll('[data-instel-tab]').forEach(b => b.onclick = () => { S._clubInstelTab = b.dataset.instelTab; hertekenClub(); });
+    v.querySelector('#instelMeer')?.addEventListener('click', () => { S._instelMeer = !(S._instelMeer || !INSTEL_BASIS.has(S._clubInstelTab || 'algemeen')); if (!S._instelMeer && !INSTEL_BASIS.has(S._clubInstelTab)) S._clubInstelTab = 'algemeen'; hertekenClub(); });
     koppelAlgemeenMelding(v, hertekenClub);       // [20260929c] banners bovenaan Algemeen
     koppelInstelNieuw(v, hertekenClub);           // [20260929c] Identiteit, Competitie, Pedagogiek, Lijsten, Regels, AI
     const slAlles = v.querySelector('#slAlles');
     if (slAlles) slAlles.onclick = () => { S._clubSlAlles = !S._clubSlAlles; hertekenClub(); };
     v.querySelectorAll('[data-sl-koppel]').forEach(b => b.onclick = () => { S._cbTeam = b.dataset.slKoppel; S._cbUitnodig = null; naarClubTab('teambeheer'); });
+    v.querySelector('#btnSeizoensovergang')?.addEventListener('click', () =>
+      import('./club-seizoen.js?v=20261011d').then(m => m.modalSeizoensovergang(teams, () => renderClub())));
     const nieuwSeizoenBtn = v.querySelector('#btnNieuwSeizoen');
     if (nieuwSeizoenBtn) nieuwSeizoenBtn.onclick = () => modalNieuwSeizoen();
     const migreerBtn = v.querySelector('#migreerSeizoen');
@@ -2459,7 +2475,7 @@ function koppelClubTab(v, tab, teams, trainingen, videos, documenten){
 /* ==================== UITNODIGEN ==================== */
 export function modalUitnodig(team){
   /* [AVG] persoonlijke, verlopende uitnodigingen i.p.v. de vaste teamlink (zie toegang.js) */
-  import('./toegang.js?v=20261010c').then(m => m.modalUitnodigNieuw(team));
+  import('./toegang.js?v=20261011d').then(m => m.modalUitnodigNieuw(team));
 }
 
 function modalAlleLinks(teams){
@@ -3609,3 +3625,108 @@ function modalBewerkDocument(d, teams){
     }
   };
 }
+
+/* ==================== [20261011d] ONBOARDING VAN DE CLUB ==================== */
+/* Uitklapper: waar vind je de Sportlink Client ID, met een kant-en-klaar berichtje. */
+function htmlClientIdUitleg(){
+  const tekst = `Hoi, voor onze coach-app Cluppie heb ik de Client ID van onze Sportlink Club.Dataservice nodig. Daarmee haalt de app automatisch het programma, de uitslagen en de standen op. Kun je die voor me opzoeken (in Sportlink Club bij de koppelingen van de Club.Dataservice)? Er gaan geen ledengegevens naar de app. Dank!`;
+  return `<details class="cb-uitklap"><summary>Waar vind ik de Client ID?</summary>
+    <p class="cb-uitleg">De Client ID is een korte code van letters en cijfers. De ledenadministratie of secretaris van jullie club kan hem opzoeken bij de Club.Dataservice in Sportlink Club. Is de Club.Dataservice nog niet aangezet, dan kan diegene dat daar ook doen. Stuur dit berichtje door:</p>
+    <div class="cb-citaat" id="clientIdBericht">${esc(tekst)}</div>
+    <button class="knop licht klein" id="clientIdKopieer" style="margin-top:8px">${ico('action-copy',16)} Kopieer bericht</button>
+  </details>`;
+}
+function koppelClientIdUitleg(v){
+  const k = v.querySelector('#clientIdKopieer');
+  if (k) k.onclick = async () => {
+    const t = v.querySelector('#clientIdBericht')?.textContent || '';
+    try { await navigator.clipboard.writeText(t); meld('Bericht gekopieerd'); }
+    catch(e){ if (navigator.share) navigator.share({ text: t }).catch(() => {}); else meld('Kopiëren lukt niet op dit apparaat'); }
+  };
+  const imp = v.querySelector('#slTeamsImport');
+  if (imp) imp.onclick = () => import('./club-sportlink-import.js?v=20261011d').then(m => m.modalTeamsUitSportlink(S.clubTeams || [], () => renderClub()));
+}
+
+/* Kaart "Aan de slag" op de club-hub (alleen beheerders, tot alles klaar of weggeklikt). */
+function htmlStartlijst(teams){
+  if (!isBeheerder()) return '';
+  const st = startlijstStatus(S.club, teams);
+  let verborgen = false; try { verborgen = localStorage.getItem('cluppie_startlijst_weg_' + S.clubId) === '1'; } catch(e){}
+  if (st.compleet || verborgen) return '';
+  const pct = Math.round(100 * st.gedaan / st.totaal);
+  const volgende = st.stappen.find(s => !s.klaar);
+  return `<div class="sl-kaart">
+    <div class="sl-kop"><div><b>Aan de slag</b><small>${st.gedaan} van ${st.totaal} gedaan</small></div>
+      <button class="sl-weg" id="startlijstWeg" aria-label="Verbergen">${ico('navigation-close',18)}</button></div>
+    <div class="sl-balk"><span style="width:${pct}%"></span></div>
+    <div class="sl-stappen">${st.stappen.map(s => `
+      <button class="sl-stap ${s.klaar ? 'klaar' : ''} ${s === volgende ? 'volgende' : ''}" data-startlijst="${esc(s.actie)}" data-stap="${esc(s.id)}" ${s.klaar ? 'disabled' : ''}>
+        <span class="sl-vink">${s.klaar ? ico('action-check',14) : ''}</span>
+        <span class="sl-tekst"><b>${esc(s.titel)}</b>${s.klaar ? '' : `<small>${esc(s.uitleg)}</small>`}</span>
+        ${s.klaar ? '' : '<span class="pijl">›</span>'}
+      </button>`).join('')}</div>
+  </div>`;
+}
+function koppelStartlijst(v, teams){
+  v.querySelector('#startlijstWeg')?.addEventListener('click', () => {
+    try { localStorage.setItem('cluppie_startlijst_weg_' + S.clubId, '1'); } catch(e){}
+    meld('Verborgen. Je vindt de stappen terug op het platform en in Instellingen.'); renderClub();
+  });
+  v.querySelectorAll('[data-startlijst]').forEach(b => b.onclick = () => {
+    const a = b.dataset.startlijst, stap = b.dataset.stap;
+    if (a === 'vo') return modalVerwerkersovereenkomst();
+    if (a.startsWith('instellingen:')){ S._clubInstelTab = a.split(':')[1]; return naarClubTab('instel'); }
+    if (stap === 'teams' && S.club.sportlinkClientId) return import('./club-sportlink-import.js?v=20261011d').then(m => m.modalTeamsUitSportlink(teams, () => renderClub()));
+    naarClubTab(a);
+  });
+}
+
+/* Verwerkersovereenkomst: de clubbeheerder accepteert zelf, namens de club (versie + tijd + naam). */
+const VO_VERSIE = '2026-10';
+export function modalVerwerkersovereenkomst(){
+  const pv = effectief(S.club).privacy || {};
+  const vo = pv.verwerkersovereenkomst;
+  openModal(`<h2>Verwerkersovereenkomst</h2>
+    <p class="cb-uitleg">Cluppie verwerkt gegevens van jullie coaches en spelers namens de club. De club is verwerkingsverantwoordelijke, Cluppie is verwerker. In deze overeenkomst staan de afspraken.</p>
+    <div class="cb-kaart"><ul class="vo-punten">
+      <li>Cluppie gebruikt de gegevens alleen om de app te laten werken, nooit voor reclame of verkoop.</li>
+      <li>Gegevens staan in de EU (Firebase, regio europe-west1) en zijn per club afgeschermd.</li>
+      <li>Geen spelernamen naar AI; AI staat standaard uit en is per club aan te zetten.</li>
+      <li>Bewaartermijnen en verwijderen: zie de privacyverklaring; coaches kunnen hun gegevens zelf inzien en wissen.</li>
+      <li>Een datalek meldt Cluppie binnen 48 uur aan de privacycontactpersoon van de club.</li>
+      <li>Bij opzeggen worden alle gegevens van de club binnen 30 dagen verwijderd, of op verzoek eerst geëxporteerd.</li>
+    </ul>
+    <a href="privacy.html" target="_blank" rel="noopener" class="cb-link">Volledige privacyverklaring ›</a></div>
+    ${vo && vo.geaccepteerd
+      ? `<p class="cb-uitleg" style="color:var(--ok)">${ico('action-check',14)} Geaccepteerd door ${esc(vo.naam || 'clubbeheerder')} op ${esc(new Date(vo.tijd).toLocaleDateString('nl-NL'))} (versie ${esc(vo.versie || '')}).</p>`
+      : `<label class="ci-schakel"><input type="checkbox" id="voAkkoord"><span>Ik ben bevoegd om namens <b>${esc(S.club.naam)}</b> deze verwerkersovereenkomst aan te gaan en ga akkoord.</span></label>
+         <button class="knop vol" id="voOk" disabled style="margin-top:10px">Akkoord namens de club</button>`}`);
+  const c = $('#voAkkoord'), k = $('#voOk');
+  if (c && k){
+    c.onchange = () => { k.disabled = !c.checked; };
+    k.onclick = async () => {
+      k.disabled = true;
+      try {
+        await updateDoc(doc(db, 'clubs', S.clubId), { 'instellingen.privacy.verwerkersovereenkomst': {
+          geaccepteerd: true, uid: S.user.uid, naam: S.user.displayName || (S.user.email || '').split('@')[0] || '', tijd: new Date().toISOString(), versie: VO_VERSIE } });
+        sluitModal(); meld('Verwerkersovereenkomst geaccepteerd ✓'); renderClub();
+      } catch(e){ k.disabled = false; meld('Opslaan mislukt: ' + (e.code || e.message)); }
+    };
+  }
+}
+
+/* [20261011d] Weekbrief: kies hele club of één bouw. */
+function kiesWeekbrief(teams){
+  const groepen = BOUWEN.map(b => ({ id: b.id, naam: b.naam, teams: teams.filter(t => (t.bouw || bouwVanCategorie(t.categorie)) === b.id) })).filter(g => g.teams.length);
+  const open = (lijst, naam) => import('./club-weekbrief.js?v=20261011d').then(m => m.openWeekbrief(lijst, naam));
+  if (groepen.length <= 1) return open(teams, S.club.naam);
+  openModal(`<h2>Weekbrief</h2>
+    <button class="lijst-item" data-wb="__club"><div class="li-tekst"><div class="titel">Hele club</div><div class="meta">${teams.length} teams</div></div><span class="pijl">›</span></button>
+    ${groepen.map(g => `<button class="lijst-item" data-wb="${esc(g.id)}"><div class="li-tekst"><div class="titel">${esc(g.naam)}</div><div class="meta">${g.teams.length} teams</div></div><span class="pijl">›</span></button>`).join('')}`);
+  $$('#modalInhoud [data-wb]').forEach(b => b.onclick = () => {
+    const g = groepen.find(x => x.id === b.dataset.wb);
+    open(g ? g.teams : teams, g ? g.naam : S.club.naam);
+  });
+}
+
+function laadVergelijk(v){ import('./club-vergelijk.js?v=20261011d').then(m => m.vulVergelijk(v, hertekenClub)); }

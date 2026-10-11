@@ -10,11 +10,11 @@
 ================================================================= */
 import { S, $, esc, meld, toon } from './state.js?v=20261010c';
 import { BOUWEN } from './config.js?v=20261010c';
-import { laadBouw, teamRijen, richting } from './desktop-bouw.js?v=20261010c';
-import { zetBouwContext, modalNieuweUitleningVanuitBouw } from './bouw-hub.js?v=20261010c';
-import { trekUitleningIn } from './teams-spelers.js?v=20261010c';
-import { htmlMobielTeam } from './desktop-schermen.js?v=20261010c';
-import { isSelectieBouw, htmlRadarMobiel, htmlSelectieTegelMobiel, htmlSelectieMobiel, selectieKlik, selectieInvoer } from './selectie-bouw.js?v=20261010c';
+import { laadBouw, teamRijen, richting } from './desktop-bouw.js?v=20261011d';
+import { zetBouwContext, modalNieuweUitleningVanuitBouw } from './bouw-hub.js?v=20261011d';
+import { trekUitleningIn } from './teams-spelers.js?v=20261011d';
+import { htmlMobielTeam } from './desktop-schermen.js?v=20261011d';
+import { isSelectieBouw, htmlRadarMobiel, htmlSelectieTegelMobiel, htmlSelectieMobiel, selectieKlik, selectieInvoer } from './selectie-bouw.js?v=20261011d';
 
 let st = null;   // { clubId, bouw, tab:'dash'|'teams'|'uit'|'selmaken', teamId, pag:'sel'|'evs'|'evw'|'stat', keuze:{} }
 let cache = null;
@@ -104,6 +104,7 @@ function dashboard(){
   const sel = isSelectieBouw(cache);   /* [20260928f] radars per team + tegel Selectie maken */
   return `<h1 class="mb-groot">${esc(huidigeBouw().naam)} <span>dashboard</span></h1>
     <div class="mb-pills"><span class="mb-pill">${rij.length} teams \u00b7 ${spelers} spelers</span>${trPct != null ? `<span class="mb-pill groen">Opkomst training ${trPct}%</span>` : ''}</div>
+    <button class="mb-knop" data-mb="weekbrief" style="margin:0 0 12px">Weekbrief: wat vraagt deze week aandacht? \u203a</button>
     <div class="mb-kaart"><div class="mb-lbl">Laatste uitslagen</div>${rij.map(r => { const l = r.u?.laatste; const k = l ? (l.voor > l.tegen ? 'groen' : l.voor < l.tegen ? 'rood' : '') : '';
       return `<div class="mb-r"><b>${esc(r.t.naam)}</b><span>${l ? 'tegen ' + esc(l.tegenstander || '') + (l.bron === 'app' ? ' \u00b7 app' : '') : (r.u?.knvbVerborgen ? 'geen KNVB-uitslagen (O10 en jonger)' : 'nog geen uitslag')}</span>${l ? `<em class="mb-pill ${k}">${l.voor}\u2013${l.tegen}</em>` : ''}</div>`; }).join('') || '<p class="mb-leeg">Geen teams.</p>'}</div>
     <div class="mb-kaart"><div class="mb-lbl">Komende wedstrijden</div>${rij.map(r => `<div class="mb-r"><b>${esc(r.t.naam)}</b><span>${r.kom ? esc(datumKort(r.kom.datum)) + (r.kom.aftrap ? ' \u00b7 ' + esc(r.kom.aftrap) : '') + ' \u00b7 ' + (r.kom.thuis ? 'thuis' : 'uit') + ' ' + esc(r.kom.tegenstander || '') : 'niets gepland'}</span></div>`).join('')}</div>
@@ -144,7 +145,7 @@ async function klik(e){
   if (a === 'terug'){
     if (st.teamId){ st.teamId = null; st.keuze = {}; teken(); return; }
     if (st.tab === 'selmaken'){ st.tab = 'dash'; teken(); window.scrollTo(0, 0); return; }
-    const m = await import('./teams.js?v=20261010c'); m.renderTeams(); toon('teams'); return;
+    const m = await import('./teams.js?v=20261011d'); m.renderTeams(); toon('teams'); return;
   }
   if (a === 'tab'){ st.tab = id; st.teamId = null; st.keuze = {}; teken(); window.scrollTo(0, 0); return; }
   if (a === 'team'){ st.teamId = id; st.pag = 'sel'; st.keuze = {}; teken(); window.scrollTo(0, 0); return; }
@@ -152,8 +153,9 @@ async function klik(e){
   if (a === 'selmaken'){ st.tab = 'selmaken'; st.teamId = null; teken(); window.scrollTo(0, 0); return; }
   if (a === 'speler'){ st.pag = 'evs'; st.keuze = { speler:id }; teken(); return; }
   if (a === 'wedstrijd'){ st.keuze = { wedstrijd:id }; teken(); return; }
-  if (a === 'eigen'){ const m = await import('./teams.js?v=20261010c'); m.openTeam(st.teamId, { sel:'spelers', evs:'spelers', evw:'evaluatie', stat:'stats' }[st.pag] || 'hub'); return; }
+  if (a === 'eigen'){ const m = await import('./teams.js?v=20261011d'); m.openTeam(st.teamId, { sel:'spelers', evs:'spelers', evw:'evaluatie', stat:'stats' }[st.pag] || 'hub'); return; }
   if (a === 'nieuwleen'){ zetBouwContext(cache); modalNieuweUitleningVanuitBouw(() => teken()); return; }
+  if (a === 'weekbrief'){ import('./club-weekbrief.js?v=20261011d').then(m => m.openWeekbrief(cache.teams || [], huidigeBouw().naam)); return; }
   if (a === 'terug-leen'){ const u = cache.uitleningen.find(x => x.id === id); if (!u) return;
     try { if (await trekUitleningIn(u, st.clubId)){ cache.uitleningen = cache.uitleningen.filter(x => x.id !== id); teken(); } }
     catch(err){ meld('Terugzetten mislukt: ' + (err.code || err.message)); }

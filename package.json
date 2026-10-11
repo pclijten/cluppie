@@ -8,11 +8,16 @@
     "emulate": "firebase emulators:start",
     "deploy:hosting": "firebase deploy --only hosting",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes",
-    "deploy:functions": "echo 'Gebruik: firebase deploy --only functions:<naam>,…' && exit 1"
+    "deploy:functions": "echo 'Gebruik: firebase deploy --only functions:<naam>,…' && exit 1",
+    "test:rules": "firebase emulators:exec --only firestore --project cluppie-rules-test \"node --test tests/rules.test.mjs\"",
+    "test": "node --no-warnings tests/sleutel.test.mjs && node --no-warnings tests/gebruik.test.mjs && node --no-warnings tests/startlijst.test.mjs && node --no-warnings tests/aanmelding.test.mjs && node --no-warnings --import ./tests/hulp/stub-loader.mjs tests/seizoen.test.mjs && node --no-warnings --import ./tests/hulp/stub-loader.mjs tests/kleur.test.mjs && node --no-warnings --import ./tests/hulp/stub-loader.mjs tests/weekbrief.test.mjs && node --no-warnings --import ./tests/hulp/stub-loader.mjs tests/sportlink-import.test.mjs"
   },
   "author": "Paul Lijten",
   "license": "MIT",
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.4",
+    "acorn": "^8.19.0",
+    "firebase": "^10.14.1",
     "firebase-tools": "^13.0.0"
   }
 }

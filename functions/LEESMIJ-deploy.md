@@ -30,7 +30,11 @@ cd functions && npm install
 ```
 Runtime: Node 22. Deploy per functie, niet in één keer.
 
-## Nog niet aanwezig
-`aggregeerGebruik` (vult `gebruikstats/{clubId}`; de regels laten alleen de function schrijven).
+| `aggregeerGebruik` | club-admin / coördinator | callable achter de knop Synchroniseer; vult `gebruikstats/{clubId}` (`gebruik.js`) |
+| `aggregeerGebruikNacht` | schema | 04:15 NL, alle clubs; daarna platformoverzicht en clubvergelijking |
+| `platformOverzichtNu` | platformbeheerder | vult `platformstats/overzicht`, `benchmark/*` (`platform.js`) |
+| `meldClubAan` | ingelogd | clubaanmelding → `clubAanmeldingen/{uid}` + mail aan platform (`aanmelding.js`) |
+| `beoordeelClubAanmelding` | platformbeheerder | maakt de club aan (aanvrager = clubbeheerder) of wijst af |
+| `meldNieuweAanvraag` | trigger `aanvragen/{id}` | mail aan clubbeheerders, max. 1 per club per dag (Trigger Email-extensie, collectie `mail`) |
 
 | `analyseerBeleidsplan` | club-admin | zelfde AI-regels; analyseert een beleidsplan-stuk tot content-voorstellen |

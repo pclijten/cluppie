@@ -34,9 +34,13 @@ export function eigenClubPatronen(clubNaam, afkorting){
 export function teamSleutel(naam, clubNaam, afkorting){
   let s = String(naam || '').toLowerCase();
   for (const re of eigenClubPatronen(clubNaam, afkorting)) s = s.replace(re, '$1 ');
-  const m = s.match(/\b(m)?j?o\s*(\d{1,2})\s*[-\s]\s*(\d+)\s*(?:jm|j|m)?\b/i);
+  s = s.trim();
+  /* [20261011c] Zelfde verankering als naamSleutel() op de server: na het teamnummer mag
+     alleen nog een JM/J/M-achtervoegsel of iets tussen haakjes staan. Een toevoeging als
+     "Futsal" geeft dus een eigen sleutel (o131futsal) en botst niet meer met het veldteam. */
+  const m = s.match(/^(m)?j?o\s*(\d{1,2})\s*[-\s]\s*(\d+)\s*(?:jm|j|m)?(?:\s*\(.*\))?$/i);
   if (m) return (m[1] ? 'm' : '') + 'o' + m[2] + '-' + m[3];
-  const sr = s.trim().match(/^(\d{1,2})\s*(?:\(?\s*(?:zon|zat)[a-z]*\s*\)?)?$/);
+  const sr = s.match(/^(\d{1,2})\s*(?:\(?\s*(?:zon|zat)[a-z]*\s*\)?)?$/);
   if (sr) return 'sen' + sr[1];
   return s.replace(/[^a-z0-9+]+/g, '');
 }

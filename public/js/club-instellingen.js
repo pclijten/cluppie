@@ -18,14 +18,58 @@ import {
   effectief, isLegacy, mergeLijst, LIJST_DEFS, ORIGINEEL, NEUTRAAL, CLUPPIE_LOGO, ICOONNAMEN,
   valideerKalender, herlaadKalender, pasClubConfigToe, clubAfk, DISTRICTEN
 } from './clubconfig.js?v=20261010c';
-import { MODULE_DEFS } from './club-beheer.js?v=20261010c';
+import { MODULE_DEFS } from './club-beheer.js?v=20261011d';
 
 /* ---------- Tabs ---------- */
 export const INSTEL_TABS = [
   ['algemeen', 'Algemeen'], ['identiteit', 'Identiteit'], ['competitie', 'Competitie'], ['sportlink', 'Sportlink'],
   ['pedagogiek', 'Pedagogiek'], ['lijsten', 'Lijsten'], ['regels', 'Regels'], ['ai', 'AI & modules'], ['toegang', 'Toegang & privacy'], ['beheer', 'Beheerders'],
 ];
+/* [20261011d] Wat elke club moet zetten staat vooraan; de rest achter "Geavanceerd". */
+export const INSTEL_BASIS = new Set(['algemeen', 'identiteit', 'sportlink', 'toegang', 'beheer']);
 export const NIEUWE_TABS = new Set(['identiteit', 'competitie', 'pedagogiek', 'lijsten', 'regels', 'ai', 'toegang']);
+
+/* ---------- [20261011d] Kleurcontrast (WCAG) ----------
+   De clubkleur wordt gebruikt als knopkleur (witte tekst) en als accent op een donkere én een lichte
+   achtergrond. kleurAdvies() geeft de contrastwaarden en, bij te weinig contrast, een bijgestelde
+   variant van dezelfde tint die wel leesbaar is. PURE, getest in tests/kleur.test.mjs. */
+const hexRgb = h => { const n = parseInt(String(h).replace('#', ''), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+const rgbHex = ([r, g, b]) => '#' + [r, g, b].map(x => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, '0')).join('');
+function luminantie(h){ return hexRgb(h).map(c => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }).reduce((s, c, i) => s + c * [0.2126, 0.7152, 0.0722][i], 0); }
+export function contrast(a, b){ const [x, y] = [luminantie(a), luminantie(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); }
+const DONKER_BG = '#181d24', LICHT_BG = '#ffffff';
+export function kleurAdvies(hex){
+  if (!/^#[0-9a-f]{6}$/i.test(hex || '')) return { ok: false, advies: '#e2342f' };
+  const c = { wit: contrast(hex, '#ffffff'), donker: contrast(hex, DONKER_BG), licht: contrast(hex, LICHT_BG) };
+  /* knoptekst (wit, vet) ≥ 3 (WCAG voor grote/vette tekst) en zichtbaar op donker ≥ 2.5;
+     het advies mikt op 4.5 zodat de bijgestelde kleur ruim leesbaar is */
+  const ok = c.wit >= 3 && c.donker >= 2.5;
+  if (ok) return { ok, c, advies: hex };
+  let rgb = hexRgb(hex), beste = hex;
+  for (let i = 1; i <= 40; i++){
+    const f = 1 - i * 0.02, kand = rgbHex(rgb.map(x => x * f));       // donkerder tot witte tekst leesbaar is
+    if (contrast(kand, '#ffffff') >= 4.5){ beste = kand; break; }
+  }
+  if (contrast(beste, DONKER_BG) < 2.5){                               // te donker voor het donkere thema: iets lichter, met witte tekst ≥ 4.5
+    for (let i = 1; i <= 40; i++){
+      const kand = rgbHex(hexRgb(beste).map(x => x + (255 - x) * i * 0.01));
+      if (contrast(kand, '#ffffff') < 4.5) break;
+      beste = kand; if (contrast(kand, DONKER_BG) >= 2.5) break;
+    }
+  }
+  return { ok, c, advies: beste };
+}
+function kleurVoorbeeld(hex){
+  const a = kleurAdvies(hex);
+  const blok = (bg, ink) => `<div class="kv-vlak" style="background:${bg};color:${ink}">
+      <span class="kv-knop" style="background:${hex}">Opslaan</span>
+      <span class="kv-tab" style="color:${hex};border-color:${hex}">Wedstrijden</span>
+      <span class="kv-badge" style="background:${hex}">77</span></div>`;
+  return `<div class="kv">${blok(DONKER_BG, '#f5f6f8')}${blok(LICHT_BG, '#1d1e1e')}</div>
+    ${a.ok ? `<p class="cb-uitleg" style="color:var(--ok);margin:6px 0 0">Goed leesbaar in het donkere en lichte thema.</p>`
+      : `<p class="cb-uitleg" style="color:var(--warn);margin:6px 0 0">Deze kleur is slecht leesbaar${a.c && a.c.wit < 3 ? ' als knop met witte tekst' : ' op de donkere achtergrond'}.
+          <button class="cb-link" type="button" data-kleur-advies="${a.advies}">Gebruik <span class="kv-stip" style="background:${a.advies}"></span> ${a.advies}</button></p>`}`;
+}
 
 /* ---------- Kleine helpers ---------- */
 const klon = x => (x === undefined ? undefined : JSON.parse(JSON.stringify(x)));
@@ -466,7 +510,7 @@ export function koppelInstelNieuw(v, herteken){
   else if (sub === 'pedagogiek') koppelPedagogiek(v, herteken);
   else if (sub === 'regels') koppelRegels(v, herteken);
   else if (sub === 'ai') koppelAI(v, herteken);
-  else if (sub === 'toegang') import('./toegang.js?v=20261010c').then(m => m.koppelToegang(v, herteken));
+  else if (sub === 'toegang') import('./toegang.js?v=20261011d').then(m => m.koppelToegang(v, herteken));
 }
 
 /* ---------- Identiteit ---------- */
@@ -493,6 +537,7 @@ function tabIdentiteit(eff){
         <input type="color" id="idKleur" value="${/^#[0-9a-fA-F]{6}$/.test(id.kleur) ? id.kleur : '#e2342f'}" style="width:56px;height:44px;border:none;background:none;padding:0">
         <button class="knop vol klein" id="idKleurOpslaan">Opslaan</button>
         <button class="knop licht klein" id="idKleurReset">Standaard</button></div>
+      <div id="idKleurVoorbeeld" style="margin-top:10px">${kleurVoorbeeld(/^#[0-9a-fA-F]{6}$/.test(id.kleur) ? id.kleur : '#e2342f')}</div>
       <p class="cb-uitleg">De hoofdkleur van de knoppen en accenten voor alle coaches van deze club.</p>`)}
     ${kaart('Uitnodigingscode', '', `
       <p class="cb-uitleg" style="margin:0 0 8px">De code in de uitnodigingslink voor mede-beheerders: <b>${esc(club.code || '—')}</b>. Lekt een link uit, ververs dan de code; oude links werken daarna niet meer.</p>
@@ -516,7 +561,15 @@ function koppelIdentiteit(v, herteken){
     catch (e){ meld(e.message || 'Logo opslaan mislukt'); }
   });
   v.querySelector('#idLogoWeg')?.addEventListener('click', e => vangFout(e.currentTarget, async () => { await bewaar([['identiteit.logo', '']]); meld('Logo verwijderd'); herteken(); }));
-  v.querySelector('#idKleurOpslaan')?.addEventListener('click', e => vangFout(e.currentTarget, async () => { await bewaar([['identiteit.kleur', v.querySelector('#idKleur').value]]); meld('Kleur opgeslagen'); herteken(); }));
+  const kleurIn = v.querySelector('#idKleur'), kleurVb = v.querySelector('#idKleurVoorbeeld');
+  const koppelAdvies = () => kleurVb?.querySelector('[data-kleur-advies]')?.addEventListener('click', b => { kleurIn.value = b.currentTarget.dataset.kleurAdvies; kleurVb.innerHTML = kleurVoorbeeld(kleurIn.value); koppelAdvies(); });
+  kleurIn?.addEventListener('input', () => { if (kleurVb){ kleurVb.innerHTML = kleurVoorbeeld(kleurIn.value); koppelAdvies(); } });
+  koppelAdvies();
+  v.querySelector('#idKleurOpslaan')?.addEventListener('click', e => vangFout(e.currentTarget, async () => {
+    const k = kleurIn.value, a = kleurAdvies(k);
+    if (!a.ok && !confirm(`Deze kleur is slecht leesbaar. Toch opslaan? (Advies: ${a.advies})`)) return;
+    await bewaar([['identiteit.kleur', k]]); meld('Kleur opgeslagen'); herteken();
+  }));
   v.querySelector('#idKleurReset')?.addEventListener('click', e => vangFout(e.currentTarget, async () => { await bewaar([['identiteit.kleur', '#e2342f']]); meld('Standaardkleur'); herteken(); }));
   v.querySelector('#idCodeVers')?.addEventListener('click', e => {
     if (!confirm('Nieuwe code maken? Bestaande uitnodigingslinks voor beheerders werken daarna niet meer.')) return;
@@ -631,9 +684,64 @@ function tabPedagogiek(eff){
     ${kaart('Teksten van Cluppie', '', `
       <label class="ci-schakel"><input type="checkbox" id="pdStandaard" ${p.contentStandaard !== false ? 'checked' : ''}><span>Standaardteksten van Cluppie gebruiken<br><small>Leerthema-uitleg, wekelijkse tips en gouden regels. Uit = alleen jullie eigen teksten (onder Content) worden getoond. Eigen teksten gaan altijd voor.</small></span></label>
       <button class="knop vol klein" id="pdStandaardOpslaan" style="margin-top:10px">Opslaan</button>`)}
-    <div class="cb-uitleg" style="margin:0 2px 12px">Domeinen, leercurve-thema’s, tags en redenen pas je aan onder <b>Lijsten</b>. De teksten bij de leerthema’s en tips staan onder <b>Content</b>.</div>`;
+    <div class="cb-uitleg" style="margin:0 2px 12px">Domeinen, leercurve-thema’s, tags en redenen pas je aan onder <b>Lijsten</b>. De teksten bij de leerthema’s en tips staan onder <b>Content</b>.</div>
+    ${kaart('Sjablonen', '', `<div id="sjabloonRoot"><p class="cb-uitleg">Laden…</p></div>`)}`;
+}
+
+/* ---------- [20261011d] Sjablonen ----------
+   Een club kan zijn opzet (pedagogiek, lijsten, regels, modules, namen) publiceren als sjabloon in
+   sjablonen/{clubId}. Andere clubs zien alleen gepubliceerde sjablonen: er wordt nooit meer zonder
+   toestemming uit een andere club gekopieerd. Teksten (Content), teams, spelers, logo, kleur,
+   toegang en privacy gaan nooit mee. */
+export function sjabloonUit(club){
+  const eff = effectief(club);
+  return { v: 1, pedagogiek: klon(eff.pedagogiek || {}), lijsten: klon(eff.lijsten || {}), regels: klon(eff.regels || {}),
+    modules: klon(eff.modules || {}), identiteit: { kompasNaam: eff.identiteit.kompasNaam, beleidsplanNaam: eff.identiteit.beleidsplanNaam } };
+}
+export async function leesSjablonen(){
+  try { return (await getDocs(collection(db, 'sjablonen'))).docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => String(a.titel || a.naam).localeCompare(String(b.titel || b.naam))); }
+  catch (e){ console.warn('[sjablonen] lezen mislukt', e.code || e.message); return []; }
+}
+async function tekenSjablonen(root, herteken){
+  const lijst = await leesSjablonen();
+  const eigen = lijst.find(s => s.id === S.clubId);
+  const anderen = lijst.filter(s => s.id !== S.clubId);
+  root.innerHTML = `
+    <p class="cb-uitleg" style="margin:0 0 8px"><b>Delen.</b> ${eigen ? `Jullie opzet staat als sjabloon <b>${esc(eigen.titel || S.club.naam)}</b> klaar voor andere clubs.` : 'Werkt jullie opzet goed? Deel hem als sjabloon met andere clubs op Cluppie. Alleen instellingen, nooit teams, spelers, teksten of logo.'}</p>
+    <div class="veldgroep"><input class="invoer" id="sjTitel" maxlength="60" placeholder="Naam van het sjabloon" value="${esc(eigen?.titel || S.club.naam + ' – opzet')}"></div>
+    <div class="veldgroep"><textarea class="invoer" id="sjOmschr" rows="2" maxlength="300" placeholder="Korte omschrijving, bv. 4Skills met 5 domeinen">${esc(eigen?.omschrijving || '')}</textarea></div>
+    <div class="rij"><button class="knop vol klein" id="sjPubliceer">${eigen ? 'Sjabloon bijwerken' : 'Publiceren als sjabloon'}</button>${eigen ? '<button class="knop licht klein" id="sjIntrek">Intrekken</button>' : ''}</div>
+    <p class="cb-uitleg" style="margin:14px 0 8px"><b>Overnemen.</b> Begin met de opzet van een andere club of met de Cluppie-standaard. Dit vervangt jullie pedagogiek, lijsten, regels en modules; logo, kleur, toegang, privacy en jullie eigen teksten blijven.</p>
+    <button class="sj-optie" data-sj-pas="__standaard"><b>Cluppie-standaard</b><small>Standaard domeinen, tags, leercurve en KNVB-regels</small></button>
+    ${anderen.map(s => `<button class="sj-optie" data-sj-pas="${esc(s.id)}"><b>${esc(s.titel || s.naam)}</b><small>${esc(s.omschrijving || ('van ' + (s.naam || 'een club')))}</small></button>`).join('')}`;
+  root.querySelector('#sjPubliceer').onclick = e => vangFout(e.currentTarget, async () => {
+    const titel = root.querySelector('#sjTitel').value.trim();
+    if (!titel) return meld('Geef het sjabloon een naam');
+    await setDoc(doc(db, 'sjablonen', S.clubId), { clubId: S.clubId, naam: S.club.naam || '', titel, omschrijving: root.querySelector('#sjOmschr').value.trim(),
+      instellingen: sjabloonUit(S.club), door: S.user.uid, bijgewerkt: serverTimestamp() });
+    meld('Sjabloon gepubliceerd'); tekenSjablonen(root, herteken);
+  });
+  root.querySelector('#sjIntrek')?.addEventListener('click', e => {
+    if (!confirm('Sjabloon intrekken? Clubs die hem al gebruikten houden hun kopie.')) return;
+    vangFout(e.currentTarget, async () => { await deleteDoc(doc(db, 'sjablonen', S.clubId)); meld('Sjabloon ingetrokken'); tekenSjablonen(root, herteken); });
+  });
+  root.querySelectorAll('[data-sj-pas]').forEach(b => b.onclick = () => {
+    const id = b.dataset.sjPas, s = anderen.find(x => x.id === id);
+    const titel = id === '__standaard' ? 'de Cluppie-standaard' : (s?.titel || 'dit sjabloon');
+    if (!confirm(`Pedagogiek, lijsten, regels en modules vervangen door ${titel}? Logo, kleur, toegang, privacy en eigen teksten blijven.`)) return;
+    vangFout(b, async () => {
+      const bron = id === '__standaard' ? sjabloonUit({ instellingen: { v: 1 } }) : s.instellingen;
+      await bewaar([['pedagogiek', klon(bron.pedagogiek || {})], ['lijsten', klon(bron.lijsten || {})], ['regels', klon(bron.regels || {})],
+        ['modules', klon(bron.modules || {})], ['identiteit.kompasNaam', bron.identiteit?.kompasNaam || NEUTRAAL.identiteit.kompasNaam],
+        ['identiteit.beleidsplanNaam', bron.identiteit?.beleidsplanNaam || NEUTRAAL.identiteit.beleidsplanNaam],
+        ['sjabloonBron', id === '__standaard' ? 'standaard' : id]]);
+      meld('Overgenomen'); herteken();
+    });
+  });
 }
 function koppelPedagogiek(v, herteken){
+  const sjRoot = v.querySelector('#sjabloonRoot');
+  if (sjRoot) tekenSjablonen(sjRoot, herteken);
   v.querySelector('#pdFormatieOpslaan')?.addEventListener('click', e => vangFout(e.currentTarget, async () => {
     const w = v.querySelector('#pdFormatie').value.trim();
     if (w && !parseFormatie(w, '11')) return meld(`Geen geldige formatie voor 11v11 (de getallen moeten samen ${aantalVeldspelers('11')} zijn, bv. 4-3-3)`);
@@ -751,14 +859,13 @@ export function koppelAlgemeenMelding(v, herteken){
 /* ==================== WIZARD: NIEUWE CLUB ==================== */
 export function modalNieuweClub(naCreatie){
   const bronnen = (S.clubs || []).slice();
-  /* de platformbeheerder kan elke club als startpunt gebruiken, niet alleen de clubs die hij zelf beheert */
-  if (isPlatformBeheerder()){
-    getDocs(collection(db, 'clubs')).then(ss => {
-      for (const d of ss.docs) if (!bronnen.some(c => c.id === d.id)) bronnen.push({ id: d.id, ...d.data() });
-      bronnen.sort((a, b) => (a.naam || '').localeCompare(b.naam || ''));
-      if (W.stap === 4) teken();
-    }).catch(() => {});
-  }
+  /* [20261011d] Naast eigen clubs alleen GEPUBLICEERDE sjablonen (toestemming van die club), ook voor de
+     platformbeheerder. Een sjabloon gedraagt zich hier als een club met alleen die instellingen. */
+  leesSjablonen().then(lijst => {
+    for (const s of lijst) if (!bronnen.some(c => c.id === s.id)) bronnen.push({ id: s.id, naam: s.titel || s.naam, instellingen: s.instellingen, _sjabloon: true });
+    bronnen.sort((a, b) => (a.naam || '').localeCompare(b.naam || ''));
+    if (W.stap === 4) teken();
+  }).catch(() => {});
   const W = {
     stap: 1, naam: '', plaats: '', lat: null, lon: null, district: 'zuid1', afk: '', afkHandmatig: false,
     logo: '', kleur: '#e2342f', clientId: '', seizoen: seizoenVoorDatum(), ai: false, kopie: '', pvNaam: '', pvMail: '', vo: false,
@@ -788,8 +895,12 @@ export function modalNieuweClub(naCreatie){
         <div class="veldgroep"><label>Logo (optioneel)</label>
           <div style="display:flex;align-items:center;gap:14px"><img id="wzLogoV" src="${esc(W.logo || CLUPPIE_LOGO)}" alt="" style="width:64px;height:64px;object-fit:contain;border-radius:12px;background:rgba(255,255,255,.06);padding:5px">
             <input type="file" id="wzLogoF" accept="image/*" style="display:none"><button class="knop licht klein" id="wzLogoK">Kiezen…</button>${W.logo ? '<button class="knop licht klein" id="wzLogoW">Weg</button>' : ''}</div></div>
-        <div class="veldgroep"><label>Hoofdkleur</label><input type="color" id="wzKleur" value="${W.kleur}" style="width:56px;height:44px;border:none;background:none;padding:0"></div>
+        <div class="veldgroep"><label>Hoofdkleur</label><input type="color" id="wzKleur" value="${W.kleur}" style="width:56px;height:44px;border:none;background:none;padding:0">
+          <div id="wzKleurVb" style="margin-top:8px">${kleurVoorbeeld(W.kleur)}</div></div>
         ${knoppen(false)}`;
+      const wzK = b.querySelector('#wzKleur'), wzVb = b.querySelector('#wzKleurVb');
+      const wzAdvies = () => wzVb.querySelector('[data-kleur-advies]')?.addEventListener('click', e => { wzK.value = e.currentTarget.dataset.kleurAdvies; wzVb.innerHTML = kleurVoorbeeld(wzK.value); wzAdvies(); });
+      wzK.oninput = () => { wzVb.innerHTML = kleurVoorbeeld(wzK.value); wzAdvies(); }; wzAdvies();
       b.querySelector('#wzLogoK').onclick = () => b.querySelector('#wzLogoF').click();
       b.querySelector('#wzLogoW')?.addEventListener('click', () => { W.logo = ''; teken(); });
       b.querySelector('#wzLogoF').onchange = async ev => {
@@ -811,8 +922,8 @@ export function modalNieuweClub(naCreatie){
         ${knoppen(false)}`;
     } else {
       const opties = [`<label class="ci-schakel"><input type="radio" name="wzKopie" value="" ${W.kopie === '' ? 'checked' : ''}><span><b>Cluppie-standaard</b><br><small>Standaard domeinen, tags, leercurve en KNVB-regels. Je past alles daarna aan.</small></span></label>`]
-        .concat(bronnen.map(c => `<label class="ci-schakel"><input type="radio" name="wzKopie" value="${esc(c.id)}" ${W.kopie === c.id ? 'checked' : ''}><span><b>Kopie van ${esc(c.naam)}</b><br><small>Neemt lijsten, regels, formatie en namen over. Teams, spelers en koppelingen niet.</small></span></label>`));
-      b.innerHTML = kop() + `<p class="cb-uitleg" style="margin-bottom:10px">Waarmee begint ${esc(W.naam)}?</p>${opties.join('')}${bronnen.length ? '' : '<p class="cb-uitleg">Zodra er andere clubs zijn waarvan je beheerder bent, kun je hier ook de instellingen van een bestaande club overnemen.</p>'}${knoppen(true)}`;
+        .concat(bronnen.map(c => `<label class="ci-schakel"><input type="radio" name="wzKopie" value="${esc(c.id)}" ${W.kopie === c.id ? 'checked' : ''}><span><b>${c._sjabloon ? 'Sjabloon: ' : 'Kopie van '}${esc(c.naam)}</b><br><small>Neemt lijsten, regels, formatie en namen over. Teams, spelers en koppelingen niet.</small></span></label>`));
+      b.innerHTML = kop() + `<p class="cb-uitleg" style="margin-bottom:10px">Waarmee begint ${esc(W.naam)}?</p>${opties.join('')}${bronnen.length ? '' : '<p class="cb-uitleg">Zodra clubs hun opzet als sjabloon delen (Instellingen → Pedagogiek), kun je die hier overnemen.</p>'}${knoppen(true)}`;
     }
     b.querySelector('#wzTerug')?.addEventListener('click', () => { lees(b); W.stap--; teken(); });
     b.querySelector('#wzVerder')?.addEventListener('click', () => volgende(b));
