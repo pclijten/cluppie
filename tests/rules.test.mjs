@@ -137,6 +137,9 @@ test('platformstats en clubaanmeldingen: alleen platformbeheerder', async () => 
   await assertFails(getDoc(doc(als('adminA'), 'platformstats/overzicht')));
   await assertSucceeds(getDoc(doc(als('paul', PLATFORM), 'platformstats/overzicht')));
   await assertFails(getDocs(collection(als('adminA'), 'clubAanmeldingen')));
+  await assertSucceeds(getDoc(doc(als('nieuweling'), 'clubAanmeldingen/nieuweling')));
+  await assertFails(getDoc(doc(als('nieuweling'), 'clubAanmeldingen/iemandAnders')));
+  await assertFails(setDoc(doc(als('nieuweling'), 'clubAanmeldingen/nieuweling'), { status: 'goedgekeurd' }));
   await assertSucceeds(getDocs(collection(als('paul', PLATFORM), 'clubAanmeldingen')));
 });
 test('club-inhoud: training van andere club niet zichtbaar', async () => {

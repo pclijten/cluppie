@@ -139,6 +139,10 @@ const gebruik = require('./gebruik');
 exports.aggregeerGebruik = gebruik.maakCallable(vereisLid);
 exports.aggregeerGebruikNacht = gebruik.aggregeerGebruikNacht;
 exports.platformOverzichtNu = require('./platform').platformOverzichtNu;
+const aanmelding = require('./aanmelding');
+exports.meldClubAan = aanmelding.meldClubAan;
+exports.beoordeelClubAanmelding = aanmelding.beoordeelClubAanmelding;
+exports.meldNieuweAanvraag = aanmelding.meldNieuweAanvraag;
 
 /* ==================== 2. AI-FUNCTIES ==================== */
 

@@ -275,8 +275,12 @@ service cloud.firestore {
     }
     /* aanmeldingen van nieuwe clubs (publieke aanmeldpagina → Cloud Function meldClubAan) */
     match /clubAanmeldingen/{id} {
-      allow read: if isPlatform();
+      allow read: if isPlatform() || (echt() && id == uid());
       allow write: if false;
+    }
+    /* uitgaande e-mail (Firebase-extensie Trigger Email); alleen Cloud Functions schrijven */
+    match /mail/{id} {
+      allow read, write: if false;
     }
     /* platformcijfers per club (platformdashboard): alleen de platformbeheerder */
     match /platformstats/{id} {
