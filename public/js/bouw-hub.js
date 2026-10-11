@@ -20,18 +20,19 @@
    Alle data (spelers, wedstrijden, presentie, poulestand, beoordelingen)
    wordt ÉÉN keer per team opgehaald bij het openen en daarna door alle
    schermen hergebruikt (huidigeContext.data) — geen dubbele reads. */
-import { pasClubConfigToe } from './clubconfig.js?v=20261011e';
-import { S, esc, meld, openModal, sluitModal, isBeheerder } from './state.js?v=20261011e';
+import { teamsOpId } from './teams-ophalen.js?v=20261011f';
+import { pasClubConfigToe } from './clubconfig.js?v=20261011f';
+import { S, esc, meld, openModal, sluitModal, isBeheerder } from './state.js?v=20261011f';
 import {
   db, collection, doc, getDoc, getDocs, addDoc, query, where, documentId, serverTimestamp
 } from './firebase.js?v=20261011e';
-import { BOUWEN, bouwNaam, SKILLS, SEIZOEN_FALLBACK, TEAM_CATEGORIEEN, niveauKleur } from './config.js?v=20261011e';
+import { BOUWEN, bouwNaam, SKILLS, SEIZOEN_FALLBACK, TEAM_CATEGORIEEN, niveauKleur, catLabel } from './config.js?v=20261011f';
 import { ico } from './icons.js?v=20260922c';
-import { bouwLeenSnapshot, trekUitleningIn, definitiefOverzetten } from './teams-spelers.js?v=20261011e';
-import { telGebruik } from './tracker.js?v=20261011e';
-import { analyseWedstrijd } from './analyse.js?v=20261011e';
+import { bouwLeenSnapshot, trekUitleningIn, definitiefOverzetten } from './teams-spelers.js?v=20261011f';
+import { telGebruik } from './tracker.js?v=20261011f';
+import { analyseWedstrijd } from './analyse.js?v=20261011f';
 import { opkomstVoor, MIN_OPKOMST_TRAININGEN } from './opkomst.js?v=20260922c';
-import { rondesVan, rondeStatusTeam } from './evaluatierondes.js?v=20261011e';
+import { rondesVan, rondeStatusTeam } from './evaluatierondes.js?v=20261011f';
 
 /* [20260929a] Voortgang van de "verplichte" evaluatie per team: de lopende
    evaluatieronde van de club als die er is, anders (zoals voorheen) de
@@ -203,7 +204,7 @@ export async function openBouwHub(clubId, bouw, isHerbezoek){
      lijn met de desktop. Lukt het laden daarvan niet, dan valt hij terug op
      het oude overlay-dashboard hieronder. */
   if (!isHerbezoek && !window.matchMedia('(min-width:1100px) and (min-height:520px)').matches){
-    try { const m = await import('./mobiel-bouw.js?v=20261011e'); await m.openMobielBouw(clubId, bouw); return; }
+    try { const m = await import('./mobiel-bouw.js?v=20261011f'); await m.openMobielBouw(clubId, bouw); return; }
     catch(e){ console.warn('[Cluppie] mobiele bouw-omgeving niet geladen, terug naar het oude dashboard', e); }
   }
   const el = bouwLaag();
@@ -842,14 +843,14 @@ function renderTeamsScherm(){
         <div class="team-shirt">${esc(t.format||'?')}<small>v${esc(t.format||'?')}</small></div>
         <div class="li-tekst">
           <div class="titel">${esc(t.naam)}</div>
-          <div class="meta">${esc(t.categorie||'—')} · ${Object.keys(t.leden||{}).length} coach(es)</div>
+          <div class="meta">${esc(catLabel(t.categorie)||'—')} · ${Object.keys(t.leden||{}).length} coach(es)</div>
         </div>
         <span class="pijl">›</span>
       </button>`).join('')}`;
   inhoud.querySelectorAll('[data-bh-open-team]').forEach(b => {
     b.onclick = async () => {
       sluitBouwHub(); toonTerugPil();
-      const m = await import('./teams.js?v=20261011e');
+      const m = await import('./teams.js?v=20261011f');
       m.openTeam(b.dataset.bhOpenTeam);
     };
   });
@@ -969,13 +970,7 @@ function renderUitleningenScherm(){
 
   const render = async () => {
     const onbekend = [...new Set(uitleningen.flatMap(u => [u.vanTeam, u.naarTeam]))].filter(id => id && !(id in bouwPerTeam));
-    for (let i=0; i<onbekend.length; i+=30){
-      const chunk = onbekend.slice(i, i+30);
-      try {
-        const tsnap = await getDocs(query(collection(db,'teams'), where(documentId(),'in',chunk)));
-        tsnap.docs.forEach(d => { bouwPerTeam[d.id] = d.data().bouw || null; });
-      } catch(e){}
-    }
+    try { (await teamsOpId(onbekend)).forEach(t => { bouwPerTeam[t.id] = t.bouw || null; }); } catch(e){}
     const eigenTeamIds = new Set((S.teams||[]).map(t => t.id));
     const coordBouwen = new Set((S.coordinatorBouwen||[]).map(b => b.bouw));
     const magTeam = (teamId) => isBeheerder() || eigenTeamIds.has(teamId) || coordBouwen.has(bouwPerTeam[teamId]);
@@ -1070,13 +1065,7 @@ export async function modalNieuweUitleningVanuitBouw(verversScherm){
     try {
       const csnap = await getDoc(doc(db,'clubs',clubId));
       const ids = (csnap.exists() ? Object.keys(csnap.data().teams || {}) : []).filter(id => id !== $('bhUlVanTeam').value);
-      let doelTeams = [];
-      for (let i=0;i<ids.length;i+=30){
-        const chunk = ids.slice(i,i+30);
-        if (!chunk.length) break;
-        const tsnap = await getDocs(query(collection(db,'teams'), where(documentId(),'in',chunk)));
-        tsnap.docs.forEach(d => doelTeams.push({id:d.id, naam:d.data().naam||'?', bouw:d.data().bouw||null}));
-      }
+      const doelTeams = (await teamsOpId(ids)).map(t => ({id:t.id, naam:t.naam||'?', bouw:t.bouw||null}));
       doelTeams.sort((a,b) => a.naam.localeCompare(b.naam));
       const eigenBouw = huidigeContext.bouw;
       naarSel.innerHTML = doelTeams.length

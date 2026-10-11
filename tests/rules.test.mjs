@@ -4,7 +4,7 @@
 import { test, before, after, beforeEach } from 'node:test';
 import fs from 'node:fs';
 import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, updateDoc, getDocs, collection, query, where, Timestamp, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, getDocs, collection, query, where, Timestamp, deleteDoc, documentId } from 'firebase/firestore';
 
 let env;
 const PLATFORM = { email: 'pclijten@gmail.com', email_verified: true };
@@ -78,6 +78,11 @@ test('team zoeken op teamcode lukt niet voor buitenstaanders (aansluiten loopt v
 test('teams van eigen club lezen via club-filter; andere club niet', async () => {
   await assertSucceeds(getDocs(query(collection(als('coachA'), 'teams'), where('club', '==', 'A'))));
   await assertFails(getDocs(query(collection(als('coachA'), 'teams'), where('club', '==', 'B'))));
+});
+test('club.teams met een verwijderd team: in-query op id lukt nog (geen zwart clubscherm)', async () => {
+  await assertSucceeds(getDocs(query(collection(als('adminA'), 'teams'), where(documentId(), 'in', ['t1', 't2', 'weg']))));
+  await assertSucceeds(getDoc(doc(als('adminA'), 'teams/weg')));
+  await assertFails(getDocs(query(collection(als('adminA'), 'teams'), where(documentId(), 'in', ['t1', 'tB']))));
 });
 test('beoordelingen: teamlid en coördinator van de bouw wel, andere coach van club niet', async () => {
   await assertSucceeds(getDoc(doc(als('coachA'), 'teams/t1/beoordelingen/b1')));

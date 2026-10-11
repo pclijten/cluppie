@@ -13,11 +13,11 @@
    per ongeluk wordt overschreven. Dit bestand importeert niets uit club.js
    (geen kringimport): club.js geeft een api-object mee. */
 import { db, doc, updateDoc } from './firebase.js?v=20261011e';
-import { S, esc, meld, modAan } from './state.js?v=20261011e';
-import { BOUWEN } from './config.js?v=20261011e';
-import { kompasNaam } from './clubconfig.js?v=20261011e';
+import { S, esc, meld, modAan } from './state.js?v=20261011f';
+import { BOUWEN, catLabel } from './config.js?v=20261011f';
+import { kompasNaam } from './clubconfig.js?v=20261011f';
 import { ico } from './icons.js?v=20260922c';
-import { eigenBouwenVanTeam, bouwVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261011e';
+import { eigenBouwenVanTeam, bouwVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261011f';
 
 /* [sleutel, naam, kort, icoon, uitleg] — 'lijstjes' was eerder niet door de beheerder te regelen */
 export const MODULE_DEFS = [
@@ -105,7 +105,7 @@ function teamKaart(t, sync){
   const ook = bouwVanTeam(t) !== ALLEEN_EIGEN ? eigenBouwenVanTeam(t).map(b => b.naam) : [];
   return `<button class="cb-team" data-cb-team="${esc(t.id)}">
     <div class="cb-team-kop"><div class="cb-fmt">${esc(t.format || '?')}v${esc(t.format || '?')}</div>
-      <div class="cb-team-naam">${esc(t.naam)}<small>${esc(t.categorie || '—')}${ook.length ? ' · ook in ' + esc(ook.join(', ')) : ''}</small></div>
+      <div class="cb-team-naam">${esc(t.naam)}<small>${esc(catLabel(t.categorie) || '—')}${ook.length ? ' · ook in ' + esc(ook.join(', ')) : ''}</small></div>
       <span class="cb-pijl">${ico('navigation-forward', 18)}</span></div>
     <div class="cb-coaches${co.length ? '' : ' geen'}">${ico('team-coach', 15)} ${co.length ? esc(co.map(c => c.naam).join(', ')) : 'Nog geen coach — nodig iemand uit'}</div>
     <div class="cb-status">${statusChips(t, sync)}</div>
@@ -204,7 +204,7 @@ export function htmlTeamBeheer(t, sync, teams){
     : st === 'geen' ? '<span class="cb-st">Club nog niet gekoppeld</span>' : '<span class="cb-st">Nog niet gesynct</span>';
   return `
     <div class="cb-kopblok"><div class="cb-fmt">${esc(t.format || '?')}v${esc(t.format || '?')}</div>
-      <div class="cb-team-naam">${esc(t.naam)}<small>${esc(t.categorie || '—')} · teamcode ${esc(t.code || '—')}</small></div>
+      <div class="cb-team-naam">${esc(t.naam)}<small>${esc(catLabel(t.categorie) || '—')} · teamcode ${esc(t.code || '—')}</small></div>
       <button class="knop licht klein" id="cbTeamOpenen">Team openen ›</button></div>
 
     <div class="cb-kaart">

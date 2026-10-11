@@ -123,3 +123,10 @@ Gevonden bij de functions-deploy: Firestore `(default)` staat in `nam5` (VS), de
 - `privacy.html`: locaties kloppend gemaakt (Firebase Auth mogelijk buiten de EU, GitHub Pages als host); verouderde zin over de assistent-rol weg.
 - Versie `20261011e` (firebase.js gewijzigd, dus alle modules opnieuw geversioneerd).
 **Deze PR wordt pas in stap 10 van het draaiboek gemerged**, nadat de bestanden en de database gekopieerd zijn.
+
+## Release 20261011f — O-namen, Sportlink-import automatisch, zwart clubscherm
+- Weergave jongenscategorieën als O17 (`catLabel` in config.js); interne sleutels blijven JO17, dus geen datamigratie. Bestaande teamnamen ("JO11-1") blijven zoals ze zijn tot de coach ze hernoemt.
+- Sportlink-import: gezamenlijk voorvoegsel van alle Sportlink-teamnamen wordt gestript (`voorvoegselUit`), zodat naam/categorie ook kloppen als de clubnaam afwijkt; 35+/45+ automatisch Senioren.
+- Zwart clubscherm (permission-denied in renderClub): een id in `club.teams` van een niet-bestaand team liet de `documentId in`-query falen. Nu `teams-ophalen.js` (`teamsOpId`) met per-team terugval, en de clubbeheerder ruimt spook-ids op.
+- **Rules deployen** (nieuw: niet-bestaand team mag gelezen worden, lekt niets): `firebase deploy --only firestore:rules --project cluppie-ad329`. Zonder deploy werkt het scherm ook, maar wordt het spookteam niet opgeruimd.
+
