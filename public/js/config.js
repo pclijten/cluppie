@@ -1,4 +1,4 @@
-import { S } from './state.js?v=20261011e';
+import { S } from './state.js?v=20261011f';
 
 /* ==================== CLUB-CONFIGURATIE (actieve laag) ====================
    [20260929c] Alles in dit bestand is de STANDAARD. Per club kan een beheerder
@@ -68,6 +68,13 @@ export const CATEGORIEEN_MEIDEN = {
    opzoekbaar (bestaande teams en wedstrijden verwijzen ernaar). */
 export function catInfo(naam){
   return CATEGORIEEN[naam] || CATEGORIEEN_MEIDEN[naam] || (ALLE_LIJSTEN.categorieen && ALLE_LIJSTEN.categorieen[naam]) || null;
+}
+
+/* Weergavenaam: jongenscategorieën heten tegenwoordig O17 (KNVB), meidenteams houden de M (MO20).
+   Intern blijft de sleutel JO17, zodat bestaande teams, rules en instellingen ongewijzigd werken. */
+export function catLabel(c){
+  const s = String(c || '');
+  return /^JO\d/.test(s) ? s.slice(1) : s;
 }
 
 export function isToernooi(w){ return w.type === 'toernooi'; }

@@ -10,17 +10,33 @@
    team zonder zichzelf aanmaken); coaches komen binnen via de teamlink. */
 
 import { db, doc, getDoc, collection, writeBatch, serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011e';
-import { S, esc, meld, openModal, sluitModal, teamCode } from './state.js?v=20261011e';
-import { CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, bouwVanCategorie } from './config.js?v=20261011e';
-import { clubAfk } from './clubconfig.js?v=20261011e';
+import { S, esc, meld, openModal, sluitModal, teamCode } from './state.js?v=20261011f';
+import { CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, bouwVanCategorie, catLabel } from './config.js?v=20261011f';
+import { clubAfk } from './clubconfig.js?v=20261011f';
 import { eigenClubPatronen, teamSleutel } from './sportlink-sleutel.js?v=20261011d';
 
 const BOUW_NAAM = { onder: 'Onderbouw', midden: 'Middenbouw', boven: 'Bovenbouw' };
 
-/* "SV Voorbeeld JO11-1" → { naam:'JO11-1', categorie:'JO11', geslacht:'j', standaardAan:true }
-   Futsal, 35+ en onbekende vormen komen wel in de lijst maar staan standaard uit. */
-export function teamVoorstel(teamnaam, clubNaam = '', afkorting = ''){
-  let s = String(teamnaam || '').toLowerCase();
+/* [20261011f] Het clubvoorvoegsel ("ASV'33 ") halen we uit de teamlijst zelf: het gemeenschappelijke
+   begin van alle Sportlink-namen (zelfde aanpak als clubVoorvoegsel() in functions/index.js). Zo werkt
+   het ook als de clubnaam in Cluppie anders is gespeld dan in Sportlink. */
+export function voorvoegselUit(namen){
+  const n = (namen || []).filter(Boolean);
+  if (n.length < 2) return '';
+  let p = n[0];
+  for (const x of n) while (p && !x.startsWith(p)) p = p.slice(0, -1);
+  const sp = p.lastIndexOf(' ');
+  return sp >= 0 ? p.slice(0, sp + 1) : '';
+}
+
+/* "ASV'33 O11-1JM" → { naam:'O11-1', categorie:'JO11', geslacht:'j', standaardAan:true }
+   Jongensteams heten tegenwoordig O11 (zonder J); meidenteams houden de M (MO15).
+   De categorie blijft intern JO11/MO15 (regels, speeltijden, bouw). Futsal en onbekende vormen
+   staan standaard uit. */
+export function teamVoorstel(teamnaam, clubNaam = '', afkorting = '', voorvoegsel = ''){
+  let s = String(teamnaam || '');
+  if (voorvoegsel && s.toLowerCase().startsWith(voorvoegsel.toLowerCase())) s = s.slice(voorvoegsel.length);
+  s = s.toLowerCase();
   for (const re of eigenClubPatronen(clubNaam, afkorting)) s = s.replace(re, '$1 ');
   s = s.replace(/\s+/g, ' ').trim();
   const futsal = /futsal|zaal/.test(s);
@@ -31,14 +47,16 @@ export function teamVoorstel(teamnaam, clubNaam = '', afkorting = ''){
     const lijst = meiden ? CATEGORIEEN_MEIDEN : CATEGORIEEN;
     const cat = (meiden ? 'MO' : 'JO') + Number(m[2]);
     const bekend = !!lijst[cat];
-    return { naam: `${cat}-${m[3]}${extra}`, categorie: bekend ? cat : null, geslacht: meiden ? 'm' : 'j', standaardAan: bekend && !futsal };
+    return { naam: `${catLabel(cat)}-${m[3]}${extra}`, categorie: bekend ? cat : null, geslacht: meiden ? 'm' : 'j', standaardAan: bekend && !futsal };
   }
-  if ((m = s.match(/^(?:vr|vrouwen)\s*(\d+)$/))) return { naam: `Vrouwen ${m[1]}`, categorie: 'Vrouwen', geslacht: 'm', standaardAan: true };
+  if ((m = s.match(/^(?:vr|vrouwen)\s*(\d+)$/))) return { naam: `Vrouwen ${m[1]}`, categorie: 'Vrouwen', geslacht: 'm', standaardAan: !futsal };
+  if ((m = s.match(/^vr\s*(\d{2})\s*\+\s*(\d+)$/))) return { naam: `Vrouwen ${m[1]}+${m[2]}`, categorie: 'Vrouwen', geslacht: 'm', standaardAan: true };
+  if ((m = s.match(/^(\d{2})\s*\+\s*(\d+)$/))) return { naam: `${m[1]}+${m[2]}`, categorie: 'Senioren', geslacht: 'j', standaardAan: true };
   if ((m = s.match(/^(\d{1,2})(?:\s*\(?\s*(zon|zat)[a-z]*\s*\)?)?$/))){
     const nr = m[1], dag = m[2] ? ` (${m[2] === 'zat' ? 'zaterdag' : 'zondag'})` : '';
-    return { naam: (nr === '1' ? 'Eerste elftal' : `Senioren ${nr}`) + dag, categorie: 'Senioren', geslacht: 'j', standaardAan: true };
+    return { naam: (nr === '1' ? 'Eerste elftal' : `Senioren ${nr}`) + dag, categorie: 'Senioren', geslacht: 'j', standaardAan: !futsal };
   }
-  const netjes = String(teamnaam || '').trim();
+  const netjes = (voorvoegsel && String(teamnaam).startsWith(voorvoegsel) ? String(teamnaam).slice(voorvoegsel.length) : String(teamnaam || '')).trim();
   return { naam: netjes, categorie: null, geslacht: 'j', standaardAan: false };
 }
 
@@ -51,8 +69,8 @@ async function leesTeamlijst(){
   return [...perNaam.values()];
 }
 
-const catOpties = (gekozen) => [...Object.keys(CATEGORIEEN), ...Object.keys(CATEGORIEEN_MEIDEN).filter(c => c !== 'Senioren')]
-  .map(c => `<option value="${c}" ${c === gekozen ? 'selected' : ''}>${c}</option>`).join('');
+const catOpties = (gekozen) => [...Object.keys(CATEGORIEEN), ...Object.keys(CATEGORIEEN_MEIDEN)]
+  .map(c => `<option value="${c}" ${c === gekozen ? 'selected' : ''}>${catLabel(c)}</option>`).join('');
 
 export async function modalTeamsUitSportlink(bestaandeTeams = [], naKlaar){
   if (!S.club?.sportlinkClientId){
@@ -77,8 +95,9 @@ export async function modalTeamsUitSportlink(bestaandeTeams = [], naKlaar){
 
   const clubNaam = S.club.naam || '', afk = clubAfk(S.club);
   const bestaandSleutel = new Set(bestaandeTeams.map(t => teamSleutel(t.sportlinkNaam || t.naam, clubNaam, afk)));
+  const voorvoegsel = voorvoegselUit(lijst.map(t => t.teamnaam));
   const rijen = lijst.map((t, i) => {
-    const v = teamVoorstel(t.teamnaam, clubNaam, afk);
+    const v = teamVoorstel(t.teamnaam, clubNaam, afk, voorvoegsel);
     const bestaat = bestaandSleutel.has(teamSleutel(t.teamnaam, clubNaam, afk));
     return { i, sl: t, ...v, bestaat, aan: v.standaardAan && !bestaat };
   }).sort((a, b) => (a.bestaat - b.bestaat) || a.naam.localeCompare(b.naam, 'nl', { numeric: true }));

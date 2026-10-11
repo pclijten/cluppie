@@ -12,13 +12,13 @@
 import {
   db, doc, collection, addDoc, updateDoc, setDoc, deleteDoc, getDocs, query, where, writeBatch, serverTimestamp
 } from './firebase.js?v=20261011e';
-import { S, $, esc, meld, openModal, sluitModal, nieuweCode, isPlatformBeheerder } from './state.js?v=20261011e';
-import { ACTIEF, SEIZOEN_FALLBACK, parseFormatie, aantalVeldspelers, SKILLS, LEERCURVE } from './config.js?v=20261011e';
+import { S, $, esc, meld, openModal, sluitModal, nieuweCode, isPlatformBeheerder } from './state.js?v=20261011f';
+import { ACTIEF, SEIZOEN_FALLBACK, parseFormatie, aantalVeldspelers, SKILLS, LEERCURVE } from './config.js?v=20261011f';
 import {
   effectief, isLegacy, mergeLijst, LIJST_DEFS, ORIGINEEL, NEUTRAAL, CLUPPIE_LOGO, ICOONNAMEN,
   valideerKalender, herlaadKalender, pasClubConfigToe, clubAfk, DISTRICTEN
-} from './clubconfig.js?v=20261011e';
-import { MODULE_DEFS } from './club-beheer.js?v=20261011e';
+} from './clubconfig.js?v=20261011f';
+import { MODULE_DEFS } from './club-beheer.js?v=20261011f';
 
 /* ---------- Tabs ---------- */
 export const INSTEL_TABS = [
@@ -510,7 +510,7 @@ export function koppelInstelNieuw(v, herteken){
   else if (sub === 'pedagogiek') koppelPedagogiek(v, herteken);
   else if (sub === 'regels') koppelRegels(v, herteken);
   else if (sub === 'ai') koppelAI(v, herteken);
-  else if (sub === 'toegang') import('./toegang.js?v=20261011e').then(m => m.koppelToegang(v, herteken));
+  else if (sub === 'toegang') import('./toegang.js?v=20261011f').then(m => m.koppelToegang(v, herteken));
 }
 
 /* ---------- Identiteit ---------- */

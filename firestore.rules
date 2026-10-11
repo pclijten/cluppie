@@ -121,7 +121,10 @@ service cloud.firestore {
       /* lezen: teamleden en leden van de club van het team (resource-gebaseerd, dus ook voor
          list-queries leden.<uid>==true en club==…). Aansluiten via teamcode loopt via de
          Cloud Function sluitAan; niet-leden kunnen teams dus niet meer opzoeken. */
-      allow read: if (echt() && (resource.data.get('leden', {}).get(uid(), false) == true
+      /* [20261011f] een niet-bestaand team lezen verraadt niets; zo laat één verwijderd team een
+         'in'-query op club.teams niet meer falen (zwart clubscherm) */
+      allow read: if (echt() && resource == null)
+                  || (echt() && (resource.data.get('leden', {}).get(uid(), false) == true
                                  || (resource.data.get('club', null) != null && isClubLid(resource.data.club))))
                   || heeftDeelToegang(teamId);
       allow create: if echt() && (
