@@ -138,6 +138,7 @@ async function vereisAI(request, rollen = null){
 const gebruik = require('./gebruik');
 exports.aggregeerGebruik = gebruik.maakCallable(vereisLid);
 exports.aggregeerGebruikNacht = gebruik.aggregeerGebruikNacht;
+exports.platformOverzichtNu = require('./platform').platformOverzichtNu;
 
 /* ==================== 2. AI-FUNCTIES ==================== */
 

@@ -183,6 +183,9 @@ const aggregeerGebruikNacht = onSchedule(
       try { const n = await aggregeerClub(db, c.id); console.log('[aggregeerGebruikNacht]', c.id, n, 'sessies'); }
       catch (e){ console.error('[aggregeerGebruikNacht]', c.id, e.message || e); }
     }
+    /* daarna het platformdashboard verversen (één document met alle clubs) */
+    try { await require('./platform').bouwPlatformOverzicht(db); }
+    catch (e){ console.error('[aggregeerGebruikNacht] platformoverzicht', e.message || e); }
   }
 );
 

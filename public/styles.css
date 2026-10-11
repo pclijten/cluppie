@@ -5528,3 +5528,56 @@ button.cb-mnaam{height:44px}
 .ov-mee-rij:last-child{border-bottom:none}
 .ov-mee-rij input{margin-top:3px;width:18px;height:18px;accent-color:var(--accent)}
 .ov-n{display:block;font-size:calc(12px * var(--fs));color:var(--ink-2);margin-top:1px}
+
+/* ==================== PLATFORMDASHBOARD (20261011d) ==================== */
+.modal-achter[data-vorm="breed"] .modal{max-width:1120px}
+.pf-balk{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.pf-knoppen{display:flex;gap:6px;flex-wrap:wrap}
+.pf-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.pf-kpi{background:var(--surface);border:1px solid var(--line-d);border-radius:var(--radius);padding:12px 14px}
+.pf-kpi .g{font-family:'Barlow Condensed';font-weight:800;font-size:calc(34px * var(--fs));line-height:1;color:var(--ink)}
+.pf-kpi .g small{font-size:.5em;color:var(--ink-2);font-weight:600}
+.pf-kpi .l{font-weight:600;font-size:calc(13px * var(--fs));margin-top:4px}
+.pf-kpi .s{font-size:calc(11.5px * var(--fs));color:var(--ink-2);margin-top:2px}
+.pf-kpi.let .g{color:var(--warn)}
+.pf-licht{width:10px;height:10px;border-radius:50%;flex-shrink:0;background:var(--ink-2)}
+.pf-licht.groen{background:var(--ok)}
+.pf-licht.oranje{background:var(--warn)}
+.pf-licht.rood{background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent)}
+.pf-signalen{display:flex;flex-direction:column;gap:2px}
+.pf-sigrij{display:flex;align-items:center;gap:10px;padding:8px 6px;border-radius:10px;text-align:left;width:100%;color:var(--ink);font-size:calc(13px * var(--fs))}
+.pf-sigrij:hover{background:var(--surface-2)}
+.pf-sigrij span:last-child{color:var(--ink-2)}
+.pf-filter{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 10px}
+.pf-filter .segment{flex:0 1 auto;margin:0}
+.pf-filter .invoer{flex:1 1 200px;min-width:0}
+.pf-club{background:var(--surface);border:1px solid var(--line-d);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px}
+.pf-club[data-status="rood"]{border-left:3px solid var(--accent)}
+.pf-club[data-status="oranje"]{border-left:3px solid var(--warn)}
+.pf-club-kop{display:flex;align-items:center;gap:12px;width:100%;text-align:left;color:var(--ink);padding:2px 0}
+.pf-club-kop .club-shirt{width:32px;height:32px;flex-shrink:0}
+.pf-club-kop .club-shirt img{width:100%;height:100%;object-fit:contain}
+.pf-naam{flex:1;min-width:0;display:flex;flex-direction:column}
+.pf-naam b{font-size:calc(15px * var(--fs));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pf-naam small,.pf-act small{font-size:calc(11.5px * var(--fs));color:var(--ink-2)}
+.pf-act{display:flex;flex-direction:column;align-items:flex-end;min-width:64px}
+.pf-act b{font-size:calc(14px * var(--fs))}
+.pf-club-kop .pijl{color:var(--ink-2);font-size:calc(20px * var(--fs))}
+.pf-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0 22px}
+.pf-chip{font-size:calc(11.5px * var(--fs));padding:3px 8px;border-radius:99px;background:var(--surface-2);color:var(--ink-2)}
+.pf-chip.ok{color:var(--ok);background:color-mix(in srgb, var(--ok) 12%, transparent)}
+.pf-chip.let{color:var(--warn);background:color-mix(in srgb, var(--warn) 14%, transparent)}
+.pf-chip.uit{opacity:.7}
+.pf-sig{margin:6px 0 0 22px;font-size:calc(12.5px * var(--fs))}
+.pf-sig.rood{color:var(--accent)}
+.pf-sig.oranje{color:var(--warn)}
+.pf-open{margin:6px 0 0 22px;font-size:calc(12px * var(--fs));color:var(--ink-2)}
+.pf-aanmeld{border-top:1px solid var(--hair);padding:10px 0}
+.pf-aanmeld:first-of-type{border-top:none}
+.pf-aanmeld small,.pf-aanmeld-meta{color:var(--ink-2);font-size:calc(12px * var(--fs))}
+.pf-aanmeld-bericht{margin-top:6px;font-size:calc(13px * var(--fs));white-space:pre-wrap}
+@media (max-width:600px){
+  .pf-act{display:none}
+  .pf-chips,.pf-sig,.pf-open{margin-left:0}
+  .pf-kpis{grid-template-columns:1fr 1fr}
+}

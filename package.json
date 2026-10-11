@@ -10,7 +10,7 @@
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes",
     "deploy:functions": "echo 'Gebruik: firebase deploy --only functions:<naam>,…' && exit 1",
     "test:rules": "firebase emulators:exec --only firestore --project cluppie-rules-test \"node --test tests/rules.test.mjs\"",
-    "test": "node tests/sleutel.test.mjs && node tests/gebruik.test.mjs"
+    "test": "node tests/sleutel.test.mjs && node tests/gebruik.test.mjs && node tests/startlijst.test.mjs"
   },
   "author": "Paul Lijten",
   "license": "MIT",
