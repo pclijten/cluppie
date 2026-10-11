@@ -18,7 +18,8 @@ import { htmlInzichtTabs, htmlInzichtTab, openRapport } from './club-inzicht.js?
 import { telGebruik, telNav } from './tracker.js?v=20261010c';
 import { ico } from './icons.js?v=20260922c';
 import { INSTEL_TABS, NIEUWE_TABS, htmlInstelNieuw, koppelInstelNieuw, htmlAlgemeenMelding, koppelAlgemeenMelding, modalNieuweClub } from './club-instellingen.js?v=20261010c';
-import { pasClubConfigToe, clubAfk } from './clubconfig.js?v=20261010c';
+import { pasClubConfigToe, clubAfk, effectief } from './clubconfig.js?v=20261010c';
+import { startlijstStatus } from './startlijst.js?v=20261011d';
 import { teamSleutel as teamSleutelClub } from './sportlink-sleutel.js?v=20261011c';
 import { htmlTeamsBeheer, koppelTeamsBeheer, htmlTeamBeheer, koppelTeamBeheer, htmlCoaches, koppelCoaches, aandachtRedenen, groepen as beheerGroepen } from './club-beheer.js?v=20261010c';
 import { rondesVan, voortgangOphalen, htmlEvalRondes, htmlRondeDetail, htmlRondeFormulier, koppelRondeFormulier, koppelRondeDetail, startConcept } from './evaluatierondes.js?v=20261010c';
@@ -840,7 +841,7 @@ function htmlClubHub(teams){
       <div class="cb-banner-t"><b>Training afgelast — ${esc(afgKort(actief.datum))}</b>${actief.reden ? `<small>${esc(actief.reden)}</small>` : ''}</div>
       <button class="knop licht klein" data-club-open="afgelasten">Bekijk</button></div>` : '';
 
-  return banner + secties.map(([kop, tegels]) => `
+  return banner + htmlStartlijst(teams) + secties.map(([kop, tegels]) => `
     <section class="hub-sectie">
       <div class="hub-sectie-kop">${esc(kop)}</div>
       <div class="hub-grid">${tegels.join('')}</div>
@@ -1065,6 +1066,8 @@ async function renderClub(opts = {}){
 
   // hub-tegels (en de banner) koppelen
   v.querySelectorAll('[data-club-open]').forEach(b => b.onclick = () => naarClubTab(b.dataset.clubOpen));
+  if (isHub) koppelStartlijst(v, teams);
+  if (tab === 'instel') koppelClientIdUitleg(v);
 
   // statistieken-sync (handmatig)
   const btnSyncStats = v.querySelector('#btnSyncStats');
@@ -1100,6 +1103,7 @@ async function renderClub(opts = {}){
     teams, herteken: hertekenClub, openBeheer,
     nieuwTeam: async () => (await teamsModule()).modalNieuwTeam(S.clubId),
     importPdf: () => modalImporteerPDF(),
+    importSportlink: () => import('./club-sportlink-import.js?v=20261011d').then(m => m.modalTeamsUitSportlink(teams, () => renderClub())),
     alleLinks: () => modalAlleLinks(teams),
   });
   if (tab === 'teambeheer') koppelTeamBeheer(v, {
@@ -1979,6 +1983,8 @@ function htmlClubInstel(teams = [], syncStatus = {}){
         </div>
         ${gekoppeld ? `<p style="font-size:calc(11.5px * var(--fs));color:var(--in);margin:8px 0 0">✓ Gekoppeld met Client ID <code style="font-size:calc(11px * var(--fs))">${esc(clientId)}</code></p>` : ''}
         <p class="cb-uitleg">De Client ID van jullie Sportlink Club.Dataservice. Daarmee haalt Cluppie het programma, de uitslagen en de standen op voor alle teams. Teams koppelen automatisch op naam; heet een team anders, koppel het dan in Teambeheer.</p>
+        ${htmlClientIdUitleg()}
+        ${gekoppeld ? `<button class="knop licht klein" id="slTeamsImport" style="margin-top:10px">${ico('football-competition',16)} Teams uit Sportlink aanmaken</button>` : ''}
       </div>`;
     inhoud = gekoppeld ? `
       <div class="cb-samenvat">
@@ -3608,4 +3614,93 @@ function modalBewerkDocument(d, teams){
       console.error(e); meld('Opslaan mislukt: ' + (e.code || e.message));
     }
   };
+}
+
+/* ==================== [20261011d] ONBOARDING VAN DE CLUB ==================== */
+/* Uitklapper: waar vind je de Sportlink Client ID, met een kant-en-klaar berichtje. */
+function htmlClientIdUitleg(){
+  const tekst = `Hoi, voor onze coach-app Cluppie heb ik de Client ID van onze Sportlink Club.Dataservice nodig. Daarmee haalt de app automatisch het programma, de uitslagen en de standen op. Kun je die voor me opzoeken (in Sportlink Club bij de koppelingen van de Club.Dataservice)? Er gaan geen ledengegevens naar de app. Dank!`;
+  return `<details class="cb-uitklap"><summary>Waar vind ik de Client ID?</summary>
+    <p class="cb-uitleg">De Client ID is een korte code van letters en cijfers. De ledenadministratie of secretaris van jullie club kan hem opzoeken bij de Club.Dataservice in Sportlink Club. Is de Club.Dataservice nog niet aangezet, dan kan diegene dat daar ook doen. Stuur dit berichtje door:</p>
+    <div class="cb-citaat" id="clientIdBericht">${esc(tekst)}</div>
+    <button class="knop licht klein" id="clientIdKopieer" style="margin-top:8px">${ico('action-copy',16)} Kopieer bericht</button>
+  </details>`;
+}
+function koppelClientIdUitleg(v){
+  const k = v.querySelector('#clientIdKopieer');
+  if (k) k.onclick = async () => {
+    const t = v.querySelector('#clientIdBericht')?.textContent || '';
+    try { await navigator.clipboard.writeText(t); meld('Bericht gekopieerd'); }
+    catch(e){ if (navigator.share) navigator.share({ text: t }).catch(() => {}); else meld('Kopiëren lukt niet op dit apparaat'); }
+  };
+  const imp = v.querySelector('#slTeamsImport');
+  if (imp) imp.onclick = () => import('./club-sportlink-import.js?v=20261011d').then(m => m.modalTeamsUitSportlink(S.clubTeams || [], () => renderClub()));
+}
+
+/* Kaart "Aan de slag" op de club-hub (alleen beheerders, tot alles klaar of weggeklikt). */
+function htmlStartlijst(teams){
+  if (!isBeheerder()) return '';
+  const st = startlijstStatus(S.club, teams);
+  let verborgen = false; try { verborgen = localStorage.getItem('cluppie_startlijst_weg_' + S.clubId) === '1'; } catch(e){}
+  if (st.compleet || verborgen) return '';
+  const pct = Math.round(100 * st.gedaan / st.totaal);
+  const volgende = st.stappen.find(s => !s.klaar);
+  return `<div class="sl-kaart">
+    <div class="sl-kop"><div><b>Aan de slag</b><small>${st.gedaan} van ${st.totaal} gedaan</small></div>
+      <button class="sl-weg" id="startlijstWeg" aria-label="Verbergen">${ico('navigation-close',18)}</button></div>
+    <div class="sl-balk"><span style="width:${pct}%"></span></div>
+    <div class="sl-stappen">${st.stappen.map(s => `
+      <button class="sl-stap ${s.klaar ? 'klaar' : ''} ${s === volgende ? 'volgende' : ''}" data-startlijst="${esc(s.actie)}" data-stap="${esc(s.id)}" ${s.klaar ? 'disabled' : ''}>
+        <span class="sl-vink">${s.klaar ? ico('action-check',14) : ''}</span>
+        <span class="sl-tekst"><b>${esc(s.titel)}</b>${s.klaar ? '' : `<small>${esc(s.uitleg)}</small>`}</span>
+        ${s.klaar ? '' : '<span class="pijl">›</span>'}
+      </button>`).join('')}</div>
+  </div>`;
+}
+function koppelStartlijst(v, teams){
+  v.querySelector('#startlijstWeg')?.addEventListener('click', () => {
+    try { localStorage.setItem('cluppie_startlijst_weg_' + S.clubId, '1'); } catch(e){}
+    meld('Verborgen. Je vindt de stappen terug op het platform en in Instellingen.'); renderClub();
+  });
+  v.querySelectorAll('[data-startlijst]').forEach(b => b.onclick = () => {
+    const a = b.dataset.startlijst, stap = b.dataset.stap;
+    if (a === 'vo') return modalVerwerkersovereenkomst();
+    if (a.startsWith('instellingen:')){ S._clubInstelTab = a.split(':')[1]; return naarClubTab('instel'); }
+    if (stap === 'teams' && S.club.sportlinkClientId) return import('./club-sportlink-import.js?v=20261011d').then(m => m.modalTeamsUitSportlink(teams, () => renderClub()));
+    naarClubTab(a);
+  });
+}
+
+/* Verwerkersovereenkomst: de clubbeheerder accepteert zelf, namens de club (versie + tijd + naam). */
+const VO_VERSIE = '2026-10';
+export function modalVerwerkersovereenkomst(){
+  const pv = effectief(S.club).privacy || {};
+  const vo = pv.verwerkersovereenkomst;
+  openModal(`<h2>Verwerkersovereenkomst</h2>
+    <p class="cb-uitleg">Cluppie verwerkt gegevens van jullie coaches en spelers namens de club. De club is verwerkingsverantwoordelijke, Cluppie is verwerker. In deze overeenkomst staan de afspraken.</p>
+    <div class="cb-kaart"><ul class="vo-punten">
+      <li>Cluppie gebruikt de gegevens alleen om de app te laten werken, nooit voor reclame of verkoop.</li>
+      <li>Gegevens staan in de EU (Firebase, regio europe-west1) en zijn per club afgeschermd.</li>
+      <li>Geen spelernamen naar AI; AI staat standaard uit en is per club aan te zetten.</li>
+      <li>Bewaartermijnen en verwijderen: zie de privacyverklaring; coaches kunnen hun gegevens zelf inzien en wissen.</li>
+      <li>Een datalek meldt Cluppie binnen 48 uur aan de privacycontactpersoon van de club.</li>
+      <li>Bij opzeggen worden alle gegevens van de club binnen 30 dagen verwijderd, of op verzoek eerst geëxporteerd.</li>
+    </ul>
+    <a href="privacy.html" target="_blank" rel="noopener" class="cb-link">Volledige privacyverklaring ›</a></div>
+    ${vo && vo.geaccepteerd
+      ? `<p class="cb-uitleg" style="color:var(--ok)">${ico('action-check',14)} Geaccepteerd door ${esc(vo.naam || 'clubbeheerder')} op ${esc(new Date(vo.tijd).toLocaleDateString('nl-NL'))} (versie ${esc(vo.versie || '')}).</p>`
+      : `<label class="ci-schakel"><input type="checkbox" id="voAkkoord"><span>Ik ben bevoegd om namens <b>${esc(S.club.naam)}</b> deze verwerkersovereenkomst aan te gaan en ga akkoord.</span></label>
+         <button class="knop vol" id="voOk" disabled style="margin-top:10px">Akkoord namens de club</button>`}`);
+  const c = $('#voAkkoord'), k = $('#voOk');
+  if (c && k){
+    c.onchange = () => { k.disabled = !c.checked; };
+    k.onclick = async () => {
+      k.disabled = true;
+      try {
+        await updateDoc(doc(db, 'clubs', S.clubId), { 'instellingen.privacy.verwerkersovereenkomst': {
+          geaccepteerd: true, uid: S.user.uid, naam: S.user.displayName || (S.user.email || '').split('@')[0] || '', tijd: new Date().toISOString(), versie: VO_VERSIE } });
+        sluitModal(); meld('Verwerkersovereenkomst geaccepteerd ✓'); renderClub();
+      } catch(e){ k.disabled = false; meld('Opslaan mislukt: ' + (e.code || e.message)); }
+    };
+  }
 }

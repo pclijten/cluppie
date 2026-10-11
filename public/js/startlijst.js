@@ -8,7 +8,7 @@
 
 export const STARTLIJST_STAPPEN = [
   { id: 'uiterlijk',   titel: 'Logo en clubkleur',          uitleg: 'Je coaches herkennen meteen hun eigen club.',            actie: 'instellingen:identiteit' },
-  { id: 'sportlink',   titel: 'Sportlink koppelen',          uitleg: 'Programma, uitslagen en standen komen dan vanzelf binnen.', actie: 'instellingen:competitie' },
+  { id: 'sportlink',   titel: 'Sportlink koppelen',          uitleg: 'Programma, uitslagen en standen komen dan vanzelf binnen.', actie: 'instellingen:sportlink' },
   { id: 'teams',       titel: 'Teams aanmaken',              uitleg: 'In één keer uit Sportlink, of zelf.',                    actie: 'teams' },
   { id: 'trainingen',  titel: 'Trainingsdagen invullen',     uitleg: 'Voor aanwezigheid en de eerstvolgende training.',         actie: 'teams' },
   { id: 'coaches',     titel: 'Eerste coach uitnodigen',     uitleg: 'Deel de persoonlijke teamlink met een trainer.',         actie: 'teams' },

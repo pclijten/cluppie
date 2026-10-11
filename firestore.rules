@@ -124,10 +124,12 @@ service cloud.firestore {
       allow read: if (echt() && (resource.data.get('leden', {}).get(uid(), false) == true
                                  || (resource.data.get('club', null) != null && isClubLid(resource.data.club))))
                   || heeftDeelToegang(teamId);
-      allow create: if echt()
-        && request.resource.data.leden.get(uid(), false) == true
-        && (request.resource.data.get('club', null) == null
-            || isClubLid(request.resource.data.club) || isClubAdmin(request.resource.data.club));
+      allow create: if echt() && (
+        (request.resource.data.leden.get(uid(), false) == true
+          && (request.resource.data.get('club', null) == null
+              || isClubLid(request.resource.data.club) || isClubAdmin(request.resource.data.club)))
+        /* [20261011d] clubbeheerder maakt teams aan zonder er zelf lid van te worden (Sportlink-import) */
+        || (request.resource.data.get('club', null) != null && isClubAdmin(request.resource.data.club)));
       allow update: if magSchrijven(teamId);
       allow delete: if isVolCoach(teamId)
         || (resource.data.get('club', null) != null && isClubAdmin(resource.data.club));

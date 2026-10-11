@@ -90,6 +90,12 @@ test('spelerslijst: leesbaar voor clubleden (uitleen), niet voor andere club', a
   await assertFails(getDoc(doc(als('coachB'), 'teams/t1/spelers/s1')));
 });
 
+test('clubbeheerder maakt team aan zonder zelf lid te worden; coach niet', async () => {
+  await assertSucceeds(setDoc(doc(als('adminA'), 'teams/imp1'), { club: 'A', naam: 'JO9-2', leden: {} }));
+  await assertFails(setDoc(doc(als('coachA'), 'teams/imp2'), { club: 'A', naam: 'JO9-3', leden: {} }));
+  await assertFails(setDoc(doc(als('adminB'), 'teams/imp3'), { club: 'A', naam: 'JO9-4', leden: {} }));
+});
+
 /* ---------- uitleningen ---------- */
 test('uitlening: lid van de club wel, ander niet', async () => {
   await assertSucceeds(setDoc(doc(als('coachA'), 'clubs/A/uitleningen/u1'), { speler: 's1', van: 't1', naar: 't2' }));

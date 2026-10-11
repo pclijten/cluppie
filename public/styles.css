@@ -5581,3 +5581,44 @@ button.cb-mnaam{height:44px}
   .pf-chips,.pf-sig,.pf-open{margin-left:0}
   .pf-kpis{grid-template-columns:1fr 1fr}
 }
+
+/* ==================== STARTLIJST, SPORTLINK-IMPORT, VO (20261011d) ==================== */
+.sl-kaart{background:var(--surface);border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line-d));border-radius:var(--radius);padding:14px;margin:0 0 16px}
+.sl-kop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.sl-kop b{font-family:'Barlow Condensed';font-weight:800;font-size:calc(20px * var(--fs));text-transform:uppercase;letter-spacing:.3px;display:block}
+.sl-kop small{color:var(--ink-2);font-size:calc(12.5px * var(--fs))}
+.sl-weg{width:34px;height:34px;border-radius:10px;background:var(--surface-2);color:var(--ink-2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sl-balk{height:6px;border-radius:99px;background:var(--surface-2);margin:10px 0 8px;overflow:hidden}
+.sl-balk span{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .3s}
+.sl-stappen{display:flex;flex-direction:column}
+.sl-stap{display:flex;align-items:center;gap:10px;padding:9px 4px;border-top:1px solid var(--hair);text-align:left;width:100%;color:var(--ink)}
+.sl-stap:first-child{border-top:none}
+.sl-stap .pijl{color:var(--ink-2);margin-left:auto}
+.sl-vink{width:22px;height:22px;border-radius:50%;border:2px solid var(--hair);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sl-stap.klaar{opacity:.55}
+.sl-stap.klaar .sl-vink{background:var(--ok);border-color:var(--ok);color:#fff}
+.sl-stap.volgende .sl-vink{border-color:var(--accent)}
+.sl-stap.volgende b{color:var(--accent)}
+.sl-tekst{display:flex;flex-direction:column;min-width:0}
+.sl-tekst b{font-size:calc(14px * var(--fs))}
+.sl-tekst small{color:var(--ink-2);font-size:calc(12px * var(--fs))}
+.sli-lijst{display:flex;flex-direction:column;gap:6px}
+.sli-rij{display:grid;grid-template-columns:22px minmax(0,1.2fr) minmax(0,1fr) 110px 86px;gap:8px;align-items:center;padding:8px;border-radius:10px;background:var(--surface);border:1px solid var(--line-d)}
+.sli-rij input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}
+.sli-rij.bestaat{opacity:.55;grid-template-columns:22px 1fr auto}
+.sli-sl{display:flex;flex-direction:column;min-width:0;font-size:calc(13px * var(--fs));overflow:hidden;text-overflow:ellipsis}
+.sli-sl small{color:var(--ink-2);font-size:calc(11px * var(--fs))}
+.sli-naam,.sli-cat{padding:7px 9px;font-size:calc(13px * var(--fs));min-width:0}
+.sli-bouw,.sli-bestaat{font-size:calc(11.5px * var(--fs));color:var(--ink-2)}
+@media (max-width:600px){
+  .sli-rij{grid-template-columns:22px 1fr 1fr}
+  .sli-sl{grid-column:2 / 4}
+  .sli-naam{grid-column:2}
+  .sli-cat{grid-column:3}
+  .sli-bouw{display:none}
+}
+.cb-uitklap{margin-top:10px;border-top:1px solid var(--hair);padding-top:8px}
+.cb-uitklap summary{cursor:pointer;font-weight:600;font-size:calc(13px * var(--fs));color:var(--accent)}
+.cb-citaat{background:var(--surface-2);border-left:3px solid var(--accent);border-radius:8px;padding:10px 12px;font-size:calc(13px * var(--fs));line-height:1.45}
+.vo-punten{margin:0 0 10px 18px;padding:0;font-size:calc(13.5px * var(--fs));line-height:1.5}
+.vo-punten li{margin-bottom:4px}

@@ -138,17 +138,19 @@ export function htmlTeamsBeheer(teams, sync){
 }
 function actieKnoppen(links){
   return `<button class="knop fluo klein" id="clubNieuwTeam">${ico('action-add', 16)} Team</button>
+    <button class="knop licht klein" id="clubTeamsSportlink">${ico('football-competition', 16)} Uit Sportlink</button>
     <button class="knop licht klein" id="clubImporteerPDF">${ico('admin-upload', 16)} PDF</button>
     ${links ? `<button class="knop licht klein" id="clubAlleLinks">${ico('action-share', 16)} Links</button>` : ''}`;
 }
 
-/* api: { teams, herteken(), openBeheer(id), nieuwTeam(), importPdf(), alleLinks() } */
+/* api: { teams, herteken(), openBeheer(id), nieuwTeam(), importPdf(), importSportlink(), alleLinks() } */
 export function koppelTeamsBeheer(v, api){
   v.querySelectorAll('[data-cb-weergave]').forEach(b => b.onclick = () => { S._cbWeergave = b.dataset.cbWeergave; api.herteken(); });
   v.querySelectorAll('[data-cb-filter]').forEach(b => b.onclick = () => { S._cbFilter = b.dataset.cbFilter; api.herteken(); });
   v.querySelectorAll('[data-cb-team]').forEach(b => b.onclick = () => api.openBeheer(b.dataset.cbTeam));
   v.querySelector('#clubNieuwTeam')?.addEventListener('click', api.nieuwTeam);
   v.querySelector('#clubImporteerPDF')?.addEventListener('click', api.importPdf);
+  v.querySelector('#clubTeamsSportlink')?.addEventListener('click', () => api.importSportlink && api.importSportlink());
   v.querySelector('#clubAlleLinks')?.addEventListener('click', api.alleLinks);
   v.querySelectorAll('[data-cb-cel]').forEach(b => b.onclick = async () => {
     const [id, k] = b.dataset.cbCel.split('|');

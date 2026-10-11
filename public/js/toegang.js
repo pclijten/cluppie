@@ -252,6 +252,7 @@ export async function koppelToegang(v, herteken){
     <div class="veldgroep"><input class="invoer" id="pvMail" type="email" placeholder="E-mailadres" value="${esc(P.contactEmail)}" maxlength="120"></div>
     <label class="ci-schakel"><input type="checkbox" id="pvAch" ${P.achternamen ? 'checked' : ''}><span>Achternaam van spelers vastleggen (uit = alleen voornaam, aanbevolen)</span></label>
     <label class="ci-schakel" style="margin-top:6px"><input type="checkbox" id="pvVo" ${vo?.geaccepteerd ? 'checked' : ''}><span>De club heeft een <b>verwerkersovereenkomst</b> met Cluppie afgesloten${vo?.geaccepteerd ? ` (vastgelegd ${datumKort(vo.tijd)} door ${esc(vo.naam || '—')})` : ''}</span></label>
+    <button class="cb-link" id="pvVoLees" type="button" style="margin-top:4px">Lees de overeenkomst en accepteer digitaal ›</button>
     <p class="cb-uitleg" style="margin:6px 0 0">AI-functies staan onder “AI &amp; modules”; voor nieuwe clubs staan ze standaard uit.</p>
     <button class="knop vol klein" id="pvOpslaan" style="margin-top:10px">Opslaan</button>`);
 
@@ -296,6 +297,7 @@ export async function koppelToegang(v, herteken){
     klaar(() => roep('verwijderLid', { clubId, uid: b.dataset.lidWeg }), b, 'Uitgeschreven');
   });
 
+  q('#pvVoLees')?.addEventListener('click', () => import('./club.js?v=20261011d').then(m => m.modalVerwerkersovereenkomst()));
   q('#pvOpslaan').onclick = (e) => klaar(async () => {
     const wijz = [
       ['privacy.contactNaam', q('#pvNaam').value.trim()], ['privacy.contactEmail', q('#pvMail').value.trim()],

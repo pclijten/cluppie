@@ -156,7 +156,7 @@ async function aggregeerClub(db, clubId){
   /* wie mag dit document lezen naast clubadmins (rules: `lezers`): bouwcoördinatoren */
   const lezers = new Set(Object.keys(club.admins || {}));
   for (const m of Object.values(club.bouwCoordinatoren || {})) for (const [u, aan] of Object.entries(m || {})) if (aan) lezers.add(u);
-  await db.doc(`gebruikstats/${clubId}`).set({ ...stats, lezers: [...lezers], bijgewerkt: FieldValue.serverTimestamp() });
+  await db.doc(`gebruikstats/${clubId}`).set({ ...stats, lezers: [...lezers], gegenereerd: Date.now(), bijgewerkt: FieldValue.serverTimestamp() });
   return sessies.length;
 }
 
