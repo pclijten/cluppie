@@ -510,7 +510,7 @@ export function koppelInstelNieuw(v, herteken){
   else if (sub === 'pedagogiek') koppelPedagogiek(v, herteken);
   else if (sub === 'regels') koppelRegels(v, herteken);
   else if (sub === 'ai') koppelAI(v, herteken);
-  else if (sub === 'toegang') import('./toegang.js?v=20261011g').then(m => m.koppelToegang(v, herteken));
+  else if (sub === 'toegang') import('./toegang.js?v=20261011h').then(m => m.koppelToegang(v, herteken));
 }
 
 /* ---------- Identiteit ---------- */

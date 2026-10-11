@@ -8,7 +8,8 @@ import { teamsOpId } from './teams-ophalen.js?v=20261011g';
 import { beleidsplanNaam, cfg } from './clubconfig.js?v=20261011g';
 import {
   db, collection, doc, addDoc, deleteDoc, updateDoc, setDoc,
-  getDoc, getDocs, query, where, serverTimestamp, documentId, deleteField
+  getDoc, getDocs, query, where, serverTimestamp, documentId, deleteField,
+  functions, httpsCallable
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, speler, uurMin, openModal, sluitModal, modAan, isBeheerder
@@ -34,7 +35,7 @@ import { heeftElftallen, filterOpElftal, elftalPillen } from './elftallen.js?v=2
    import). Dynamic import() binnen de aanroepende functie is het patroon
    dat de rest van de app ook al gebruikt (zie club.js/wedstrijd.js). */
 async function herrenderTeam(){
-  const m = await import('./teams.js?v=20261011g');
+  const m = await import('./teams.js?v=20261011h');
   m.renderTeam();
 }
 
@@ -1690,68 +1691,33 @@ function htmlOverzetDialoog(u, naam, raw, bron, datum){
     <button class="knop licht vol" id="ovAnnuleer" style="margin-top:8px">Annuleren</button>`;
 }
 
-/* Voert de overzet uit. Volgorde is bewust: eerst alles bijschrijven bij het
-   ontvangende team, dan pas het origineel archiveren en het leen-record
-   opruimen. Mislukt het halverwege, dan is er niets kwijt (het origineel staat
-   er nog) en kan de admin het opnieuw proberen: alle writes zijn merge:true. */
+/* [20261011h] Server-aanroep: zetSpelerOver (functions/overdracht.js) schrijft dossier, spelerdocument,
+   archivering van het origineel en het opruimen van de uitlening in één transactie. De app rekent
+   alleen het dossier uit. Lukt de aanroep niet, dan is er niets veranderd. */
+const zetSpelerOverFn = (data) => httpsCallable(functions, 'zetSpelerOver')(data).then(r => r.data);
+function overzetFout(e){
+  const c = String(e?.code || '').replace(/^functions\//, '');
+  if (c === 'permission-denied') return 'je hebt niet over beide teams (coach- of coördinatorrechten) genoeg toegang.';
+  if (c === 'unavailable' || c === 'deadline-exceeded') return 'geen verbinding. Er is niets veranderd; probeer het opnieuw.';
+  if (c === 'not-found' && !e?.message) return 'de functie staat nog niet online.';
+  return e?.message || c || 'onbekende fout';
+}
+
 async function voerOverzettenUit(u, clubId, bronRef, bron, raw, mee, datum){
   const naam = u.snapshot?.naam || 'De speler';
   try {
-    const naarId = u.adopteertGast || u.spelerId;           // id van het document bij het ontvangende team
-    const naarRef = doc(db,'teams',u.naarTeam,'spelers',naarId);
-    const stintenRef = collection(db,'teams',u.naarTeam,'spelers',naarId,'vorigeTeams');
-
-    // 1) dossier: eerdere dossiers van deze speler (keten A→B→C) + het nieuwe
-    const eerdere = await getDocs(collection(db,'teams',u.vanTeam,'spelers',u.spelerId,'vorigeTeams'));
-    for (const d of eerdere.docs) await setDoc(doc(stintenRef, d.id), d.data(), { merge:true });
-    await setDoc(doc(stintenRef, `${u.vanTeam}_${datum}`), dossierDoc(raw, mee, datum), { merge:true });
-
-    // 2) spelerdocument: kopie van het origineel met overlay als nieuwe basiswaarde
-    const data = { ...bron };
-    if (u.overlay?.nummer !== undefined && u.overlay.nummer !== null) data.nummer = u.overlay.nummer;
-    if (u.overlay?.positie) data.positie = u.overlay.positie;
-    data.meetelVanaf = datum;
-    data.heeftVorigeTeams = true;
-    if (!mee.not) delete data.notitie;
-    if (!mee.lp) data.leerpunten = [];
-    data.gast = deleteField();                              // een definitief overgezette speler is nooit meer een gast
-    data.gearchiveerd = deleteField(); data.naarTeam = deleteField();
-    data.naarTeamNaam = deleteField(); data.gearchiveerdOp = deleteField();
-
-    if (u.adopteertGast){
-      /* Koppeling aan een gast: het ontvangende team heeft al een gast-document
-         (met eigen id) waar alle opstellingen aan hangen. Wat de coach daar zelf
-         bij de gast noteerde (leerpunten, notitie) wordt SAMENGEVOEGD met de
-         gegevens van het bronteam; het document zelf blijft, dus id en
-         opstellingen blijven intact. */
-      const gSnap = await getDoc(naarRef);
-      if (gSnap.exists()){
-        const g = gSnap.data();
-        const lp = [...(Array.isArray(data.leerpunten) ? data.leerpunten : [])];
-        const ids = new Set(lp.map(l => l.id));
-        for (const l of (Array.isArray(g.leerpunten) ? g.leerpunten : [])) if (!ids.has(l.id)) lp.push(l);
-        data.leerpunten = lp;
-        if (g.notitie && data.notitie && g.notitie !== data.notitie) data.notitie = `${data.notitie}\n\n${g.notitie}`;
-        else if (g.notitie && !data.notitie) data.notitie = g.notitie;
-      }
-    }
-    await setDoc(naarRef, data, { merge:true });
-
-    // 3) origineel archiveren (NIET verwijderen) + leen-record opruimen
-    await updateDoc(bronRef, { gearchiveerd:true, naarTeam:u.naarTeam, naarTeamNaam:u.naarTeamNaam || null, gearchiveerdOp:vandaagIso() });
-    await deleteDoc(doc(db,'clubs',clubId,'uitleningen',u.id));
-
+    const r = await zetSpelerOverFn({
+      soort: 'uitleen', clubId, uitleenId: u.id, vanTeam: u.vanTeam, spelerId: u.spelerId,
+      naarTeam: u.naarTeam, naarTeamNaam: u.naarTeamNaam || null, datum, mee, dossier: dossierDoc(raw, mee, datum),
+    });
+    const naarId = r?.naarId || u.adopteertGast || u.spelerId;
     telGebruik('uitlenen_definitief');
     S._vtBezig = null; if (S._vorigeTeams) delete S._vorigeTeams[`${u.naarTeam}/${naarId}`];
     meld(`${naam} nu definitief bij ${u.naarTeamNaam}`);
     if (S.teamId) herrenderTeam();
     return true;
   } catch(e){
-    if (e.code === 'permission-denied'){
-      meld('Overzetten mislukt: je hebt niet over beide teams (coach- of coördinatorrechten) genoeg toegang.');
-    } else {
-      meld('Overzetten mislukt: ' + (e.code||e.message));
-    }
+    meld('Overzetten mislukt: ' + overzetFout(e));
     return false;
   }
 }
@@ -1883,13 +1849,13 @@ export function modalKoppelGast(gastId){
    met hetzelfde bevroren dossier als bij definitief overzetten (alles gaat mee).
    verhuizingen: [{ spelerId, naarTeam, naarTeamNaam }] — naarTeam null = speler verlaat de club
    (alleen archiveren). Geeft { gelukt, mislukt: [{spelerId, fout}] } terug; nooit UI-meldingen,
-   zodat de assistent de voortgang zelf toont. Alle writes zijn merge, dus opnieuw draaien is veilig. */
+   zodat de assistent de voortgang zelf toont. Per speler schrijft de server alles in één transactie
+   (zetSpelerOver); opnieuw draaien is veilig, al overgezette spelers worden overgeslagen. */
 export async function verhuisSpelersSeizoen({ clubId, vanTeam, vanTeamNaam, verhuizingen, datum, opVoortgang }){
   const res = { gelukt: 0, mislukt: [] };
   const vanT = await getDoc(doc(db,'teams',vanTeam));
   if (!vanT.exists() || vanT.data().club !== clubId) throw new Error('Team hoort niet bij deze club');
   const cache = { w: await getDocs(collection(db,'teams',vanTeam,'wedstrijden')), p: await getDocs(collection(db,'teams',vanTeam,'presentie')) };
-  const clubTeams = new Map();
   const mee = { wed:true, beo:true, tr:true, lp:true, not:true };
   for (const v of verhuizingen){
     try {
@@ -1897,22 +1863,14 @@ export async function verhuisSpelersSeizoen({ clubId, vanTeam, vanTeamNaam, verh
       const snap = await getDoc(bronRef);
       if (!snap.exists() || snap.data().gearchiveerd){ res.gelukt++; opVoortgang && opVoortgang(res); continue; }
       const bron = snap.data();
-      if (v.naarTeam){
-        if (!clubTeams.has(v.naarTeam)){ const t = await getDoc(doc(db,'teams',v.naarTeam)); clubTeams.set(v.naarTeam, t.exists() && t.data().club === clubId); }
-        if (!clubTeams.get(v.naarTeam)) throw new Error('Doelteam hoort niet bij deze club');
-        const raw = await bouwOverdrachtDossier({ vanTeam, vanTeamNaam, spelerId: v.spelerId, speler: bron, uitleen: null, cache });
-        const stintenRef = collection(db,'teams',v.naarTeam,'spelers',v.spelerId,'vorigeTeams');
-        const eerdere = await getDocs(collection(db,'teams',vanTeam,'spelers',v.spelerId,'vorigeTeams'));
-        for (const d of eerdere.docs) await setDoc(doc(stintenRef, d.id), d.data(), { merge:true });
-        await setDoc(doc(stintenRef, `${vanTeam}_${datum}`), dossierDoc(raw, mee, datum), { merge:true });
-        const data = { ...bron, meetelVanaf: datum, heeftVorigeTeams: true };
-        data.gast = deleteField(); data.gearchiveerd = deleteField(); data.naarTeam = deleteField();
-        data.naarTeamNaam = deleteField(); data.gearchiveerdOp = deleteField();
-        await setDoc(doc(db,'teams',v.naarTeam,'spelers',v.spelerId), data, { merge:true });
-      }
-      await updateDoc(bronRef, { gearchiveerd:true, naarTeam: v.naarTeam || null, naarTeamNaam: v.naarTeamNaam || (v.naarTeam ? null : 'Verlaat de club'), gearchiveerdOp: datum });
+      /* [20261011h] per speler alles-of-niets via de server; de app rekent alleen het dossier uit */
+      const dossier = v.naarTeam
+        ? dossierDoc(await bouwOverdrachtDossier({ vanTeam, vanTeamNaam, spelerId: v.spelerId, speler: bron, uitleen: null, cache }), mee, datum)
+        : null;
+      await zetSpelerOverFn({ soort: 'seizoen', clubId, vanTeam, spelerId: v.spelerId,
+        naarTeam: v.naarTeam || null, naarTeamNaam: v.naarTeamNaam || null, datum, mee, dossier });
       res.gelukt++;
-    } catch(e){ res.mislukt.push({ spelerId: v.spelerId, fout: e.code || e.message }); }
+    } catch(e){ res.mislukt.push({ spelerId: v.spelerId, fout: overzetFout(e) }); }
     opVoortgang && opVoortgang(res);
   }
   telGebruik('seizoen_doorstroom');
