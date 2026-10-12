@@ -38,6 +38,11 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 
 # Geschiedenis
 
+## Release 20261012e — spelers uit Sportlink + wedstrijdinfo op desktop
+- **Spelers uit Sportlink** (mockup goedgekeurd 12-10): knop "Uit Sportlink" bij Selectie (mobiel en desktop), alleen als de club een Sportlink-koppeling heeft. Nieuwe callable `sportlinkTeamSpelers` haalt `team-indeling` op en geeft alleen voornamen (achternaam alleen als de club die vastlegt) van zichtbare spelers terug; afgeschermde leden worden geteld, staf/lidnummer/contact/foto/geslacht nooit. Coach kiest wie erbij komt; dubbelen grijs (`markeerBestaand`, getest). Geen nachtelijke sync. Zie `AVG.md` → Sportlink-gegevens.
+- **Wedstrijdinfo:** op desktop bij Aanwezigheid over de volle breedte (stond in een spelerstegel). Bij een gespeelde wedstrijd geen lege tijdvakjes meer, wel de uitleg dat invullen en delen bij komende wedstrijden kan.
+- **Deploy:** `firebase deploy --only functions:sportlinkTeamSpelers --project cluppie-ad329` en `gcloud run services add-iam-policy-binding sportlinkteamspelers --region=europe-west1 --member=allUsers --role=roles/run.invoker --project=cluppie-ad329`. Daarna mergen.
+
 ## Release 20261012d — Sportlink-wedstrijden per team ophalen (bugfix)
 - **Probleem:** bij ASV O12-1 stonden alleen de wedstrijden t/m 12 september in Cluppie; rondes 4–6 en de oktoberwedstrijden ontbraken. Oorzaak: de sync vroeg `programma` en `uitslagen` clubbreed op, en Sportlink kapt die lijst af (bij een club met veel teams stopte het seizoensoverzicht half september). Live vastgesteld 12-10-2026: met `teamcode=361275` en hetzelfde venster komen alle zes O12-1-wedstrijden t/m 10 oktober wél terug.
 - **Oplossing:** `syncClubSportlink` vraagt programma en uitslagen nu per gekoppeld team op (`teamcode` + `lokaleteamcode`, die de teamlijst nu ook bewaart). Afgelastingen blijft clubbreed (korte lijst). Twee Sportlink-calls per team per sync in plaats van twee per club.

@@ -275,7 +275,8 @@ export function htmlWedstrijdInfo(w, { bewerk = true } = {}){
   const eigen = w.infoEigen || {};
   return `<div class="ws-info">
     <div class="ws-info-kop">Wedstrijdinfo</div>
-    <div class="ws-tijden">${tijd('Verzamelen', i.verzamel, 'verzamel')}${tijd('Vertrek', i.vertrek, 'vertrek')}${tijd('Aftrap', i.aftrap, 'aftrap')}</div>
+    ${komt ? `<div class="ws-tijden">${tijd('Verzamelen', i.verzamel, 'verzamel')}${tijd('Vertrek', i.vertrek, 'vertrek')}${tijd('Aftrap', i.aftrap, 'aftrap')}</div>`
+      : rij('Aftrap', esc(i.aftrap.t))}
     ${komt && bewerk ? `<details class="ws-tijd-edit"${S._wsTijdOpen === w.id ? ' open' : ''}><summary>Tijden zelf invullen</summary>
       <div class="ws-tijd-invoer">
         <label>Verzamelen<input type="time" class="invoer" id="wsVerzamel" value="${esc(eigen.verzamel || '')}"></label>
@@ -287,7 +288,8 @@ export function htmlWedstrijdInfo(w, { bewerk = true } = {}){
     ${rij('Veld', esc(i.veld))}
     ${rij('Kleedkamer', esc(i.kleedkamer))}
     ${komt ? `<div class="ws-knoppen">${!w.thuis && i.route ? `<a class="knop licht klein" href="${esc(i.route)}" target="_blank" rel="noopener">Route</a>` : ''}
-      ${bewerk ? `<button class="knop klein ws-wa" id="wsDeel" data-wid="${esc(w.id)}">Deel met ouders</button>` : ''}</div>` : ''}
+      ${bewerk ? `<button class="knop klein ws-wa" id="wsDeel" data-wid="${esc(w.id)}">Deel met ouders</button>` : ''}</div>`
+      : `<p class="ws-hint">Deze wedstrijd is gespeeld. Tijden invullen en delen met ouders kan bij komende wedstrijden.</p>`}
   </div>`;
 }
 

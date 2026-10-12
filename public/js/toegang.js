@@ -12,7 +12,7 @@ import {
   collection, doc, getDoc, getDocs, query, where
 } from './firebase.js?v=20261011g';
 import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261011g';
-import { bewaar } from './club-instellingen.js?v=20261012c';
+import { bewaar } from './club-instellingen.js?v=20261012e';
 import { effectief } from './clubconfig.js?v=20261011g';
 
 export const PRIVACY_VERSIE = '2026-10';
@@ -297,7 +297,7 @@ export async function koppelToegang(v, herteken){
     klaar(() => roep('verwijderLid', { clubId, uid: b.dataset.lidWeg }), b, 'Uitgeschreven');
   });
 
-  q('#pvVoLees')?.addEventListener('click', () => import('./club.js?v=20261012c').then(m => m.modalVerwerkersovereenkomst()));
+  q('#pvVoLees')?.addEventListener('click', () => import('./club.js?v=20261012e').then(m => m.modalVerwerkersovereenkomst()));
   q('#pvOpslaan').onclick = (e) => klaar(async () => {
     const wijz = [
       ['privacy.contactNaam', q('#pvNaam').value.trim()], ['privacy.contactEmail', q('#pvMail').value.trim()],

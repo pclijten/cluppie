@@ -12,6 +12,7 @@ Alle callables vereisen `clubId` in de payload; de server controleert lidmaatsch
 | `syncSportlink` | schema | nachtelijk, alle clubs met `sportlinkClientId` |
 | `checkAfgelastingen` | schema | vr–zo elke 30 min (actief vr 16–22, za/zo 7–14): afgelaste wedstrijden markeren |
 | `sportlinkClubInfo` | ingelogd | callable; club opzoeken met een Client ID (geen bank-/contactgegevens), max 10/uur |
+| `sportlinkTeamSpelers` | coach van het team / beheer | callable; alleen namen van zichtbare spelers uit de teamindeling, max 10/uur |
 | `cleanupDeletedItems` | schema | opruimen |
 
 | `sluitAan`, `uitnodigingInfo`, `codeBezet` | coach / (uitnodigingInfo: openbaar) | aansluiten via team- of clubcode; vervangt client-queries op `code==` |

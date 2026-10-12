@@ -13,7 +13,7 @@
 
 import { db, doc, getDocs, collection, updateDoc, deleteField } from './firebase.js?v=20261011g';
 import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261011g';
-import { verhuisSpelersSeizoen } from './teams-spelers.js?v=20261012c';
+import { verhuisSpelersSeizoen } from './teams-spelers.js?v=20261012e';
 
 const BLIJFT = '__blijft', WEG = '__weg';
 

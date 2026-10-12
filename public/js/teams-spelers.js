@@ -35,7 +35,7 @@ import { heeftElftallen, filterOpElftal, elftalPillen } from './elftallen.js?v=2
    import). Dynamic import() binnen de aanroepende functie is het patroon
    dat de rest van de app ook al gebruikt (zie club.js/wedstrijd.js). */
 async function herrenderTeam(){
-  const m = await import('./teams.js?v=20261012c');
+  const m = await import('./teams.js?v=20261012e');
   m.renderTeam();
 }
 
@@ -63,7 +63,10 @@ export function htmlSpelers(){
       <span>Beoordelingen en leerpunten zijn alleen zichtbaar voor coaches van dit team. Spelers en ouders zien deze gegevens niet.</span>
     </div>
 
-    <button class="knop vol licht" id="nieuweSpeler" style="margin-bottom:14px">+ Speler toevoegen</button>
+    ${sportlinkGekoppeld() ? `<div class="rij" style="margin-bottom:14px">
+      <button class="knop vol licht" id="nieuweSpeler">+ Speler toevoegen</button>
+      <button class="knop vol licht" id="spelersSportlink">Uit Sportlink</button></div>`
+      : `<button class="knop vol licht" id="nieuweSpeler" style="margin-bottom:14px">+ Speler toevoegen</button>`}
     ${(() => {
       const eigen = S.spelers.filter(p => !p._ingeleend);
       const spelerRij = (p, ingeleend) => {
@@ -1138,6 +1141,74 @@ function meestGespeeldHtml(top){
       </div>
       <button type="button" class="mg-knop" id="mSpMgOk" data-pos="${esc(beste.naam)}">Overnemen: ${esc(beste.naam)}</button>
     </div>`;
+}
+
+/* ==================== SPELERS UIT SPORTLINK (20261012e) ====================
+   Eenmalig, op verzoek van de coach: namen van zichtbare spelers uit de Sportlink-teamindeling
+   (callable sportlinkTeamSpelers). Afgeschermde spelers worden alleen geteld; staf, contact,
+   foto, geslacht en lidnummer komen nooit mee. Geen nachtelijke sync. Zie AVG.md. */
+export function sportlinkGekoppeld(){
+  const club = (S.clubs || []).find(c => c.id === S.team?.club) || S.club;
+  return !!(club && club.sportlinkClientId);
+}
+const naamSleutel = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '');
+/* PURE (getest): markeert wie al in de selectie staat. Zonder achternaam aan één kant telt de voornaam. */
+export function markeerBestaand(zichtbaar, bestaande){
+  const eigen = (bestaande || []).filter(p => !p._ingeleend && !p.gast);
+  return (zichtbaar || []).map(z => {
+    const v = naamSleutel(z.voornaam), a = naamSleutel(z.achternaam);
+    const al = eigen.some(p => naamSleutel(p.naam) === v && (!a || !p.achternaam || naamSleutel(p.achternaam) === a));
+    return { ...z, al };
+  });
+}
+export async function modalSpelersUitSportlink(){
+  const clubId = S.team?.club || S.clubId;
+  const sluitKnop = tekst => `<button class="knop licht vol" id="slSpSluit" style="margin-top:8px">${tekst}</button>`;
+  openModal('<h2>Spelers uit Sportlink</h2><div class="sl-laden"><span class="sl-spin"></span>Teamindeling ophalen…</div>');
+  let r;
+  try { r = (await httpsCallable(functions, 'sportlinkTeamSpelers')({ clubId, teamId: S.teamId })).data || {}; }
+  catch (e){
+    const tekst = e.code === 'functions/not-found' && !e.message ? 'Ophalen uit Sportlink is nog niet beschikbaar.'
+      : (e.message || 'Sportlink is nu niet bereikbaar. Probeer het later opnieuw.');
+    openModal(`<h2>Spelers uit Sportlink</h2><p class="cb-uitleg">${esc(tekst)}</p>${sluitKnop('Sluiten')}`);
+    $('#slSpSluit').onclick = sluitModal; return;
+  }
+  if (!r.gekoppeld){
+    openModal(`<h2>Spelers uit Sportlink</h2><p class="cb-uitleg">Dit team is nog niet aan Sportlink gekoppeld. Vraag je clubbeheerder om het team te koppelen (Instellingen → Sportlink).</p>${sluitKnop('Sluiten')}`);
+    $('#slSpSluit').onclick = sluitModal; return;
+  }
+  const lijst = markeerBestaand(r.zichtbaar, S.spelers);
+  const nieuw = lijst.filter(x => !x.al);
+  const afgeschermd = r.afgeschermd ? `<div class="sl-vondst-melding let"><b>${r.afgeschermd} speler${r.afgeschermd === 1 ? ' is' : 's zijn'} afgeschermd in Sportlink</b>
+    <span>Hun naam is niet openbaar. Voeg ze zelf toe met "+ Speler toevoegen".</span></div>` : '';
+  const rij = (x, i) => `<label class="sl-sp-keuze${x.al ? ' al' : ''}"><input type="checkbox" data-i="${i}" ${x.al ? '' : 'checked'}>
+    <span><b>${esc(x.voornaam)}</b>${x.achternaam ? ' ' + esc(x.achternaam) : ''}</span>${x.al ? '<small>staat al in selectie</small>' : ''}</label>`;
+  openModal(`<h2>Spelers uit Sportlink</h2>
+    <p class="cb-uitleg" style="margin:0 0 10px">Sportlink kent ${r.totaal} speler${r.totaal === 1 ? '' : 's'} voor dit team.${nieuw.length ? ' Vink aan wie je wilt toevoegen.' : ''}</p>
+    ${lijst.length ? `<div class="sl-sp-kop">Met zichtbare naam</div>${lijst.map(rij).join('')}` : ''}
+    ${!nieuw.length && lijst.length ? '<p class="cb-uitleg">Iedereen met een zichtbare naam staat al in je selectie.</p>' : ''}
+    ${afgeschermd}
+    ${nieuw.length && !lijst.some(x => x.achternaam) ? '<p class="cb-uitleg" style="font-size:calc(12px * var(--fs));margin-top:8px">Alleen voornamen: jullie club legt geen achternamen vast.</p>' : ''}
+    ${nieuw.length ? '<button class="knop fluo vol" id="slSpToe" style="margin-top:12px"></button>' : ''}
+    ${sluitKnop(nieuw.length ? 'Annuleren' : 'Sluiten')}`);
+  const knop = $('#slSpToe');
+  const gekozen = () => $$('#modalInhoud .sl-sp-keuze input:checked').map(i => lijst[Number(i.dataset.i)]).filter(x => x && !x.al);
+  const telBij = () => { if (!knop) return; const n = gekozen().length;
+    knop.textContent = n ? `${n} speler${n === 1 ? '' : 's'} toevoegen` : 'Niemand gekozen'; knop.disabled = !n; };
+  $$('#modalInhoud .sl-sp-keuze input').forEach(i => i.onchange = telBij); telBij();
+  $('#slSpSluit').onclick = sluitModal;
+  if (knop) knop.onclick = async () => {
+    const keuze = gekozen(); if (!keuze.length) return;
+    knop.disabled = true; knop.textContent = 'Bezig…';
+    try {
+      for (const x of keuze){
+        await addDoc(collection(db, 'teams', S.teamId, 'spelers'),
+          { naam: x.voornaam, achternaam: achternaamUit() ? null : (x.achternaam || null), nummer: null, bron: 'sportlink' });
+        telGebruik('speler_nieuw');
+      }
+      sluitModal(); meld(`${keuze.length} speler${keuze.length === 1 ? '' : 's'} toegevoegd`);
+    } catch (e){ knop.disabled = false; telBij(); meld('Toevoegen mislukt: ' + (e.code || e.message)); }
+  };
 }
 
 export function modalSpeler(p){
