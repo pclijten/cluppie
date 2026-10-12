@@ -38,6 +38,10 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 
 # Geschiedenis
 
+## Release 20261012c — teamcode weg uit Teaminstellingen
+- De kaart "Teamcode voor coaches" (code, kopiëren, handmatig wijzigen) is weg; "Coach uitnodigen" (persoonlijke link, 14 dagen) staat nu in de Coaches-kaart. Het vinkje "code volgt naam" bij teamnaam wijzigen staat er alleen nog als de club vaste codes aan heeft. Handleiding, rondleiding, hulp-antwoord en `functions/kennis.js` aangepast (kennis.js gaat mee bij de volgende deploy van `chatHulp`).
+- Gekozen wedstrijdvorm ("8 tegen 8") was in het lichte thema onleesbaar (witte tekst): `.vxv-opt.aan` gebruikt nu `--ink`.
+
 ## Release 20261012b — logo op het uitnodigingsscherm
 - Het scherm dat een coach ziet bij een uitnodigingslink (`?uitn=`) toont nu het Cluppie-logo boven de teamnaam (zelfde `login-logo` als het loginscherm); het 🏟-teken vóór de teamnaam is weg (`index.html`, `auth.js`). Alleen client, geen deploy van functions nodig.
 

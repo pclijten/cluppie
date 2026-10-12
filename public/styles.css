@@ -1597,7 +1597,7 @@ body{ background:var(--bg); color:var(--ink); }
 /* wedstrijdvorm-keuze (vXv) in teaminstellingen */
 .vxv-opties{display:flex;flex-wrap:wrap;gap:8px}
 .vxv-opt{border:1.5px solid var(--line-d);background:var(--surface-2);color:var(--ink);border-radius:10px;padding:9px 14px;font-weight:700;cursor:pointer;font-family:inherit;font-size:calc(14px * var(--fs))}
-.vxv-opt.aan{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 15%,var(--surface-2));color:#fff}
+.vxv-opt.aan{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 15%,var(--surface-2));color:var(--ink)}
 
 /* snel-kop in modal */
 .snel-kop{display:flex;align-items:center;gap:11px;margin-bottom:6px}
