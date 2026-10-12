@@ -219,7 +219,70 @@ function spelersUitIndeling(regels, { achternamen = false } = {}){
   return { zichtbaar, afgeschermd, totaal };
 }
 
+/* ---------- 6. clubgids (20261012f) ----------
+   Gedeelde, platformbrede gids van clubs (alleen openbare clubgegevens): clubcode → naam,
+   teamnamen, sportpark, plaats, adres. Gevuld door de sync uit programma, uitslagen en
+   pouledata; gebruikt bij "Nieuwe wedstrijd" om een tegenstander te kiezen. */
+
+const TEAM_ACHTERVOEGSEL = /\s+(?:(?:J|M)?O\s?\d{1,2}(?:[-\s]\S*)?|MO\d+\S*|JO\d+\S*|\d{1,2}(?:\s*\(.*\))?|VR\S*|Vrouwen\b.*|Veteranen\b.*|\d{2}\+\S*|Zaterdag\b.*|Zondag\b.*)(?:\s*\(.*\))?$/i;
+/* "SV de Middenpeel O12-1JM" + "SV de Middenpeel 1" → "SV de Middenpeel" */
+function clubNaamUitTeams(namen){
+  const lijst = [...new Set((namen || []).map(n => schoon(n, 80)).filter(Boolean))];
+  if (!lijst.length) return '';
+  if (lijst.length >= 2){
+    let p = lijst[0];
+    for (const n of lijst) while (p && !n.startsWith(p)) p = p.slice(0, -1);
+    const sp = p.lastIndexOf(' ');
+    const kandidaat = (sp > 0 ? p.slice(0, sp) : '').trim();
+    if (kandidaat.length >= 3) return kandidaat;
+  }
+  const kort = lijst.map(n => n.replace(TEAM_ACHTERVOEGSEL, '').trim()).filter(Boolean).sort((a, b) => a.length - b.length)[0];
+  return kort || lijst[0];
+}
+
+/* Wedstrijdregels (programma, uitslagen, pouledata) → Map clubcode → { teams:Set, sportparken:Map naam→aantal, plaats } */
+function gidsUitRegels(regels){
+  const per = new Map();
+  const bij = (code, team) => {
+    code = schoon(code, 20).toUpperCase();
+    if (!/^[A-Z0-9]{4,20}$/.test(code)) return null;
+    const g = per.get(code) || { teams: new Set(), sportparken: new Map(), plaats: '' };
+    const t = schoon(team, 80); if (t) g.teams.add(t);
+    per.set(code, g); return g;
+  };
+  for (const r of regels || []){
+    const thuis = bij(r?.thuisteamclubrelatiecode, r?.thuisteam);
+    bij(r?.uitteamclubrelatiecode, r?.uitteam);
+    const acc = schoon(r?.accommodatie, 80);
+    if (thuis && acc) thuis.sportparken.set(acc, (thuis.sportparken.get(acc) || 0) + 1);
+    if (thuis && r?.plaats && !thuis.plaats) thuis.plaats = netjesPlaats(r.plaats);
+  }
+  return per;
+}
+
+/* Bestaand gidsdocument + nieuwe waarneming → nieuw document, of null als er niets verandert.
+   Teams worden samengevoegd (max 40), het meest gebruikte sportpark wint, adres alleen als bekend. */
+function gidsSamenvoegen(oud, g, adres = null){
+  oud = oud || {};
+  const teams = [...new Set([...(oud.teams || []), ...g.teams])].slice(0, 40).sort((a, b) => a.localeCompare(b, 'nl'));
+  const sportpark = [...g.sportparken.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || oud.accommodatie || '';
+  const nieuw = {
+    naam: clubNaamUitTeams(teams) || oud.naam || '',
+    teams,
+    accommodatie: sportpark,
+    plaats: g.plaats || oud.plaats || '',
+    ...(adres && adres.adres ? { adres: adres.adres, plaatsAdres: adres.plaats || '', route: adres.route || '' }
+        : oud.adres ? { adres: oud.adres, plaatsAdres: oud.plaatsAdres || '', route: oud.route || '' } : {}),
+  };
+  if (!nieuw.route && nieuw.accommodatie)
+    nieuw.route = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent([nieuw.accommodatie, nieuw.plaats || nieuw.naam].filter(Boolean).join(', '));
+  const sleutels = ['naam', 'accommodatie', 'plaats', 'adres', 'plaatsAdres', 'route'];
+  const gelijk = sleutels.every(k => (oud[k] || '') === (nieuw[k] || '')) && JSON.stringify(oud.teams || []) === JSON.stringify(teams);
+  return gelijk ? null : nieuw;
+}
+
 module.exports = {
+  clubNaamUitTeams, gidsUitRegels, gidsSamenvoegen,
   spelersUitIndeling,
   schoon, netjesPlaats, kleurUitTekst, filterClubgegevens, soortVan, poulesPerTeam, bekerPoule,
   infoUitRegel, accommodatieSleutel, accommodatieUit, afgelastPlan, afgelastRegel, inAfgelastVenster,

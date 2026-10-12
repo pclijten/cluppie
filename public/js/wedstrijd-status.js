@@ -40,9 +40,13 @@ export function wedstrijdInfo(w){
   return {
     verzamel: tijd('verzamel'), vertrek: tijd('vertrek'),
     aftrap: w && w.aftrap ? { t: w.aftrap, bron: w.bron === 'sportlink' ? 'sportlink' : 'eigen' } : { t: '', bron: '' },
-    accommodatie: sl.accommodatie || '', veld: sl.veld || '', kleedkamer: sl.kleedkamer || '',
-    plaats: sl.plaats || '', adres: sl.adres || '', plaatsAdres: sl.plaatsAdres || '', telefoon: sl.telefoon || '',
-    route: /^https:\/\/www\.google\.com\/maps\//.test(sl.route || '') ? sl.route : '',
+    // [20261012f] bij een eigen wedstrijd (of een aangepaste plek) gaat infoEigen voor
+    accommodatie: eigen.accommodatie || sl.accommodatie || '', veld: sl.veld || '', kleedkamer: sl.kleedkamer || '',
+    plaats: sl.plaats || '',
+    adres: eigen.accommodatie ? (eigen.adres || '') : (sl.adres || ''),
+    plaatsAdres: eigen.accommodatie ? (eigen.plaatsAdres || '') : (sl.plaatsAdres || ''),
+    telefoon: eigen.accommodatie ? '' : (sl.telefoon || ''),
+    route: (r => /^https:\/\/www\.google\.com\/maps\//.test(r) ? r : '')(eigen.accommodatie ? (eigen.route || '') : (sl.route || '')),
   };
 }
 export const heeftInfo = w => { const i = wedstrijdInfo(w); return !!(i.accommodatie || i.verzamel.t || i.vertrek.t); };
@@ -64,7 +68,8 @@ function datumKort(iso){
 /* Bericht voor de oudergroep. Geen spelernamen: alleen tijden en plek. */
 export function deelTekst(w, teamNaam){
   const i = wedstrijdInfo(w);
-  const titel = w.thuis ? `${teamNaam} – ${w.tegenstander || ''}` : `${w.tegenstander || ''} – ${teamNaam}`;
+  const titel = w.type === 'toernooi' ? (w.tegenstander || 'Toernooi')
+    : w.thuis ? `${teamNaam} – ${w.tegenstander || ''}` : `${w.tegenstander || ''} – ${teamNaam}`;
   const r = [`${datumKort(w.datum).replace(/^./, c => c.toUpperCase())} — ${titel.trim()}`];
   if (isAfgelast(w)){ r.push('Deze wedstrijd is afgelast.'); return r.join('\n'); }
   const tijden = [i.verzamel.t && `verzamelen ${i.verzamel.t}`, i.vertrek.t && `vertrek ${i.vertrek.t}`].filter(Boolean);
@@ -73,6 +78,7 @@ export function deelTekst(w, teamNaam){
   if (i.kleedkamer) r.push(`Kleedkamer ${i.kleedkamer}`);
   if (!w.thuis && i.adres) r.push(`Adres: ${[i.adres, i.plaatsAdres].filter(Boolean).join(', ')}`);
   if (!w.thuis && i.route) r.push(`Route: ${i.route}`);
+  if (!w.thuis && !i.adres && !i.route && i.accommodatie) r.push('Adres nog onbekend; zoek op het sportpark.');
   return r.filter(Boolean).join('\n');
 }
 

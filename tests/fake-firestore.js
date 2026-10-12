@@ -46,6 +46,7 @@ class Query {
 }
 const db = {
   doc: p => new Doc(p), collection: c => new Query(c),
+  getAll: async (...refs) => Promise.all(refs.map(r => r.get())),
   /* writes worden pas na afloop uitgevoerd (zoals echt): faalt fn, dan verandert er niets */
   runTransaction: async fn => {
     const w = [];

@@ -17,11 +17,12 @@ import {
 } from './config.js?v=20261011g';
 import { kwartGespeeld, effectieveLineup, analyseKwart, analyseWedstrijd, speeltijdReserve, disciplinaireTijd, WISSEL_BEURT, analyseKwartVerwacht, analyseWedstrijdVerwacht } from './analyse.js?v=20261011g';
 import { ico } from './icons.js?v=20260922c';
+import { laadClubgids, zoekTegenstanders, plekVoor, pouleTeamnamen, clubVanTeam } from './clubgids.js?v=20261012f';
 import { aiAan, eigenClubTokens, voorbeeldTegenstander, beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261011g';
 
 import { telGebruik, telNav } from './tracker.js?v=20261011g';
 import { opkomstVoor, teltMee, MIN_OPKOMST_TRAININGEN } from './opkomst.js?v=20260922c';
-import { openInvoegSheet, bewaarWedstrijdAlsSjabloon, zetNaToepassenCallback } from './opstelling-sjabloon.js?v=20261012e';
+import { openInvoegSheet, bewaarWedstrijdAlsSjabloon, zetNaToepassenCallback } from './opstelling-sjabloon.js?v=20261012f';
 import { heeftElftallen, elftalWedstrijd, elftalNaam, hoortBijElftal, spelersVoorElftal, filterOpElftal,
   elftalFilter, elftalFilterHtml } from './elftallen.js?v=20261011g';
 
@@ -314,8 +315,11 @@ export function modalNieuweWedstrijd(){
     ${cat ? `<p style="font-size:calc(12.5px * var(--fs));color:var(--ink-2);margin-bottom:12px">KNVB ${esc(catLabel(S.team.categorie))}: ${esc(cat.knvb)} — standaarden zijn ingevuld.</p>` : ''}
 
     <div id="mWNormaal">
-      <div class="veldgroep"><label>Tegenstander</label>
-        <input class="invoer" id="mWTegen" placeholder="Bijv. ${esc(voorbeeldTegenstander(S.team.categorie))}" autocomplete="off"></div>
+      <div class="veldgroep mw-tegen"><label for="mWTegen">Tegenstander</label>
+        <input class="invoer" id="mWTegen" placeholder="Typ een club of team, bijv. ${esc(voorbeeldTegenstander(S.team.categorie))}" autocomplete="off"
+          role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="mWSug">
+        <div class="mw-sug" id="mWSug" role="listbox" hidden></div>
+        <p class="mw-hint" id="mWTegenBron" hidden></p></div>
       <div class="veldgroep"><label>Periodes</label>
         <div class="segment" id="mWPeriodes">
           <button data-p="2" class="${periodes===2?'actief':''}">2 helften</button>
@@ -348,6 +352,13 @@ export function modalNieuweWedstrijd(){
           `<button data-f="${f}" class="${format===f?'actief':''}">${f}</button>`).join('')}</div></div>
     </div>
 
+    <div class="veldgroep"><label>Tijden <span class="mw-opt">(optioneel)</span></label>
+      <div class="mw-tijden">
+        <label>Verzamelen<input class="invoer" type="time" id="mWVerzamel"></label>
+        <label id="mWVertrekWrap">Vertrek<input class="invoer" type="time" id="mWVertrek"></label>
+        <label>Aftrap<input class="invoer" type="time" id="mWAftrap"></label></div></div>
+    <div class="veldgroep"><label>Plek</label><div id="mWPlek"></div></div>
+
     <label class="lid-rij" id="mWOvernemenWrap" style="cursor:pointer;display:none">
       <input type="checkbox" id="mWOvernemen" style="width:19px;height:19px;accent-color:var(--grass)">
       <div class="lid-naam" style="font-weight:500">Begin met opstelling van vorige wedstrijd
@@ -357,6 +368,58 @@ export function modalNieuweWedstrijd(){
     <button class="knop vol" id="mWOk" style="margin-top:6px">Aanmaken</button>`);
 
   let thuis = true;
+  /* [20261012f] tegenstander uit de clubgids + plek. `gekozenClub` = gids-item van de tegenstander;
+     `plekHand` = coach typt de plek zelf (vrije tekst of "Wijzigen"). */
+  let gids = [], gekozenClub = null, plekHand = false;
+  const eigenClub = (S.clubs || []).find(c => c.id === S.team?.club) || S.club || {};
+  const eigenCode = eigenClub.sportlinkClubcode || '';
+  const huidigePlek = () => type === 'toernooi' ? null
+    : thuis ? plekVoor(gids.find(c => c.code === eigenCode)) : plekVoor(gekozenClub);
+  const tekenPlek = () => {
+    const el = $('#mWPlek'); if (!el) return;
+    const p = huidigePlek();
+    if (plekHand || type === 'toernooi' || !p){
+      const vorige = $('#mWPlekTekst')?.value;
+      el.innerHTML = `<input class="invoer" id="mWPlekTekst" maxlength="80" placeholder="${type === 'toernooi' ? 'Bijv. Sportpark De Kluis, Mierlo' : 'Sportpark (optioneel)'}" value="${esc(vorige ?? (p?.accommodatie || ''))}">
+        ${!plekHand && type !== 'toernooi' ? `<p class="mw-hint">${thuis ? 'Eigen sportpark nog niet bekend; dat vult de Sportlink-sync.' : 'Kies een tegenstander uit de lijst, dan zetten we de plek klaar.'}</p>` : ''}`;
+      return;
+    }
+    el.innerHTML = `<div class="mw-plek"><span aria-hidden="true">${thuis ? '🏠' : '📍'}</span>
+      <div><b>${esc(p.accommodatie)}</b><span>${p.adresBekend ? esc([p.adres, p.plaatsAdres].filter(Boolean).join(', ')) : thuis ? 'Eigen sportpark' : 'Adres nog onbekend, route via zoeken'}</span></div>
+      <button type="button" class="mw-wijzig" id="mWPlekWijzig">Wijzigen</button></div>`;
+    $('#mWPlekWijzig').onclick = () => { plekHand = true; tekenPlek(); $('#mWPlekTekst')?.focus(); };
+  };
+  laadClubgids().then(g => { gids = g; tekenPlek(); }).catch(() => {});
+  const sluitSug = () => { const el = $('#mWSug'); if (el){ el.hidden = true; el.innerHTML = ''; } $('#mWTegen')?.setAttribute('aria-expanded', 'false'); };
+  const kiesTegen = (naam, club, bron) => {
+    $('#mWTegen').value = naam; gekozenClub = club || null; plekHand = false; sluitSug();
+    const b = $('#mWTegenBron');
+    b.hidden = !club; b.textContent = club ? (bron === 'poule' ? 'Uit je poule' : 'Uit de clubgids') + (club.accommodatie ? ' · ' + club.accommodatie : '') : '';
+    tekenPlek();
+  };
+  const toonSug = () => {
+    const q = $('#mWTegen').value;
+    const { poule, clubs } = zoekTegenstanders(gids, q, { pouleTeams: pouleTeamnamen(), eigenCode });
+    const el = $('#mWSug');
+    if (q.trim().length < 2){ sluitSug(); return; }
+    const items = [...poule.map(p => ({ naam: p.naam, club: p.club, bron: 'poule' })), ...clubs.map(c => ({ naam: c.naam, club: c, bron: 'gids' }))];
+    const knop = (it, i) => `<button type="button" role="option" data-sug="${i}"><b>${esc(it.naam)}</b>${it.club ? `<small>${esc([it.club.accommodatie, it.bron === 'gids' ? it.club.plaats : ''].filter(Boolean).join(' · '))}</small>` : ''}</button>`;
+    el.innerHTML = (poule.length ? `<div class="mw-sug-kop">Uit je poule</div>${items.slice(0, poule.length).map(knop).join('')}` : '')
+      + (clubs.length ? `<div class="mw-sug-kop">Andere clubs</div>${items.slice(poule.length).map((it, j) => knop(it, poule.length + j)).join('')}` : '')
+      + `<button type="button" class="mw-sug-vrij" data-vrij="1">"${esc(q.trim())}" als vrije tekst gebruiken</button>`;
+    el.hidden = false; $('#mWTegen').setAttribute('aria-expanded', 'true');
+    el.querySelectorAll('[data-sug]').forEach(b => b.onmousedown = e => { e.preventDefault(); const it = items[Number(b.dataset.sug)]; kiesTegen(it.naam, it.club, it.bron); });
+    el.querySelector('[data-vrij]').onmousedown = e => { e.preventDefault(); kiesTegen(q.trim(), null); plekHand = true; tekenPlek(); };
+  };
+  $('#mWTegen').addEventListener('input', () => { gekozenClub = null; $('#mWTegenBron').hidden = true; toonSug(); tekenPlek(); });
+  $('#mWTegen').addEventListener('blur', () => setTimeout(() => {
+    sluitSug();
+    // getypte naam die precies bij een club hoort: die club alsnog koppelen
+    if (!gekozenClub){ const v = $('#mWTegen').value.trim(); const c = v && clubVanTeam(gids, v); if (c){ gekozenClub = c; tekenPlek(); } }
+  }, 150));
+  $('#mWTegen').addEventListener('keydown', e => { if (e.key === 'Escape') sluitSug(); });
+  const werkVertrek = () => { $('#mWVertrekWrap').hidden = thuis && type === 'normaal'; };
+  tekenPlek(); werkVertrek();
   const duurLabel = () => {
     $('#mWDuurLabel').textContent = type === 'toernooi'
       ? (toernooiHelften === 1 ? 'Minuten per wedstrijd' : 'Minuten per helft')
@@ -392,9 +455,9 @@ export function modalNieuweWedstrijd(){
     $('#mWToernooi').style.display = type === 'toernooi' ? '' : 'none';
     $('#mWThuisWrap').style.display = type === 'normaal' ? '' : 'none';
     $('#mWDuur').value = type === 'toernooi' ? '15' : String(stdDuur).replace('.',',');
-    duurLabel(); werkOvernemenBij();
+    duurLabel(); werkOvernemenBij(); tekenPlek(); werkVertrek();
   });
-  $$('#mWThuis button').forEach(b => b.onclick = () => { $$('#mWThuis button').forEach(x=>x.classList.remove('actief')); b.classList.add('actief'); thuis = b.dataset.t==='1'; });
+  $$('#mWThuis button').forEach(b => b.onclick = () => { $$('#mWThuis button').forEach(x=>x.classList.remove('actief')); b.classList.add('actief'); thuis = b.dataset.t==='1'; plekHand = false; tekenPlek(); werkVertrek(); });
   $$('#mWFormat button').forEach(b => b.onclick = () => { $$('#mWFormat button').forEach(x=>x.classList.remove('actief')); b.classList.add('actief'); format = b.dataset.f; werkOvernemenBij(); });
   $$('#mWHelften button').forEach(b => b.onclick = () => { $$('#mWHelften button').forEach(x=>x.classList.remove('actief')); b.classList.add('actief'); toernooiHelften = Number(b.dataset.h); duurLabel(); });
   $$('#mWPeriodes button').forEach(b => b.onclick = () => {
@@ -434,6 +497,25 @@ export function modalNieuweWedstrijd(){
         thuis, format, periodes,
       };
     }
+    /* [20261012f] tijden en plek; alleen gevulde velden */
+    const tijdVan = id => { const x = ($(id)?.value || '').trim(); return /^\d{2}:\d{2}$/.test(x) ? x : ''; };
+    const aftrap = tijdVan('#mWAftrap'), verzamel = tijdVan('#mWVerzamel'), vertrek = (thuis && type === 'normaal') ? '' : tijdVan('#mWVertrek');
+    const plek = huidigePlek();
+    const plekTekst = ($('#mWPlekTekst')?.value || '').trim().slice(0, 80);
+    const infoEigen = {};
+    if (verzamel) infoEigen.verzamel = verzamel;
+    if (vertrek) infoEigen.vertrek = vertrek;
+    if (!plekHand && type === 'normaal' && plek){
+      infoEigen.accommodatie = plek.accommodatie;
+      if (plek.adres){ infoEigen.adres = plek.adres; infoEigen.plaatsAdres = plek.plaatsAdres || ''; }
+      if (plek.route) infoEigen.route = plek.route;
+    } else if (plekTekst){
+      infoEigen.accommodatie = plekTekst;
+      infoEigen.route = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(plekTekst);
+    }
+    if (aftrap) w.aftrap = aftrap;
+    if (Object.keys(infoEigen).length) w.infoEigen = infoEigen;
+    if (type === 'normaal' && gekozenClub?.code) w.tegenstanderClub = gekozenClub.code;
     const kwarten = {};
     for (let i = 1; i <= w.periodes; i++) kwarten[i] = leegKwart();
     if (overTeNemen) kwarten[1].lineup = {...overTeNemen};
@@ -541,7 +623,7 @@ export function openWedstrijd(wid){
   if (!S.teamId || !wid){
     console.warn('[Cluppie] openWedstrijd afgebroken: ontbrekende teamId of wid', {teamId:S.teamId, wid});
     S.wedstrijdId = null;
-    if (S.teamId) import('./teams.js?v=20261012e').then(m => m.renderTeam?.());
+    if (S.teamId) import('./teams.js?v=20261012f').then(m => m.renderTeam?.());
     return;
   }
   S.wedstrijdId = wid; S.kwart = '1'; S.geselecteerd = null; S._confroOpen = false; S._wizardActief = false;
@@ -587,7 +669,7 @@ export function sluitWedstrijd(naarTab){
   verbergWijzigOpzet();
   if (typeof naarTab === 'string') S.teamTab = naarTab;
   bewaarPositie();
-  import('./teams.js?v=20261012e').then(m => { m.renderTeam(); toon('team'); });
+  import('./teams.js?v=20261012f').then(m => { m.renderTeam(); toon('team'); });
 }
 /* Speeltijd van INGELEENDE spelers in déze wedstrijd wegschrijven op het
    leen-record zelf (clubs/{clubId}/uitleningen/{leenId}), zodat het
@@ -2618,7 +2700,7 @@ export function htmlStats(){
 export function koppelStatsBlad(root){
   (root || document).querySelectorAll('[data-statsblad]').forEach(b => b.onclick = () => {
     S.statsBlad = b.dataset.statsblad;
-    import('./teams.js?v=20261012e').then(m => m.renderTeam?.());
+    import('./teams.js?v=20261012f').then(m => m.renderTeam?.());
   });
 }
 
@@ -3153,7 +3235,7 @@ ${confroHtml}
   { const bwk = v.querySelector('#bijwerkKnop'); if (bwk) bwk.onclick = () => { S.bijwerkKwart = S.kwart; toonBijwerkScherm(); }; }
   const teamEvalKnop = v.querySelector('#teamEvalKnop');
   if (teamEvalKnop) teamEvalKnop.onclick = () => {
-    import('./teams.js?v=20261012e').then(m => m.modalTeamEvaluatie(S.wedstrijdId));
+    import('./teams.js?v=20261012f').then(m => m.modalTeamEvaluatie(S.wedstrijdId));
   };
   v.querySelectorAll('[data-corrigeer-goal]').forEach(b => b.onclick = e => {
     e.stopPropagation(); modalGoalCorrigeren(Number(b.dataset.corrigeerGoal));

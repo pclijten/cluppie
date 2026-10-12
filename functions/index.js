@@ -84,6 +84,7 @@ const PADEN = {
   aiGebruik:   (c, m) => `clubs/${c}/aiGebruik/${m}`,          // { aantal } per maand (YYYY-MM)
   afgelast:    (c)    => `clubs/${c}/geheim/_afgelast`,        // [20261012a] { rijen[] } afgelaste wedstrijden, voor het clubscherm
   accommodatie:(k)    => `accommodaties/${k}`,                 // [20261012a] gedeelde adres-cache (alleen functions)
+  clubgids:    'clubgids',                                     // [20261012f] gedeelde gids van clubs (lezen: ingelogd)
 };
 
 const ADMIN_ROLLEN = ['club_admin'];
@@ -877,6 +878,7 @@ async function haalPoule(clientId, poulecode, venster){
   const programmaRijen = [...samen.values()]
     .sort((a, b) => (a.datum + (a.tijd || '')).localeCompare(b.datum + (b.tijd || '')));
   return {
+    ruw: [...uitslagen, ...programma],   // [20261012f] voor de clubgids (clubcode + sportpark)
     stand: { rijen: rows, poulecode, klassepoule: String(stand[0]?.klassepoule || '').trim() || null },
     uitslagen: { rijen: uitslagRijen, poulecode },
     programma: { rijen: programmaRijen, poulecode },
@@ -926,6 +928,7 @@ async function syncClubSportlink(clubId, { alleenTeamlijst = false } = {}){
   const pouleCache = new Map();
   const koppelingen = {};
   const accCache = new Map();
+  const gidsRegels = [];   // [20261012f] rauwe wedstrijdregels voor de clubgids
   let wedstrijden = 0, gematcht = 0;
 
   for (const teamDoc of teamsSnap.docs){
@@ -943,6 +946,7 @@ async function syncClubSportlink(clubId, { alleenTeamlijst = false } = {}){
       }
       koppelingen[k.teamcode] = teamDoc.id;
       const { bron, inProgramma } = await teamWedstrijden(k);
+      gidsRegels.push(...bron);
       const eigen = eigenWedstrijden(bron, k.teamcode);
       await vulAccommodaties(db, clientId, eigen, accCache);
       await schrijfInBatches(db, eigen.map(w => [
@@ -990,6 +994,9 @@ async function syncClubSportlink(clubId, { alleenTeamlijst = false } = {}){
     }
   }
 
+  for (const p of pouleCache.values()) gidsRegels.push(...(p.ruw || []));
+  try { await schrijfClubgids(db, gidsRegels, accCache); }
+  catch (e){ console.warn(`[sl] clubgids ${clubId}: ${e.message || e}`); }   // gids mag de sync nooit laten mislukken
   // koppelingen teamcode → teamId: nodig voor de snelle weekendcontrole (checkAfgelastingen)
   await db.doc(PADEN.teamlijst(clubId)).set({ teams: lijst, voorvoegsel, koppelingen, updatedAt: FieldValue.serverTimestamp() });
   if (afgelast) await schrijfAfgelastOverzicht(db, clubId, afgelast, koppelingen, teamsSnap);
@@ -1078,6 +1085,39 @@ async function vulAccommodaties(db, clientId, eigen, cache){
     if (acc) Object.assign(w.info, { adres: acc.adres || undefined, plaatsAdres: acc.plaats || undefined, telefoon: acc.telefoon || undefined, route: acc.route || undefined });
     for (const k of Object.keys(w.info)) if (w.info[k] === undefined) delete w.info[k];
   }
+}
+
+/* [20261012f] Clubgids bijwerken: platformbreed clubgids/{clubcode}. Leest de bestaande documenten
+   in één keer en schrijft alleen wat verandert. Adres uit de accommodatie-cache (deze run of eerder). */
+async function schrijfClubgids(db, regels, accCache = new Map()){
+  const per = slh.gidsUitRegels(regels);
+  if (!per.size) return 0;
+  const codes = [...per.keys()];
+  const refs = codes.map(c => db.doc(`${PADEN.clubgids}/${c}`));
+  const oud = new Map();
+  for (let i = 0; i < refs.length; i += 300){
+    const snaps = await db.getAll(...refs.slice(i, i + 300));
+    snaps.forEach((d, j) => oud.set(codes[i + j], d.exists ? d.data() : null));
+  }
+  const schrijf = [];
+  for (const code of codes){
+    const g = per.get(code);
+    const sportpark = [...g.sportparken.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+    let adres = null;
+    const sleutel = sportpark && g.plaats ? slh.accommodatieSleutel(sportpark, g.plaats) : '';
+    if (sleutel && !oud.get(code)?.adres){
+      if (accCache.has(sleutel)) adres = accCache.get(sleutel);
+      else { const d = (await db.doc(PADEN.accommodatie(sleutel)).get()).data(); adres = d || null; accCache.set(sleutel, adres); }
+    }
+    const nieuw = slh.gidsSamenvoegen(oud.get(code), g, adres);
+    if (nieuw) schrijf.push([refs[codes.indexOf(code)], { ...nieuw, bijgewerkt: FieldValue.serverTimestamp() }]);
+  }
+  for (let i = 0; i < schrijf.length; i += 450){
+    const batch = db.batch();
+    for (const [ref, data] of schrijf.slice(i, i + 450)) batch.set(ref, data);
+    await batch.commit();
+  }
+  return schrijf.length;
 }
 
 /* Weekendcontrole: alleen het afgelastingen-endpoint, één call per club. */

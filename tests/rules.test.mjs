@@ -46,6 +46,13 @@ beforeEach(async () => {
 });
 
 /* ---------- clubs ---------- */
+test('clubgids: ingelogd lezen, niemand schrijven', async () => {
+  await env.withSecurityRulesDisabled(c => setDoc(doc(c.firestore(), 'clubgids/XXTT12Z'), { naam: 'VV Voorbeeld', accommodatie: 'Sportpark De Hoef' }));
+  await assertSucceeds(getDoc(doc(als('coachA'), 'clubgids/XXTT12Z')));
+  await assertFails(getDoc(doc(gast(), 'clubgids/XXTT12Z')));
+  await assertFails(setDoc(doc(als('coachA'), 'clubgids/XXTT12Z'), { naam: 'Gekaapt' }));
+  await assertFails(setDoc(doc(als('paul', PLATFORM), 'clubgids/NIEUW01'), { naam: 'X' }));
+});
 test('club aanmaken: alleen platformbeheerder', async () => {
   const data = u => ({ naam: 'Nieuw', admins: { [u]: true }, leden: { [u]: true } });
   await assertFails(setDoc(doc(als('coachA'), 'clubs/N1'), data('coachA')));

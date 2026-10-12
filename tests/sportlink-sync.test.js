@@ -43,8 +43,10 @@ function standaardSL(){
     ],
     programma: [
       { wedstrijdcode: 1001, wedstrijddatum: T(6), aanvangstijd: '10:30', thuisteamid: 777, thuisteam: 'FC Kempen O11-1', uitteamid: 501, uitteam: 'VV Voorbeeld O11-1',
+        thuisteamclubrelatiecode: 'KEMP12A', uitteamclubrelatiecode: 'XXTT12Z',
         competitiesoort: 'beker', accommodatie: 'Sportpark De Kempen', veld: 'veld 3', plaats: 'REUSEL', vertrektijd: '9:30', kleedkamerthuisteam: '1', kleedkameruitteam: '4', scheidsrechter: 'P. Pupil' },
       { wedstrijdcode: 1002, wedstrijddatum: T(13, '09:00'), aanvangstijd: '09:00', thuisteamid: 501, thuisteam: 'VV Voorbeeld O11-1', uitteamid: 778, uitteam: 'SV Molenbroek O11-2',
+        thuisteamclubrelatiecode: 'XXTT12Z', uitteamclubrelatiecode: 'MOLB34B',
         competitiesoort: 'regulier', accommodatie: 'Sportpark De Hoef', veld: 'veld 2', plaats: 'RIXTEL', verzameltijd: '08:15', kleedkamerthuisteam: '2' },
       { wedstrijdcode: 1003, wedstrijddatum: T(16, '18:30'), aanvangstijd: '18:30', thuisteamid: 501, thuisteam: 'VV Voorbeeld O11-1', uitteamid: 779, uitteam: 'FC Oefen O11-3',
         competitiesoort: 'Oefenwedstrijd' },
@@ -57,7 +59,9 @@ function standaardSL(){
       { wedstrijdcode: 1001, wedstrijddatum: T(6), aanvangstijd: '10:30', thuisteamid: '777', uitteamid: '501', status: 'Afgelast', wedstrijd: 'FC Kempen O11-1 - VV Voorbeeld O11-1' },
     ],
     poulestand: q => [{ positie: 1, teamnaam: q.get('poulecode') === '905' ? 'VV Voorbeeld O11-1' : 'Ander', gespeeldewedstrijden: 2, punten: 6 }],
-    pouleuitslagen: [], 'poule-programma': [],
+    pouleuitslagen: [{ wedstrijdcode: 9001, wedstrijddatum: T(-20), thuisteam: 'SV Heidebloem O11-1', thuisteamclubrelatiecode: 'HEID56C',
+      uitteam: 'Ander O11-1', uitteamclubrelatiecode: 'ANDR78D', accommodatie: 'Sportpark De Heide', uitslag: '1 - 1' }],
+    'poule-programma': [],
     'wedstrijd-accommodatie': [{ wedstrijd: { accommodatienaam: 'Sportpark De Kempen', adres: 'Kempenweg 12', plaats: '5541AB REUSEL', telefoonnummer: '0497-123456' } }],
     clubgegevens: [{ gegevens: { clubnaam: 'VV Voorbeeld', clubcode: 'XXTT12Z', plaats: 'RIXTEL', thuisshirtkleur: 'Groen / Wit', logo: 'iVBORw0KGgo' + 'A'.repeat(300),
       banknummer: 'NL00BANK0123456789', naamsecretaris: 'J. Jansen' } }],
@@ -112,6 +116,12 @@ function zetKlaar(){
   ok(beker && beker.poulecode === '905' && beker.stand[0].eigen === true, 'bekerstand geschreven met eigen team gemarkeerd');
   ok(!doc('teams/t13/poule/beker'), 'team zonder beker: geen bekerdocument');
 
+  // [20261012f] clubgids
+  const kemp = doc('clubgids/KEMP12A');
+  ok(kemp && kemp.naam === 'FC Kempen' && kemp.accommodatie === 'Sportpark De Kempen' && kemp.adres === 'Kempenweg 12', 'clubgids: tegenstander met sportpark en adres (uitwedstrijd)');
+  ok(doc('clubgids/XXTT12Z')?.accommodatie === 'Sportpark De Hoef', 'clubgids: eigen club met eigen sportpark');
+  ok(doc('clubgids/HEID56C')?.accommodatie === 'Sportpark De Heide' && !doc('clubgids/HEID56C').adres, 'clubgids: poule-club uit pouledata, adres onbekend');
+  ok(doc('clubgids/MOLB34B')?.naam === 'SV Molenbroek' && !doc('clubgids/MOLB34B').accommodatie, 'clubgids: uitploeg zonder sportpark');
   const lijst = doc('clubs/c1/geheim/_sportlink');
   ok(lijst.koppelingen['501'] === 't11' && lijst.teams[0].poules.length === 2, 'teamlijst met poules en koppelingen');
   const ov = doc('clubs/c1/geheim/_afgelast');
