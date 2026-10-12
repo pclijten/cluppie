@@ -2,7 +2,7 @@
 
 Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
 
-## Stand (bijgewerkt 12-10-2026, versie 20261012a)
+## Stand (bijgewerkt 12-10-2026, versie 20261012e)
 - **Firestore-rules:** per club afgeschermd (teams, trainingen, video's, documenten, berichten via clublidmaatschap). Getest in de emulator: `npm run test:rules` (21 scenario's, laatst 20/20 groen op 11-10; de 21e is in 20261011f toegevoegd). Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.
 - **Cloud Functions:** live in `europe-west1` (Node 22, 2nd gen). Iedere nieuwe callable heeft na de eerste deploy de invoker `allUsers` nodig (`gcloud run services add-iam-policy-binding <naam-in-kleine-letters> …`), anders krijgt de app een CORS-/`internal`-fout.
 - **Tests:** `npm test` (12 suites, sinds 20261012a ook `sportlink-meer` en `sportlink-sync`) en `node tests/toegang.test.js` (aansluiten/uitnodigen, 24 scenario's). Pariteit met ASV'33: `node tools/pariteit.mjs ../cluppieasv33` (sinds 20261011h 10 verwachte verschillen in `bouw-hub.js`, `club.js` en `teams-spelers.js`: het overzetten loopt hier via de server).
@@ -20,7 +20,17 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - [ ] AI per club aanzetten zodra de Anthropic-limiet het toelaat (eind oktober).
 - [ ] E-mail: extensie *Trigger Email from Firestore* (collectie `mail`) installeren; zonder extensie gaan meldingen van clubaanmeldingen niet per mail.
 
+**Voor Paul — Training maken en Seizoensplanning (release 20261012e, branch `trainingsmodule-seizoensplanning`)**
+- [ ] Branch reviewen en mergen; daarna `firebase deploy --only functions:personaliseerTraining,functions:seizoensVoorstel` en voor beide de invoker `allUsers` openzetten (zie `functions/LEESMIJ-deploy.md`).
+- [ ] AI-uitleg en AI-jaarvoorstel werken pas als de Anthropic-limiet het toelaat; zonder AI werkt alles met de standaardtekst en de standaard jaarlijn.
+- [ ] `MODEL` in `functions/index.js` is nog `claude-haiku-4-5-20251001`. Haiku 5.5 is volgens de prijzenpagina 10× goedkoper; model-id eerst controleren, dan omzetten (geldt voor alle AI-functies).
+- [ ] Praktijktest met één of twee teams (bijv. een O11 en een O9) voordat het breder gaat; coaches de 48 vormen laten beoordelen (veldmaten en m² per speler zijn aannames).
+- [ ] KNVB schriftelijk om toestemming vragen als KNVB-vormen getoond of bewerkt moeten worden; nu is de bibliotheek eigen werk.
+
 **Bouwen**
+- [ ] Trainingsbibliotheek uitbreiden: omschakelen balwinst/balverlies (vanaf O14), dunne cellen (Teamsport O13, Technische vaardigheden O13, Dieptespel O8), keepervormen, O14+.
+- [ ] Thema-check in de teamevaluatie staat nu in de telefoonversie; de desktop-evaluatie (`desktop-schermen.js`, actie `evsave`) heeft het veld nog niet.
+- [ ] Handleiding (`teams-handleiding.js`) en kennisbank van de hulpchat uitbreiden met Training maken en Seizoensplanning.
 - [ ] Sportlink: na de eerste weekendcontrole (`checkAfgelastingen`, vr 16–22 en za/zo 7–14) in de logs kijken of het aantal calls en markeringen klopt.
 - [ ] Een clubbeheerder kan in zijn eigen club `sportlinkClubcode` aanpassen. Misbruik (de code van een andere club invullen om diens aanmelding te blokkeren) is onwaarschijnlijk; eventueel het veld in de rules alleen voor functions/platform schrijfbaar maken.
 - [ ] Bestaande teamnamen "JO11-1" omzetten naar "O11-1" (knop voor de clubbeheerder of eenmalig voor alle clubs).
@@ -37,6 +47,14 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 ---
 
 # Geschiedenis
+
+## Release 20261012e — Training maken en Seizoensplanning
+- **Training maken** (tab `trainingsmodule`, hub → Oefenstof): een complete training uit een eigen bibliotheek van 48 vormen (O8–O13). Regelgebaseerde planner kiest en controleert (duur, opbouw, voetbalecht ≥50%, thema ≥60%, geen wachtrijen, ruimte per speler, belasting, groepsgrootte); SVG-tekening per onderdeel; knoppen Druk/Moeilijkheid/Coachstijl; Wissel vorm; bewaren onder `teams/{id}/trainingsplannen` (alleen vorm-id's en minuten) en delen via WhatsApp. Werkt zonder AI.
+- **Seizoensplanning** (tab `seizoensplan`): drie opbouwmodellen, parameters (data, vrije weken, trainingen per week, accent), concept-jaarlijn in blokken van 4–6 weken met uitleg, eerste weken uitgewerkt, wekelijks aanvullen. Bijsturing alleen als voorstel (min. 3 wedstrijdevaluaties, max. één per week, feiten + besluit gelogd in `…/seizoensplan/{seizoen}/voorstellen`). Optioneel AI-jaarvoorstel en AI-uitleg, altijd door code gevalideerd met terugval op de standaardopbouw.
+- **Teamevaluatie:** optionele thema-check (ja/deels/nee) als er een seizoensplan is; veld `themaCheck` op `teamevaluaties`.
+- **Functions:** `personaliseerTraining`, `seizoensVoorstel` in `functions/trainingsai.js` (geen namen of spelerdata naar het model; zelfde AI-limiet als de andere AI-functies).
+- **Tests:** `tests/trainingsplanner.test.mjs` (1872 proefplannen), `tests/seizoensplan.test.mjs`, `tests/trainingsai.test.js`; alle in `npm test`. Bibliotheekbron: `tools/trainingsbibliotheek/` (bouwt `public/js/trainingsbibliotheek.js`).
+- Geen wijziging in `state.js` en geen rules-wijziging (valt onder `/teams/{teamId}/{sub=**}`).
 
 ## Release 20261012d — Sportlink-wedstrijden per team ophalen (bugfix)
 - **Probleem:** bij ASV O12-1 stonden alleen de wedstrijden t/m 12 september in Cluppie; rondes 4–6 en de oktoberwedstrijden ontbraken. Oorzaak: de sync vroeg `programma` en `uitslagen` clubbreed op, en Sportlink kapt die lijst af (bij een club met veel teams stopte het seizoensoverzicht half september). Live vastgesteld 12-10-2026: met `teamcode=361275` en hetzelfde venster komen alle zes O12-1-wedstrijden t/m 10 oktober wél terug.

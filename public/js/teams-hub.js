@@ -93,6 +93,8 @@ export function htmlHub(updInfo){
       tegel('trainingen',       'Oefenstof',    'training-cones', oefenstofOngelezen || null),
       `<button class="hub-tegel" data-open-tactiek="1">${ico('football-tactics', 40)}<span class="hub-tnaam">Tactiek</span></button>`,
       tegel('videos',           'Video\u2019s', 'training-video'),
+      tegel('trainingsmodule',  'Training maken', 'training-plan'),
+      tegel('seizoensplan',     'Seizoen',      'planning-month'),
     ]],
     ['Presentie', [
       tegel('presentietraining','Training',     'training-cones'),
