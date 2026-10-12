@@ -202,7 +202,7 @@ export async function joinMetCode(code, naam = null){
   }
   if (res.status === 'aanvraag'){
     S._aanvraagVerstuurd = { club: res.clubNaam, team: res.naam };
-    import('./toegang.js?v=20261012a').then(m => m.toonAanvraagVerstuurd(res));
+    import('./toegang.js?v=20261012b').then(m => m.toonAanvraagVerstuurd(res));
     return null;
   }
   if (!res.teamId){ if (res.clubNaam) meld('Gekoppeld aan ' + res.clubNaam); return null; }
@@ -224,7 +224,7 @@ export async function checkUitnodiging(){
       $('#uitnodigForm').style.display = 'none';
       pendingTeamInfo = null;
     } else {
-      $('#uitnodigTitel').textContent = '🏟 ' + info.naam;
+      $('#uitnodigTitel').textContent = info.naam;
       $('#uitnodigSubtitel').textContent = info.clubNaam
         ? 'Je bent uitgenodigd als coach bij ' + info.clubNaam + '. Log in om aan te sluiten.'
         : 'Je bent uitgenodigd als coach. Log in om aan te sluiten.';
