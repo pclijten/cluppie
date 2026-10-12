@@ -35,7 +35,7 @@ import { heeftElftallen, filterOpElftal, elftalPillen } from './elftallen.js?v=2
    import). Dynamic import() binnen de aanroepende functie is het patroon
    dat de rest van de app ook al gebruikt (zie club.js/wedstrijd.js). */
 async function herrenderTeam(){
-  const m = await import('./teams.js?v=20261012f');
+  const m = await import('./teams.js?v=20261012h');
   m.renderTeam();
 }
 
@@ -1143,7 +1143,7 @@ function meestGespeeldHtml(top){
     </div>`;
 }
 
-/* ==================== SPELERS UIT SPORTLINK (20261012e) ====================
+/* ==================== SPELERS UIT SPORTLINK (20261012g) ====================
    Eenmalig, op verzoek van de coach: namen van zichtbare spelers uit de Sportlink-teamindeling
    (callable sportlinkTeamSpelers). Afgeschermde spelers worden alleen geteld; staf, contact,
    foto, geslacht en lidnummer komen nooit mee. Geen nachtelijke sync. Zie AVG.md. */

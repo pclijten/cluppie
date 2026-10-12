@@ -17,12 +17,12 @@ import {
 } from './config.js?v=20261011g';
 import { kwartGespeeld, effectieveLineup, analyseKwart, analyseWedstrijd, speeltijdReserve, disciplinaireTijd, WISSEL_BEURT, analyseKwartVerwacht, analyseWedstrijdVerwacht } from './analyse.js?v=20261011g';
 import { ico } from './icons.js?v=20260922c';
-import { laadClubgids, zoekTegenstanders, plekVoor, pouleTeamnamen, clubVanTeam } from './clubgids.js?v=20261012f';
+import { laadClubgids, zoekTegenstanders, plekVoor, pouleTeamnamen, clubVanTeam } from './clubgids.js?v=20261012h';
 import { aiAan, eigenClubTokens, voorbeeldTegenstander, beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261011g';
 
 import { telGebruik, telNav } from './tracker.js?v=20261011g';
 import { opkomstVoor, teltMee, MIN_OPKOMST_TRAININGEN } from './opkomst.js?v=20260922c';
-import { openInvoegSheet, bewaarWedstrijdAlsSjabloon, zetNaToepassenCallback } from './opstelling-sjabloon.js?v=20261012f';
+import { openInvoegSheet, bewaarWedstrijdAlsSjabloon, zetNaToepassenCallback } from './opstelling-sjabloon.js?v=20261012h';
 import { heeftElftallen, elftalWedstrijd, elftalNaam, hoortBijElftal, spelersVoorElftal, filterOpElftal,
   elftalFilter, elftalFilterHtml } from './elftallen.js?v=20261011g';
 
@@ -368,7 +368,7 @@ export function modalNieuweWedstrijd(){
     <button class="knop vol" id="mWOk" style="margin-top:6px">Aanmaken</button>`);
 
   let thuis = true;
-  /* [20261012f] tegenstander uit de clubgids + plek. `gekozenClub` = gids-item van de tegenstander;
+  /* [20261012h] tegenstander uit de clubgids + plek. `gekozenClub` = gids-item van de tegenstander;
      `plekHand` = coach typt de plek zelf (vrije tekst of "Wijzigen"). */
   let gids = [], gekozenClub = null, plekHand = false;
   const eigenClub = (S.clubs || []).find(c => c.id === S.team?.club) || S.club || {};
@@ -497,7 +497,7 @@ export function modalNieuweWedstrijd(){
         thuis, format, periodes,
       };
     }
-    /* [20261012f] tijden en plek; alleen gevulde velden */
+    /* [20261012h] tijden en plek; alleen gevulde velden */
     const tijdVan = id => { const x = ($(id)?.value || '').trim(); return /^\d{2}:\d{2}$/.test(x) ? x : ''; };
     const aftrap = tijdVan('#mWAftrap'), verzamel = tijdVan('#mWVerzamel'), vertrek = (thuis && type === 'normaal') ? '' : tijdVan('#mWVertrek');
     const plek = huidigePlek();
@@ -623,7 +623,7 @@ export function openWedstrijd(wid){
   if (!S.teamId || !wid){
     console.warn('[Cluppie] openWedstrijd afgebroken: ontbrekende teamId of wid', {teamId:S.teamId, wid});
     S.wedstrijdId = null;
-    if (S.teamId) import('./teams.js?v=20261012f').then(m => m.renderTeam?.());
+    if (S.teamId) import('./teams.js?v=20261012h').then(m => m.renderTeam?.());
     return;
   }
   S.wedstrijdId = wid; S.kwart = '1'; S.geselecteerd = null; S._confroOpen = false; S._wizardActief = false;
@@ -669,7 +669,7 @@ export function sluitWedstrijd(naarTab){
   verbergWijzigOpzet();
   if (typeof naarTab === 'string') S.teamTab = naarTab;
   bewaarPositie();
-  import('./teams.js?v=20261012f').then(m => { m.renderTeam(); toon('team'); });
+  import('./teams.js?v=20261012h').then(m => { m.renderTeam(); toon('team'); });
 }
 /* Speeltijd van INGELEENDE spelers in déze wedstrijd wegschrijven op het
    leen-record zelf (clubs/{clubId}/uitleningen/{leenId}), zodat het
@@ -2700,7 +2700,7 @@ export function htmlStats(){
 export function koppelStatsBlad(root){
   (root || document).querySelectorAll('[data-statsblad]').forEach(b => b.onclick = () => {
     S.statsBlad = b.dataset.statsblad;
-    import('./teams.js?v=20261012f').then(m => m.renderTeam?.());
+    import('./teams.js?v=20261012h').then(m => m.renderTeam?.());
   });
 }
 
@@ -3235,7 +3235,7 @@ ${confroHtml}
   { const bwk = v.querySelector('#bijwerkKnop'); if (bwk) bwk.onclick = () => { S.bijwerkKwart = S.kwart; toonBijwerkScherm(); }; }
   const teamEvalKnop = v.querySelector('#teamEvalKnop');
   if (teamEvalKnop) teamEvalKnop.onclick = () => {
-    import('./teams.js?v=20261012f').then(m => m.modalTeamEvaluatie(S.wedstrijdId));
+    import('./teams.js?v=20261012h').then(m => m.modalTeamEvaluatie(S.wedstrijdId));
   };
   v.querySelectorAll('[data-corrigeer-goal]').forEach(b => b.onclick = e => {
     e.stopPropagation(); modalGoalCorrigeren(Number(b.dataset.corrigeerGoal));

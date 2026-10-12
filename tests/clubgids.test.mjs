@@ -1,4 +1,4 @@
-// Clubgids in de app (20261012f): tegenstander zoeken en plek bepalen.
+// Clubgids in de app (20261012h): tegenstander zoeken en plek bepalen.
 // Draaien: node --import ./tests/hulp/stub-loader.mjs tests/clubgids.test.mjs
 import assert from 'node:assert/strict';
 const { zoekTegenstanders, clubVanTeam, plekVoor, normNaam } = await import('../public/js/clubgids.js');

@@ -40,7 +40,7 @@ export function wedstrijdInfo(w){
   return {
     verzamel: tijd('verzamel'), vertrek: tijd('vertrek'),
     aftrap: w && w.aftrap ? { t: w.aftrap, bron: w.bron === 'sportlink' ? 'sportlink' : 'eigen' } : { t: '', bron: '' },
-    // [20261012f] bij een eigen wedstrijd (of een aangepaste plek) gaat infoEigen voor
+    // [20261012h] bij een eigen wedstrijd (of een aangepaste plek) gaat infoEigen voor
     accommodatie: eigen.accommodatie || sl.accommodatie || '', veld: sl.veld || '', kleedkamer: sl.kleedkamer || '',
     plaats: sl.plaats || '',
     adres: eigen.accommodatie ? (eigen.adres || '') : (sl.adres || ''),

@@ -138,7 +138,7 @@ ok('weekendvenster', () => {
   assert.equal(h.inAfgelastVenster(0, 14), true); assert.equal(h.inAfgelastVenster(3, 10), false);
 });
 
-/* ---------- 6. clubgids (20261012f) ---------- */
+/* ---------- 6. clubgids (20261012h) ---------- */
 ok('clubgids: clubnaam uit teamnamen', () => {
   assert.equal(h.clubNaamUitTeams(['SV de Middenpeel O12-1JM']), 'SV de Middenpeel');
   assert.equal(h.clubNaamUitTeams(['Gemert O12-3', 'Gemert 1']), 'Gemert');

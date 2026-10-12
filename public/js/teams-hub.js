@@ -21,7 +21,7 @@ import { ongelezenBerichten } from './berichten.js?v=20261011g';
 import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261012a';
 import { htmlRondeBalk } from './evaluatierondes.js?v=20261011g';
 import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261011g';
-import { isAfgelast, telMee, soortPill, wedstrijdInfo, htmlAfgelastBanner, afgelastMeldingen, deelTekst } from './wedstrijd-status.js?v=20261012f';
+import { isAfgelast, telMee, soortPill, wedstrijdInfo, htmlAfgelastBanner, afgelastMeldingen, deelTekst } from './wedstrijd-status.js?v=20261012h';
 
 
 /* ---------- Hulpjes ---------- */
@@ -93,6 +93,8 @@ export function htmlHub(updInfo){
       tegel('trainingen',       'Oefenstof',    'training-cones', oefenstofOngelezen || null),
       `<button class="hub-tegel" data-open-tactiek="1">${ico('football-tactics', 40)}<span class="hub-tnaam">Tactiek</span></button>`,
       tegel('videos',           'Video\u2019s', 'training-video'),
+      tegel('trainingsmodule',  'Training maken', 'training-plan'),
+      tegel('seizoensplan',     'Seizoen',      'planning-month'),
     ]],
     ['Presentie', [
       tegel('presentietraining','Training',     'training-cones'),
@@ -273,7 +275,7 @@ export function htmlWedstrijdInfo(w, { bewerk = true } = {}){
       <span>${t.bron === 'eigen' ? (sleutel === 'aftrap' ? '' : 'door jou') : t.bron === 'sportlink' ? 'Sportlink' : 'niet bekend'}</span></div>`;
   const rij = (l, waarde) => waarde ? `<div class="ws-rij"><span>${l}</span><div>${waarde}</div></div>` : '';
   const eigen = w.infoEigen || {};
-  // [20261012f] bij een eigen wedstrijd zijn ook aftrap en plek aan te passen; bij Sportlink alleen de tijden
+  // [20261012h] bij een eigen wedstrijd zijn ook aftrap en plek aan te passen; bij Sportlink alleen de tijden
   const eigenW = w.bron !== 'sportlink';
   const toernooi = w.type === 'toernooi';
   return `<div class="ws-info">
@@ -298,7 +300,7 @@ export function htmlWedstrijdInfo(w, { bewerk = true } = {}){
   </div>`;
 }
 
-/* [20261012f] Handlers van het wedstrijdinfo-blok: tijden/plek bewaren en delen met ouders.
+/* [20261012h] Handlers van het wedstrijdinfo-blok: tijden/plek bewaren en delen met ouders.
    Gebruikt door teams.js (Aanwezigheid, mobiel) én desktop-schermen.js (wedstrijdkaart). */
 export function koppelWedstrijdInfo(v){
   const det = v.querySelector('.ws-tijd-edit');

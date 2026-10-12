@@ -1,4 +1,4 @@
-/* ==================== CLUBGIDS (20261012f) ====================
+/* ==================== CLUBGIDS (20261012h) ====================
    Platformbrede gids van clubs (clubgids/{clubcode}): naam, teamnamen, sportpark, plaats en —
    zodra bekend — adres en route. Gevuld door de Sportlink-sync (functions/index.js →
    schrijfClubgids); de app leest alleen. Gebruikt bij "Nieuwe wedstrijd" om een tegenstander

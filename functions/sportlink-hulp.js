@@ -188,7 +188,7 @@ function inAfgelastVenster(dag, uur){
   return false;
 }
 
-/* ---------- 5. spelers uit de teamindeling (20261012e) ---------- */
+/* ---------- 5. spelers uit de teamindeling (20261012g) ---------- */
 
 /* Sportlink team-indeling → alleen wat de coach mag overnemen:
      { zichtbaar: [{ voornaam, achternaam? }], afgeschermd, totaal }
@@ -219,7 +219,7 @@ function spelersUitIndeling(regels, { achternamen = false } = {}){
   return { zichtbaar, afgeschermd, totaal };
 }
 
-/* ---------- 6. clubgids (20261012f) ----------
+/* ---------- 6. clubgids (20261012h) ----------
    Gedeelde, platformbrede gids van clubs (alleen openbare clubgegevens): clubcode → naam,
    teamnamen, sportpark, plaats, adres. Gevuld door de sync uit programma, uitslagen en
    pouledata; gebruikt bij "Nieuwe wedstrijd" om een tegenstander te kiezen. */

@@ -84,7 +84,7 @@ const PADEN = {
   aiGebruik:   (c, m) => `clubs/${c}/aiGebruik/${m}`,          // { aantal } per maand (YYYY-MM)
   afgelast:    (c)    => `clubs/${c}/geheim/_afgelast`,        // [20261012a] { rijen[] } afgelaste wedstrijden, voor het clubscherm
   accommodatie:(k)    => `accommodaties/${k}`,                 // [20261012a] gedeelde adres-cache (alleen functions)
-  clubgids:    'clubgids',                                     // [20261012f] gedeelde gids van clubs (lezen: ingelogd)
+  clubgids:    'clubgids',                                     // [20261012h] gedeelde gids van clubs (lezen: ingelogd)
 };
 
 const ADMIN_ROLLEN = ['club_admin'];
@@ -509,6 +509,13 @@ exports.structureerTraining = onCall(
   }
 );
 
+/* ---------- 2c. TRAININGSMODULE + SEIZOENSPLANNING ====================
+   personaliseerTraining en seizoensVoorstel (zie trainingsai.js). Zelfde toegang en
+   AI-limiet als de andere AI-functies; de app werkt ook zonder deze functies. */
+Object.assign(exports, require('./trainingsai').maak({
+  onCall, HttpsError, secrets: [ANTHROPIC_API_KEY], REGIO, vereisAI, claude, apiKey: () => ANTHROPIC_API_KEY.value(), scrubPII,
+}));
+
 /* ---------- 2d. HOTSPOT-SAMENVATTING ====================
    Vat de opmerkingen die coaches bij één regel (hotspot) van een training
    hebben gemaakt anoniem samen tot één of twee zinnen voor de beheerder.
@@ -878,7 +885,7 @@ async function haalPoule(clientId, poulecode, venster){
   const programmaRijen = [...samen.values()]
     .sort((a, b) => (a.datum + (a.tijd || '')).localeCompare(b.datum + (b.tijd || '')));
   return {
-    ruw: [...uitslagen, ...programma],   // [20261012f] voor de clubgids (clubcode + sportpark)
+    ruw: [...uitslagen, ...programma],   // [20261012h] voor de clubgids (clubcode + sportpark)
     stand: { rijen: rows, poulecode, klassepoule: String(stand[0]?.klassepoule || '').trim() || null },
     uitslagen: { rijen: uitslagRijen, poulecode },
     programma: { rijen: programmaRijen, poulecode },
@@ -928,7 +935,7 @@ async function syncClubSportlink(clubId, { alleenTeamlijst = false } = {}){
   const pouleCache = new Map();
   const koppelingen = {};
   const accCache = new Map();
-  const gidsRegels = [];   // [20261012f] rauwe wedstrijdregels voor de clubgids
+  const gidsRegels = [];   // [20261012h] rauwe wedstrijdregels voor de clubgids
   let wedstrijden = 0, gematcht = 0;
 
   for (const teamDoc of teamsSnap.docs){
@@ -1087,7 +1094,7 @@ async function vulAccommodaties(db, clientId, eigen, cache){
   }
 }
 
-/* [20261012f] Clubgids bijwerken: platformbreed clubgids/{clubcode}. Leest de bestaande documenten
+/* [20261012h] Clubgids bijwerken: platformbreed clubgids/{clubcode}. Leest de bestaande documenten
    in één keer en schrijft alleen wat verandert. Adres uit de accommodatie-cache (deze run of eerder). */
 async function schrijfClubgids(db, regels, accCache = new Map()){
   const per = slh.gidsUitRegels(regels);
@@ -1235,7 +1242,7 @@ exports.sportlinkClubInfo = onCall({ region: REGIO, cors: true, timeoutSeconds: 
   };
 });
 
-/* [20261012e] Spelers van één team uit de Sportlink-teamindeling, op verzoek van de coach.
+/* [20261012g] Spelers van één team uit de Sportlink-teamindeling, op verzoek van de coach.
    Geen nachtelijke sync: alleen deze aanroep, en alleen namen van zichtbare spelers (zie
    spelersUitIndeling). Toegang: coach van het team, of clubbeheerder/coördinator. Max 10/uur.
    { clubId, teamId } → { gekoppeld, zichtbaar[], afgeschermd, totaal } */

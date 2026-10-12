@@ -116,7 +116,7 @@ function zetKlaar(){
   ok(beker && beker.poulecode === '905' && beker.stand[0].eigen === true, 'bekerstand geschreven met eigen team gemarkeerd');
   ok(!doc('teams/t13/poule/beker'), 'team zonder beker: geen bekerdocument');
 
-  // [20261012f] clubgids
+  // [20261012h] clubgids
   const kemp = doc('clubgids/KEMP12A');
   ok(kemp && kemp.naam === 'FC Kempen' && kemp.accommodatie === 'Sportpark De Kempen' && kemp.adres === 'Kempenweg 12', 'clubgids: tegenstander met sportpark en adres (uitwedstrijd)');
   ok(doc('clubgids/XXTT12Z')?.accommodatie === 'Sportpark De Hoef', 'clubgids: eigen club met eigen sportpark');
