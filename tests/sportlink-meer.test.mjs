@@ -138,6 +138,34 @@ ok('weekendvenster', () => {
   assert.equal(h.inAfgelastVenster(0, 14), true); assert.equal(h.inAfgelastVenster(3, 10), false);
 });
 
+/* ---------- 6. clubgids (20261012h) ---------- */
+ok('clubgids: clubnaam uit teamnamen', () => {
+  assert.equal(h.clubNaamUitTeams(['SV de Middenpeel O12-1JM']), 'SV de Middenpeel');
+  assert.equal(h.clubNaamUitTeams(['Gemert O12-3', 'Gemert 1']), 'Gemert');
+  assert.equal(h.clubNaamUitTeams(["SSA/SJO VBC'25 O12-1"]), "SSA/SJO VBC'25");
+  assert.equal(h.clubNaamUitTeams(['Stiphout Vooruit MO20-1 (9-tal)']), 'Stiphout Vooruit');
+  assert.equal(h.clubNaamUitTeams(['Mifano 3']), 'Mifano');
+  assert.equal(h.clubNaamUitTeams([]), '');
+});
+ok('clubgids: uit wedstrijdregels, meest gebruikte sportpark', () => {
+  const per = h.gidsUitRegels([
+    { thuisteamclubrelatiecode: 'tmkg482', thuisteam: 'SV de Middenpeel O12-1JM', uitteamclubrelatiecode: 'BBHT73Z', uitteam: "ASV'33 O12-1", accommodatie: 'Sportpark De Blaarpeel' },
+    { thuisteamclubrelatiecode: 'TMKG482', thuisteam: 'SV de Middenpeel 1', accommodatie: 'Sportpark De Blaarpeel', plaats: 'MILHEEZE' },
+    { thuisteamclubrelatiecode: 'TMKG482', thuisteam: 'SV de Middenpeel VR1', accommodatie: 'Sporthal' },
+    { thuisteamclubrelatiecode: '!!', thuisteam: 'Rommel' },
+  ]);
+  assert.deepEqual([...per.keys()].sort(), ['BBHT73Z', 'TMKG482']);
+  const g = per.get('TMKG482');
+  assert.equal(g.teams.size, 3); assert.equal(g.plaats, 'Milheeze');
+  const doc = h.gidsSamenvoegen(null, g);
+  assert.equal(doc.naam, 'SV de Middenpeel'); assert.equal(doc.accommodatie, 'Sportpark De Blaarpeel');
+  assert.match(doc.route, /Sportpark%20De%20Blaarpeel/); assert.equal(doc.adres, undefined);
+  assert.equal(h.gidsSamenvoegen(doc, g), null, 'niets veranderd → niet schrijven');
+  const metAdres = h.gidsSamenvoegen(doc, g, { adres: 'Blaarpeel 2', plaats: '5763 AA Milheeze', route: 'https://www.google.com/maps/search/?api=1&query=z' });
+  assert.equal(metAdres.adres, 'Blaarpeel 2'); assert.equal(metAdres.route, 'https://www.google.com/maps/search/?api=1&query=z');
+  assert.equal(h.gidsSamenvoegen(metAdres, g), null, 'zonder nieuw adres verandert er niets: het bekende adres blijft');
+});
+
 /* ---------- client: wedstrijd-status.js (geen imports, dus direct te laden) ---------- */
 const ws = await import('../public/js/wedstrijd-status.js');
 const wUit = { id: 'sl_1', datum: '2026-10-25', aftrap: '11:00', thuis: false, tegenstander: 'FC Kempen O11-1', bron: 'sportlink',
@@ -145,6 +173,15 @@ const wUit = { id: 'sl_1', datum: '2026-10-25', aftrap: '11:00', thuis: false, t
   info: { accommodatie: 'Sportpark De Kempen', veld: 'veld 3', vertrek: '10:00', verzamel: '09:30', kleedkamer: '4',
     adres: 'Kempenweg 12', plaatsAdres: '5541 AB Reusel', route: 'https://www.google.com/maps/search/?api=1&query=x' },
   infoEigen: { verzamel: '09:45' } };
+ok('client: eigen plek gaat voor, zonder oude Sportlink-adres', () => {
+  const w = { thuis: false, info: { accommodatie: 'SL-park', adres: 'SL-straat 1', route: 'https://www.google.com/maps/search/?api=1&query=sl' },
+    infoEigen: { accommodatie: 'Sportpark De Kluis', route: 'https://www.google.com/maps/search/?api=1&query=kluis' } };
+  const i = ws.wedstrijdInfo(w);
+  assert.equal(i.accommodatie, 'Sportpark De Kluis'); assert.equal(i.adres, ''); assert.match(i.route, /kluis/);
+  const t = ws.deelTekst({ ...w, datum: '2026-10-13', tegenstander: 'Mifano', aftrap: '18:30' }, 'O12-1');
+  assert.match(t, /Route: https/); assert.ok(!/SL-straat/.test(t));
+  assert.match(ws.deelTekst({ type: 'toernooi', tegenstander: 'Pinkstertoernooi', datum: '2026-10-13', thuis: true, infoEigen: {} }, 'O12-1'), /— Pinkstertoernooi/);
+});
 ok('client: coachtijd gaat voor Sportlink', () => {
   const i = ws.wedstrijdInfo(wUit);
   assert.deepEqual(i.verzamel, { t: '09:45', bron: 'eigen' }); assert.deepEqual(i.vertrek, { t: '10:00', bron: 'sportlink' });

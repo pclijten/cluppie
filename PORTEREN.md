@@ -48,6 +48,15 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 
 # Geschiedenis
 
+## Release 20261012h — eigen wedstrijd: tegenstander uit de clubgids, tijden en plek
+Mockup goedgekeurd 12-10. Gecontroleerd met live pouledata (O12-1): `pouleuitslagen` bevat per wedstrijd `thuisteamclubrelatiecode` en `accommodatie`; een adres geeft Sportlink alleen bij wedstrijden met een eigen team.
+- **Clubgids** (`clubgids/{clubcode}`, platformbreed, alleen openbare clubgegevens): naam (gemeenschappelijk begin van de teamnamen), teamnamen, meest gebruikte sportpark, plaats, adres/route zodra bekend. De sync (`schrijfClubgids`) vult hem uit programma, uitslagen en pouledata; leest bestaande documenten in één keer en schrijft alleen wat verandert. Een fout in de gids laat de sync nooit mislukken.
+- **Nieuwe wedstrijd** (`wedstrijd.js`): tegenstander met suggesties (eerst de eigen poule, dan de gids, altijd ook vrije tekst), tijden (verzamelen, vertrek alleen bij uit, aftrap) en plek (uit: sportpark van de tegenstander; thuis: eigen sportpark; "Wijzigen" of vrije tekst). Bewaart `aftrap`, `infoEigen{verzamel, vertrek, accommodatie, adres?, plaatsAdres?, route}` en `tegenstanderClub`. Toernooi: tijden + vrije plek.
+- **Wedstrijdinfo**: eigen plek gaat voor (`wedstrijdInfo`); bij een eigen wedstrijd ook aftrap en plek aan te passen. Handlers gedeeld in `koppelWedstrijdInfo` (teams-hub.js), nu ook op de desktop-wedstrijdkaart (was alleen-lezen). Toernooien tonen het blok ook.
+- `state.js` niet aangeraakt (`S._clubgids`).
+- **Rules:** nieuwe regel `clubgids` (lezen: ingelogd; schrijven: niemand). Scenario toegevoegd aan `tests/rules.test.mjs`; **niet in deze omgeving gedraaid** (emulator-download geblokkeerd) — draai `npm run test:rules` op je pc.
+- **Deploy:** `firebase deploy --only firestore:rules,functions:sportlinkSyncNu,functions:syncSportlink --project cluppie-ad329`, daarna "Sync nu" (vult de gids), dan mergen.
+
 ## Release 20261012g — spelers uit Sportlink + wedstrijdinfo op desktop
 - **Spelers uit Sportlink** (mockup goedgekeurd 12-10): knop "Uit Sportlink" bij Selectie (mobiel en desktop), alleen als de club een Sportlink-koppeling heeft. Nieuwe callable `sportlinkTeamSpelers` haalt `team-indeling` op en geeft alleen voornamen (achternaam alleen als de club die vastlegt) van zichtbare spelers terug; afgeschermde leden worden geteld, staf/lidnummer/contact/foto/geslacht nooit. Coach kiest wie erbij komt; dubbelen grijs (`markeerBestaand`, getest). Geen nachtelijke sync. Zie `AVG.md` → Sportlink-gegevens.
 - **Wedstrijdinfo:** op desktop bij Aanwezigheid over de volle breedte (stond in een spelerstegel). Bij een gespeelde wedstrijd geen lege tijdvakjes meer, wel de uitleg dat invullen en delen bij komende wedstrijden kan.

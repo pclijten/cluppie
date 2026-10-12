@@ -10,8 +10,8 @@
    Event-koppeling gebeurt in teams.js (koppelTeamTab) — dit bestand levert
    alleen HTML + de opslaghulpjes voor de wedstrijd-presentie. Het importeert
    bewust NIET terug uit teams.js (geen circulaire import). */
-import { db, doc, updateDoc } from './firebase.js?v=20261011g';
-import { S, esc, meld, datumNL, modAan } from './state.js?v=20261011g';
+import { db, doc, updateDoc, deleteField } from './firebase.js?v=20261011g';
+import { S, esc, meld, datumNL, modAan, openModal } from './state.js?v=20261011g';
 import { AFWEZIG_REDENEN, afwezigRedenInfo } from './config.js?v=20261011g';
 import { ico } from './icons.js?v=20260922c';
 import { logoImg, primaireClubId } from './clubconfig.js?v=20261011g';
@@ -21,7 +21,7 @@ import { ongelezenBerichten } from './berichten.js?v=20261011g';
 import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261012a';
 import { htmlRondeBalk } from './evaluatierondes.js?v=20261011g';
 import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261011g';
-import { isAfgelast, telMee, soortPill, wedstrijdInfo, htmlAfgelastBanner, afgelastMeldingen } from './wedstrijd-status.js?v=20261012a';
+import { isAfgelast, telMee, soortPill, wedstrijdInfo, htmlAfgelastBanner, afgelastMeldingen, deelTekst } from './wedstrijd-status.js?v=20261012h';
 
 
 /* ---------- Hulpjes ---------- */
@@ -265,7 +265,7 @@ export function htmlPresWedstrijd(){
    Sportlink vult `info`; de coach kan verzamel- en vertrektijd zelf zetten (`infoEigen`, gaat voor).
    Geen spelernamen in het deelbericht. Handlers: teams.js (tab preswedstrijd). */
 export function htmlWedstrijdInfo(w, { bewerk = true } = {}){
-  if (!w || w.type === 'toernooi') return '';
+  if (!w) return '';
   if (isAfgelast(w)) return `<div class="ws-info ws-info-af"><b>Deze wedstrijd is afgelast door de KNVB.</b>
     <span>Presentie en opstelling blijven bewaard, maar tellen niet mee.</span></div>`;
   const i = wedstrijdInfo(w);
@@ -275,16 +275,21 @@ export function htmlWedstrijdInfo(w, { bewerk = true } = {}){
       <span>${t.bron === 'eigen' ? (sleutel === 'aftrap' ? '' : 'door jou') : t.bron === 'sportlink' ? 'Sportlink' : 'niet bekend'}</span></div>`;
   const rij = (l, waarde) => waarde ? `<div class="ws-rij"><span>${l}</span><div>${waarde}</div></div>` : '';
   const eigen = w.infoEigen || {};
+  // [20261012h] bij een eigen wedstrijd zijn ook aftrap en plek aan te passen; bij Sportlink alleen de tijden
+  const eigenW = w.bron !== 'sportlink';
+  const toernooi = w.type === 'toernooi';
   return `<div class="ws-info">
     <div class="ws-info-kop">Wedstrijdinfo</div>
     ${komt ? `<div class="ws-tijden">${tijd('Verzamelen', i.verzamel, 'verzamel')}${tijd('Vertrek', i.vertrek, 'vertrek')}${tijd('Aftrap', i.aftrap, 'aftrap')}</div>`
       : rij('Aftrap', esc(i.aftrap.t))}
-    ${komt && bewerk ? `<details class="ws-tijd-edit"${S._wsTijdOpen === w.id ? ' open' : ''}><summary>Tijden zelf invullen</summary>
+    ${komt && bewerk ? `<details class="ws-tijd-edit"${S._wsTijdOpen === w.id ? ' open' : ''}><summary>${eigenW ? 'Tijden en plek aanpassen' : 'Tijden zelf invullen'}</summary>
       <div class="ws-tijd-invoer">
         <label>Verzamelen<input type="time" class="invoer" id="wsVerzamel" value="${esc(eigen.verzamel || '')}"></label>
-        <label>Vertrek<input type="time" class="invoer" id="wsVertrek" value="${esc(eigen.vertrek || '')}"></label>
-        <button class="knop klein" id="wsTijdBewaar" data-wid="${esc(w.id)}">Bewaar</button></div>
-      <p class="ws-hint">Leeg laten = de tijd uit Sportlink (als die er is).</p></details>` : ''}
+        ${w.thuis && !toernooi ? '' : `<label>Vertrek<input type="time" class="invoer" id="wsVertrek" value="${esc(eigen.vertrek || '')}"></label>`}
+        ${eigenW ? `<label>Aftrap<input type="time" class="invoer" id="wsAftrap" value="${esc(w.aftrap || '')}"></label>` : ''}</div>
+      ${eigenW ? `<label class="ws-plek-invoer">Plek<input class="invoer" id="wsPlek" maxlength="80" value="${esc(eigen.accommodatie || '')}" placeholder="Bijv. Sportpark De Hoef, Rixtel"></label>` : ''}
+      <button class="knop klein" id="wsTijdBewaar" data-wid="${esc(w.id)}" style="margin-top:8px">Bewaar</button>
+      ${eigenW ? '' : '<p class="ws-hint">Leeg laten = de tijd uit Sportlink (als die er is).</p>'}</details>` : ''}
     ${rij('Sportpark', esc(i.accommodatie))}
     ${!w.thuis ? rij('Adres', [i.adres, i.plaatsAdres || i.plaats].filter(Boolean).map(esc).join('<br>')) : ''}
     ${rij('Veld', esc(i.veld))}
@@ -293,6 +298,48 @@ export function htmlWedstrijdInfo(w, { bewerk = true } = {}){
       ${bewerk ? `<button class="knop klein ws-wa" id="wsDeel" data-wid="${esc(w.id)}">Deel met ouders</button>` : ''}</div>`
       : `<p class="ws-hint">Deze wedstrijd is gespeeld. Tijden invullen en delen met ouders kan bij komende wedstrijden.</p>`}
   </div>`;
+}
+
+/* [20261012h] Handlers van het wedstrijdinfo-blok: tijden/plek bewaren en delen met ouders.
+   Gebruikt door teams.js (Aanwezigheid, mobiel) én desktop-schermen.js (wedstrijdkaart). */
+export function koppelWedstrijdInfo(v){
+  const det = v.querySelector('.ws-tijd-edit');
+  if (det) det.ontoggle = () => { S._wsTijdOpen = det.open ? v.querySelector('#wsTijdBewaar')?.dataset.wid : null; };
+  const bewaar = v.querySelector('#wsTijdBewaar');
+  if (bewaar) bewaar.onclick = async () => {
+    const w = S.wedstrijden.find(x => x.id === bewaar.dataset.wid); if (!w) return;
+    const tijd = id => { const el = v.querySelector(id); if (!el) return undefined; const x = el.value.trim(); return /^\d{2}:\d{2}$/.test(x) ? x : deleteField(); };
+    const upd = {};
+    for (const [veld, id] of [['infoEigen.verzamel', '#wsVerzamel'], ['infoEigen.vertrek', '#wsVertrek']]){ const t = tijd(id); if (t !== undefined) upd[veld] = t; }
+    const aftrap = v.querySelector('#wsAftrap');
+    if (aftrap) upd.aftrap = /^\d{2}:\d{2}$/.test(aftrap.value) ? aftrap.value : null;
+    const plek = v.querySelector('#wsPlek');
+    if (plek){
+      const nieuw = plek.value.trim().slice(0, 80), oud = (w.infoEigen || {}).accommodatie || '';
+      if (nieuw !== oud){
+        // andere plek: adres en route van de oude plek kloppen niet meer; route opnieuw via zoeken
+        upd['infoEigen.accommodatie'] = nieuw || deleteField();
+        upd['infoEigen.adres'] = deleteField(); upd['infoEigen.plaatsAdres'] = deleteField();
+        upd['infoEigen.route'] = nieuw ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(nieuw) : deleteField();
+      }
+    }
+    bewaar.disabled = true;
+    try {
+      await updateDoc(doc(db, 'teams', S.teamId, 'wedstrijden', w.id), upd);
+      S._wsTijdOpen = null; meld('Bewaard');
+    } catch (e){ bewaar.disabled = false; meld('Bewaren mislukt: ' + (e.code || e.message)); }
+  };
+  const deel = v.querySelector('#wsDeel');
+  if (deel) deel.onclick = () => {
+    const w = S.wedstrijden.find(x => x.id === deel.dataset.wid); if (!w) return;
+    const tekst = deelTekst(w, S.team.naam);
+    openModal(`<h2>Delen met ouders</h2>
+      <p class="cb-uitleg" style="margin:0 0 10px">Alleen tijden en plek, geen spelernamen.</p>
+      <div class="ws-deel-tekst" id="wsDeelTekst">${esc(tekst)}</div>
+      <div class="rij" style="margin-top:12px"><button class="knop licht" id="wsKopieer">Kopiëren</button><button class="knop ws-wa" id="wsWhatsapp">WhatsApp</button></div>`);
+    document.getElementById('wsKopieer').onclick = async () => { try { await navigator.clipboard.writeText(tekst); meld('Gekopieerd'); } catch { meld('Kopiëren lukte niet; selecteer de tekst zelf'); } };
+    document.getElementById('wsWhatsapp').onclick = () => window.open('https://wa.me/?text=' + encodeURIComponent(tekst), '_blank', 'noopener');
+  };
 }
 
 /* Kiezerlijst voor de dropdown (komend eerst, dan afgelopen — beide op datum). */

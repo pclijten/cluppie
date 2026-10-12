@@ -68,6 +68,12 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if isPlatform();
     }
+    /* [20261012h] clubgids: openbare clubgegevens (naam, teamnamen, sportpark, adres) voor het kiezen
+       van een tegenstander. Gevuld door de Sportlink-sync (Admin SDK); de app leest alleen. */
+    match /clubgids/{code} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
 
     match /clubs/{clubId} {
       /* lezen: alleen leden van de club (aansluiten loopt via de Cloud Function sluitAan).

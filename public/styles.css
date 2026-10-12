@@ -5845,3 +5845,25 @@ h3.tm-kop2{font-size:calc(20px * var(--fs))}
 .sl-sp-keuze small{color:var(--ink-2);font-size:calc(11.5px * var(--fs))}
 .sl-sp-keuze.al{opacity:.55;cursor:default}
 .sl-sp-keuze.al input{pointer-events:none}
+
+/* ==================== [20261012h] Nieuwe wedstrijd: tegenstander uit de clubgids, tijden, plek ==================== */
+.mw-tegen{position:relative}
+.mw-sug{position:absolute;left:0;right:0;top:100%;margin-top:4px;background:var(--card);border:1px solid var(--hair);border-radius:12px;box-shadow:var(--shadow);z-index:20;max-height:300px;overflow-y:auto;padding:6px}
+.mw-sug-kop{font-size:calc(10.5px * var(--fs));font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-2);padding:8px 8px 4px}
+.mw-sug button{display:block;width:100%;text-align:left;padding:8px;border-radius:9px;color:var(--ink)}
+.mw-sug button:hover,.mw-sug button:focus-visible{background:var(--surface-2, var(--op-vlak))}
+.mw-sug b{display:block;font-size:calc(14px * var(--fs))}
+.mw-sug small{display:block;color:var(--ink-2);font-size:calc(12px * var(--fs))}
+.mw-sug .mw-sug-vrij{border-top:1px solid var(--hair);margin-top:4px;border-radius:0 0 9px 9px;color:var(--ink-2);font-size:calc(13px * var(--fs))}
+.mw-hint{margin:6px 0 0;font-size:calc(12px * var(--fs));color:var(--ink-2)}
+.mw-opt{text-transform:none;letter-spacing:0;font-weight:500}
+.mw-tijden{display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:8px}
+.mw-tijden label{display:flex;flex-direction:column;gap:4px;font-size:calc(11.5px * var(--fs));color:var(--ink-2);text-transform:none;letter-spacing:0;font-weight:500;margin:0}
+.mw-tijden label[hidden]{display:none}
+.mw-tijden .invoer{padding:10px 6px;text-align:center;font-variant-numeric:tabular-nums;min-width:0}
+.mw-plek{display:flex;align-items:flex-start;gap:10px;background:var(--surface-2, var(--op-vlak));border-radius:12px;padding:11px 12px}
+.mw-plek>div{flex:1;min-width:0}
+.mw-plek b{display:block}
+.mw-plek span{display:block;color:var(--ink-2);font-size:calc(12.5px * var(--fs))}
+.mw-wijzig{color:var(--accent);font-weight:600;font-size:calc(12.5px * var(--fs));white-space:nowrap;flex-shrink:0}
+.ws-plek-invoer{display:flex;flex-direction:column;gap:4px;font-size:calc(11.5px * var(--fs));color:var(--ink-2);margin-top:8px}

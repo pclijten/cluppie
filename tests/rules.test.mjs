@@ -46,6 +46,13 @@ beforeEach(async () => {
 });
 
 /* ---------- clubs ---------- */
+test('clubgids: ingelogd lezen, niemand schrijven', async () => {
+  await env.withSecurityRulesDisabled(c => setDoc(doc(c.firestore(), 'clubgids/XXTT12Z'), { naam: 'VV Voorbeeld', accommodatie: 'Sportpark De Hoef' }));
+  await assertSucceeds(getDoc(doc(als('coachA'), 'clubgids/XXTT12Z')));
+  await assertFails(getDoc(doc(gast(), 'clubgids/XXTT12Z')));
+  await assertFails(setDoc(doc(als('coachA'), 'clubgids/XXTT12Z'), { naam: 'Gekaapt' }));
+  await assertFails(setDoc(doc(als('paul', PLATFORM), 'clubgids/NIEUW01'), { naam: 'X' }));
+});
 test('club aanmaken: alleen platformbeheerder', async () => {
   const data = u => ({ naam: 'Nieuw', admins: { [u]: true }, leden: { [u]: true } });
   await assertFails(setDoc(doc(als('coachA'), 'clubs/N1'), data('coachA')));
@@ -79,9 +86,15 @@ test('teams van eigen club lezen via club-filter; andere club niet', async () =>
   await assertSucceeds(getDocs(query(collection(als('coachA'), 'teams'), where('club', '==', 'A'))));
   await assertFails(getDocs(query(collection(als('coachA'), 'teams'), where('club', '==', 'B'))));
 });
-test('club.teams met een verwijderd team: in-query op id lukt nog (geen zwart clubscherm)', async () => {
-  await assertSucceeds(getDocs(query(collection(als('adminA'), 'teams'), where(documentId(), 'in', ['t1', 't2', 'weg']))));
+/* [20261012i] Een 'in'-query met een verwijderd team faalt in de rules-engine ('resource == null'
+   is bij list-queries niet te evalueren). Dat is geen probleem: teamsOpId (teams-ophalen.js) valt bij
+   permission-denied terug op losse getDoc's, en die moeten dan wél lukken. Dat testen we hier. */
+test('club.teams met een verwijderd team: losse get op het verwijderde team lukt (fallback teamsOpId)', async () => {
   await assertSucceeds(getDoc(doc(als('adminA'), 'teams/weg')));
+  await assertSucceeds(getDoc(doc(als('adminA'), 'teams/t1')));
+});
+test('club.teams: in-query op bestaande eigen teams lukt, met een team van een andere club niet', async () => {
+  await assertSucceeds(getDocs(query(collection(als('adminA'), 'teams'), where(documentId(), 'in', ['t1', 't2']))));
   await assertFails(getDocs(query(collection(als('adminA'), 'teams'), where(documentId(), 'in', ['t1', 'tB']))));
 });
 test('beoordelingen: teamlid en coördinator van de bouw wel, andere coach van club niet', async () => {
