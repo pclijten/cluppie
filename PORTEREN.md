@@ -1,7 +1,37 @@
-# PORTEREN.md — open punten multi-tenant (fase 2: Firebase + Cloud Functions)
+# PORTEREN.md — stand van zaken cluppie.io
 
-Fundament (fase 1, client) is klaar: alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar
-(Club → Instellingen; wizard "Nieuwe club"). Een club zonder vastgelegde instellingen krijgt de neutrale standaard (knop "Waarden vastleggen" schrijft die expliciet weg). Sinds 2026-10-10 bevat de app zelf geen ASV-verwijzingen meer (geen legacy-shim, logo of teksten); die staan alleen nog in deze portering-geschiedenis.
+Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
+
+## Stand (bijgewerkt 11-10-2026, versie 20261011h)
+- **Firestore-rules:** per club afgeschermd (teams, trainingen, video's, documenten, berichten via clublidmaatschap). Getest in de emulator: `npm run test:rules` (21 scenario's, laatst 20/20 groen op 11-10; de 21e is in 20261011f toegevoegd). Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.
+- **Cloud Functions:** live in `europe-west1` (Node 22, 2nd gen). Iedere nieuwe callable heeft na de eerste deploy de invoker `allUsers` nodig (`gcloud run services add-iam-policy-binding <naam-in-kleine-letters> …`), anders krijgt de app een CORS-/`internal`-fout.
+- **Tests:** `npm test` (10 suites) en `node tests/toegang.test.js` (aansluiten/uitnodigen, 24 scenario's). Pariteit met ASV'33: `node tools/pariteit.mjs ../cluppieasv33`.
+- **Versies:** elke release `node tools/versie.mjs JJJJMMDDx origin/main` (zet `?v=` in gewijzigde modules en hun importeurs + `CACHE_VERSIE` in `sw.js`).
+- **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
+
+## Open
+**Voor Paul (console/terminal)**
+- [ ] `zetSpelerOver` deployen + invoker openzetten (zie release 20261011h), dan PR mergen.
+- [ ] Rond 18-10: tijdelijke database weg (`gcloud firestore databases delete --database=cluppie-overzet --project=cluppie-ad329`) en bestanden in de oude bucket verwijderen.
+- [ ] App Check: na een paar dagen in Console → App Check → APIs kijken; bij ~100% geldige verzoeken Enforce aan voor Firestore, Storage en Functions.
+- [ ] AI per club aanzetten zodra de Anthropic-limiet het toelaat (eind oktober).
+- [ ] E-mail: extensie *Trigger Email from Firestore* (collectie `mail`) installeren; zonder extensie gaan meldingen van clubaanmeldingen niet per mail.
+
+**Bouwen**
+- [ ] Bestaande teamnamen "JO11-1" omzetten naar "O11-1" (knop voor de clubbeheerder of eenmalig voor alle clubs).
+- [ ] `storage.rules` testen in de emulator (Firestore-rules zijn getest, Storage nog niet).
+- [ ] Documenten van vóór de clubscheiding zonder `club`-veld: controleren of ze er nog zijn en zo nodig vullen.
+- [ ] ASV'33 als club op cluppie.io: aparte migratie (data overzetten, coaches laten overstappen).
+- [ ] Test met één bevriende club vóór bredere uitrol.
+
+**Bewust (nog) niet**
+- Variabel aantal beoordelingsdomeinen (3–6): pas als een club erom vraagt.
+- Delen van plannen tussen clubs: vraagt expliciete toestemming per club.
+- `over.html`/`readme.html`, PWA-manifest en icons: één per domein, niet per club.
+
+---
+
+# Geschiedenis
 
 ## Gepoort uit ASV'33 (bijgewerkt 2026-10-10, cache-versie 20261010c)
 Vergelijking van de complete cluppieasv33-zip (t/m release 2026-10-05) met deze repo. Alle andere verschillen zijn bewuste multi-tenant-aanpassingen (clubconfig, instellingen per club).
@@ -24,36 +54,7 @@ Ontbrekende modules uit de repo toegevoegd (werden wel overal geimporteerd): `fi
 
 Harde ASV-teksten naar de clubinstellingen: onboarding-stap kompas, handleiding (teamcode-voorbeeld, beleidsplannaam), leerlijn-badge, speler/evaluatie-teksten, radarkleuren in desktop-stats (volgen nu `--accent`).
 
-## Structuur (opgelost 2026-10-08)
-- App staat nu in `public/` (modules in `public/js/`, `icons/`, `content/seed.json`); het oude fase-1-skelet staat in `_fase1-backup/`.
-- Icons en `over.html` tonen sinds 2026-10-10 het Cluppie-logo; `readme.html` bevat geen logo.
-- Datamodel = dat van de app (zie `functions/LEESMIJ-deploy.md`); het fase-1-model (`clubs/{id}/bouwen/.../players`) is vervallen.
-
-## AVG (okt 2026) — zie AVG.md
-Rules zijn aangescherpt (leesrechten per club); client sluit aan via Cloud Functions; fonts/PDF.js/ExcelJS zelf gehost; privacy.html + 'Mijn gegevens'. Open: bestaande documenten zonder `club`-veld vullen, composite indexen deployen, ASV'33-client gelijktrekken vóór rules live gaan.
-
-## Onboarding (okt 2026)
-Uitnodigingen, aanvragen met goedkeuring, rollen (assistent/coach), toegangslog, uitschrijven, kennisname, e-mailverificatie, rate limiting: zie AVG.md. Serverlogica getest met een mock (24 scenario's); rules en UI ongetest. Open: e-mailmelding bij aanvragen, App Check site key, ASV'33-client gelijktrekken.
-
-## Firestore rules (geschreven, NOG TESTEN)
-- `firestore.rules` is opgesteld uit de client-code en is niet in de emulator doorlopen. Test: join via teamcode/clubcode, nieuw team, uitlening, deel-link (anoniem), Sportlink-sleutel (alleen admin), club aanmaken (alleen platformbeheerder).
-- Bekende zwakte: lezen van `clubs`, `teams`, `trainingen`, `videos`, `documenten`, `berichten` is open voor elke ingelogde coach (client-queries op `code==` en `teams array-contains-any` laten niets strakkers toe). Isolatie per club vraagt een club-filter in die queries.
-- `platform/instellingen` schrijven kan alleen via de console; platformbeheerder-check eist een geverifieerd e-mailadres.
-- `storage.rules` bestaat (clublidmaatschap via Firestore), maar is ongetest in de emulator.
-
-## Cloud Functions (omgezet naar het app-model, ONGETEST tegen echte Firestore)
-- Sportlink: `sportlinkSyncNu` (admin) + `syncSportlink` (nacht) schrijven `teams/{id}/poule/*`, `teams/{id}/wedstrijden/sl_*` en `clubs/{id}/geheim/*` in het schema van de app.
-- AI: `instellingen.ai.aan` en `maandLimiet` worden server-side afgedwongen; clubId verplicht.
-- `teamSleutel` (client) en `naamSleutel` (server) getest met `node tests/sleutel.test.mjs` (2026-10-10): gelijk voor alle gangbare teamnamen. Futsal-verschil opgelost in 20261011c: de server is leidend, de client geeft nu ook `o131futsal`.
-- `aggregeerGebruik` gebouwd in release 20261011c (zie onder). Open: Anthropic-limiet t/m oktober blokkeert AI; Node 22 is al ingesteld.
-
-## Bewust nog statisch
-- `over.html`/`readme.html`, PWA-manifest en icons: één per domein, niet per club.
-- Standaard-content (kompas-tips, leercurve-teksten) is neutraal geformuleerd; clubs kunnen een eigen kopie maken of "Cluppie-standaard" gebruiken.
-- `firebase.js` gebruikt het eigen Firebase-project van Cluppie (`cluppie-ad329`), gedeeld door alle clubs op cluppie.io.
-
-## Testen voor livegang
-- Nieuwe club via wizard → team → speler → wedstrijd; controleer dat er nergens een andere clubnaam of logo dan die van de club zelf verschijnt.
+Structuur (08-10): app in `public/`, oud fase-1-skelet in `_fase1-backup/`, datamodel = dat van de app (zie `functions/LEESMIJ-deploy.md`). AVG en onboarding: zie `AVG.md`.
 
 ## Release 20261010h — districten en kalenders
 - `clubconfig.js`: `DISTRICTEN` (noord, oost, west1, west2, zuid1, zuid2; oude waarde `zuid` blijft werken als zuid1), `kalenderId(seizoen, district)`. `zetKalender` volgorde: platformkalender `kalenders/{seizoen}_{district}` (huidigSeizoen van de club, daarna seizoen van vandaag) → ingebouwd (alleen Zuid, 2026/'27) → club-eigen `clubs/{id}/kalender/huidig` gaat altijd voor. Zuid I en II delen de kalender (id eindigt op `_zuid1`).
@@ -110,19 +111,16 @@ Alle onderdelen uit `VERBETERPLAN.md` zijn gebouwd. Cache-versie `cluppie-v20261
 ### Testen
 `npm test` (9 suites: sleutel, gebruik, startlijst/stoplicht/vergelijking, aanmelding, seizoen, kleur, weekbrief, Sportlink-import) en `node tools/pariteit.mjs ../cluppieasv33` (moet "Gelijk" geven). Alle nieuwe schermen zijn met Playwright gerenderd op 414×896 en desktop met een nep-Firestore, zonder consolefouten.
 
-### Open
-- Domeinen 3–6 (variabel aantal beoordelingsdomeinen): bewust niet gebouwd; pas als een club erom vraagt.
-- ASV'33 als tenant op cluppie.io: aparte migratie.
-- `bouwOverdrachtDossier` en de seizoensovergang schrijven vanaf de client; een Cloud Function maakt het atomair (zelfde open punt als bij speler-overdracht).
+(Open punten van deze release staan nu bovenaan onder *Open*.)
 
-## Release 20261011e — overstap naar de EU (branch `eu-database`, NIET zomaar mergen)
+## Release 20261011e — overstap naar de EU (uitgevoerd 11-10-2026)
 Gevonden bij de functions-deploy: Firestore `(default)` staat in `nam5` (VS), de standaard-bucket ook. Draaiboek en volgorde: **`MIGRATIE-EU.md`**. Kort:
 - Firestore: `(default)` → tijdelijke database `cluppie-overzet` (EU) → `(default)` verwijderen en opnieuw aanmaken in `europe-west1` → terugkopiëren. Geen codewijziging nodig; een aparte EU-database kan niet, want Storage-rules lezen alleen `(default)`.
 - Storage: nieuwe bucket `cluppie-ad329-eu` (`europe-west1`); `public/js/firebase.js` uploadt daar via `STORAGE_BUCKET`. De oude bucket gaat dicht (`storage.dicht.rules`, deploy-doel `oud`).
 - `tools/migreer-eu.mjs`: kopie (Firestore recursief, alle subcollecties; bestanden met download-tokens; download-URL's herschreven) en controle.
 - `privacy.html`: locaties kloppend gemaakt (Firebase Auth mogelijk buiten de EU, GitHub Pages als host); verouderde zin over de assistent-rol weg.
 - Versie `20261011e` (firebase.js gewijzigd, dus alle modules opnieuw geversioneerd).
-**Deze PR wordt pas in stap 10 van het draaiboek gemerged**, nadat de bestanden en de database gekopieerd zijn.
+Uitgevoerd met `tools/overstap-eu.ps1`; `(default)` staat in `europe-west1`, bestanden in `cluppie-ad329-eu`, oude bucket dicht.
 
 ## Release 20261011f — O-namen, Sportlink-import automatisch, zwart clubscherm
 - Weergave jongenscategorieën als O17 (`catLabel` in config.js); interne sleutels blijven JO17, dus geen datamigratie. Bestaande teamnamen ("JO11-1") blijven zoals ze zijn tot de coach ze hernoemt.
@@ -130,7 +128,16 @@ Gevonden bij de functions-deploy: Firestore `(default)` staat in `nam5` (VS), de
 - Zwart clubscherm (permission-denied in renderClub): een id in `club.teams` van een niet-bestaand team liet de `documentId in`-query falen. Nu `teams-ophalen.js` (`teamsOpId`) met per-team terugval, en de clubbeheerder ruimt spook-ids op.
 - **Rules deployen** (nieuw: niet-bestaand team mag gelezen worden, lekt niets): `firebase deploy --only firestore:rules --project cluppie-ad329`. Zonder deploy werkt het scherm ook, maar wordt het spookteam niet opgeruimd.
 
-
 ## Release 20261011g — App Check aan (meten)
 - reCAPTCHA Enterprise-sleutel in `firebase.js` (ReCaptchaEnterpriseProvider), niet op localhost. CSP (report-only) staat www.google.com/recaptcha toe.
-- **Open:** na een paar dagen in Firebase-console → App Check → APIs kijken; bij ~100% geldige verzoeken Enforce aan voor Firestore, Storage en Cloud Functions.
+- Sleutel geregistreerd in de console op 11-10-2026; Enforce staat nog uit (zie *Open*).
+
+## Release 20261011h — overzetten en seizoensovergang alles-of-niets
+- Nieuwe callable `zetSpelerOver` (`functions/overdracht.js`): schrijft eerdere dossiers, het nieuwe dossier, het spelerdocument bij het nieuwe team, de archivering van het origineel en (bij een uitlening) het opruimen van het leen-record in één Firestore-transactie. Lukt iets niet, dan verandert er niets; opnieuw aanroepen wordt herkend (`alGedaan`).
+- De app rekent het dossier nog zelf uit (alleen lezen) en stuurt het mee; de server leest het spelerdocument, de uitlening en een gekoppelde gast zelf en controleert rechten (uitleen: clubbeheerder of coördinator van de ontvangende bouw; seizoen: schrijfrecht op beide teams) en dat beide teams bij de club horen.
+- `voerOverzettenUit` en `verhuisSpelersSeizoen` (`teams-spelers.js`) roepen de functie aan. Seizoensovergang: per speler alles-of-niets; valt de verbinding weg, dan zijn de eerste spelers helemaal over en de rest nog helemaal niet, en een tweede keer starten maakt het af.
+- Test: `node tests/overdracht.test.js` (22 controles, in `npm test`). `tests/fake-firestore.js` voert transactie-writes nu pas na afloop uit, zoals echt.
+- **Deploy vóór het mergen**, anders werkt overzetten niet:
+  `firebase deploy --only functions:zetSpelerOver --project cluppie-ad329`
+  `gcloud run services add-iam-policy-binding zetspelerover --region=europe-west1 --member=allUsers --role=roles/run.invoker --project=cluppie-ad329`
+

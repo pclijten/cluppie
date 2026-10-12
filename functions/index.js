@@ -16,6 +16,8 @@
      Sportlink (Club.Dataservice)
        • sportlinkSyncNu     – handmatige sync of alleen de teamlijst (club-admin)
        • syncSportlink       – nachtelijke sync, alle clubs (03:30 NL)
+     Spelers
+       • zetSpelerOver       – definitief overzetten en seizoensovergang, alles-of-niets
      Gebruik
        • aggregeerGebruik    – Inzicht-cijfers van één club (admin/coördinator)
        • aggregeerGebruikNacht – idem voor alle clubs (04:15 NL)
@@ -143,6 +145,8 @@ const aanmelding = require('./aanmelding');
 exports.meldClubAan = aanmelding.meldClubAan;
 exports.beoordeelClubAanmelding = aanmelding.beoordeelClubAanmelding;
 exports.meldNieuweAanvraag = aanmelding.meldNieuweAanvraag;
+/* [20261011h] speler overzetten / seizoensovergang in één transactie (functions/overdracht.js) */
+exports.zetSpelerOver = require('./overdracht').zetSpelerOver;
 
 /* ==================== 2. AI-FUNCTIES ==================== */
 

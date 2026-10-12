@@ -17,7 +17,10 @@ const getPath = (obj, path) => path.split('.').reduce((o, k) => (o == null ? und
 class Doc {
   constructor(p){ this.path = p; this.id = p.split('/').pop(); this.ref = this; }
   async get(){ const d = store.get(this.path); return { exists: d !== undefined, id: this.id, ref: this, data: () => clone(d) }; }
-  async set(d){ store.set(this.path, clone(d)); }
+  async set(d, opt){
+    if (opt && opt.merge && store.has(this.path)){ const o = store.get(this.path); for (const [k, v] of Object.entries(d)){ if (v === SENT.del) delete o[k]; else o[k] = clone(v); } return; }
+    const c = clone(d); for (const [k, v] of Object.entries(c)) if (v === SENT.del) delete c[k]; store.set(this.path, c);
+  }
   async update(u){ const d = store.get(this.path); if (!d) throw new Error('NOT_FOUND ' + this.path); for (const [k, v] of Object.entries(u)) setPath(d, k, v); }
   async delete(){ store.delete(this.path); }
 }
@@ -40,7 +43,13 @@ class Query {
 }
 const db = {
   doc: p => new Doc(p), collection: c => new Query(c),
-  runTransaction: async fn => fn({ get: r => r.get(), set: (r, d) => r.set(d), update: (r, u) => r.update(u) }),
+  /* writes worden pas na afloop uitgevoerd (zoals echt): faalt fn, dan verandert er niets */
+  runTransaction: async fn => {
+    const w = [];
+    const r = await fn({ get: x => x.get(), set: (x, d, o) => w.push(() => x.set(d, o)), update: (x, u) => w.push(() => x.update(u)), delete: x => w.push(() => x.delete()) });
+    for (const f of w) await f();
+    return r;
+  },
   batch: () => ({ ops: [], delete(r){ this.ops.push(r); }, async commit(){ for (const r of this.ops) await r.delete(); } }),
 };
 module.exports = { store, db, FieldValue, Timestamp: { fromMillis: ms => new Ts(ms) }, Ts };
