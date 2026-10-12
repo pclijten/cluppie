@@ -174,4 +174,31 @@ ok('client: melding alleen voor afgelast binnen 7 dagen', () => {
   assert.equal(ws.htmlAfgelastBanner([], 'O11-1', '2026-10-12'), '');
 });
 
+/* ---------- 20261012e: spelers uit de teamindeling ---------- */
+const indeling = [
+  { relatiecode: 'AB12CD3', naam: 'Luuk Bakker', voornaam: 'Luuk', achternaam: 'Bakker', tussenvoegsel: '', geslacht: 'Man', rol: 'Teamspeler', functie: '', email: 'x@y.nl', mobiel: '0612345678', foto: 'iVBOR' },
+  { relatiecode: '', naam: 'Sem de Vries', voornaam: 'Sem', achternaam: 'Vries', tussenvoegsel: 'de', rol: 'Teamspeler' },
+  { naam: 'Afgeschermd', voornaam: 'Afgeschermd', achternaam: 'Afgeschermd', tussenvoegsel: 'Afgeschermd', rol: 'Teamspeler' },
+  { naam: 'Afgeschermd', voornaam: 'Afgeschermd', achternaam: 'Afgeschermd', rol: 'Teamspeler' },
+  { naam: 'Trainer Thijs', voornaam: 'Thijs', achternaam: 'Trainer', rol: 'Technische staf', functie: 'Trainer/coach' },
+  { naam: 'Luuk Bakker', voornaam: 'Luuk', achternaam: 'Bakker', rol: 'Teamspeler' },
+];
+ok('spelers: alleen voornaam als de club geen achternamen vastlegt', () => {
+  const r = h.spelersUitIndeling(indeling, { achternamen: false });
+  assert.deepEqual(r, { zichtbaar: [{ voornaam: 'Luuk' }, { voornaam: 'Sem' }], afgeschermd: 2, totaal: 5 });
+});
+ok('spelers: achternaam (met tussenvoegsel) alleen als de club dat aan heeft', () => {
+  const r = h.spelersUitIndeling(indeling, { achternamen: true });
+  assert.deepEqual(r.zichtbaar, [{ voornaam: 'Luuk', achternaam: 'Bakker' }, { voornaam: 'Sem', achternaam: 'de Vries' }]);
+});
+ok('spelers: nooit staf, lidnummer, contact, foto of geslacht', () => {
+  const t = JSON.stringify(h.spelersUitIndeling(indeling, { achternamen: true }));
+  for (const verboden of ['Thijs', 'AB12CD3', 'x@y.nl', '0612345678', 'iVBOR', 'Man', 'Afgeschermd']) assert.ok(!t.includes(verboden), verboden);
+});
+ok('spelers: lege of rare invoer', () => {
+  assert.deepEqual(h.spelersUitIndeling(null), { zichtbaar: [], afgeschermd: 0, totaal: 0 });
+  assert.deepEqual(h.spelersUitIndeling([{ rol: 'Teamspeler', naam: '' }]), { zichtbaar: [], afgeschermd: 1, totaal: 1 });
+  assert.deepEqual(h.spelersUitIndeling([{ rol: 'Teamspeler', naam: 'Noor Jansen' }]).zichtbaar, [{ voornaam: 'Noor' }]);
+});
+
 console.log(`sportlink-meer: alle ${n} controles geslaagd`);

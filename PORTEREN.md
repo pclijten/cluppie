@@ -48,6 +48,11 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 
 # Geschiedenis
 
+## Release 20261012g — spelers uit Sportlink + wedstrijdinfo op desktop
+- **Spelers uit Sportlink** (mockup goedgekeurd 12-10): knop "Uit Sportlink" bij Selectie (mobiel en desktop), alleen als de club een Sportlink-koppeling heeft. Nieuwe callable `sportlinkTeamSpelers` haalt `team-indeling` op en geeft alleen voornamen (achternaam alleen als de club die vastlegt) van zichtbare spelers terug; afgeschermde leden worden geteld, staf/lidnummer/contact/foto/geslacht nooit. Coach kiest wie erbij komt; dubbelen grijs (`markeerBestaand`, getest). Geen nachtelijke sync. Zie `AVG.md` → Sportlink-gegevens.
+- **Wedstrijdinfo:** op desktop bij Aanwezigheid over de volle breedte (stond in een spelerstegel). Bij een gespeelde wedstrijd geen lege tijdvakjes meer, wel de uitleg dat invullen en delen bij komende wedstrijden kan.
+- **Deploy:** `firebase deploy --only functions:sportlinkTeamSpelers --project cluppie-ad329` en `gcloud run services add-iam-policy-binding sportlinkteamspelers --region=europe-west1 --member=allUsers --role=roles/run.invoker --project=cluppie-ad329`. Daarna mergen.
+
 ## Release 20261012e — Training maken en Seizoensplanning
 - **Training maken** (tab `trainingsmodule`, hub → Oefenstof): een complete training uit een eigen bibliotheek van 48 vormen (O8–O13). Regelgebaseerde planner kiest en controleert (duur, opbouw, voetbalecht ≥50%, thema ≥60%, geen wachtrijen, ruimte per speler, belasting, groepsgrootte); SVG-tekening per onderdeel; knoppen Druk/Moeilijkheid/Coachstijl; Wissel vorm; bewaren onder `teams/{id}/trainingsplannen` (alleen vorm-id's en minuten) en delen via WhatsApp. Werkt zonder AI.
 - **Seizoensplanning** (tab `seizoensplan`): drie opbouwmodellen, parameters (data, vrije weken, trainingen per week, accent), concept-jaarlijn in blokken van 4–6 weken met uitleg, eerste weken uitgewerkt, wekelijks aanvullen. Bijsturing alleen als voorstel (min. 3 wedstrijdevaluaties, max. één per week, feiten + besluit gelogd in `…/seizoensplan/{seizoen}/voorstellen`). Optioneel AI-jaarvoorstel en AI-uitleg, altijd door code gevalideerd met terugval op de standaardopbouw.

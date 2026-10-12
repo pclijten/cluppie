@@ -188,7 +188,39 @@ function inAfgelastVenster(dag, uur){
   return false;
 }
 
+/* ---------- 5. spelers uit de teamindeling (20261012g) ---------- */
+
+/* Sportlink team-indeling → alleen wat de coach mag overnemen:
+     { zichtbaar: [{ voornaam, achternaam? }], afgeschermd, totaal }
+   - alleen rol "Teamspeler" (geen staf; coaches komen binnen via een uitnodiging)
+   - "Afgeschermd" (privacykeuze van lid/ouders in Sportlink) wordt geteld, nooit overgenomen
+   - achternaam alleen als de club die vastlegt (instellingen.privacy.achternamen !== false)
+   - nooit: relatiecode, geslacht, functie, e-mail, telefoon, foto, einddatum */
+const AFGESCHERMD = /^\s*afgeschermd\s*$/i;
+function spelersUitIndeling(regels, { achternamen = false } = {}){
+  const zichtbaar = [], gezien = new Set();
+  let afgeschermd = 0, totaal = 0;
+  for (const r of regels || []){
+    if (!/speler/i.test(String(r?.rol || ''))) continue;
+    totaal++;
+    let voornaam = schoon(r.voornaam, 40);
+    if (!voornaam) voornaam = schoon(String(r.naam || '').split(/\s+/)[0], 40);
+    if (!voornaam || AFGESCHERMD.test(voornaam) || AFGESCHERMD.test(String(r.naam || ''))){ afgeschermd++; continue; }
+    const speler = { voornaam };
+    if (achternamen){
+      const a = [schoon(r.tussenvoegsel, 20), schoon(r.achternaam, 50)].filter(x => x && !AFGESCHERMD.test(x)).join(' ');
+      if (a) speler.achternaam = a;
+    }
+    const sleutel = normSleutel(speler.voornaam) + '|' + normSleutel(speler.achternaam || '');
+    if (gezien.has(sleutel)) continue;
+    gezien.add(sleutel); zichtbaar.push(speler);
+  }
+  zichtbaar.sort((a, b) => a.voornaam.localeCompare(b.voornaam, 'nl'));
+  return { zichtbaar, afgeschermd, totaal };
+}
+
 module.exports = {
+  spelersUitIndeling,
   schoon, netjesPlaats, kleurUitTekst, filterClubgegevens, soortVan, poulesPerTeam, bekerPoule,
   infoUitRegel, accommodatieSleutel, accommodatieUit, afgelastPlan, afgelastRegel, inAfgelastVenster,
 };

@@ -42,6 +42,11 @@ Status: technische maatregelen doorgevoerd (okt 2026). **Niet getest** tegen de 
 - Speler verwijderen wist ook `vorigeTeams` van die speler. Het gearchiveerde origineel bij het oude team moet je daar apart verwijderen (verzoek tot wissen: beide kanten doen).
 - `scrubPII` leest alle spelersdocumenten van het team, dus ook gearchiveerde namen worden uit AI-invoer gehaald.
 
+## Sportlink-gegevens (okt 2026)
+- **Clubgegevens** (`sportlinkClubInfo`): alleen clubnaam, clubcode, plaats, website, logo en tenuekleur. Banknummer, KvK-nummer, naam secretaris, telefoon en e-mail die Sportlink ook teruggeeft, filtert de server weg (`functions/sportlink-hulp.js`, getest).
+- **Wedstrijden**: geen scheidsrechternamen (bij de jeugd vaak minderjarig). Wel sportpark, veld, kleedkamer, tijden en het adres van het sportpark.
+- **Spelers uit de teamindeling** (`sportlinkTeamSpelers`, release 20261012g): alleen op verzoek van een coach van het team, nooit automatisch of 's nachts. De server geeft alleen de **voornaam** terug, en de achternaam alleen als de club achternamen vastlegt (`instellingen.privacy.achternamen`). Alleen rol "Teamspeler": geen staf. Nooit: lidnummer (relatiecode), geslacht, functie, e-mail, telefoon, foto, einddatum. Leden die in Sportlink **afgeschermd** zijn, worden alleen geteld en nooit overgenomen. De coach kiest zelf wie er in de selectie komt; Cluppie bewaart geen Sportlink-sleutel bij de speler (alleen `bron: 'sportlink'`).
+
 ## Bewuste restpunten (kies/regel zelf)
 1. **Verwerkersovereenkomst** per club + verwerkersovereenkomsten/DPA met Google (Firebase DPA; Firestore stond in nam5 en de standaard-bucket in de VS: overstap naar europe-west1 volgens MIGRATIE-EU.md) en Anthropic (DPA + zero-data-retention overwegen; VS-doorgifte via SCC/DPF).
 2. **DPIA**: verwerking van gegevens van minderjarigen op schaal (30 clubs) → doe een DPIA vóór uitrol; dit document is de basis. Verwerkingsregister: gebruik de tabel hierboven.

@@ -18,6 +18,7 @@
        • syncSportlink       – nachtelijke sync, alle clubs (03:30 NL)
        • checkAfgelastingen  – weekend: elke 30 min afgelaste wedstrijden markeren (vr 16–22, za/zo 7–14)
        • sportlinkClubInfo   – club opzoeken met een Client ID (aanmelden, wizard, koppeling testen)
+       • sportlinkTeamSpelers – namen van zichtbare spelers uit de teamindeling (op verzoek van de coach)
      Spelers
        • zetSpelerOver       – definitief overzetten en seizoensovergang, alles-of-niets
      Gebruik
@@ -1199,6 +1200,47 @@ exports.sportlinkClubInfo = onCall({ region: REGIO, cors: true, timeoutSeconds: 
     metCompetitie: teams.filter(t => t.poulecode).length,
     metBeker: teams.filter(t => (t.poules || []).some(p => p.soort === 'beker')).length,
   };
+});
+
+/* [20261012g] Spelers van één team uit de Sportlink-teamindeling, op verzoek van de coach.
+   Geen nachtelijke sync: alleen deze aanroep, en alleen namen van zichtbare spelers (zie
+   spelersUitIndeling). Toegang: coach van het team, of clubbeheerder/coördinator. Max 10/uur.
+   { clubId, teamId } → { gekoppeld, zichtbaar[], afgeschermd, totaal } */
+exports.sportlinkTeamSpelers = onCall({ region: REGIO, cors: true, timeoutSeconds: 30 }, async (request) => {
+  const a = request.auth;
+  if (!a || a.token?.firebase?.sign_in_provider === 'anonymous') throw new HttpsError('unauthenticated', 'Log eerst in met je eigen account.');
+  const { clubId, rol } = await vereisLid(request);
+  const teamId = String(request.data?.teamId || '').trim();
+  if (!teamId) throw new HttpsError('invalid-argument', 'teamId ontbreekt.');
+  const db = getFirestore();
+  const team = (await db.doc(`${PADEN.teamsCol()}/${teamId}`).get()).data();
+  if (!team || team.club !== clubId) throw new HttpsError('not-found', 'Dit team hoort niet bij deze club.');
+  if (!team.leden?.[a.uid] && !BEHEER_ROLLEN.includes(rol)) throw new HttpsError('permission-denied', 'Alleen coaches van dit team kunnen spelers ophalen.');
+
+  const limietRef = db.doc(`ratelimiet/${a.uid}`);
+  const uur = new Date().toISOString().slice(0, 13);
+  const mag = await db.runTransaction(async tx => {
+    const r = (await tx.get(limietRef)).data() || {};
+    const n = r.spelersUur === uur ? (r.spelersAantal || 0) : 0;
+    if (n >= 10) return false;
+    tx.set(limietRef, { spelersUur: uur, spelersAantal: n + 1 }, { merge: true });
+    return true;
+  });
+  if (!mag) throw new HttpsError('resource-exhausted', 'Je hebt dit uur al vaak opgehaald. Probeer het later opnieuw.');
+
+  const club = (await db.doc(PADEN.club(clubId)).get()).data() || {};
+  const clientId = String(club.sportlinkClientId || '').trim();
+  const status = (await db.doc(PADEN.teamStatus(clubId, teamId)).get()).data() || {};
+  const teamcode = String(team.sportlinkTeamcode || status.teamcode || '').trim();
+  if (!clientId || !teamcode) return { gekoppeld: false, zichtbaar: [], afgeschermd: 0, totaal: 0 };
+  const lijst = (await db.doc(PADEN.teamlijst(clubId)).get()).data()?.teams || [];
+  const lokaleteamcode = lijst.find(t => t.teamcode === teamcode)?.lokaleteamcode || '-1';
+
+  let regels;
+  try { regels = await sportlinkCall(clientId, 'team-indeling', { teamcode, lokaleteamcode }); }
+  catch (e){ console.warn('[sportlinkTeamSpelers]', e.message || e); throw new HttpsError('unavailable', 'Sportlink is nu niet bereikbaar. Probeer het later opnieuw.'); }
+  const achternamen = club.instellingen?.privacy?.achternamen !== false;
+  return { gekoppeld: true, ...slh.spelersUitIndeling(regels, { achternamen }) };
 });
 
 /* Alleen voor tests (niet-enumerable, dus de Firebase-CLI ziet het niet als functie). */

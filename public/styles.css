@@ -4414,6 +4414,8 @@ textarea.trw-vel-in{min-height:80px;resize:none}
   html.desk .dk-na-preswedstrijd .dk-namidden{ display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; align-content:start; }
   html.desk .dk-na-preswedstrijd .dk-namidden > *{ max-width:none; margin:0 !important; }
   html.desk .dk-na-preswedstrijd .pw-tel, html.desk .dk-na-preswedstrijd #pwKlaar{ grid-column:1 / -1; }
+  /* [20261012g] wedstrijdinfo over de volle breedte, niet in een spelerstegel */
+  html.desk .dk-na-preswedstrijd .ws-info{ grid-column:1 / -1; max-width:620px !important; margin-bottom:4px !important; }
   html.desk .dk-na-preswedstrijd #pwKlaar{ display:none; }
   html.desk .dk-na-preswedstrijd .pres-speler{ margin:0; border-radius:12px; }
   /* poule: stand en programma naast elkaar */
@@ -5834,3 +5836,12 @@ h3.tm-kop2{font-size:calc(20px * var(--fs))}
 .tv-speler{stroke:#0e1116;stroke-width:1.5}
 .tv-speler.tv-eigen{fill:var(--accent)}.tv-speler.tv-tegen{fill:#4a8fe0}.tv-speler.tv-joker{fill:var(--keeper)}
 .tv-nr{font-size:10px;font-weight:700;fill:#fff;pointer-events:none}.tv-nr.tv-joker{fill:#111}
+
+/* [20261012g] spelers uit Sportlink */
+.sl-sp-kop{font-size:calc(11px * var(--fs));font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-2);margin:6px 0 8px}
+.sl-sp-keuze{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:12px;background:var(--surface-2, var(--op-vlak));margin-bottom:8px;cursor:pointer}
+.sl-sp-keuze input{width:19px;height:19px;accent-color:var(--accent);flex-shrink:0}
+.sl-sp-keuze span{flex:1;min-width:0}
+.sl-sp-keuze small{color:var(--ink-2);font-size:calc(11.5px * var(--fs))}
+.sl-sp-keuze.al{opacity:.55;cursor:default}
+.sl-sp-keuze.al input{pointer-events:none}

@@ -166,5 +166,29 @@ function zetKlaar(){
   try { await F.sportlinkClubInfo({ auth: { uid: 'x', token: { firebase: { sign_in_provider: 'anonymous' } } }, data: { clientId: 'k7Rq2pX9aW' } }); ok(false, 'anoniem geweigerd'); }
   catch (e){ ok(e.code === 'unauthenticated', 'clubinfo: anoniem geweigerd'); }
 
+  /* [20261012e] spelers uit de teamindeling */
+  zetKlaar(); await sync();
+  store.set('clubs/c1', { ...doc('clubs/c1'), instellingen: { privacy: { achternamen: false } } });
+  store.set('teams/t11', { ...doc('teams/t11'), leden: { coach1: true } });
+  SL['team-indeling'] = q => q.get('teamcode') === '501' ? [
+    { relatiecode: 'AB12CD3', naam: 'Luuk Bakker', voornaam: 'Luuk', achternaam: 'Bakker', rol: 'Teamspeler', email: 'x@y.nl' },
+    { naam: 'Afgeschermd', voornaam: 'Afgeschermd', achternaam: 'Afgeschermd', rol: 'Teamspeler' },
+    { naam: 'Thijs Trainer', voornaam: 'Thijs', rol: 'Technische staf' },
+  ] : [];
+  const req = (uid, data) => ({ auth: { uid, token: { firebase: { sign_in_provider: 'password' } } }, data });
+  const sp = await F.sportlinkTeamSpelers(req('coach1', { clubId: 'c1', teamId: 't11' }));
+  ok(sp.gekoppeld && sp.totaal === 2 && sp.afgeschermd === 1 && JSON.stringify(sp.zichtbaar) === '[{"voornaam":"Luuk"}]', `spelers: alleen zichtbare voornaam (${JSON.stringify(sp)})`);
+  ok(!JSON.stringify(sp).includes('Bakker') && !JSON.stringify(sp).includes('AB12CD3') && !JSON.stringify(sp).includes('Thijs'), 'spelers: geen achternaam (club uit), lidnummer of staf');
+  store.set('clubs/c1', { ...doc('clubs/c1'), instellingen: { privacy: { achternamen: true } } });
+  ok((await F.sportlinkTeamSpelers(req('coach1', { clubId: 'c1', teamId: 't11' }))).zichtbaar[0].achternaam === 'Bakker', 'spelers: achternaam als de club dat vastlegt');
+  try { await F.sportlinkTeamSpelers(req('vreemde', { clubId: 'c1', teamId: 't11' })); ok(false, 'niet-lid geweigerd'); }
+  catch (e){ ok(e.code === 'permission-denied', 'spelers: niet-lid van de club geweigerd'); }
+  store.set('clubs/c1', { ...doc('clubs/c1'), leden: { ...(doc('clubs/c1').leden || {}), andereCoach: true } });
+  try { await F.sportlinkTeamSpelers(req('andereCoach', { clubId: 'c1', teamId: 't11' })); ok(false, 'coach van ander team geweigerd'); }
+  catch (e){ ok(e.code === 'permission-denied', 'spelers: coach van een ander team geweigerd'); }
+  ok((await F.sportlinkTeamSpelers(req('adm', { clubId: 'c1', teamId: 't11' }))).gekoppeld, 'spelers: clubbeheerder mag');
+  store.delete('clubs/c1/geheim/t13');
+  ok((await F.sportlinkTeamSpelers(req('adm', { clubId: 'c1', teamId: 't13' }))).gekoppeld === false, 'spelers: niet gekoppeld team → gekoppeld:false');
+
   console.log(process.exitCode ? 'sportlink-sync: FOUTEN' : 'sportlink-sync: alle controles geslaagd');
 })().catch(e => { console.error(e); process.exitCode = 1; });
