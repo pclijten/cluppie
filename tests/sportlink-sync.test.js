@@ -20,9 +20,16 @@ const plus = n => { const d = new Date(vandaag + 'T12:00:00Z'); d.setUTCDate(d.g
 const T = (n, t = '10:30') => `${plus(n)}T${t}:00+0200`;
 
 /* ---- nep-Sportlink ---- */
-let SL = {}; const aanroepen = [];
+let SL = {}; const aanroepen = [], params = [];
+/* Zoals de echte Club.Dataservice: clubbreed (zonder teamcode) wordt programma/uitslagen afgekapt
+   (hier na 1 regel); met teamcode komen alle wedstrijden van dat team. */
+const perTeam = lijst => q => {
+  const code = q.get('teamcode');
+  if (!code) return lijst.slice(0, 1);
+  return lijst.filter(r => String(r.thuisteamid) === code || String(r.uitteamid) === code);
+};
 global.fetch = async (url) => {
-  const u = new URL(url); const ep = u.pathname.slice(1); aanroepen.push(ep);
+  const u = new URL(url); const ep = u.pathname.slice(1); aanroepen.push(ep); params.push([ep, u.searchParams]);
   const data = typeof SL[ep] === 'function' ? SL[ep](u.searchParams) : SL[ep];
   if (data === undefined) return { ok: false, status: 404, text: async () => '' };
   return { ok: true, status: 200, text: async () => JSON.stringify(data) };
@@ -42,7 +49,10 @@ function standaardSL(){
       { wedstrijdcode: 1003, wedstrijddatum: T(16, '18:30'), aanvangstijd: '18:30', thuisteamid: 501, thuisteam: 'VV Voorbeeld O11-1', uitteamid: 779, uitteam: 'FC Oefen O11-3',
         competitiesoort: 'Oefenwedstrijd' },
     ],
-    uitslagen: [],
+    uitslagen: [
+      { wedstrijdcode: 1010, wedstrijddatum: T(-2, '10:00'), aanvangstijd: '10:00', thuisteamid: 501, thuisteam: 'VV Voorbeeld O11-1', uitteamid: 781, uitteam: 'Laat FC O11-1', uitslag: '7 - 4', competitiesoort: 'regulier' },
+      { wedstrijdcode: 1301, wedstrijddatum: T(-9, '09:00'), aanvangstijd: '09:00', thuisteamid: 502, thuisteam: 'VV Voorbeeld O13-1', uitteamid: 790, uitteam: 'Ander O13-1', uitslag: '2 - 2', competitiesoort: 'regulier' },
+    ],
     afgelastingen: [
       { wedstrijdcode: 1001, wedstrijddatum: T(6), aanvangstijd: '10:30', thuisteamid: '777', uitteamid: '501', status: 'Afgelast', wedstrijd: 'FC Kempen O11-1 - VV Voorbeeld O11-1' },
     ],
@@ -60,7 +70,8 @@ const ok = (c, m) => { console.log((c ? 'OK   ' : 'FAIL ') + m); if (!c) process
 const doc = p => store.get(p);
 
 function zetKlaar(){
-  store.clear(); aanroepen.length = 0; standaardSL();
+  store.clear(); aanroepen.length = 0; params.length = 0; standaardSL();
+  SL._prog = SL.programma; SL.programma = perTeam(SL._prog); SL.uitslagen = perTeam(SL.uitslagen);
   store.set('clubs/c1', { naam: 'VV Voorbeeld', admins: { adm: true }, sportlinkClientId: 'k7Rq2pX9aW' });
   store.set('teams/t11', { club: 'c1', naam: 'O11-1', leden: {} });
   store.set('teams/t13', { club: 'c1', naam: 'O13-1', leden: {} });
@@ -74,8 +85,13 @@ function zetKlaar(){
 
   zetKlaar();
   const r = await sync();
-  ok(r.gematcht === 2 && r.wedstrijden === 3, `sync: 2 teams gekoppeld, 3 wedstrijden (${JSON.stringify(r)})`);
+  ok(r.gematcht === 2 && r.wedstrijden === 5, `sync: 2 teams gekoppeld, 5 wedstrijden (${JSON.stringify(r)})`);
 
+  // [20261012d] per team opgevraagd: ook wat clubbreed zou wegvallen komt binnen
+  ok(doc('teams/t11/wedstrijden/sl_1010')?.tegenstander === 'Laat FC O11-1', 'late uitslag binnen (clubbrede lijst zou afgekapt zijn)');
+  ok(doc('teams/t13/wedstrijden/sl_1301') && !doc('teams/t11/wedstrijden/sl_1301'), 'uitslag bij het juiste team');
+  ok(params.filter(([ep]) => ep === 'programma' || ep === 'uitslagen').every(([, q]) => q.get('teamcode') && q.get('lokaleteamcode') === '-1'),
+    'programma en uitslagen altijd met teamcode');
   const w1 = doc('teams/t11/wedstrijden/sl_1001');
   ok(w1.competitiesoort === 'beker', 'bekerwedstrijd herkend');
   ok(w1.status === 'afgelast' && w1.afgelastOp, 'afgelaste wedstrijd gemarkeerd');
@@ -104,7 +120,7 @@ function zetKlaar(){
 
   /* afgelasting ingetrokken + wedstrijd weer terug */
   SL.afgelastingen = [];
-  SL.programma.push({ wedstrijdcode: 1009, wedstrijddatum: T(9), aanvangstijd: '10:00', thuisteamid: 501, uitteamid: 780, uitteam: 'Weg FC' });
+  SL._prog.push({ wedstrijdcode: 1009, wedstrijddatum: T(9), aanvangstijd: '10:00', thuisteamid: 501, uitteamid: 780, uitteam: 'Weg FC' });
   aanroepen.length = 0;
   await sync();
   ok(!doc('teams/t11/wedstrijden/sl_1001').status && !doc('teams/t11/wedstrijden/sl_1001').afgelastOp, 'afgelasting ingetrokken → status weg');
