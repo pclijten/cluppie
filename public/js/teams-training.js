@@ -499,27 +499,20 @@ export function htmlInstellingen(){
     ${beheer ? `<div class="kaart">
       <div class="sectie-kop" style="margin-top:0">Teamnaam</div>
       <input class="invoer" id="iTeamNaam" value="${esc(S.team.naam)}" autocomplete="off" style="margin-bottom:10px">
-      <label class="lid-rij" style="cursor:pointer;margin-bottom:10px">
+      ${(S.club?.instellingen?.toegang?.vasteCodes) !== false ? `<label class="lid-rij" style="cursor:pointer;margin-bottom:10px">
         <input type="checkbox" id="iCodeVolgtNaam" checked style="width:19px;height:19px;accent-color:var(--grass)">
         <div class="lid-naam" style="font-weight:500">Code aanpassen aan de nieuwe naam
           <span style="display:block;font-size:calc(11.5px * var(--fs));color:var(--ink-2);font-weight:400">Bijv. ${esc(voorbeeldTeamcode())} — let op: oude uitnodigingslinks werken dan niet meer</span></div>
-      </label>
+      </label>` : ''}
       <button class="knop vol" id="iNaamOk">Naam opslaan</button>
     </div>` : ''}
-    <div class="kaart">
-      <div class="sectie-kop" style="margin-top:0">Teamcode voor coaches</div>
-      <p style="font-size:calc(13.5px * var(--fs));color:var(--ink-2)">Deel deze code of een uitnodigingslink met collega-coaches. Zij loggen in met e-mail of Google en zitten direct in dit team.</p>
-      <div class="teamcode">${esc(S.team.code)}</div>
-      <div class="rij">
-        <button class="knop licht vol" id="deelCode">Code kopiëren</button>
-        <button class="knop fluo vol" id="deelLink">📲 Uitnodigen</button>
-      </div>
-      ${beheer ? `<button class="knop licht vol" id="wijzigCode" style="margin-top:8px">✏️ Code handmatig wijzigen</button>` : ''}
-    </div>
     <div class="kaart">
       <div class="sectie-kop" style="margin-top:0">Coaches (${ledenIds.length})</div>
       <p style="font-size:calc(12.5px * var(--fs));color:var(--ink-2);margin-bottom:10px">Staat er iemand dubbel of verkeerd in de lijst? Verwijder die met 🗑.</p>
       ${ledenHtml}
+      <!-- [20261012c] vaste teamcode weg: collega's komen binnen via een persoonlijke link (toegang.js) -->
+      <button class="knop fluo vol" id="deelLink" style="margin-top:10px">📲 Coach uitnodigen</button>
+      <p style="font-size:calc(12px * var(--fs));color:var(--ink-2);margin:6px 0 0">Je collega krijgt een persoonlijke link, 14 dagen geldig.</p>
       <button class="knop licht vol" id="wijzigMijnNaam" style="margin-top:10px">✏️ Mijn weergavenaam wijzigen</button>
     </div>
     <div class="kaart">

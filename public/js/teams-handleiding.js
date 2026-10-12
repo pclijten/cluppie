@@ -5,8 +5,8 @@
    (#helpZoek) wordt door de hub (teams.js/koppelTeamTab) aangesloten,
    want die werkt direct op het gerenderde DOM-element. */
 import { esc } from './state.js?v=20261011g';
-import { voorbeeldTeamcode, beleidsplanNaam } from './clubconfig.js?v=20261011g';
-import { onboardingHerstartBlok } from './onboarding.js?v=20261012b';
+import { beleidsplanNaam } from './clubconfig.js?v=20261011g';
+import { onboardingHerstartBlok } from './onboarding.js?v=20261012c';
 
 export function htmlHandleiding(){
   return `<div class="hl">
@@ -39,13 +39,13 @@ export function htmlHandleiding(){
     <div class="tip"><b>Wachtwoord vergeten?</b> Tik op "Wachtwoord vergeten?" onder de inlogknop — je krijgt dan een mailtje om een nieuw wachtwoord in te stellen.</div>
     </section>
 
-    <section class="hl-sec" data-zoek="🔗 aansluiten bij je team je coach of de clubbeheerder stuurt je een persoonlijke uitnodigingslink (vaak via whatsapp). zo werkt het: tik op de link. je ziet een welkomstscherm met de naam van je team. log in (google of e-mail) — en je zit meteen in het juiste team. geen link gekregen? vraag je coach om de teamcode (bijv. ${esc(voorbeeldTeamcode()).toLowerCase()}) en vul die in op het inlogscherm.">
+    <section class="hl-sec" data-zoek="🔗 aansluiten bij je team je coach of de clubbeheerder stuurt je een persoonlijke uitnodigingslink (vaak via whatsapp). zo werkt het: tik op de link. je ziet een welkomstscherm met de naam van je team. log in (google of e-mail) — en je zit meteen in het juiste team. geen link gekregen, of is hij verlopen? vraag je coach of de clubbeheerder om een nieuwe. een link is 14 dagen geldig.">
     <h3>🔗 Aansluiten bij je team</h3>
     <p>Je coach of de clubbeheerder stuurt je een <b>persoonlijke uitnodigingslink</b> (vaak via WhatsApp). Zo werkt het:</p>
     <ul>
       <li>Tik op de link. Je ziet een welkomstscherm met de naam van je team.</li>
       <li>Log in (Google of e-mail) — en je zit meteen in het juiste team.</li>
-      <li>Geen link gekregen? Vraag je coach om de <b>teamcode</b> (bijv. ${esc(voorbeeldTeamcode())}) en vul die in op het inlogscherm.</li>
+      <li>Geen link gekregen, of is hij verlopen? Vraag je coach of de clubbeheerder om een nieuwe. Een link is 14 dagen geldig.</li>
     </ul>
     </section>
 
@@ -183,21 +183,21 @@ export function htmlHandleiding(){
     </section>
 
     <h4 class="hl-hoofdstuk" id="hlh-club">🏛 Club &amp; team beheren</h4>
-    <section class="hl-sec" data-zoek="🏛 clubs & trainingen delen werk je als hoofdtrainer voor meerdere teams? maak op het startscherm een club aan. daarmee kun je: teams aanmaken die bij jouw club horen (de coaches ervan komen direct in het juiste team). 📥 pdf importeren : upload een pdf met de teamindeling en de app leest de teams en spelers automatisch uit. controleer in de preview, klik "aanmaken" en alle teams + spelers staan klaar. coaches uitnodigen met een persoonlijke link (via whatsapp), zodat ze niet eerst een teamcode hoeven te krijgen. met 🔗 alle uitnodigingen krijg je in één overzicht alle links voor alle teams. pdf-trainingen uploaden en aangeven voor welke teams ze beschikbaar zijn. de trainers zien ze in het 📄 training-tabblad van hun team. met ✏️ pas je de titel, week of de gekoppelde teams later aan, zonder het bestand opnieuw te uploaden. een 🔴 stip op het training-tabblad waarschuwt coaches voor nieuwe, ongelezen trainingen.">
+    <section class="hl-sec" data-zoek="🏛 clubs & trainingen delen werk je als hoofdtrainer voor meerdere teams? maak op het startscherm een club aan. daarmee kun je: teams aanmaken die bij jouw club horen (de coaches ervan komen direct in het juiste team). 📥 pdf importeren : upload een pdf met de teamindeling en de app leest de teams en spelers automatisch uit. controleer in de preview, klik "aanmaken" en alle teams + spelers staan klaar. coaches uitnodigen met een persoonlijke link (via whatsapp). met 🔗 alle uitnodigingen krijg je in één overzicht alle links voor alle teams. pdf-trainingen uploaden en aangeven voor welke teams ze beschikbaar zijn. de trainers zien ze in het 📄 training-tabblad van hun team. met ✏️ pas je de titel, week of de gekoppelde teams later aan, zonder het bestand opnieuw te uploaden. een 🔴 stip op het training-tabblad waarschuwt coaches voor nieuwe, ongelezen trainingen.">
     <h3>🏛 Clubs & trainingen delen</h3>
     <p>Werk je als hoofdtrainer voor meerdere teams? Maak op het startscherm een <b>club</b> aan. Daarmee kun je:</p>
     <ul>
       <li>Teams aanmaken die bij jouw club horen (de coaches ervan komen direct in het juiste team).</li>
       <li><b>📥 PDF importeren</b>: upload een PDF met de teamindeling en de app leest de teams en spelers automatisch uit. Controleer in de preview, klik "Aanmaken" en alle teams + spelers staan klaar.</li>
-      <li>Coaches uitnodigen met een persoonlijke link (via WhatsApp), zodat ze niet eerst een teamcode hoeven te krijgen. Met <b>🔗 Alle uitnodigingen</b> krijg je in één overzicht alle links voor alle teams.</li>
+      <li>Coaches uitnodigen met een persoonlijke link (via WhatsApp). Met <b>🔗 Alle uitnodigingen</b> krijg je in één overzicht alle links voor alle teams.</li>
       <li>PDF-trainingen uploaden en aangeven voor welke teams ze beschikbaar zijn. De trainers zien ze in het 📄 Training-tabblad van hun team. Met ✏️ pas je de titel, week of de gekoppelde teams later aan, zonder het bestand opnieuw te uploaden.</li>
       <li>Een 🔴 stip op het training-tabblad waarschuwt coaches voor nieuwe, ongelezen trainingen.</li>
     </ul>
     </section>
 
-    <section class="hl-sec" data-zoek="👥 meerdere coaches & rommel opruimen onder ⚙️ team vind je de teamcode (bijv. ${esc(voorbeeldTeamcode()).toLowerCase()}) en de lijst coaches . deel de code of een uitnodigingslink met collega-coaches: ze openen de link en loggen in met hun e-mailadres of google. daarna zitten ze direct in het team — en komen ze later met dezelfde login terug als dezelfde coach. staat er iemand verkeerd of dubbel in de lijst? tik op het 🗑 naast een coach om die te verwijderen uit het team. wijzigingen lopen realtime door — handig als de assistent-coach langs de lijn de wissels bijhoudt en de hoofdcoach de score.">
+    <section class="hl-sec" data-zoek="👥 meerdere coaches & rommel opruimen onder ⚙️ team vind je de lijst coaches en de knop coach uitnodigen. een collega-coach krijgt een persoonlijke link (14 dagen geldig): ze openen de link en loggen in met hun e-mailadres of google. daarna zitten ze direct in het team — en komen ze later met dezelfde login terug als dezelfde coach. staat er iemand verkeerd of dubbel in de lijst? tik op het 🗑 naast een coach om die te verwijderen uit het team. wijzigingen lopen realtime door — handig als de assistent-coach langs de lijn de wissels bijhoudt en de hoofdcoach de score.">
     <h3>👥 Meerdere coaches & rommel opruimen</h3>
-    <p>Onder ⚙️ <b>Team</b> vind je de <b>teamcode</b> (bijv. ${esc(voorbeeldTeamcode())}) en de lijst <b>coaches</b>. Deel de code of een uitnodigingslink met collega-coaches:</p>
+    <p>Onder ⚙️ <b>Team</b> vind je de lijst <b>coaches</b> en de knop <b>Coach uitnodigen</b>. Een collega-coach krijgt een persoonlijke link die 14 dagen geldig is:</p>
     <ul>
       <li>Ze openen de link en loggen in met hun e-mailadres of Google. Daarna zitten ze direct in het team — en komen ze later met dezelfde login terug als dezelfde coach.</li>
       <li>Staat er iemand verkeerd of dubbel in de lijst? Tik op het 🗑 naast een coach om die te verwijderen uit het team.</li>
