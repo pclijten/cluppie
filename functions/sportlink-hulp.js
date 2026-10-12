@@ -188,7 +188,7 @@ function inAfgelastVenster(dag, uur){
   return false;
 }
 
-/* ---------- 5. spelers uit de teamindeling (20261012e) ---------- */
+/* ---------- 5. spelers uit de teamindeling (20261012g) ---------- */
 
 /* Sportlink team-indeling → alleen wat de coach mag overnemen:
      { zichtbaar: [{ voornaam, achternaam? }], afgeschermd, totaal }

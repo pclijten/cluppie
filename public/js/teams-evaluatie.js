@@ -5,7 +5,7 @@
    spelersstatistieken uit wedstrijd.js. */
 import { beleidsplanNaam } from './clubconfig.js?v=20261011g';
 import {
-  db, collection, doc, addDoc, deleteDoc, updateDoc
+  db, collection, doc, addDoc, deleteDoc, updateDoc, deleteField
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, openModal, sluitModal, toon, modAan
@@ -13,8 +13,9 @@ import {
 import { NIVEAUS, niveauKleur, TEAM_CATEGORIEEN, TEAM_TAGS, teamCategorie, SEIZOEN_FALLBACK } from './config.js?v=20261011g';
 import { ico } from './icons.js?v=20260922c';
 
-import { htmlStats } from './wedstrijd.js?v=20261012e';
+import { htmlStats } from './wedstrijd.js?v=20261012g';
 import { telGebruik } from './tracker.js?v=20261011g';
+import { themaOpDatum } from './seizoensplan-logica.js?v=20261012e';
 
 /* Kleine lokale kopie van de deelnemer-helper (ook aanwezig in teams-spelers.js)
    — bewust hier gedupliceerd i.p.v. een cross-module import voor één regel. */
@@ -29,6 +30,10 @@ export function modalTeamEvaluatie(wedstrijdId){
   const bestaande = S.teamEvaluaties.find(e => e.wedstrijdId === wedstrijdId) || null;
   const scores = {...(bestaande?.scores || {})};
   let gekozenTags = new Set(bestaande?.tags || []);
+  /* [20261012e] thema-check: alleen als dit team een seizoensplan heeft; het thema is dat van de wedstrijdweek */
+  const spPlan = S._spPlan && S._spPlan.teamId === S.teamId ? S._spPlan.plan : null;
+  const checkThema = spPlan ? themaOpDatum(spPlan, w.datum) : null;
+  let checkAntwoord = bestaande?.themaCheck?.thema === checkThema ? (bestaande.themaCheck.antwoord || null) : null;
 
   const kleurbalk = (catId) => `<div class="kleurbalk" data-cat="${catId}">${NIVEAUS.slice(1).map(n =>
     `<button data-niv="${n.n}" class="kn${n.n} ${scores[catId]===n.n?'gekozen':''}"><span class="lbl">${n.label.toUpperCase()}</span></button>`).join('')}</div>`;
@@ -53,6 +58,9 @@ export function modalTeamEvaluatie(wedstrijdId){
     </div>
 
     ${TEAM_CATEGORIEEN.map(catBlok).join('')}
+
+    ${checkThema ? `<div class="veldlabel">Kwam het thema “${esc(checkThema)}” terug in de wedstrijd? (optioneel)</div>
+    <div class="tag-rij" id="mTeCheck">${[['ja','Ja'],['deels','Deels'],['nee','Nee']].map(([k,t]) => `<button class="tag ${checkAntwoord===k?'aan':''}" data-check="${k}">${t}</button>`).join('')}</div>` : ''}
 
     <div class="veldlabel">Opvallend (optioneel)</div>
     <div class="tag-rij" id="mTeTags">${TEAM_TAGS.map(t =>
@@ -101,6 +109,10 @@ export function modalTeamEvaluatie(wedstrijdId){
     else { scores[catId] = Number(b.dataset.niv); b.classList.add('gekozen'); }
     werkSamenvattingBij();
   });
+  $$('#mTeCheck [data-check]').forEach(b => b.onclick = () => {
+    checkAntwoord = checkAntwoord === b.dataset.check ? null : b.dataset.check;
+    $$('#mTeCheck [data-check]').forEach(x => x.classList.toggle('aan', x.dataset.check === checkAntwoord));
+  });
   $$('#mTeTags [data-tag]').forEach(b => b.onclick = () => {
     const id = b.dataset.tag;
     if (gekozenTags.has(id)) gekozenTags.delete(id); else gekozenTags.add(id);
@@ -113,6 +125,7 @@ export function modalTeamEvaluatie(wedstrijdId){
     const ok = await bewaarTeamEvaluatie(wedstrijdId, {
       scores, tags:[...gekozenTags],
       notitieGoed:$('#mTeGoed').value.trim(), notitieAandacht:$('#mTeAandacht').value.trim(),
+      themaCheck: checkThema && checkAntwoord ? { thema: checkThema, antwoord: checkAntwoord } : null,
     });
     if (ok) sluitModal();
   };
@@ -127,7 +140,7 @@ export function modalTeamEvaluatie(wedstrijdId){
 /* [20260923a] Opslaan van een teamevaluatie, gedeeld door de modal hierboven
    en het desktopscherm "Evaluatie" (inline invullen naast de radar).
    Zelfde documentvorm als voorheen; geeft true terug bij succes. */
-export async function bewaarTeamEvaluatie(wedstrijdId, { scores, tags = [], notitieGoed = '', notitieAandacht = '' }){
+export async function bewaarTeamEvaluatie(wedstrijdId, { scores, tags = [], notitieGoed = '', notitieAandacht = '', themaCheck }){
   const w = S.wedstrijden.find(x => x.id === wedstrijdId);
   if (!w){ meld('Kon de wedstrijd niet vinden — probeer de pagina te verversen'); return false; }
   if (!scores || !Object.keys(scores).length){ meld('Vul minstens één categorie in'); return false; }
@@ -138,6 +151,7 @@ export async function bewaarTeamEvaluatie(wedstrijdId, { scores, tags = [], noti
     door:deelnemer(), gemaaktMs:Date.now(),
   };
   if (!bestaande) data.seizoen = S.huidigSeizoen || SEIZOEN_FALLBACK;
+  if (themaCheck !== undefined){ if (themaCheck) data.themaCheck = themaCheck; else if (bestaande) data.themaCheck = deleteField(); }   /* null = antwoord weghalen; weglaten = ongemoeid laten */
   try {
     if (bestaande) await updateDoc(doc(db,'teams',S.teamId,'teamevaluaties',bestaande.id), data);
     else await addDoc(collection(db,'teams',S.teamId,'teamevaluaties'), data);

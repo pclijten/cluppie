@@ -8,6 +8,7 @@ Alle callables vereisen `clubId` in de payload; de server controleert lidmaatsch
 | Functie | Rol | Opmerking |
 |---|---|---|
 | `chatHulp`, `structureerTraining`, `genereerVerslagAI`, `samenvatHotspot` | club-lid | respecteert `instellingen.ai.aan` en `instellingen.ai.maandLimiet` (teller in `clubs/{id}/aiGebruik/{YYYY-MM}`) |
+| `personaliseerTraining`, `seizoensVoorstel` | club-lid | AI-uitleg bij Training maken en AI-jaarvoorstel bij Seizoensplanning; zelfde AI-limiet; invoer zonder namen; de app werkt ook zonder (nieuwe callables: invoker `allUsers` openzetten na eerste deploy) |
 | `sportlinkSyncNu` | club-admin | callable; leest `clubs/{id}.sportlinkClientId` |
 | `syncSportlink` | schema | nachtelijk, alle clubs met `sportlinkClientId` |
 | `checkAfgelastingen` | schema | vr–zo elke 30 min (actief vr 16–22, za/zo 7–14): afgelaste wedstrijden markeren |

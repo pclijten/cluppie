@@ -1,4 +1,4 @@
-// Spelers uit Sportlink (20261012e): wie staat al in de selectie?
+// Spelers uit Sportlink (20261012g): wie staat al in de selectie?
 // Draaien: node --import ./tests/hulp/stub-loader.mjs tests/spelers-sportlink.test.mjs
 import assert from 'node:assert/strict';
 const { markeerBestaand } = await import('../public/js/teams-spelers.js');
