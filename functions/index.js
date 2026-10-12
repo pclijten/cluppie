@@ -702,6 +702,7 @@ async function haalTeamlijst(clientId){
     if (b && (b._regulier || !regulier)) continue;
     perCode.set(teamcode, {
       teamcode, teamnaam,
+      lokaleteamcode: r.lokaleteamcode != null ? String(r.lokaleteamcode) : '-1',
       poulecode: regulier && r.poulecode != null ? String(r.poulecode) : null,
       klassepoule: regulier ? (String(r.klassepoule || '').trim() || null) : null,
       leeftijdscategorie: String(r.leeftijdscategorie || '').trim() || null,
@@ -897,19 +898,28 @@ async function syncClubSportlink(clubId, { alleenTeamlijst = false } = {}){
   }
 
   const venster = uitslagVenster();
-  // [20261012a] null = niet opgehaald (fout); dan markeren we niets als "verdwenen"
-  const [programma, uitslagen, afgelastRuw] = await Promise.all([
-    sportlinkCall(clientId, 'programma', {
-      aantaldagen: PROGRAMMA_DAGEN, eigenwedstrijden: 'ja', sorteervolgorde: 'datum-team-tijd', weekoffset: 0,
-    }).catch(e => { console.warn(`[sl] programma ${clubId}: ${e.message}`); return null; }),
-    sportlinkCall(clientId, 'uitslagen', {
-      aantaldagen: venster.dagenClub, weekoffset: venster.weekoffset, eigenwedstrijden: 'ja', sorteervolgorde: 'datum-team-tijd',
-    }).catch(e => { console.warn(`[sl] uitslagen ${clubId}: ${e.message}`); return []; }),
-    sportlinkCall(clientId, 'afgelastingen', {}).catch(e => { console.warn(`[sl] afgelastingen ${clubId}: ${e.message}`); return null; }),
-  ]);
-  const bron = [...(programma || []), ...uitslagen];
-  const inProgramma = programma && programma.length ? new Set(bron.map(r => String(r.wedstrijdcode || '').trim()).filter(Boolean)) : null;
+  /* [20261012d] Programma en uitslagen PER TEAM (parameter teamcode). Clubbreed kapt Sportlink de
+     lijst af: bij ASV stopte het seizoensoverzicht half september, zodat latere uitslagen en
+     wedstrijden nooit binnenkwamen (live vastgesteld 12-10-2026 met O12-1). Alleen afgelastingen
+     blijft clubbreed: dat is een korte lijst. */
+  const afgelastRuw = await sportlinkCall(clientId, 'afgelastingen', {})
+    .catch(e => { console.warn(`[sl] afgelastingen ${clubId}: ${e.message}`); return null; });
   const afgelast = afgelastRuw ? afgelastingenMap(afgelastRuw) : null;
+  const teamWedstrijden = async (k) => {
+    const t = { teamcode: k.teamcode, lokaleteamcode: k.lokaleteamcode || '-1' };
+    const [programma, uitslagen] = await Promise.all([
+      sportlinkCall(clientId, 'programma', {
+        ...t, aantaldagen: PROGRAMMA_DAGEN, eigenwedstrijden: 'ja', sorteervolgorde: 'datum-team-tijd', weekoffset: 0,
+      }).catch(e => { console.warn(`[sl] programma ${clubId}/${k.teamcode}: ${e.message}`); return null; }),
+      sportlinkCall(clientId, 'uitslagen', {
+        ...t, aantaldagen: venster.dagenClub, weekoffset: venster.weekoffset, eigenwedstrijden: 'ja', sorteervolgorde: 'datum-team-tijd',
+      }).catch(e => { console.warn(`[sl] uitslagen ${clubId}/${k.teamcode}: ${e.message}`); return []; }),
+    ]);
+    const bron = [...(programma || []), ...uitslagen];
+    // null = programma niet (goed) opgehaald of leeg; dan markeren we niets als "verdwenen"
+    const inProgramma = programma && programma.length ? new Set(bron.map(r => String(r.wedstrijdcode || '').trim()).filter(Boolean)) : null;
+    return { bron, inProgramma };
+  };
 
   const teamsSnap = await db.collection(PADEN.teamsCol()).where('club', '==', clubId).get();
   const pouleCache = new Map();
@@ -931,6 +941,7 @@ async function syncClubSportlink(clubId, { alleenTeamlijst = false } = {}){
         continue;
       }
       koppelingen[k.teamcode] = teamDoc.id;
+      const { bron, inProgramma } = await teamWedstrijden(k);
       const eigen = eigenWedstrijden(bron, k.teamcode);
       await vulAccommodaties(db, clientId, eigen, accCache);
       await schrijfInBatches(db, eigen.map(w => [

@@ -38,6 +38,13 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 
 # Geschiedenis
 
+## Release 20261012d — Sportlink-wedstrijden per team ophalen (bugfix)
+- **Probleem:** bij ASV O12-1 stonden alleen de wedstrijden t/m 12 september in Cluppie; rondes 4–6 en de oktoberwedstrijden ontbraken. Oorzaak: de sync vroeg `programma` en `uitslagen` clubbreed op, en Sportlink kapt die lijst af (bij een club met veel teams stopte het seizoensoverzicht half september). Live vastgesteld 12-10-2026: met `teamcode=361275` en hetzelfde venster komen alle zes O12-1-wedstrijden t/m 10 oktober wél terug.
+- **Oplossing:** `syncClubSportlink` vraagt programma en uitslagen nu per gekoppeld team op (`teamcode` + `lokaleteamcode`, die de teamlijst nu ook bewaart). Afgelastingen blijft clubbreed (korte lijst). Twee Sportlink-calls per team per sync in plaats van twee per club.
+- "Niet in Sportlink" werkt nu per team: is het programma van een team leeg of mislukt, dan wordt niets als verdwenen gemarkeerd.
+- Test: `tests/sportlink-sync.test.js` bootst de afkapping na (clubbreed 1 regel, per team alles); 35 controles, drie ervan falen op de oude code.
+- **Deploy:** `firebase deploy --only functions:sportlinkSyncNu,functions:syncSportlink --project cluppie-ad329`, daarna "Sync nu". Geen invoker nodig (bestaande functies).
+
 ## Release 20261012c — teamcode weg uit Teaminstellingen
 - De kaart "Teamcode voor coaches" (code, kopiëren, handmatig wijzigen) is weg; "Coach uitnodigen" (persoonlijke link, 14 dagen) staat nu in de Coaches-kaart. Het vinkje "code volgt naam" bij teamnaam wijzigen staat er alleen nog als de club vaste codes aan heeft. Handleiding, rondleiding, hulp-antwoord en `functions/kennis.js` aangepast (kennis.js gaat mee bij de volgende deploy van `chatHulp`).
 - Gekozen wedstrijdvorm ("8 tegen 8") was in het lichte thema onleesbaar (witte tekst): `.vxv-opt.aan` gebruikt nu `--ink`.
