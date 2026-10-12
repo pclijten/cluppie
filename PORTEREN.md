@@ -38,6 +38,9 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 
 # Geschiedenis
 
+## Release 20261012b — logo op het uitnodigingsscherm
+- Het scherm dat een coach ziet bij een uitnodigingslink (`?uitn=`) toont nu het Cluppie-logo boven de teamnaam (zelfde `login-logo` als het loginscherm); het 🏟-teken vóór de teamnaam is weg (`index.html`, `auth.js`). Alleen client, geen deploy van functions nodig.
+
 ## Release 20261012a — meer uit Sportlink
 Mockup en impactanalyse goedgekeurd 12-10-2026. Alle Sportlink-velden live gecontroleerd met het ASV-ID (clubgegevens, teams, programma, afgelastingen, wedstrijd-accommodatie).
 - **Club aanmelden met Client ID** (`club-aanmelden.js`, wizard stap 1 in `club-instellingen.js`, "Koppeling testen" in Instellingen → Sportlink in `club.js`; gedeeld: `sportlink-clubinfo.js`). Nieuwe callable `sportlinkClubInfo`: naam, clubcode, plaats, logo, tenuekleur → hex, aantallen teams. Banknummer, KvK, secretaris, telefoon en e-mail worden in `functions/sportlink-hulp.js` weggefilterd. Max 10 opzoekingen per gebruiker per uur (`ratelimiet/{uid}`, alleen functions). Dubbele club herkend op `sportlinkClubcode` (de nachtsync legt die bij bestaande clubs vast). Goedkeuren zet Client ID, logo en kleur op de club en haalt meteen de teamlijst op. District blijft handmatig: Sportlink geeft het niet mee.
