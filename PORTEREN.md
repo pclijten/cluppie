@@ -11,7 +11,9 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 
 ## Open
 **Voor Paul (console/terminal)**
-- [ ] **Release 20261012a deployen vóór het mergen** (zie onderaan): functions + invoker voor `sportlinkclubinfo`. Daarna één keer "Sync nu" bij een club met Sportlink.
+- [x] Release 20261012a: functions gedeployed en invoker `sportlinkclubinfo` open (12-10-2026).
+- [ ] Na het mergen van PR #12: één keer "Sync nu" bij een club met Sportlink.
+- [ ] `firebase-functions` upgraden (de CLI waarschuwt; breaking changes, dus als eigen release met tests).
 - [ ] `zetSpelerOver` deployen + invoker openzetten (zie release 20261011h), als dat nog niet gebeurd is (PR #11 is al gemerged).
 - [ ] Rond 18-10: tijdelijke database weg (`gcloud firestore databases delete --database=cluppie-overzet --project=cluppie-ad329`) en bestanden in de oude bucket verwijderen.
 - [ ] App Check: na een paar dagen in Console → App Check → APIs kijken; bij ~100% geldige verzoeken Enforce aan voor Firestore, Storage en Functions.
