@@ -12,11 +12,11 @@ import { S, $, esc, meld, isBeheerder, toon } from './state.js?v=20261011g';
 import { BOUWEN, NIVEAUS, niveauKleur, bouwVanCategorie } from './config.js?v=20261011g';
 import { ico } from './icons.js?v=20260922c';
 import { analyseWedstrijd } from './analyse.js?v=20261011g';
-import { laadBouwData, zetBouwContext, presentiePctTeam, presentiePctWedstrijdTeam, uitslagenTeam, modalNieuweUitleningVanuitBouw } from './bouw-hub.js?v=20261011h';
-import { trekUitleningIn, definitiefOverzetten } from './teams-spelers.js?v=20261011h';
-import { htmlMeekijk } from './desktop-schermen.js?v=20261011h';
+import { laadBouwData, zetBouwContext, presentiePctTeam, presentiePctWedstrijdTeam, uitslagenTeam, modalNieuweUitleningVanuitBouw } from './bouw-hub.js?v=20261012a';
+import { trekUitleningIn, definitiefOverzetten } from './teams-spelers.js?v=20261012a';
+import { htmlMeekijk } from './desktop-schermen.js?v=20261012a';
 import { rondeStatusTeam } from './evaluatierondes.js?v=20261011g';
-import { isSelectieBouw, htmlRadarBlok, htmlSelectieTegel, htmlSelectieScherm, selectieKlik, selectieInvoer } from './selectie-bouw.js?v=20261011h';
+import { isSelectieBouw, htmlRadarBlok, htmlSelectieTegel, htmlSelectieScherm, selectieKlik, selectieInvoer } from './selectie-bouw.js?v=20261012a';
 
 const cache = new Map();          // 'clubId|bouw' → context uit laadBouwData
 const bezig = new Map();          // lopende laadacties
@@ -128,7 +128,7 @@ export function teamRijen(ctx){
   return ctx.teams.map(t => {
     const d = ctx.data.get(t.id) || {};
     const u = (() => { try { return uitslagenTeam(t); } catch(e){ return {}; } })();
-    const kom = (d.wedstrijden || []).filter(w => !gespeeld(w)).sort((a, b) => (a.datum + (a.aftrap || '')).localeCompare(b.datum + (b.aftrap || '')))[0] || null;
+    const kom = (d.wedstrijden || []).filter(w => !gespeeld(w) && w.status !== 'afgelast').sort((a, b) => (a.datum + (a.aftrap || '')).localeCompare(b.datum + (b.aftrap || '')))[0] || null;
     return { t, d, u, kom, tr: (() => { try { return presentiePctTeam(t); } catch(e){ return null; } })(),
       wd: (() => { try { return presentiePctWedstrijdTeam(t); } catch(e){ return null; } })(), kaart: gemKaart(d), open: openEvaluaties(d),
       /* [20260929a] lopende evaluatieronde van de club */

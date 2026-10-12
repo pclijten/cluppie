@@ -18,9 +18,10 @@ import { logoImg, primaireClubId } from './clubconfig.js?v=20261011g';
 import { analyseWedstrijd, WISSEL_BEURT } from './analyse.js?v=20261011g';
 import { telGebruik } from './tracker.js?v=20261011g';
 import { ongelezenBerichten } from './berichten.js?v=20261011g';
-import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261011g';
+import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261012a';
 import { htmlRondeBalk } from './evaluatierondes.js?v=20261011g';
 import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261011g';
+import { isAfgelast, telMee, soortPill, wedstrijdInfo, htmlAfgelastBanner, afgelastMeldingen } from './wedstrijd-status.js?v=20261012a';
 
 
 /* ---------- Hulpjes ---------- */
@@ -99,7 +100,7 @@ export function htmlHub(updInfo){
       tegel('stats',            'Stats',        'stats-bars'),
     ]],
     ['Wedstrijden', [
-      tegel('wedstrijden',      'Wedstrijden',  'football-lineup'),
+      tegel('wedstrijden',      'Wedstrijden',  'football-lineup', afgelastMeldingen(S.wedstrijden, vandaagIso()).length || null),
       ...(modAan('evaluaties') ? [tegel('evaluatie', 'Evaluatie', 'attendance-evaluatie', evalOpen || null)] : []),
       tegel('poule',            'Poule',        'football-competition'),
     ]],
@@ -154,6 +155,7 @@ export function htmlHub(updInfo){
       <button class="uitlog-knop" id="hubUitloggen" title="Uitloggen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3"/></svg></button>
     </div>
     ${teamKeuze}
+    ${htmlAfgelastBanner(S.wedstrijden, S.team.naam, vandaagIso())}
     ${updBanner}
     ${modAan('evaluaties') ? htmlRondeBalk(S._clubRondes, S.teamId, S.spelers, S.beoordelingen) : ''}
     ${htmlSelectieDashboard()}
@@ -185,7 +187,7 @@ export function presWedstrijdHuidig(){
   if (gekozen) return gekozen;
   const vandaag = vandaagIso();
   const komend = S.wedstrijden
-    .filter(w => (w.datum || '') >= vandaag)
+    .filter(w => (w.datum || '') >= vandaag && telMee(w))
     .sort((a,b) => (a.datum||'').localeCompare(b.datum||'') || (a.aftrap||'').localeCompare(b.aftrap||''));
   return komend[0] || S.wedstrijden[0] || null;
 }
@@ -213,7 +215,7 @@ export function htmlPresWedstrijd(){
     <button class="pw-kiezer" id="pwKiezer">
       <span class="pw-ico">${ico('football-whistle', 20)}</span>
       <span class="pw-txt"><span class="pw-t">${wedstrijdTitel(w)}</span>
-        <span class="pw-m">${elftalPillWedstrijd(w)}${datumNL(w.datum)}${w.aftrap ? ' · '+esc(w.aftrap) : ''} · ${w.thuis ? 'thuis' : 'uit'}</span></span>
+        <span class="pw-m">${elftalPillWedstrijd(w)}${soortPill(w)}${datumNL(w.datum)}${w.aftrap ? ' · '+esc(w.aftrap) : ''} · ${w.thuis ? 'thuis' : 'uit'}${isAfgelast(w) ? ' · <b class="ws-tekst-af">afgelast</b>' : ''}</span></span>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="pw-pijl"><path d="M8 9l4 4 4-4"/></svg>
     </button>`;
 
@@ -250,10 +252,43 @@ export function htmlPresWedstrijd(){
 
   return `
     ${kiezer}
+    ${htmlWedstrijdInfo(w)}
     <div class="pw-tel">${aanwezigN} van ${S.spelers.length} spelen mee${laat.size ? ` (${[...laat].filter(id => sel.has(id)).length} later)` : ''} · wijzigingen worden direct bewaard</div>
     <div class="pw-tel" style="margin-top:-4px">Komt iemand later? Tik hem op afwezig, kies <b>⏱ Komt later</b> en vul eventueel de wedstrijdminuut in. De tijd daarvóór telt niet mee in zijn speeltijd-%.</div>
     ${S.spelers.length ? rijen : `<div class="kaart leeg">Nog geen spelers in dit team.</div>`}
     <button class="knop vol" id="pwKlaar" style="margin-top:16px">Klaar</button>`;
+}
+
+/* [20261012a] Wedstrijdinfo: verzamelen/vertrek/aftrap, sportpark, veld, kleedkamer, route, delen.
+   Sportlink vult `info`; de coach kan verzamel- en vertrektijd zelf zetten (`infoEigen`, gaat voor).
+   Geen spelernamen in het deelbericht. Handlers: teams.js (tab preswedstrijd). */
+export function htmlWedstrijdInfo(w, { bewerk = true } = {}){
+  if (!w || w.type === 'toernooi') return '';
+  if (isAfgelast(w)) return `<div class="ws-info ws-info-af"><b>Deze wedstrijd is afgelast door de KNVB.</b>
+    <span>Presentie en opstelling blijven bewaard, maar tellen niet mee.</span></div>`;
+  const i = wedstrijdInfo(w);
+  const komt = (w.datum || '') >= vandaagIso();
+  if (!komt && !i.accommodatie) return '';
+  const tijd = (label, t, sleutel) => `<div class="ws-tijd${t.t ? '' : ' leeg'}"><small>${label}</small><b>${esc(t.t || '–:–')}</b>
+      <span>${t.bron === 'eigen' ? (sleutel === 'aftrap' ? '' : 'door jou') : t.bron === 'sportlink' ? 'Sportlink' : 'niet bekend'}</span></div>`;
+  const rij = (l, waarde) => waarde ? `<div class="ws-rij"><span>${l}</span><div>${waarde}</div></div>` : '';
+  const eigen = w.infoEigen || {};
+  return `<div class="ws-info">
+    <div class="ws-info-kop">Wedstrijdinfo</div>
+    <div class="ws-tijden">${tijd('Verzamelen', i.verzamel, 'verzamel')}${tijd('Vertrek', i.vertrek, 'vertrek')}${tijd('Aftrap', i.aftrap, 'aftrap')}</div>
+    ${komt && bewerk ? `<details class="ws-tijd-edit"${S._wsTijdOpen === w.id ? ' open' : ''}><summary>Tijden zelf invullen</summary>
+      <div class="ws-tijd-invoer">
+        <label>Verzamelen<input type="time" class="invoer" id="wsVerzamel" value="${esc(eigen.verzamel || '')}"></label>
+        <label>Vertrek<input type="time" class="invoer" id="wsVertrek" value="${esc(eigen.vertrek || '')}"></label>
+        <button class="knop klein" id="wsTijdBewaar" data-wid="${esc(w.id)}">Bewaar</button></div>
+      <p class="ws-hint">Leeg laten = de tijd uit Sportlink (als die er is).</p></details>` : ''}
+    ${rij('Sportpark', esc(i.accommodatie))}
+    ${!w.thuis ? rij('Adres', [i.adres, i.plaatsAdres || i.plaats].filter(Boolean).map(esc).join('<br>')) : ''}
+    ${rij('Veld', esc(i.veld))}
+    ${rij('Kleedkamer', esc(i.kleedkamer))}
+    ${komt ? `<div class="ws-knoppen">${!w.thuis && i.route ? `<a class="knop licht klein" href="${esc(i.route)}" target="_blank" rel="noopener">Route</a>` : ''}
+      ${bewerk ? `<button class="knop klein ws-wa" id="wsDeel" data-wid="${esc(w.id)}">Deel met ouders</button>` : ''}</div>` : ''}
+  </div>`;
 }
 
 /* Kiezerlijst voor de dropdown (komend eerst, dan afgelopen — beide op datum). */
@@ -274,7 +309,7 @@ export function presWedstrijdKeuzeHtml(){
   const rij = (w) => `
     <button class="lijst-item ${huidig && w.id === huidig.id ? 'eerstvolgend' : ''}" data-pw-kies="${w.id}">
       <div class="li-tekst"><div class="titel">${wedstrijdTitel(w)}</div>
-      <div class="meta">${elftalPillWedstrijd(w)}${datumNL(w.datum)}${w.aftrap ? ' · '+esc(w.aftrap) : ''} · ${w.thuis ? 'thuis' : 'uit'}</div></div>
+      <div class="meta">${elftalPillWedstrijd(w)}${soortPill(w)}${datumNL(w.datum)}${w.aftrap ? ' · '+esc(w.aftrap) : ''} · ${w.thuis ? 'thuis' : 'uit'}${isAfgelast(w) ? ' · afgelast' : ''}</div></div>
       <span class="pijl">›</span></button>`;
   return `
     <h2>Kies een wedstrijd</h2>
