@@ -16,6 +16,8 @@
      Sportlink (Club.Dataservice)
        • sportlinkSyncNu     – handmatige sync of alleen de teamlijst (club-admin)
        • syncSportlink       – nachtelijke sync, alle clubs (03:30 NL)
+       • checkAfgelastingen  – weekend: elke 30 min afgelaste wedstrijden markeren (vr 16–22, za/zo 7–14)
+       • sportlinkClubInfo   – club opzoeken met een Client ID (aanmelden, wizard, koppeling testen)
      Spelers
        • zetSpelerOver       – definitief overzetten en seizoensovergang, alles-of-niets
      Gebruik
@@ -56,6 +58,7 @@ const { KENNIS_TEKST } = require('./kennis');
 const avg = require('./avg');
 const toegang = require('./toegang');
 const { scrubPII, namenVoorScrub } = avg;
+const slh = require('./sportlink-hulp');
 Object.assign(exports, { uitnodigingInfo: toegang.uitnodigingInfo, sluitAan: toegang.sluitAan, maakUitnodiging: toegang.maakUitnodiging,
   trekUitnodigingIn: toegang.trekUitnodigingIn, beoordeelAanvraag: toegang.beoordeelAanvraag, wijzigRol: toegang.wijzigRol,
   verwijderLid: toegang.verwijderLid, bevestigPrivacy: toegang.bevestigPrivacy, privacyOverzicht: toegang.privacyOverzicht, codeBezet: avg.codeBezet,
@@ -78,6 +81,8 @@ const PADEN = {
   teamlijst:   (c)    => `clubs/${c}/geheim/_sportlink`,       // { teams[], voorvoegsel, updatedAt }
   teamStatus:  (c, t) => `clubs/${c}/geheim/${t}`,             // { gematcht, laatsteSync, laatsteAantal, laatsteFout, … }
   aiGebruik:   (c, m) => `clubs/${c}/aiGebruik/${m}`,          // { aantal } per maand (YYYY-MM)
+  afgelast:    (c)    => `clubs/${c}/geheim/_afgelast`,        // [20261012a] { rijen[] } afgelaste wedstrijden, voor het clubscherm
+  accommodatie:(k)    => `accommodaties/${k}`,                 // [20261012a] gedeelde adres-cache (alleen functions)
 };
 
 const ADMIN_ROLLEN = ['club_admin'];
@@ -142,6 +147,8 @@ exports.aggregeerGebruik = gebruik.maakCallable(vereisLid);
 exports.aggregeerGebruikNacht = gebruik.aggregeerGebruikNacht;
 exports.platformOverzichtNu = require('./platform').platformOverzichtNu;
 const aanmelding = require('./aanmelding');
+/* [20261012a] na goedkeuren meteen de Sportlink-teamlijst ophalen, zodat "Teams uit Sportlink" klaarstaat */
+aanmelding.zetNaGoedkeuring(clubId => syncClubSportlink(clubId, { alleenTeamlijst: true }));
 exports.meldClubAan = aanmelding.meldClubAan;
 exports.beoordeelClubAanmelding = aanmelding.beoordeelClubAanmelding;
 exports.meldNieuweAanvraag = aanmelding.meldNieuweAanvraag;
@@ -703,7 +710,9 @@ async function haalTeamlijst(clientId){
       _regulier: regulier,
     });
   }
-  return [...perCode.values()].map(({ _regulier, ...t }) => t);
+  // [20261012a] alle poules per team (regulier, beker, …); poulecode/klassepoule blijven de reguliere
+  const poules = slh.poulesPerTeam(regels);
+  return [...perCode.values()].map(({ _regulier, ...t }) => ({ ...t, poules: poules.get(t.teamcode) || [] }));
 }
 
 /* Gemeenschappelijk voorvoegsel van alle teamnamen, afgekapt op een spatie:
@@ -784,6 +793,9 @@ function eigenWedstrijden(regels, teamcode){
         bron: 'sportlink',
         sportlinkCode: code,
         competitie: String(r.competitie || r.competitienaam || '').trim() || null,
+        // [20261012a] beker/oefen herkenbaar + waar en hoe laat (alleen gevulde velden, merge)
+        ...(slh.soortVan(r.competitiesoort) ? { competitiesoort: slh.soortVan(r.competitiesoort) } : {}),
+        ...(() => { const i = slh.infoUitRegel(r, thuis); return Object.keys(i).length ? { info: i } : {}; })(),
         sportlinkSync: FieldValue.serverTimestamp(),
       },
     });
@@ -879,22 +891,30 @@ async function syncClubSportlink(clubId, { alleenTeamlijst = false } = {}){
 
   const lijst = await haalTeamlijst(clientId);
   const voorvoegsel = clubVoorvoegsel(lijst);
-  await db.doc(PADEN.teamlijst(clubId)).set({ teams: lijst, voorvoegsel, updatedAt: FieldValue.serverTimestamp() });
-  if (alleenTeamlijst) return { teamlijst: lijst.length };
+  if (alleenTeamlijst){
+    await db.doc(PADEN.teamlijst(clubId)).set({ teams: lijst, voorvoegsel, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    return { teamlijst: lijst.length };
+  }
 
   const venster = uitslagVenster();
-  const [programma, uitslagen] = await Promise.all([
+  // [20261012a] null = niet opgehaald (fout); dan markeren we niets als "verdwenen"
+  const [programma, uitslagen, afgelastRuw] = await Promise.all([
     sportlinkCall(clientId, 'programma', {
       aantaldagen: PROGRAMMA_DAGEN, eigenwedstrijden: 'ja', sorteervolgorde: 'datum-team-tijd', weekoffset: 0,
-    }).catch(e => { console.warn(`[sl] programma ${clubId}: ${e.message}`); return []; }),
+    }).catch(e => { console.warn(`[sl] programma ${clubId}: ${e.message}`); return null; }),
     sportlinkCall(clientId, 'uitslagen', {
       aantaldagen: venster.dagenClub, weekoffset: venster.weekoffset, eigenwedstrijden: 'ja', sorteervolgorde: 'datum-team-tijd',
     }).catch(e => { console.warn(`[sl] uitslagen ${clubId}: ${e.message}`); return []; }),
+    sportlinkCall(clientId, 'afgelastingen', {}).catch(e => { console.warn(`[sl] afgelastingen ${clubId}: ${e.message}`); return null; }),
   ]);
-  const bron = [...programma, ...uitslagen];
+  const bron = [...(programma || []), ...uitslagen];
+  const inProgramma = programma && programma.length ? new Set(bron.map(r => String(r.wedstrijdcode || '').trim()).filter(Boolean)) : null;
+  const afgelast = afgelastRuw ? afgelastingenMap(afgelastRuw) : null;
 
   const teamsSnap = await db.collection(PADEN.teamsCol()).where('club', '==', clubId).get();
   const pouleCache = new Map();
+  const koppelingen = {};
+  const accCache = new Map();
   let wedstrijden = 0, gematcht = 0;
 
   for (const teamDoc of teamsSnap.docs){
@@ -910,26 +930,43 @@ async function syncClubSportlink(clubId, { alleenTeamlijst = false } = {}){
         });
         continue;
       }
+      koppelingen[k.teamcode] = teamDoc.id;
       const eigen = eigenWedstrijden(bron, k.teamcode);
+      await vulAccommodaties(db, clientId, eigen, accCache);
       await schrijfInBatches(db, eigen.map(w => [
         db.collection(PADEN.wedstrijden(teamDoc.id)).doc('sl_' + w.sportlinkCode.replace(/[^A-Za-z0-9]/g, '')), w,
       ]));
       wedstrijden += eigen.length;
 
+      // [20261012a] afgelast / niet meer in Sportlink (nooit verwijderen)
+      if (afgelast || inProgramma) await pasAfgelastToe(db, teamDoc.id, { inProgramma, afgelast: afgelast || new Map() });
+
+      const col = db.collection(PADEN.poule(teamDoc.id));
+      const ts = { bijgewerkt: FieldValue.serverTimestamp() };
       if (k.poulecode){
         if (!pouleCache.has(k.poulecode)) pouleCache.set(k.poulecode, await haalPoule(clientId, k.poulecode, venster));
         const p = pouleVoorTeam(pouleCache.get(k.poulecode), k);
-        const col = db.collection(PADEN.poule(teamDoc.id));
-        const ts = { bijgewerkt: FieldValue.serverTimestamp() };
         await Promise.all([
           col.doc('stand').set({ ...p.stand, ...ts }),
           col.doc('uitslagen').set({ ...p.uitslagen, ...ts }),
           col.doc('programma').set({ ...p.programma, ...ts }),
         ]);
       }
+      // [20261012a] bekerpoule: één document met stand + uitslagen + programma
+      const beker = slh.bekerPoule(k.poules);
+      if (beker){
+        if (!pouleCache.has(beker.poulecode)) pouleCache.set(beker.poulecode, await haalPoule(clientId, beker.poulecode, venster));
+        const p = pouleVoorTeam(pouleCache.get(beker.poulecode), k);
+        await col.doc('beker').set({
+          poulecode: beker.poulecode, klassepoule: p.stand.klassepoule || beker.klassepoule || null,
+          stand: p.stand.rijen, uitslagen: p.uitslagen.rijen, programma: p.programma.rijen, ...ts,
+        });
+      } else {
+        await col.doc('beker').delete().catch(() => {});
+      }
       await statusRef.set({
         gematcht: true, automatisch: k.automatisch, teamcode: k.teamcode, teamnaam: k.teamnaam,
-        poulecode: k.poulecode || null, klassepoule: k.klassepoule || null,
+        poulecode: k.poulecode || null, klassepoule: k.klassepoule || null, bekerPoulecode: beker?.poulecode || null,
         laatsteAantal: eigen.length, laatsteSync: FieldValue.serverTimestamp(), laatsteFout: null,
       });
       gematcht++;
@@ -941,8 +978,117 @@ async function syncClubSportlink(clubId, { alleenTeamlijst = false } = {}){
     }
   }
 
-  await db.doc(PADEN.club(clubId)).set({ sportlinkLaatsteSync: FieldValue.serverTimestamp() }, { merge: true });
+  // koppelingen teamcode → teamId: nodig voor de snelle weekendcontrole (checkAfgelastingen)
+  await db.doc(PADEN.teamlijst(clubId)).set({ teams: lijst, voorvoegsel, koppelingen, updatedAt: FieldValue.serverTimestamp() });
+  if (afgelast) await schrijfAfgelastOverzicht(db, clubId, afgelast, koppelingen, teamsSnap);
+  // clubcode één keer vastleggen (bestaande clubs): daarmee herkent "Club aanmelden" een dubbele club
+  let clubcode = club.sportlinkClubcode || null;
+  if (!clubcode){
+    try { clubcode = slh.filterClubgegevens(await sportlinkCall(clientId, 'clubgegevens', {}))?.clubcode || null; }
+    catch (e){ console.warn(`[sl] clubgegevens ${clubId}: ${e.message}`); }
+  }
+  await db.doc(PADEN.club(clubId)).set({ sportlinkLaatsteSync: FieldValue.serverTimestamp(), ...(clubcode ? { sportlinkClubcode: clubcode } : {}) }, { merge: true });
   return { teams: teamsSnap.size, gematcht, wedstrijden, totaalWedstrijden: wedstrijden };
+}
+
+/* --- afgelastingen (20261012a) -------------------------------------------- */
+
+function afgelastingenMap(regels){
+  const m = new Map();
+  for (const r of regels || []){ const a = slh.afgelastRegel(r); if (a) m.set(a.code, a); }
+  return m;
+}
+const vandaagNL = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Amsterdam' });
+function plusDagen(iso, n){ const d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+
+/* Past afgelastPlan toe op de komende Sportlink-wedstrijden van één team. Leest alleen
+   wedstrijden vanaf vandaag (enkelvoudige range-query, geen samengestelde index nodig). */
+async function pasAfgelastToe(db, teamId, { inProgramma, afgelast }){
+  const vandaag = vandaagNL();
+  const snap = await db.collection(PADEN.wedstrijden(teamId)).where('datum', '>=', vandaag).get();
+  const bestaand = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(w => w.bron === 'sportlink' && w.sportlinkCode);
+  const plan = slh.afgelastPlan({ bestaand, inProgramma, afgelast, vanaf: vandaag, tot: plusDagen(vandaag, PROGRAMMA_DAGEN - 1) });
+  if (!plan.length) return 0;
+  const batch = db.batch();
+  for (const [id, patch] of plan){
+    const data = {};
+    for (const [k, v] of Object.entries(patch)) data[k] = v === null ? FieldValue.delete() : v;
+    if (patch.status === 'afgelast') data.afgelastOp = FieldValue.serverTimestamp();
+    if (patch.status === null) data.afgelastOp = FieldValue.delete();
+    batch.update(db.collection(PADEN.wedstrijden(teamId)).doc(id), data);
+  }
+  await batch.commit();
+  return plan.length;
+}
+
+/* Clubscherm "Afgelasten": de komende afgelaste wedstrijden van eigen teams. Alleen clubnamen en tijden. */
+async function schrijfAfgelastOverzicht(db, clubId, afgelast, koppelingen, teamsSnap = null){
+  const vandaag = vandaagNL();
+  const namen = {};
+  if (teamsSnap) for (const d of teamsSnap.docs) namen[d.id] = (d.data() || {}).naam || '';
+  const rijen = [];
+  for (const a of afgelast.values()){
+    if (a.datum < vandaag) continue;
+    const teamId = koppelingen[a.thuisCode] || koppelingen[a.uitCode];
+    if (!teamId) continue;
+    rijen.push({ teamId, teamNaam: namen[teamId] || '', datum: a.datum, tijd: a.tijd, wedstrijd: a.wedstrijd, code: a.code });
+  }
+  rijen.sort((x, y) => (x.datum + x.tijd).localeCompare(y.datum + y.tijd));
+  const ref = db.doc(PADEN.afgelast(clubId));
+  const oud = (await ref.get()).data();
+  const sleutel = r => r.map(x => x.code).join(',');
+  if (oud && sleutel(oud.rijen || []) === sleutel(rijen)) return;
+  await ref.set({ rijen, bijgewerkt: FieldValue.serverTimestamp() });
+}
+
+/* Uitwedstrijden in de komende 21 dagen: adres + route, één keer per sportpark (gedeelde cache). */
+async function vulAccommodaties(db, clientId, eigen, cache){
+  const grens = plusDagen(vandaagNL(), 21), vandaag = vandaagNL();
+  for (const w of eigen){
+    if (w.thuis || !w.info?.accommodatie || w.datum < vandaag || w.datum > grens) continue;
+    const sleutel = slh.accommodatieSleutel(w.info.accommodatie, w.info.plaats);
+    if (!sleutel) continue;
+    if (!cache.has(sleutel)){
+      let acc = null;
+      try {
+        const ref = db.doc(PADEN.accommodatie(sleutel));
+        const d = (await ref.get()).data();
+        const vers = d && d.opgehaald && (Date.now() - d.opgehaald.toMillis()) < 180 * 864e5;
+        if (vers) acc = d;
+        else {
+          acc = slh.accommodatieUit(await sportlinkCall(clientId, 'wedstrijd-accommodatie', { wedstrijdcode: w.sportlinkCode }));
+          if (acc) await ref.set({ ...acc, naam: w.info.accommodatie, opgehaald: FieldValue.serverTimestamp() });
+        }
+      } catch (e){ console.warn(`[sl] accommodatie ${sleutel}: ${e.message}`); }
+      cache.set(sleutel, acc);
+    }
+    const acc = cache.get(sleutel);
+    if (acc) Object.assign(w.info, { adres: acc.adres || undefined, plaatsAdres: acc.plaats || undefined, telefoon: acc.telefoon || undefined, route: acc.route || undefined });
+    for (const k of Object.keys(w.info)) if (w.info[k] === undefined) delete w.info[k];
+  }
+}
+
+/* Weekendcontrole: alleen het afgelastingen-endpoint, één call per club. */
+async function checkAfgelastingenClub(db, clubId, clientId){
+  const lijstDoc = (await db.doc(PADEN.teamlijst(clubId)).get()).data() || {};
+  const koppelingen = lijstDoc.koppelingen || {};
+  if (!Object.keys(koppelingen).length) return { overgeslagen: 'geen koppelingen' };
+  const afgelast = afgelastingenMap(await sportlinkCall(clientId, 'afgelastingen', {}));
+  const vandaag = vandaagNL();
+  let gemarkeerd = 0;
+  for (const a of afgelast.values()){
+    if (a.datum < vandaag) continue;
+    const teamId = koppelingen[a.thuisCode] || koppelingen[a.uitCode];
+    if (!teamId) continue;
+    const ref = db.collection(PADEN.wedstrijden(teamId)).doc('sl_' + a.code.replace(/[^A-Za-z0-9]/g, ''));
+    const d = (await ref.get()).data();
+    if (!d || d.status === 'afgelast') continue;
+    await ref.update({ status: 'afgelast', afgelastOp: FieldValue.serverTimestamp(), sportlinkWeg: FieldValue.delete() });
+    gemarkeerd++;
+  }
+  const teamsSnap = await db.collection(PADEN.teamsCol()).where('club', '==', clubId).get();
+  await schrijfAfgelastOverzicht(db, clubId, afgelast, koppelingen, teamsSnap);
+  return { afgelast: afgelast.size, gemarkeerd };
 }
 
 /* Handmatig — alleen club-admins. { clubId, alleenTeamlijst? } */
@@ -978,6 +1124,67 @@ exports.syncSportlink = onSchedule(
     }
   }
 );
+
+/* [20261012a] Weekend: afgelastingen vallen vaak op zaterdagochtend, de nachtsync is dan te laat.
+   Draait vr–zo elke 30 minuten en doet alleen iets binnen het venster (vr 16–22, za/zo 7–14 NL).
+   Eén Sportlink-call per club. */
+exports.checkAfgelastingen = onSchedule(
+  { region: REGIO, schedule: '*/30 * * * 5,6,0', timeZone: 'Europe/Amsterdam', timeoutSeconds: 300, memory: '256MiB' },
+  async () => {
+    const nu = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Amsterdam' }));
+    if (!slh.inAfgelastVenster(nu.getDay(), nu.getHours())) return;
+    const db = getFirestore();
+    const clubs = await db.collection('clubs').get();
+    for (const c of clubs.docs){
+      const d = c.data() || {};
+      if (d.status && d.status !== 'active') continue;
+      const clientId = String(d.sportlinkClientId || '').trim();
+      if (!clientId) continue;
+      try { console.log(`[checkAfgelastingen] ${c.id}:`, JSON.stringify(await checkAfgelastingenClub(db, c.id, clientId))); }
+      catch (e){ console.error(`[checkAfgelastingen] ${c.id} mislukt:`, e.message || e); }
+    }
+  }
+);
+
+/* [20261012a] Club opzoeken met een Sportlink Client ID. Voor "Club aanmelden", de wizard en
+   "Koppeling testen". Geeft alleen naam, plaats, logo, kleur en aantallen terug — nooit bank-,
+   KvK- of contactgegevens. Max 10 opzoekingen per gebruiker per uur. { clientId } */
+exports.sportlinkClubInfo = onCall({ region: REGIO, cors: true, timeoutSeconds: 30 }, async (request) => {
+  const a = request.auth;
+  if (!a || a.token.firebase?.sign_in_provider === 'anonymous') throw new HttpsError('unauthenticated', 'Log eerst in met je eigen account.');
+  const clientId = String(request.data?.clientId || '').trim();
+  if (!/^[A-Za-z0-9]{6,40}$/.test(clientId)) throw new HttpsError('invalid-argument', 'Dat lijkt geen geldige Client ID.');
+  const db = getFirestore();
+  const limietRef = db.doc(`ratelimiet/${a.uid}`);
+  const uur = new Date().toISOString().slice(0, 13);
+  const mag = await db.runTransaction(async tx => {
+    const r = (await tx.get(limietRef)).data() || {};
+    const n = r.clubInfoUur === uur ? (r.clubInfoAantal || 0) : 0;
+    if (n >= 10) return false;
+    tx.set(limietRef, { clubInfoUur: uur, clubInfoAantal: n + 1 }, { merge: true });
+    return true;
+  });
+  if (!mag) throw new HttpsError('resource-exhausted', 'Je hebt dit uur al vaak gezocht. Probeer het later opnieuw.');
+
+  let club;
+  try { club = slh.filterClubgegevens(await sportlinkCall(clientId, 'clubgegevens', {})); }
+  catch (e){ console.warn('[sportlinkClubInfo]', e.message || e); club = null; }
+  if (!club) return { gevonden: false };
+  let teams = [];
+  try { teams = await haalTeamlijst(clientId); } catch (e){ console.warn('[sportlinkClubInfo] teams', e.message || e); }
+  const eigenClubId = String(request.data?.clubId || '').trim();
+  const dubbel = await db.collection('clubs').where('sportlinkClubcode', '==', club.clubcode).limit(2).get();
+  const bestaatAl = dubbel.docs.some(d => d.id !== eigenClubId);
+  return {
+    gevonden: true, bestaatAl, ...club,
+    aantalTeams: teams.length,
+    metCompetitie: teams.filter(t => t.poulecode).length,
+    metBeker: teams.filter(t => (t.poules || []).some(p => p.soort === 'beker')).length,
+  };
+});
+
+/* Alleen voor tests (niet-enumerable, dus de Firebase-CLI ziet het niet als functie). */
+Object.defineProperty(exports, '_intern', { value: { checkAfgelastingenClub, syncClubSportlink }, enumerable: false });
 
 /* ==================== 4. ONDERHOUD ==================== */
 

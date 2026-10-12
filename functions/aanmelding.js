@@ -5,7 +5,10 @@
 
      clubAanmeldingen/{uid}  { uid, clubNaam, plaats, district, contactNaam, contactEmail, rol,
                                aantalTeams, bericht, status: nieuw|goedgekeurd|afgewezen,
-                               clubId?, reden?, gemaakt, beoordeeld? }
+                               clubId?, reden?, gemaakt, beoordeeld?,
+                               [20261012a] sportlinkClientId?, sportlinkClubcode?, logo?, kleur? }
+   Met een Client ID (opgezocht via sportlinkClubInfo) krijgt de club bij goedkeuren meteen logo,
+   kleur en Sportlink-koppeling, en staat de teamlijst klaar.
    Eén aanmelding per account (document-id = uid).
 
    E-mail gaat via de Firebase-extensie "Trigger Email" (collectie `mail`). Zonder die extensie
@@ -55,12 +58,19 @@ async function mail(db, aan, onderwerp, inhoud){
 }
 
 /* PURE: controle van het aanmeldformulier (getest). Geeft { fout } of { data }. */
+const LOGO_MAX = 160000;   // verkleind door verwerkLogo in de app (≈120 kB), met marge
 function controleerAanmelding(d = {}){
   const data = {
     clubNaam: tekst(d.clubNaam, 60), plaats: tekst(d.plaats, 60), district: DISTRICTEN.includes(d.district) ? d.district : '',
     contactNaam: tekst(d.contactNaam, 80), contactEmail: tekst(d.contactEmail, 120).toLowerCase(), rol: tekst(d.rol, 60),
     aantalTeams: Math.max(0, Math.min(200, parseInt(d.aantalTeams, 10) || 0)), bericht: tekst(d.bericht, 1000),
   };
+  /* [20261012a] optioneel, uit Sportlink; ongeldige waarden vallen stil weg */
+  const cid = tekst(d.sportlinkClientId, 40), code = tekst(d.sportlinkClubcode, 20).toUpperCase();
+  if (/^[A-Za-z0-9]{6,40}$/.test(cid)) data.sportlinkClientId = cid;
+  if (/^[A-Z0-9]{4,20}$/.test(code)) data.sportlinkClubcode = code;
+  if (typeof d.logo === 'string' && d.logo.length <= LOGO_MAX && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+=*$/.test(d.logo)) data.logo = d.logo;
+  if (typeof d.kleur === 'string' && /^#[0-9a-fA-F]{6}$/.test(d.kleur)) data.kleur = d.kleur.toLowerCase();
   if (data.clubNaam.length < 2) return { fout: 'Vul de naam van de club in.' };
   if (!data.contactNaam) return { fout: 'Vul je naam in.' };
   if (!isMail(data.contactEmail)) return { fout: 'Vul een geldig e-mailadres in.' };
@@ -76,10 +86,12 @@ const meldClubAan = onCall({ region: REGIO, cors: true }, async (request) => {
   const db = getFirestore(), ref = db.doc(`clubAanmeldingen/${a.uid}`);
   const bestaand = (await ref.get()).data();
   if (bestaand && bestaand.status === 'nieuw') throw new HttpsError('already-exists', 'Je aanmelding is al binnen en wordt bekeken.');
+  if (data.sportlinkClubcode && !(await db.collection('clubs').where('sportlinkClubcode', '==', data.sportlinkClubcode).limit(1).get()).empty)
+    throw new HttpsError('already-exists', 'Deze club staat al op Cluppie. Vraag je clubbeheerder om een uitnodiging.');
   await ref.set({ ...data, uid: a.uid, accountEmail: a.token.email || '', status: 'nieuw', gemaakt: FieldValue.serverTimestamp() });
   await mail(db, PLATFORM_EMAIL, `Cluppie: nieuwe club aangemeld — ${data.clubNaam}`,
     `${data.contactNaam}${data.rol ? ' (' + data.rol + ')' : ''} meldde ${data.clubNaam}${data.plaats ? ' uit ' + data.plaats : ''} aan voor Cluppie.\n` +
-    `E-mail: ${data.contactEmail}\nTeams: ${data.aantalTeams || 'onbekend'}\n${data.bericht ? '\n' + data.bericht + '\n' : ''}\nGoedkeuren: ${APP_URL} → Platform.`);
+    `E-mail: ${data.contactEmail}\nTeams: ${data.aantalTeams || 'onbekend'}\n${data.sportlinkClientId ? 'Sportlink: gevonden met Client ID\n' : ''}${data.bericht ? '\n' + data.bericht + '\n' : ''}\nGoedkeuren: ${APP_URL} → Platform.`);
   return { ok: true };
 });
 
@@ -102,14 +114,18 @@ const beoordeelClubAanmelding = onCall({ region: REGIO, cors: true }, async (req
   const gebruiker = await admin.auth().getUser(a.uid).catch(() => null);
   if (!gebruiker) throw new HttpsError('failed-precondition', 'Het account van de aanvrager bestaat niet meer.');
   const naam = gebruiker.displayName || a.contactNaam || (gebruiker.email || '').split('@')[0] || 'Beheerder';
+  if (a.sportlinkClubcode && !(await db.collection('clubs').where('sportlinkClubcode', '==', a.sportlinkClubcode).limit(1).get()).empty)
+    throw new HttpsError('already-exists', 'Er bestaat al een club met deze Sportlink-clubcode. Wijs de aanmelding af of koppel de aanvrager aan die club.');
   const clubRef = db.collection('clubs').doc();
   await clubRef.set({
     naam: a.clubNaam, code: await vrijeClubCode(db),
+    ...(a.sportlinkClientId ? { sportlinkClientId: a.sportlinkClientId } : {}),
+    ...(a.sportlinkClubcode ? { sportlinkClubcode: a.sportlinkClubcode } : {}),
     admins: { [a.uid]: true }, adminsInfo: { [a.uid]: { naam } }, leden: { [a.uid]: true },
     teams: {}, huidigSeizoen: seizoenVoorDatum(),
     instellingen: {
       v: 1,
-      identiteit: { afkorting: afkVoorstel(a.clubNaam) },
+      identiteit: { afkorting: afkVoorstel(a.clubNaam), ...(a.logo ? { logo: a.logo } : {}), ...(a.kleur ? { kleur: a.kleur } : {}) },
       locatie: { plaats: a.plaats || '', lat: null, lon: null, district: a.district || 'zuid1' },
       ai: { aan: false },
       toegang: { goedkeuring: true, standaardRol: 'coach', vasteCodes: false },
@@ -118,6 +134,9 @@ const beoordeelClubAanmelding = onCall({ region: REGIO, cors: true }, async (req
     bron: 'aanmelding', gemaakt: FieldValue.serverTimestamp(),
   });
   await ref.update({ status: 'goedgekeurd', clubId: clubRef.id, beoordeeld: FieldValue.serverTimestamp() });
+  if (a.sportlinkClientId && naGoedkeuring){
+    try { await naGoedkeuring(clubRef.id); } catch (e){ console.warn('[aanmelding] teamlijst ophalen mislukt', e.message || e); }
+  }
   await mail(db, a.contactEmail, `Welkom bij Cluppie, ${a.clubNaam}!`,
     `Hoi ${a.contactNaam},\n\n${a.clubNaam} staat klaar in Cluppie en jij bent clubbeheerder.\n\n` +
     `Log in op ${APP_URL} met hetzelfde account waarmee je je aanmeldde. Op de clubpagina staat "Aan de slag": ` +
@@ -147,4 +166,8 @@ const meldNieuweAanvraag = onDocumentCreated({ document: 'aanvragen/{id}', regio
     `Je krijgt hooguit één zo'n mail per dag; nieuwe aanvragen van vandaag staan daar ook.`);
 });
 
-module.exports = { meldClubAan, beoordeelClubAanmelding, meldNieuweAanvraag, controleerAanmelding, afkVoorstel };
+/* index.js geeft hier de Sportlink-teamlijstsync door (voorkomt een kringverwijzing) */
+let naGoedkeuring = null;
+const zetNaGoedkeuring = fn => { naGoedkeuring = fn; };
+
+module.exports = { meldClubAan, beoordeelClubAanmelding, meldNieuweAanvraag, controleerAanmelding, afkVoorstel, zetNaGoedkeuring };

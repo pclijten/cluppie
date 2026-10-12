@@ -104,7 +104,8 @@ function clubRij(k){
 
 function aanmeldKaart(a){
   return `<div class="pf-aanmeld">
-    <div><b>${esc(a.clubNaam || '')}</b> <small>${esc([a.plaats, a.district && (DISTRICTEN.find(d => d.id === a.district)?.naam || a.district), a.aantalTeams ? a.aantalTeams + ' teams' : ''].filter(Boolean).join(' · '))}</small></div>
+    ${a.logo ? `<img class="pf-aanmeld-logo" src="${esc(a.logo)}" alt="">` : ''}
+    <div><b>${esc(a.clubNaam || '')}</b>${a.sportlinkClientId ? ' <span class="pf-sl" title="Gevonden met de Sportlink Client ID; de club krijgt meteen koppeling, logo en kleur">via Sportlink</span>' : ''} <small>${esc([a.plaats, a.district && (DISTRICTEN.find(d => d.id === a.district)?.naam || a.district), a.aantalTeams ? a.aantalTeams + ' teams' : ''].filter(Boolean).join(' · '))}</small></div>
     <div class="pf-aanmeld-meta">${esc(a.contactNaam || '')}${a.rol ? ' (' + esc(a.rol) + ')' : ''} · ${esc(a.contactEmail || '')}${a.gemaakt ? ' · ' + esc(datum(a.gemaakt)) : ''}</div>
     ${a.bericht ? `<div class="pf-aanmeld-bericht">${esc(a.bericht)}</div>` : ''}
     <div class="rij" style="margin-top:8px">
@@ -157,7 +158,7 @@ function tekenPlatform(o, aanmeldingen){
     const z = document.getElementById('pfZoek'); if (z){ z.focus(); try { z.setSelectionRange(pos, pos); } catch (e) {} }
   };
   document.getElementById('pfKalenders')?.addEventListener('click', () => openKalenders());
-  document.getElementById('pfNieuweClub')?.addEventListener('click', () => import('./club.js?v=20261011h').then(m => m.modalNieuwClub()));
+  document.getElementById('pfNieuweClub')?.addEventListener('click', () => import('./club.js?v=20261012a').then(m => m.modalNieuwClub()));
   document.getElementById('pfVernieuw')?.addEventListener('click', async e => {
     const k = e.currentTarget; k.disabled = true; k.textContent = 'Bezig…';
     try { await httpsCallable(functions, 'platformOverzichtNu')({}); meld('Cijfers bijgewerkt'); openPlatform(); }
@@ -166,7 +167,7 @@ function tekenPlatform(o, aanmeldingen){
   document.querySelectorAll('[data-platform-club]').forEach(b => b.onclick = () => {
     const id = b.dataset.platformClub;
     sluitModal();
-    import('./club.js?v=20261011h').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
+    import('./club.js?v=20261012a').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
   });
   document.querySelectorAll('[data-aanmeld-ok], [data-aanmeld-af]').forEach(b => b.onclick = async () => {
     const id = b.dataset.aanmeldOk || b.dataset.aanmeldAf, goed = !!b.dataset.aanmeldOk;

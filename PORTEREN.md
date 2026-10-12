@@ -2,22 +2,27 @@
 
 Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
 
-## Stand (bijgewerkt 11-10-2026, versie 20261011h)
+## Stand (bijgewerkt 12-10-2026, versie 20261012a)
 - **Firestore-rules:** per club afgeschermd (teams, trainingen, video's, documenten, berichten via clublidmaatschap). Getest in de emulator: `npm run test:rules` (21 scenario's, laatst 20/20 groen op 11-10; de 21e is in 20261011f toegevoegd). Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.
 - **Cloud Functions:** live in `europe-west1` (Node 22, 2nd gen). Iedere nieuwe callable heeft na de eerste deploy de invoker `allUsers` nodig (`gcloud run services add-iam-policy-binding <naam-in-kleine-letters> …`), anders krijgt de app een CORS-/`internal`-fout.
-- **Tests:** `npm test` (10 suites) en `node tests/toegang.test.js` (aansluiten/uitnodigen, 24 scenario's). Pariteit met ASV'33: `node tools/pariteit.mjs ../cluppieasv33`.
+- **Tests:** `npm test` (12 suites, sinds 20261012a ook `sportlink-meer` en `sportlink-sync`) en `node tests/toegang.test.js` (aansluiten/uitnodigen, 24 scenario's). Pariteit met ASV'33: `node tools/pariteit.mjs ../cluppieasv33` (sinds 20261011h 10 verwachte verschillen in `bouw-hub.js`, `club.js` en `teams-spelers.js`: het overzetten loopt hier via de server).
 - **Versies:** elke release `node tools/versie.mjs JJJJMMDDx origin/main` (zet `?v=` in gewijzigde modules en hun importeurs + `CACHE_VERSIE` in `sw.js`).
 - **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
 
 ## Open
 **Voor Paul (console/terminal)**
-- [ ] `zetSpelerOver` deployen + invoker openzetten (zie release 20261011h), dan PR mergen.
+- [x] Release 20261012a: functions gedeployed en invoker `sportlinkclubinfo` open (12-10-2026).
+- [ ] Na het mergen van PR #12: één keer "Sync nu" bij een club met Sportlink.
+- [ ] `firebase-functions` upgraden (de CLI waarschuwt; breaking changes, dus als eigen release met tests).
+- [ ] `zetSpelerOver` deployen + invoker openzetten (zie release 20261011h), als dat nog niet gebeurd is (PR #11 is al gemerged).
 - [ ] Rond 18-10: tijdelijke database weg (`gcloud firestore databases delete --database=cluppie-overzet --project=cluppie-ad329`) en bestanden in de oude bucket verwijderen.
 - [ ] App Check: na een paar dagen in Console → App Check → APIs kijken; bij ~100% geldige verzoeken Enforce aan voor Firestore, Storage en Functions.
 - [ ] AI per club aanzetten zodra de Anthropic-limiet het toelaat (eind oktober).
 - [ ] E-mail: extensie *Trigger Email from Firestore* (collectie `mail`) installeren; zonder extensie gaan meldingen van clubaanmeldingen niet per mail.
 
 **Bouwen**
+- [ ] Sportlink: na de eerste weekendcontrole (`checkAfgelastingen`, vr 16–22 en za/zo 7–14) in de logs kijken of het aantal calls en markeringen klopt.
+- [ ] Een clubbeheerder kan in zijn eigen club `sportlinkClubcode` aanpassen. Misbruik (de code van een andere club invullen om diens aanmelding te blokkeren) is onwaarschijnlijk; eventueel het veld in de rules alleen voor functions/platform schrijfbaar maken.
 - [ ] Bestaande teamnamen "JO11-1" omzetten naar "O11-1" (knop voor de clubbeheerder of eenmalig voor alle clubs).
 - [ ] `storage.rules` testen in de emulator (Firestore-rules zijn getest, Storage nog niet).
 - [ ] Documenten van vóór de clubscheiding zonder `club`-veld: controleren of ze er nog zijn en zo nodig vullen.
@@ -32,6 +37,23 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 ---
 
 # Geschiedenis
+
+## Release 20261012a — meer uit Sportlink
+Mockup en impactanalyse goedgekeurd 12-10-2026. Alle Sportlink-velden live gecontroleerd met het ASV-ID (clubgegevens, teams, programma, afgelastingen, wedstrijd-accommodatie).
+- **Club aanmelden met Client ID** (`club-aanmelden.js`, wizard stap 1 in `club-instellingen.js`, "Koppeling testen" in Instellingen → Sportlink in `club.js`; gedeeld: `sportlink-clubinfo.js`). Nieuwe callable `sportlinkClubInfo`: naam, clubcode, plaats, logo, tenuekleur → hex, aantallen teams. Banknummer, KvK, secretaris, telefoon en e-mail worden in `functions/sportlink-hulp.js` weggefilterd. Max 10 opzoekingen per gebruiker per uur (`ratelimiet/{uid}`, alleen functions). Dubbele club herkend op `sportlinkClubcode` (de nachtsync legt die bij bestaande clubs vast). Goedkeuren zet Client ID, logo en kleur op de club en haalt meteen de teamlijst op. District blijft handmatig: Sportlink geeft het niet mee.
+- **Beker en oefen**: teamlijst bewaart alle poules (`poules[]`), bekerpoule (nieuwste ronde) in `teams/{t}/poule/beker`, wedstrijden krijgen `competitiesoort`. Stand & poule krijgt Competitie | Beker; pill Beker/Oefen in lijsten. (Bekerwedstrijden kwamen al binnen; reekswissels gingen al vanzelf.)
+- **Afgelastingen** (bestaand probleem: een afgelaste wedstrijd verdween stil uit `programma` en bleef in Cluppie "te spelen"). Sync en nieuwe `checkAfgelastingen` (vr–zo elke 30 min, alleen binnen het venster, één call per club) zetten `status: 'afgelast'`; ingetrokken afgelasting → status weg. Komende wedstrijd die verdwijnt zonder afgelasting → `sportlinkWeg` ("Niet in Sportlink"). Nooit verwijderen. Programma-fout → niets als verdwenen markeren. Banner + badge op de teamhub (wegtikken per toestel), doorgestreept in lijsten, niet meer eerstvolgend, clubscherm Afgelasten toont `clubs/{c}/geheim/_afgelast`. Gedeelde logica in `wedstrijd-status.js` (zonder imports).
+- **Wedstrijdinfo**: `info{accommodatie, veld, plaats, verzamel, vertrek, kleedkamer}` uit programma (alleen gevulde velden, merge); uitwedstrijden binnen 21 dagen ook `adres, plaatsAdres, telefoon, route` via `wedstrijd-accommodatie`, gecachet per sportpark in `accommodaties/{sleutel}` (180 dagen, alleen functions). Scheidsrechternaam bewust niet opgeslagen (vaak minderjarig). Coach kan verzamel-/vertrektijd zelf zetten (`infoEigen`, gaat voor). Blok bij Presentie wedstrijd en op de desktop-wedstrijdkaart; delen met ouders via WhatsApp zonder spelernamen.
+- `state.js` niet aangeraakt (runtime: `S.pouleBeker`, `S._pouleBron`, `S._wsTijdOpen`, `S._clubWedAfgelast`).
+- Tests: `tests/sportlink-meer.test.mjs` (22) en `tests/sportlink-sync.test.js` (33, echte sync tegen nep-Sportlink en nep-Firestore); `tests/fake-firestore.js` kent nu `>=`/`>`-queries, `collection().doc()` en `batch.set/update`. Schermen gerenderd op 414×896 (donker) en desktop 1440 met de echte modules, zonder consolefouten.
+
+### Deploy (vóór het mergen, project `cluppie-ad329`)
+1. `cd functions && npm install`
+2. `firebase deploy --only functions:sportlinkClubInfo,functions:checkAfgelastingen,functions:sportlinkSyncNu,functions:syncSportlink,functions:meldClubAan,functions:beoordeelClubAanmelding --project cluppie-ad329`
+3. `gcloud run services add-iam-policy-binding sportlinkclubinfo --region=europe-west1 --member=allUsers --role=roles/run.invoker --project=cluppie-ad329`
+4. Geen rules-deploy nodig: `accommodaties` en `ratelimiet` hebben geen regel en zijn dus dicht voor de app.
+5. Mergen; daarna één keer "Sync nu" bij een club met Sportlink, zodat beker, info en afgelastingen gevuld zijn.
+6. Kosten: `checkAfgelastingen` is de vierde Cloud Scheduler-taak (eerste drie gratis, daarna ongeveer € 0,10 per maand).
 
 ## Gepoort uit ASV'33 (bijgewerkt 2026-10-10, cache-versie 20261010c)
 Vergelijking van de complete cluppieasv33-zip (t/m release 2026-10-05) met deze repo. Alle andere verschillen zijn bewuste multi-tenant-aanpassingen (clubconfig, instellingen per club).

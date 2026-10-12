@@ -105,7 +105,7 @@ function wedstrijdRijen(metEerder){
   return (S.wedstrijden || [])
     .filter(w => w.datum && (!w.seizoen || w.seizoen === seizoen))
     .filter(w => metEerder || w.datum >= vandaag)
-    .map(w => ({ id:w.id, soort:'wedstrijd', datum:w.datum, tegen:w.type === 'toernooi' ? (w.tegenstander || 'Toernooi') : (w.tegenstander || 'Tegenstander'),
+    .map(w => ({ id:w.id, soort:'wedstrijd', datum:w.datum, tegen:(w.type === 'toernooi' ? (w.tegenstander || 'Toernooi') : (w.tegenstander || 'Tegenstander')) + (w.status === 'afgelast' ? ' · afgelast' : ''),
       thuis:w.thuis === true, tijd:w.aftrap || w.tijd || '', verleden:w.datum < vandaag }))
     .sort((a, b) => a.datum.localeCompare(b.datum));
 }

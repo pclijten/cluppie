@@ -32,13 +32,16 @@ class Query {
     const docs = [];
     for (const [p, d] of store){
       if (p.startsWith(this.col + '/') && p.split('/').length === this.col.split('/').length + 1){
-        if (this.f.every(([k, op, v]) => { const x = getPath(d, k); return op === '==' ? x === v : op === 'array-contains' ? (x || []).includes(v) : false; }))
+        if (this.f.every(([k, op, v]) => { const x = getPath(d, k);
+          return op === '==' ? x === v : op === 'array-contains' ? (x || []).includes(v)
+            : op === '>=' ? x != null && x >= v : op === '>' ? x != null && x > v : op === '<' ? x != null && x < v : op === '<=' ? x != null && x <= v : false; }))
           docs.push({ id: p.split('/').pop(), ref: new Doc(p), data: () => clone(d) });
       }
     }
     const l = docs.slice(0, this.lim);
     return { docs: l, empty: !l.length, size: l.length };
   }
+  doc(id){ return new Doc(`${this.col}/${id || 'a' + Math.random().toString(36).slice(2, 10)}`); }
   async add(d){ const id = 'a' + Math.random().toString(36).slice(2, 10); store.set(`${this.col}/${id}`, clone(d)); return new Doc(`${this.col}/${id}`); }
 }
 const db = {
@@ -50,6 +53,7 @@ const db = {
     for (const f of w) await f();
     return r;
   },
-  batch: () => ({ ops: [], delete(r){ this.ops.push(r); }, async commit(){ for (const r of this.ops) await r.delete(); } }),
+  batch: () => ({ ops: [], delete(r){ this.ops.push(() => r.delete()); }, set(r, d, o){ this.ops.push(() => r.set(d, o)); },
+    update(r, u){ this.ops.push(() => r.update(u)); }, async commit(){ for (const f of this.ops) await f(); } }),
 };
 module.exports = { store, db, FieldValue, Timestamp: { fromMillis: ms => new Ts(ms) }, Ts };

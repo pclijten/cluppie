@@ -510,7 +510,7 @@ export function koppelInstelNieuw(v, herteken){
   else if (sub === 'pedagogiek') koppelPedagogiek(v, herteken);
   else if (sub === 'regels') koppelRegels(v, herteken);
   else if (sub === 'ai') koppelAI(v, herteken);
-  else if (sub === 'toegang') import('./toegang.js?v=20261011h').then(m => m.koppelToegang(v, herteken));
+  else if (sub === 'toegang') import('./toegang.js?v=20261012a').then(m => m.koppelToegang(v, herteken));
 }
 
 /* ---------- Identiteit ---------- */
@@ -869,6 +869,7 @@ export function modalNieuweClub(naCreatie){
   const W = {
     stap: 1, naam: '', plaats: '', lat: null, lon: null, district: 'zuid1', afk: '', afkHandmatig: false,
     logo: '', kleur: '#e2342f', clientId: '', seizoen: seizoenVoorDatum(), ai: false, kopie: '', pvNaam: '', pvMail: '', vo: false,
+    clubcode: '', slVondst: '',   // [20261012a] gevonden via Sportlink
   };
   openModal(`<h2>🏛 Nieuwe club</h2><div id="wzBody"></div>`);
   const body = () => $('#modalInhoud .modal-body') || $('#wzBody');
@@ -883,11 +884,37 @@ export function modalNieuweClub(naCreatie){
     if (W.stap === 1){
       b.innerHTML = kop() + `
         <p class="cb-uitleg" style="margin-bottom:12px">Als clubbeheerder maak je teams aan en deel je trainingen met alle teams. Coaches nodig je uit met een persoonlijke teamlink. Alle onderdelen kun je later nog aanpassen.</p>
+        <div class="cb-kaart sl-zoek">
+          <div class="veldgroep" style="margin:0"><label for="wzSlId">Sportlink Client ID (optioneel)</label>
+            <div class="rij sl-zoek-rij"><input class="invoer" id="wzSlId" maxlength="40" autocomplete="off" spellcheck="false" placeholder="Bijv. k7Rq2pX9aW" value="${esc(W.clientId)}">
+              <button class="knop fluo" id="wzSlZoek">Zoek club</button></div>
+            <p class="cb-uitleg" style="margin:6px 0 0">Vult naam, plaats, logo en kleur in vanuit Sportlink.</p></div>
+          <div id="wzSlVondst" aria-live="polite">${W.slVondst}</div>
+        </div>
         ${veldGroep('Clubnaam', `<input class="invoer" id="wzNaam" maxlength="60" placeholder="Bijv. RKVV Mifano" value="${esc(W.naam)}" autocomplete="off">`)}
-        ${veldGroep('Plaats', plaatsZoeker('wz', W.plaats), W.plaats ? `Gekozen: <b>${esc(W.plaats)}</b> — voor het weer op het startscherm. Optioneel.` : 'Voor het weer op het startscherm. Optioneel.')}
+        ${veldGroep('Plaats', plaatsZoeker('wz', W.plaats), W.plaats && W.lat != null ? `Gekozen: <b>${esc(W.plaats)}</b> — voor het weer op het startscherm. Optioneel.` : W.plaats ? 'Uit Sportlink. Tik op Zoek en kies de plaats als je het weer op het startscherm wilt. Optioneel.' : 'Voor het weer op het startscherm. Optioneel.')}
         ${veldGroep('KNVB-district', `<select class="invoer" id="wzDistrict">${districtOpties(W.district)}</select>`, 'De speeldagen van jullie district worden automatisch bij de club gezet, ook in de komende seizoenen.')}
         ${knoppen(false)}`;
       koppelPlaatsZoeker(b, 'wz', p => { W.plaats = p.plaats; W.lat = p.lat; W.lon = p.lon; W.naam = b.querySelector('#wzNaam').value; W.district = b.querySelector('#wzDistrict').value; teken(); });
+      b.querySelector('#wzSlZoek').onclick = async e => {
+        const k = e.currentTarget, uit = b.querySelector('#wzSlVondst'), id = b.querySelector('#wzSlId').value.trim();
+        W.naam = b.querySelector('#wzNaam').value; W.district = b.querySelector('#wzDistrict').value;
+        k.disabled = true; uit.innerHTML = '<div class="sl-laden"><span class="sl-spin"></span>Club opzoeken in Sportlink…</div>';
+        try {
+          const { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261012a');
+          const info = await zoekClubInSportlink(id);
+          if (info.gevonden){
+            const [logo, kleur] = await Promise.all([verkleinSportlinkLogo(info.logo), leesbareKleur(info.kleur)]);
+            Object.assign(W, { clientId: id, clubcode: info.clubcode, naam: info.clubnaam, logo: logo || W.logo, kleur: kleur || W.kleur });
+            if (info.plaats && !W.lat) W.plaats = info.plaats;
+            W.slVondst = htmlClubVondst(info, { logo, kleur });
+          } else { W.clubcode = ''; W.slVondst = htmlClubVondst(info); }
+        } catch (x){
+          const { htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261012a');
+          W.slVondst = htmlClubVondst(null, { fout: x });
+        }
+        k.disabled = false; teken();
+      };
     } else if (W.stap === 2){
       const vs = W.afkHandmatig ? W.afk : afkVoorstel(W.naam);
       b.innerHTML = kop() + `
@@ -985,6 +1012,7 @@ async function maakClub(W, bronnen){
     gemaakt: serverTimestamp(),
   };
   if (W.clientId) data.sportlinkClientId = W.clientId;
+  if (W.clubcode && W.clientId) data.sportlinkClubcode = W.clubcode;
   const ref = await addDoc(collection(db, 'clubs'), data);
   return ref.id;
 }

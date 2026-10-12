@@ -10,6 +10,8 @@ Alle callables vereisen `clubId` in de payload; de server controleert lidmaatsch
 | `chatHulp`, `structureerTraining`, `genereerVerslagAI`, `samenvatHotspot` | club-lid | respecteert `instellingen.ai.aan` en `instellingen.ai.maandLimiet` (teller in `clubs/{id}/aiGebruik/{YYYY-MM}`) |
 | `sportlinkSyncNu` | club-admin | callable; leest `clubs/{id}.sportlinkClientId` |
 | `syncSportlink` | schema | nachtelijk, alle clubs met `sportlinkClientId` |
+| `checkAfgelastingen` | schema | vr–zo elke 30 min (actief vr 16–22, za/zo 7–14): afgelaste wedstrijden markeren |
+| `sportlinkClubInfo` | ingelogd | callable; club opzoeken met een Client ID (geen bank-/contactgegevens), max 10/uur |
 | `cleanupDeletedItems` | schema | opruimen |
 
 | `sluitAan`, `uitnodigingInfo`, `codeBezet` | coach / (uitnodigingInfo: openbaar) | aansluiten via team- of clubcode; vervangt client-queries op `code==` |
