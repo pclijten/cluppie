@@ -507,6 +507,13 @@ exports.structureerTraining = onCall(
   }
 );
 
+/* ---------- 2c. TRAININGSMODULE + SEIZOENSPLANNING ====================
+   personaliseerTraining en seizoensVoorstel (zie trainingsai.js). Zelfde toegang en
+   AI-limiet als de andere AI-functies; de app werkt ook zonder deze functies. */
+Object.assign(exports, require('./trainingsai').maak({
+  onCall, HttpsError, secrets: [ANTHROPIC_API_KEY], REGIO, vereisAI, claude, apiKey: () => ANTHROPIC_API_KEY.value(), scrubPII,
+}));
+
 /* ---------- 2d. HOTSPOT-SAMENVATTING ====================
    Vat de opmerkingen die coaches bij één regel (hotspot) van een training
    hebben gemaakt anoniem samen tot één of twee zinnen voor de beheerder.
