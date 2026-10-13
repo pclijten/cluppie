@@ -2,15 +2,17 @@
 
 Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
 
-## Stand (bijgewerkt 12-10-2026, versie 20261012e)
+## Stand (bijgewerkt 13-10-2026, versie 20261013a)
 - **Firestore-rules:** per club afgeschermd (teams, trainingen, video's, documenten, berichten via clublidmaatschap). Getest in de emulator: `npm run test:rules` (21 scenario's, laatst 20/20 groen op 11-10; de 21e is in 20261011f toegevoegd). Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.
 - **Cloud Functions:** live in `europe-west1` (Node 22, 2nd gen). Iedere nieuwe callable heeft na de eerste deploy de invoker `allUsers` nodig (`gcloud run services add-iam-policy-binding <naam-in-kleine-letters> …`), anders krijgt de app een CORS-/`internal`-fout.
-- **Tests:** `npm test` (12 suites, sinds 20261012a ook `sportlink-meer` en `sportlink-sync`) en `node tests/toegang.test.js` (aansluiten/uitnodigen, 24 scenario's). Pariteit met ASV'33: `node tools/pariteit.mjs ../cluppieasv33` (sinds 20261011h 10 verwachte verschillen in `bouw-hub.js`, `club.js` en `teams-spelers.js`: het overzetten loopt hier via de server).
+- **Tests:** `npm test` (17 suites, laatst 13-10 allemaal groen; nieuw: `vaste-afmeldingen`. Eerst één keer `cd functions && npm install`) en `node tests/toegang.test.js` (aansluiten/uitnodigen, 24 scenario's). Pariteit met ASV'33: `node tools/pariteit.mjs ../cluppieasv33` (10 verwachte verschillen in `bouw-hub.js`, `club.js` en `teams-spelers.js`: het overzetten loopt hier via de server; ASV'33 PR #5 is sinds 20261013a gepoort).
 - **Versies:** elke release `node tools/versie.mjs JJJJMMDDx origin/main` (zet `?v=` in gewijzigde modules en hun importeurs + `CACHE_VERSIE` in `sw.js`).
 - **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
 
 ## Open
 **Voor Paul (console/terminal)**
+- [ ] Release 20261013a (branch `vaste-afmelding`): PR reviewen en mergen. Alleen client, geen rules- of functions-deploy voor de vaste afmelding. De bijgewerkte kennisbank (`functions/kennis.js`) gaat mee bij de eerstvolgende deploy van `chatHulp`: `firebase deploy --only functions:chatHulp --project cluppie-ad329`.
+- [ ] In ASV'33 (`cluppieasv33`): niets te doen voor de vaste afmelding (daar komt hij vandaan).
 - [x] Release 20261012a: functions gedeployed en invoker `sportlinkclubinfo` open (12-10-2026).
 - [ ] Na het mergen van PR #12: één keer "Sync nu" bij een club met Sportlink.
 - [ ] `firebase-functions` upgraden (de CLI waarschuwt; breaking changes, dus als eigen release met tests).
@@ -20,8 +22,8 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - [ ] AI per club aanzetten zodra de Anthropic-limiet het toelaat (eind oktober).
 - [ ] E-mail: extensie *Trigger Email from Firestore* (collectie `mail`) installeren; zonder extensie gaan meldingen van clubaanmeldingen niet per mail.
 
-**Voor Paul — Training maken en Seizoensplanning (release 20261012e, branch `trainingsmodule-seizoensplanning`)**
-- [ ] Branch reviewen en mergen; daarna `firebase deploy --only functions:personaliseerTraining,functions:seizoensVoorstel` en voor beide de invoker `allUsers` openzetten (zie `functions/LEESMIJ-deploy.md`).
+**Voor Paul — Training maken en Seizoen (release 20261012e)**
+- [ ] De code staat op `main`. Nog te doen (als dat niet gebeurd is): `firebase deploy --only functions:personaliseerTraining,functions:seizoensVoorstel` en voor beide de invoker `allUsers` openzetten (zie `functions/LEESMIJ-deploy.md`).
 - [ ] AI-uitleg en AI-jaarvoorstel werken pas als de Anthropic-limiet het toelaat; zonder AI werkt alles met de standaardtekst en de standaard jaarlijn.
 - [ ] `MODEL` in `functions/index.js` is nog `claude-haiku-4-5-20251001`. Haiku 5.5 is volgens de prijzenpagina 10× goedkoper; model-id eerst controleren, dan omzetten (geldt voor alle AI-functies).
 - [ ] Praktijktest met één of twee teams (bijv. een O11 en een O9) voordat het breder gaat; coaches de 48 vormen laten beoordelen (veldmaten en m² per speler zijn aannames).
@@ -29,8 +31,6 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 
 **Bouwen**
 - [ ] Trainingsbibliotheek uitbreiden: omschakelen balwinst/balverlies (vanaf O14), dunne cellen (Teamsport O13, Technische vaardigheden O13, Dieptespel O8), keepervormen, O14+.
-- [ ] Thema-check in de teamevaluatie staat nu in de telefoonversie; de desktop-evaluatie (`desktop-schermen.js`, actie `evsave`) heeft het veld nog niet.
-- [ ] Handleiding (`teams-handleiding.js`) en kennisbank van de hulpchat uitbreiden met Training maken en Seizoensplanning.
 - [ ] Sportlink: na de eerste weekendcontrole (`checkAfgelastingen`, vr 16–22 en za/zo 7–14) in de logs kijken of het aantal calls en markeringen klopt.
 - [ ] Een clubbeheerder kan in zijn eigen club `sportlinkClubcode` aanpassen. Misbruik (de code van een andere club invullen om diens aanmelding te blokkeren) is onwaarschijnlijk; eventueel het veld in de rules alleen voor functions/platform schrijfbaar maken.
 - [ ] Bestaande teamnamen "JO11-1" omzetten naar "O11-1" (knop voor de clubbeheerder of eenmalig voor alle clubs).
@@ -47,6 +47,13 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 ---
 
 # Geschiedenis
+
+## Release 20261013a — vaste afmelding gepoord, thema-check op desktop, handleiding
+- **Vaste afmelding** (ASV'33 PR #5, release 20261012a): een coach meldt een speler in één keer af voor een vaste trainingsdag over meerdere weken. Regels staan op `teams/{id}.vasteAfmeldingen`; er worden geen presentie-records vooruit aangemaakt, zodat opkomst-% en afgelaste trainingen kloppen. Presentievenster, eerstvolgende-kaart, "vooruit afgemeld" en de desktop-trainingen tonen de afmelding met 🔁. Nieuwe module `public/js/vaste-afmeldingen.js` (zonder imports), aanpassingen in `teams-training.js`, `teams.js`, `desktop-schermen.js`, `styles.css`. Test: `tests/vaste-afmeldingen.test.mjs`. Presentie-HTML met een lopende regel is in Node gerenderd; **niet getest in een echte browser** (414×896/desktop): bekijk de knop "Vaste afmelding" en het formulier even op je telefoon.
+- **Thema-check op desktop**: de teamevaluatie op de desktop (`desktop-schermen.js`, actie `evcheck`/`evsave`) vraagt nu ook "Kwam het thema terug?" (ja/deels/nee), alleen als het team een seizoensplan heeft; zelfde veld `themaCheck` als op de telefoon.
+- **Handleiding en kennisbank**: nieuwe secties Training maken, Seizoen (jaarlijn en bijsturing) en Vaste afmelding in `teams-handleiding.js` en `functions/kennis.js`.
+- `PORTEREN-regel.md` (verouderd snippet van 28-9) verwijderd. `state.js` niet aangeraakt, geen rules-wijziging.
+- Bewust **niet** gedaan: `MODEL` in `functions/index.js` omzetten (het model-id van Haiku 5.5 kon ik hier niet controleren), en bouwen die een mockup of jouw keuze vragen (bibliotheek uitbreiden, knop JO→O-namen, `storage.rules`-test in de emulator).
 
 ## Release 20261012h — eigen wedstrijd: tegenstander uit de clubgids, tijden en plek
 Mockup goedgekeurd 12-10. Gecontroleerd met live pouledata (O12-1): `pouleuitslagen` bevat per wedstrijd `thuisteamclubrelatiecode` en `accommodatie`; een adres geeft Sportlink alleen bij wedstrijden met een eigen team.
@@ -112,6 +119,7 @@ Vergelijking van de complete cluppieasv33-zip (t/m release 2026-10-05) met deze 
 | 2026-10-10 | Verwachte speeltijd bij geplande wissels (ASV'33 PR #2, release 20261010a) | **gepoort** ([notitie](porteren/20261010a-verwachte-speeltijd.md)) |
 | 2026-10-10 | Speler definitief overzetten met bevroren dossier (ASV'33 PR #4, release 20261010b) + tenant-controle, naam-fallback, dossier wissen bij speler verwijderen | **gepoort** ([notitie](porteren/20261010b-speler-overdracht.md)) |
 | 2026-10-10 | Lokale AVG/onboarding-lijn samengevoegd met GitHub, app weer in `public/js/` (release 20261010c) | **klaar** ([notitie](porteren/20261010c-samenvoegen.md)) |
+| 2026-10-12 | Vaste afmelding: speler terugkerend afmelden voor training (ASV'33 PR #5, release 20261012a) | **gepoort** (release 20261013a) |
 | 2026-10-10 | Platformscherm "Platform: alle clubs" (`js/platform.js`, alleen platformbeheerder): alle clubs met teams, leden, admins en wachtende aanvragen, club openen. Loginscherm en opstartscherm tonen altijd het neutrale Cluppie-logo (release 20261010f) | **klaar** |
 | 2026-10-10 | Alle ASV-verwijzingen uit de app gehaald: schild, legacy-shim, seed-teksten, over.html, voorbeelden en wijzigingenlijst (release 20261010e) | **klaar** |
 | 2026-10-10 | Nieuw Cluppie-logo (open C met bal): app-iconen, favicon (`icons/icon.svg`), laad- en loginscherm, `over.html` (release 20261010d) | **klaar** |
