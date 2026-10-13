@@ -62,7 +62,7 @@ function valideerBlokken(blokken, weken, toegestaan){
 
 function maak({ onCall, HttpsError, secrets, REGIO, vereisAI, claude, apiKey, scrubPII }){
   const personaliseerTraining = onCall({ region: REGIO, secrets, cors: true, timeoutSeconds: 60 }, async (request) => {
-    await vereisAI(request);
+    await vereisAI(request, null, 'trainingsmodule');
     const p = request.data?.profiel || {};
     const onderdelen = (Array.isArray(request.data?.onderdelen) ? request.data.onderdelen : []).slice(0, 6).map(o => ({
       slot: tekst(o?.slot, 20), minuten: Math.max(0, Math.min(90, Number(o?.minuten) || 0)), naam: tekst(o?.naam, 80), doel: scrubPII(tekst(o?.doel, 240)),
@@ -86,7 +86,7 @@ function maak({ onCall, HttpsError, secrets, REGIO, vereisAI, claude, apiKey, sc
   });
 
   const seizoensVoorstel = onCall({ region: REGIO, secrets, cors: true, timeoutSeconds: 60 }, async (request) => {
-    await vereisAI(request);
+    await vereisAI(request, null, 'seizoensplan');
     const modus = request.data?.modus;
     if (modus === 'jaarplan'){
       const d = request.data;

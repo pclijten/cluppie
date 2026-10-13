@@ -69,6 +69,14 @@ test('clubinstellingen wijzigen: alleen clubadmin', async () => {
   await assertFails(updateDoc(doc(als('coachA'), 'clubs/A'), { 'instellingen.identiteit.kleur': '#654321' }));
   await assertFails(updateDoc(doc(als('adminB'), 'clubs/A'), { naam: 'Gekaapt' }));
 });
+test('platformModules (onderdelen aan/uit): alleen de eindbaas, niet de clubadmin', async () => {
+  await assertFails(updateDoc(doc(als('adminA'), 'clubs/A'), { 'platformModules.trainingsmodule': true }));
+  await assertFails(updateDoc(doc(als('adminA'), 'clubs/A'), { platformModules: { seizoensplan: true } }));
+  await assertSucceeds(updateDoc(doc(als('paul', PLATFORM), 'clubs/A'), { 'platformModules.trainingsmodule': true }));
+  /* daarna kan de clubadmin gewoon andere velden blijven wijzigen */
+  await assertSucceeds(updateDoc(doc(als('adminA'), 'clubs/A'), { 'instellingen.identiteit.kleur': '#abcdef' }));
+  await assertFails(updateDoc(doc(als('adminA'), 'clubs/A'), { 'platformModules.trainingsmodule': false }));
+});
 test('coach registreert nieuw team bij club (alleen veld teams)', async () => {
   await assertSucceeds(updateDoc(doc(als('coachA'), 'clubs/A'), { 'teams.t9': true }));
   await assertFails(updateDoc(doc(als('coachA'), 'clubs/A'), { 'teams.t9': true, naam: 'x' }));

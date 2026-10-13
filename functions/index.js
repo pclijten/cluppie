@@ -124,10 +124,12 @@ async function vereisLid(request, rollen = null){
 
 /* AI-instellingen van de club: clubs/{id}.instellingen.ai = { aan, maandLimiet }.
    Ontbreekt het (bestaande club zonder instellingen) → AI aan, geen limiet. */
-async function vereisAI(request, rollen = null){
+async function vereisAI(request, rollen = null, onderdeel = null){
   const r = await vereisLid(request, rollen);
   const db = getFirestore();
   const club = (await db.doc(PADEN.club(r.clubId)).get()).data() || {};
+  /* [20261013b] eindbaas heeft dit onderdeel voor de club uitgezet: weigeren vóórdat er AI-gebruik geteld wordt */
+  if (onderdeel && !require('./onderdelen').platformToegestaan(club, onderdeel)) throw new HttpsError('failed-precondition', 'Dit onderdeel staat niet aan voor deze club.');
   const ai = club.instellingen?.ai || {};
   if (ai.aan === false) throw new HttpsError('failed-precondition', 'AI staat uit voor deze club.');
   const limiet = Number(ai.maandLimiet);

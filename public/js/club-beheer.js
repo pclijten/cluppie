@@ -15,7 +15,8 @@
 import { db, doc, updateDoc } from './firebase.js?v=20261011g';
 import { S, esc, meld, modAan } from './state.js?v=20261011g';
 import { BOUWEN, catLabel } from './config.js?v=20261011g';
-import { kompasNaam } from './clubconfig.js?v=20261011g';
+import { kompasNaam } from './clubconfig.js?v=20261013b';
+import { onderdeelAan, doorPlatformUit } from './onderdelen.js?v=20261013b';
 import { ico } from './icons.js?v=20260922c';
 import { eigenBouwenVanTeam, bouwVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261011g';
 
@@ -26,13 +27,17 @@ export const MODULE_DEFS = [
   ['kompas',     'Club-kompas', 'Tip',   'map',               'Wekelijkse beleidsplan-tip op de Training-tab. Aanbevolen om aan te laten.'],
   ['leerplein',  'Leerplein',  'Plein', 'football-tactics',  'Uitleg en voorbeeld-loopacties per leerthema op het tactiekbord.'],
   ['lijstjes',   'Lijstjes',   'Lijst', 'attendance-fill',   'Lijstjes voor aanwezigheid, kledingmaten en ouderhulp.'],
+  /* [20261013b] door de eindbaas per club vrijgegeven (zie onderdelen.js) */
+  ['trainingsmodule', 'Training maken', 'Maken', 'training-plan', 'Complete trainingen samenstellen (Oefenstof → Training maken).'],
+  ['seizoensplan', 'Seizoensplanning', 'Seizoen', 'planning-month', 'Jaarlijn in blokken met bijsturing op basis van evaluaties (Oefenstof → Seizoen).'],
 ];
 document.addEventListener('clubconfig', () => { const d = MODULE_DEFS.find(m => m[0] === 'kompas'); if (d) d[1] = kompasNaam(); });
 const DAG_KORT = ['Ma','Di','Wo','Do','Vr','Za','Zo'];
 const DAG_LANG = ['maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag','zondag'];
 export const BOUW_KLEUR = { onder:'#35c47a', midden:'#3b82f6', boven:'#a855f7' };
 
-const aan = (t, k) => modAan(k, t);
+const aan = (t, k) => onderdeelAan(k, t);
+const GEBLOKKEERD_TIP = 'Door Cluppie niet aangezet voor jullie club';
 const naamKort = n => String(n || 'Coach').split('@')[0];
 export function twee(n){ const w = String(n || '?').trim().split(/\s+/).filter(Boolean); return ((w[0]?.[0] || '?') + (w.length > 1 ? w[w.length - 1][0] : '')).toUpperCase(); }
 export function coachesVanTeam(t){
@@ -96,7 +101,7 @@ function statusChips(t, sync){
   else if (st === 'nee') s.push(`<span class="cb-st let">${ico('action-warning', 12)} Sportlink niet gevonden</span>`);
   else if (st === 'fout') s.push(`<span class="cb-st let">${ico('action-warning', 12)} Sportlink-fout</span>`);
   else if (st === 'nog') s.push(`<span class="cb-st">Sportlink nog niet gesynct</span>`);
-  const uit = MODULE_DEFS.filter(([k]) => !aan(t, k)).length;
+  const uit = MODULE_DEFS.filter(([k]) => !doorPlatformUit(k) && !aan(t, k)).length;
   if (uit) s.push(`<span class="cb-st">${uit} onderde${uit === 1 ? 'el' : 'len'} uit</span>`);
   return s.join('');
 }
@@ -126,10 +131,10 @@ export function htmlTeamsBeheer(teams, sync){
       ${x.teams.map(t => teamKaart(t, sync)).join('')}`).join('') || '<div class="kaart leeg">Geen teams in deze selectie.</div>';
   } else {
     const kop = `<div class="cb-mrij cb-mkop"><div class="cb-mnaam cb-mkoptekst">Team</div>
-      ${MODULE_DEFS.map(([k, naam, kort, i]) => `<button class="cb-mkol" data-cb-kol="${k}" title="${esc(naam)}: tik om voor alle getoonde teams aan of uit te zetten">${ico(i, 18)}${esc(kort)}<span class="cb-telling">${lijst.filter(t => aan(t, k)).length}/${lijst.length}</span></button>`).join('')}</div>`;
+      ${MODULE_DEFS.map(([k, naam, kort, i]) => `<button class="cb-mkol ${doorPlatformUit(k) ? 'geblokkeerd' : ''}" data-cb-kol="${k}" ${doorPlatformUit(k) ? 'disabled' : ''} title="${doorPlatformUit(k) ? GEBLOKKEERD_TIP : esc(naam) + ': tik om voor alle getoonde teams aan of uit te zetten'}">${ico(i, 18)}${esc(kort)}<span class="cb-telling">${lijst.filter(t => aan(t, k)).length}/${lijst.length}</span></button>`).join('')}</div>`;
     const rijen = g.map(x => `<div class="cb-mrij bouw"><div style="grid-column:1/-1"><i style="background:${esc(x.kleur)}"></i>${esc(x.naam)}</div></div>
       ${x.teams.map(t => `<div class="cb-mrij"><button class="cb-mnaam" data-cb-team="${esc(t.id)}">${esc(t.naam)}</button>
-        ${MODULE_DEFS.map(([k, naam]) => `<button class="cb-mcel ${aan(t, k) ? 'aan' : ''}" data-cb-cel="${esc(t.id)}|${k}" aria-label="${esc(naam)} ${aan(t, k) ? 'aan' : 'uit'} voor ${esc(t.naam)}"><span></span></button>`).join('')}</div>`).join('')}`).join('');
+        ${MODULE_DEFS.map(([k, naam]) => `<button class="cb-mcel ${aan(t, k) ? 'aan' : ''} ${doorPlatformUit(k) ? 'geblokkeerd' : ''}" data-cb-cel="${esc(t.id)}|${k}" ${doorPlatformUit(k) ? `disabled title="${GEBLOKKEERD_TIP}"` : ''} aria-label="${esc(naam)} ${aan(t, k) ? 'aan' : 'uit'} voor ${esc(t.naam)}"><span></span></button>`).join('')}</div>`).join('')}`).join('');
     inhoud = `<p class="cb-legenda">Tik een vakje om een onderdeel voor dat team aan of uit te zetten; het wordt direct opgeslagen. Tik een kolomkop om het voor alle getoonde teams te doen. Uitzetten verbergt alleen de knoppen, gegevens blijven bewaard.</p>
       <div class="cb-legenda cb-legenda-iconen">${MODULE_DEFS.map(([, naam, kort]) => `<span><b>${esc(kort)}</b> ${esc(naam)}</span>`).join('')}</div>
       ${lijst.length ? `<div class="cb-matrix">${kop}${rijen}</div>` : '<div class="kaart leeg">Geen teams in deze selectie.</div>'}`;
@@ -155,6 +160,7 @@ export function koppelTeamsBeheer(v, api){
   v.querySelectorAll('[data-cb-cel]').forEach(b => b.onclick = async () => {
     const [id, k] = b.dataset.cbCel.split('|');
     const t = api.teams.find(x => x.id === id); if (!t) return;
+    if (doorPlatformUit(k)) return meld(GEBLOKKEERD_TIP);
     const nieuw = !aan(t, k);
     b.classList.toggle('aan', nieuw); b.disabled = true;
     try { await zetModule(t, k, nieuw); meld(`${t.naam}: ${MODULE_DEFS.find(m => m[0] === k)[1]} ${nieuw ? 'aan' : 'uit'}`); api.herteken(); }
@@ -162,6 +168,7 @@ export function koppelTeamsBeheer(v, api){
   });
   v.querySelectorAll('[data-cb-kol]').forEach(b => b.onclick = async () => {
     const k = b.dataset.cbKol, naam = MODULE_DEFS.find(m => m[0] === k)[1];
+    if (doorPlatformUit(k)) return meld(GEBLOKKEERD_TIP);
     const lijst = api.teams.filter(t => inFilter(t, S._cbFilter, S._clubSyncStatus));
     if (!lijst.length) return;
     const nieuw = !lijst.every(t => aan(t, k));
@@ -233,7 +240,7 @@ export function htmlTeamBeheer(t, sync, teams){
 
     <div class="cb-kaart">
       <div class="cb-kaart-kop">${ico('admin-permissions', 18)}<b>Onderdelen voor coaches</b></div>
-      ${MODULE_DEFS.map(([k, naam, , i, uitleg]) => `<button type="button" class="cb-schakelrij" data-cb-mod="${k}">${ico(i, 20)}<div class="cb-persoon-n">${esc(naam)}<small>${esc(uitleg)}</small></div><span class="lj-schakel ${aan(t, k) ? 'aan' : ''}"></span></button>`).join('')}
+      ${MODULE_DEFS.map(([k, naam, , i, uitleg]) => `<button type="button" class="cb-schakelrij ${doorPlatformUit(k) ? 'geblokkeerd' : ''}" data-cb-mod="${k}" ${doorPlatformUit(k) ? 'disabled' : ''}>${ico(i, 20)}<div class="cb-persoon-n">${esc(naam)}<small>${doorPlatformUit(k) ? GEBLOKKEERD_TIP + '. ' : ''}${esc(uitleg)}</small></div><span class="lj-schakel ${aan(t, k) ? 'aan' : ''}"></span></button>`).join('')}
       <p class="cb-uitleg">Uitzetten verbergt alleen de knoppen. Gegevens blijven bewaard en komen terug zodra je het weer aanzet.</p>
     </div>
 
@@ -269,6 +276,7 @@ export function koppelTeamBeheer(v, api){
   });
   v.querySelectorAll('[data-cb-mod]').forEach(b => b.onclick = async () => {
     const k = b.dataset.cbMod, nieuw = !aan(t, k);
+    if (doorPlatformUit(k)) return meld(GEBLOKKEERD_TIP);
     b.querySelector('.lj-schakel')?.classList.toggle('aan', nieuw);
     try { await zetModule(t, k, nieuw); meld(`${MODULE_DEFS.find(m => m[0] === k)[1]} ${nieuw ? 'aan' : 'uit'}`); }
     catch(e){ b.querySelector('.lj-schakel')?.classList.toggle('aan', !nieuw); meld('Opslaan mislukt: ' + (e.code || e.message)); }

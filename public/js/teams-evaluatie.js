@@ -3,7 +3,7 @@
    wedstrijd (8 categorieën + tags + toelichtingen) en het bijbehorende
    dashboard/geschiedenis, plus de "Stats"-tab die dit combineert met de
    spelersstatistieken uit wedstrijd.js. */
-import { beleidsplanNaam } from './clubconfig.js?v=20261011g';
+import { beleidsplanNaam } from './clubconfig.js?v=20261013b';
 import {
   db, collection, doc, addDoc, deleteDoc, updateDoc, deleteField
 } from './firebase.js?v=20261011g';
@@ -13,9 +13,10 @@ import {
 import { NIVEAUS, niveauKleur, TEAM_CATEGORIEEN, TEAM_TAGS, teamCategorie, SEIZOEN_FALLBACK } from './config.js?v=20261011g';
 import { ico } from './icons.js?v=20260922c';
 
-import { htmlStats } from './wedstrijd.js?v=20261013a';
+import { htmlStats } from './wedstrijd.js?v=20261013b';
 import { telGebruik } from './tracker.js?v=20261011g';
 import { themaOpDatum } from './seizoensplan-logica.js?v=20261012e';
+import { onderdeelAan } from './onderdelen.js?v=20261013b';
 
 /* Kleine lokale kopie van de deelnemer-helper (ook aanwezig in teams-spelers.js)
    — bewust hier gedupliceerd i.p.v. een cross-module import voor één regel. */
@@ -31,7 +32,7 @@ export function modalTeamEvaluatie(wedstrijdId){
   const scores = {...(bestaande?.scores || {})};
   let gekozenTags = new Set(bestaande?.tags || []);
   /* [20261012e] thema-check: alleen als dit team een seizoensplan heeft; het thema is dat van de wedstrijdweek */
-  const spPlan = S._spPlan && S._spPlan.teamId === S.teamId ? S._spPlan.plan : null;
+  const spPlan = onderdeelAan('seizoensplan') && S._spPlan && S._spPlan.teamId === S.teamId ? S._spPlan.plan : null;
   const checkThema = spPlan ? themaOpDatum(spPlan, w.datum) : null;
   let checkAntwoord = bestaande?.themaCheck?.thema === checkThema ? (bestaande.themaCheck.antwoord || null) : null;
 

@@ -17,8 +17,9 @@ import { ACTIEF, SEIZOEN_FALLBACK, parseFormatie, aantalVeldspelers, SKILLS, LEE
 import {
   effectief, isLegacy, mergeLijst, LIJST_DEFS, ORIGINEEL, NEUTRAAL, CLUPPIE_LOGO, ICOONNAMEN,
   valideerKalender, herlaadKalender, pasClubConfigToe, clubAfk, DISTRICTEN
-} from './clubconfig.js?v=20261011g';
-import { MODULE_DEFS } from './club-beheer.js?v=20261011g';
+} from './clubconfig.js?v=20261013b';
+import { MODULE_DEFS } from './club-beheer.js?v=20261013b';
+import { doorPlatformUit } from './onderdelen.js?v=20261013b';
 
 /* ---------- Tabs ---------- */
 export const INSTEL_TABS = [
@@ -510,7 +511,7 @@ export function koppelInstelNieuw(v, herteken){
   else if (sub === 'pedagogiek') koppelPedagogiek(v, herteken);
   else if (sub === 'regels') koppelRegels(v, herteken);
   else if (sub === 'ai') koppelAI(v, herteken);
-  else if (sub === 'toegang') import('./toegang.js?v=20261013a').then(m => m.koppelToegang(v, herteken));
+  else if (sub === 'toegang') import('./toegang.js?v=20261013b').then(m => m.koppelToegang(v, herteken));
 }
 
 /* ---------- Identiteit ---------- */
@@ -818,7 +819,7 @@ function tabAI(eff){
       <button class="knop vol klein" id="aiOpslaan">Opslaan</button>`)}
     ${kaart('Onderdelen die standaard aan staan', '', `
       <p class="cb-uitleg" style="margin:0 0 8px">Voor alle teams die hier zelf niets over hebben ingesteld. Per team kun je het afwijkend instellen onder Teams.</p>
-      ${MODULE_DEFS.map(([k, naam, , , uitleg]) => `<label class="ci-schakel"><input type="checkbox" data-mod="${k}" ${std[k] !== false ? 'checked' : ''}><span><b>${esc(k === 'kompas' ? (eff.identiteit.kompasNaam || naam) : naam)}</b><br><small>${esc(uitleg)}</small></span></label>`).join('')}
+      ${MODULE_DEFS.map(([k, naam, , , uitleg]) => `<label class="ci-schakel ${doorPlatformUit(k) ? 'geblokkeerd' : ''}"><input type="checkbox" data-mod="${k}" ${std[k] !== false ? 'checked' : ''} ${doorPlatformUit(k) ? 'disabled' : ''}><span><b>${esc(k === 'kompas' ? (eff.identiteit.kompasNaam || naam) : naam)}</b><br><small>${doorPlatformUit(k) ? 'Door Cluppie niet aangezet voor jullie club. ' : ''}${esc(uitleg)}</small></span></label>`).join('')}
       <button class="knop vol klein" id="modOpslaan" style="margin-top:10px">Opslaan</button>`)}`;
 }
 function koppelAI(v, herteken){
@@ -901,7 +902,7 @@ export function modalNieuweClub(naCreatie){
         W.naam = b.querySelector('#wzNaam').value; W.district = b.querySelector('#wzDistrict').value;
         k.disabled = true; uit.innerHTML = '<div class="sl-laden"><span class="sl-spin"></span>Club opzoeken in Sportlink…</div>';
         try {
-          const { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261013a');
+          const { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261013b');
           const info = await zoekClubInSportlink(id);
           if (info.gevonden){
             const [logo, kleur] = await Promise.all([verkleinSportlinkLogo(info.logo), leesbareKleur(info.kleur)]);
@@ -910,7 +911,7 @@ export function modalNieuweClub(naCreatie){
             W.slVondst = htmlClubVondst(info, { logo, kleur });
           } else { W.clubcode = ''; W.slVondst = htmlClubVondst(info); }
         } catch (x){
-          const { htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261013a');
+          const { htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261013b');
           W.slVondst = htmlClubVondst(null, { fout: x });
         }
         k.disabled = false; teken();

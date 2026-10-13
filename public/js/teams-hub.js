@@ -14,12 +14,13 @@ import { db, doc, updateDoc, deleteField } from './firebase.js?v=20261011g';
 import { S, esc, meld, datumNL, modAan, openModal } from './state.js?v=20261011g';
 import { AFWEZIG_REDENEN, afwezigRedenInfo } from './config.js?v=20261011g';
 import { ico } from './icons.js?v=20260922c';
-import { logoImg, primaireClubId } from './clubconfig.js?v=20261011g';
+import { logoImg, primaireClubId } from './clubconfig.js?v=20261013b';
 import { analyseWedstrijd, WISSEL_BEURT } from './analyse.js?v=20261011g';
 import { telGebruik } from './tracker.js?v=20261011g';
 import { ongelezenBerichten } from './berichten.js?v=20261011g';
 import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261012a';
 import { htmlRondeBalk } from './evaluatierondes.js?v=20261011g';
+import { onderdeelAan } from './onderdelen.js?v=20261013b';
 import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261011g';
 import { isAfgelast, telMee, soortPill, wedstrijdInfo, htmlAfgelastBanner, afgelastMeldingen, deelTekst } from './wedstrijd-status.js?v=20261012h';
 
@@ -93,8 +94,8 @@ export function htmlHub(updInfo){
       tegel('trainingen',       'Oefenstof',    'training-cones', oefenstofOngelezen || null),
       `<button class="hub-tegel" data-open-tactiek="1">${ico('football-tactics', 40)}<span class="hub-tnaam">Tactiek</span></button>`,
       tegel('videos',           'Video\u2019s', 'training-video'),
-      tegel('trainingsmodule',  'Training maken', 'training-plan'),
-      tegel('seizoensplan',     'Seizoen',      'planning-month'),
+      ...(onderdeelAan('trainingsmodule') ? [tegel('trainingsmodule',  'Training maken', 'training-plan')] : []),
+      ...(onderdeelAan('seizoensplan') ? [tegel('seizoensplan',     'Seizoen',      'planning-month')] : []),
     ]],
     ['Presentie', [
       tegel('presentietraining','Training',     'training-cones'),
