@@ -20,12 +20,13 @@
 import { db, collection, addDoc, getDocs, deleteDoc, doc, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { S, esc, meld } from './state.js?v=20261011g';
 import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } from './config.js?v=20261011g';
-import { aiAan } from './clubconfig.js?v=20261011g';
+import { aiAan } from './clubconfig.js?v=20261013b';
 import { ico } from './icons.js?v=20260922c';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261012e';
 import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG } from './trainingsplanner.js?v=20261012e';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261012e';
 import { positieWeek } from './seizoensplan-logica.js?v=20261012e';
+import { onderdeelAan } from './onderdelen.js?v=20261013b';
 
 const VORMEN = BIBLIOTHEEK.vormen;
 const THEMAS_BESCHIKBAAR = () => new Set(VORMEN.flatMap(v => v.thema));
@@ -65,7 +66,7 @@ function staat(){
 /* Thema en blokfase van de leerlijn voor week t.w. */
 function leerlijnNu(){
   const t = staat(), lv = leeftijdVanCategorie(S.team?.categorie);
-  const plan = S._spPlan && S._spPlan.teamId === S.teamId ? S._spPlan.plan : null;
+  const plan = onderdeelAan('seizoensplan') && S._spPlan && S._spPlan.teamId === S.teamId ? S._spPlan.plan : null;
   if (plan?.blokken?.length){
     const p = positieWeek(plan, Math.max(1, Math.min(plan.trainingsweken || 36, t.week)));
     return { blok: p.blok.nr, thema: p.blok.thema, fase: p.fase, weekInBlok: p.weekInBlok, weken: p.blok.weken, bron: 'seizoensplan' };

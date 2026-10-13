@@ -21,7 +21,8 @@
 import { db, doc, collection, getDoc, getDocs, setDoc, addDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { S, esc, meld } from './state.js?v=20261011g';
 import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261011g';
-import { aiAan } from './clubconfig.js?v=20261011g';
+import { aiAan } from './clubconfig.js?v=20261013b';
+import { onderdeelAan } from './onderdelen.js?v=20261013b';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261012e';
 import { maakPlan, FASE_UITLEG, LEERCURVE } from './trainingsplanner.js?v=20261012e';
 import {
@@ -125,7 +126,8 @@ function weekHtml(plan, weekNr, blok){
   const pos = positieWeek(plan, weekNr);
   const w = plan.kal.filter(x => !x.vrij)[weekNr - 1];
   const trainingen = [];
-  for (let t = 0; t < f.tpw; t++){
+  /* [20261013b] zonder Training maken geen uitgewerkte trainingen in de week */
+  for (let t = 0; t < (onderdeelAan('trainingsmodule') ? f.tpw : 0); t++){
     const p = maakPlan(VORMEN, { categorie: S.team?.categorie, leeftijd: leeftijdVanCategorie(S.team?.categorie), aantalSpelers: aanwezigeSpelers(), niveau: f.niveau, duur: f.duur,
       thema: pos.blok.thema, blokFase: pos.fase, seed: `${S.teamId}:${weekNr}:${t + 1}`, recent: [] });
     trainingen.push(`<div class="tm-sub">Training ${t + 1}</div><ul class="tm-ul">${p.onderdelen.map(o => `<li>${o.minuten}′ ${esc(o.vorm.naam)}</li>`).join('')}</ul>

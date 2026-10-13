@@ -2,7 +2,7 @@
 
 Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
 
-## Stand (bijgewerkt 13-10-2026, versie 20261013a)
+## Stand (bijgewerkt 13-10-2026, versie 20261013b)
 - **Firestore-rules:** per club afgeschermd (teams, trainingen, video's, documenten, berichten via clublidmaatschap). Getest in de emulator: `npm run test:rules` (21 scenario's, laatst 20/20 groen op 11-10; de 21e is in 20261011f toegevoegd). Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.
 - **Cloud Functions:** live in `europe-west1` (Node 22, 2nd gen). Iedere nieuwe callable heeft na de eerste deploy de invoker `allUsers` nodig (`gcloud run services add-iam-policy-binding <naam-in-kleine-letters> …`), anders krijgt de app een CORS-/`internal`-fout.
 - **Tests:** `npm test` (17 suites, laatst 13-10 allemaal groen; nieuw: `vaste-afmeldingen`. Eerst één keer `cd functions && npm install`) en `node tests/toegang.test.js` (aansluiten/uitnodigen, 24 scenario's). Pariteit met ASV'33: `node tools/pariteit.mjs ../cluppieasv33` (10 verwachte verschillen in `bouw-hub.js`, `club.js` en `teams-spelers.js`: het overzetten loopt hier via de server; ASV'33 PR #5 is sinds 20261013a gepoort).
@@ -11,7 +11,8 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 
 ## Open
 **Voor Paul (console/terminal)**
-- [ ] Release 20261013a (branch `vaste-afmelding`): PR reviewen en mergen. Alleen client, geen rules- of functions-deploy voor de vaste afmelding. De bijgewerkte kennisbank (`functions/kennis.js`) gaat mee bij de eerstvolgende deploy van `chatHulp`: `firebase deploy --only functions:chatHulp --project cluppie-ad329`.
+- [ ] Release 20261013b (branch `onderdelen-aan-uit`): PR reviewen en mergen. **Eerst** `npm run test:rules` draaien (Java nodig, kon hier niet), daarna deployen: `firebase deploy --only firestore:rules --project cluppie-ad329` en `firebase deploy --only functions:personaliseerTraining,functions:seizoensVoorstel --project cluppie-ad329`. Zonder die twee deploys kan een clubbeheerder de eindbaas-schakelaar nog omzeilen.
+- [x] Release 20261013a (branch `vaste-afmelding`, gemerged als PR #19): PR reviewen en mergen. Alleen client, geen rules- of functions-deploy voor de vaste afmelding. De bijgewerkte kennisbank (`functions/kennis.js`) gaat mee bij de eerstvolgende deploy van `chatHulp`: `firebase deploy --only functions:chatHulp --project cluppie-ad329`.
 - [ ] In ASV'33 (`cluppieasv33`): niets te doen voor de vaste afmelding (daar komt hij vandaan).
 - [x] Release 20261012a: functions gedeployed en invoker `sportlinkclubinfo` open (12-10-2026).
 - [ ] Na het mergen van PR #12: één keer "Sync nu" bij een club met Sportlink.
@@ -47,6 +48,17 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 ---
 
 # Geschiedenis
+
+## Release 20261013b — Training maken en Seizoensplanning aan/uit (eindbaas, club, team)
+
+Drie lagen, strengste wint: **eindbaas** (platformscherm, per club, harde poort) → **clubbeheerder** (standaard per club, "Onderdelen die standaard aan staan") → **team** (matrix/teaminstellingen).
+
+- **Standaard:** clubs aangemaakt vóór 2026-10-13 behouden beide onderdelen (geen datamigratie: `GRENS_SEC` in `onderdelen.js` en `functions/onderdelen.js`). Nieuwe clubs beginnen **uit** tot de eindbaas ze aanzet. Expliciete waarde in `clubs/{id}.platformModules.{trainingsmodule|seizoensplan}` wint altijd.
+- **Code:** `public/js/onderdelen.js` (`onderdeelAan`, `platformToegestaan`, `doorPlatformUit`); `state.js` is bewust niet aangeraakt. `clubconfig.js` zet `S._clubPlatform`. Tegels, desktopmenu, tab-herstel, thema-check en weekplanning kijken naar `onderdeelAan`.
+- **Server:** `vereisAI(request, rollen, onderdeel)` weigert met `failed-precondition` als de eindbaas het onderdeel uit heeft (`personaliseerTraining`, `seizoensVoorstel`).
+- **Rules:** clubadmin mag `platformModules` niet wijzigen (alleen `isPlatform()`); scenario toegevoegd in `tests/rules.test.mjs`.
+- **Tests:** `tests/onderdelen.test.mjs` (lagen, datumformaten, client = server).
+- **Niet getest:** de emulator-rules en het uiterlijk in een echte browser (platformscherm-knoppen, uitgegrijsde cellen in de matrix). Even bekijken na de deploy.
 
 ## Release 20261013a — vaste afmelding gepoord, thema-check op desktop, handleiding
 - **Vaste afmelding** (ASV'33 PR #5, release 20261012a): een coach meldt een speler in één keer af voor een vaste trainingsdag over meerdere weken. Regels staan op `teams/{id}.vasteAfmeldingen`; er worden geen presentie-records vooruit aangemaakt, zodat opkomst-% en afgelaste trainingen kloppen. Presentievenster, eerstvolgende-kaart, "vooruit afgemeld" en de desktop-trainingen tonen de afmelding met 🔁. Nieuwe module `public/js/vaste-afmeldingen.js` (zonder imports), aanpassingen in `teams-training.js`, `teams.js`, `desktop-schermen.js`, `styles.css`. Test: `tests/vaste-afmeldingen.test.mjs`. Presentie-HTML met een lopende regel is in Node gerenderd; **niet getest in een echte browser** (414×896/desktop): bekijk de knop "Vaste afmelding" en het formulier even op je telefoon.

@@ -10,7 +10,7 @@ import {
   S, $, $$, esc, meld, datumNL, speler, initialen, openModal, sluitModal, toon, isBeheerder
 } from './state.js?v=20261011g';
 import { telGebruik } from './tracker.js?v=20261011g';
-import { voorbeeldTeamcode } from './clubconfig.js?v=20261011g';
+import { voorbeeldTeamcode } from './clubconfig.js?v=20261013b';
 import { ico } from './icons.js?v=20260922c';
 
 import {
@@ -18,7 +18,7 @@ import {
   SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo, isoWeek,
   catLabel,
 } from './config.js?v=20261011g';
-import { htmlKompas } from './teams-leerlijn.js?v=20261011g';
+import { htmlKompas } from './teams-leerlijn.js?v=20261013b';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
 import {
   MAX_WEKEN, weekdagVan, plusDagen, eersteOpDag, regelDatums, actieveRegels, vastOp, vastePrefill, redenVanRegel

@@ -87,7 +87,10 @@ service cloud.firestore {
         && request.resource.data.admins.get(uid(), false) == true
         && request.resource.data.leden.get(uid(), false) == true;
       /* clubadmin of platformbeheerder: alles */
-      allow update: if isClubAdmin(clubId) || isPlatform()
+      allow update: if isPlatform()
+        /* clubadmin mag alles behalve de schakelaars van de eindbaas (platformModules) */
+        || (isClubAdmin(clubId)
+            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['platformModules']))
         /* teamaanmaker registreert een nieuw team bij de club */
         || (echt() && isClubLid(clubId) && wijzigt(['teams']));
       allow delete: if isClubAdmin(clubId) || isPlatform();

@@ -6,8 +6,9 @@
 ==================================================================== */
 import { db, collection, getDocs, doc, getDoc, setDoc, serverTimestamp, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261011g';
-import { logoImgVoorDoc, DISTRICTEN, kalenderId, valideerKalender, ORIGINEEL } from './clubconfig.js?v=20261011g';
+import { logoImgVoorDoc, DISTRICTEN, kalenderId, valideerKalender, ORIGINEEL } from './clubconfig.js?v=20261013b';
 import { STARTLIJST_STAPPEN } from './startlijst.js?v=20261011d';
+import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261013b';
 
 /* [20261011d] Platformdashboard: eigen breed scherm i.p.v. een lijstje.
    Bron: platformstats/overzicht (Cloud Function platformOverzichtNu / nachtelijk), met
@@ -29,6 +30,24 @@ const relatief = iso => {
 };
 const STAP_NAAM = Object.fromEntries(STARTLIJST_STAPPEN.map(s => [s.id, s.titel]));
 const PF = { filter: 'alle', zoek: '' };
+/* [20261013b] eindbaas-keuze per club (Training maken / Seizoensplanning): { clubId: { platformModules, gemaakt } } */
+let PM = null;
+async function leesPlatformModules(){
+  try {
+    const cs = await getDocs(collection(db, 'clubs')); const m = {};
+    cs.docs.forEach(d => { const c = d.data(); m[d.id] = { platformModules: c.platformModules || {}, gemaakt: c.gemaakt || null }; });
+    return m;
+  } catch (e) { console.warn('[platform] onderdelen lezen mislukt', e.code || e.message); return null; }
+}
+async function zetPlatformModule(clubId, sleutel, waarde){
+  await setDoc(doc(db, 'clubs', clubId), { platformModules: { [sleutel]: waarde } }, { merge: true });
+  PM[clubId] = { ...PM[clubId], platformModules: { ...(PM[clubId]?.platformModules || {}), [sleutel]: waarde } };
+}
+function onderdelenRij(k){
+  if (!PM || !PM[k.id]) return '';
+  return `<div class="pf-onderdelen">${BEHEERD.map(sl => { const aan = platformToegestaan(PM[k.id], sl);
+    return `<button type="button" class="pf-onderdeel ${aan ? 'aan' : ''}" data-pf-od="${esc(k.id)}|${sl}" aria-pressed="${aan}" aria-label="${esc(ONDERDEEL_NAMEN[sl])} ${aan ? 'aan' : 'uit'} voor ${esc(k.naam)}">${esc(ONDERDEEL_NAMEN[sl])}: ${aan ? 'aan' : 'uit'}</button>`; }).join('')}</div>`;
+}
 
 async function leesOverzicht(){
   try { const s = await getDoc(doc(db, 'platformstats', 'overzicht')); return s.exists() ? s.data() : null; }
@@ -64,6 +83,7 @@ export async function openPlatform(){
     }
   }
   const aanmeldingen = await leesAanmeldingen();
+  PM = await leesPlatformModules();
   tekenPlatform(o, aanmeldingen);
 }
 
@@ -98,7 +118,7 @@ function clubRij(k){
       ${k.wachtend ? `<span class="club-badge">${k.wachtend} wacht${k.wachtend === 1 ? '' : 'en'}</span>` : ''}
       <span class="pijl">›</span>
     </button>
-    <div class="pf-chips">${chips.join('')}</div>${signalen}${open}
+    <div class="pf-chips">${chips.join('')}</div>${onderdelenRij(k)}${signalen}${open}
   </div>`;
 }
 
@@ -158,16 +178,22 @@ function tekenPlatform(o, aanmeldingen){
     const z = document.getElementById('pfZoek'); if (z){ z.focus(); try { z.setSelectionRange(pos, pos); } catch (e) {} }
   };
   document.getElementById('pfKalenders')?.addEventListener('click', () => openKalenders());
-  document.getElementById('pfNieuweClub')?.addEventListener('click', () => import('./club.js?v=20261013a').then(m => m.modalNieuwClub()));
+  document.getElementById('pfNieuweClub')?.addEventListener('click', () => import('./club.js?v=20261013b').then(m => m.modalNieuwClub()));
   document.getElementById('pfVernieuw')?.addEventListener('click', async e => {
     const k = e.currentTarget; k.disabled = true; k.textContent = 'Bezig…';
     try { await httpsCallable(functions, 'platformOverzichtNu')({}); meld('Cijfers bijgewerkt'); openPlatform(); }
     catch (x){ k.disabled = false; k.textContent = 'Vernieuwen'; meld('Vernieuwen mislukt: ' + (x.code === 'functions/not-found' ? 'functie nog niet gedeployed' : (x.message || x.code))); }
   });
+  document.querySelectorAll('[data-pf-od]').forEach(b => b.onclick = async () => {
+    const [clubId, sl] = b.dataset.pfOd.split('|'), nieuw = !platformToegestaan(PM[clubId], sl);
+    b.disabled = true;
+    try { await zetPlatformModule(clubId, sl, nieuw); meld(`${ONDERDEEL_NAMEN[sl]} ${nieuw ? 'aan' : 'uit'} voor deze club`); opnieuw(); }
+    catch (x){ b.disabled = false; meld('Opslaan mislukt: ' + (x.code === 'permission-denied' ? 'rules nog niet gedeployed?' : (x.message || x.code))); }
+  });
   document.querySelectorAll('[data-platform-club]').forEach(b => b.onclick = () => {
     const id = b.dataset.platformClub;
     sluitModal();
-    import('./club.js?v=20261013a').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
+    import('./club.js?v=20261013b').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
   });
   document.querySelectorAll('[data-aanmeld-ok], [data-aanmeld-af]').forEach(b => b.onclick = async () => {
     const id = b.dataset.aanmeldOk || b.dataset.aanmeldAf, goed = !!b.dataset.aanmeldOk;
