@@ -2,7 +2,7 @@
 
 Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
 
-## Stand (bijgewerkt 13-10-2026, versie 20261013b)
+## Stand (bijgewerkt 14-10-2026, versie 20261014a)
 - **Firestore-rules:** per club afgeschermd (teams, trainingen, video's, documenten, berichten via clublidmaatschap). Getest in de emulator: `npm run test:rules` (21 scenario's, laatst 20/20 groen op 11-10; de 21e is in 20261011f toegevoegd). Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.
 - **Cloud Functions:** live in `europe-west1` (Node 22, 2nd gen). Iedere nieuwe callable heeft na de eerste deploy de invoker `allUsers` nodig (`gcloud run services add-iam-policy-binding <naam-in-kleine-letters> …`), anders krijgt de app een CORS-/`internal`-fout.
 - **Tests:** `npm test` (17 suites, laatst 13-10 allemaal groen; nieuw: `vaste-afmeldingen`. Eerst één keer `cd functions && npm install`) en `node tests/toegang.test.js` (aansluiten/uitnodigen, 24 scenario's). Pariteit met ASV'33: `node tools/pariteit.mjs ../cluppieasv33` (10 verwachte verschillen in `bouw-hub.js`, `club.js` en `teams-spelers.js`: het overzetten loopt hier via de server; ASV'33 PR #5 is sinds 20261013a gepoort).
@@ -22,6 +22,10 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - [ ] App Check: na een paar dagen in Console → App Check → APIs kijken; bij ~100% geldige verzoeken Enforce aan voor Firestore, Storage en Functions.
 - [ ] AI per club aanzetten zodra de Anthropic-limiet het toelaat (eind oktober).
 - [ ] E-mail: extensie *Trigger Email from Firestore* (collectie `mail`) installeren; zonder extensie gaan meldingen van clubaanmeldingen niet per mail.
+
+**Voor Paul — Training maken v2 (release 20261014a, branch `trainingen-4-vormen`)**
+- [ ] PR reviewen en mergen. Alleen client (geen rules- of functions-deploy). Max 4 vormen (warming-up, 2 kern, partij), vorm ≤15 min (partij 20 met rust), duur 45/60/75, bibliotheek 141 vormen O6–O19, nieuw scherm met tabs Uitvoering/Coach/Differentiatie/Spelvormen. Oude bewaarde trainingen (90 min) worden bij openen opnieuw samengesteld.
+- [ ] Praktijktest met een mini-team (O7), een O11 en een O15+: veldmaten zijn aannames; dunne cellen staan bij Bouwen.
 
 **Voor Paul — Training maken en Seizoen (release 20261012e)**
 - [ ] De code staat op `main`. Nog te doen (als dat niet gebeurd is): `firebase deploy --only functions:personaliseerTraining,functions:seizoensVoorstel` en voor beide de invoker `allUsers` openzetten (zie `functions/LEESMIJ-deploy.md`).

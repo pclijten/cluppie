@@ -6,7 +6,7 @@
    ========================================================================== */
 
 import { LEERCURVE } from './config.js?v=20261011g';
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261012e';
+import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261014a';
 export { LEERCURVE };
 
 /* ───────────── Trainingsopbouw ───────────── */
