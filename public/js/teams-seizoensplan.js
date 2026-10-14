@@ -23,12 +23,12 @@ import { S, esc, meld } from './state.js?v=20261011g';
 import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261011g';
 import { aiAan } from './clubconfig.js?v=20261013b';
 import { onderdeelAan } from './onderdelen.js?v=20261013b';
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261012e';
-import { maakPlan, FASE_UITLEG, LEERCURVE } from './trainingsplanner.js?v=20261012e';
+import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261014a';
+import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261014a';
 import {
   MODELLEN, ACCENTEN, maakSeizoensplan, weekKalender, herreken, standaardVrij, maandagVan, beschikbareThemas, themaVolgorde,
   valideerBlokken, positieOp, positieWeek, teamSignalen, stelBijsturingVoor, pasVoorstelToe,
-} from './seizoensplan-logica.js?v=20261012e';
+} from './seizoensplan-logica.js?v=20261014a';
 
 const VORMEN = BIBLIOTHEEK.vormen;
 const KLEUREN = ['var(--accent)', '#4a8fe0', '#e0a526', '#3fb27f', '#a855f7', '#f08a24', '#14b8a6', '#ec4899'];
@@ -44,7 +44,7 @@ function aanwezigeSpelers(){ const n = (S.spelers || []).filter(p => p && !p.gas
 function standaardForm(){
   const y = seizoenStartJaar(), lv = leeftijdVanCategorie(S.team?.categorie);
   const start = maandagVan(vandaagIso() > `${y}-08-24` ? vandaagIso() : `${y}-08-24`), eind = `${y + 1}-06-06`;
-  return { model: 'leercurve', start, eind, vrij: standaardVrij(start, eind), accent: [], tpw: 2, duur: lv <= 9 ? 60 : lv <= 12 ? 75 : 90, niveau: 2, bijsturen: 'voorstel' };
+  return { model: 'leercurve', start, eind, vrij: standaardVrij(start, eind), accent: [], tpw: 2, duur: lv <= 8 ? 45 : lv <= 11 ? 60 : 75, niveau: 2, bijsturen: 'voorstel' };
 }
 function staat(){
   if (!S._sp || S._sp.teamId !== S.teamId){
@@ -107,7 +107,7 @@ function htmlOpzet(){
       <div class="tm-rij"><span class="tm-l">Start</span><input type="date" class="tm-select" id="spStart" value="${esc(f.start)}"></div>
       <div class="tm-rij"><span class="tm-l">Einde</span><input type="date" class="tm-select" id="spEind" value="${esc(f.eind)}"></div>
       <div class="tm-rij"><span class="tm-l">Trainingen per week</span><div class="tm-stap"><button data-sp-tpw="-1" aria-label="Minder">−</button><b>${f.tpw}</b><button data-sp-tpw="1" aria-label="Meer">+</button></div></div>
-      <div class="tm-rij"><span class="tm-l">Duur</span><div class="tm-chips">${[60, 75, 90].map(d => chip('data-sp-duur', d, d + '′', f.duur === d)).join('')}</div></div>
+      <div class="tm-rij"><span class="tm-l">Duur</span><div class="tm-chips">${[45, 60, 75].map(d => chip('data-sp-duur', d, d + '′', kiesDuur(f.duur) === d)).join('')}</div></div>
       <div class="tm-rij"><span class="tm-l">Niveau van het team</span><div class="tm-chips">${['Basis', 'Midden', 'Hoog'].map((x, i) => chip('data-sp-niv', i + 1, x, f.niveau === i + 1)).join('')}</div></div>
       <div class="tm-rij" style="align-items:flex-start"><span class="tm-l">Vrije weken</span>
         <div class="tm-chips">${(f.vrij || []).map(m => `<button class="tm-chip aan" data-sp-vrijweg="${esc(m)}" title="Weer meetellen">wk ${dk(m)} ✕</button>`).join('') || '<span class="tm-info">geen</span>'}</div></div>
