@@ -1,7 +1,7 @@
 // Controle van de trainingsbibliotheek: schema, tekeningen, dekking en een brede proefrun van de planner.
 // Draaien: node --no-warnings --import ./tests/hulp/stub-loader.mjs tests/trainingsplanner.test.mjs
 const { BIBLIOTHEEK } = await import('../public/js/trainingsbibliotheek.js');
-const { LEERCURVE, RUIMTE_PER_SPELER, maakPlan, jaarlijn, blokVoorWeek } = await import('../public/js/trainingsplanner.js');
+const { LEERCURVE, RUIMTE_PER_SPELER, maakPlan, jaarlijn, blokVoorWeek, OPBOUW, DUREN, kiesDuur, rondeIndeling, MAX_VORM, MAX_PARTIJ } = await import('../public/js/trainingsplanner.js');
 const VORMEN = BIBLIOTHEEK.vormen, THEMAREGELS = BIBLIOTHEEK.themaregels;
 
 const fouten = [], waarschuwingen = [];
@@ -31,6 +31,17 @@ for (const v of VORMEN){
   for (const k of ['naam', 'doel']) if (!v[k] || typeof v[k] !== 'string') fout(id, `${k} ontbreekt`);
   for (const k of ['organisatie', 'regels', 'coachpunten', 'coachvragen', 'makkelijker', 'moeilijker'])
     if (!Array.isArray(v[k]) || !v[k].length || v[k].some(x => typeof x !== 'string' || !x.trim())) fout(id, `${k} leeg of ongeldig`);
+  if (!v.uitleg || typeof v.uitleg !== 'string' || v.uitleg.length < 30) fout(id, 'uitleg voor de spelers ontbreekt');
+  if (!v.soort || typeof v.soort !== 'string') fout(id, 'soort ontbreekt');
+  if (!Array.isArray(v.letOp) || !v.letOp.length || v.letOp.some(x => typeof x !== 'string' || !x.trim())) fout(id, 'letOp ontbreekt');
+  if (!Array.isArray(v.varianten) || v.varianten.length < 2 || v.varianten.some(x => !x?.naam || !x?.uitleg)) fout(id, 'minstens 2 spelvorm-varianten met naam en uitleg nodig');
+  if (v.fase !== 'afsluiting'){
+    if ((v.coachpunten || []).length < 3) fout(id, 'minstens 3 coachpunten');
+    if ((v.coachvragen || []).length < 2) fout(id, 'minstens 2 coachvragen');
+    if ((v.makkelijker || []).length < 2 || (v.moeilijker || []).length < 2) fout(id, 'differentiatie: minstens 2 makkelijker en 2 moeilijker');
+  }
+  if (v.fase === 'warming-up' && v.duur.ronde * v.duur.rondes[0] > 12) fout(id, 'warming-up te lang voor een kleine spelvorm');
+  if (v.fase !== 'partijspel' && v.duur.ronde > MAX_VORM) fout(id, 'ronde langer dan 15 minuten');
   if (!v.materiaal || ['pionnen', 'ballen', 'hesjes', 'doeltjes'].some(k => typeof v.materiaal[k] !== 'number')) fout(id, 'materiaal onvolledig');
   if (v.wachtrij) fout(id, 'wachtrij niet toegestaan in de startset');
   /* voetbalecht: moet minstens één doel/doeltje hebben of een kasteel/punten-spel */
@@ -61,17 +72,17 @@ for (const v of VORMEN){
 }
 
 /* 4. themaregels voor alle thema's ≤ 13 */
-for (const t of LEERCURVE.filter(t => t.vanaf <= 13)) if (!THEMAREGELS[t.thema]) fout('themaregels', `ontbreekt voor ${t.thema}`);
+for (const t of LEERCURVE) if (!THEMAREGELS[t.thema]) fout('themaregels', `ontbreekt voor ${t.thema}`);
 
 /* 5. dekking: per thema en leeftijd minstens 1 kernvorm; per leeftijd een partijspel */
 const dekking = [];
-const LEEFTIJDEN = [8, 9, 10, 11, 12, 13];
-for (const t of LEERCURVE.filter(t => t.vanaf <= 13)){
+const LEEFTIJDEN = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+for (const t of LEERCURVE){
   const rij = { thema: t.thema };
   for (const l of LEEFTIJDEN){
     if (l < t.vanaf){ rij[l] = '–'; continue; }
     const n = VORMEN.filter(v => ['positiespel', 'spelvorm'].includes(v.fase) && v.thema.includes(t.thema) && l >= v.leeftijd[0] && l <= v.leeftijd[1]).length;
-    rij[l] = n; if (n === 0) fout('dekking', `${t.thema} heeft geen kernvorm voor O${l}`); else if (n === 1) waarsch('dekking', `${t.thema} O${l}: maar 1 kernvorm (geen alternatief bij wisselen)`);
+    rij[l] = n; if (n < 3) fout('dekking', `${t.thema} heeft maar ${n} kernvorm(en) voor O${l} (minimaal 3 nodig)`);
   }
   dekking.push(rij);
 }
@@ -79,28 +90,32 @@ for (const l of LEEFTIJDEN){
   const n = VORMEN.filter(v => v.fase === 'partijspel' && l >= v.leeftijd[0] && l <= v.leeftijd[1]).length;
   const w = VORMEN.filter(v => v.fase === 'warming-up' && l >= v.leeftijd[0] && l <= v.leeftijd[1]).length;
   const a = VORMEN.filter(v => v.fase === 'afsluiting' && l >= v.leeftijd[0] && l <= v.leeftijd[1]).length;
-  if (!n) fout('dekking', `geen partijspel voor O${l}`); if (!w) fout('dekking', `geen warming-up voor O${l}`); if (!a) fout('dekking', `geen afsluiting voor O${l}`);
+  if (n < 2) fout('dekking', `minder dan 2 partijspelen voor O${l}`); if (w < 4) fout('dekking', `minder dan 4 warming-up spelvormen voor O${l} (${w})`); if (!a) fout('dekking', `geen afsluiting voor O${l}`);
 }
 
-/* 6. brede proefrun van de planner */
+/* 6. brede proefrun van de planner: max 4 vormen, elke vorm ≤ 15 min (partij ≤ 20 met onderbreking) */
 let runs = 0, mis = 0; const missers = {};
-const duurVoor = (l) => (l <= 9 ? 60 : l <= 12 ? 75 : 90);
-for (const l of LEEFTIJDEN) for (const N of [8, 10, 12, 14, 16, 20]) for (const niveau of [1, 2, 3]){
+const duurVoor = (l) => (l <= 8 ? 45 : l <= 11 ? 60 : 75);
+const aantallen = (l) => (l <= 7 ? [4, 6, 8, 10, 12] : l <= 10 ? [6, 8, 10, 12, 14, 16] : l <= 12 ? [8, 10, 12, 14, 16, 18] : [14, 16, 18, 20, 22]);
+for (const l of LEEFTIJDEN) for (const N of aantallen(l)) for (const niveau of [1, 2, 3]) for (const dur of (l === 12 ? DUREN : [duurVoor(l)])){
   for (const t of LEERCURVE.filter(t => t.vanaf <= l)) for (const blokFase of ['Ontdek', 'Pas toe']){
-    if (l >= 13 && N < 14) continue;               /* O13 speelt 11 tegen 11 */
-    const p = maakPlan(VORMEN, { categorie: 'JO' + l, aantalSpelers: N, niveau, duur: duurVoor(l), thema: t.thema, blokFase, seed: runs, ruimteM2: l >= 13 ? 6000 : 3500 });
+    const p = maakPlan(VORMEN, { categorie: (l >= 7 ? 'JO' : 'JO') + l, aantalSpelers: N, niveau, duur: dur, thema: t.thema, blokFase, seed: runs, ruimteM2: l >= 13 ? 6000 : 3500 });
     runs++;
     const slecht = p.controle.checks.filter(c => !c.ok);
-    if (p.onderdelen.length < 5 || slecht.length){
-      mis++; const sl = p.onderdelen.length < 5 ? ['onvolledig: ' + p.meldingen[0]] : slecht.map(c => c.id);
+    if (p.onderdelen.length !== 4 || !p.afsluiting || slecht.length){
+      mis++; const sl = p.onderdelen.length !== 4 ? ['onvolledig: ' + (p.meldingen[0] || '?')] : slecht.map(c => c.id);
       for (const s of sl) missers[s.split(':')[0] + ` (O${l})`] = (missers[s.split(':')[0] + ` (O${l})`] || 0) + 1;
     }
   }
 }
+/* duur-aliassen en rondes */
+if (kiesDuur(90) !== 75 || kiesDuur(50) !== 45 || kiesDuur(60) !== 60) fout('duur', 'kiesDuur klopt niet');
+const lang = VORMEN.find(v => v.fase === 'partijspel'); const ri = rondeIndeling(lang, 20);
+if (ri.rondes < 2 || ri.rust < 1 || ri.ronde > MAX_VORM) fout('rondeIndeling', 'partijspel van 20 min heeft geen onderbreking');
 
 /* 7. jaarlijn */
 const beschik = new Set(VORMEN.flatMap(v => v.thema));
-for (const [bouw, l] of [['onder', 9], ['midden', 10], ['midden', 12], ['boven', 13]]){
+for (const [bouw, l] of [['onder', 7], ['onder', 9], ['midden', 10], ['midden', 12], ['boven', 13], ['boven', 16]]){
   const j = jaarlijn({ bouw, leeftijd: l, weken: 36, beschikbaar: beschik });
   const som = j.blokken.reduce((a, b) => a + b.weken, 0);
   if (som !== 36) fout('jaarlijn', `${bouw} O${l}: ${som} weken i.p.v. 36`);
