@@ -184,7 +184,13 @@ async function claude({ apiKey, system, messages, maxTokens = 700, temperature =
   if (!res.ok){
     const tekst = await res.text().catch(() => '');
     console.error('[claude] API-fout', res.status, tekst.slice(0, 500));
-    throw new HttpsError('unavailable', 'Het taalmodel is even niet bereikbaar.');
+    // 429 en 5xx zijn tijdelijk: 'unavailable'. Een 4xx (400/401/403/404) betekent dat
+    // ónze aanvraag of sleutel is afgewezen: dat is geen storing van het model en
+    // hoort niet als 'niet bereikbaar' (503) bij de app terecht te komen.
+    if (res.status === 429 || res.status >= 500){
+      throw new HttpsError('unavailable', 'Het taalmodel is even niet bereikbaar.');
+    }
+    throw new HttpsError('internal', 'Het AI-verzoek is afgewezen door het taalmodel. Dit ligt aan de instelling van de app, niet aan jouw invoer.');
   }
   const data = await res.json();
   const tekst = (data.content || [])
