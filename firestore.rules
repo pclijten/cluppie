@@ -30,6 +30,10 @@ service cloud.firestore {
       return echt() && clubBestaat(c) && club(c).get('bouwCoordinatoren', {}).get(bouw, {}).get(uid(), false) == true;
     }
 
+    /* hoofd jeugdopleiding (club-breed seizoensplan): veld clubs/{id}.hoofdJeugd.{uid} = true; alleen de clubadmin zet dat */
+    function isHoofdJeugd(c) { return echt() && clubBestaat(c) && club(c).get('hoofdJeugd', {}).get(uid(), false) == true; }
+    function isJeugdPlanner(c) { return isClubAdmin(c) || isHoofdJeugd(c); }
+
     /* ---------- team-rollen ---------- */
     function team(t) { return get(/databases/$(database)/documents/teams/$(t)).data; }
     function teamBestaat(t) { return t != null && exists(/databases/$(database)/documents/teams/$(t)); }
@@ -113,6 +117,30 @@ service cloud.firestore {
         allow read: if isClubLid(clubId);
         allow write: if isClubAdmin(clubId) || isPlatform();
       }
+      /* seizoensplan jeugd (club-breed of per bouw). Lezen: clubleden. Plan maken/wijzigen: clubadmin,
+         hoofd jeugdopleiding, of de bouwcoördinator voor een eigen bouw (onder/midden/boven, nooit 'club').
+         Een bouwcoördinator mag de bouw van een plan niet wijzigen. */
+      match /seizoensplannen/{planId} {
+        allow read: if isClubLid(clubId) || isClubAdmin(clubId);
+        allow create: if isJeugdPlanner(clubId)
+          || (echt() && request.resource.data.get('bouw', '_') in ['onder', 'midden', 'boven']
+              && isCoordinatorVanBouw(clubId, request.resource.data.get('bouw', '_')));
+        allow update: if isJeugdPlanner(clubId)
+          || (echt() && resource.data.get('bouw', '_') in ['onder', 'midden', 'boven']
+              && isCoordinatorVanBouw(clubId, resource.data.get('bouw', '_'))
+              && request.resource.data.get('bouw', '_') == resource.data.get('bouw', '_'));
+        allow delete: if isJeugdPlanner(clubId)
+          || (echt() && resource.data.get('bouw', '_') in ['onder', 'midden', 'boven']
+              && isCoordinatorVanBouw(clubId, resource.data.get('bouw', '_')));
+        /* toewijzing per team: schrijven door de planner, of de bouwcoördinator voor een team in zijn bouw */
+        match /toewijzingen/{teamId} {
+          allow read: if isClubLid(clubId) || isClubAdmin(clubId);
+          allow write: if isJeugdPlanner(clubId)
+            || (echt() && teamBestaat(teamId) && teamClub(teamId) == clubId
+                && isCoordinatorVanBouw(clubId, team(teamId).get('bouw', '_')));
+        }
+      }
+
       /* Sportlink-gegevens: ALLEEN clubadmins (clientId + teamkoppelingen).
          Cloud Functions lezen/schrijven hier via Admin SDK. */
       match /geheim/{id} {
