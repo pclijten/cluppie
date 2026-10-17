@@ -399,7 +399,7 @@ export function htmlTeamTrainingen(){
     const perWeek = new Map();   // key -> {weekNr, jaar, items[]}
     for (const t of pdfs){
       const wn = weekNrUit(t.week);
-      const jaar = wn ? jaarVoorWeek(wn, t.gemaakt?.seconds) : null;
+      const jaar = wn ? (t.seizoenJaar || jaarVoorWeek(wn, t.gemaakt?.seconds)) : null;
       const key = wn ? `${jaar}-${String(wn).padStart(2,'0')}` : 'onbekend';
       if (!perWeek.has(key)) perWeek.set(key, {weekNr:wn, jaar, items:[]});
       perWeek.get(key).items.push(t);
