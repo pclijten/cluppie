@@ -22,6 +22,7 @@ import { db, doc, collection, getDoc, getDocs, setDoc, addDoc, functions, httpsC
 import { S, esc, meld } from './state.js?v=20261011g';
 import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261011g';
 import { aiAan } from './clubconfig.js?v=20261013b';
+import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261017a';
 import { onderdeelAan } from './onderdelen.js?v=20261013b';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261014a';
 import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261014a';
@@ -220,8 +221,15 @@ async function bewaarPlan(plan){
   try {
     const d = naarDoc(plan);
     await setDoc(planRef(), { ...d, ...(s.plan ? {} : { gemaaktMs: Date.now() }) }, { merge: true });
-    s.plan = plan; deelS(); return true;
+    s.plan = plan; deelS();
   } catch (e){ meld('Opslaan mislukt: ' + (e.code || e.message)); return false; }
+  /* de seizoenstrainingen naar het tabblad Trainingen; een mislukking hier houdt het plan wel bewaard */
+  try {
+    const r = await zetSeizoenTrainingen({ plan, team: { id: S.teamId, categorie: S.team?.categorie }, clubId: S.team?.club || S.clubId,
+      planId: `team_${S.teamId}_${seizoenSleutel()}`, planVersie: 1, vormen: VORMEN });
+    if (r.meldingen?.length) console.warn('[seizoensplan] trainingen:', r.meldingen.slice(0, 5));
+  } catch (e){ meld('Plan bewaard, maar de trainingen zijn niet op Trainingen gezet: ' + (e.code || e.message)); return false; }
+  return true;
 }
 async function maakConcept(metAI){
   const s = staat();
