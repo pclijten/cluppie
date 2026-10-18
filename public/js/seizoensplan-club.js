@@ -104,35 +104,47 @@ function tekeningVan(od){
 /* Alle trainingsdocumenten voor één team uit één seizoensplan.
    p = { plan (uit seizoensplan-logica: kal, blokken, params), team, clubId, planId, planVersie, vormen (bibliotheek), aantalSpelers }
    Geeft { docs:[{id, ...}], meldingen:[] }. Elke trainingsweek krijgt params.tpw trainingen. */
-export function trainingDocs({ plan, team, clubId, planId, planVersie, vormen, aantalSpelers = 12 }){
+/* [20261018a] Alle trainingen van een seizoensplan voor één team, in volgorde, met de rotatie over
+   de weken heen (recent = vorm-id's van de laatste 10 onderdelen). Gedeeld door de opslag
+   (trainingDocs) en het teamscherm, zodat wat op het scherm staat precies is wat op Trainingen komt.
+   Geeft [{ w, pos, t, p }]: w = trainingsweek uit plan.kal, t = nummer binnen de week. */
+export function trainingenVanPlan({ plan, team, vormen, planId, aantalSpelers = 12 }){
   const f = plan.params || {};
-  const teamId = team.id;
   const lv = leeftijdVanCategorie(team.categorie);
-  const meldingen = [];
-  const docs = [];
-  let recent = [];                                      /* vorm-id's van de laatste trainingen, meest recent eerst */
-  const weken = plan.kal.filter(w => !w.vrij);
-  for (const w of weken){
+  const uit = [];
+  let recent = [];
+  for (const w of plan.kal.filter(x => !x.vrij)){
     const pos = positieWeek(plan, w.nr);
-    const { weekNr, jaar } = isoWeekVan(w.iso);
     for (let t = 1; t <= (f.tpw || 2); t++){
       const p = maakPlan(vormen, {
         categorie: team.categorie, leeftijd: lv, aantalSpelers, niveau: f.niveau || 2, duur: f.duur || 60,
-        thema: pos.blok.thema, blokFase: pos.fase, seed: `${teamId}:${planId}:${w.nr}:${t}`, recent,
+        thema: pos.blok.thema, blokFase: pos.fase, seed: `${team.id}:${planId}:${w.nr}:${t}`, recent,
       });
-      if (p.meldingen?.length) meldingen.push(`week ${w.nr} training ${t}: ${p.meldingen.join(' ')}`);
       recent = [...p.onderdelen.map(o => o.vormId), ...recent].slice(0, 10);
-      const id = `sp_${planId}_${teamId}_${w.nr}_${t}`.replace(/[^A-Za-z0-9_-]/g, '_');
-      docs.push({
-        id, club: clubId, teams: [teamId],
-        week: `Week ${weekNr}`, seizoenJaar: jaar, seizoensWeek: w.nr,
-        titel: `Seizoensplan · week ${w.nr} · training ${t} · ${pos.blok.thema}`,
-        bron: 'seizoensplan', seizoensplanId: planId, planVersie: planVersie || 1,
-        thema: pos.blok.thema, fase: pos.fase, duur: p.profiel?.duur || f.duur || 60,
-        url: '', diagramUrls: {},
-        oefeningen: [...p.onderdelen.map(oefeningVan), ...(p.afsluiting ? [oefeningVan(p.afsluiting)] : [])],
-      });
+      uit.push({ w, pos, t, p });
     }
+  }
+  return uit;
+}
+
+export function trainingDocs({ plan, team, clubId, planId, planVersie, vormen, aantalSpelers = 12 }){
+  const f = plan.params || {};
+  const teamId = team.id;
+  const meldingen = [];
+  const docs = [];
+  for (const { w, pos, t, p } of trainingenVanPlan({ plan, team, vormen, planId, aantalSpelers })){
+    const { weekNr, jaar } = isoWeekVan(w.iso);
+    if (p.meldingen?.length) meldingen.push(`week ${w.nr} training ${t}: ${p.meldingen.join(' ')}`);
+    const id = `sp_${planId}_${teamId}_${w.nr}_${t}`.replace(/[^A-Za-z0-9_-]/g, '_');
+    docs.push({
+      id, club: clubId, teams: [teamId],
+      week: `Week ${weekNr}`, seizoenJaar: jaar, seizoensWeek: w.nr,
+      titel: `Seizoensplan · week ${w.nr} · training ${t} · ${pos.blok.thema}`,
+      bron: 'seizoensplan', seizoensplanId: planId, planVersie: planVersie || 1,
+      thema: pos.blok.thema, fase: pos.fase, duur: p.profiel?.duur || f.duur || 60,
+      url: '', diagramUrls: {},
+      oefeningen: [...p.onderdelen.map(oefeningVan), ...(p.afsluiting ? [oefeningVan(p.afsluiting)] : [])],
+    });
   }
   return { docs, meldingen };
 }

@@ -84,6 +84,17 @@ ok('de seizoensweken lopen door zonder gaten', () => {
   assert.deepEqual(weken, weken.map((_, i) => i + 1));
 });
 
+/* rotatie: opeenvolgende trainingen delen zelden een vorm; scherm en opslag gebruiken dezelfde reeks */
+ok('opeenvolgende trainingen delen zelden een vorm (rotatie over de weken)', () => {
+  const rij = C.trainingenVanPlan({ plan, team, vormen, planId: 'plan-1', aantalSpelers: 12 });
+  let gedeeld = 0;
+  for (let i = 1; i < rij.length; i++){
+    const vorige = rij[i - 1].p.onderdelen.map(o => o.vormId);
+    if (rij[i].p.onderdelen.some(o => vorige.includes(o.vormId))) gedeeld++;
+  }
+  assert.ok(gedeeld <= 5, `te veel herhaling: ${gedeeld} van ${rij.length - 1} paren delen een vorm`);
+});
+
 /* bezette weken en botsingen */
 ok('handmatige trainingen tellen mee als bezette week, seizoenstrainingen niet', () => {
   const bezet = C.bezetteWeken([
