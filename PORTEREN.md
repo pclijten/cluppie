@@ -21,7 +21,7 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - [ ] Rond 18-10: tijdelijke database weg (`gcloud firestore databases delete --database=cluppie-overzet --project=cluppie-ad329`) en bestanden in de oude bucket verwijderen.
 - [ ] App Check: na een paar dagen in Console → App Check → APIs kijken; bij ~100% geldige verzoeken Enforce aan voor Firestore, Storage en Functions.
 - [ ] AI per club aanzetten zodra de Anthropic-limiet het toelaat (eind oktober).
-- [ ] E-mail: extensie *Trigger Email from Firestore* (collectie `mail`) installeren; zonder extensie gaan meldingen van clubaanmeldingen niet per mail.
+- [ ] E-mail: eigen function `verstuurMail` (`functions/mail.js`) in gebruik nemen: `firebase functions:secrets:set SMTP_WACHTWOORD`, daarna `firebase deploy --only functions:verstuurMail` (vraagt SMTP_HOST, poort, gebruiker en afzender). Testen met een document in de collectie `mail` (Console → Firestore: `to`, `message.subject`, `message.text`) en kijken of `delivery.state` op SUCCESS komt. De Trigger Email-extensie is dus niet nodig (Firebase Extensions wordt op 31-03-2027 stopgezet).
 
 **Voor Paul — Training maken v2 (release 20261014a, branch `trainingen-4-vormen`)**
 - [ ] PR reviewen en mergen. Alleen client (geen rules- of functions-deploy). Max 4 vormen (warming-up, 2 kern, partij), vorm ≤15 min (partij 20 met rust), duur 45/60/75, bibliotheek 141 vormen O6–O19, nieuw scherm met tabs Uitvoering/Coach/Differentiatie/Spelvormen. Oude bewaarde trainingen (90 min) worden bij openen opnieuw samengesteld.
@@ -52,6 +52,14 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 ---
 
 # Geschiedenis
+
+## Release 20261018a — eigen mailfunctie (vervangt de Trigger Email-extensie)
+- `functions/mail.js`: `verstuurMail` (trigger op `mail/{id}`, `europe-west1`) verstuurt elk nieuw document via SMTP (nodemailer). Zelfde documentvorm als de extensie (`to`, `message.subject/text`), dus `aanmelding.js` bleef ongewijzigd. Resultaat in het document: `delivery.state` PROCESSING → SUCCESS of ERROR (met `error`).
+- Veilig: afzender komt altijd uit de instelling `MAIL_VAN` (nooit uit het document), max. 10 ontvangers, adressen gecontroleerd, regeleinden uit het onderwerp (geen header-injectie), tekst max. 20.000 tekens, één keer claimen via een transactie (geen dubbele mails bij een dubbele gebeurtenis), geen automatische herhaling.
+- Instellingen bij de eerste deploy: `SMTP_HOST`, `SMTP_PORT` (465), `SMTP_GEBRUIKER` (paul@cluppie.io), `MAIL_VAN`. Geheim: `SMTP_WACHTWOORD` (Secret Manager). Geen invoker nodig (trigger, geen callable).
+- Test: `node tests/mail.test.js` (24 controles, in `npm test`); `tests/sportlink-sync.test.js` kent nu `defineString`.
+- Let op: `PLATFORM_EMAIL` in `functions/aanmelding.js` staat nog op het oude adres.
+
 
 ## Release 20261013b — Training maken en Seizoensplanning aan/uit (eindbaas, club, team)
 

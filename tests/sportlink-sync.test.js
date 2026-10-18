@@ -7,7 +7,7 @@ Module._load = function(r, ...a){
   if (r === 'firebase-functions/v2/https') return { onCall: (o, f) => f, onRequest: (o, f) => f, HttpsError };
   if (r === 'firebase-functions/v2/scheduler') return { onSchedule: (o, f) => f };
   if (r === 'firebase-functions/v2/firestore') return { onDocumentCreated: (o, f) => f, onDocumentWritten: (o, f) => f };
-  if (r === 'firebase-functions/params') return { defineSecret: () => ({ value: () => '' }) };
+  if (r === 'firebase-functions/params') return { defineSecret: () => ({ value: () => '' }), defineString: (n, o) => ({ value: () => (o && o.default) || '' }) };
   if (r === 'firebase-functions') return { logger: console };
   if (r === 'firebase-functions/logger') return console;
   if (r === 'firebase-admin/firestore') return { getFirestore: () => fake.db, FieldValue: fake.FieldValue, Timestamp: fake.Timestamp };

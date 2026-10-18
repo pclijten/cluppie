@@ -3,13 +3,16 @@
   "description": "Cloud Functions voor cluppie.io (club & leden, AI, Sportlink-sync)",
   "type": "commonjs",
   "main": "index.js",
-  "engines": { "node": "22" },
+  "engines": {
+    "node": "22"
+  },
   "scripts": {
     "serve": "firebase emulators:start --only functions",
     "deploy": "echo 'Gebruik: firebase deploy --only functions:<naam>,…' && exit 1"
   },
   "dependencies": {
     "firebase-admin": "^12.6.0",
-    "firebase-functions": "^6.0.1"
+    "firebase-functions": "^6.0.1",
+    "nodemailer": "^10.1.2"
   }
 }
