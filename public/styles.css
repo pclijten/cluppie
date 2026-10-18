@@ -2346,6 +2346,7 @@ body{ background:var(--bg); color:var(--ink); }
 .trw-oef .hl p{white-space:pre-wrap}
 .trw-diagram{position:relative;margin:0 0 13px;border-radius:10px;overflow:hidden;background:#fff;cursor:zoom-in}
 .trw-diagram img{display:block;width:100%;height:auto}
+.trw-diagram.trw-svg svg{display:block;width:100%;height:auto}
 .trw-zoomhint{position:absolute;right:8px;bottom:8px;background:rgba(14,17,22,.72);color:#fff;font-size:calc(12px * var(--fs));padding:5px 9px;border-radius:99px;pointer-events:none}
 
 /* ---- Diagram-lightbox: schermvullend, boven de weergave (z-index > 60) ---- */
