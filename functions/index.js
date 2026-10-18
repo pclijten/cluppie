@@ -156,6 +156,7 @@ aanmelding.zetNaGoedkeuring(clubId => syncClubSportlink(clubId, { alleenTeamlijs
 exports.meldClubAan = aanmelding.meldClubAan;
 exports.beoordeelClubAanmelding = aanmelding.beoordeelClubAanmelding;
 exports.meldNieuweAanvraag = aanmelding.meldNieuweAanvraag;
+exports.verstuurMail = require('./mail').verstuurMail;   // SMTP-verzending van `mail/{id}` (vervangt de Trigger Email-extensie)
 /* [20261011h] speler overzetten / seizoensovergang in één transactie (functions/overdracht.js) */
 exports.zetSpelerOver = require('./overdracht').zetSpelerOver;
 
