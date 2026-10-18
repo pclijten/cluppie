@@ -10,9 +10,11 @@
 
    Vaste docId per training (sp_{planId}_{teamId}_{seizoensweek}_{nr}) maakt een herhaalde
    uitrol idempotent: dezelfde documenten worden overschreven, nooit gedupliceerd. */
-import { maakPlan } from './trainingsplanner.js?v=20261014a';
+import { maakPlan, pasKnoppenToe } from './trainingsplanner.js?v=20261014a';
 import { positieWeek, maakSeizoensplan } from './seizoensplan-logica.js?v=20261014a';
 import { leeftijdVanCategorie } from './config.js?v=20261011g';
+import { vormSvg } from './trainingsvorm-svg.js?v=20261012e';
+
 
 export const JEUGDBOUWEN = ['onder', 'midden', 'boven'];
 
@@ -84,7 +86,19 @@ export function oefeningVan(od){
     ...lijst('Makkelijker', v.makkelijker),
     ...lijst('Moeilijker', v.moeilijker),
   ];
-  return { titel: String(v.naam || od.vormId || 'Oefening'), blokken };
+  return { titel: String(v.naam || od.vormId || 'Oefening'), blokken, svg: tekeningVan(od) };
+}
+/* De tekening van de oefening als SVG (zoals in de Training maken-weergave). Geen tekening → geen veld. */
+function tekeningVan(od){
+  const v = od.vorm || {};
+  try {
+    if (!v.tekening) return '';
+    const veld = od.veld || pasKnoppenToe(od, { druk: 0, complexiteit: 0, stijl: 'punten' }).veld || v.veld;
+    if (!veld) return '';
+    /* pijlpunt-id's uit vormSvg komen uit een teller: vastzetten op de oefening, zodat uitrollen herhaalbaar is */
+    const sleutel = String(od.vormId || v.id || 'v').replace(/[^a-z0-9]/gi, '').slice(0, 30) || 'v';
+    return vormSvg(v, veld).replace(/\btv\d+\b/g, 'tv' + sleutel);
+  } catch (e){ return ''; }
 }
 
 /* Alle trainingsdocumenten voor één team uit één seizoensplan.

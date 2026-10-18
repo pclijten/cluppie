@@ -118,7 +118,9 @@ export function oefHtml(idx, oef, diagramUrls){
   const D = diagramUrls || {};
   const url = D[idx] || D[String(idx)] ||
     (oef.diagramPagina != null ? (D[oef.diagramPagina] || D[String(oef.diagramPagina)]) : null);
-  const diagram = url
+  const diagram = !url && oef.svg
+    ? `<figure class="trw-diagram trw-svg">${oef.svg}</figure>`
+    : url
     ? `<figure class="trw-diagram" data-zoom="${esc(url)}" data-zoomtitel="${esc(oef.titel || 'Oefening ' + idx)}"><img src="${esc(url)}" alt="" loading="lazy"><span class="trw-zoomhint">🔍 tik om te vergroten</span></figure>`
     : '';
   const blokken = (oef.blokken || []).map(blokHtml).join('');
