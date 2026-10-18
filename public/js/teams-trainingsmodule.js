@@ -17,7 +17,7 @@
 
    Tabblad: 'trainingsmodule'. Importeert NIET uit teams.js (geen kringimport); teams.js geeft
    zetTeamTab mee aan koppelTrainingsmodule(). */
-import { db, collection, addDoc, getDocs, deleteDoc, doc, functions, httpsCallable } from './firebase.js?v=20261011g';
+import { db, collection, addDoc, setDoc, getDocs, deleteDoc, doc, functions, httpsCallable, serverTimestamp } from './firebase.js?v=20261011g';
 import { S, esc, meld } from './state.js?v=20261011g';
 import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } from './config.js?v=20261011g';
 import { aiAan } from './clubconfig.js?v=20261013b';
@@ -26,6 +26,7 @@ import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261014a';
 import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, OPBOUW, kiesDuur, SLOT_NAAM } from './trainingsplanner.js?v=20261014a';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261012e';
 import { positieWeek } from './seizoensplan-logica.js?v=20261014a';
+import { oefeningVan } from './seizoensplan-club.js?v=20261017a';
 import { onderdeelAan } from './onderdelen.js?v=20261013b';
 
 const VORMEN = BIBLIOTHEEK.vormen;
@@ -38,15 +39,26 @@ function bouwKey(){
   const b = S.team?.bouw;
   return ['onder', 'midden', 'boven'].includes(b) ? b : bouwVanCategorie(S.team?.categorie);
 }
-function seizoenStartJaar(){
-  const m = String(S.huidigSeizoen || SEIZOEN_FALLBACK).match(/(\d{4})/);
-  return m ? Number(m[1]) : new Date().getFullYear();
+/* Datum als 'JJJJ-MM-DD' en terug; weekdag 1 = ma … 7 = zo (zoals team.trainingsdagen). */
+function datumStr(d){ return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+function datumUit(s){ const [j, m, d] = String(s).split('-').map(Number); return new Date(j, m - 1, d, 12); }
+function weekdagIso(d){ return (d.getDay() + 6) % 7 + 1; }
+/* ISO-week en -jaar van een datum (donderdag-regel). */
+function isoVan(d){
+  const k = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  k.setUTCDate(k.getUTCDate() + 4 - (k.getUTCDay() || 7));
+  const jaar = k.getUTCFullYear();
+  return { week: Math.ceil((((k - Date.UTC(jaar, 0, 1)) / 864e5) + 1) / 7), jaar };
 }
-/* Weeknummer in de standaard jaarlijn als er (nog) geen seizoensplan is: weken sinds de eerste maandag van september. */
-function standaardWeek(){
-  const d = new Date(seizoenStartJaar(), 8, 1, 12); d.setDate(d.getDate() + ((8 - d.getDay()) % 7));
-  const w = Math.floor((Date.now() - d.getTime()) / (7 * 864e5)) + 1;
-  return Math.max(1, Math.min(36, w));
+/* Eerstvolgende trainingsdag van het team (vandaag telt mee); zonder trainingsdagen: vandaag. */
+function volgendeTrainingsdag(){
+  const dagen = Array.isArray(S.team?.trainingsdagen) ? S.team.trainingsdagen.map(Number) : [];
+  const nu = new Date(); nu.setHours(12, 0, 0, 0);
+  for (let i = 0; i < 14 && dagen.length; i++){
+    const c = new Date(nu); c.setDate(nu.getDate() + i);
+    if (dagen.includes(weekdagIso(c))) return datumStr(c);
+  }
+  return datumStr(nu);
 }
 function aanwezigeSpelers(){
   const n = (S.spelers || []).filter(p => p && !p.gast && !p._ingeleend).length;
@@ -57,8 +69,9 @@ function standaardDuur(lv){ return lv <= 8 ? 45 : lv <= 11 ? 60 : 75; }
 function staat(){
   if (!S._tm || S._tm.teamId !== S.teamId){
     const lv = leeftijdVanCategorie(S.team?.categorie);
-    S._tm = { teamId: S.teamId, n: aanwezigeSpelers(), duur: standaardDuur(lv), niv: 2, week: standaardWeek(), thema: null, themaHand: false,
-      seed: 1, knop: { druk: 0, complexiteit: 0, stijl: 'punten' }, open: null, tab: {}, pas: false, ckOpen: false, plan: null, bewaardId: null, lijst: null, ai: {}, aiBezig: false };
+    const datum = volgendeTrainingsdag();
+    S._tm = { teamId: S.teamId, n: aanwezigeSpelers(), duur: standaardDuur(lv), niv: 2, datum, week: isoVan(datumUit(datum)).week, thema: null, themaHand: false,
+      seed: 1, knop: { druk: 0, complexiteit: 0, stijl: 'punten' }, open: null, tab: {}, pas: false, ckOpen: false, plan: null, bewaardId: null, lijst: null, ai: {}, aiBezig: false, meerOpen: false };
   }
   return S._tm;
 }
@@ -90,6 +103,7 @@ function maak(){
   t.plan = maakPlan(VORMEN, { categorie: S.team?.categorie, leeftijd: lv, aantalSpelers: t.n, niveau: t.niv, duur: t.duur, thema: t.thema,
     blokFase: ll.fase, seed: `${S.teamId}:${t.week}:${t.seed}`, recent: [] });
   t.plan.profiel.week = t.week;
+  t.plan.profiel.datum = t.datum;
   t.bewaardId = null; t.ai = {}; t.open = null; t.tab = {};
 }
 
@@ -113,9 +127,9 @@ function htmlFormulier(){
     <div class="tm-rij"><span class="tm-l">Aanwezig</span><div class="tm-stap"><button data-tm-n="-1" aria-label="Eén minder">−</button><b>${t.n}</b><button data-tm-n="1" aria-label="Eén meer">+</button></div></div>
     <div class="tm-rij"><span class="tm-l">Duur</span><div class="tm-chips">${DUREN.map(d => chip('data-tm-duur', d, d + ' min', kiesDuur(t.duur) === d)).join('')}</div></div>
     <div class="tm-rij"><span class="tm-l">Thema</span><select id="tmThema" class="tm-select">${themas.map(x => `<option${x === t.thema ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></div>
-    <details class="tm-meer"><summary>Meer opties</summary>
+    <div class="tm-rij"><span class="tm-l">Datum</span><input type="date" id="tmDatum" class="tm-select" value="${esc(t.datum)}" aria-label="Datum van de training"></div>
+    <details class="tm-meer"${t.meerOpen ? ' open' : ''}><summary>Meer opties</summary>
       <div class="tm-rij"><span class="tm-l">Niveau van het team</span><div class="tm-chips">${NIVEAU.map((x, i) => chip('data-tm-niv', i + 1, x, t.niv === i + 1)).join('')}</div></div>
-      <div class="tm-rij"><span class="tm-l">Week in seizoen</span><div class="tm-stap"><button data-tm-week="-1" aria-label="Vorige week">−</button><b>${t.week}</b><button data-tm-week="1" aria-label="Volgende week">+</button></div></div>
     </details>
     <div class="tm-info">Leerlijn${ll.bron === 'seizoensplan' ? ' (jouw seizoensplan)' : ''}: blok ${ll.blok} · <b>${esc(ll.thema)}</b> · week ${ll.weekInBlok} van ${ll.weken} · fase <b>${esc(ll.fase)}</b></div>
     <button class="knop vol fluo" data-tm-maak="1" style="margin-top:12px">Maak training</button>
@@ -205,9 +219,27 @@ async function bewaar(){
       onderdelen: p.onderdelen.map(o => ({ slot: o.slot, minuten: o.minuten, vormId: o.vormId })), afsluitingId: p.afsluiting?.vormId || null,
       seizoen: S.huidigSeizoen || SEIZOEN_FALLBACK, door: S.user?.uid || null, gemaaktMs: Date.now(),
     });
-    t.bewaardId = ref.id; meld('Training bewaard'); await laadBewaard();
+    t.bewaardId = ref.id;
+    try { await zetOpTrainingen(p, ref.id); meld(`Training bewaard en op ${datumKort(datumUit(t.datum))} gezet`); }
+    catch (e){ meld('Bewaard, maar niet op Trainingen gezet: ' + (e.code || e.message)); }
+    await laadBewaard();
   } catch (e){ meld('Opslaan mislukt: ' + (e.code || e.message)); }
 }
+/* Zet de bewaarde training als trainingsdocument op het tabblad Trainingen, op de gekozen datum.
+   Zelfde vorm als de seizoenstrainingen: week + vaste weekdag (trainingsdag) + oefeningen. */
+async function zetOpTrainingen(p, planId){
+  const t = staat(), d = datumUit(t.datum), iso = isoVan(d);
+  const id = `tm_${planId}`.replace(/[^A-Za-z0-9_-]/g, '_');
+  const oefeningen = [...p.onderdelen.map(oefeningVan), ...(p.afsluiting ? [oefeningVan(p.afsluiting)] : [])];
+  await setDoc(doc(db, 'trainingen', id), {
+    id, club: S.team?.club || S.clubId, teams: [S.teamId],
+    week: `Week ${iso.week}`, seizoenJaar: iso.jaar, trainingsdag: weekdagIso(d), datum: t.datum,
+    titel: `${p.profiel?.thema || 'Training'} · ${p.profiel?.duur || ''} min`,
+    bron: 'trainingsmodule', trainingsplanId: planId, thema: p.profiel?.thema || '', duur: p.profiel?.duur || null,
+    url: '', diagramUrls: {}, oefeningen, gemaakt: serverTimestamp(),
+  }, { merge: true });
+}
+function datumKort(d){ const s = d.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' }); return s.charAt(0).toUpperCase() + s.slice(1).replace('.', ''); }
 function openBewaarde(id){
   const t = staat(), d = (t.lijst || []).find(x => x.id === id); if (!d) return;
   const pr = d.profiel || {};
@@ -233,7 +265,7 @@ function openBewaarde(id){
     plan = { profiel: { ...pr, duur }, onderdelen, afsluiting, overgang: ov, meldingen: [], ruimteM2: leeftijdVanCategorie(pr.categorie) >= 13 ? 6000 : 3500 };
     plan.controle = valideer(plan);
   }
-  Object.assign(t, { n: N, duur, niv: pr.niveau || t.niv, week: pr.week || t.week, thema: pr.thema, themaHand: true, knop: d.knop || t.knop, plan, bewaardId: id, ai: {}, open: null, tab: {} });
+  Object.assign(t, { n: N, duur, niv: pr.niveau || t.niv, week: pr.week || t.week, datum: pr.datum || t.datum, thema: pr.thema, themaHand: true, knop: d.knop || t.knop, plan, bewaardId: id, ai: {}, open: null, tab: {} });
   plan.profiel.week = pr.week;
   teken(); window.scrollTo({ top: 0 });
 }
@@ -283,7 +315,6 @@ export function koppelTrainingsmodule(v){
     if (d.tmN){ t.n = Math.max(6, Math.min(24, t.n + Number(d.tmN))); teken(); }
     else if (d.tmDuur){ t.duur = Number(d.tmDuur); teken(); }
     else if (d.tmNiv){ t.niv = Number(d.tmNiv); teken(); }
-    else if (d.tmWeek){ t.week = Math.max(1, Math.min(36, t.week + Number(d.tmWeek))); t.themaHand = false; teken(); }
     else if (d.tmMaak){ t.seed++; maak(); teken(); const r = root.querySelector('.tm-kop2'); if (r) window.scrollTo({ top: r.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' }); }
     else if (d.tmOpenVorm !== undefined){ const i = Number(d.tmOpenVorm); t.open = t.open === i ? null : i; teken(); }
     else if (d.tmTab){ const [i, k] = d.tmTab.split(':'); t.tab[Number(i)] = k; teken(); }
@@ -311,5 +342,10 @@ export function koppelTrainingsmodule(v){
   });
   root.addEventListener('change', e => {
     if (e.target.id === 'tmThema'){ t.thema = e.target.value; t.themaHand = true; maak(); teken(); }
+    if (e.target.id === 'tmDatum' && e.target.value){
+      t.datum = e.target.value; t.week = isoVan(datumUit(t.datum)).week; t.themaHand = false; maak(); teken();
+    }
   });
+  /* toggle gebeurt niet in de bubbelfase: met capture de stand van 'Meer opties' onthouden, zodat teken() hem niet dichtklapt */
+  root.addEventListener('toggle', e => { if (e.target.classList?.contains('tm-meer')) t.meerOpen = e.target.open; }, true);
 }
