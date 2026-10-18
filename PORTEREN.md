@@ -58,7 +58,7 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - Veilig: afzender komt altijd uit de instelling `MAIL_VAN` (nooit uit het document), max. 10 ontvangers, adressen gecontroleerd, regeleinden uit het onderwerp (geen header-injectie), tekst max. 20.000 tekens, één keer claimen via een transactie (geen dubbele mails bij een dubbele gebeurtenis), geen automatische herhaling.
 - Instellingen bij de eerste deploy: `SMTP_HOST`, `SMTP_PORT` (465), `SMTP_GEBRUIKER` (paul@cluppie.io), `MAIL_VAN`. Geheim: `SMTP_WACHTWOORD` (Secret Manager). Geen invoker nodig (trigger, geen callable).
 - Test: `node tests/mail.test.js` (24 controles, in `npm test`); `tests/sportlink-sync.test.js` kent nu `defineString`.
-- Let op: `PLATFORM_EMAIL` in `functions/aanmelding.js` staat nog op het oude adres.
+- `PLATFORM_EMAIL` in `functions/aanmelding.js` (ontvanger van de aanmeldmelding) staat nu op paul@cluppie.io. De platformbeheerder-controle (`functions/platform.js`, `firestore.rules`, `public/js/state.js`) blijft bewust op het inlogaccount pclijten@gmail.com: dat is een ander ding.
 
 
 ## Release 20261013b — Training maken en Seizoensplanning aan/uit (eindbaas, club, team)
