@@ -23,6 +23,7 @@ import { S, esc, meld } from './state.js?v=20261011g';
 import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261011g';
 import { aiAan } from './clubconfig.js?v=20261013b';
 import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261017a';
+import { trainingenVanPlan } from './seizoensplan-club.js?v=20261017a';
 import { onderdeelAan } from './onderdelen.js?v=20261013b';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261014a';
 import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261014a';
@@ -122,18 +123,12 @@ function htmlOpzet(){
     </div>`;
 }
 
-function weekHtml(plan, weekNr, blok){
-  const f = plan.params;
+function weekHtml(plan, weekNr, blok, alle){
   const pos = positieWeek(plan, weekNr);
   const w = plan.kal.filter(x => !x.vrij)[weekNr - 1];
-  const trainingen = [];
-  /* [20261013b] zonder Training maken geen uitgewerkte trainingen in de week */
-  for (let t = 0; t < (onderdeelAan('trainingsmodule') ? f.tpw : 0); t++){
-    const p = maakPlan(VORMEN, { categorie: S.team?.categorie, leeftijd: leeftijdVanCategorie(S.team?.categorie), aantalSpelers: aanwezigeSpelers(), niveau: f.niveau, duur: f.duur,
-      thema: pos.blok.thema, blokFase: pos.fase, seed: `${S.teamId}:${weekNr}:${t + 1}`, recent: [] });
-    trainingen.push(`<div class="tm-sub">Training ${t + 1}</div><ul class="tm-ul">${p.onderdelen.map(o => `<li>${o.minuten}′ ${esc(o.vorm.naam)}</li>`).join('')}</ul>
-      <button class="knop klein licht" data-sp-open="${weekNr}:${t + 1}">Open in Training maken</button>`);
-  }
+  /* zelfde trainingen als op Trainingen komen (trainingenVanPlan), dus geen eigen rotatie of seed hier */
+  const trainingen = alle.filter(x => x.w.nr === weekNr).map(x => `<div class="tm-sub">Training ${x.t}</div><ul class="tm-ul">${x.p.onderdelen.map(o => `<li>${o.minuten}′ ${esc(o.vorm.naam)}</li>`).join('')}</ul>
+      <button class="knop klein licht" data-sp-open="${weekNr}:${x.t}">Open in Training maken</button>`);
   return `<div class="tm-week"><div class="tm-wk-kop"><b>Week ${weekNr}</b><span class="tm-info">${dk(w?.iso)} · ${esc(pos.fase)}</span></div>${trainingen.join('')}<div class="tm-info" style="margin-top:6px">${esc(FASE_UITLEG[pos.fase] || '')}</div></div>`;
 }
 
@@ -147,6 +142,7 @@ function htmlJaarlijn(){
   const s = staat(), plan = s.plan;
   if (!plan) return `<div class="kaart"><div class="tm-info">Er is nog geen seizoensplan. Maak er eerst een onder “1 Opzet”.</div><button class="knop klein licht" data-sp-tab="opzet" style="margin-top:8px">Naar opzet</button></div>`;
   const nu = huidigeWeekNr(plan), vanaf = nu, tot = Math.min(plan.trainingsweken, nu + 3);
+  const alle = onderdeelAan('trainingsmodule') ? trainingenVanPlan({ plan, team: { id: S.teamId, categorie: S.team?.categorie }, vormen: VORMEN, planId: `team_${S.teamId}_${seizoenSleutel()}`, aantalSpelers: aanwezigeSpelers() }) : [];
   let h = `<div class="kaart"><div class="tm-kop2">Seizoensplan ${esc(catLabel(S.team?.categorie))}</div>
     <div class="tm-info">${esc(MODELLEN[plan.model]?.naam || '')} · ${plan.trainingsweken} trainingsweken · ${plan.blokken.length} blokken · ${plan.params.tpw}× per week${plan.params.accent?.length ? ' · accent ' + esc(plan.params.accent.join(', ')) : ''}</div>
     <div class="tm-band">${plan.blokken.map((b, i) => `<i style="flex:${b.weken};background:${KLEUREN[i % KLEUREN.length]}" title="${esc(b.thema)}"></i>`).join('')}</div>
@@ -154,7 +150,7 @@ function htmlJaarlijn(){
   plan.blokken.forEach((b, i) => {
     h += `<div class="tm-blok" style="--c:${KLEUREN[i % KLEUREN.length]}"><h3>${esc(b.thema)} <span class="tm-badge">${esc(b.domein || '')}</span> <span class="tm-badge">${b.weken} wk · ${dk(b.van)} – ${dk(b.tot)}</span>${b.soort === 'herhaling' ? ' <span class="tm-badge">herhaling</span>' : ''}</h3>
       <div class="tm-info">${esc(b.fasen.join(' → '))}</div><div class="tm-waarom"><b>Waarom:</b> ${esc(b.waarom || '')}</div>`;
-    for (let w = b.vanafWeek; w <= b.totWeek; w++) if (w >= vanaf && w <= tot) h += weekHtml(plan, w, b);
+    for (let w = b.vanafWeek; w <= b.totWeek; w++) if (w >= vanaf && w <= tot) h += weekHtml(plan, w, b, alle);
     if (b.totWeek > tot && b.vanafWeek <= tot + 1 && b.totWeek > nu) h += `<div class="tm-info">Week ${Math.max(tot + 1, b.vanafWeek)}–${b.totWeek}: worden wekelijks aangevuld.</div>`;
     h += '</div>';
   });
@@ -226,7 +222,7 @@ async function bewaarPlan(plan){
   /* de seizoenstrainingen naar het tabblad Trainingen; een mislukking hier houdt het plan wel bewaard */
   try {
     const r = await zetSeizoenTrainingen({ plan, team: { id: S.teamId, categorie: S.team?.categorie }, clubId: S.team?.club || S.clubId,
-      planId: `team_${S.teamId}_${seizoenSleutel()}`, planVersie: 1, vormen: VORMEN });
+      planId: `team_${S.teamId}_${seizoenSleutel()}`, planVersie: 1, vormen: VORMEN, aantalSpelers: aanwezigeSpelers() });
     if (r.meldingen?.length) console.warn('[seizoensplan] trainingen:', r.meldingen.slice(0, 5));
   } catch (e){ meld('Plan bewaard, maar de trainingen zijn niet op Trainingen gezet: ' + (e.code || e.message)); return false; }
   return true;
