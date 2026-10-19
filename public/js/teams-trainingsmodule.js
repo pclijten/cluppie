@@ -20,12 +20,14 @@
 import { db, collection, addDoc, setDoc, getDoc, getDocs, deleteDoc, doc, functions, httpsCallable, serverTimestamp } from './firebase.js?v=20261011g';
 import { S, esc, meld } from './state.js?v=20261011g';
 import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } from './config.js?v=20261011g';
-import { aiAan } from './clubconfig.js?v=20261013b';
+import { aiAan } from './clubconfig.js?v=20261019b';
 import { ico } from './icons.js?v=20260922c';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261014a';
 import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, OPBOUW, kiesDuur, SLOT_NAAM, groepsindeling } from './trainingsplanner.js?v=20261019a';
 import { MATERIAAL, MATERIAAL_NAAM, PRESETS, presetVan, VELDEN, schoonContext, behoefte, haalbaar, valtAf, tipTekst } from './trainingscontext-logica.js?v=20261019a';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
+import { TERUGBLIK_VRAGEN, zetAntwoord, terugblikKlaar, terugblikSamenvatting, signaalVormBewaard, signaalVormGewisseld, signaalTerugblik, signaalMateriaal, signaalGat, gatRedenen } from './leren-logica.js?v=20261019b';
+import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261019b';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261012e';
 import { positieWeek } from './seizoensplan-logica.js?v=20261019a';
 import { oefeningVan } from './seizoensplan-club.js?v=20261019a';
@@ -85,7 +87,7 @@ function staat(){
     const lv = leeftijdVanCategorie(S.team?.categorie);
     const datum = volgendeTrainingsdag();
     S._tm = { teamId: S.teamId, n: aanwezigeSpelers(), duur: standaardDuur(lv), niv: 2, datum, week: isoVan(datumUit(datum)).week, thema: null, themaHand: false,
-      nHand: false, halfVeld: false, cx: schoonContext(null), cxGeladen: false, seed: 1, knop: { druk: 0, complexiteit: 0, stijl: 'punten' }, open: null, tab: {}, pas: false, ckOpen: false, plan: null, bewaardId: null, lijst: null, ai: {}, aiBezig: false, meerOpen: false };
+      tb: {}, tbVerzonden: {}, nHand: false, halfVeld: false, cx: schoonContext(null), cxGeladen: false, seed: 1, knop: { druk: 0, complexiteit: 0, stijl: 'punten' }, open: null, tab: {}, pas: false, ckOpen: false, plan: null, bewaardId: null, lijst: null, ai: {}, aiBezig: false, meerOpen: false };
   }
   return S._tm;
 }
@@ -206,6 +208,7 @@ function htmlResultaat(){
     ${aiAan() ? `<div class="tm-rij"><span class="tm-l">AI-uitleg</span><button class="knop klein licht" data-tm-ai="1"${t.aiBezig ? ' disabled' : ''}>${t.aiBezig ? 'Bezig…' : (Object.keys(t.ai).length ? 'Opnieuw afstemmen' : 'Afstemmen op mijn team')}</button></div>`
       : `<div class="tm-info">AI-uitleg staat uit voor deze club; je ziet de standaardtekst uit de bibliotheek.</div>`}
   </div>`;
+  h += htmlTerugblik();
   h += `<div class="tm-info" style="margin:10px 2px">Na de training: kwam het thema terug in het partijspel? Een bewaarde training bevat alleen de gekozen vormen, geen namen of spelersgegevens.</div>`;
   return h;
 }
@@ -241,10 +244,20 @@ function htmlMateriaalRegel(od){
   return `<div class="tm-info">Nodig: ${esc(lijst)}.${h.vervangers.length ? ' Tip: ' + esc(h.vervangers.join('; ')) + '.' : ''}${mist ? ` <b>Je mist: ${esc(mist)}.</b>` : ''}</div>`;
 }
 
+/* Na de training: drie tikken, alleen voor jezelf (fase 1h, stap 1). Bij een club die meedoet gaat er daarnaast
+   een anoniem signaal mee (geen namen, geen tekst); dat staat er dan bij. */
+function htmlTerugblik(){
+  const t = staat(); if (!t.bewaardId) return '';
+  return `<div class="kaart tm-tb"><div class="tm-sub" style="margin-top:0">Na de training</div>
+    ${TERUGBLIK_VRAGEN.map(v => `<div class="tm-rij"><span class="tm-l">${esc(v.vraag)}</span><div class="tm-chips">${v.opties.map(([w, x]) => chip('data-tm-tb', v.sl + ':' + w, x, t.tb[v.sl] === w)).join('')}</div></div>`).join('')}
+    <div class="tm-info">Drie tikken, alleen voor jou: zo zie je wat bij jouw team werkt.${lerenAan() ? ' Jullie club helpt de app verbeteren: de antwoorden gaan anoniem mee, zonder namen of tekst.' : ''}</div>
+  </div>`;
+}
 function htmlBewaard(){
   const t = staat();
   if (!t.lijst || !t.lijst.length) return '';
-  return `<div class="kaart"><div class="tm-sub" style="margin-top:0">Bewaarde trainingen</div>
+  const tbs = terugblikSamenvatting(t.lijst);
+  return `<div class="kaart"><div class="tm-sub" style="margin-top:0">Bewaarde trainingen</div>${tbs.n ? `<div class="tm-info" style="margin-bottom:8px">${esc(tbs.tekst)}</div>` : ''}
     ${t.lijst.map(x => `<div class="tm-bw"><button class="tm-bw-open" data-tm-open="${esc(x.id)}"><b>${esc(x.profiel?.thema || 'Training')}</b><span class="tm-info">week ${esc(x.profiel?.week ?? '')} · ${esc(x.profiel?.duur || '')} min · ${new Date(x.gemaaktMs || 0).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}</span></button><button class="tm-bw-weg" data-tm-weg="${esc(x.id)}" aria-label="Verwijder">${ico('admin-delete', 16)}</button></div>`).join('')}</div>`;
 }
 
@@ -278,7 +291,8 @@ async function bewaar(){
       onderdelen: p.onderdelen.map(o => ({ slot: o.slot, minuten: o.minuten, vormId: o.vormId })), afsluitingId: p.afsluiting?.vormId || null,
       context: schoonContext(t.cx), seizoen: S.huidigSeizoen || SEIZOEN_FALLBACK, door: S.user?.uid || null, gemaaktMs: Date.now(),
     });
-    t.bewaardId = ref.id;
+    t.bewaardId = ref.id; t.tb = {};
+    stuurSignalen([...p.onderdelen, ...(p.afsluiting ? [p.afsluiting] : [])].map(o => signaalVormBewaard(leeftijdVanCategorie(S.team?.categorie), o)));
     try { await zetOpTrainingen(p, ref.id); meld(`Training bewaard en op ${datumKort(datumUit(t.datum))} gezet`); }
     catch (e){ meld('Bewaard, maar niet op Trainingen gezet: ' + (e.code || e.message)); }
     await laadBewaard();
@@ -324,8 +338,9 @@ function openBewaarde(id){
     plan = { profiel: { ...pr, duur }, onderdelen, afsluiting, overgang: ov, meldingen: [], ruimteM2: leeftijdVanCategorie(pr.categorie) >= 13 ? 6000 : 3500 };
     plan.controle = valideer(plan);
   }
-  Object.assign(t, { n: N, nHand: true, duur, niv: pr.niveau || t.niv, week: pr.week || t.week, datum: pr.datum || t.datum, thema: pr.thema, themaHand: true, knop: d.knop || t.knop, plan, bewaardId: id, ai: {}, open: null, tab: {} });
+  Object.assign(t, { n: N, nHand: true, duur, niv: pr.niveau || t.niv, week: pr.week || t.week, datum: pr.datum || t.datum, thema: pr.thema, themaHand: true, knop: d.knop || t.knop, plan, bewaardId: id, tb: d.terugblik || {}, ai: {}, open: null, tab: {} });
   plan.profiel.week = pr.week;
+  if (terugblikKlaar(t.tb)) t.tbVerzonden[id] = true;
   teken(); window.scrollTo({ top: 0 });
 }
 
@@ -377,6 +392,7 @@ export function koppelTrainingsmodule(v){
       const k = d.tmPreset;
       if (k === 'eigen') return;
       t.cx.materiaal = k ? { ...PRESETS[k].materiaal } : null; bewaarContext(); maak(); teken();
+      if (k) stuurSignalen([signaalMateriaal(leeftijdVanCategorie(S.team?.categorie), k)]);
     }
     else if (d.tmMat){
       const [k, dl] = d.tmMat.split(':');
@@ -388,7 +404,7 @@ export function koppelTrainingsmodule(v){
     else if (d.tmHalf !== undefined){ t.halfVeld = !t.halfVeld; maak(); teken(); }
     else if (d.tmDuur){ t.duur = Number(d.tmDuur); teken(); }
     else if (d.tmNiv){ t.niv = Number(d.tmNiv); teken(); }
-    else if (d.tmMaak){ t.seed++; maak(); teken(); const r = root.querySelector('.tm-kop2'); if (r) window.scrollTo({ top: r.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' }); }
+    else if (d.tmMaak){ t.seed++; maak(); stuurSignalen(gatRedenen(t.plan).map(r => signaalGat(leeftijdVanCategorie(S.team?.categorie), r))); teken(); const r = root.querySelector('.tm-kop2'); if (r) window.scrollTo({ top: r.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' }); }
     else if (d.tmOpenVorm !== undefined){ const i = Number(d.tmOpenVorm); t.open = t.open === i ? null : i; teken(); }
     else if (d.tmTab){ const [i, k] = d.tmTab.split(':'); t.tab[Number(i)] = k; teken(); }
     else if (d.tmPas){ t.pas = !t.pas; teken(); }
@@ -401,8 +417,22 @@ export function koppelTrainingsmodule(v){
       const lst = rangschik(VORMEN, od.slot, { categorie: S.team?.categorie, aantalSpelers: t.n, niveau: t.niv, thema: t.thema, doelC: t.plan.profiel.doelComplexiteit,
         uitsluiten: t.plan.onderdelen.map(o => o.vormId), seed: t.seed, context: t.cx, datum: t.datum, halfVeld: t.halfVeld });
       if (!lst[0]){ meld('Geen andere passende vorm gevonden'); return; }
+      stuurSignalen([signaalVormGewisseld(leeftijdVanCategorie(S.team?.categorie), od)]);
       t.plan.onderdelen[i] = bouwOnderdeel(lst[0], { slot: od.slot, minuten: od.minuten }, { N: t.n, thema: t.thema });
       t.plan.controle = valideer(t.plan); t.bewaardId = null; delete t.ai[od.slot]; teken();
+    }
+    else if (d.tmTb){
+      const [sl, w] = d.tmTb.split(':'); if (!t.bewaardId) return;
+      t.tb = zetAntwoord(t.tb, sl, w); teken();
+      try {
+        await setDoc(doc(db, 'teams', S.teamId, 'trainingsplannen', t.bewaardId), { terugblik: { ...t.tb, ms: Date.now() } }, { merge: true });
+        const rij = (t.lijst || []).find(x => x.id === t.bewaardId); if (rij) rij.terugblik = { ...t.tb };
+      } catch (err){ meld('Terugblik niet bewaard: ' + (err.code || err.message)); }
+      if (terugblikKlaar(t.tb) && !t.tbVerzonden[t.bewaardId]){
+        t.tbVerzonden[t.bewaardId] = true;
+        stuurSignalen([signaalTerugblik(leeftijdVanCategorie(S.team?.categorie), [...t.plan.onderdelen, ...(t.plan.afsluiting ? [t.plan.afsluiting] : [])].map(o => o.vormId), t.plan.profiel?.thema, t.tb)]);
+      }
+      teken();
     }
     else if (d.tmBewaar) bewaar();
     else if (d.tmWa){ window.open('https://wa.me/?text=' + encodeURIComponent(deelTekst()), '_blank'); }

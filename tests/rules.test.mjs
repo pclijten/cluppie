@@ -186,3 +186,17 @@ test('club-inhoud: training van andere club niet zichtbaar', async () => {
   await assertFails(getDoc(doc(als('coachB'), 'trainingen/tr1')));
   await assertFails(deleteDoc(doc(als('coachB'), 'trainingen/tr1')));
 });
+test('leren van gebruik: signalen en geheim dicht, samenvatting alleen platformbeheerder', async () => {
+  for (const pad of ['leersignalen/x', 'leren_teller/x', 'leren_geheim/zout']){
+    await assertFails(getDoc(doc(als('adminA'), pad)));
+    await assertFails(setDoc(doc(als('adminA'), pad), { n: 1 }));
+    await assertFails(getDoc(doc(als('x', PLATFORM), pad)));
+  }
+  await assertFails(getDoc(doc(als('adminA'), 'leerstatistiek/2026-10')));
+  await assertFails(setDoc(doc(als('x', PLATFORM), 'leerstatistiek/2026-10'), { cellen: [] }));
+  await assertSucceeds(getDoc(doc(als('x', PLATFORM), 'leerstatistiek/2026-10')));
+});
+test('leren van gebruik: clubbeheerder kan zelf meedoen aanzetten, maar niet de eindbaas-schakelaar', async () => {
+  await assertSucceeds(updateDoc(doc(als('adminA'), 'clubs/A'), { 'instellingen.leren': { meedoen: true } }));
+  await assertFails(updateDoc(doc(als('adminA'), 'clubs/A'), { 'platformModules.leren': true }));
+});

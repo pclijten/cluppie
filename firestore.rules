@@ -324,6 +324,15 @@ service cloud.firestore {
       allow read: if isPlatform() || (echt() && id == uid());
       allow write: if false;
     }
+    /* leren van gebruik (functions/leren.js): ruwe signalen, tellers en het geheim zijn alleen voor Cloud Functions;
+       de maandelijkse samenvatting leest alleen de platformbeheerder */
+    match /leersignalen/{id} { allow read, write: if false; }
+    match /leren_teller/{id} { allow read, write: if false; }
+    match /leren_geheim/{id} { allow read, write: if false; }
+    match /leerstatistiek/{id} {
+      allow read: if isPlatform();
+      allow write: if false;
+    }
     /* uitgaande e-mail (Firebase-extensie Trigger Email); alleen Cloud Functions schrijven */
     match /mail/{id} {
       allow read, write: if false;

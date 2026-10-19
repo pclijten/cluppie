@@ -150,6 +150,8 @@ const gebruik = require('./gebruik');
 exports.aggregeerGebruik = gebruik.maakCallable(vereisLid);
 exports.aggregeerGebruikNacht = gebruik.aggregeerGebruikNacht;
 exports.platformOverzichtNu = require('./platform').platformOverzichtNu;
+/* [20261019b] leren van gebruik (fase 1h): anonieme signalen + maandelijkse samenvatting; staat standaard uit (zie functions/leren.js) */
+Object.assign(exports, require('./leren').maakFuncties({ onCall, onSchedule, HttpsError, getFirestore, FieldValue, vereisLid, isPlatformBeheerder: require('./platform').isPlatformBeheerder }));
 const aanmelding = require('./aanmelding');
 /* [20261012a] na goedkeuren meteen de Sportlink-teamlijst ophalen, zodat "Teams uit Sportlink" klaarstaat */
 aanmelding.zetNaGoedkeuring(clubId => syncClubSportlink(clubId, { alleenTeamlijst: true }));

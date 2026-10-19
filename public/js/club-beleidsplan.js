@@ -6,9 +6,9 @@
 import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261011g';
 import { LEERCURVE } from './config.js?v=20261011g';
 import { functions, httpsCallable } from './firebase.js?v=20261011g';
-import { aiAan, kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261013b';
+import { aiAan, kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261019b';
 import { opslaanContent } from './content.js?v=20261011g';
-import { huidigeContentLijst } from './club-content.js?v=20261013b';
+import { huidigeContentLijst } from './club-content.js?v=20261019b';
 
 const MAX_STUK = 12000;
 const slug = t => String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60);
@@ -42,7 +42,7 @@ export function splitsOpKoppen(tekst){
 
 async function pdfNaarTekst(file){
   const { laadPdfJs } = await import('./pdf-viewer.js?v=20261011g');
-  const { regelsUitTekstItems } = await import('./training-ai.js?v=20261013b');
+  const { regelsUitTekstItems } = await import('./training-ai.js?v=20261019b');
   await laadPdfJs();
   const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
   const paginas = [];
