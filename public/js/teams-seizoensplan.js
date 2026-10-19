@@ -22,15 +22,15 @@ import { db, doc, collection, getDoc, getDocs, setDoc, addDoc, functions, httpsC
 import { S, esc, meld } from './state.js?v=20261011g';
 import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261011g';
 import { aiAan } from './clubconfig.js?v=20261013b';
-import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261017a';
-import { trainingenVanPlan } from './seizoensplan-club.js?v=20261017a';
+import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261019a';
+import { trainingenVanPlan } from './seizoensplan-club.js?v=20261019a';
 import { onderdeelAan } from './onderdelen.js?v=20261013b';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261014a';
-import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261014a';
+import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261019a';
 import {
   MODELLEN, ACCENTEN, maakSeizoensplan, weekKalender, herreken, standaardVrij, maandagVan, beschikbareThemas, themaVolgorde,
   valideerBlokken, positieOp, positieWeek, teamSignalen, stelBijsturingVoor, pasVoorstelToe,
-} from './seizoensplan-logica.js?v=20261014a';
+} from './seizoensplan-logica.js?v=20261019a';
 
 const VORMEN = BIBLIOTHEEK.vormen;
 const KLEUREN = ['var(--accent)', '#4a8fe0', '#e0a526', '#3fb27f', '#a855f7', '#f08a24', '#14b8a6', '#ec4899'];

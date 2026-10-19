@@ -17,16 +17,18 @@
 
    Tabblad: 'trainingsmodule'. Importeert NIET uit teams.js (geen kringimport); teams.js geeft
    zetTeamTab mee aan koppelTrainingsmodule(). */
-import { db, collection, addDoc, setDoc, getDocs, deleteDoc, doc, functions, httpsCallable, serverTimestamp } from './firebase.js?v=20261011g';
+import { db, collection, addDoc, setDoc, getDoc, getDocs, deleteDoc, doc, functions, httpsCallable, serverTimestamp } from './firebase.js?v=20261011g';
 import { S, esc, meld } from './state.js?v=20261011g';
 import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } from './config.js?v=20261011g';
 import { aiAan } from './clubconfig.js?v=20261013b';
 import { ico } from './icons.js?v=20260922c';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261014a';
-import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, OPBOUW, kiesDuur, SLOT_NAAM } from './trainingsplanner.js?v=20261014a';
+import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, OPBOUW, kiesDuur, SLOT_NAAM, groepsindeling } from './trainingsplanner.js?v=20261019a';
+import { MATERIAAL, MATERIAAL_NAAM, PRESETS, presetVan, VELDEN, schoonContext, behoefte, haalbaar, valtAf, tipTekst } from './trainingscontext-logica.js?v=20261019a';
+import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261012e';
-import { positieWeek } from './seizoensplan-logica.js?v=20261014a';
-import { oefeningVan } from './seizoensplan-club.js?v=20261017a';
+import { positieWeek } from './seizoensplan-logica.js?v=20261019a';
+import { oefeningVan } from './seizoensplan-club.js?v=20261019a';
 import { onderdeelAan } from './onderdelen.js?v=20261013b';
 
 const VORMEN = BIBLIOTHEEK.vormen;
@@ -64,6 +66,18 @@ function aanwezigeSpelers(){
   const n = (S.spelers || []).filter(p => p && !p.gast && !p._ingeleend).length;
   return Math.max(6, Math.min(24, n || 12));
 }
+/* Verwacht aantal spelers op de trainingsdatum: selectie min afgemeld. Een vastgelegde presentie telt het zwaarst,
+   anders de vaste afmeldingen, anders de hele selectie. Alleen aantallen; geen namen verlaten dit scherm. */
+function verwachtAantal(datum){
+  const sel = (S.spelers || []).filter(p => p && !p.gast && !p._ingeleend);
+  const ids = sel.map(p => p.id);
+  const sessie = (S.presentie || []).find(x => x.datum === datum);
+  let afw = [], bron = 'selectie';
+  if (sessie){ afw = sessie.afwezig || []; bron = 'presentie'; }
+  else { try { afw = vastePrefill(S.team, datum, ids).afwezig; if (afw.length) bron = 'vast'; } catch (e){ afw = []; } }
+  const weg = afw.filter(id => ids.includes(id)).length;
+  return { n: Math.max(6, Math.min(24, ids.length - weg || 12)), selectie: ids.length, afwezig: weg, bron };
+}
 function standaardDuur(lv){ return lv <= 8 ? 45 : lv <= 11 ? 60 : 75; }
 
 function staat(){
@@ -71,7 +85,7 @@ function staat(){
     const lv = leeftijdVanCategorie(S.team?.categorie);
     const datum = volgendeTrainingsdag();
     S._tm = { teamId: S.teamId, n: aanwezigeSpelers(), duur: standaardDuur(lv), niv: 2, datum, week: isoVan(datumUit(datum)).week, thema: null, themaHand: false,
-      seed: 1, knop: { druk: 0, complexiteit: 0, stijl: 'punten' }, open: null, tab: {}, pas: false, ckOpen: false, plan: null, bewaardId: null, lijst: null, ai: {}, aiBezig: false, meerOpen: false };
+      nHand: false, halfVeld: false, cx: schoonContext(null), cxGeladen: false, seed: 1, knop: { druk: 0, complexiteit: 0, stijl: 'punten' }, open: null, tab: {}, pas: false, ckOpen: false, plan: null, bewaardId: null, lijst: null, ai: {}, aiBezig: false, meerOpen: false };
   }
   return S._tm;
 }
@@ -98,10 +112,11 @@ function themaOpties(){
 /* ---------- plan maken ---------- */
 function maak(){
   const t = staat(), ll = leerlijnNu(), lv = leeftijdVanCategorie(S.team?.categorie);
+  if (!t.nHand) t.n = verwachtAantal(t.datum).n;
   if (!t.themaHand) t.thema = ll.thema;
   if (!themaOpties().includes(t.thema)) t.thema = themaOpties()[0] || ll.thema;
   t.plan = maakPlan(VORMEN, { categorie: S.team?.categorie, leeftijd: lv, aantalSpelers: t.n, niveau: t.niv, duur: t.duur, thema: t.thema,
-    blokFase: ll.fase, seed: `${S.teamId}:${t.week}:${t.seed}`, recent: [] });
+    blokFase: ll.fase, seed: `${S.teamId}:${t.week}:${t.seed}`, recent: [], context: t.cx, datum: t.datum, halfVeld: t.halfVeld });
   t.plan.profiel.week = t.week;
   t.plan.profiel.datum = t.datum;
   t.bewaardId = null; t.ai = {}; t.open = null; t.tab = {};
@@ -113,6 +128,7 @@ export function htmlTrainingsmodule(){
   if (S._tmVoorinvul){ Object.assign(t, S._tmVoorinvul); t.duur = kiesDuur(t.duur); S._tmVoorinvul = null; maak(); }
   if (!t.plan) maak();
   if (!t.lijst) laadBewaard();
+  if (!t.cxGeladen) laadContext();
   return `<div id="tmRoot" class="tm">${htmlInhoud()}</div>`;
 }
 function htmlInhoud(){
@@ -120,16 +136,36 @@ function htmlInhoud(){
 }
 function chip(attr, waarde, tekst, actief){ return `<button class="tm-chip${actief ? ' aan' : ''}" ${attr}="${esc(waarde)}">${esc(tekst)}</button>`; }
 
+const DAG_KORT = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
+function htmlMateriaal(){
+  const t = staat(), cx = t.cx, pr = presetVan(cx.materiaal);
+  const lv = leeftijdVanCategorie(S.team?.categorie);
+  let info = '';
+  if (cx.materiaal){
+    const kand = VORMEN.filter(v => lv >= v.leeftijd[0] && lv <= v.leeftijd[1] && t.n >= (v.spelers?.min || 0) && t.n <= (v.spelers?.max || 99));
+    const r = valtAf(kand, v => groepsindeling(v, t.n).groepen, cx);
+    if (r.af > 0) info = `<div class="tm-info">Met dit materiaal passen ${r.passend} van ${r.totaal} vormen.${r.tips[0] ? ' ' + esc(tipTekst(r.tips[0])) : ''}</div>`;
+  }
+  return `<div class="tm-rij"><span class="tm-l">Materiaal</span><div class="tm-chips">${chip('data-tm-preset', '', 'Niet beperken', !cx.materiaal)}${Object.entries(PRESETS).map(([k, x]) => chip('data-tm-preset', k, x.naam, pr === k)).join('')}${cx.materiaal && !pr ? chip('data-tm-preset', 'eigen', 'Eigen', true) : ''}</div></div>${info}`;
+}
 function htmlFormulier(){
-  const t = staat(), ll = leerlijnNu();
+  const t = staat(), ll = leerlijnNu(), cx = t.cx;
   const themas = themaOpties();
+  const vw = verwachtAantal(t.datum);
+  const bronTekst = t.nHand ? '' : vw.bron === 'presentie' ? `Uit de presentie: ${vw.selectie - vw.afwezig} van ${vw.selectie}` : vw.bron === 'vast' ? `Uit de vaste afmeldingen: ${vw.afwezig} afwezig` : 'Hele selectie; nog geen presentie voor deze datum';
   return `<div class="kaart tm-form">
-    <div class="tm-rij"><span class="tm-l">Aanwezig</span><div class="tm-stap"><button data-tm-n="-1" aria-label="Eén minder">−</button><b>${t.n}</b><button data-tm-n="1" aria-label="Eén meer">+</button></div></div>
+    <div class="tm-rij"><span class="tm-l">Spelers vandaag</span><div class="tm-stap"><button data-tm-n="-1" aria-label="Eén minder">−</button><b>${t.n}</b><button data-tm-n="1" aria-label="Eén meer">+</button></div></div>
+    ${t.nHand ? `<div class="tm-info" style="margin:-6px 0 10px">Handmatig aangepast. <button class="tm-chip tm-mini" data-tm-terugpres="1">Terug naar presentie (${vw.n})</button></div>` : `<div class="tm-info" style="margin:-6px 0 10px">${esc(bronTekst)}</div>`}
     <div class="tm-rij"><span class="tm-l">Duur</span><div class="tm-chips">${DUREN.map(d => chip('data-tm-duur', d, d + ' min', kiesDuur(t.duur) === d)).join('')}</div></div>
     <div class="tm-rij"><span class="tm-l">Thema</span><select id="tmThema" class="tm-select">${themas.map(x => `<option${x === t.thema ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></div>
     <div class="tm-rij"><span class="tm-l">Datum</span><input type="date" id="tmDatum" class="tm-select" value="${esc(t.datum)}" aria-label="Datum van de training"></div>
-    <details class="tm-meer"${t.meerOpen ? ' open' : ''}><summary>Meer opties</summary>
+    ${htmlMateriaal()}
+    <details class="tm-meer"${t.meerOpen ? ' open' : ''}><summary>Meer instellen</summary>
       <div class="tm-rij"><span class="tm-l">Niveau van het team</span><div class="tm-chips">${NIVEAU.map((x, i) => chip('data-tm-niv', i + 1, x, t.niv === i + 1)).join('')}</div></div>
+      ${MATERIAAL.map(([k, naam]) => `<div class="tm-rij"><span class="tm-l">${esc(naam)}</span><div class="tm-stap"><button data-tm-mat="${k}:-1" aria-label="Eén minder ${esc(naam)}">−</button><b>${cx.materiaal ? cx.materiaal[k] : '–'}</b><button data-tm-mat="${k}:1" aria-label="Eén meer ${esc(naam)}">+</button></div></div>`).join('')}
+      <div class="tm-rij"><span class="tm-l">Veld</span><div class="tm-chips">${chip('data-tm-veld', '', 'Standaard', !cx.veld)}${VELDEN.map(([k, x]) => chip('data-tm-veld', k, x, cx.veld === k)).join('')}</div></div>
+      <div class="tm-rij"><span class="tm-l">Wedstrijddag</span><div class="tm-chips">${chip('data-tm-wd', 0, 'Geen', !cx.wedstrijddag)}${DAG_KORT.map((x, i) => chip('data-tm-wd', i + 1, x, cx.wedstrijddag === i + 1)).join('')}</div></div>
+      <div class="tm-info">Wordt bewaard voor dit team. De dag voor de wedstrijd traint de planner lichter.</div>
     </details>
     <div class="tm-info">Leerlijn${ll.bron === 'seizoensplan' ? ' (jouw seizoensplan)' : ''}: blok ${ll.blok} · <b>${esc(ll.thema)}</b> · week ${ll.weekInBlok} van ${ll.weken} · fase <b>${esc(ll.fase)}</b></div>
     <button class="knop vol fluo" data-tm-maak="1" style="margin-top:12px">Maak training</button>
@@ -137,7 +173,7 @@ function htmlFormulier(){
 }
 
 const SLOT_KLEUR = { ontvangst: '#5b6573', 'warming-up': '#4a8fe0', kern1: '#35c47a', kern2: '#f5b13d', partij: '#e2342f', afsluiting: '#8a6fe0' };
-const CHECK_NAAM = { duur: 'Duur', opbouw: 'Opbouw', vormduur: 'Vormduur', warmingup: 'Warming-up', voetbalecht: 'Voetbalecht', thema: 'Thema', wachtrij: 'Geen wachtrij', ruimte: 'Ruimte', veld: 'Veld', intensiteit: 'Belasting', rust: 'Drinkpauze', groepen: 'Groepen', coach: 'Coachinfo', variatie: 'Variatie' };
+const CHECK_NAAM = { duur: 'Duur', opbouw: 'Opbouw', vormduur: 'Vormduur', warmingup: 'Warming-up', voetbalecht: 'Voetbalecht', thema: 'Thema', wachtrij: 'Geen wachtrij', ruimte: 'Ruimte', veld: 'Veld', intensiteit: 'Belasting', rust: 'Drinkpauze', groepen: 'Groepen', coach: 'Coachinfo', variatie: 'Variatie', materiaal: 'Materiaal' };
 
 function htmlResultaat(){
   const t = staat(), p = t.plan;
@@ -166,6 +202,7 @@ function htmlResultaat(){
   if (t.pas) h += `<div class="kaart tm-knoppen">
     <div class="tm-rij"><span class="tm-l">Druk</span><div class="tm-chips">${[[-1, 'Rustiger'], [0, 'Normaal'], [1, 'Hoger']].map(([v, x]) => chip('data-tm-druk', v, x, t.knop.druk === v)).join('')}</div></div>
     <div class="tm-rij"><span class="tm-l">Moeilijkheid</span><div class="tm-chips">${[[-1, 'Lichter'], [0, 'Normaal'], [1, 'Zwaarder']].map(([v, x]) => chip('data-tm-cx', v, x, t.knop.complexiteit === v)).join('')}</div></div>
+    <div class="tm-rij"><span class="tm-l">Plan B</span><div class="tm-chips">${chip('data-tm-half', 1, 'Half veld (bv. regen of veld gedeeld)', t.halfVeld)}</div></div>
     ${aiAan() ? `<div class="tm-rij"><span class="tm-l">AI-uitleg</span><button class="knop klein licht" data-tm-ai="1"${t.aiBezig ? ' disabled' : ''}>${t.aiBezig ? 'Bezig…' : (Object.keys(t.ai).length ? 'Opnieuw afstemmen' : 'Afstemmen op mijn team')}</button></div>`
       : `<div class="tm-info">AI-uitleg staat uit voor deze club; je ziet de standaardtekst uit de bibliotheek.</div>`}
   </div>`;
@@ -185,6 +222,7 @@ function htmlOnderdeel(od, i){
       <span class="tm-mid"><span class="tm-slot">${esc(naam)}</span><span class="tm-nm">${esc(v.naam)}</span><span class="tm-vsub">${od.groepen}×${od.groepGrootte} · ${kn.veld.b}×${kn.veld.l} m · ${esc(v.doel)}</span></span><span class="tm-pij">⌄</span></button>
     ${open ? `<div class="tm-vb">${vormSvg(v, kn.veld)}${TEKENING_LEGENDA}
       <div class="tm-feiten4"><div><b>Groepen</b>${od.groepen}×${od.groepGrootte}${od.wissel ? '+' + od.wissel : ''}</div><div><b>Veld</b>${kn.veld.b}×${kn.veld.l}</div><div><b>Tijd</b>${od.rondes ? od.rondes + '×' : ''}${od.ronde}′${od.rust ? '/' + od.rust + '′' : ''}</div><div><b>Materiaal</b>${m.pionnen || 0}p ${m.ballen || 0}b${m.doeltjes ? ' ' + m.doeltjes + 'd' : ''}</div></div>
+      ${htmlMateriaalRegel(od)}
       <div class="tm-tabs">${TABS.map(([k, x]) => `<button class="${k === tab ? 'aan' : ''}" data-tm-tab="${i}:${k}">${x}</button>`).join('')}</div>
       ${tab === 'uitv' ? `${ai?.intro ? `<div class="tm-ai"><b>Voor jouw team:</b> ${esc(ai.intro)}</div>` : ''}${v.uitleg ? `<div class="tm-sub" style="margin-top:0">Wat zeg je tegen de spelers</div><div class="tm-zeg">“${esc(v.uitleg)}”</div>` : ''}${od.themaregel ? `<div class="tm-themaregel"><b>Themaregel:</b> ${esc(od.themaregel)}</div>` : ''}${lijst(v.organisatie, 'Zo zet je het uit')}${lijst(v.regels, 'Regels')}${lijst(kn.aanpassingen, 'Aangepast door jouw knoppen')}${lijst(v.letOp, 'Let op')}` : ''}
       ${tab === 'coach' ? `${ai?.tip ? `<div class="tm-ai"><b>Tip:</b> ${esc(ai.tip)}</div>` : ''}<div class="tm-chips" style="margin-bottom:8px">${chip('data-tm-stijl', 'punten', 'Coachpunten', t.knop.stijl === 'punten')}${chip('data-tm-stijl', 'ontdekkend', 'Vragen stellen', t.knop.stijl === 'ontdekkend')}</div><ul class="tm-ul">${kn.coaching.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
@@ -193,6 +231,14 @@ function htmlOnderdeel(od, i){
       <div class="tm-rij" style="margin-top:12px">${knoppen}<span class="tm-info">${esc((v.domeinen || []).join(' · '))} · niveau ${v.complexiteit}/3</span></div>
     </div>` : ''}
   </div>`;
+}
+
+function htmlMateriaalRegel(od){
+  const cx = staat().cx; if (!cx.materiaal) return '';
+  const nodig = behoefte(od.vorm, od.groepen), h = haalbaar(od.vorm, od.groepen, cx);
+  const lijst = Object.entries(nodig).map(([k, n]) => `${n} ${(MATERIAAL_NAAM[k] || k).toLowerCase()}`).join(', ') || 'geen';
+  const mist = Object.entries(h.tekort).map(([k, n]) => `${n} ${(MATERIAAL_NAAM[k] || k).toLowerCase()}`).join(', ');
+  return `<div class="tm-info">Nodig: ${esc(lijst)}.${h.vervangers.length ? ' Tip: ' + esc(h.vervangers.join('; ')) + '.' : ''}${mist ? ` <b>Je mist: ${esc(mist)}.</b>` : ''}</div>`;
 }
 
 function htmlBewaard(){
@@ -211,13 +257,26 @@ async function laadBewaard(){
     teken();
   } catch (e){ console.warn('[trainingsmodule] bewaarde trainingen laden mislukt', e); }
 }
+/* teams/{teamId}/trainingscontext/huidig: alleen aantallen en keuzes; valt onder het bestaande wildcard-recht van het team. */
+async function laadContext(){
+  const t = staat(); t.cxGeladen = true;
+  try {
+    const sn = await getDoc(doc(db, 'teams', S.teamId, 'trainingscontext', 'huidig'));
+    if (sn.exists()){ t.cx = schoonContext(sn.data()); maak(); teken(); }
+  } catch (e){ console.warn('[trainingsmodule] trainingscontext laden mislukt', e); }
+}
+async function bewaarContext(){
+  const t = staat();
+  try { await setDoc(doc(db, 'teams', S.teamId, 'trainingscontext', 'huidig'), { ...schoonContext(t.cx), bijgewerkt: serverTimestamp(), door: S.user?.uid || null }, { merge: true }); }
+  catch (e){ console.warn('[trainingsmodule] trainingscontext bewaren mislukt', e); meld('Materiaal niet bewaard voor het team; het geldt nu alleen in dit scherm'); }
+}
 async function bewaar(){
   const t = staat(), p = t.plan; if (!p || t.bewaardId) return;
   try {
     const ref = await addDoc(collection(db, 'teams', S.teamId, 'trainingsplannen'), {
       profiel: { ...p.profiel }, knop: { ...t.knop }, bibliotheekVersie: BIBLIOTHEEK.versie,
       onderdelen: p.onderdelen.map(o => ({ slot: o.slot, minuten: o.minuten, vormId: o.vormId })), afsluitingId: p.afsluiting?.vormId || null,
-      seizoen: S.huidigSeizoen || SEIZOEN_FALLBACK, door: S.user?.uid || null, gemaaktMs: Date.now(),
+      context: schoonContext(t.cx), seizoen: S.huidigSeizoen || SEIZOEN_FALLBACK, door: S.user?.uid || null, gemaaktMs: Date.now(),
     });
     t.bewaardId = ref.id;
     try { await zetOpTrainingen(p, ref.id); meld(`Training bewaard en op ${datumKort(datumUit(t.datum))} gezet`); }
@@ -265,7 +324,7 @@ function openBewaarde(id){
     plan = { profiel: { ...pr, duur }, onderdelen, afsluiting, overgang: ov, meldingen: [], ruimteM2: leeftijdVanCategorie(pr.categorie) >= 13 ? 6000 : 3500 };
     plan.controle = valideer(plan);
   }
-  Object.assign(t, { n: N, duur, niv: pr.niveau || t.niv, week: pr.week || t.week, datum: pr.datum || t.datum, thema: pr.thema, themaHand: true, knop: d.knop || t.knop, plan, bewaardId: id, ai: {}, open: null, tab: {} });
+  Object.assign(t, { n: N, nHand: true, duur, niv: pr.niveau || t.niv, week: pr.week || t.week, datum: pr.datum || t.datum, thema: pr.thema, themaHand: true, knop: d.knop || t.knop, plan, bewaardId: id, ai: {}, open: null, tab: {} });
   plan.profiel.week = pr.week;
   teken(); window.scrollTo({ top: 0 });
 }
@@ -312,7 +371,21 @@ export function koppelTrainingsmodule(v){
   root.addEventListener('click', async e => {
     const b = e.target.closest('button'); if (!b) return;
     const d = b.dataset;
-    if (d.tmN){ t.n = Math.max(6, Math.min(24, t.n + Number(d.tmN))); teken(); }
+    if (d.tmN){ t.n = Math.max(6, Math.min(24, t.n + Number(d.tmN))); t.nHand = true; teken(); }
+    else if (d.tmTerugpres !== undefined){ t.nHand = false; t.n = verwachtAantal(t.datum).n; teken(); }
+    else if (d.tmPreset !== undefined){
+      const k = d.tmPreset;
+      if (k === 'eigen') return;
+      t.cx.materiaal = k ? { ...PRESETS[k].materiaal } : null; bewaarContext(); maak(); teken();
+    }
+    else if (d.tmMat){
+      const [k, dl] = d.tmMat.split(':');
+      if (!t.cx.materiaal) t.cx.materiaal = { ...PRESETS.normaal.materiaal };
+      t.cx.materiaal[k] = Math.max(0, Math.min(500, t.cx.materiaal[k] + Number(dl))); t.meerOpen = true; bewaarContext(); maak(); teken();
+    }
+    else if (d.tmVeld !== undefined){ t.cx.veld = d.tmVeld || null; t.meerOpen = true; bewaarContext(); maak(); teken(); }
+    else if (d.tmWd !== undefined){ t.cx.wedstrijddag = Number(d.tmWd) || null; t.meerOpen = true; bewaarContext(); maak(); teken(); }
+    else if (d.tmHalf !== undefined){ t.halfVeld = !t.halfVeld; maak(); teken(); }
     else if (d.tmDuur){ t.duur = Number(d.tmDuur); teken(); }
     else if (d.tmNiv){ t.niv = Number(d.tmNiv); teken(); }
     else if (d.tmMaak){ t.seed++; maak(); teken(); const r = root.querySelector('.tm-kop2'); if (r) window.scrollTo({ top: r.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' }); }
@@ -326,7 +399,7 @@ export function koppelTrainingsmodule(v){
     else if (d.tmWissel !== undefined){
       const i = Number(d.tmWissel), od = t.plan.onderdelen[i];
       const lst = rangschik(VORMEN, od.slot, { categorie: S.team?.categorie, aantalSpelers: t.n, niveau: t.niv, thema: t.thema, doelC: t.plan.profiel.doelComplexiteit,
-        uitsluiten: t.plan.onderdelen.map(o => o.vormId), seed: t.seed });
+        uitsluiten: t.plan.onderdelen.map(o => o.vormId), seed: t.seed, context: t.cx, datum: t.datum, halfVeld: t.halfVeld });
       if (!lst[0]){ meld('Geen andere passende vorm gevonden'); return; }
       t.plan.onderdelen[i] = bouwOnderdeel(lst[0], { slot: od.slot, minuten: od.minuten }, { N: t.n, thema: t.thema });
       t.plan.controle = valideer(t.plan); t.bewaardId = null; delete t.ai[od.slot]; teken();

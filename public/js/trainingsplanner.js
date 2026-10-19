@@ -7,6 +7,7 @@
 
 import { LEERCURVE } from './config.js?v=20261011g';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261014a';
+import { haalbaar, MATERIAAL_NAAM, MAX_INTENSITEIT_VOOR_WEDSTRIJD, dagVoorWedstrijd, ruimteM2 } from './trainingscontext-logica.js?v=20261019a';
 export { LEERCURVE };
 
 /* ───────────── Trainingsopbouw ───────────── */
@@ -98,7 +99,9 @@ export function standaardRuimte(leeftijd){ return leeftijd >= 13 ? 6000 : 3500; 
 
 /* ───────────── Planner ───────────── */
 /* o = { categorie, aantalSpelers, niveau (1-3), duur (60|75|90), thema, blokFase ('Ontdek'|…),
-         recent: [vorm-id's], seed, ruimteM2, zwakDomein } */
+         recent: [vorm-id's], seed, ruimteM2, zwakDomein,
+         context (optioneel, zie trainingscontext-logica.js): { materiaal, veld, wedstrijddag },
+         datum ('JJJJ-MM-DD', voor de dag-voor-de-wedstrijd-regel), halfVeld (plan B: veld één stap kleiner) } */
 export function maakPlan(vormen, o){
   const leeftijd = o.leeftijd ?? leeftijdVan(o.categorie);
   const lftBib = clamp(leeftijd, 6, 19);               /* de bibliotheek loopt van 6 t/m 19 jaar; senioren gebruiken de oudste vormen */
@@ -109,19 +112,21 @@ export function maakPlan(vormen, o){
   const doelC = clamp((FASE_COMPLEXITEIT[blokFase] ?? 2) + (niveau - 2), 1, 3);
   const recent = o.recent || [];
   const seed = String(o.seed ?? 0);
-  const ruimte = o.ruimteM2 ?? standaardRuimte(leeftijd);
+  const cx = contextVan(o, leeftijd);
+  const ruimte = o.ruimteM2 ?? cx.ruimteM2 ?? standaardRuimte(leeftijd);
   const meldingen = [];
+  if (cx.lichtMelding) meldingen.push(cx.lichtMelding);
   const gebruikt = new Set();
   const onderdelen = [];
   const intens = [];                                  /* intensiteit van de gekozen onderdelen tot nu toe */
   const soorten = [];                                 /* soort spelvorm van de gekozen onderdelen (voor variatie) */
 
   for (const sl of OPBOUW[duur].onderdelen){
-    const kand = kandidaten(vormen, sl.slot, { leeftijd: lftBib, N, gebruikt });
+    const kand = kandidatenCx(vormen, sl.slot, { leeftijd: lftBib, N, gebruikt }, cx, meldingen);
     let gekozen = null;
     if (sl.slot === 'partij' && !kand.length){
       /* te weinig spelers voor de wedstrijdvorm → kleine voetbalechte vorm */
-      const klein = kandidaten(vormen, 'kern2', { leeftijd: lftBib, N, gebruikt }).filter(v => v.voetbalecht);
+      const klein = kandidatenCx(vormen, 'kern2', { leeftijd: lftBib, N, gebruikt }, cx, meldingen).filter(v => v.voetbalecht);
       if (klein.length){
         gekozen = beste(klein, { ...o, doelC, recent, seed, thema: o.thema, slot: 'kern2', intens, soorten });
         meldingen.push(`Met ${N} spelers past de wedstrijdvorm niet; als partijspel is een kleine voetbalvorm gekozen.`);
@@ -147,7 +152,7 @@ export function maakPlan(vormen, o){
     if (idx === undefined) break;
     const sl = { slot: onderdelen[idx].slot, minuten: onderdelen[idx].minuten };
     const ander = new Set(gebruikt); ander.delete(onderdelen[idx].vormId);
-    const kand = kandidaten(vormen, sl.slot, { leeftijd: lftBib, N, gebruikt: ander }).filter(v => v.intensiteit < 3);
+    const kand = kandidaten(vormen, sl.slot, { leeftijd: lftBib, N, gebruikt: ander }, cx).filter(v => v.intensiteit < 3);
     const nieuw = beste(kand, { ...o, doelC, recent, seed, thema: o.thema, slot: sl.slot, intens: [], soorten: onderdelen.filter((_, j) => j !== idx).map(x => x.vorm.soort) });
     if (!nieuw) break;
     gebruikt.delete(onderdelen[idx].vormId); gebruikt.add(nieuw.id);
@@ -161,7 +166,7 @@ export function maakPlan(vormen, o){
     const sl = { slot: onderdelen[idx].slot, minuten: onderdelen[idx].minuten };
     const ander = new Set(gebruikt); ander.delete(onderdelen[idx].vormId);
     const zonderDrie = (v) => { let r = 0; return onderdelen.every((x, j) => { r = (j === idx ? v.intensiteit : x.vorm.intensiteit) === 3 ? r + 1 : 0; return r <= 2; }); };
-    const kand = kandidaten(vormen, sl.slot, { leeftijd: lftBib, N, gebruikt: ander }).filter(v => filter(v) && zonderDrie(v));
+    const kand = kandidaten(vormen, sl.slot, { leeftijd: lftBib, N, gebruikt: ander }, cx).filter(v => filter(v) && zonderDrie(v));
     const nieuw = beste(kand, { ...o, doelC, recent, seed, thema: o.thema, slot: sl.slot, intens: [], soorten: onderdelen.filter((_, j) => j !== idx).map(x => x.vorm.soort) });
     if (!nieuw) return false;
     gebruikt.delete(onderdelen[idx].vormId); gebruikt.add(nieuw.id);
@@ -184,21 +189,64 @@ export function maakPlan(vormen, o){
 
   /* afsluiting: geen vierde of vijfde vorm, maar de laatste minuten (uitlopen en terugblik) */
   const ov = OPBOUW[duur].overgang;
-  const afsKand = kandidaten(vormen, 'afsluiting', { leeftijd: lftBib, N, gebruikt: new Set() });
+  const afsKand = kandidatenCx(vormen, 'afsluiting', { leeftijd: lftBib, N, gebruikt: new Set() }, cx, meldingen);
   const afsV = afsKand.sort((a, b) => hash(a.id + seed) - hash(b.id + seed))[0] || null;
   const afsluiting = afsV ? bouwOnderdeel(afsV, { slot: 'afsluiting', minuten: ov.afsluiting }, { N, thema: o.thema }) : null;
   if (o.duur && kiesDuur(o.duur) !== Number(o.duur)) meldingen.push(`Een training duurt ${duur} minuten (keuze: ${DUREN.join(', ')}); ${o.duur} is daarop afgerond.`);
 
   const plan = { profiel: { categorie: o.categorie, leeftijd, aantalSpelers: N, niveau, duur, thema: o.thema, blokFase, doelComplexiteit: doelC },
                  onderdelen, afsluiting, overgang: { ...ov }, meldingen, ruimteM2: ruimte };
+  if (cx.actief) plan.context = cx.context;
   plan.controle = valideer(plan);
   return plan;
 }
 
-function kandidaten(vormen, slot, { leeftijd, N, gebruikt }){
+function kandidaten(vormen, slot, { leeftijd, N, gebruikt }, cx){
   const fasen = SLOT_FASEN[slot];
-  return vormen.filter(v => fasen.includes(v.fase) && leeftijd >= v.leeftijd[0] && leeftijd <= v.leeftijd[1]
+  let lijst = vormen.filter(v => fasen.includes(v.fase) && leeftijd >= v.leeftijd[0] && leeftijd <= v.leeftijd[1]
     && N >= v.spelers.min && !gebruikt.has(v.id));
+  if (cx && cx.actief){
+    if (cx.maxIntensiteit) lijst = lijst.filter(v => v.intensiteit <= cx.maxIntensiteit);
+    if (cx.context.materiaal) lijst = lijst.filter(v => haalbaar(v, groepsindeling(v, N).groepen, cx.context).ok);
+  }
+  return lijst;
+}
+/* Zoals kandidaten, maar vindt de context niets, dan kiest hij toch de vorm met het kleinste materiaaltekort
+   (en meldt dat), zodat een trainer nooit een lege training krijgt. */
+function kandidatenCx(vormen, slot, a, cx, meldingen){
+  const streng = kandidaten(vormen, slot, a, cx);
+  if (streng.length || !cx.actief) return streng;
+  /* eerst de dag-voor-de-wedstrijd-grens laten staan, daarna pas versoepelen */
+  const zonderMat = kandidaten(vormen, slot, a, { ...cx, context: { ...cx.context, materiaal: null } });
+  if (zonderMat.length && cx.context.materiaal){
+    const maat = v => { const h = haalbaar(v, groepsindeling(v, a.N).groepen, cx.context); return Object.values(h.tekort).reduce((p, x) => p + x, 0); };
+    const kleinste = Math.min(...zonderMat.map(maat));
+    const keuze = zonderMat.filter(v => maat(v) === kleinste);
+    meldingen.push(`Met jouw materiaal past geen vorm bij ${SLOT_NAAM[slot]}. De best passende vorm is gekozen; zie het materiaal bij die vorm.`);
+    return keuze;
+  }
+  if (cx.maxIntensiteit){
+    const los = kandidaten(vormen, slot, a, { ...cx, maxIntensiteit: 0 });
+    if (los.length) return los;
+  }
+  return streng;
+}
+/* Praktische context → grenzen voor de planner. Zonder context: alles uit, gedrag zoals vroeger. */
+function contextVan(o, leeftijd){
+  const c = o.context || null;
+  const actief = !!(c && (c.materiaal || c.veld || c.wedstrijddag) ) || !!o.halfVeld;
+  if (!actief) return { actief: false, context: { materiaal: null }, maxIntensiteit: 0, ruimteM2: undefined, lichtMelding: null };
+  const context = { materiaal: c?.materiaal || null, veld: c?.veld || null, wedstrijddag: c?.wedstrijddag || null };
+  const licht = dagVoorWedstrijd(o.datum, context);
+  let veld = context.veld || 'heel';
+  if (o.halfVeld && veld === 'heel') veld = 'half'; else if (o.halfVeld && veld === 'half') veld = 'kwart';
+  const heeftVeld = !!context.veld || !!o.halfVeld;
+  return {
+    actief: true, context,
+    maxIntensiteit: licht ? MAX_INTENSITEIT_VOOR_WEDSTRIJD : 0,
+    ruimteM2: heeftVeld ? ruimteM2(veld, standaardRuimte(leeftijd)) : undefined,
+    lichtMelding: licht ? 'De dag voor de wedstrijd: lichter, met maximaal zwaarte 2. Dit is gewoonte onder trainers, niet onderzocht bij jeugd.' : null,
+  };
 }
 
 function score(v, o){
@@ -228,7 +276,7 @@ function score(v, o){
 function beste(kand, o){ return kand.map(v => ({ v, s: score(v, o) })).sort((a, b) => b.s - a.s)[0]?.v || null; }
 export function rangschik(vormen, slot, o){ /* alternatieven voor 'wissel vorm' */
   const leeftijd = o.leeftijd ?? leeftijdVan(o.categorie);
-  const kand = kandidaten(vormen, slot, { leeftijd: clamp(leeftijd, 6, 19), N: o.aantalSpelers, gebruikt: new Set(o.uitsluiten || []) });
+  const kand = kandidaten(vormen, slot, { leeftijd: clamp(leeftijd, 6, 19), N: o.aantalSpelers, gebruikt: new Set(o.uitsluiten || []) }, contextVan(o, clamp(leeftijd, 6, 19)));
   const doelC = o.doelC ?? 2;
   return kand.map(v => ({ v, s: score(v, { ...o, slot, doelC, recent: o.recent || [], seed: o.seed ?? 0, intens: o.intens || [], soorten: o.soorten || [] }) })).sort((a, b) => b.s - a.s).map(x => x.v);
 }
@@ -318,6 +366,11 @@ export function valideer(plan){
 
   const soorten = new Set(ond.map(o => o.vorm.soort).filter(Boolean));
   c.push({ id: 'variatie', ok: soorten.size >= Math.min(3, ond.length), tekst: `${soorten.size} verschillende soorten spelvorm in deze training` });
+
+  if (plan.context && plan.context.materiaal){
+    const mis = ond.concat(plan.afsluiting ? [plan.afsluiting] : []).map(o => ({ o, h: haalbaar(o.vorm, o.groepen, plan.context) })).filter(x => !x.h.ok);
+    c.push({ id: 'materiaal', ok: mis.length === 0, tekst: mis.length ? `Materiaal mist bij: ${mis.map(x => `${x.o.vorm.naam} (${Object.entries(x.h.tekort).map(([k, n]) => n + ' ' + (MATERIAAL_NAAM[k] || k).toLowerCase()).join(', ')})`).join('; ')}` : 'Het materiaal van het team is genoeg (eventueel met de vervangers)' });
+  }
 
   c.push({ id: 'avg', ok: true, tekst: 'Geen namen of persoonsgegevens gebruikt (alleen teamprofiel)' });
   return { ok: c.every(x => x.ok), checks: c, voetbalechtPct: vbPct, themaPct: thPct };
