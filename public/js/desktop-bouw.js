@@ -12,11 +12,11 @@ import { S, $, esc, meld, isBeheerder, toon } from './state.js?v=20261011g';
 import { BOUWEN, NIVEAUS, niveauKleur, bouwVanCategorie } from './config.js?v=20261011g';
 import { ico } from './icons.js?v=20260922c';
 import { analyseWedstrijd } from './analyse.js?v=20261011g';
-import { laadBouwData, zetBouwContext, presentiePctTeam, presentiePctWedstrijdTeam, uitslagenTeam, modalNieuweUitleningVanuitBouw } from './bouw-hub.js?v=20261019h';
-import { trekUitleningIn, definitiefOverzetten } from './teams-spelers.js?v=20261019h';
-import { htmlMeekijk } from './desktop-schermen.js?v=20261019h';
+import { laadBouwData, zetBouwContext, presentiePctTeam, presentiePctWedstrijdTeam, uitslagenTeam, modalNieuweUitleningVanuitBouw } from './bouw-hub.js?v=20261019i';
+import { trekUitleningIn, definitiefOverzetten } from './teams-spelers.js?v=20261019i';
+import { htmlMeekijk } from './desktop-schermen.js?v=20261019i';
 import { rondeStatusTeam } from './evaluatierondes.js?v=20261011g';
-import { isSelectieBouw, htmlRadarBlok, htmlSelectieTegel, htmlSelectieScherm, selectieKlik, selectieInvoer } from './selectie-bouw.js?v=20261019h';
+import { isSelectieBouw, htmlRadarBlok, htmlSelectieTegel, htmlSelectieScherm, selectieKlik, selectieInvoer } from './selectie-bouw.js?v=20261019i';
 
 const cache = new Map();          // 'clubId|bouw' → context uit laadBouwData
 const bezig = new Map();          // lopende laadacties

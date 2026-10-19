@@ -210,7 +210,10 @@ export function pasClubConfigToe(club){
   LOGO_CACHE[club.id] = veiligUrl(eff.identiteit.logo) || CLUPPIE_LOGO;
   NAAM_CACHE[club.id] = club.naam || '';
   /* [20261013b] eindbaas-keuze per club (zie onderdelen.js); buiten de handtekening, zodat een wijziging direct telt */
-  S._clubPlatform = { platformModules: club.platformModules || {}, gemaakt: club.gemaakt || null };
+  S._clubPlatform = { platformModules: club.platformModules || {}, gemaakt: club.gemaakt || null,
+    werkwijze: (club.instellingen && club.instellingen.werkwijze) || 'vrij',
+    leiding: { admins: club.admins || {}, hoofdJeugd: club.hoofdJeugd || {}, bouwCoordinatoren: club.bouwCoordinatoren || {},
+      eigenBouwen: Array.isArray(club.eigenBouwen) ? club.eigenBouwen : [] } };
   if (sig === _sig) return;
   _sig = sig;
   HUIDIG = { clubId: club.id, naam: club.naam || '', eff, huidigSeizoen: club.huidigSeizoen || '' };

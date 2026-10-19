@@ -5,8 +5,8 @@
 
 import { db, doc, getDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261011g';
-import { DISTRICTEN } from './clubconfig.js?v=20261019b';
-import { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } from './sportlink-clubinfo.js?v=20261019h';
+import { DISTRICTEN } from './clubconfig.js?v=20261019i';
+import { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } from './sportlink-clubinfo.js?v=20261019i';
 
 export async function laadMijnAanmelding(el){
   if (!el || !S.user) return;
@@ -53,6 +53,10 @@ export function modalClubAanmelden(naVersturen){
     </div>
     <div class="veldgroep" id="caKleurRij" hidden><label>Clubkleur</label><div class="invoer sl-auto" id="caKleur"></div></div>
     <div class="veldgroep"><label>Jouw rol bij de club</label><input class="invoer" id="caRol" maxlength="60" placeholder="Bijv. jeugdcoördinator, bestuurslid"></div>
+    <div class="veldgroep"><label>Hoe werkt jullie jeugdopleiding?</label>
+      <label class="ci-schakel"><input type="radio" name="caWerk" value="club" checked><span><b>Coördinatoren sturen de lijn</b> · er zijn bouwen of een hoofd jeugd. Trainers ontvangen het plan.</span></label>
+      <label class="ci-schakel"><input type="radio" name="caWerk" value="vrij"><span><b>Iedere trainer werkt zelfstandig</b> · trainers maken hun eigen trainingen en plan.</span></label>
+      <p class="cb-uitleg">Je kunt dit later aanpassen onder Instellingen. Weet je het nog niet? Laat het dan staan.</p></div>
     <div class="veldgroep"><label>E-mailadres</label><input class="invoer" id="caMail" type="email" maxlength="120" value="${esc(mail)}" autocomplete="email"></div>
     <div class="veldgroep"><label>Nog iets dat we moeten weten? (optioneel)</label><textarea class="invoer" id="caBericht" rows="3" maxlength="1000"></textarea></div>
     <label class="ci-schakel"><input type="checkbox" id="caAkkoord"><span>Ik meld deze club aan namens de club en ga akkoord met de <a href="privacy.html" target="_blank" rel="noopener">privacyverklaring</a>. De club sluit later digitaal de verwerkersovereenkomst af.</span></label>
@@ -84,7 +88,7 @@ export function modalClubAanmelden(naVersturen){
     const k = e.currentTarget;
     const data = {
       clubNaam: $m('caClub').value.trim(), plaats: $m('caPlaats').value.trim(), district: $m('caDistrict').value,
-      contactNaam: $m('caNaam').value.trim(), aantalTeams: $m('caTeams').value, rol: $m('caRol').value.trim(),
+      contactNaam: $m('caNaam').value.trim(), aantalTeams: $m('caTeams').value, rol: $m('caRol').value.trim(), werkwijze: document.querySelector('input[name="caWerk"]:checked')?.value === 'vrij' ? 'vrij' : 'club',
       contactEmail: $m('caMail').value.trim(), bericht: $m('caBericht').value.trim(), akkoord: $m('caAkkoord').checked,
       ...(SL.clientId ? { sportlinkClientId: SL.clientId, sportlinkClubcode: SL.clubcode } : {}),
       ...(SL.logo ? { logo: SL.logo } : {}), ...(SL.kleur ? { kleur: SL.kleur } : {}),

@@ -71,3 +71,32 @@ for (const gemaakt of gevallen) for (const pm of [undefined, {}, { trainingsmodu
   assert.equal(O.platformToegestaan(club, k), server.platformToegestaan(club, k), JSON.stringify([gemaakt, pm, k]));
 }
 console.log('onderdelen: client en server stemmen overeen');
+
+/* ---- vierde laag: werkwijze ---- */
+{
+  const club = (w, leiding = {}) => ({ platformModules: {}, gemaakt: OUD, werkwijze: w, leiding });
+  const zet = (w, team, uid, leiding) => { reset(); S._clubPlatform = club(w, leiding); S.team = { id: 't', club: 'c1', modules: {}, ...team }; S.user = { uid }; };
+  zet('vrij', {}, 'u1');
+  for (const k of O.BEHEERD) assert.equal(O.onderdeelAan(k), true, `${k}: Trainers vrij`);
+  zet('club', {}, 'u1');
+  for (const k of O.BEHEERD) assert.equal(O.onderdeelAan(k), false, `${k}: Club stuurt, gewone trainer`);
+  zet('club', { werkwijzeVrij: true }, 'u1');
+  for (const k of O.BEHEERD) assert.equal(O.onderdeelAan(k), true, `${k}: team met uitzondering`);
+  zet('club', {}, 'u2', { admins: { u2: true } });
+  assert.equal(O.onderdeelAan('seizoensplan'), true, 'admin blijft bouwen');
+  zet('club', {}, 'u2', { hoofdJeugd: { u2: true } });
+  assert.equal(O.onderdeelAan('trainingsmodule'), true, 'hoofd jeugd blijft bouwen');
+  zet('club', {}, 'u2', { bouwCoordinatoren: { midden: { u2: true } } });
+  assert.equal(O.onderdeelAan('trainingsmodule'), true, 'bouwcoördinator blijft bouwen');
+  zet('club', {}, 'u2', { eigenBouwen: [{ id: 'e1', coaches: { u2: true } }] });
+  assert.equal(O.onderdeelAan('seizoensplan'), true, 'coach van eigen bouw blijft bouwen');
+  zet('club', { club: null }, 'u1');
+  assert.equal(O.onderdeelAan('trainingsmodule'), true, 'team zonder club: alles open');
+  zet('club', {}, 'u1');
+  S._clubPlatform.platformModules = { trainingsmodule: false };
+  assert.equal(O.onderdeelAan('trainingsmodule'), false, 'eindbaas gaat voor');
+  assert.equal(O.werkwijzeVan(undefined), 'vrij');
+  assert.equal(O.werkwijzeVan({ werkwijze: 'onzin' }), 'vrij');
+  zet('club', {}, 'u1');
+  assert.equal(O.onderdeelAan('kompas'), true, 'andere onderdelen ongemoeid');
+}
