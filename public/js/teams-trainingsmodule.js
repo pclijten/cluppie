@@ -22,16 +22,18 @@ import { S, esc, meld } from './state.js?v=20261011g';
 import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } from './config.js?v=20261011g';
 import { aiAan } from './clubconfig.js?v=20261019b';
 import { ico } from './icons.js?v=20260922c';
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019g';
-import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, OPBOUW, kiesDuur, SLOT_NAAM, groepsindeling } from './trainingsplanner.js?v=20261019g';
+import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019h';
+import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, OPBOUW, kiesDuur, SLOT_NAAM, groepsindeling } from './trainingsplanner.js?v=20261019h';
 import { MATERIAAL, MATERIAAL_NAAM, PRESETS, presetVan, VELDEN, schoonContext, behoefte, haalbaar, valtAf, tipTekst } from './trainingscontext-logica.js?v=20261019a';
-import { voorbereidStijl } from './speelstijl-planner.js?v=20261019g';
+import { laadCoachmodel } from './coachmodel.js?v=20261019h';
+import { coachkaart, alleBevestigd as coachKlaar, DIMS as COACH_DIMS } from './coachmodel-logica.js?v=20261019h';
+import { voorbereidStijl } from './speelstijl-planner.js?v=20261019h';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
 import { TERUGBLIK_VRAGEN, zetAntwoord, terugblikKlaar, terugblikSamenvatting, signaalVormBewaard, signaalVormGewisseld, signaalTerugblik, signaalMateriaal, signaalGat, gatRedenen } from './leren-logica.js?v=20261019b';
 import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261019b';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261012e';
-import { positieWeek } from './seizoensplan-logica.js?v=20261019g';
-import { oefeningVan } from './seizoensplan-club.js?v=20261019g';
+import { positieWeek } from './seizoensplan-logica.js?v=20261019h';
+import { oefeningVan } from './seizoensplan-club.js?v=20261019h';
 import { onderdeelAan } from './onderdelen.js?v=20261013b';
 
 const VORMEN = BIBLIOTHEEK.vormen;
@@ -120,7 +122,7 @@ function maak(){
   if (!themaOpties().includes(t.thema)) t.thema = themaOpties()[0] || ll.thema;
   t.plan = maakPlan(VORMEN, { categorie: S.team?.categorie, leeftijd: lv, aantalSpelers: t.n, niveau: t.niv, duur: t.duur, thema: t.thema,
     blokFase: ll.fase, seed: `${S.teamId}:${t.week}:${t.seed}`, recent: [], context: t.cx, datum: t.datum, halfVeld: t.halfVeld, slechtWeer: t.slechtWeer,
-    stijl: t.stijlUit ? null : t.stijl });
+    stijl: t.stijlUit ? null : t.stijl, coach: t.coach });
   t.plan.profiel.week = t.week;
   t.plan.profiel.datum = t.datum;
   t.bewaardId = null; t.ai = {}; t.open = null; t.tab = {};
@@ -134,6 +136,7 @@ export function htmlTrainingsmodule(){
   if (!t.lijst) laadBewaard();
   if (!t.cxGeladen) laadContext();
   if (!t.stijlGeladen) laadStijl();
+  if (!t.coachGeladen) laadCoach();
   return `<div id="tmRoot" class="tm">${htmlInhoud()}</div>`;
 }
 function htmlInhoud(){
@@ -196,6 +199,7 @@ function htmlResultaat(){
       <button class="tm-chip tm-mini" data-tm-ck="1">${t.ckOpen || fouten.length ? 'verberg' : 'details'}</button></div>
     ${(t.ckOpen || fouten.length) ? `<div class="tm-checks">${p.controle.checks.filter(c => c.id !== 'avg').map(c => `<span class="tm-ck ${c.ok ? 'ok' : 'fout'}" title="${esc(c.tekst)}">${esc(CHECK_NAAM[c.id] || c.id)}${c.id === 'voetbalecht' ? ' ' + p.controle.voetbalechtPct + '%' : c.id === 'thema' ? ' ' + p.controle.themaPct + '%' : ''}</span>`).join('')}</div>${fouten.map(f => `<div class="tm-info">${esc(f.tekst)}</div>`).join('')}` : ''}
   </div>`;
+  h += htmlAccentRegel();
   p.meldingen.forEach(m => { h += `<div class="tm-melding">${esc(m)}</div>`; });
   h += `<div class="tm-pauze">Ontvangst · ${ov.ontvangst}′ — spelers verzamelen, uitleg warming-up</div>`;
   p.onderdelen.forEach((od, i) => {
@@ -232,7 +236,7 @@ function htmlOnderdeel(od, i){
       ${htmlMateriaalRegel(od)}
       <div class="tm-tabs">${TABS.map(([k, x]) => `<button class="${k === tab ? 'aan' : ''}" data-tm-tab="${i}:${k}">${x}</button>`).join('')}</div>
       ${tab === 'uitv' ? `${ai?.intro ? `<div class="tm-ai"><b>Voor jouw team:</b> ${esc(ai.intro)}</div>` : ''}${v.uitleg ? `<div class="tm-sub" style="margin-top:0">Wat zeg je tegen de spelers</div><div class="tm-zeg">“${esc(v.uitleg)}”</div>` : ''}${od.themaregel ? `<div class="tm-themaregel"><b>Themaregel:</b> ${esc(od.themaregel)}</div>` : ''}${lijst(v.organisatie, 'Zo zet je het uit')}${lijst(v.regels, 'Regels')}${lijst(kn.aanpassingen, 'Aangepast door jouw knoppen')}${lijst(v.letOp, 'Let op')}` : ''}
-      ${tab === 'coach' ? `${ai?.tip ? `<div class="tm-ai"><b>Tip:</b> ${esc(ai.tip)}</div>` : ''}<div class="tm-chips" style="margin-bottom:8px">${chip('data-tm-stijl', 'punten', 'Coachpunten', t.knop.stijl === 'punten')}${chip('data-tm-stijl', 'ontdekkend', 'Vragen stellen', t.knop.stijl === 'ontdekkend')}</div><ul class="tm-ul">${kn.coaching.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+      ${tab === 'coach' ? `${ai?.tip ? `<div class="tm-ai"><b>Tip:</b> ${esc(ai.tip)}</div>` : ''}<div class="tm-chips" style="margin-bottom:8px">${chip('data-tm-stijl', 'punten', 'Coachpunten', t.knop.stijl === 'punten')}${chip('data-tm-stijl', 'ontdekkend', 'Vragen stellen', t.knop.stijl === 'ontdekkend')}</div><ul class="tm-ul">${kn.coaching.map(x => `<li>${esc(x)}</li>`).join('')}</ul>${htmlCoachkaart(v)}` : ''}
       ${tab === 'diff' ? `<div class="tm-diff"><div class="mak"><h4>Makkelijker</h4><ul class="tm-ul">${(v.makkelijker || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div><div class="moe"><h4>Moeilijker</h4><ul class="tm-ul">${(v.moeilijker || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div></div>` : ''}
       ${tab === 'var' ? ((v.varianten || []).map(x => `<div class="tm-var"><b>${esc(x.naam)}</b><span>${esc(x.uitleg)}</span></div>`).join('') || '<div class="tm-info">Geen varianten.</div>') : ''}
       <div class="tm-rij" style="margin-top:12px">${knoppen}<span class="tm-info">${esc((v.domeinen || []).join(' · '))} · niveau ${v.complexiteit}/3</span></div>
@@ -291,6 +295,26 @@ async function laadStijl(){
     t.stijl = sn.exists() ? voorbereidStijl(sn.data()) : null;
     if (t.stijl && t.stijl.sturend){ maak(); teken(); }
   } catch (e){ console.warn('[trainingsmodule] speelstijl laden mislukt', e); }
+}
+/* gebruikers/{uid}/coachmodel/huidig: het persoonlijke coachmodel van de trainer (alleen hij leest het). Zonder model: niets verandert. */
+async function laadCoach(){
+  const t = staat(); t.coachGeladen = true;
+  try {
+    t.coach = await laadCoachmodel();
+    const lopen = t.coach?.onderdelen?.c3?.bevestigd && (t.coach.onderdelen.c3.stand ?? 0) <= -1;
+    if (lopen){ maak(); teken(); } else teken();
+  } catch (e){ console.warn('[trainingsmodule] coachmodel laden mislukt', e); }
+}
+/* Coachkaart in de verpakking van de trainer; alleen als er minstens één onderdeel bevestigd is. */
+function htmlCoachkaart(v){
+  const m = staat().coach;
+  if (!m || !COACH_DIMS.some(d => m.onderdelen?.[d.id]?.bevestigd)) return '';
+  return `<div class="tm-sub">Jouw coachkaart</div><ul class="tm-ul">${coachkaart(v, m).map(x => `<li><b>${esc(x.moment)}:</b> ${esc(x.tekst)}</li>`).join('')}</ul>`;
+}
+function htmlAccentRegel(){
+  const a = staat().coach?.accent;
+  if (!a || a.uit) return '';
+  return `<div class="tm-melding">Accent van de week: ${esc(a.tekst)} Je geeft je tikken na de training bij Mijn coachmodel.</div>`;
 }
 async function bewaarContext(){
   const t = staat();

@@ -6,9 +6,10 @@
    ========================================================================== */
 
 import { LEERCURVE } from './config.js?v=20261011g';
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019g';
+import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019h';
 import { haalbaar, MATERIAAL_NAAM, MAX_INTENSITEIT_VOOR_WEDSTRIJD, dagVoorWedstrijd, ruimteM2 } from './trainingscontext-logica.js?v=20261019a';
-import { voorbereidStijl, stijlScore, stijlUitgesloten, stijlMelding } from './speelstijl-planner.js?v=20261019g';
+import { voorbereidStijl, stijlScore, stijlUitgesloten, stijlMelding } from './speelstijl-planner.js?v=20261019h';
+import { coachScore } from './coachmodel-logica.js?v=20261019h';
 export { LEERCURVE };
 
 /* ───────────── Trainingsopbouw ───────────── */
@@ -104,6 +105,7 @@ export function standaardRuimte(leeftijd){ return leeftijd >= 13 ? 6000 : 3500; 
          context (optioneel, zie trainingscontext-logica.js): { materiaal, veld, wedstrijddag },
          datum ('JJJJ-MM-DD', voor de dag-voor-de-wedstrijd-regel), halfVeld (plan B: veld één stap kleiner),
          slechtWeer (plan B: regen of koud; buiten de afsluiting alleen vormen met zwaarte 2 of 3, zodat niemand stilstaat),
+         coach (optioneel, zie coachmodel-logica.js): het coachmodel van de trainer; wie 'laten lopen' bevestigde krijgt bij gelijke score doorlopend spel (+1),
          stijl (optioneel, zie speelstijl-planner.js): de vastgelegde speelstijl van de club; zonder stijl gedrag zoals vroeger } */
 export function maakPlan(vormen, o){
   const leeftijd = o.leeftijd ?? leeftijdVan(o.categorie);
@@ -286,6 +288,7 @@ function score(v, o){
   if ((o.slot === 'kern1' || o.slot === 'kern2') && v.voetbalecht) sc += 3;   /* ruim de helft van de tijd voetbalecht */
   if (v.soort && (o.soorten || []).includes(v.soort)) sc -= 4;                                              /* liever een andere soort spelvorm dan eerder in de training */
   if (o.slot === 'warming-up' && v.voetbalecht) sc += 1.5;                                                 /* warming-up als kleine spelvorm */
+  sc += coachScore(v, o.coach);                         /* kleine voorkeur voor doorlopend spel bij 'laten lopen' (0 zonder coachmodel) */
   sc += stijlScore(v, o.stijl);                         /* lichte voorkeur voor de speelstijl van de club (0 zonder stijl) */
   sc += hash(v.id + o.seed) * 0.9;                      /* stabiele variatie per week */
   return sc;
