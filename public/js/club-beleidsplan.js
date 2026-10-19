@@ -6,9 +6,10 @@
 import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261011g';
 import { LEERCURVE } from './config.js?v=20261011g';
 import { functions, httpsCallable } from './firebase.js?v=20261011g';
+import { uploadHulpHtml, UPLOAD_HULP } from './upload-hulp.js?v=20261019h';
 import { aiAan, kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261019b';
 import { opslaanContent } from './content.js?v=20261011g';
-import { huidigeContentLijst } from './club-content.js?v=20261019b';
+import { huidigeContentLijst } from './club-content.js?v=20261019h';
 
 const MAX_STUK = 12000;
 const slug = t => String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60);
@@ -64,6 +65,7 @@ export function openBeleidsplanImport(){
       <button class="knop licht vol" id="bpKies">PDF of tekstbestand kiezen…</button>
       <textarea class="invoer" id="bpTekst" rows="8" placeholder="…of plak hier de tekst" style="margin-top:10px">${esc(st.tekst)}</textarea>
       <p class="cb-uitleg" id="bpInfo" style="margin:6px 0 0"></p>
+      ${uploadHulpHtml()}
       <div class="rij" style="margin-top:12px">
         <button class="knop licht vol" id="bpHandmatig">Zonder AI: in onderdelen splitsen</button>
         <button class="knop vol" id="bpAi" ${aiAan() ? '' : 'disabled'}>Analyseren met AI</button></div>
@@ -76,7 +78,7 @@ export function openBeleidsplanImport(){
       try {
         tekstEl.value = /pdf$/i.test(f.name) || f.type === 'application/pdf' ? await pdfNaarTekst(f) : await f.text();
         info.textContent = tekstEl.value.trim().length < 80 ? 'Er is weinig tekst gevonden. Is dit een ingescande PDF? Plak dan de tekst handmatig.' : `${tekstEl.value.length.toLocaleString('nl-NL')} tekens gelezen.`;
-      } catch (e){ console.error(e); info.textContent = 'Lezen mislukt: ' + (e.message || e); }
+      } catch (e){ console.error(e); info.textContent = 'Lezen mislukt: ' + (e.message || e) + '. ' + UPLOAD_HULP; }
     };
     const lees = () => { st.tekst = tekstEl.value.trim(); if (st.tekst.length < 80){ meld('Voeg eerst (meer) tekst toe'); return false; } return true; };
     document.getElementById('bpHandmatig').onclick = () => {
