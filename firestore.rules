@@ -188,7 +188,11 @@ service cloud.firestore {
               || isClubLid(request.resource.data.club) || isClubAdmin(request.resource.data.club)))
         /* [20261011d] clubbeheerder maakt teams aan zonder er zelf lid van te worden (Sportlink-import) */
         || (request.resource.data.get('club', null) != null && isClubAdmin(request.resource.data.club)));
-      allow update: if magSchrijven(teamId);
+      /* leden en clubkoppeling: een coach mag die niet zelf wijzigen (anders kan hij iemand toevoegen of het team
+         naar een andere club verplaatsen). Clubbeheer en de coördinator van de bouw mogen wel. */
+      allow update: if (isVolCoach(teamId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['leden', 'club']))
+        || (teamBestaat(teamId) && teamClub(teamId) != null && (isClubAdmin(teamClub(teamId))
+            || isCoordinatorVanBouw(teamClub(teamId), team(teamId).get('bouw', '_'))));
       allow delete: if isVolCoach(teamId)
         || (resource.data.get('club', null) != null && isClubAdmin(resource.data.club));
 
@@ -206,9 +210,7 @@ service cloud.firestore {
       match /spelers/{id} {
         allow read: if magLezen(teamId) || heeftDeelToegang(teamId);
       }
-      match /presentie/{id} {
-        allow read: if heeftDeelToegang(teamId);          /* naast de wildcard hierboven */
-      }
+      /* presentie: geen deel-link; alleen via de wildcard hierboven (teamleden, clubbeheer, coördinator) */
       /* poule/* wordt door Cloud Functions geschreven (Admin SDK); coaches lezen via de wildcard */
     }
 
@@ -220,16 +222,23 @@ service cloud.firestore {
     function clubInhoudBeheer() { return isPlatform() || (echt() && resource.data.get('club', null) != null && isClubAdmin(resource.data.club)); }
     function clubInhoudNieuwBeheer() { return echt() && request.resource.data.get('club', null) != null && isClubAdmin(request.resource.data.club); }
     function trainingClub(id) { return get(/databases/$(database)/documents/trainingen/$(id)).data.get('club', null); }
+    /* trainingen schrijven: hoofd jeugdopleiding / clubadmin, of de coach van een training voor precies één team.
+       Een training voor meerdere teams wijzigt alleen het hoofd jeugdopleiding of de clubadmin. */
+    function isTrainingCoach(d) { return echt() && d.get('teams', []).size() == 1 && isVolCoach(d.get('teams', [])[0]); }
+    function magTrainingSchrijven(d) { return d.get('club', null) != null && (isJeugdPlanner(d.get('club', null)) || isTrainingCoach(d)); }
+    function trainingSchrijver(id) { return echt() && magTrainingSchrijven(get(/databases/$(database)/documents/trainingen/$(id)).data); }
 
     match /trainingen/{id} {
       allow read: if clubInhoudLezen()
         || (anoniem() && exists(/databases/$(database)/documents/trainingToegang/$(uid()))
             && get(/databases/$(database)/documents/trainingToegang/$(uid())).data.trainingId == id
             && get(/databases/$(database)/documents/trainingToegang/$(uid())).data.vervaltOp > request.time);
-      allow create: if clubInhoudNieuw();
-      allow update, delete: if clubInhoudLezen();
+      allow create: if echt() && magTrainingSchrijven(request.resource.data);
+      allow update: if echt() && magTrainingSchrijven(resource.data) && magTrainingSchrijven(request.resource.data);
+      allow delete: if echt() && magTrainingSchrijven(resource.data);
       match /{sub=**} {
-        allow read, write: if echt() && trainingClub(id) != null && isClubLid(trainingClub(id));
+        allow read: if echt() && trainingClub(id) != null && isClubLid(trainingClub(id));
+        allow write: if trainingSchrijver(id);
       }
     }
     match /videos/{id} {
