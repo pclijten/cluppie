@@ -6,7 +6,7 @@
    ========================================================================== */
 
 import { LEERCURVE } from './config.js?v=20261011g';
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019c';
+import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019f';
 import { haalbaar, MATERIAAL_NAAM, MAX_INTENSITEIT_VOOR_WEDSTRIJD, dagVoorWedstrijd, ruimteM2 } from './trainingscontext-logica.js?v=20261019a';
 export { LEERCURVE };
 

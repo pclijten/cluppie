@@ -9,6 +9,7 @@ import { DEEL_G } from './vormen-g.mjs';
 import { DEEL_H } from './vormen-h.mjs';
 import { DEEL_I } from './vormen-i.mjs';
 import { DEEL_J } from './vormen-j.mjs';
+import { DEEL_K } from './vormen-k.mjs';
 import { VERRIJKING } from './verrijking.mjs';
 
 /* Eerste 48 vormen krijgen soort, uitleg, varianten en let-op-punten uit verrijking.mjs. */
@@ -19,7 +20,7 @@ function verrijk(v){
   if (r.lft) uit.leeftijd = r.lft;
   return uit;
 }
-const NIEUW = [DEEL_D, DEEL_E, DEEL_F, DEEL_G, DEEL_H, DEEL_I, DEEL_J];
+const NIEUW = [DEEL_D, DEEL_E, DEEL_F, DEEL_G, DEEL_H, DEEL_I, DEEL_J, DEEL_K];
 const OUD = [...DEEL_A, ...DEEL_B, ...DEEL_C].map(verrijk);
 export const VORMEN = [...OUD, ...NIEUW.flat()];
 
@@ -31,7 +32,7 @@ export const THEMAREGELS = {
 };
 
 export const BIBLIOTHEEK = {
-  versie: '2026.10.19-keeper',
+  versie: '2026.10.19-bouwen',
   taal: 'nl',
   licentie: 'Eigen werk (Cluppie). Referentiekader: KNVB-spelregels en -principes. Geen KNVB-tekst of -afbeeldingen overgenomen.',
   themaregels: THEMAREGELS,
