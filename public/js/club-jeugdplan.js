@@ -12,9 +12,9 @@
 import { S, esc, meld } from './state.js?v=20261011g';
 import { db, doc, collection, getDocs, setDoc, updateDoc, deleteField, query, where, writeBatch, serverTimestamp } from './firebase.js?v=20261011g';
 import { bouwNaam, catLabel, SEIZOEN_FALLBACK } from './config.js?v=20261011g';
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019f';
-import { MODELLEN, ACCENTEN, beschikbareThemas, maandagVan, standaardVrij, weekKalender } from './seizoensplan-logica.js?v=20261019f';
-import { rechtenVoor, magVoorBouw, teamsVoorPlan, planVoorTeam, trainingDocs, bezetteWeken, JEUGDBOUWEN } from './seizoensplan-club.js?v=20261019f';
+import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019g';
+import { MODELLEN, ACCENTEN, beschikbareThemas, maandagVan, standaardVrij, weekKalender } from './seizoensplan-logica.js?v=20261019g';
+import { rechtenVoor, magVoorBouw, teamsVoorPlan, planVoorTeam, trainingDocs, bezetteWeken, JEUGDBOUWEN } from './seizoensplan-club.js?v=20261019g';
 
 const VORMEN = BIBLIOTHEEK.vormen;
 const vandaagIso = () => new Date().toISOString().slice(0, 10);
