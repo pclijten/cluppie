@@ -13,3 +13,9 @@ assert.equal(controleerAanmelding({ ...goed, district: 'mars' }).data.district, 
 assert.equal(controleerAanmelding({ ...goed, bericht: 'a\u0000b' }).data.bericht, 'a b');
 assert.equal(afkVoorstel('RKVV Voorbeeld'), 'RKVV'); assert.equal(afkVoorstel('Voetbal Club Gemert'), 'VCG');
 console.log('aanmelding: alle controles geslaagd');
+
+/* werkwijze bij aanmelding: alleen 'vrij' blijft vrij, al het andere wordt 'club' */
+assert.equal(controleerAanmelding({ ...goed, werkwijze: 'vrij' }).data.werkwijze, 'vrij');
+assert.equal(controleerAanmelding({ ...goed, werkwijze: 'club' }).data.werkwijze, 'club');
+assert.equal(controleerAanmelding(goed).data.werkwijze, 'club');
+assert.equal(controleerAanmelding({ ...goed, werkwijze: 'x' }).data.werkwijze, 'club');
