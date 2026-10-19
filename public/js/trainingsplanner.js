@@ -6,8 +6,9 @@
    ========================================================================== */
 
 import { LEERCURVE } from './config.js?v=20261011g';
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019f';
+import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019g';
 import { haalbaar, MATERIAAL_NAAM, MAX_INTENSITEIT_VOOR_WEDSTRIJD, dagVoorWedstrijd, ruimteM2 } from './trainingscontext-logica.js?v=20261019a';
+import { voorbereidStijl, stijlScore, stijlUitgesloten, stijlMelding } from './speelstijl-planner.js?v=20261019g';
 export { LEERCURVE };
 
 /* ───────────── Trainingsopbouw ───────────── */
@@ -102,7 +103,8 @@ export function standaardRuimte(leeftijd){ return leeftijd >= 13 ? 6000 : 3500; 
          recent: [vorm-id's], seed, ruimteM2, zwakDomein,
          context (optioneel, zie trainingscontext-logica.js): { materiaal, veld, wedstrijddag },
          datum ('JJJJ-MM-DD', voor de dag-voor-de-wedstrijd-regel), halfVeld (plan B: veld één stap kleiner),
-         slechtWeer (plan B: regen of koud; buiten de afsluiting alleen vormen met zwaarte 2 of 3, zodat niemand stilstaat) } */
+         slechtWeer (plan B: regen of koud; buiten de afsluiting alleen vormen met zwaarte 2 of 3, zodat niemand stilstaat),
+         stijl (optioneel, zie speelstijl-planner.js): de vastgelegde speelstijl van de club; zonder stijl gedrag zoals vroeger } */
 export function maakPlan(vormen, o){
   const leeftijd = o.leeftijd ?? leeftijdVan(o.categorie);
   const lftBib = clamp(leeftijd, 6, 19);               /* de bibliotheek loopt van 6 t/m 19 jaar; senioren gebruiken de oudste vormen */
@@ -113,11 +115,13 @@ export function maakPlan(vormen, o){
   const doelC = clamp((FASE_COMPLEXITEIT[blokFase] ?? 2) + (niveau - 2), 1, 3);
   const recent = o.recent || [];
   const seed = String(o.seed ?? 0);
+  o = { ...o, stijl: voorbereidStijl(o.stijl) };
   const cx = contextVan(o, leeftijd);
   const ruimte = o.ruimteM2 ?? cx.ruimteM2 ?? standaardRuimte(leeftijd);
   const meldingen = [];
   if (cx.lichtMelding) meldingen.push(cx.lichtMelding);
   if (cx.weerMelding) meldingen.push(cx.weerMelding);
+  if (o.stijl && o.stijl.sturend) meldingen.push(stijlMelding(o.stijl));
   const gebruikt = new Set();
   const onderdelen = [];
   const intens = [];                                  /* intensiteit van de gekozen onderdelen tot nu toe */
@@ -207,6 +211,7 @@ function kandidaten(vormen, slot, { leeftijd, N, gebruikt }, cx){
   const fasen = SLOT_FASEN[slot];
   let lijst = vormen.filter(v => fasen.includes(v.fase) && leeftijd >= v.leeftijd[0] && leeftijd <= v.leeftijd[1]
     && N >= v.spelers.min && !gebruikt.has(v.id));
+  if (cx && cx.stijl) lijst = lijst.filter(v => !stijlUitgesloten(v, cx.stijl, leeftijd));
   if (cx && cx.actief){
     if (cx.maxIntensiteit) lijst = lijst.filter(v => v.intensiteit <= cx.maxIntensiteit);
     if (cx.minIntensiteit && slot !== 'afsluiting') lijst = lijst.filter(v => v.intensiteit >= cx.minIntensiteit);
@@ -218,6 +223,7 @@ function kandidaten(vormen, slot, { leeftijd, N, gebruikt }, cx){
    (en meldt dat), zodat een trainer nooit een lege training krijgt. */
 function kandidatenCx(vormen, slot, a, cx, meldingen){
   const streng = kandidaten(vormen, slot, a, cx);
+  if (!streng.length && cx.stijl){ const zonder = kandidatenCx(vormen, slot, a, { ...cx, stijl: null }, meldingen); if (zonder.length) return zonder; }  /* de speelstijl laat nooit een leeg slot achter */
   if (streng.length || !cx.actief) return streng;
   /* eerst de dag-voor-de-wedstrijd-grens laten staan, daarna pas versoepelen */
   const zonderMat = kandidaten(vormen, slot, a, { ...cx, context: { ...cx.context, materiaal: null } });
@@ -241,15 +247,16 @@ function kandidatenCx(vormen, slot, a, cx, meldingen){
 /* Praktische context → grenzen voor de planner. Zonder context: alles uit, gedrag zoals vroeger. */
 function contextVan(o, leeftijd){
   const c = o.context || null;
+  const stijl = voorbereidStijl(o.stijl);
   const actief = !!(c && (c.materiaal || c.veld || c.wedstrijddag) ) || !!o.halfVeld || !!o.slechtWeer;
-  if (!actief) return { actief: false, context: { materiaal: null }, maxIntensiteit: 0, minIntensiteit: 0, weerMelding: null, ruimteM2: undefined, lichtMelding: null };
+  if (!actief) return { stijl, actief: false, context: { materiaal: null }, maxIntensiteit: 0, minIntensiteit: 0, weerMelding: null, ruimteM2: undefined, lichtMelding: null };
   const context = { materiaal: c?.materiaal || null, veld: c?.veld || null, wedstrijddag: c?.wedstrijddag || null };
   const licht = dagVoorWedstrijd(o.datum, context);
   let veld = context.veld || 'heel';
   if (o.halfVeld && veld === 'heel') veld = 'half'; else if (o.halfVeld && veld === 'half') veld = 'kwart';
   const heeftVeld = !!context.veld || !!o.halfVeld;
   return {
-    actief: true, context,
+    stijl, actief: true, context,
     maxIntensiteit: licht ? MAX_INTENSITEIT_VOOR_WEDSTRIJD : 0,
     minIntensiteit: o.slechtWeer ? 2 : 0,
     weerMelding: o.slechtWeer ? 'Regen of koud: vormen waarin spelers veel bewegen, geen lange uitleg en korte pauzes. Laat de spelers warme kleding aan houden in de pauzes. Dit is gewoonte onder trainers, niet onderzocht bij jeugd.' : null,
@@ -279,6 +286,7 @@ function score(v, o){
   if ((o.slot === 'kern1' || o.slot === 'kern2') && v.voetbalecht) sc += 3;   /* ruim de helft van de tijd voetbalecht */
   if (v.soort && (o.soorten || []).includes(v.soort)) sc -= 4;                                              /* liever een andere soort spelvorm dan eerder in de training */
   if (o.slot === 'warming-up' && v.voetbalecht) sc += 1.5;                                                 /* warming-up als kleine spelvorm */
+  sc += stijlScore(v, o.stijl);                         /* lichte voorkeur voor de speelstijl van de club (0 zonder stijl) */
   sc += hash(v.id + o.seed) * 0.9;                      /* stabiele variatie per week */
   return sc;
 }

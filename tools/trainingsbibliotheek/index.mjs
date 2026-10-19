@@ -10,6 +10,7 @@ import { DEEL_H } from './vormen-h.mjs';
 import { DEEL_I } from './vormen-i.mjs';
 import { DEEL_J } from './vormen-j.mjs';
 import { DEEL_K } from './vormen-k.mjs';
+import { STIJLTAGS } from './stijltags.mjs';
 import { VERRIJKING } from './verrijking.mjs';
 
 /* Eerste 48 vormen krijgen soort, uitleg, varianten en let-op-punten uit verrijking.mjs. */
@@ -22,7 +23,8 @@ function verrijk(v){
 }
 const NIEUW = [DEEL_D, DEEL_E, DEEL_F, DEEL_G, DEEL_H, DEEL_I, DEEL_J, DEEL_K];
 const OUD = [...DEEL_A, ...DEEL_B, ...DEEL_C].map(verrijk);
-export const VORMEN = [...OUD, ...NIEUW.flat()];
+/* Speelstijl-tags (`p`): zie stijltags.mjs. Vormen zonder tag hebben `p: []` en blijven neutraal. */
+export const VORMEN = [...OUD, ...NIEUW.flat()].map(v => ({ ...v, p: STIJLTAGS[v.id] || [] }));
 
 /* Themaregels voor de partijspelen (één eenvoudige regel per leercurve-thema). */
 export const THEMAREGELS = {
@@ -32,7 +34,7 @@ export const THEMAREGELS = {
 };
 
 export const BIBLIOTHEEK = {
-  versie: '2026.10.19-bouwen',
+  versie: '2026.10.19-stijl',
   taal: 'nl',
   licentie: 'Eigen werk (Cluppie). Referentiekader: KNVB-spelregels en -principes. Geen KNVB-tekst of -afbeeldingen overgenomen.',
   themaregels: THEMAREGELS,
