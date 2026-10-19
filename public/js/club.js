@@ -10,6 +10,7 @@ import {
 } from './state.js?v=20261011g';
 import { ACTIEF, DOC_CATEGORIEEN, docCategorieenAlle, CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, BOUWEN, bouwVanCategorie, bouwNaam, youtubeId, youtubeThumb, youtubeWatch, SEIZOEN_FALLBACK, GEBRUIK_CATEGORIEEN, gebruikEventLabel, catLabel } from './config.js?v=20261011g';
 import { teltMee } from './opkomst.js?v=20260922c';
+import { uploadHulpHtml, uploadFout, UPLOAD_HULP } from './upload-hulp.js?v=20261019h';
 import { analyseWedstrijd } from './analyse.js?v=20261011g';
 import { htmlEigenBouwenBeheer, koppelEigenBouwenBeheer } from './eigen-bouwen.js?v=20261011g';
 import { htmlBouwIndeling, koppelBouwIndeling, standaardBouwVoorStof, bouwGroepen } from './bouw-indeling.js?v=20261011g';
@@ -17,11 +18,11 @@ import { htmlClubJeugdplan, koppelClubJeugdplan } from './club-jeugdplan.js?v=20
 import { htmlClubSpeelstijl, koppelClubSpeelstijl } from './speelstijl.js?v=20261019g';
 import { rechtenVoor } from './seizoensplan-club.js?v=20261019f';
 import { clubEvaluatiesOphalen, htmlClubEvaluaties, koppelClubEvaluaties } from './club-evaluaties.js?v=20261011g';
-import { startClubContentListener, htmlClubContent, koppelClubContent } from './club-content.js?v=20261019b';
+import { startClubContentListener, htmlClubContent, koppelClubContent } from './club-content.js?v=20261019h';
 import { htmlInzichtTabs, htmlInzichtTab, openRapport } from './club-inzicht.js?v=20261011g';
 import { telGebruik, telNav } from './tracker.js?v=20261011g';
 import { ico } from './icons.js?v=20260922c';
-import { INSTEL_TABS, INSTEL_BASIS, NIEUWE_TABS, htmlInstelNieuw, koppelInstelNieuw, htmlAlgemeenMelding, koppelAlgemeenMelding, modalNieuweClub } from './club-instellingen.js?v=20261019g';
+import { INSTEL_TABS, INSTEL_BASIS, NIEUWE_TABS, htmlInstelNieuw, koppelInstelNieuw, htmlAlgemeenMelding, koppelAlgemeenMelding, modalNieuweClub } from './club-instellingen.js?v=20261019h';
 import { pasClubConfigToe, clubAfk, effectief } from './clubconfig.js?v=20261019b';
 import { startlijstStatus } from './startlijst.js?v=20261011d';
 import { teamSleutel as teamSleutelClub } from './sportlink-sleutel.js?v=20261011d';
@@ -37,7 +38,7 @@ const DASH_OPKOMST_LAAG = () => ACTIEF.dashboard.opkomstLaag;
 
 /* openTeam en modalNieuwTeam komen uit teams.js; om kringverwijzing te
    vermijden importeren we ze lui binnen de functies die ze nodig hebben. */
-async function teamsModule(){ return await import('./teams.js?v=20261019g'); }
+async function teamsModule(){ return await import('./teams.js?v=20261019h'); }
 
 /* ==================== CLUB AANMAKEN ==================== */
 /* [20260929c] Aanmaken in vier stappen (club, uiterlijk, koppeling, startinhoud):
@@ -56,7 +57,7 @@ export function openClub(clubId){
     if (!snap.exists()){ verlaatClubView(); return; }
     const eersteKeer = !S.club || S.club.id !== snap.id;
     S.club = {id:snap.id, ...snap.data()};
-    if (eersteKeer && S.club.admins?.[S.user?.uid]) import('./toegang.js?v=20261019g').then(m => m.meldOpenAanvragen(clubId));
+    if (eersteKeer && S.club.admins?.[S.user?.uid]) import('./toegang.js?v=20261019h').then(m => m.meldOpenAanvragen(clubId));
     pasClubConfigToe(S.club);      // [20260929c] club-instellingen → config.js, vóór het renderen
     renderClub();
   }, (err) => {
@@ -70,7 +71,7 @@ export function openClub(clubId){
 export function verlaatClubView(){
   stopUnsubs('club', 'clubContent');
   S.clubId = null; S.club = null;
-  import('./teams.js?v=20261019g').then(m => { m.renderTeams(); toon('teams'); });
+  import('./teams.js?v=20261019h').then(m => { m.renderTeams(); toon('teams'); });
 }
 
 async function clubTeamsOphalen(){
@@ -1518,6 +1519,7 @@ function htmlClubTrainingenDesk(teams, trainingen){
           <small>Sleep PDF's hierheen of klik om te kiezen — meerdere tegelijk verdeel je daarna per groep</small></span>
         <input type="file" id="trainingFile" accept="application/pdf" multiple style="display:none">
       </button>
+      ${uploadHulpHtml()}
       <div class="segment trd-seg" id="trainWeergave">
         <button data-weergave="lijst" class="${weergave==='lijst'?'actief':''}">Lijst</button>
         <button data-weergave="overzicht" class="${weergave==='overzicht'?'actief':''}">Overzicht per groep</button>
@@ -1703,6 +1705,7 @@ function htmlClubTrainingen(teams, trainingen){
   const uploadBlok = `
     <button class="upload-knop" id="trainingUpload">📄 PDF-training(en) toevoegen
       <input type="file" id="trainingFile" accept="application/pdf" multiple style="display:none"></button>
+    ${uploadHulpHtml()}
     <div class="tr-boven-acties">
       <span class="tr-boven-hint">Meerdere PDF's tegelijk kan — je verdeelt ze daarna per groep.</span>
       <button class="link" id="trGroepenBeheer">${groepen.length ? '⚙️ Groepen beheren' : '＋ Trainingsgroepen instellen'}</button>
@@ -1835,6 +1838,7 @@ function htmlClubDocumenten(teams, documenten){
   return `
     <button class="upload-knop" id="documentUpload">📄 Document toevoegen voor één of meer teams
       <input type="file" id="documentFile" accept="application/pdf" style="display:none"></button>
+    ${uploadHulpHtml()}
     ${segment}
     ${lijst}`;
 }
@@ -2427,7 +2431,7 @@ function koppelClubTab(v, tab, teams, trainingen, videos, documenten){
     if (slAlles) slAlles.onclick = () => { S._clubSlAlles = !S._clubSlAlles; hertekenClub(); };
     v.querySelectorAll('[data-sl-koppel]').forEach(b => b.onclick = () => { S._cbTeam = b.dataset.slKoppel; S._cbUitnodig = null; naarClubTab('teambeheer'); });
     v.querySelector('#btnSeizoensovergang')?.addEventListener('click', () =>
-      import('./club-seizoen.js?v=20261019g').then(m => m.modalSeizoensovergang(teams, () => renderClub())));
+      import('./club-seizoen.js?v=20261019h').then(m => m.modalSeizoensovergang(teams, () => renderClub())));
     const nieuwSeizoenBtn = v.querySelector('#btnNieuwSeizoen');
     if (nieuwSeizoenBtn) nieuwSeizoenBtn.onclick = () => modalNieuwSeizoen();
     const migreerBtn = v.querySelector('#migreerSeizoen');
@@ -2488,7 +2492,7 @@ function koppelClubTab(v, tab, teams, trainingen, videos, documenten){
     if (testBtn) testBtn.onclick = async () => {
       const uit = v.querySelector('#slTestUit'), id = (v.querySelector('#clientIdInput').value || '').trim();
       testBtn.disabled = true; uit.innerHTML = '<div class="sl-laden"><span class="sl-spin"></span>Sportlink vragen…</div>';
-      const { zoekClubInSportlink, htmlClubVondst, verkleinSportlinkLogo } = await import('./sportlink-clubinfo.js?v=20261019g');
+      const { zoekClubInSportlink, htmlClubVondst, verkleinSportlinkLogo } = await import('./sportlink-clubinfo.js?v=20261019h');
       try {
         const info = await zoekClubInSportlink(id, S.clubId);
         const logo = info.gevonden ? (S.club.instellingen?.identiteit?.logo || await verkleinSportlinkLogo(info.logo)) : '';
@@ -2525,7 +2529,7 @@ function koppelClubTab(v, tab, teams, trainingen, videos, documenten){
 /* ==================== UITNODIGEN ==================== */
 export function modalUitnodig(team){
   /* [AVG] persoonlijke, verlopende uitnodigingen i.p.v. de vaste teamlink (zie toegang.js) */
-  import('./toegang.js?v=20261019g').then(m => m.modalUitnodigNieuw(team));
+  import('./toegang.js?v=20261019h').then(m => m.modalUitnodigNieuw(team));
 }
 
 function modalAlleLinks(teams){
@@ -2622,7 +2626,8 @@ function modalImporteerPDF(){
     <p style="font-size:calc(13px * var(--fs));color:var(--ink-2);margin-bottom:12px">Upload een PDF met de teamindeling. De app leest de teamnamen en spelersnamen uit, daarna kun je alles controleren voordat je de teams aanmaakt.</p>
     <label class="upload-knop" for="mPDFFile">📄 Kies PDF-bestand
       <input type="file" id="mPDFFile" accept="application/pdf" style="display:none"></label>
-    <div id="mPDFStatus" style="font-size:calc(13px * var(--fs));color:var(--ink-2);text-align:center"></div>`);
+    <div id="mPDFStatus" style="font-size:calc(13px * var(--fs));color:var(--ink-2);text-align:center"></div>
+    ${uploadHulpHtml('text-align:center')}`);
   $('#mPDFFile').onchange = async e => {
     const file = e.target.files[0]; if (!file) return;
     $('#mPDFStatus').textContent = '⏳ PDF wordt gelezen, even geduld...';
@@ -2636,7 +2641,7 @@ function modalImporteerPDF(){
       modalImportPreview(teams);
     } catch (err) {
       console.error(err);
-      $('#mPDFStatus').textContent = '❌ Kon de PDF niet lezen: ' + err.message;
+      $('#mPDFStatus').textContent = '❌ Kon de PDF niet lezen: ' + err.message + '. ' + UPLOAD_HULP;
     }
   };
 }
@@ -2900,7 +2905,8 @@ function modalNieuweTraining(file, teams, voorBouw = null, batchMeta = null){
         ${groepen.length ? '<button class="knop licht klein" id="mTrGroepen">⚙️ Groepen beheren</button>' : ''}
       </div>
     </div>
-    <button class="knop vol" id="mTrOk">Uploaden en delen</button>`);
+    <button class="knop vol" id="mTrOk">Uploaden en delen</button>
+    ${uploadHulpHtml('text-align:center')}`);
   const sync = () => $$('#mTrTeams label').forEach(l => l.classList.toggle('aan', l.querySelector('input').checked));
   $$('#mTrTeams input').forEach(c => c.onchange = sync);
   // Groep-chip: zet precies de teams van die groep aan (vervangt de selectie).
@@ -3004,7 +3010,7 @@ async function startTrainingVerwerking(file, meta){
     toonPreview(file, meta, { mapId, pdfPath, pdfUrl, diagramUrls, oefeningen, doelen, score, paginas });
   } catch(e){
     console.error('[training-ai] verwerking mislukt', e);
-    meld('Verwerking mislukt — staat Firebase Storage aan?');
+    meld(uploadFout('Verwerking mislukt'));
     sluitModal();
   }
 }
@@ -3543,7 +3549,8 @@ function modalUploadVideo(file, teams, voorBouw = null){
         <button class="knop licht klein" id="mVuGeen">Geen</button>
       </div>
     </div>
-    <button class="knop vol" id="mVuOk">Uploaden en delen</button>`);
+    <button class="knop vol" id="mVuOk">Uploaden en delen</button>
+    ${uploadHulpHtml('text-align:center')}`);
   const sync = () => $$('#mVuTeams label').forEach(l => l.classList.toggle('aan', l.querySelector('input').checked));
   $$('#mVuTeams input').forEach(c => c.onchange = sync);
   $('#mVuAlle').onclick = () => { $$('#mVuTeams input').forEach(c => c.checked = true); sync(); };
@@ -3572,7 +3579,7 @@ function modalUploadVideo(file, teams, voorBouw = null){
       });
       meld('Video geüpload'); renderClub();
     } catch(e){
-      console.error(e); meld('Upload mislukt — staat Firebase Storage aan?');
+      console.error(e); meld(uploadFout('Upload mislukt'));
       if (knop){ knop.classList.remove('bezig'); knop.textContent = '⬆️ Eigen video uploaden (mp4) voor één of meer teams'; }
     }
   };
@@ -3601,7 +3608,8 @@ function modalNieuwDocument(file, teams, voorCategorie = null){
         <button class="knop licht klein" id="mDoGeen">Geen</button>
       </div>
     </div>
-    <button class="knop vol" id="mDoOk">Uploaden en delen</button>`);
+    <button class="knop vol" id="mDoOk">Uploaden en delen</button>
+    ${uploadHulpHtml('text-align:center')}`);
   const sync = () => $$('#mDoTeams label').forEach(l => l.classList.toggle('aan', l.querySelector('input').checked));
   $$('#mDoTeams input').forEach(c => c.onchange = sync);
   $('#mDoAlle').onclick = () => { $$('#mDoTeams input').forEach(c => c.checked = true); sync(); };
@@ -3630,7 +3638,7 @@ function modalNieuwDocument(file, teams, voorCategorie = null){
       });
       meld('Document geüpload'); renderClub();
     } catch(e){
-      console.error(e); meld('Upload mislukt — staat Firebase Storage aan?');
+      console.error(e); meld(uploadFout('Upload mislukt'));
       if (knop){ knop.classList.remove('bezig'); knop.textContent = '📄 Document toevoegen voor één of meer teams'; }
     }
   };
@@ -3779,4 +3787,4 @@ function kiesWeekbrief(teams){
   });
 }
 
-function laadVergelijk(v){ import('./club-vergelijk.js?v=20261019g').then(m => m.vulVergelijk(v, hertekenClub)); }
+function laadVergelijk(v){ import('./club-vergelijk.js?v=20261019h').then(m => m.vulVergelijk(v, hertekenClub)); }
