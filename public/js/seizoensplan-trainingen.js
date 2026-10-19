@@ -7,7 +7,7 @@
    hetzelfde plan (bron 'seizoensplan', zelfde seizoensplanId) die niet meer in het plan zitten,
    worden verwijderd. Handmatige trainingen (bron niet 'seizoensplan') blijven altijd staan. */
 import { db, collection, doc, getDocs, query, where, writeBatch, serverTimestamp } from './firebase.js?v=20261011g';
-import { trainingDocs } from './seizoensplan-club.js?v=20261019g';
+import { trainingDocs } from './seizoensplan-club.js?v=20261019h';
 
 /* plan = { kal, blokken, params } zoals het teamplan of planVoorTeam die levert.
    team = { id, categorie }. Geeft { geschreven, verwijderd, meldingen }. */

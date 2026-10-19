@@ -116,6 +116,7 @@ export function htmlHub(updInfo){
       tegel('planning',         'Planning',     'planning-calendar'),
       tegel('documenten',       'Documenten',   'admin-document', documentenOngelezen || null),
       ...(modAan('lijstjes') ? [tegel('lijstjes', 'Lijstjes', 'attendance-fill', lijstjesOpenTotaal() || null)] : []),
+      tegel('coachmodel',       'Coachmodel',   'team-coach'),
       tegel('instellingen',     'Instellingen', 'navigation-settings'),
       tegel('help',             'Help',         'navigation-help'),
       `<button class="hub-tegel" data-open-hulpchat="1">${ico('communication-chat', 40)}<span class="hub-tnaam">Hulpchat</span></button>`,
