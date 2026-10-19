@@ -10,8 +10,8 @@
 
    Vaste docId per training (sp_{planId}_{teamId}_{seizoensweek}_{nr}) maakt een herhaalde
    uitrol idempotent: dezelfde documenten worden overschreven, nooit gedupliceerd. */
-import { maakPlan, pasKnoppenToe } from './trainingsplanner.js?v=20261019c';
-import { positieWeek, maakSeizoensplan } from './seizoensplan-logica.js?v=20261019c';
+import { maakPlan, pasKnoppenToe } from './trainingsplanner.js?v=20261019f';
+import { positieWeek, maakSeizoensplan } from './seizoensplan-logica.js?v=20261019f';
 import { leeftijdVanCategorie } from './config.js?v=20261011g';
 import { vormSvg } from './trainingsvorm-svg.js?v=20261012e';
 
