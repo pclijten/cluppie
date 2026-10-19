@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0e1116">
 <title>Cluppie — De jeugdopleiding van je club, digitaal op orde</title>
+<meta name="description" content="Cluppie is de app voor jeugdtrainers en jeugdopleidingen: trainingen die passen bij je team, evaluaties, seizoensplan en speelstijl van de club. Meld je club aan en probeer het.">
 <link rel="preload" href="fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="fonts/fonts.css">
 <style>
@@ -272,6 +273,17 @@
     html{scroll-behavior:auto}
     .curve-path,.curve-dot,.reveal{animation:none!important;transition:none!important;opacity:1!important;stroke-dashoffset:0!important;transform:none!important}
   }
+  /* ---- Nieuw ---- */
+  .nieuw-tag{display:inline-block;font-family:'Barlow Condensed';font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:#fff;background:var(--accent);padding:2px 9px;border-radius:99px;margin-bottom:10px}
+  /* ---- Doe mee ---- */
+  .meedoen-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px}
+  .meedoen-kaart{background:var(--surface);border:1px solid var(--line-d);border-radius:var(--radius);padding:24px 22px;display:flex;flex-direction:column;gap:10px}
+  .meedoen-kaart h3{font-family:'Barlow Condensed';font-size:21px;text-transform:uppercase;letter-spacing:.3px}
+  .meedoen-kaart p{font-size:13.5px;color:var(--ink-2);flex:1}
+  .meedoen-kaart .btn{align-self:flex-start;margin-top:6px}
+  .belofte{display:flex;flex-wrap:wrap;gap:10px 22px;justify-content:center;margin:0 0 24px;font-size:13px;color:var(--ink-2)}
+  .belofte span::before{content:'✓';color:var(--ok);font-weight:700;margin-right:6px}
+  @media (max-width:900px){.meedoen-grid{grid-template-columns:1fr}}
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </style>
 </head>
@@ -280,7 +292,10 @@
 <div class="topbar">
   <div class="wrap">
     <div class="brand"><img src="icons/icon-192.png" alt="" class="brand-schild"> Cluppie</div>
-    <a href="index.html" class="btn btn-primary cta-login">Inloggen</a>
+    <div style="display:flex;gap:10px;align-items:center">
+      <a href="index.html?aanmelden" class="btn btn-ghost cta-login">Club aanmelden</a>
+      <a href="index.html" class="btn btn-primary cta-login">Inloggen</a>
+    </div>
   </div>
 </div>
 
@@ -289,18 +304,18 @@
     <div>
       <div class="eyebrow">Cluppie · Jeugdopleiding</div>
       <h1>De jeugdopleiding,<br>digitaal <span>op orde</span>.</h1>
-      <p class="lead">Cluppie is de app waarmee trainers opstellingen maken, wedstrijden evalueren en de ontwikkeling van hun team volgen — gebouwd rond het jeugdbeleidsplan van de eigen club.</p>
+      <p class="lead">Cluppie helpt jeugdtrainers met trainingen die passen bij hun team, snelle evaluaties na de wedstrijd en inzicht in de ontwikkeling van spelers. De club bepaalt hoe er gespeeld wordt; de trainer houdt zijn eigen manier van coachen.</p>
       <div class="hero-cta">
-        <a href="index.html" class="btn btn-primary cta-login">Inloggen</a>
-        <a href="#functies" class="btn btn-ghost">Bekijk wat het kan</a>
+        <a href="index.html?aanmelden" class="btn btn-primary cta-login">Meld je club aan</a>
+        <a href="#meedoen" class="btn btn-ghost">Probeer Cluppie</a>
       </div>
-      <p class="hero-note">Voor trainers, coördinatoren en de technische commissie van de club.</p>
+      <p class="hero-note">Voor trainers, coördinatoren en de technische commissie. Heb je al een uitnodiging? <a href="index.html" class="cta-login">Inloggen</a>.</p>
     </div>
 
     <div class="groeikaart reveal">
       <div class="gk-kop">
         <span class="gk-titel">Groeicurve · Samenspel</span>
-        <span class="gk-team">JO11-2</span>
+        <span class="gk-team">O11-2</span>
       </div>
       <svg viewBox="0 0 320 140" fill="none">
         <line x1="0" y1="35" x2="320" y2="35" stroke="rgba(255,255,255,.05)" stroke-width="1"/>
@@ -382,6 +397,50 @@
         <div class="p-nr">Fundament</div>
         <h3>Continuïteit</h3>
         <p>Kennis over een speler blijft behouden, ook als de trainer wisselt van seizoen naar seizoen.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section id="nieuw">
+  <div class="wrap">
+    <div class="sectie-kop reveal">
+      <div class="eyebrow">Nieuw in Cluppie</div>
+      <h2>Van evaluatie naar een training die past</h2>
+      <p>Cluppie denkt mee over de training van vanavond, niet alleen over wat er vorige week gebeurde.</p>
+    </div>
+    <div class="functies-grid">
+      <div class="functie reveal">
+        <span class="nieuw-tag">Nieuw</span>
+        <h3>Training maken in een paar tikken</h3>
+        <p>Een training van maximaal vier vormen, uit bijna 170 eigen oefenvormen voor O6 tot en met O19. Met tekening, coachpunten, een makkelijkere en een moeilijkere versie.</p>
+      </div>
+      <div class="functie reveal">
+        <span class="nieuw-tag">Nieuw</span>
+        <h3>Past bij jouw praktijk</h3>
+        <p>Weinig spelers, weinig materiaal, een half veld of regen? De planner houdt er rekening mee en maakt een plan B. Geen verplichte instellingen: zonder keuze werkt alles meteen.</p>
+      </div>
+      <div class="functie reveal">
+        <span class="nieuw-tag">Nieuw</span>
+        <h3>Seizoensplan voor de hele club</h3>
+        <p>De hoofd jeugdopleiding legt de lijn voor het hele seizoen vast en zet de trainingen met één tik klaar bij alle teams van een bouw of de club.</p>
+      </div>
+      <div class="functie reveal">
+        <span class="nieuw-tag">Nieuw</span>
+        <h3>De speelstijl van je club</h3>
+        <p>Met een korte vragenlijst leggen tot vijf mensen vast hoe jullie willen voetballen. Je ziet waar jullie het eens zijn en waar het gesprek nog nodig is.</p>
+      </div>
+      <div class="functie reveal">
+        <span class="nieuw-tag">Nieuw</span>
+        <h3>Jouw eigen coachmodel</h3>
+        <p>Ontdek hoe je zelf coacht en probeer elke week één accent. Drie tikken na de training, alleen voor jou zichtbaar. De club ziet niets dat jij niet deelt.</p>
+      </div>
+      <div class="functie reveal">
+        <span class="nieuw-tag">Nieuw</span>
+        <h3>Ook op de laptop</h3>
+        <p>Naast de telefoonversie voor langs het veld is er een weergave voor de laptop, met spelerskaarten, een kalender en overzicht per bouw.</p>
       </div>
     </div>
   </div>
@@ -489,6 +548,10 @@
       <div class="overzicht-blok reveal">
         <div class="ov-kop"><div class="ov-icoon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="12" cy="14.5" r="1.4" fill="currentColor" stroke="none"/></svg></div><h3>Trainen &amp; plannen</h3></div>
         <ul>
+          <li>Training maken uit een bibliotheek van bijna 170 vormen, met tekening en coachpunten</li>
+          <li>Plan B bij weinig spelers, half veld, regen of kou; houdt rekening met je materiaal</li>
+          <li>Seizoensplan per bouw of voor de hele club, met één tik toegewezen aan de teams</li>
+          <li>Speelstijl van de club vastleggen en je eigen coachmodel opbouwen</li>
           <li>Trainingen delen als PDF per team, met melding bij iets nieuws</li>
           <li>Video's delen via YouTube-links, gekoppeld aan het team</li>
           <li>Seizoenskalender per maand, met filters op wedstrijden, speeldagen en beker</li>
@@ -501,10 +564,11 @@
         <div class="ov-kop"><div class="ov-icoon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 8.4h8.2"/><path d="M17 8.4h3.6"/><path d="M3.4 15.6h3.6"/><path d="M12.4 15.6h8.2"/><circle cx="14.4" cy="8.4" r="2.4"/><circle cx="9.6" cy="15.6" r="2.4"/></svg></div><h3>Club &amp; team beheren</h3></div>
         <ul>
           <li>PDF-import van teamindelingen: teams en spelers automatisch uitgelezen</li>
+          <li>Alle teams in een keer klaarzetten uit Sportlink, in de juiste bouw</li>
           <li>Coaches uitnodigen en beheren per team, met persoonlijke links</li>
           <li>Documenten (KNVB, beleid, overig) centraal uploaden en delen per team</li>
           <li>Club-brede evaluatieheatmap met Excel-export voor de technische commissie</li>
-          <li>Spelers tijdelijk uitlenen aan een ander team binnen de club</li>
+          <li>Spelers tijdelijk uitlenen aan een ander team binnen de club, of definitief overzetten met hun geschiedenis</li>
           <li>Berichten naar coaches sturen, met een melding in de app tot ze gelezen zijn</li>
           <li>Seizoensbeheer en club-breed afgelasten van speeldagen</li>
         </ul>
@@ -515,7 +579,7 @@
         <ul>
           <li>Werkt offline door langs de lijn en synchroniseert automatisch bij verbinding</li>
           <li>Toe te voegen aan het beginscherm — voelt als een echte app, geen browser nodig</li>
-          <li>Inloggen met Google of e-mail, geen installatie of account vooraf nodig</li>
+          <li>Inloggen met Google of e-mail, geen installatie nodig</li>
           <li>Ingebouwde handleiding met zoekfunctie, altijd binnen handbereik</li>
         </ul>
       </div>
@@ -598,7 +662,7 @@
       <div class="log-item">
         <div class="log-tijd">Zaterdag<br>12:15</div>
         <div class="log-tekst">
-          <p>Trainer Mark van <b>JO11-2</b> fluit het laatste fluitsignaal. Voor de kleedkamer opent hij Cluppie en tikt in dertig seconden de teamevaluatie in: balbezit, samenwerking, verdedigen.</p>
+          <p>Trainer Mark van <b>O11-2</b> fluit het laatste fluitsignaal. Voor de kleedkamer opent hij Cluppie en tikt in dertig seconden de teamevaluatie in: balbezit, samenwerking, verdedigen.</p>
           <span class="tag">Teambeoordeling</span>
         </div>
       </div>
@@ -641,6 +705,41 @@
 
 <hr class="divider">
 
+<section id="meedoen">
+  <div class="wrap">
+    <div class="sectie-kop reveal">
+      <div class="eyebrow">Doe mee</div>
+      <h2>Probeer Cluppie met jouw club</h2>
+      <p>We bouwen Cluppie samen met trainers en jeugdopleidingen en horen graag wat beter kan. Meld je aan, probeer het met een of twee teams en vertel ons wat je ervan vindt.</p>
+    </div>
+    <div class="meedoen-grid">
+      <div class="meedoen-kaart reveal">
+        <h3>Jeugdcoördinator of bestuurslid</h3>
+        <p>Meld de club aan. Na goedkeuring ben jij clubbeheerder en zet je in ongeveer een kwartier alle teams klaar, rechtstreeks uit Sportlink.</p>
+        <a href="index.html?aanmelden" class="btn btn-primary cta-login">Club aanmelden</a>
+      </div>
+      <div class="meedoen-kaart reveal">
+        <h3>Trainer</h3>
+        <p>Je club doet nog niet mee? Stuur deze pagina door naar je jeugdcoördinator, of laat ons weten wie we kunnen benaderen. Wil je Cluppie zelf proberen met een team, dan denken we graag mee.</p>
+        <a href="mailto:paul@cluppie.io?subject=Ik%20wil%20Cluppie%20proberen&amp;body=Naam%3A%0AClub%3A%0ATeam%20(bijv.%20O11)%3A%0AMijn%20rol%3A%0A" class="btn btn-ghost">Mail ons</a>
+      </div>
+      <div class="meedoen-kaart reveal">
+        <h3>Al uitgenodigd?</h3>
+        <p>Heb je een persoonlijke link van je club gekregen? Open hem, log in met Google of e-mail en je zit binnen.</p>
+        <a href="index.html" class="btn btn-ghost cta-login">Inloggen</a>
+      </div>
+    </div>
+    <div class="belofte reveal">
+      <span>Alles in de EU opgeslagen</span>
+      <span>Achternamen blijven in het eigen team</span>
+      <span>Geen spelersnamen in AI</span>
+      <span>Werkt ook zonder AI</span>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
 <section id="starten">
   <div class="wrap">
     <div class="sectie-kop reveal">
@@ -650,26 +749,26 @@
     <div class="stappen">
       <div class="stap reveal">
         <div class="s-cijfer">1</div>
-        <h3>Inloggen</h3>
-        <p>Log in met je Google-account of e-mailadres.</p>
+        <h3>Club aanmelden</h3>
+        <p>Vul het formulier in. Met de Sportlink Client ID van je club vullen we naam, plaats, logo en kleur voor je in.</p>
       </div>
       <div class="stap reveal">
         <div class="s-cijfer">2</div>
-        <h3>Team kiezen</h3>
-        <p>Selecteer je team — of vraag de teamcode aan bij je coördinator.</p>
+        <h3>Teams en coaches</h3>
+        <p>Zet alle teams in een keer klaar en nodig de coaches uit met een persoonlijke link.</p>
       </div>
       <div class="stap reveal">
         <div class="s-cijfer">3</div>
-        <h3>Eerste evaluatie</h3>
-        <p>Vul na je eerstvolgende wedstrijd de teambeoordeling in. De rest ontdek je vanzelf.</p>
+        <h3>Eerste training</h3>
+        <p>Maak een training en vul na de eerstvolgende wedstrijd de teamevaluatie in. De rest ontdek je vanzelf.</p>
       </div>
     </div>
     <div class="cta-blok reveal">
       <h2>Ontwikkeling die je kunt zien groeien.</h2>
-      <p>Cluppie staat klaar voor jouw team. Heeft jouw club nog geen Cluppie? Meld hem aan: na goedkeuring zet je in een kwartier alle teams klaar, rechtstreeks uit Sportlink.</p>
+      <p>Cluppie staat klaar voor jouw team. Vragen of liever eerst even praten? Mail naar <a href="mailto:paul@cluppie.io" style="text-decoration:underline">paul@cluppie.io</a>.</p>
       <div class="hero-cta" style="justify-content:center">
-        <a href="index.html" class="btn btn-primary cta-login">Inloggen bij Cluppie</a>
-        <a href="index.html?aanmelden" class="btn btn-ghost">Club aanmelden</a>
+        <a href="index.html?aanmelden" class="btn btn-primary cta-login">Club aanmelden</a>
+        <a href="index.html" class="btn btn-ghost cta-login">Inloggen bij Cluppie</a>
       </div>
     </div>
   </div>
@@ -678,7 +777,7 @@
 <footer>
   <div class="wrap footer-grid">
     <div class="footer-slogan">Cluppie — Opleiden met overzicht</div>
-    <div class="footer-meta">Vragen? Neem contact op met Paul · <a href="index.html" class="cta-login">cluppie.io</a></div>
+    <div class="footer-meta">Vragen? <a href="mailto:paul@cluppie.io">paul@cluppie.io</a> · <a href="privacy.html">Privacy</a> · <a href="index.html" class="cta-login">cluppie.io</a></div>
   </div>
 </footer>
 
