@@ -106,6 +106,40 @@ const ZUINIG = L.PRESETS.zuinig.materiaal;
   eis(!gewoon.meldingen.some(m => /dag voor de wedstrijd/.test(m)), 'donderdag: geen melding');
 }
 
+/* 7b. regen of koud: buiten de afsluiting geen stilstaande vormen (zwaarte 1), tenzij er niets anders is */
+{
+  let laag = 0, plannen = 0, kort = 0, zonder = 0;
+  for (const lft of [7, 9, 11, 13, 16]) for (const N of [8, 12, 16]) for (const thema of ['Positiespel opbouw', 'Uitspelen 1:1', 'Scoren']){
+    const o = basis({ categorie: 'O' + lft, aantalSpelers: N, duur: 60, thema });
+    const p = maakPlan(VORMEN, { ...o, slechtWeer: true });
+    plannen++; if (p.onderdelen.length < 4) kort++;
+    laag += p.onderdelen.filter(x => x.vorm.intensiteit < 2).length;
+    if (!p.meldingen.some(m => /Regen of koud/.test(m))) zonder++;
+    const gewoon = maakPlan(VORMEN, o);
+    eis(!gewoon.meldingen.some(m => /Regen of koud/.test(m)), 'zonder slechtWeer geen weermelding');
+  }
+  eis(kort === 0, `regen of koud: altijd vier vormen (${kort} van ${plannen} korter)`);
+  eis(zonder === 0, 'regen of koud: melding met tips aanwezig');
+  eis(laag <= Math.ceil(plannen * 0.05), `regen of koud: bijna nooit een vorm met zwaarte 1 buiten de afsluiting (${laag} van ${plannen * 4})`);
+  const o = basis({ aantalSpelers: 12 });
+  gelijk(ids(maakPlan(VORMEN, { ...o, slechtWeer: false })), ids(maakPlan(VORMEN, o)), 'slechtWeer=false verandert niets');
+}
+
+/* 7c. de vormen met weinig materiaal bestaan en vragen echt weinig */
+{
+  const weinig = VORMEN.filter(v => /^(wu|sv)-l-/.test(v.id));
+  eis(weinig.length >= 8, `minstens 8 vormen met weinig materiaal (${weinig.length})`);
+  for (const v of weinig) eis(v.materiaal.ballen <= 6 && v.materiaal.doeltjes === 0, `${v.id} vraagt weinig ballen en geen doeltjes`);
+}
+
+/* 7d. keepervormen: iedereen rouleert, voor meerdere leeftijden en met een keeper in de tekening */
+{
+  const kp = VORMEN.filter(v => v.soort === 'keeper');
+  eis(kp.length >= 5, `minstens 5 keepervormen (${kp.length})`);
+  for (const lft of [9, 11, 13, 16]) eis(kp.some(v => lft >= v.leeftijd[0] && lft <= v.leeftijd[1]), `keepervorm voor O${lft}`);
+  for (const v of kp) eis((v.tekening.spelers || []).some(p => p.kant === 'keeper'), `${v.id} toont een keeper in de tekening`);
+}
+
 /* 8. wat valt af en wat helpt */
 {
   const kand = VORMEN.filter(v => v.leeftijd[0] <= 11 && v.leeftijd[1] >= 11 && v.spelers.min <= 14);
@@ -119,7 +153,7 @@ const ZUINIG = L.PRESETS.zuinig.materiaal;
 }
 
 /* 9. dekking: de planner geeft altijd vier vormen, en de materiaalgaten mogen niet groter worden */
-const GRENS = { zuinig: 108, normaal: 3, ruim: 0 };        /* stand van 19-10-2026; lager mag, hoger niet */
+const GRENS = { zuinig: 66, normaal: 0, ruim: 0 };        /* stand van 19-10-2026 na de vormen met weinig materiaal (deel I); lager mag, hoger niet */
 const rest = {};
 for (const k of Object.keys(L.PRESETS)){
   let n = 0, gat = 0, kort = 0;
