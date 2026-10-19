@@ -5943,3 +5943,34 @@ h3.tm-kop2{font-size:calc(20px * var(--fs))}
 .tm-var b{display:block;font-size:calc(14px * var(--fs))}.tm-var span{font-size:calc(13px * var(--fs));color:var(--ink-2)}
 .tm-acties{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 10px}
 .tm-vb .tm-tabs{gap:3px;padding:3px}.tm-vb .tm-tabs button{padding:8px 1px;font-size:calc(12px * var(--fs));white-space:nowrap}
+
+/* ---------- Speelstijl invullen: één vraag per scherm [20261019] ---------- */
+.ss-invul{max-width:560px;margin:0 auto;padding:4px 0 24px}
+.ss-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.ss-teller{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:calc(15px * var(--fs));letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
+.ss-balk{height:6px;border-radius:99px;background:var(--op-vlak,rgba(127,127,127,.18));overflow:hidden;margin:6px 0 14px}
+.ss-balk i{display:block;height:100%;border-radius:99px;background:var(--accent);transition:width .25s ease}
+.ss-deel{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:calc(13px * var(--fs));text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:6px}
+.ss-vraag{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:calc(27px * var(--fs));line-height:1.1;margin:0 0 8px;color:var(--ink)}
+.ss-hulp{font-size:calc(13.5px * var(--fs));color:var(--ink-2);margin:0 0 14px;line-height:1.4}
+.ss-opties{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.ss-optie{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:16px 16px;min-height:64px;border-radius:16px;border:1.5px solid var(--hair);background:var(--surface-2,var(--op-vlak));color:var(--ink);font:inherit;font-weight:600;font-size:calc(16px * var(--fs));line-height:1.3;cursor:pointer;transition:border-color .15s,background .15s,transform .1s}
+.ss-optie:active{transform:scale(.985)}
+.ss-optie .ss-vink{flex:0 0 auto;width:24px;height:24px;border-radius:50%;border:2px solid var(--hair);display:grid;place-items:center;font-size:14px;color:#fff;transition:all .15s}
+.ss-optie.aan{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--surface-2,transparent))}
+.ss-optie.aan .ss-vink{background:var(--accent);border-color:var(--accent)}
+.ss-optie.aan .ss-vink::after{content:'✓'}
+.ss-optie.ss-zacht{min-height:48px;padding:11px 16px;border-style:dashed;font-weight:500;font-size:calc(14px * var(--fs));color:var(--ink-2);background:transparent}
+.ss-optie.ss-zacht.aan{color:var(--ink)}
+.ss-leeftijden{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+.ss-pil{min-height:52px;border-radius:14px;border:1.5px solid var(--hair);background:var(--surface-2,var(--op-vlak));color:var(--ink);font:inherit;font-weight:700;font-size:calc(16px * var(--fs));cursor:pointer}
+.ss-pil.aan{border-color:var(--accent);background:var(--accent);color:#fff}
+.ss-voet{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:22px}
+.ss-knop{min-height:48px;padding:0 24px;border-radius:99px;border:0;background:var(--accent);color:#fff;font:inherit;font-weight:700;font-size:calc(15px * var(--fs));cursor:pointer}
+.ss-knop.zacht{background:var(--surface-2,var(--op-vlak));color:var(--ink);border:1.5px solid var(--hair)}
+.ss-link{background:none;border:0;color:var(--ink-2);font:inherit;font-weight:600;font-size:calc(14px * var(--fs));padding:10px 4px;cursor:pointer}
+.ss-uit-kop{font-weight:700;font-size:calc(17px * var(--fs));margin:2px 0 4px}
+.ss-klaar{text-align:center;padding:28px 6px}
+.ss-klaar .ss-voet{flex-direction:column;margin-top:18px}
+.ss-klaar-icoon{width:56px;height:56px;margin:0 auto 12px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:28px}
+@media (min-width:900px){.ss-vraag{font-size:calc(32px * var(--fs))}}

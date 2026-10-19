@@ -18,7 +18,7 @@ const chip = (attr, w, t, aan) => `<button class="tm-chip${aan ? ' aan' : ''}" $
 const dk = ms => ms ? new Date(ms).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) : '';
 
 function C(){
-  if (!S._ss) S._ss = { huidig: undefined, rondes: null, sel: null, antw: {}, nieuw: false, laadt: false, opnieuw: null };
+  if (!S._ss) S._ss = { huidig: undefined, rondes: null, sel: null, antw: {}, nieuw: false, laadt: false, opnieuw: null, invullen: false, stap: 0 };
   return S._ss;
 }
 function rolNaam(uid){
@@ -98,13 +98,41 @@ function htmlNieuw(){
     <button class="tm-chip" data-ss-terug="1" style="margin-top:10px">Terug</button></div>`;
 }
 
+/* ---------- invullen: één vraag per scherm ---------- */
+const SS_MIN = { kort: 'ongeveer 2 minuten', volledig: 'ongeveer 7 minuten' };
+const ssBeantwoord = (q, w) => q.k === 'multi' ? Array.isArray(w) && w.length > 0 : w !== undefined && w !== null;
+const optie = (attr, w, t, aan, extra = '') => `<button class="ss-optie${aan ? ' aan' : ''}${extra}" ${attr}="${esc(String(w))}"><span class="ss-vink" aria-hidden="true"></span><span>${esc(t)}</span></button>`;
+
 function htmlVraag(q, mijn){
   const w = mijn[q.id];
-  let opt = '';
-  if (q.k === 'ab') opt = `<div class="tm-chips">${chip('data-ss-a', q.id + '|A', q.A, w === 'A')}${chip('data-ss-a', q.id + '|B', q.B, w === 'B')}${chip('data-ss-a', q.id + '|?', 'Weten we nog niet', w === '?')}</div>`;
-  else if (q.k === 'age') opt = `<div class="tm-chips">${L.LEEFTIJDEN.map(l => chip('data-ss-a', q.id + '|' + l, l === 99 ? 'Nooit' : 'O' + l, w === l)).join('')}</div>`;
-  else opt = `<div class="tm-chips">${q.o.map(o => chip('data-ss-a', q.id + '|' + o[0], q.k === 'one' ? o[1] : o[1], q.k === 'one' ? w === o[0] : (w || []).includes(o[0]))).join('')}</div>`;
-  return `<div style="margin:10px 0"><div style="font-weight:600;margin-bottom:6px">${esc(q.q)}</div>${opt}</div>`;
+  if (q.k === 'ab') return `<div class="ss-opties">${optie('data-ss-a', q.id + '|A', q.A, w === 'A')}${optie('data-ss-a', q.id + '|B', q.B, w === 'B')}${optie('data-ss-a', q.id + '|?', 'Weten we nog niet', w === '?', ' ss-zacht')}</div>`;
+  if (q.k === 'age') return `<div class="ss-leeftijden">${L.LEEFTIJDEN.map(l => `<button class="ss-pil${w === l ? ' aan' : ''}" data-ss-a="${esc(q.id + '|' + l)}">${l === 99 ? 'Nooit' : 'O' + l}</button>`).join('')}</div>`;
+  return `<div class="ss-opties">${q.o.map(o => optie('data-ss-a', q.id + '|' + o[0], o[1], q.k === 'one' ? w === o[0] : (w || []).includes(o[0]))).join('')}</div>`;
+}
+
+function htmlInvul(r, mijn){
+  const c = C(), vr = L.vragenVoor(r.modus), n = vr.length;
+  if (c.stap >= n){
+    const gedaan = vr.filter(q => ssBeantwoord(q, mijn[q.id])).length;
+    return `<div class="ss-invul"><div class="ss-klaar">
+      <div class="ss-klaar-icoon" aria-hidden="true">✓</div>
+      <h2 class="ss-vraag">Dat was het</h2>
+      <p class="ss-hulp">${gedaan} van ${n} vragen beantwoord. Je antwoorden zijn bewaard. Je kunt ze later nog aanpassen zolang de ronde open is.</p>
+      <div class="ss-voet"><button class="ss-knop" data-ss-stop="1">Bekijk de tussenstand</button><button class="ss-link" data-ss-nalopen="1">Antwoorden nalopen</button></div></div></div>`;
+  }
+  const q = vr[c.stap], w = mijn[q.id];
+  const multi = q.k === 'multi', aantal = multi ? (Array.isArray(w) ? w.length : 0) : 0;
+  const hulp = q.k === 'ab' ? 'Kies wat het beste bij jullie past. Er is geen goed of fout.' : multi ? `Kies er maximaal ${q.max}. Je gekozen aantal: ${aantal} van ${q.max}.` : '';
+  const volgende = multi ? (aantal ? 'Volgende' : 'Overslaan') : (ssBeantwoord(q, w) ? 'Volgende' : 'Overslaan');
+  return `<div class="ss-invul">
+    <div class="ss-top"><button class="ss-link" data-ss-stop="1">Sluiten</button><span class="ss-teller">${c.stap + 1} van ${n}</span></div>
+    <div class="ss-balk" role="progressbar" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${c.stap + 1}"><i style="width:${Math.round((c.stap + 1) / n * 100)}%"></i></div>
+    <div class="ss-deel">${esc(L.DEELN[q.deel] || '')}</div>
+    <h2 class="ss-vraag">${esc(q.q)}</h2>
+    ${hulp ? `<p class="ss-hulp">${esc(hulp)}</p>` : ''}
+    ${htmlVraag(q, mijn)}
+    <div class="ss-voet">${c.stap > 0 ? '<button class="ss-link" data-ss-vorige="1">Vorige</button>' : '<span></span>'}<button class="ss-knop${ssBeantwoord(q, w) ? '' : ' zacht'}" data-ss-volgende="1">${volgende}</button></div>
+  </div>`;
 }
 
 function htmlRonde(r){
@@ -116,36 +144,50 @@ function htmlRonde(r){
   const lijst = Object.entries(alle).map(([u, d]) => ({ u, ...d }));
   const uit = L.clubUitkomst(lijst.map(x => x.antwoorden || {}), r.modus);
   const dimNaam = id => L.DIMS.find(d => d.id === id)?.n;
-  let vragen = '', deel = 0;
-  for (const q of vr){ if (q.deel !== deel){ deel = q.deel; vragen += `<div class="tm-sub">${esc(L.DEELN[deel])}</div>`; } vragen += htmlVraag(q, mijn); }
   const kanMeedoen = open && (alle[uidNu()] || lijst.length < L.MAX_INVULLERS);
+  if (c.invullen && kanMeedoen) return htmlInvul(r, mijn);
+  const pct = vg.totaal ? Math.round(vg.gedaan / vg.totaal * 100) : 0;
+  const meedoen = kanMeedoen ? `<div class="kaart ss-uitnodiging"><div class="tm-sub" style="margin-top:0">Jouw antwoorden</div>
+      <div class="ss-uit-kop">${vg.gedaan === 0 ? 'Vul jouw kant in' : vg.gedaan >= vg.totaal ? 'Je hebt alles ingevuld' : 'Ga verder waar je bleef'}</div>
+      <div class="ss-balk"><i style="width:${pct}%"></i></div>
+      <div class="tm-info">${vg.gedaan} van ${vg.totaal} beantwoord · ${SS_MIN[r.modus === 'kort' ? 'kort' : 'volledig']} · één vraag per scherm. Je antwoorden worden direct bewaard, bij het overzicht staat alleen je rol. "Weten we nog niet" mag altijd.</div>
+      <button class="ss-knop" data-ss-begin="1" style="margin-top:12px">${vg.gedaan === 0 ? 'Begin' : vg.gedaan >= vg.totaal ? 'Antwoorden aanpassen' : 'Ga verder'}</button></div>`
+    : `<div class="kaart"><div class="tm-info">${open ? `Deze ronde heeft al ${L.MAX_INVULLERS} invullers.` : 'Deze ronde is gesloten.'}</div></div>`;
   return `<div class="kaart">
       <div class="tm-sub" style="margin-top:0">${esc(r.naam || 'Ronde')} · ${r.modus === 'kort' ? 'kort' : 'volledig'}${open ? '' : ' · gesloten'}</div>
       <div class="tm-info">${lijst.length} van max ${L.MAX_INVULLERS} invullers: ${lijst.map(x => `${esc(x.rol || 'Deelnemer')} (${L.voortgang(x.antwoorden || {}, r.modus).gedaan}/${vg.totaal})`).join(', ') || 'nog niemand'}.</div>
       <button class="tm-chip" data-ss-terug="1">Terug</button>
       ${mag && open ? `<button class="tm-chip" data-ss-sluit="${esc(r.id)}">Ronde sluiten</button>` : ''}
     </div>
+    ${meedoen}
     <div class="kaart"><div class="tm-sub" style="margin-top:0">Tussenstand</div>
       ${lijst.length ? htmlStijl(L.huidigDoc(uit, null, Date.now())) : `<div class="tm-info">Zodra iemand antwoordt, verschijnt hier de uitkomst.</div>`}
       ${uit.verschil.length ? `<div class="tm-sub">Om over te praten</div>${uit.verschil.map(id => `<div class="tm-info">${esc(L.gespreksvraag(id))}</div>`).join('')}` : ''}
       ${uit.kruisverschil ? `<div class="tm-info">De gekozen herkenningsstijl (${esc(L.REFS[uit.gekozenStijl]?.n || '')}) wijkt af van wat de antwoorden zeggen. Bespreek dat even.</div>` : ''}
       ${mag && lijst.length ? `<button class="tm-chip aan" data-ss-vast="${esc(r.id)}" style="margin-top:8px">${S._ss.huidig ? 'Vervang de vastgelegde stijl door deze' : 'Leg deze stijl vast'}</button>` : ''}
-    </div>
-    ${kanMeedoen ? `<div class="kaart"><div class="tm-sub" style="margin-top:0">Jouw antwoorden (${vg.gedaan}/${vg.totaal})</div>
-      <div class="tm-info">Je antwoorden worden direct bewaard. Bij het overzicht staat alleen je rol, niet je naam. "Weten we nog niet" mag altijd.</div>${vragen}</div>`
-      : `<div class="kaart"><div class="tm-info">${open ? `Deze ronde heeft al ${L.MAX_INVULLERS} invullers.` : 'Deze ronde is gesloten.'}</div></div>`}`;
+    </div>`;
 }
 
 /* ---------- acties ---------- */
 export function koppelClubSpeelstijl(v, opnieuw){
   const c = C(); c.opnieuw = opnieuw;
   const root = v.querySelector('#ssRoot'); if (!root) return;
+  const nieuweStap = () => { opnieuw(); document.getElementById('ssRoot')?.scrollIntoView({ block: 'start' }); };
   root.onclick = async e => {
     const b = e.target.closest('button'); if (!b) return;
     const d = b.dataset;
     if (d.ssOpen){ c.sel = d.ssOpen; return opnieuw(); }
     if (d.ssNieuw){ c.nieuw = true; return opnieuw(); }
-    if (d.ssTerug){ c.sel = null; c.nieuw = false; return opnieuw(); }
+    if (d.ssTerug){ c.sel = null; c.nieuw = false; c.invullen = false; return opnieuw(); }
+    if (d.ssBegin){
+      const r = c.rondes.find(x => x.id === c.sel), mijn = c.antw[r?.id]?.[uidNu()]?.antwoorden || {};
+      const vr = L.vragenVoor(r?.modus), eerste = vr.findIndex(q => !ssBeantwoord(q, mijn));
+      c.invullen = true; c.stap = eerste < 0 ? 0 : eerste; return nieuweStap();
+    }
+    if (d.ssStop){ c.invullen = false; return nieuweStap(); }
+    if (d.ssNalopen){ c.stap = 0; return nieuweStap(); }
+    if (d.ssVorige){ c.stap = Math.max(0, c.stap - 1); return nieuweStap(); }
+    if (d.ssVolgende){ c.stap += 1; return nieuweStap(); }
     try {
       if (d.ssMaak){
         const id = 'r' + Date.now().toString(36);
@@ -180,7 +222,8 @@ export function koppelClubSpeelstijl(v, opnieuw){
         const schoon = L.schoonAntwoord(id, nieuw); if (schoon === undefined) return;
         mijnDoc.antwoorden = { ...mijnDoc.antwoorden, [id]: schoon };
         c.antw[r.id][uidNu()] = { ...mijnDoc, rol: mijnDoc.rol || rolNaam(uidNu()), bijgewerktMs: Date.now() };
-        opnieuw();
+        if (c.invullen && q.k !== 'multi') c.stap += 1;      /* één keuze: meteen naar de volgende vraag */
+        nieuweStap();
         await setDoc(doc(db, 'clubs', S.clubId, 'speelstijlRondes', r.id, 'antwoorden', uidNu()), { rol: c.antw[r.id][uidNu()].rol, antwoorden: { [id]: schoon }, bijgewerktMs: Date.now() }, { merge: true });
       }
     } catch (err){ meld('Opslaan mislukt: ' + (err.code || err.message)); }
