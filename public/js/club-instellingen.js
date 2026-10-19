@@ -17,8 +17,9 @@ import { ACTIEF, SEIZOEN_FALLBACK, parseFormatie, aantalVeldspelers, SKILLS, LEE
 import {
   effectief, isLegacy, mergeLijst, LIJST_DEFS, ORIGINEEL, NEUTRAAL, CLUPPIE_LOGO, ICOONNAMEN,
   valideerKalender, herlaadKalender, pasClubConfigToe, clubAfk, DISTRICTEN
-} from './clubconfig.js?v=20261013b';
-import { MODULE_DEFS } from './club-beheer.js?v=20261013b';
+} from './clubconfig.js?v=20261019b';
+import { MODULE_DEFS } from './club-beheer.js?v=20261019b';
+import { lerenBeschikbaar } from './leren-signalen.js?v=20261019b';
 import { doorPlatformUit } from './onderdelen.js?v=20261013b';
 
 /* ---------- Tabs ---------- */
@@ -511,7 +512,7 @@ export function koppelInstelNieuw(v, herteken){
   else if (sub === 'pedagogiek') koppelPedagogiek(v, herteken);
   else if (sub === 'regels') koppelRegels(v, herteken);
   else if (sub === 'ai') koppelAI(v, herteken);
-  else if (sub === 'toegang') import('./toegang.js?v=20261019a').then(m => m.koppelToegang(v, herteken));
+  else if (sub === 'toegang') import('./toegang.js?v=20261019b').then(m => m.koppelToegang(v, herteken));
 }
 
 /* ---------- Identiteit ---------- */
@@ -817,6 +818,12 @@ function tabAI(eff){
       ${veldGroep('Maximaal aantal AI-aanroepen per maand (optioneel)', `<input class="invoer" type="number" inputmode="numeric" id="aiLimiet" min="0" max="100000" value="${ai.maandLimiet ?? ''}" placeholder="onbeperkt">`,
         'De server dwingt dit af (Cloud Function).')}
       <button class="knop vol klein" id="aiOpslaan">Opslaan</button>`)}
+    ${kaart('Help de app verbeteren', '', `
+      ${lerenBeschikbaar()
+        ? `<label class="ci-schakel"><input type="checkbox" id="lerenAan" ${(eff.leren && eff.leren.meedoen) ? 'checked' : ''}><span>Anoniem meedoen</span></label>`
+        : `<p class="cb-uitleg"><b>Nog niet beschikbaar.</b> Dit gaat pas open als Cluppie het voor jullie club aanzet, nadat de voorwaarden zijn aangepast.</p>`}
+      <p class="cb-uitleg">Wat er meegaat: welke oefenvormen trainers bewaren of wisselen, de leeftijdsgroep (O6-O8, O9-O11, O12-O14, O15+), het thema, de drie antwoorden na de training en het gekozen materiaalpakket. Wat nooit meegaat: namen, spelers, teamnaam, eigen tekst of gebruikers. Cluppie toont alleen uitkomsten die van minstens 5 teams uit 3 clubs komen. Een mens bekijkt alle uitkomsten; er wordt niets automatisch aangepast. Je kunt dit altijd weer uitzetten.</p>
+      ${lerenBeschikbaar() ? '<button class="knop vol klein" id="lerenOpslaan">Opslaan</button>' : ''}`)}
     ${kaart('Onderdelen die standaard aan staan', '', `
       <p class="cb-uitleg" style="margin:0 0 8px">Voor alle teams die hier zelf niets over hebben ingesteld. Per team kun je het afwijkend instellen onder Teams.</p>
       ${MODULE_DEFS.map(([k, naam, , , uitleg]) => `<label class="ci-schakel ${doorPlatformUit(k) ? 'geblokkeerd' : ''}"><input type="checkbox" data-mod="${k}" ${std[k] !== false ? 'checked' : ''} ${doorPlatformUit(k) ? 'disabled' : ''}><span><b>${esc(k === 'kompas' ? (eff.identiteit.kompasNaam || naam) : naam)}</b><br><small>${doorPlatformUit(k) ? 'Door Cluppie niet aangezet voor jullie club. ' : ''}${esc(uitleg)}</small></span></label>`).join('')}
@@ -828,6 +835,9 @@ function koppelAI(v, herteken){
     const lim = raw === '' ? null : Math.max(0, Math.round(Number(raw)));
     if (raw !== '' && !Number.isFinite(lim)) return meld('Vul een geldig aantal in');
     await bewaar([['ai', { aan: v.querySelector('#aiAan').checked, maandLimiet: lim }]]); meld('Opgeslagen'); herteken();
+  }));
+  v.querySelector('#lerenOpslaan')?.addEventListener('click', e => vangFout(e.currentTarget, async () => {
+    await bewaar([['leren', { meedoen: v.querySelector('#lerenAan').checked }]]); meld('Opgeslagen'); herteken();
   }));
   v.querySelector('#modOpslaan')?.addEventListener('click', e => vangFout(e.currentTarget, async () => {
     const std = {}; v.querySelectorAll('[data-mod]').forEach(c => { if (!c.checked) std[c.dataset.mod] = false; });
@@ -902,7 +912,7 @@ export function modalNieuweClub(naCreatie){
         W.naam = b.querySelector('#wzNaam').value; W.district = b.querySelector('#wzDistrict').value;
         k.disabled = true; uit.innerHTML = '<div class="sl-laden"><span class="sl-spin"></span>Club opzoeken in Sportlink…</div>';
         try {
-          const { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261019a');
+          const { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261019b');
           const info = await zoekClubInSportlink(id);
           if (info.gevonden){
             const [logo, kleur] = await Promise.all([verkleinSportlinkLogo(info.logo), leesbareKleur(info.kleur)]);
@@ -911,7 +921,7 @@ export function modalNieuweClub(naCreatie){
             W.slVondst = htmlClubVondst(info, { logo, kleur });
           } else { W.clubcode = ''; W.slVondst = htmlClubVondst(info); }
         } catch (x){
-          const { htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261019a');
+          const { htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261019b');
           W.slVondst = htmlClubVondst(null, { fout: x });
         }
         k.disabled = false; teken();

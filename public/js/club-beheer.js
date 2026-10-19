@@ -15,7 +15,7 @@
 import { db, doc, updateDoc } from './firebase.js?v=20261011g';
 import { S, esc, meld, modAan } from './state.js?v=20261011g';
 import { BOUWEN, catLabel } from './config.js?v=20261011g';
-import { kompasNaam } from './clubconfig.js?v=20261013b';
+import { kompasNaam } from './clubconfig.js?v=20261019b';
 import { onderdeelAan, doorPlatformUit } from './onderdelen.js?v=20261013b';
 import { ico } from './icons.js?v=20260922c';
 import { eigenBouwenVanTeam, bouwVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261011g';

@@ -6,7 +6,7 @@
 ==================================================================== */
 import { db, collection, getDocs, doc, getDoc, setDoc, serverTimestamp, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261011g';
-import { logoImgVoorDoc, DISTRICTEN, kalenderId, valideerKalender, ORIGINEEL } from './clubconfig.js?v=20261013b';
+import { logoImgVoorDoc, DISTRICTEN, kalenderId, valideerKalender, ORIGINEEL } from './clubconfig.js?v=20261019b';
 import { STARTLIJST_STAPPEN } from './startlijst.js?v=20261011d';
 import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261013b';
 
@@ -45,7 +45,8 @@ async function zetPlatformModule(clubId, sleutel, waarde){
 }
 function onderdelenRij(k){
   if (!PM || !PM[k.id]) return '';
-  return `<div class="pf-onderdelen">${BEHEERD.map(sl => { const aan = platformToegestaan(PM[k.id], sl);
+  const leren = PM[k.id].platformModules.leren === true;
+  return `<div class="pf-onderdelen"><button type="button" class="pf-onderdeel ${leren ? 'aan' : ''}" data-pf-od="${esc(k.id)}|leren" aria-pressed="${leren}" aria-label="Leren van gebruik ${leren ? 'aan' : 'uit'} voor ${esc(k.naam)}">Leren van gebruik: ${leren ? 'aan' : 'uit'}</button>${BEHEERD.map(sl => { const aan = platformToegestaan(PM[k.id], sl);
     return `<button type="button" class="pf-onderdeel ${aan ? 'aan' : ''}" data-pf-od="${esc(k.id)}|${sl}" aria-pressed="${aan}" aria-label="${esc(ONDERDEEL_NAMEN[sl])} ${aan ? 'aan' : 'uit'} voor ${esc(k.naam)}">${esc(ONDERDEEL_NAMEN[sl])}: ${aan ? 'aan' : 'uit'}</button>`; }).join('')}</div>`;
 }
 
@@ -178,22 +179,22 @@ function tekenPlatform(o, aanmeldingen){
     const z = document.getElementById('pfZoek'); if (z){ z.focus(); try { z.setSelectionRange(pos, pos); } catch (e) {} }
   };
   document.getElementById('pfKalenders')?.addEventListener('click', () => openKalenders());
-  document.getElementById('pfNieuweClub')?.addEventListener('click', () => import('./club.js?v=20261019a').then(m => m.modalNieuwClub()));
+  document.getElementById('pfNieuweClub')?.addEventListener('click', () => import('./club.js?v=20261019b').then(m => m.modalNieuwClub()));
   document.getElementById('pfVernieuw')?.addEventListener('click', async e => {
     const k = e.currentTarget; k.disabled = true; k.textContent = 'Bezig…';
     try { await httpsCallable(functions, 'platformOverzichtNu')({}); meld('Cijfers bijgewerkt'); openPlatform(); }
     catch (x){ k.disabled = false; k.textContent = 'Vernieuwen'; meld('Vernieuwen mislukt: ' + (x.code === 'functions/not-found' ? 'functie nog niet gedeployed' : (x.message || x.code))); }
   });
   document.querySelectorAll('[data-pf-od]').forEach(b => b.onclick = async () => {
-    const [clubId, sl] = b.dataset.pfOd.split('|'), nieuw = !platformToegestaan(PM[clubId], sl);
+    const [clubId, sl] = b.dataset.pfOd.split('|'), nieuw = sl === 'leren' ? PM[clubId]?.platformModules?.leren !== true : !platformToegestaan(PM[clubId], sl);
     b.disabled = true;
-    try { await zetPlatformModule(clubId, sl, nieuw); meld(`${ONDERDEEL_NAMEN[sl]} ${nieuw ? 'aan' : 'uit'} voor deze club`); opnieuw(); }
+    try { await zetPlatformModule(clubId, sl, nieuw); meld(`${sl === 'leren' ? 'Leren van gebruik' : ONDERDEEL_NAMEN[sl]} ${nieuw ? 'aan' : 'uit'} voor deze club`); opnieuw(); }
     catch (x){ b.disabled = false; meld('Opslaan mislukt: ' + (x.code === 'permission-denied' ? 'rules nog niet gedeployed?' : (x.message || x.code))); }
   });
   document.querySelectorAll('[data-platform-club]').forEach(b => b.onclick = () => {
     const id = b.dataset.platformClub;
     sluitModal();
-    import('./club.js?v=20261019a').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
+    import('./club.js?v=20261019b').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
   });
   document.querySelectorAll('[data-aanmeld-ok], [data-aanmeld-af]').forEach(b => b.onclick = async () => {
     const id = b.dataset.aanmeldOk || b.dataset.aanmeldAf, goed = !!b.dataset.aanmeldOk;

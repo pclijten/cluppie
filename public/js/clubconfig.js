@@ -16,6 +16,7 @@
      regels:      { tijdstraf, bouwGrenzen, dashboard, maxVideoMB },
      modules:     { standaard: { <module>: false } },
      ai:          { aan, maandLimiet }
+     leren:       { meedoen }                                         (anoniem meedoen met verbeteren van de app, standaard uit; zie leren-signalen.js)
      toegang:     { goedkeuring, standaardRol, vasteCodes }           (onboarding, zie toegang.js)
      privacy:     { contactNaam, contactEmail, achternamen, verwerkersovereenkomst }
    }
@@ -42,6 +43,7 @@ export const NEUTRAAL = Object.freeze({
   regels: {},
   modules: { standaard: {} },
   ai: { aan: true, maandLimiet: null },
+  leren: { meedoen: false },
   toegang: { goedkeuring: true, standaardRol: 'coach', vasteCodes: true },
   privacy: { contactNaam: '', contactEmail: '', achternamen: true, verwerkersovereenkomst: null },
 });
