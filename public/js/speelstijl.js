@@ -10,7 +10,7 @@
 import { S, esc, meld } from './state.js?v=20261011g';
 import { db, doc, collection, getDocs, setDoc } from './firebase.js?v=20261011g';
 import { rechtenVoor } from './seizoensplan-club.js?v=20261019a';
-import * as L from './speelstijl-logica.js?v=20261019d';
+import * as L from './speelstijl-logica.js?v=20261019e';
 
 const uidNu = () => S.user?.uid || '';
 const isPlanner = () => rechtenVoor(S.club, uidNu()).alles;

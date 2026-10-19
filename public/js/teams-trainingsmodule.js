@@ -22,15 +22,15 @@ import { S, esc, meld } from './state.js?v=20261011g';
 import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } from './config.js?v=20261011g';
 import { aiAan } from './clubconfig.js?v=20261019b';
 import { ico } from './icons.js?v=20260922c';
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261014a';
-import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, OPBOUW, kiesDuur, SLOT_NAAM, groepsindeling } from './trainingsplanner.js?v=20261019a';
+import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019c';
+import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, OPBOUW, kiesDuur, SLOT_NAAM, groepsindeling } from './trainingsplanner.js?v=20261019c';
 import { MATERIAAL, MATERIAAL_NAAM, PRESETS, presetVan, VELDEN, schoonContext, behoefte, haalbaar, valtAf, tipTekst } from './trainingscontext-logica.js?v=20261019a';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
 import { TERUGBLIK_VRAGEN, zetAntwoord, terugblikKlaar, terugblikSamenvatting, signaalVormBewaard, signaalVormGewisseld, signaalTerugblik, signaalMateriaal, signaalGat, gatRedenen } from './leren-logica.js?v=20261019b';
 import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261019b';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261012e';
-import { positieWeek } from './seizoensplan-logica.js?v=20261019a';
-import { oefeningVan } from './seizoensplan-club.js?v=20261019a';
+import { positieWeek } from './seizoensplan-logica.js?v=20261019c';
+import { oefeningVan } from './seizoensplan-club.js?v=20261019c';
 import { onderdeelAan } from './onderdelen.js?v=20261013b';
 
 const VORMEN = BIBLIOTHEEK.vormen;
@@ -87,7 +87,7 @@ function staat(){
     const lv = leeftijdVanCategorie(S.team?.categorie);
     const datum = volgendeTrainingsdag();
     S._tm = { teamId: S.teamId, n: aanwezigeSpelers(), duur: standaardDuur(lv), niv: 2, datum, week: isoVan(datumUit(datum)).week, thema: null, themaHand: false,
-      tb: {}, tbVerzonden: {}, nHand: false, halfVeld: false, cx: schoonContext(null), cxGeladen: false, seed: 1, knop: { druk: 0, complexiteit: 0, stijl: 'punten' }, open: null, tab: {}, pas: false, ckOpen: false, plan: null, bewaardId: null, lijst: null, ai: {}, aiBezig: false, meerOpen: false };
+      tb: {}, tbVerzonden: {}, nHand: false, halfVeld: false, slechtWeer: false, cx: schoonContext(null), cxGeladen: false, seed: 1, knop: { druk: 0, complexiteit: 0, stijl: 'punten' }, open: null, tab: {}, pas: false, ckOpen: false, plan: null, bewaardId: null, lijst: null, ai: {}, aiBezig: false, meerOpen: false };
   }
   return S._tm;
 }
@@ -118,7 +118,7 @@ function maak(){
   if (!t.themaHand) t.thema = ll.thema;
   if (!themaOpties().includes(t.thema)) t.thema = themaOpties()[0] || ll.thema;
   t.plan = maakPlan(VORMEN, { categorie: S.team?.categorie, leeftijd: lv, aantalSpelers: t.n, niveau: t.niv, duur: t.duur, thema: t.thema,
-    blokFase: ll.fase, seed: `${S.teamId}:${t.week}:${t.seed}`, recent: [], context: t.cx, datum: t.datum, halfVeld: t.halfVeld });
+    blokFase: ll.fase, seed: `${S.teamId}:${t.week}:${t.seed}`, recent: [], context: t.cx, datum: t.datum, halfVeld: t.halfVeld, slechtWeer: t.slechtWeer });
   t.plan.profiel.week = t.week;
   t.plan.profiel.datum = t.datum;
   t.bewaardId = null; t.ai = {}; t.open = null; t.tab = {};
@@ -204,7 +204,7 @@ function htmlResultaat(){
   if (t.pas) h += `<div class="kaart tm-knoppen">
     <div class="tm-rij"><span class="tm-l">Druk</span><div class="tm-chips">${[[-1, 'Rustiger'], [0, 'Normaal'], [1, 'Hoger']].map(([v, x]) => chip('data-tm-druk', v, x, t.knop.druk === v)).join('')}</div></div>
     <div class="tm-rij"><span class="tm-l">Moeilijkheid</span><div class="tm-chips">${[[-1, 'Lichter'], [0, 'Normaal'], [1, 'Zwaarder']].map(([v, x]) => chip('data-tm-cx', v, x, t.knop.complexiteit === v)).join('')}</div></div>
-    <div class="tm-rij"><span class="tm-l">Plan B</span><div class="tm-chips">${chip('data-tm-half', 1, 'Half veld (bv. regen of veld gedeeld)', t.halfVeld)}</div></div>
+    <div class="tm-rij"><span class="tm-l">Plan B</span><div class="tm-chips">${chip('data-tm-half', 1, 'Half veld (veld gedeeld)', t.halfVeld)}${chip('data-tm-weer', 1, 'Regen of koud', t.slechtWeer)}</div></div>
     ${aiAan() ? `<div class="tm-rij"><span class="tm-l">AI-uitleg</span><button class="knop klein licht" data-tm-ai="1"${t.aiBezig ? ' disabled' : ''}>${t.aiBezig ? 'Bezig…' : (Object.keys(t.ai).length ? 'Opnieuw afstemmen' : 'Afstemmen op mijn team')}</button></div>`
       : `<div class="tm-info">AI-uitleg staat uit voor deze club; je ziet de standaardtekst uit de bibliotheek.</div>`}
   </div>`;
@@ -402,6 +402,7 @@ export function koppelTrainingsmodule(v){
     else if (d.tmVeld !== undefined){ t.cx.veld = d.tmVeld || null; t.meerOpen = true; bewaarContext(); maak(); teken(); }
     else if (d.tmWd !== undefined){ t.cx.wedstrijddag = Number(d.tmWd) || null; t.meerOpen = true; bewaarContext(); maak(); teken(); }
     else if (d.tmHalf !== undefined){ t.halfVeld = !t.halfVeld; maak(); teken(); }
+    else if (d.tmWeer !== undefined){ t.slechtWeer = !t.slechtWeer; maak(); teken(); }
     else if (d.tmDuur){ t.duur = Number(d.tmDuur); teken(); }
     else if (d.tmNiv){ t.niv = Number(d.tmNiv); teken(); }
     else if (d.tmMaak){ t.seed++; maak(); stuurSignalen(gatRedenen(t.plan).map(r => signaalGat(leeftijdVanCategorie(S.team?.categorie), r))); teken(); const r = root.querySelector('.tm-kop2'); if (r) window.scrollTo({ top: r.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' }); }
@@ -415,7 +416,7 @@ export function koppelTrainingsmodule(v){
     else if (d.tmWissel !== undefined){
       const i = Number(d.tmWissel), od = t.plan.onderdelen[i];
       const lst = rangschik(VORMEN, od.slot, { categorie: S.team?.categorie, aantalSpelers: t.n, niveau: t.niv, thema: t.thema, doelC: t.plan.profiel.doelComplexiteit,
-        uitsluiten: t.plan.onderdelen.map(o => o.vormId), seed: t.seed, context: t.cx, datum: t.datum, halfVeld: t.halfVeld });
+        uitsluiten: t.plan.onderdelen.map(o => o.vormId), seed: t.seed, context: t.cx, datum: t.datum, halfVeld: t.halfVeld, slechtWeer: t.slechtWeer });
       if (!lst[0]){ meld('Geen andere passende vorm gevonden'); return; }
       stuurSignalen([signaalVormGewisseld(leeftijdVanCategorie(S.team?.categorie), od)]);
       t.plan.onderdelen[i] = bouwOnderdeel(lst[0], { slot: od.slot, minuten: od.minuten }, { N: t.n, thema: t.thema });

@@ -6,7 +6,7 @@
    ========================================================================== */
 
 import { LEERCURVE } from './config.js?v=20261011g';
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261014a';
+import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019c';
 import { haalbaar, MATERIAAL_NAAM, MAX_INTENSITEIT_VOOR_WEDSTRIJD, dagVoorWedstrijd, ruimteM2 } from './trainingscontext-logica.js?v=20261019a';
 export { LEERCURVE };
 
@@ -101,7 +101,8 @@ export function standaardRuimte(leeftijd){ return leeftijd >= 13 ? 6000 : 3500; 
 /* o = { categorie, aantalSpelers, niveau (1-3), duur (60|75|90), thema, blokFase ('Ontdek'|…),
          recent: [vorm-id's], seed, ruimteM2, zwakDomein,
          context (optioneel, zie trainingscontext-logica.js): { materiaal, veld, wedstrijddag },
-         datum ('JJJJ-MM-DD', voor de dag-voor-de-wedstrijd-regel), halfVeld (plan B: veld één stap kleiner) } */
+         datum ('JJJJ-MM-DD', voor de dag-voor-de-wedstrijd-regel), halfVeld (plan B: veld één stap kleiner),
+         slechtWeer (plan B: regen of koud; buiten de afsluiting alleen vormen met zwaarte 2 of 3, zodat niemand stilstaat) } */
 export function maakPlan(vormen, o){
   const leeftijd = o.leeftijd ?? leeftijdVan(o.categorie);
   const lftBib = clamp(leeftijd, 6, 19);               /* de bibliotheek loopt van 6 t/m 19 jaar; senioren gebruiken de oudste vormen */
@@ -116,6 +117,7 @@ export function maakPlan(vormen, o){
   const ruimte = o.ruimteM2 ?? cx.ruimteM2 ?? standaardRuimte(leeftijd);
   const meldingen = [];
   if (cx.lichtMelding) meldingen.push(cx.lichtMelding);
+  if (cx.weerMelding) meldingen.push(cx.weerMelding);
   const gebruikt = new Set();
   const onderdelen = [];
   const intens = [];                                  /* intensiteit van de gekozen onderdelen tot nu toe */
@@ -207,6 +209,7 @@ function kandidaten(vormen, slot, { leeftijd, N, gebruikt }, cx){
     && N >= v.spelers.min && !gebruikt.has(v.id));
   if (cx && cx.actief){
     if (cx.maxIntensiteit) lijst = lijst.filter(v => v.intensiteit <= cx.maxIntensiteit);
+    if (cx.minIntensiteit && slot !== 'afsluiting') lijst = lijst.filter(v => v.intensiteit >= cx.minIntensiteit);
     if (cx.context.materiaal) lijst = lijst.filter(v => haalbaar(v, groepsindeling(v, N).groepen, cx.context).ok);
   }
   return lijst;
@@ -225,6 +228,10 @@ function kandidatenCx(vormen, slot, a, cx, meldingen){
     meldingen.push(`Met jouw materiaal past geen vorm bij ${SLOT_NAAM[slot]}. De best passende vorm is gekozen; zie het materiaal bij die vorm.`);
     return keuze;
   }
+  if (cx.minIntensiteit){
+    const los = kandidaten(vormen, slot, a, { ...cx, minIntensiteit: 0 });
+    if (los.length) return los;
+  }
   if (cx.maxIntensiteit){
     const los = kandidaten(vormen, slot, a, { ...cx, maxIntensiteit: 0 });
     if (los.length) return los;
@@ -234,8 +241,8 @@ function kandidatenCx(vormen, slot, a, cx, meldingen){
 /* Praktische context → grenzen voor de planner. Zonder context: alles uit, gedrag zoals vroeger. */
 function contextVan(o, leeftijd){
   const c = o.context || null;
-  const actief = !!(c && (c.materiaal || c.veld || c.wedstrijddag) ) || !!o.halfVeld;
-  if (!actief) return { actief: false, context: { materiaal: null }, maxIntensiteit: 0, ruimteM2: undefined, lichtMelding: null };
+  const actief = !!(c && (c.materiaal || c.veld || c.wedstrijddag) ) || !!o.halfVeld || !!o.slechtWeer;
+  if (!actief) return { actief: false, context: { materiaal: null }, maxIntensiteit: 0, minIntensiteit: 0, weerMelding: null, ruimteM2: undefined, lichtMelding: null };
   const context = { materiaal: c?.materiaal || null, veld: c?.veld || null, wedstrijddag: c?.wedstrijddag || null };
   const licht = dagVoorWedstrijd(o.datum, context);
   let veld = context.veld || 'heel';
@@ -244,6 +251,8 @@ function contextVan(o, leeftijd){
   return {
     actief: true, context,
     maxIntensiteit: licht ? MAX_INTENSITEIT_VOOR_WEDSTRIJD : 0,
+    minIntensiteit: o.slechtWeer ? 2 : 0,
+    weerMelding: o.slechtWeer ? 'Regen of koud: vormen waarin spelers veel bewegen, geen lange uitleg en korte pauzes. Laat de spelers warme kleding aan houden in de pauzes. Dit is gewoonte onder trainers, niet onderzocht bij jeugd.' : null,
     ruimteM2: heeftVeld ? ruimteM2(veld, standaardRuimte(leeftijd)) : undefined,
     lichtMelding: licht ? 'De dag voor de wedstrijd: lichter, met maximaal zwaarte 2. Dit is gewoonte onder trainers, niet onderzocht bij jeugd.' : null,
   };
