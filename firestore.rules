@@ -33,6 +33,7 @@ service cloud.firestore {
     /* hoofd jeugdopleiding (club-breed seizoensplan): veld clubs/{id}.hoofdJeugd.{uid} = true; alleen de clubadmin zet dat */
     function isHoofdJeugd(c) { return echt() && clubBestaat(c) && club(c).get('hoofdJeugd', {}).get(uid(), false) == true; }
     function isJeugdPlanner(c) { return isClubAdmin(c) || isHoofdJeugd(c); }
+    function isSpeelstijlDeelnemer(c) { return isJeugdPlanner(c) || isCoordinatorVanBouw(c, 'onder') || isCoordinatorVanBouw(c, 'midden') || isCoordinatorVanBouw(c, 'boven'); }
 
     /* ---------- team-rollen ---------- */
     function team(t) { return get(/databases/$(database)/documents/teams/$(t)).data; }
@@ -138,6 +139,23 @@ service cloud.firestore {
           allow write: if isJeugdPlanner(clubId)
             || (echt() && teamBestaat(teamId) && teamClub(teamId) == clubId
                 && isCoordinatorVanBouw(clubId, team(teamId).get('bouw', '_')));
+        }
+      }
+
+      /* speelstijl van de club [20261019d]. huidig = de vastgelegde stijl (alleen uitkomst): lezen clubleden,
+         vastleggen clubadmin of hoofd jeugd. Rondes en antwoorden: alleen de deelnemers (admin, hoofd jeugd,
+         bouwcoördinator); iedereen schrijft alleen het eigen antwoord. Maximaal 5 invullers wordt in het scherm bewaakt. */
+      match /speelstijl/{id} {
+        allow read: if isClubLid(clubId) || isClubAdmin(clubId);
+        allow write: if isJeugdPlanner(clubId);
+      }
+      match /speelstijlRondes/{rondeId} {
+        allow read: if isSpeelstijlDeelnemer(clubId);
+        allow write: if isJeugdPlanner(clubId);
+        match /antwoorden/{antwoordUid} {
+          allow read: if isSpeelstijlDeelnemer(clubId);
+          allow create, update: if isSpeelstijlDeelnemer(clubId) && antwoordUid == uid();
+          allow delete: if isSpeelstijlDeelnemer(clubId) && (antwoordUid == uid() || isJeugdPlanner(clubId));
         }
       }
 
