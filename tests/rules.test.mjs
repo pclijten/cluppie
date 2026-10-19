@@ -200,3 +200,15 @@ test('leren van gebruik: clubbeheerder kan zelf meedoen aanzetten, maar niet de 
   await assertSucceeds(updateDoc(doc(als('adminA'), 'clubs/A'), { 'instellingen.leren': { meedoen: true } }));
   await assertFails(updateDoc(doc(als('adminA'), 'clubs/A'), { 'platformModules.leren': true }));
 });
+test('speelstijl: huidig leest de club, legt vast de admin; antwoorden alleen deelnemers en alleen het eigen', async () => {
+  await assertSucceeds(setDoc(doc(als('adminA'), 'clubs/A/speelstijl/huidig'), { versie: 1 }));
+  await assertFails(setDoc(doc(als('coachA'), 'clubs/A/speelstijl/huidig'), { versie: 1 }));
+  await assertSucceeds(getDoc(doc(als('coachA'), 'clubs/A/speelstijl/huidig')));
+  await assertFails(getDoc(doc(als('coachB'), 'clubs/A/speelstijl/huidig')));
+  await assertSucceeds(setDoc(doc(als('adminA'), 'clubs/A/speelstijlRondes/r1'), { naam: 'Ronde 1', modus: 'kort' }));
+  await assertFails(getDoc(doc(als('coachA'), 'clubs/A/speelstijlRondes/r1')));
+  await assertSucceeds(setDoc(doc(als('coordA'), 'clubs/A/speelstijlRondes/r1/antwoorden/coordA'), { antwoorden: { d1a: 'A' } }));
+  await assertFails(setDoc(doc(als('coordA'), 'clubs/A/speelstijlRondes/r1/antwoorden/adminA'), { antwoorden: {} }));
+  await assertFails(setDoc(doc(als('coachA'), 'clubs/A/speelstijlRondes/r1/antwoorden/coachA'), { antwoorden: {} }));
+  await assertSucceeds(getDoc(doc(als('coordA'), 'clubs/A/speelstijlRondes/r1/antwoorden/coordA')));
+});

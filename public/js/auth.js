@@ -202,7 +202,7 @@ export async function joinMetCode(code, naam = null){
   }
   if (res.status === 'aanvraag'){
     S._aanvraagVerstuurd = { club: res.clubNaam, team: res.naam };
-    import('./toegang.js?v=20261019c').then(m => m.toonAanvraagVerstuurd(res));
+    import('./toegang.js?v=20261019e').then(m => m.toonAanvraagVerstuurd(res));
     return null;
   }
   if (!res.teamId){ if (res.clubNaam) meld('Gekoppeld aan ' + res.clubNaam); return null; }
