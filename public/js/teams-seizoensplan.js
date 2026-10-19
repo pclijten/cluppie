@@ -21,10 +21,10 @@
 import { db, doc, collection, getDoc, getDocs, setDoc, addDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { S, esc, meld } from './state.js?v=20261011g';
 import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261011g';
-import { aiAan } from './clubconfig.js?v=20261019b';
+import { aiAan } from './clubconfig.js?v=20261019i';
 import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261019f';
 import { trainingenVanPlan } from './seizoensplan-club.js?v=20261019f';
-import { onderdeelAan } from './onderdelen.js?v=20261013b';
+import { onderdeelAan } from './onderdelen.js?v=20261019i';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019f';
 import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261019f';
 import {

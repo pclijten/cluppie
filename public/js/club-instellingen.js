@@ -17,10 +17,10 @@ import { ACTIEF, SEIZOEN_FALLBACK, parseFormatie, aantalVeldspelers, SKILLS, LEE
 import {
   effectief, isLegacy, mergeLijst, LIJST_DEFS, ORIGINEEL, NEUTRAAL, CLUPPIE_LOGO, ICOONNAMEN,
   valideerKalender, herlaadKalender, pasClubConfigToe, clubAfk, DISTRICTEN
-} from './clubconfig.js?v=20261019b';
-import { MODULE_DEFS } from './club-beheer.js?v=20261019b';
-import { lerenBeschikbaar } from './leren-signalen.js?v=20261019b';
-import { doorPlatformUit } from './onderdelen.js?v=20261013b';
+} from './clubconfig.js?v=20261019i';
+import { MODULE_DEFS } from './club-beheer.js?v=20261019i';
+import { lerenBeschikbaar } from './leren-signalen.js?v=20261019i';
+import { doorPlatformUit, werkwijzeVan } from './onderdelen.js?v=20261019i';
 
 /* ---------- Tabs ---------- */
 export const INSTEL_TABS = [
@@ -512,7 +512,7 @@ export function koppelInstelNieuw(v, herteken){
   else if (sub === 'pedagogiek') koppelPedagogiek(v, herteken);
   else if (sub === 'regels') koppelRegels(v, herteken);
   else if (sub === 'ai') koppelAI(v, herteken);
-  else if (sub === 'toegang') import('./toegang.js?v=20261019j').then(m => m.koppelToegang(v, herteken));
+  else if (sub === 'toegang') import('./toegang.js?v=20261019k').then(m => m.koppelToegang(v, herteken));
 }
 
 /* ---------- Identiteit ---------- */
@@ -812,6 +812,12 @@ function tabAI(eff){
   const ai = eff.ai || {}, std = (eff.modules && eff.modules.standaard) || {};
   const aan = ai.aan !== false;
   return `
+    ${kaart('Werkwijze trainingen', '', `
+      <p class="cb-uitleg" style="margin:0 0 8px">Wie mag trainingen en seizoensplannen maken? Dit regelt alleen wat trainers in de app zien.</p>
+      <label class="ci-schakel"><input type="radio" name="wzKeuze" value="vrij" ${werkwijzeVan({ werkwijze: ((eff && eff.werkwijze) || (S.club?.instellingen?.werkwijze)) }) === 'vrij' ? 'checked' : ''}><span><b>Trainers vrij</b> · iedere trainer maakt zelf trainingen en een seizoensplan voor het eigen team. Geschikt voor kleine clubs.</span></label>
+      <label class="ci-schakel"><input type="radio" name="wzKeuze" value="club" ${werkwijzeVan({ werkwijze: ((eff && eff.werkwijze) || (S.club?.instellingen?.werkwijze)) }) === 'club' ? 'checked' : ''}><span><b>Club stuurt</b> · hoofd jeugd en bouwcoördinatoren maken het plan. Trainers krijgen de trainingen onder Oefenstof en bouwen zelf niets.</span></label>
+      <p class="cb-uitleg">Een team dat anders werkt (bijvoorbeeld een nieuwe trainer) zet je per team op “mag zelf plannen” onder Teams. Bestaande clubs blijven op Trainers vrij staan tot je zelf kiest.</p>
+      <button class="knop vol klein" id="wzOpslaan">Opslaan</button>`)}
     ${kaart('AI-functies', '', `
       <label class="ci-schakel"><input type="checkbox" id="aiAan" ${aan ? 'checked' : ''}><span>AI-functies aan voor deze club</span></label>
       <p class="cb-uitleg">Trainingen structureren, wedstrijdverslagen en de hulp-chatbot. Uit = de knoppen verdwijnen bij alle coaches. Er gaan nooit spelersnamen naar de AI.</p>
@@ -830,6 +836,10 @@ function tabAI(eff){
       <button class="knop vol klein" id="modOpslaan" style="margin-top:10px">Opslaan</button>`)}`;
 }
 function koppelAI(v, herteken){
+  v.querySelector('#wzOpslaan')?.addEventListener('click', e => vangFout(e.currentTarget, async () => {
+    const k = v.querySelector('input[name="wzKeuze"]:checked')?.value === 'club' ? 'club' : 'vrij';
+    await bewaar([['werkwijze', k]]); meld(k === 'club' ? 'Werkwijze: Club stuurt' : 'Werkwijze: Trainers vrij'); herteken();
+  }));
   v.querySelector('#aiOpslaan')?.addEventListener('click', e => vangFout(e.currentTarget, async () => {
     const raw = v.querySelector('#aiLimiet').value.trim();
     const lim = raw === '' ? null : Math.max(0, Math.round(Number(raw)));
@@ -912,7 +922,7 @@ export function modalNieuweClub(naCreatie){
         W.naam = b.querySelector('#wzNaam').value; W.district = b.querySelector('#wzDistrict').value;
         k.disabled = true; uit.innerHTML = '<div class="sl-laden"><span class="sl-spin"></span>Club opzoeken in Sportlink…</div>';
         try {
-          const { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261019j');
+          const { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261019k');
           const info = await zoekClubInSportlink(id);
           if (info.gevonden){
             const [logo, kleur] = await Promise.all([verkleinSportlinkLogo(info.logo), leesbareKleur(info.kleur)]);
@@ -921,7 +931,7 @@ export function modalNieuweClub(naCreatie){
             W.slVondst = htmlClubVondst(info, { logo, kleur });
           } else { W.clubcode = ''; W.slVondst = htmlClubVondst(info); }
         } catch (x){
-          const { htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261019j');
+          const { htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261019k');
           W.slVondst = htmlClubVondst(null, { fout: x });
         }
         k.disabled = false; teken();

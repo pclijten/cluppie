@@ -15,8 +15,8 @@
 import { db, doc, updateDoc } from './firebase.js?v=20261011g';
 import { S, esc, meld, modAan } from './state.js?v=20261011g';
 import { BOUWEN, catLabel } from './config.js?v=20261011g';
-import { kompasNaam } from './clubconfig.js?v=20261019b';
-import { onderdeelAan, doorPlatformUit } from './onderdelen.js?v=20261013b';
+import { kompasNaam } from './clubconfig.js?v=20261019i';
+import { onderdeelAan, doorPlatformUit, werkwijzeVan } from './onderdelen.js?v=20261019i';
 import { ico } from './icons.js?v=20260922c';
 import { eigenBouwenVanTeam, bouwVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261011g';
 
@@ -242,6 +242,7 @@ export function htmlTeamBeheer(t, sync, teams){
       <div class="cb-kaart-kop">${ico('admin-permissions', 18)}<b>Onderdelen voor coaches</b></div>
       ${MODULE_DEFS.map(([k, naam, , i, uitleg]) => `<button type="button" class="cb-schakelrij ${doorPlatformUit(k) ? 'geblokkeerd' : ''}" data-cb-mod="${k}" ${doorPlatformUit(k) ? 'disabled' : ''}>${ico(i, 20)}<div class="cb-persoon-n">${esc(naam)}<small>${doorPlatformUit(k) ? GEBLOKKEERD_TIP + '. ' : ''}${esc(uitleg)}</small></div><span class="lj-schakel ${aan(t, k) ? 'aan' : ''}"></span></button>`).join('')}
       <p class="cb-uitleg">Uitzetten verbergt alleen de knoppen. Gegevens blijven bewaard en komen terug zodra je het weer aanzet.</p>
+      ${werkwijzeVan(S._clubPlatform) === 'club' ? `<button type="button" class="cb-schakelrij" data-cb-wz="1">${ico('training-plan', 20)}<div class="cb-persoon-n">Mag zelf plannen<small>De club stuurt, maar dit team maakt zelf trainingen en een seizoensplan.</small></div><span class="lj-schakel ${t.werkwijzeVrij === true ? 'aan' : ''}"></span></button>` : ''}
     </div>
 
     <div class="cb-kaart">
@@ -273,6 +274,12 @@ export function koppelTeamBeheer(v, api){
     b.classList.toggle('aan');
     try { await updateDoc(doc(db, 'teams', t.id), { trainingsdagen: dagen }); t.trainingsdagen = dagen; meld('Trainingsdagen opgeslagen'); api.herteken(); }
     catch(e){ b.classList.toggle('aan'); meld('Opslaan mislukt: ' + (e.code || e.message)); }
+  });
+  v.querySelector('[data-cb-wz]')?.addEventListener('click', async e => {
+    const b = e.currentTarget, nieuw = t.werkwijzeVrij !== true;
+    b.querySelector('.lj-schakel')?.classList.toggle('aan', nieuw);
+    try { await updateDoc(doc(db, 'teams', t.id), { werkwijzeVrij: nieuw }); t.werkwijzeVrij = nieuw; meld(nieuw ? 'Dit team mag zelf plannen' : 'Dit team volgt de club'); }
+    catch(err){ b.querySelector('.lj-schakel')?.classList.toggle('aan', !nieuw); meld('Opslaan mislukt: ' + (err.code || err.message)); }
   });
   v.querySelectorAll('[data-cb-mod]').forEach(b => b.onclick = async () => {
     const k = b.dataset.cbMod, nieuw = !aan(t, k);

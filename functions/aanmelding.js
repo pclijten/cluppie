@@ -64,6 +64,8 @@ function controleerAanmelding(d = {}){
     clubNaam: tekst(d.clubNaam, 60), plaats: tekst(d.plaats, 60), district: DISTRICTEN.includes(d.district) ? d.district : '',
     contactNaam: tekst(d.contactNaam, 80), contactEmail: tekst(d.contactEmail, 120).toLowerCase(), rol: tekst(d.rol, 60),
     aantalTeams: Math.max(0, Math.min(200, parseInt(d.aantalTeams, 10) || 0)), bericht: tekst(d.bericht, 1000),
+    /* werkwijze trainingen: 'vrij' (trainers zelfstandig) of 'club' (club stuurt); onbekend = club */
+    werkwijze: d.werkwijze === 'vrij' ? 'vrij' : 'club',
   };
   /* [20261012a] optioneel, uit Sportlink; ongeldige waarden vallen stil weg */
   const cid = tekst(d.sportlinkClientId, 40), code = tekst(d.sportlinkClubcode, 20).toUpperCase();
@@ -128,6 +130,7 @@ const beoordeelClubAanmelding = onCall({ region: REGIO, cors: true }, async (req
       identiteit: { afkorting: afkVoorstel(a.clubNaam), ...(a.logo ? { logo: a.logo } : {}), ...(a.kleur ? { kleur: a.kleur } : {}) },
       locatie: { plaats: a.plaats || '', lat: null, lon: null, district: a.district || 'zuid1' },
       ai: { aan: false },
+      werkwijze: a.werkwijze === 'vrij' ? 'vrij' : 'club',
       toegang: { goedkeuring: true, standaardRol: 'coach', vasteCodes: false },
       privacy: { contactNaam: a.contactNaam || '', contactEmail: a.contactEmail || '', achternamen: false, verwerkersovereenkomst: null },
     },

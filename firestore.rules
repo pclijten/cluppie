@@ -190,7 +190,7 @@ service cloud.firestore {
         || (request.resource.data.get('club', null) != null && isClubAdmin(request.resource.data.club)));
       /* leden en clubkoppeling: een coach mag die niet zelf wijzigen (anders kan hij iemand toevoegen of het team
          naar een andere club verplaatsen). Clubbeheer en de coördinator van de bouw mogen wel. */
-      allow update: if (isVolCoach(teamId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['leden', 'club']))
+      allow update: if (isVolCoach(teamId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['leden', 'club', 'werkwijzeVrij']))
         || (teamBestaat(teamId) && teamClub(teamId) != null && (isClubAdmin(teamClub(teamId))
             || isCoordinatorVanBouw(teamClub(teamId), team(teamId).get('bouw', '_'))));
       allow delete: if isVolCoach(teamId)
