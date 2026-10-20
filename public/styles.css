@@ -5977,3 +5977,39 @@ h3.tm-kop2{font-size:calc(20px * var(--fs))}
 
 .upload-hulp{font-size:calc(11.5px * var(--fs));color:var(--ink-2);line-height:1.4;margin:-6px 0 12px}
 .upload-hulp a{color:var(--accent)}
+
+/* ==================== SNELSTART: zelf beginnen als trainer [20261020b] ==================== */
+.sn-stappen{display:flex;gap:6px;margin-bottom:14px}
+.sn-stappen span{flex:1;height:4px;border-radius:2px;background:var(--hair)}
+.sn-stappen span.aan{background:var(--accent)}
+.sn-beloften{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:10px}
+.sn-beloften li{background:var(--surface-2);border-radius:12px;padding:12px 14px;font-size:calc(14px * var(--fs));line-height:1.4;color:var(--ink-2)}
+.sn-beloften b{color:var(--ink)}
+.sn-tip{margin:0 2px 14px;line-height:1.4}
+.sn-naam{margin:0 0 4px}
+.sn-naam summary{min-height:44px;display:flex;align-items:center;color:var(--ink-2);font-size:calc(14px * var(--fs));cursor:pointer}
+.sn-gekozen{margin-top:8px;padding:9px 12px;border-radius:10px;font-size:calc(13.5px * var(--fs));color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,transparent)}
+.sn-gekozen[hidden]{display:none}
+.sn-samen{margin:0 0 12px;display:grid;gap:8px}
+.sn-samen div{display:flex;justify-content:space-between;gap:12px;font-size:calc(14px * var(--fs))}
+.sn-samen dt{color:var(--ink-2);flex:none}
+.sn-samen dd{margin:0;text-align:right;color:var(--ink)}
+.sn-wel-niet{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sn-wel-niet>div{background:var(--surface-2);border-radius:12px;padding:10px 12px;font-size:calc(13px * var(--fs))}
+.sn-wel-niet ul{margin:6px 0 0;padding-left:16px;color:var(--ink-2);line-height:1.5}
+.sn-kaart{border:1px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+.sn-kop{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.sn-kop span{font-size:calc(13px * var(--fs));color:var(--ink-2)}
+.sn-balk{height:6px;border-radius:3px;background:var(--hair);overflow:hidden;margin-bottom:6px}
+.sn-balk i{display:block;height:100%;background:var(--ok);border-radius:3px}
+.sn-stap{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:8px 2px;text-align:left;border-radius:10px;color:var(--ink)}
+.sn-vink{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--hair);display:grid;place-items:center;font-size:14px;color:#fff}
+.sn-stap.nu .sn-vink{border-color:var(--accent)}
+.sn-stap.klaar .sn-vink{background:var(--ok);border-color:var(--ok)}
+.sn-tekst{display:flex;flex-direction:column;min-width:0}
+.sn-tekst b{font-size:calc(15px * var(--fs))}
+.sn-tekst small{font-size:calc(12.5px * var(--fs));color:var(--ink-2);line-height:1.35}
+.sn-stap.klaar .sn-tekst b{color:var(--ink-2);text-decoration:line-through}
+.sn-voet{display:flex;justify-content:space-between;margin-top:4px}
+.sn-link{min-height:44px;padding:0 4px;font-size:calc(13px * var(--fs));color:var(--ink-2);text-decoration:underline}
+#ssVerder,#ssRond,#ssTerug,#ssMaak,#scOk,#ssClubVul,#ssClubWeg,#ssGeslacht button,#ssCP [data-ss-zonder],#ssCP2 [data-ss-zonder]{min-height:44px}

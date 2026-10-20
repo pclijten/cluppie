@@ -32,6 +32,7 @@ import { S, clubAfkorting } from './state.js?v=20261011g';
 import * as C from './config.js?v=20261011g';
 import { db, doc, getDoc } from './firebase.js?v=20261011g';
 import { zetContentClub } from './content.js?v=20261011g';
+import { weerVanTeam } from './snelstart-logica.js?v=20261020b';
 
 /* ---------- Standaardwaarden ---------- */
 export const NEUTRAAL = Object.freeze({
@@ -381,7 +382,9 @@ export function weerSleutel(){ const l = weerLocatie(); return l ? `${l.lat},${l
 export function weerLocatie(){
   const l = cfg().locatie;
   const lat = Number(l.lat), lon = Number(l.lon);
-  return (l.plaats && Number.isFinite(lat) && Number.isFinite(lon) && l.lat !== null && l.lon !== null) ? { plaats: l.plaats, lat, lon } : null;
+  if (l.plaats && Number.isFinite(lat) && Number.isFinite(lon) && l.lat !== null && l.lon !== null) return { plaats: l.plaats, lat, lon };
+  /* [20261020b] trainer zonder club: de plaats uit Snelstart (teams/{id}.eigenClub) */
+  return weerVanTeam(S.teams, S.team);
 }
 /* Logo van de actieve club, of van een andere club waarvan we het document zagen. */
 export function logoSrc(clubId){

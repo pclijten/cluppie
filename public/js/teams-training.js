@@ -10,7 +10,7 @@ import {
   S, $, $$, esc, meld, datumNL, speler, initialen, openModal, sluitModal, toon, isBeheerder
 } from './state.js?v=20261011g';
 import { telGebruik } from './tracker.js?v=20261011g';
-import { voorbeeldTeamcode } from './clubconfig.js?v=20261020a';
+import { voorbeeldTeamcode } from './clubconfig.js?v=20261020b';
 import { ico } from './icons.js?v=20260922c';
 
 import {
@@ -18,7 +18,8 @@ import {
   SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo, isoWeek,
   catLabel,
 } from './config.js?v=20261011g';
-import { htmlKompas } from './teams-leerlijn.js?v=20261020a';
+import { htmlKompas } from './teams-leerlijn.js?v=20261020b';
+import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261020b';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
 import {
   MAX_WEKEN, weekdagVan, plusDagen, eersteOpDag, regelDatums, actieveRegels, vastOp, vastePrefill, redenVanRegel
@@ -532,6 +533,7 @@ export function htmlInstellingen(){
   }).join('') : '<p style="font-size:calc(14px * var(--fs))">—</p>';
 
   return `
+    ${htmlClubPlaatsInstelling()}
     ${beheer ? `<div class="kaart">
       <div class="sectie-kop" style="margin-top:0">Teamnaam</div>
       <input class="invoer" id="iTeamNaam" value="${esc(S.team.naam)}" autocomplete="off" style="margin-bottom:10px">

@@ -12,7 +12,7 @@ import { S, $, esc, openModal, modAan } from './state.js?v=20261011g';
 import { skillDomein, leercurveThema, isoWeek, kompasIndexVoorWeek,
          LEERCURVE, leercurveRelevant } from './config.js?v=20261011g';
 import { contentVoorThema, kompasTips } from './content.js?v=20261011g';
-import { beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261020a';
+import { beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261020b';
 
 /* ---------- Leerlijn-blok: kompas + leerlijn (Training-tab) ----------
    Eén rustig blok waarin de coach met de pijltjes door twee series bladert:

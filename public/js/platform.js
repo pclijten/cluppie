@@ -7,7 +7,7 @@
 ==================================================================== */
 import { db, collection, getDocs, doc, getDoc, setDoc, serverTimestamp, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261011g';
-import { logoImgVoorDoc, DISTRICTEN, kalenderId, valideerKalender, ORIGINEEL } from './clubconfig.js?v=20261020a';
+import { logoImgVoorDoc, DISTRICTEN, kalenderId, valideerKalender, ORIGINEEL } from './clubconfig.js?v=20261020b';
 import { STARTLIJST_STAPPEN } from './startlijst.js?v=20261011d';
 import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261019i';
 
@@ -180,7 +180,7 @@ function tekenPlatform(o, aanmeldingen){
     const z = document.getElementById('pfZoek'); if (z){ z.focus(); try { z.setSelectionRange(pos, pos); } catch (e) {} }
   };
   document.getElementById('pfKalenders')?.addEventListener('click', () => openKalenders());
-  document.getElementById('pfNieuweClub')?.addEventListener('click', () => import('./club.js?v=20261020a').then(m => m.modalNieuwClub()));
+  document.getElementById('pfNieuweClub')?.addEventListener('click', () => import('./club.js?v=20261020b').then(m => m.modalNieuwClub()));
   document.getElementById('pfVernieuw')?.addEventListener('click', async e => {
     const k = e.currentTarget; k.disabled = true; k.textContent = 'Bezig…';
     try { await httpsCallable(functions, 'platformOverzichtNu')({}); meld('Cijfers bijgewerkt'); openPlatform(); }
@@ -196,10 +196,10 @@ function tekenPlatform(o, aanmeldingen){
   document.querySelectorAll('[data-platform-club]').forEach(b => b.onclick = async () => {
     const id = b.dataset.platformClub;
     b.disabled = true;
-    const ond = await import('./ondersteuning.js?v=20261020a').catch(() => null);
+    const ond = await import('./ondersteuning.js?v=20261020b').catch(() => null);
     if (!ond || !(await ond.startOndersteuning(id))){ b.disabled = false; return; }
     sluitModal();
-    import('./club.js?v=20261020a').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
+    import('./club.js?v=20261020b').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
   });
   document.querySelectorAll('[data-aanmeld-ok], [data-aanmeld-af]').forEach(b => b.onclick = async () => {
     const id = b.dataset.aanmeldOk || b.dataset.aanmeldAf, goed = !!b.dataset.aanmeldOk;

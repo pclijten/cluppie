@@ -7,9 +7,9 @@ import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261011g';
 import { LEERCURVE } from './config.js?v=20261011g';
 import { functions, httpsCallable } from './firebase.js?v=20261011g';
 import { uploadHulpHtml, UPLOAD_HULP } from './upload-hulp.js?v=20261019h';
-import { aiAan, kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261020a';
+import { aiAan, kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261020b';
 import { opslaanContent } from './content.js?v=20261011g';
-import { huidigeContentLijst } from './club-content.js?v=20261020a';
+import { huidigeContentLijst } from './club-content.js?v=20261020b';
 
 const MAX_STUK = 12000;
 const slug = t => String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60);
@@ -43,7 +43,7 @@ export function splitsOpKoppen(tekst){
 
 async function pdfNaarTekst(file){
   const { laadPdfJs } = await import('./pdf-viewer.js?v=20261011g');
-  const { regelsUitTekstItems } = await import('./training-ai.js?v=20261020a');
+  const { regelsUitTekstItems } = await import('./training-ai.js?v=20261020b');
   await laadPdfJs();
   const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
   const paginas = [];
