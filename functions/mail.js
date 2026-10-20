@@ -1,7 +1,7 @@
 /* Uitgaande e-mail: verstuurt elk nieuw document in `mail/{id}` via SMTP.
    Vervangt de Firebase-extensie "Trigger Email" (Firebase Extensions wordt op 31-03-2027 stopgezet).
    Zelfde documentvorm als de extensie, dus de app en functions schrijven ongewijzigd:
-     { to: 'a@b.nl' | ['a@b.nl', …], message: { subject, text } }
+     { to: 'a@b.nl' | ['a@b.nl', …], message: { subject, text, html? } }   (html: opgemaakte versie, zie mail-sjabloon.js)
    Alleen Cloud Functions schrijven in `mail` (rules: dicht voor de app).
    Resultaat komt terug in het document: delivery.state = PROCESSING | SUCCESS | ERROR.
    Instellingen (bij de eerste deploy gevraagd, niet geheim): SMTP_HOST, SMTP_PORT, SMTP_GEBRUIKER, MAIL_VAN.
@@ -14,6 +14,7 @@ const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const REGIO = 'europe-west1';
 const MAX_ONTVANGERS = 10;
 const MAX_TEKST = 20000;
+const MAX_HTML = 100000;
 
 const SMTP_HOST = defineString('SMTP_HOST', { description: 'SMTP-server van de mailbox, bijvoorbeeld smtp.strato.com' });
 const SMTP_PORT = defineString('SMTP_PORT', { default: '465', description: '465 (SSL) of 587 (STARTTLS)' });
@@ -38,7 +39,9 @@ function maakBericht(data, van){
   const text = String(m.text == null ? '' : m.text).slice(0, MAX_TEKST);
   if (!subject) return { fout: 'Geen onderwerp.' };
   if (!text.trim()) return { fout: 'Geen tekst.' };
-  return { bericht: { from: van, to: uniek, subject, text } };
+  /* optionele HTML-versie (alleen door Cloud Functions geschreven); de tekst blijft verplicht als terugval */
+  const html = typeof m.html === 'string' && m.html.trim() ? m.html.slice(0, MAX_HTML) : '';
+  return { bericht: { from: van, to: uniek, subject, text, ...(html ? { html } : {}) } };
 }
 
 let transporter = null;

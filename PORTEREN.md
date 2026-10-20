@@ -2,7 +2,7 @@
 
 Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
 
-## Stand (bijgewerkt 20-10-2026, versie 20261020b)
+## Stand (bijgewerkt 20-10-2026, versie 20261020c)
 - **Firestore-rules:** per club afgeschermd (teams, trainingen, video's, documenten, berichten via clublidmaatschap). Getest in de emulator: `npm run test:rules` (21 scenario's, laatst 20/20 groen op 11-10; de 21e is in 20261011f toegevoegd). Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.
 - **Cloud Functions:** live in `europe-west1` (Node 22, 2nd gen). Iedere nieuwe callable heeft na de eerste deploy de invoker `allUsers` nodig (`gcloud run services add-iam-policy-binding <naam-in-kleine-letters> …`), anders krijgt de app een CORS-/`internal`-fout.
 - **Tests:** `npm test` (17 suites, laatst 13-10 allemaal groen; nieuw: `vaste-afmeldingen`. Eerst één keer `cd functions && npm install`) en `node tests/toegang.test.js` (aansluiten/uitnodigen, 24 scenario's). Pariteit met ASV'33: `node tools/pariteit.mjs ../cluppieasv33` (10 verwachte verschillen in `bouw-hub.js`, `club.js` en `teams-spelers.js`: het overzetten loopt hier via de server; ASV'33 PR #5 is sinds 20261013a gepoort).
@@ -22,6 +22,12 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - [ ] App Check: na een paar dagen in Console → App Check → APIs kijken; bij ~100% geldige verzoeken Enforce aan voor Firestore, Storage en Functions.
 - [ ] AI per club aanzetten zodra de Anthropic-limiet het toelaat (eind oktober).
 - [ ] E-mail: eigen function `verstuurMail` (`functions/mail.js`) in gebruik nemen: `firebase functions:secrets:set SMTP_WACHTWOORD`, daarna `firebase deploy --only functions:verstuurMail` (vraagt SMTP_HOST, poort, gebruiker en afzender). Testen met een document in de collectie `mail` (Console → Firestore: `to`, `message.subject`, `message.text`) en kijken of `delivery.state` op SUCCESS komt. De Trigger Email-extensie is dus niet nodig (Firebase Extensions wordt op 31-03-2027 stopgezet).
+
+**Voor Paul — Opgemaakte aanmeldmails in het Nederlands (release 20261020c, branch `mooie-aanmeldmail`)**
+- [ ] PR reviewen en mergen. Wat het doet: de vier mails rond aanmelden zijn nu opgemaakt (donkere kop met Cluppie-C, rode accentlijn, genummerde stappen, knop) en bevatten naast de tekstversie een HTML-versie: welkomstmail aan de nieuwe clubbeheerder (met de zeven stappen van "Aan de slag"), afwijzing, melding aan jou van een nieuwe clubaanmelding, en de melding aan clubbeheerders bij een nieuwe coach-aanvraag. Alles in het Nederlands, geen externe afbeeldingen.
+- [ ] Deploy: `firebase deploy --only functions:meldClubAan,functions:beoordeelClubAanmelding,functions:meldNieuweAanvraag,functions:verstuurMail --project cluppie-ad329`. Geen nieuwe functies, dus geen invoker nodig. Zonder deploy van `verstuurMail` gaat de HTML niet mee (dan blijft het tekstmail).
+- [ ] Testen: laat een testclub aanmelden en goedkeuren, en bekijk de mail in Gmail, Outlook en op je telefoon. Niet in een echt mailprogramma bekeken (wel in Chromium op 700 en 375 px breed).
+- [ ] Niet gedaan: de overige mails (bijv. uitnodigingen) zijn er niet; als die er komen, gebruik `maakMail()` uit `functions/mail-sjabloon.js`.
 
 **Voor Paul — Trainingsupload, blokplanning en individuele coaches (release 20261020b, branch `training-upload-blokplanning`)**
 - [ ] PR reviewen en mergen. Wat het doet: (1) uit ASV'33 gepoort (releases van 13-10): een zip of meerdere PDF's met blok-namen in één keer inplannen (`training-plan.js`), uploaden op de achtergrond met wachtrij en concept (`upload-wachtrij.js`), drie trainingen tegelijk omzetten, "zichtbaar voor het team vanaf" ook bij een losse training, Overzicht per groep horizontaal scrollen en afwijkers weggooien; (2) nieuw: in het eindbaasscherm staat een kaart **Individuele coaches** (accounts zonder club: eigen team, aanvraag open of nog niets gestart, met "nieuw"-label voor de laatste 7 dagen) en een extra KPI.
@@ -68,6 +74,12 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 ---
 
 # Geschiedenis
+
+## Release 20261020c — aanmeldmails opgemaakt (HTML) en in het Nederlands
+- Nieuw: `functions/mail-sjabloon.js` (`maakMail({ voorkop, titel, alineas, stappen, gegevens, knop, slot, voet })` → `{ text, html }`; puur, alles ge-escaped, knop alleen `https://`). Tabelgebaseerde HTML met inline stijlen, 600 px breed, merkkleuren (`#e2342f` accent, `#0e1013` kop), geen externe afbeeldingen (de C in de kop is tekst), tekstversie blijft als terugval.
+- `functions/mail.js`: `message.html` (optioneel, max 100.000 tekens) wordt meegestuurd; `message.text` blijft verplicht. Afzender en ontvangercontroles ongewijzigd.
+- `functions/aanmelding.js`: welkomst-, afwijzings-, platformmelding- en coach-aanvraagmail gebruiken `maakMail`. De zeven stappen in de welkomstmail spiegelen `STAPPEN` in `public/js/startlijst.js`.
+- Tests: `tests/mail-sjabloon.test.js` (nieuw, in `npm test`) en uitbreiding van `tests/mail.test.js`. `state.js` en rules niet aangeraakt; geen client-wijziging, dus geen versie-bump van de app nodig.
 
 ## Release 20261020b — trainingsupload en blokplanning gepoort, individuele coaches in het eindbaasscherm
 - **Gepoort uit ASV'33** (PR #6–#11, 13-10-2026): nieuwe modules `training-plan.js` en `upload-wachtrij.js`, koppelpunten in `club.js`, zichtbaarheidsfilter in `teams.js` (`zichtbaarVanaf`), weekweergave in `teams-training.js`, parallelle diagram-upload in `training-ai.js`, CSS-blokken `BLOKPLANNING` en `UPLOADWACHTRIJ`. Aanpassingen voor cluppie.io: JSZip lokaal in `vendor/`, de wijzigingenlijst als twee neutrale regels, geen ASV-teksten (bewaakt in `tests/trainingplan.test.mjs`). Training-documenten krijgen zoals altijd `club` en `clubNaam`, dus de bestaande rules blijven gelden.

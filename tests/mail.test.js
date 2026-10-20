@@ -32,6 +32,15 @@ const VAN = 'Cluppie <paul@cluppie.io>';
   ok(M.maakBericht({ to: 'a@b.nl', message: { subject: 's', text: 'x'.repeat(30000) } }, VAN).bericht.text.length === 20000, 'tekst afgekapt op 20.000 tekens');
   ok(!!M.maakBericht(null, VAN).fout, 'leeg document geweigerd');
 
+  /* html-versie (20261020c) */
+  r = M.maakBericht({ to: 'a@b.nl', message: { subject: 's', text: 't', html: '<p>Hoi</p>' } }, VAN);
+  ok(r.bericht.html === '<p>Hoi</p>' && r.bericht.text === 't', 'html wordt meegestuurd naast de tekst');
+  r = M.maakBericht({ to: 'a@b.nl', message: { subject: 's', text: 't' } }, VAN);
+  ok(!('html' in r.bericht), 'zonder html blijft het een tekstmail');
+  r = M.maakBericht({ to: 'a@b.nl', message: { subject: 's', text: 't', html: 'x'.repeat(150000) } }, VAN);
+  ok(r.bericht.html.length === 100000, 'html afgekapt op 100.000 tekens');
+  ok(!!M.maakBericht({ to: 'a@b.nl', message: { subject: 's', html: '<p>Hoi</p>' } }, VAN).fout, 'html zonder tekstversie geweigerd');
+
   /* verwerk (met nep-transporter) */
   const verstuurd = [];
   const goed = () => ({ sendMail: async b => { verstuurd.push(b); return { messageId: '<id1>', accepted: b.to, rejected: [] }; } });
