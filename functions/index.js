@@ -70,6 +70,11 @@ if (!admin.apps.length) admin.initializeApp();
 
 const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 const MODEL = 'claude-haiku-4-5-20251001';
+/* "Nauwkeuriger" voor structureerTraining. Bewust leeg: het model-id moet eerst worden gekozen
+   en gecontroleerd. Zolang het null is, valt elke keuze terug op MODEL. Zet daarna in de app
+   ook NAUWKEURIG_AAN (public/js/upload-wachtrij.js) aan. */
+const MODEL_NAUWKEURIG = null;
+const MODEL_KEUZES = ['standaard', 'nauwkeurig'];
 const API_URL = 'https://api.anthropic.com/v1/messages';
 const REGIO = 'europe-west1';
 
@@ -174,7 +179,7 @@ const TOUR_HOOFDSTUKKEN = [
 
 /* Kleine helper: roept de Anthropic-API aan en geeft de platte tekst terug.
    `system` mag een array van blokken zijn (voor cache_control). */
-async function claude({ apiKey, system, messages, maxTokens = 700, temperature = 0.4, metaTerug = false }){
+async function claude({ apiKey, system, messages, maxTokens = 700, temperature = 0.4, metaTerug = false, model = MODEL }){
   const res = await fetch(API_URL, {
     method: 'POST',
     headers: {
@@ -182,7 +187,7 @@ async function claude({ apiKey, system, messages, maxTokens = 700, temperature =
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
     },
-    body: JSON.stringify({ model: MODEL, max_tokens: maxTokens, temperature, system, messages }),
+    body: JSON.stringify({ model, max_tokens: maxTokens, temperature, system, messages }),
   });
 
   if (!res.ok){
@@ -430,6 +435,13 @@ exports.structureerTraining = onCall(
   async (request) => {
     await vereisAI(request);
 
+    // [20261013c] modelkeuze per upload: alleen sleutels uit de whitelist; het id bepaalt de server.
+    const keuze = request.data?.model == null ? 'standaard' : String(request.data.model);
+    if (!MODEL_KEUZES.includes(keuze)){
+      throw new HttpsError('invalid-argument', 'Onbekende modelkeuze.');
+    }
+    const gekozenModel = keuze === 'nauwkeurig' && MODEL_NAUWKEURIG ? MODEL_NAUWKEURIG : MODEL;
+
     // Client stuurt per pagina de ruwe tekst: [{ pagina: 1, tekst: "..." }, ...]
     const paginas = Array.isArray(request.data?.paginas) ? request.data.paginas : [];
     if (!paginas.length){
@@ -467,6 +479,7 @@ exports.structureerTraining = onCall(
       system,
       messages: [{ role: 'user', content: vraag }],
       maxTokens: 8192,
+      model: gekozenModel,
       temperature: 0,          // deterministisch: we willen letterlijke overname
       metaTerug: true,
     });

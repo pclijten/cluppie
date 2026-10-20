@@ -139,7 +139,7 @@ export function koppelClubContent(v, herteken){
     catch(e){ meld('Kopiëren mislukt: ' + (e.code || e.message)); }
   });
   v.querySelector('#btnContentNieuw')?.addEventListener('click', () => modalContentBewerk(null));
-  v.querySelector('#btnBeleidsplan')?.addEventListener('click', () => import('./club-beleidsplan.js?v=20261020a').then(m => m.openBeleidsplanImport()));
+  v.querySelector('#btnBeleidsplan')?.addEventListener('click', () => import('./club-beleidsplan.js?v=20261020b').then(m => m.openBeleidsplanImport()));
   v.querySelector('#btnContentSeed')?.addEventListener('click', async () => {
     meld('Bezig met seeden…');
     try {
