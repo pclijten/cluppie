@@ -28,7 +28,7 @@
    verder niets aan de engine te veranderen (zie beheeromgeving-notities
    onderaan). */
 
-import { kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261020a';
+import { kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261020c';
 import { db, doc, getDoc, setDoc } from './firebase.js?v=20261011g';
 import { S, $, $$, esc, meld, modAan, toon } from './state.js?v=20261011g';
 

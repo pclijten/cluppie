@@ -17,9 +17,9 @@ import { ACTIEF, SEIZOEN_FALLBACK, parseFormatie, aantalVeldspelers, SKILLS, LEE
 import {
   effectief, isLegacy, mergeLijst, LIJST_DEFS, ORIGINEEL, NEUTRAAL, CLUPPIE_LOGO, ICOONNAMEN,
   valideerKalender, herlaadKalender, pasClubConfigToe, clubAfk, DISTRICTEN
-} from './clubconfig.js?v=20261020a';
-import { MODULE_DEFS } from './club-beheer.js?v=20261020a';
-import { lerenBeschikbaar } from './leren-signalen.js?v=20261020a';
+} from './clubconfig.js?v=20261020c';
+import { MODULE_DEFS } from './club-beheer.js?v=20261020c';
+import { lerenBeschikbaar } from './leren-signalen.js?v=20261020c';
 import { doorPlatformUit, werkwijzeVan } from './onderdelen.js?v=20261019i';
 
 /* ---------- Tabs ---------- */

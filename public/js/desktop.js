@@ -15,13 +15,13 @@
 ========================================================================== */
 import { S, $, esc, modAan, isBeheerder, stopUnsubs, meld } from './state.js?v=20261011g';
 import { ico } from './icons.js?v=20260922c';
-import { logoImg, primaireClubId } from './clubconfig.js?v=20261020a';
+import { logoImg, primaireClubId } from './clubconfig.js?v=20261020c';
 import { BOUWEN } from './config.js?v=20261011g';
 import { openTeam, zetTeamTab, verlaatTeamView, updatesInfo, renderTeam } from './teams.js?v=20261020d';
 import { initSchermen, ruimOp } from './desktop-schermen.js?v=20261020d';
 import { openBouw, bouwTeams, bouwHuidig, zetHerteken, bouwIsSelectie } from './desktop-bouw.js?v=20261020d';
 import { ongelezenBerichten } from './berichten.js?v=20261011g';
-import { evaluatieOpen } from './teams-hub.js?v=20261020a';
+import { evaluatieOpen } from './teams-hub.js?v=20261020d';
 import { onderdeelAan } from './onderdelen.js?v=20261019i';
 import { telNav } from './tracker.js?v=20261011g';
 

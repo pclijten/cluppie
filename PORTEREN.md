@@ -75,6 +75,7 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - `over.html`/`readme.html`, PWA-manifest en icons: één per domein, niet per club.
 
 ---
+- **Snelstart individuele coach, nog niet gedaan:** (1) herkennen dat de club al Cluppie gebruikt (clubgids + callable) en dan doorverwijzen naar aansluiten; (2) welkomstuitleg voor coaches die via een uitnodiging binnenkomen (nu alleen voor wie zelf een team start); (3) de kaart Eerste stappen staat nog niet op de desktop-weergave.
 
 # Geschiedenis
 
@@ -82,7 +83,7 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - `functions/wachtwoord-reset.js`: callable `wachtwoordReset({ email })`, ook zonder inloggen. Maakt via Admin SDK een resetlink (`lang=nl`), schrijft een opgemaakte mail naar `mail/{id}` (→ `verstuurMail`). Altijd `{ ok: true }`; onbekend adres = geen mail maar hetzelfde antwoord; `ratelimiet/reset_<sha256 van adres>` (3 per uur). Pure delen (`nederlandseLink`, `maakResetMail`) en `verwerkReset` getest in `tests/wachtwoord-reset.test.js` (in `npm test`).
 - `public/js/auth.js`: `wachtwoordVergeten` roept de callable aan; bij `not-found`/`unavailable`/`internal` valt hij terug op `sendPasswordResetEmail`. Versie via `node tools/versie.mjs 20261020d origin/main`. Geen rules- of `state.js`-wijziging.
 
-## Release 20261020c — aanmeldmails opgemaakt (HTML) en in het Nederlands
+## Release 20261020c (mails, parallel aan Snelstart met hetzelfde nummer) — aanmeldmails opgemaakt (HTML) en in het Nederlands
 - Nieuw: `functions/mail-sjabloon.js` (`maakMail({ voorkop, titel, alineas, stappen, gegevens, knop, slot, voet })` → `{ text, html }`; puur, alles ge-escaped, knop alleen `https://`). Tabelgebaseerde HTML met inline stijlen, 600 px breed, merkkleuren (`#e2342f` accent, `#0e1013` kop), geen externe afbeeldingen (de C in de kop is tekst), tekstversie blijft als terugval.
 - `functions/mail.js`: `message.html` (optioneel, max 100.000 tekens) wordt meegestuurd; `message.text` blijft verplicht. Afzender en ontvangercontroles ongewijzigd.
 - `functions/aanmelding.js`: welkomst-, afwijzings-, platformmelding- en coach-aanvraagmail gebruiken `maakMail`. De zeven stappen in de welkomstmail spiegelen `STAPPEN` in `public/js/startlijst.js`.
@@ -282,3 +283,10 @@ Uitgevoerd met `tools/overstap-eu.ps1`; `(default)` staat in `europe-west1`, bes
   `firebase deploy --only functions:zetSpelerOver --project cluppie-ad329`
   `gcloud run services add-iam-policy-binding zetspelerover --region=europe-west1 --member=allUsers --role=roles/run.invoker --project=cluppie-ad329`
 
+
+## Release 20261020c — Snelstart voor trainers zonder club
+- Nieuw: `snelstart.js` (schermen) en `snelstart-logica.js` (zuivere logica, `tests/snelstart.test.mjs`, in `npm test`). Vervangt de twee losse schermen van "Begin met mijn eigen team": uitleg, club + plaats (verplicht), categorie met standaard JO11/MO11, privacybevestiging.
+- Team krijgt `eigenClub: { naam, plaats, lat, lon, clubcode? }`. `club` en `clubNaam` blijven voor echte clubs. Geen rules-wijziging nodig (coach mag `eigenClub` schrijven; `club`/`leden`/`werkwijzeVrij` niet).
+- Weer voor teams zonder club: `weerLocatie()` valt terug op `eigenClub` (Open-Meteo, geen sleutel).
+- Teamscherm: kaart Eerste stappen (alleen team zonder club); bestaande losse teams zonder `eigenClub` krijgen een tip. Instellingen: kaart Club en plaats. Vlaggen staan in `gebruikers/{uid}/meta/onboarding.snelstart`.
+- Deploy: alleen hosting. De kennisbank (`functions/kennis.js`) gaat mee met de volgende `chatHulp`-deploy: `firebase deploy --only functions:chatHulp --project cluppie-ad329`.

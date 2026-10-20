@@ -26,9 +26,9 @@ import { vastOp, vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
 import { themaOpDatum } from './seizoensplan-logica.js?v=20261019f';
 import { onderdeelAan } from './onderdelen.js?v=20261019i';
 import { ico } from './icons.js?v=20260922c';
-import { beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261020a';
+import { beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261020c';
 import { renderTeam, zetTeamTab, modalTeamEvaluatie, planningItems } from './teams.js?v=20261020d';
-import { evaluatieOpen, presWedstrijdKeuzes, htmlWedstrijdInfo, koppelWedstrijdInfo } from './teams-hub.js?v=20261020a';
+import { evaluatieOpen, presWedstrijdKeuzes, htmlWedstrijdInfo, koppelWedstrijdInfo } from './teams-hub.js?v=20261020d';
 import { isAfgelast, telMee, soortPill, statusBadge } from './wedstrijd-status.js?v=20261012h';
 import { spelerStats, meestGespeeldePosities } from './teams-spelers.js?v=20261020d';
 import { bewaarTeamEvaluatie } from './teams-evaluatie.js?v=20261020d';
@@ -982,9 +982,9 @@ async function actie(b){
   if (a === 'openw'){ const m = await import('./wedstrijd.js?v=20261020d'); m.openWedstrijd(id); return; }
   if (a === 'nieuwew'){ const m = await import('./wedstrijd.js?v=20261020d'); m.modalNieuweWedstrijd(); return; }
   if (a === 'evalueer'){ modalTeamEvaluatie(id); return; }
-  if (a === 'presentie'){ const m = await import('./teams-training.js?v=20261020b'); m.modalPresentie(); return; }
-  if (a === 'presentieander'){ const m = await import('./teams-training.js?v=20261020b'); m.modalPresentie(null, { startAnder:true }); return; }
-  if (a === 'presentiewijzig'){ const s = (S.presentie || []).find(x => x.id === id); const m = await import('./teams-training.js?v=20261020b'); m.modalPresentie(s || null); return; }
+  if (a === 'presentie'){ const m = await import('./teams-training.js?v=20261020d'); m.modalPresentie(); return; }
+  if (a === 'presentieander'){ const m = await import('./teams-training.js?v=20261020d'); m.modalPresentie(null, { startAnder:true }); return; }
+  if (a === 'presentiewijzig'){ const s = (S.presentie || []).find(x => x.id === id); const m = await import('./teams-training.js?v=20261020d'); m.modalPresentie(s || null); return; }
   if (a === 'stof'){ openOefenstof(id); return; }
   if (a === 'profiel'){ klassiekProfiel = null; S._beoordeelProfiel = id; if (S.teamTab !== 'spelers') zetTeamTab('spelers'); else renderTeam(); return; }
   if (a === 'terugsel'){ S._dkModus = null; S._beoordeelProfiel = null; renderTeam(); return; }
@@ -1040,13 +1040,13 @@ async function actie(b){
     if (!d) planMaand = vandaagISO().slice(0, 7);
     else { const [j, m] = planMaand.split('-').map(Number); const x = new Date(j, m - 1 + d, 1, 12); planMaand = x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0'); }
     renderTeam(); return; }
-  if (a === 'eigendag'){ const m = await import('./teams-training.js?v=20261020b'); m.modalEigenDag(); return; }
+  if (a === 'eigendag'){ const m = await import('./teams-training.js?v=20261020d'); m.modalEigenDag(); return; }
   if (a === 'plandag'){ const { datum, bron, doc: did } = b.dataset;
     if (bron === 'wedstrijd' && did){ const m = await import('./wedstrijd.js?v=20261020d'); m.openWedstrijd(did); return; }
     if (bron === 'training'){ selTraining = datum; zetTeamTab('presentietraining'); return; }
     if (bron === 'lijst' && did){ S._lijstOpen = did; S._ljFilter = 'alle'; S._ljToonEerder = false; zetTeamTab('lijst'); return; }
     const it = planningItems().find(x => x.datum === datum && x.bron === bron);
-    if (it){ const m = await import('./teams-training.js?v=20261020b'); m.modalPlanDag(it); } return; }
+    if (it){ const m = await import('./teams-training.js?v=20261020d'); m.modalPlanDag(it); } return; }
   if (a === 'seldoc'){ selDoc = id; renderTeam(); markeerGelezen(id); return; }
   if (a === 'docgroot'){ const d = (S.documenten || []).find(x => x.id === id); if (!d?.url) return; const { openPdfViewer } = await import('./pdf-viewer.js?v=20261011g'); openPdfViewer({ url: d.url, titel: d.titel || 'Document', meta: '' }); markeerGelezen(id); return; }
 }

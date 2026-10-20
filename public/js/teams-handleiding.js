@@ -5,7 +5,7 @@
    (#helpZoek) wordt door de hub (teams.js/koppelTeamTab) aangesloten,
    want die werkt direct op het gerenderde DOM-element. */
 import { esc } from './state.js?v=20261011g';
-import { beleidsplanNaam } from './clubconfig.js?v=20261020a';
+import { beleidsplanNaam } from './clubconfig.js?v=20261020c';
 import { onboardingHerstartBlok } from './onboarding.js?v=20261020d';
 
 export function htmlHandleiding(){
@@ -37,6 +37,17 @@ export function htmlHandleiding(){
       <li><b>Met e-mail en wachtwoord</b> — vul je e-mailadres en een zelfgekozen wachtwoord in. Bestaat je account nog niet? Dan wordt het automatisch aangemaakt. De volgende keer kom je met diezelfde gegevens direct terug als dezelfde coach.</li>
     </ul>
     <div class="tip"><b>Wachtwoord vergeten?</b> Tik op "Wachtwoord vergeten?" onder de inlogknop — je krijgt dan een mailtje om een nieuw wachtwoord in te stellen.</div>
+    </section>
+
+    <section class="hl-sec" data-zoek="🌱 zelf beginnen als trainer zonder club begin met mijn eigen team club plaats weer eerste stappen">
+    <h3>🌱 Zelf beginnen als trainer</h3>
+    <p>Train je een team en heeft je club Cluppie nog niet? Tik op <b>Begin met mijn eigen team</b>. Je doorloopt drie korte stappen:</p>
+    <ul>
+      <li><b>Uitleg.</b> Wat Cluppie voor je doet, en eerlijk wat je zonder club niet hebt (Sportlink en AI-hulp).</li>
+      <li><b>Club en plaats.</b> Vul je club en de plaats of het dorp in en kies je plaats in de lijst. Dan staat het weer op je teamscherm. Categorie, teamnaam en speelduur staan alvast goed; je past ze aan als dat nodig is.</li>
+      <li><b>Klaar.</b> Bevestig de privacyafspraak (voornamen, geen gezondheidsgegevens) en je team staat er.</li>
+    </ul>
+    <p>Op je teamscherm staat daarna de kaart <b>Eerste stappen</b>: spelers toevoegen, een wedstrijd maken, een training maken en een collega uitnodigen. Zijn ze klaar, dan verdwijnt de kaart. Je kunt hem ook verbergen. Club of plaats later wijzigen? Dat kan onder Instellingen → Club en plaats.</p>
     </section>
 
     <section class="hl-sec" data-zoek="🔗 aansluiten bij je team je coach of de clubbeheerder stuurt je een persoonlijke uitnodigingslink (vaak via whatsapp). zo werkt het: tik op de link. je ziet een welkomstscherm met de naam van je team. log in (google of e-mail) — en je zit meteen in het juiste team. geen link gekregen, of is hij verlopen? vraag je coach of de clubbeheerder om een nieuwe. een link is 14 dagen geldig.">

@@ -18,17 +18,17 @@ import { htmlClubJeugdplan, koppelClubJeugdplan } from './club-jeugdplan.js?v=20
 import { htmlClubSpeelstijl, koppelClubSpeelstijl } from './speelstijl.js?v=20261019g';
 import { rechtenVoor } from './seizoensplan-club.js?v=20261019f';
 import { clubEvaluatiesOphalen, htmlClubEvaluaties, koppelClubEvaluaties } from './club-evaluaties.js?v=20261011g';
-import { startClubContentListener, htmlClubContent, koppelClubContent } from './club-content.js?v=20261020b';
+import { startClubContentListener, htmlClubContent, koppelClubContent } from './club-content.js?v=20261020c';
 import { htmlInzichtTabs, htmlInzichtTab, openRapport } from './club-inzicht.js?v=20261011g';
 import { telGebruik, telNav } from './tracker.js?v=20261011g';
 import { ico } from './icons.js?v=20260922c';
 import { INSTEL_TABS, INSTEL_BASIS, NIEUWE_TABS, htmlInstelNieuw, koppelInstelNieuw, htmlAlgemeenMelding, koppelAlgemeenMelding, modalNieuweClub } from './club-instellingen.js?v=20261020d';
-import { pasClubConfigToe, clubAfk, effectief } from './clubconfig.js?v=20261020a';
+import { pasClubConfigToe, clubAfk, effectief } from './clubconfig.js?v=20261020c';
 import { startlijstStatus } from './startlijst.js?v=20261011d';
 import { teamSleutel as teamSleutelClub } from './sportlink-sleutel.js?v=20261011d';
-import { htmlTeamsBeheer, koppelTeamsBeheer, htmlTeamBeheer, koppelTeamBeheer, htmlCoaches, koppelCoaches, aandachtRedenen, groepen as beheerGroepen } from './club-beheer.js?v=20261020a';
-import { isBlokUpload, isZip, startBlokUpload, hervatBlokUpload, htmlPlannen, koppelPlannen, zichtbaarLabel } from './training-plan.js?v=20261020b';
-import { initWachtrij, voegToeAanWachtrij, htmlUploadPaneel, htmlModelKeuze } from './upload-wachtrij.js?v=20261020b';
+import { htmlTeamsBeheer, koppelTeamsBeheer, htmlTeamBeheer, koppelTeamBeheer, htmlCoaches, koppelCoaches, aandachtRedenen, groepen as beheerGroepen } from './club-beheer.js?v=20261020c';
+import { isBlokUpload, isZip, startBlokUpload, hervatBlokUpload, htmlPlannen, koppelPlannen, zichtbaarLabel } from './training-plan.js?v=20261020c';
+import { initWachtrij, voegToeAanWachtrij, htmlUploadPaneel, htmlModelKeuze } from './upload-wachtrij.js?v=20261020c';
 import { rondesVan, voortgangOphalen, htmlEvalRondes, htmlRondeDetail, htmlRondeFormulier, koppelRondeFormulier, koppelRondeDetail, startConcept } from './evaluatierondes.js?v=20261011g';
 
 /* [20261013b] Uploadwachtrij: trainingen worden op de achtergrond verwerkt.
@@ -1156,7 +1156,7 @@ async function renderClub(opts = {}){
     teams, herteken: hertekenClub, openBeheer,
     nieuwTeam: async () => (await teamsModule()).modalNieuwTeam(S.clubId),
     importPdf: () => modalImporteerPDF(),
-    importSportlink: () => import('./club-sportlink-import.js?v=20261020a').then(m => m.modalTeamsUitSportlink(teams, () => renderClub())),
+    importSportlink: () => import('./club-sportlink-import.js?v=20261020c').then(m => m.modalTeamsUitSportlink(teams, () => renderClub())),
     alleLinks: () => modalAlleLinks(teams),
   });
   if (tab === 'teambeheer') koppelTeamBeheer(v, {
@@ -3100,7 +3100,7 @@ async function startTrainingVerwerking(file, meta){
     rest.map(t=>`<div>${t}</div>`).join('');
 
   try {
-    const ai = await import('./training-ai.js?v=20261020b');
+    const ai = await import('./training-ai.js?v=20261020c');
 
     toonVerwerk(stap([], 'PDF inlezen…', ['Diagrammen opslaan','Oefeningen structureren','Controleren']));
     const { paginas, diagramBlobs, bytes, aantalPaginas } = await ai.leesPdf(file);
@@ -3278,7 +3278,7 @@ async function startTrainingHerstructureer(file, meta, ctx){
   const mod = $('.modal'); if (!mod) return;
   zetTrainingModalInhoud('Opnieuw genereren', `<div class="tr-verwerk"><div class="tr-spin"></div><p>De AI probeert de opmaak nog een keer.</p></div>`);
   try {
-    const ai = await import('./training-ai.js?v=20261020b');
+    const ai = await import('./training-ai.js?v=20261020c');
     // Ook de diagrammen opnieuw uitlezen én overschrijven: zo herstelt "opnieuw
     // genereren" ook een fout diagram (bv. een logo/avatar dat als veld doorkwam),
     // niet alleen de tekst-layout. uploadDiagrammen schrijft naar dezelfde paden
@@ -3829,7 +3829,7 @@ function koppelClientIdUitleg(v){
     catch(e){ if (navigator.share) navigator.share({ text: t }).catch(() => {}); else meld('Kopiëren lukt niet op dit apparaat'); }
   };
   const imp = v.querySelector('#slTeamsImport');
-  if (imp) imp.onclick = () => import('./club-sportlink-import.js?v=20261020a').then(m => m.modalTeamsUitSportlink(S.clubTeams || [], () => renderClub()));
+  if (imp) imp.onclick = () => import('./club-sportlink-import.js?v=20261020c').then(m => m.modalTeamsUitSportlink(S.clubTeams || [], () => renderClub()));
 }
 
 /* Kaart "Aan de slag" op de club-hub (alleen beheerders, tot alles klaar of weggeklikt). */
@@ -3861,7 +3861,7 @@ function koppelStartlijst(v, teams){
     const a = b.dataset.startlijst, stap = b.dataset.stap;
     if (a === 'vo') return modalVerwerkersovereenkomst();
     if (a.startsWith('instellingen:')){ S._clubInstelTab = a.split(':')[1]; return naarClubTab('instel'); }
-    if (stap === 'teams' && S.club.sportlinkClientId) return import('./club-sportlink-import.js?v=20261020a').then(m => m.modalTeamsUitSportlink(teams, () => renderClub()));
+    if (stap === 'teams' && S.club.sportlinkClientId) return import('./club-sportlink-import.js?v=20261020c').then(m => m.modalTeamsUitSportlink(teams, () => renderClub()));
     naarClubTab(a);
   });
 }

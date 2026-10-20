@@ -13,7 +13,7 @@ import {
 } from './firebase.js?v=20261011g';
 import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261011g';
 import { bewaar } from './club-instellingen.js?v=20261020d';
-import { effectief } from './clubconfig.js?v=20261020a';
+import { effectief } from './clubconfig.js?v=20261020c';
 
 export const PRIVACY_VERSIE = '2026-10';
 const roep = (naam, data) => httpsCallable(functions, naam)(data || {}).then(r => r.data);

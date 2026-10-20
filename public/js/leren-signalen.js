@@ -6,7 +6,7 @@
    De server controleert beide schakelaars opnieuw (functions/leren.js). */
 import { functions, httpsCallable } from './firebase.js?v=20261011g';
 import { S } from './state.js?v=20261011g';
-import { cfg } from './clubconfig.js?v=20261020a';
+import { cfg } from './clubconfig.js?v=20261020c';
 
 export function lerenAan(){
   return !!(S._clubPlatform && S._clubPlatform.platformModules && S._clubPlatform.platformModules.leren === true)

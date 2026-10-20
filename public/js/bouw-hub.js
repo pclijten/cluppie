@@ -21,7 +21,7 @@
    wordt ÉÉN keer per team opgehaald bij het openen en daarna door alle
    schermen hergebruikt (huidigeContext.data) — geen dubbele reads. */
 import { teamsOpId } from './teams-ophalen.js?v=20261011g';
-import { pasClubConfigToe } from './clubconfig.js?v=20261020a';
+import { pasClubConfigToe } from './clubconfig.js?v=20261020c';
 import { S, esc, meld, openModal, sluitModal, isBeheerder } from './state.js?v=20261011g';
 import {
   db, collection, doc, getDoc, getDocs, addDoc, query, where, documentId, serverTimestamp

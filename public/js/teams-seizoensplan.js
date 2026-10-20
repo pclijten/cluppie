@@ -21,7 +21,7 @@
 import { db, doc, collection, getDoc, getDocs, setDoc, addDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { S, esc, meld } from './state.js?v=20261011g';
 import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261011g';
-import { aiAan } from './clubconfig.js?v=20261020a';
+import { aiAan } from './clubconfig.js?v=20261020c';
 import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261019f';
 import { trainingenVanPlan } from './seizoensplan-club.js?v=20261019f';
 import { onderdeelAan } from './onderdelen.js?v=20261019i';
