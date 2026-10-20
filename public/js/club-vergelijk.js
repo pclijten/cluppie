@@ -6,7 +6,7 @@
 
 import { db, doc, getDoc } from './firebase.js?v=20261011g';
 import { S, esc, meld } from './state.js?v=20261011g';
-import { bewaar } from './club-instellingen.js?v=20261019k';
+import { bewaar } from './club-instellingen.js?v=20261020a';
 
 const METRICS = [
   ['evaluaties', 'Beoordelingen', 'per team, 30 dagen'],

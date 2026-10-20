@@ -21,10 +21,21 @@ service cloud.firestore {
         || request.auth.token.email == 'pclijten@gmail.com');
     }
 
+    /* [20261020a] ondersteuningsmodus: de eindbaas werkt tijdelijk als clubbeheerder in precies één club.
+       Het document ondersteuning/{uid} wordt alleen door de Cloud Function startOndersteuning gemaakt
+       (die controleert dat de club het niet heeft uitgezet en de start vastlegt in het toegangslog)
+       en verloopt vanzelf (veld tot). Zonder die modus heeft de eindbaas geen toegang tot spelers en teamgegevens. */
+    function ondersteuningActief(c) {
+      return isPlatform() && c != null
+        && exists(/databases/$(database)/documents/ondersteuning/$(request.auth.uid))
+        && get(/databases/$(database)/documents/ondersteuning/$(request.auth.uid)).data.clubId == c
+        && get(/databases/$(database)/documents/ondersteuning/$(request.auth.uid)).data.tot > request.time;
+    }
+
     /* ---------- club-rollen ---------- */
     function club(c) { return get(/databases/$(database)/documents/clubs/$(c)).data; }
     function clubBestaat(c) { return c != null && exists(/databases/$(database)/documents/clubs/$(c)); }
-    function isClubAdmin(c) { return echt() && clubBestaat(c) && club(c).get('admins', {}).get(uid(), false) == true; }
+    function isClubAdmin(c) { return echt() && clubBestaat(c) && (club(c).get('admins', {}).get(uid(), false) == true || ondersteuningActief(c)); }
     function isClubLid(c) { return echt() && clubBestaat(c) && (club(c).get('leden', {}).get(uid(), false) == true || isClubAdmin(c)); }
     function isCoordinatorVanBouw(c, bouw) {
       return echt() && clubBestaat(c) && club(c).get('bouwCoordinatoren', {}).get(bouw, {}).get(uid(), false) == true;
@@ -179,6 +190,7 @@ service cloud.firestore {
       /* [20261011f] een niet-bestaand team lezen verraadt niets; zo laat één verwijderd team een
          'in'-query op club.teams niet meer falen (zwart clubscherm) */
       allow read: if (echt() && resource == null)
+                  || isPlatform()      /* [20261020a] teamlijst per club voor het platformoverzicht; spelers e.d. alleen in de ondersteuningsmodus */
                   || (echt() && (resource.data.get('leden', {}).get(uid(), false) == true
                                  || (resource.data.get('club', null) != null && isClubLid(resource.data.club))))
                   || heeftDeelToegang(teamId);
@@ -297,6 +309,11 @@ service cloud.firestore {
       allow read: if isPlatform() || echt() && (resource.data.uid == uid()
         || isClubAdmin(resource.data.clubId)
         || (resource.data.get('teamId', null) != null && isVolCoach(resource.data.teamId)));
+      allow write: if false;
+    }
+    /* [20261020a] ondersteuningsmodus van de eindbaas: eigen document alleen lezen; schrijven via Cloud Function */
+    match /ondersteuning/{u} {
+      allow read: if echt() && u == uid();
       allow write: if false;
     }
     match /toegangslog/{id} {
