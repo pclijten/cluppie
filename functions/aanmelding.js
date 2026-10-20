@@ -22,6 +22,7 @@ const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const admin = require('firebase-admin');
 const { isPlatformBeheerder } = require('./platform');
+const { maakMail } = require('./mail-sjabloon');
 
 const REGIO = 'europe-west1';
 const PLATFORM_EMAIL = 'paul@cluppie.io';   // ontvanger van de aanmeldmelding (NIET de beheerdercontrole: die staat in platform.js)
@@ -51,9 +52,10 @@ async function vrijeClubCode(db){
   }
   throw new HttpsError('internal', 'Geen vrije clubcode gevonden.');
 }
+/* inhoud: { text, html } uit maakMail() */
 async function mail(db, aan, onderwerp, inhoud){
   if (!aan || (Array.isArray(aan) && !aan.length)) return;
-  try { await db.collection('mail').add({ to: aan, message: { subject: onderwerp, text: inhoud }, gemaakt: FieldValue.serverTimestamp() }); }
+  try { await db.collection('mail').add({ to: aan, message: { subject: onderwerp, text: inhoud.text, html: inhoud.html }, gemaakt: FieldValue.serverTimestamp() }); }
   catch (e){ console.warn('[mail] wegschrijven mislukt', e.message || e); }
 }
 
@@ -91,9 +93,18 @@ const meldClubAan = onCall({ region: REGIO, cors: true }, async (request) => {
   if (data.sportlinkClubcode && !(await db.collection('clubs').where('sportlinkClubcode', '==', data.sportlinkClubcode).limit(1).get()).empty)
     throw new HttpsError('already-exists', 'Deze club staat al op Cluppie. Vraag je clubbeheerder om een uitnodiging.');
   await ref.set({ ...data, uid: a.uid, accountEmail: a.token.email || '', status: 'nieuw', gemaakt: FieldValue.serverTimestamp() });
-  await mail(db, PLATFORM_EMAIL, `Cluppie: nieuwe club aangemeld — ${data.clubNaam}`,
-    `${data.contactNaam}${data.rol ? ' (' + data.rol + ')' : ''} meldde ${data.clubNaam}${data.plaats ? ' uit ' + data.plaats : ''} aan voor Cluppie.\n` +
-    `E-mail: ${data.contactEmail}\nTeams: ${data.aantalTeams || 'onbekend'}\n${data.sportlinkClientId ? 'Sportlink: gevonden met Client ID\n' : ''}${data.bericht ? '\n' + data.bericht + '\n' : ''}\nGoedkeuren: ${APP_URL} → Platform.`);
+  await mail(db, PLATFORM_EMAIL, `Cluppie: nieuwe club aangemeld — ${data.clubNaam}`, maakMail({
+    voorkop: 'Nieuwe aanmelding',
+    titel: `${data.clubNaam} wil met Cluppie starten`,
+    alineas: [`${data.contactNaam}${data.rol ? ' (' + data.rol + ')' : ''} meldde ${data.clubNaam}${data.plaats ? ' uit ' + data.plaats : ''} aan.`],
+    gegevens: [
+      ['Club', data.clubNaam], ['Plaats', data.plaats], ['Contact', data.contactNaam], ['Rol', data.rol],
+      ['E-mail', data.contactEmail], ['Aantal teams', data.aantalTeams || 'onbekend'],
+      ['Sportlink', data.sportlinkClientId ? 'gevonden met Client ID' : ''], ['Bericht', data.bericht],
+    ],
+    knop: { tekst: 'Aanmelding bekijken', url: APP_URL },
+    slot: ['Goedkeuren of afwijzen kan in het platformscherm.'],
+  }));
   return { ok: true };
 });
 
@@ -108,8 +119,16 @@ const beoordeelClubAanmelding = onCall({ region: REGIO, cors: true }, async (req
 
   if (besluit === 'afwijzen'){
     await ref.update({ status: 'afgewezen', reden: tekst(request.data?.reden, 300), beoordeeld: FieldValue.serverTimestamp() });
-    await mail(db, a.contactEmail, 'Je aanmelding bij Cluppie',
-      `Hoi ${a.contactNaam},\n\nBedankt voor je aanmelding van ${a.clubNaam}. We kunnen de club op dit moment nog niet toelaten tot Cluppie.${a.reden ? '\n\n' + a.reden : ''}\n\nVragen? Antwoord gerust op deze mail.\n\nGroet, Cluppie`);
+    await mail(db, a.contactEmail, 'Je aanmelding bij Cluppie', maakMail({
+      voorkop: 'Je aanmelding',
+      titel: 'Bedankt voor je aanmelding',
+      alineas: [
+        `Hoi ${a.contactNaam},`,
+        `Bedankt voor je aanmelding van ${a.clubNaam}. We kunnen de club op dit moment nog niet toelaten tot Cluppie.`,
+        ...(a.reden ? [a.reden] : []),
+      ],
+      slot: ['Vragen? Antwoord gerust op deze mail.', 'Groet,\nCluppie'],
+    }));
     return { ok: true };
   }
 
@@ -140,10 +159,19 @@ const beoordeelClubAanmelding = onCall({ region: REGIO, cors: true }, async (req
   if (a.sportlinkClientId && naGoedkeuring){
     try { await naGoedkeuring(clubRef.id); } catch (e){ console.warn('[aanmelding] teamlijst ophalen mislukt', e.message || e); }
   }
-  await mail(db, a.contactEmail, `Welkom bij Cluppie, ${a.clubNaam}!`,
-    `Hoi ${a.contactNaam},\n\n${a.clubNaam} staat klaar in Cluppie en jij bent clubbeheerder.\n\n` +
-    `Log in op ${APP_URL} met hetzelfde account waarmee je je aanmeldde. Op de clubpagina staat "Aan de slag": ` +
-    `zeven korte stappen (logo, Sportlink, teams, coaches uitnodigen, privacy). Meestal ben je in een kwartier klaar.\n\nVeel plezier!\nCluppie`);
+  await mail(db, a.contactEmail, `Welkom bij Cluppie, ${a.clubNaam}!`, maakMail({
+    voorkop: 'Welkom',
+    titel: `${a.clubNaam} staat klaar`,
+    alineas: [
+      `Hoi ${a.contactNaam},`,
+      `Goed nieuws: ${a.clubNaam} staat klaar in Cluppie en jij bent clubbeheerder.`,
+      'Log in met hetzelfde account waarmee je je aanmeldde. Op de clubpagina vind je "Aan de slag": zeven korte stappen om de club in te richten. Meestal ben je in een kwartier klaar.',
+    ],
+    /* zelfde zeven stappen als STAPPEN in public/js/startlijst.js */
+    stappen: ['Logo en clubkleur', 'Sportlink koppelen', 'Teams aanmaken', 'Trainingsdagen invullen', 'Eerste coach uitnodigen', 'Privacycontact invullen', 'Verwerkersovereenkomst'],
+    knop: { tekst: 'Naar Cluppie', url: APP_URL },
+    slot: ['Loop je ergens op vast? Antwoord gerust op deze mail.', 'Veel plezier!\nCluppie'],
+  }));
   return { ok: true, clubId: clubRef.id };
 });
 
@@ -164,9 +192,14 @@ const meldNieuweAanvraag = onDocumentCreated({ document: 'aanvragen/{id}', regio
   const uids = Object.keys(club.admins || {});
   const mails = [];
   for (const u of uids){ const g = await admin.auth().getUser(u).catch(() => null); if (g && g.email) mails.push(g.email); }
-  await mail(db, mails, `Cluppie: ${a.naam || 'een coach'} wil aansluiten bij ${club.naam || 'jullie club'}`,
-    `${a.naam || 'Een coach'} vroeg toegang${a.teamNaam ? ' tot ' + a.teamNaam : ''}.\n\nGoedkeuren: ${APP_URL} → Club → Instellingen → Toegang & privacy.\n\n` +
-    `Je krijgt hooguit één zo'n mail per dag; nieuwe aanvragen van vandaag staan daar ook.`);
+  await mail(db, mails, `Cluppie: ${a.naam || 'een coach'} wil aansluiten bij ${club.naam || 'jullie club'}`, maakMail({
+    voorkop: 'Nieuwe aanvraag',
+    titel: `${a.naam || 'Een coach'} wil aansluiten`,
+    alineas: [`${a.naam || 'Een coach'} vroeg toegang${a.teamNaam ? ' tot ' + a.teamNaam : ''}${club.naam ? ' bij ' + club.naam : ''}.`],
+    knop: { tekst: 'Aanvraag beoordelen', url: APP_URL },
+    slot: ['Je vindt de aanvraag onder Club → Instellingen → Toegang & privacy.'],
+    voet: 'Je krijgt hooguit één zo\'n mail per dag; nieuwe aanvragen van vandaag staan er ook.',
+  }));
 });
 
 /* index.js geeft hier de Sportlink-teamlijstsync door (voorkomt een kringverwijzing) */
