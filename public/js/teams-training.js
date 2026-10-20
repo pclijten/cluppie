@@ -19,7 +19,7 @@ import {
   catLabel,
 } from './config.js?v=20261011g';
 import { htmlKompas } from './teams-leerlijn.js?v=20261020c';
-import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261020d';
+import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261020e';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
 import {
   MAX_WEKEN, weekdagVan, plusDagen, eersteOpDag, regelDatums, actieveRegels, vastOp, vastePrefill, redenVanRegel

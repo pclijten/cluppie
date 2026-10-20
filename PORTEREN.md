@@ -2,7 +2,7 @@
 
 Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
 
-## Stand (bijgewerkt 20-10-2026, versie 20261020d)
+## Stand (bijgewerkt 20-10-2026, versie 20261020e)
 - **Firestore-rules:** per club afgeschermd (teams, trainingen, video's, documenten, berichten via clublidmaatschap). Getest in de emulator: `npm run test:rules` (21 scenario's, laatst 20/20 groen op 11-10; de 21e is in 20261011f toegevoegd). Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.
 - **Cloud Functions:** live in `europe-west1` (Node 22, 2nd gen). Iedere nieuwe callable heeft na de eerste deploy de invoker `allUsers` nodig (`gcloud run services add-iam-policy-binding <naam-in-kleine-letters> …`), anders krijgt de app een CORS-/`internal`-fout.
 - **Tests:** `npm test` (17 suites, laatst 13-10 allemaal groen; nieuw: `vaste-afmeldingen`. Eerst één keer `cd functions && npm install`) en `node tests/toegang.test.js` (aansluiten/uitnodigen, 24 scenario's). Pariteit met ASV'33: `node tools/pariteit.mjs ../cluppieasv33` (10 verwachte verschillen in `bouw-hub.js`, `club.js` en `teams-spelers.js`: het overzetten loopt hier via de server; ASV'33 PR #5 is sinds 20261013a gepoort).
@@ -22,6 +22,12 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - [ ] App Check: na een paar dagen in Console → App Check → APIs kijken; bij ~100% geldige verzoeken Enforce aan voor Firestore, Storage en Functions.
 - [ ] AI per club aanzetten zodra de Anthropic-limiet het toelaat (eind oktober).
 - [ ] E-mail: eigen function `verstuurMail` (`functions/mail.js`) in gebruik nemen: `firebase functions:secrets:set SMTP_WACHTWOORD`, daarna `firebase deploy --only functions:verstuurMail` (vraagt SMTP_HOST, poort, gebruiker en afzender). Testen met een document in de collectie `mail` (Console → Firestore: `to`, `message.subject`, `message.text`) en kijken of `delivery.state` op SUCCESS komt. De Trigger Email-extensie is dus niet nodig (Firebase Extensions wordt op 31-03-2027 stopgezet).
+
+**Voor Paul — Bevestigingsmail in het Nederlands (release 20261020e, branch `verificatiemail-nl`)**
+- [ ] PR reviewen en mergen. Bij het aanmaken van een account (en bij "Mail opnieuw sturen") kwam nog de Engelse standaardmail van Firebase binnen. Nu: eigen opgemaakte Nederlandse mail vanaf paul@cluppie.io via de nieuwe callable `verificatieMail` (`functions/verificatie-mail.js`; max. 3 per uur per account, al bevestigd = geen mail). `public/js/verificatie.js` valt terug op de Firebase-mail zolang de functie niet gedeployed is.
+- [ ] Deploy: `firebase deploy --only functions:verificatieMail --project cluppie-ad329`, daarna de invoker: `gcloud run services add-iam-policy-binding verificatiemail --region=europe-west1 --member=allUsers --role=roles/run.invoker --project=cluppie-ad329`.
+- [ ] Na de deploy testen met een nieuw e-mailadres: account aanmaken op het loginscherm → bevestigingsmail in het Nederlands.
+- [ ] Nog Engels als de terugval raakt: Console → Authentication → Templates (taal op Nederlands zetten) voor de oude Firebase-mails.
 
 **Voor Paul — Opgemaakte mails in het Nederlands (release 20261020c + 20261020d, branch `mooie-aanmeldmail`)**
 - [ ] PR reviewen en mergen. Wat het doet: de vier mails rond aanmelden zijn nu opgemaakt (donkere kop met Cluppie-C, rode accentlijn, genummerde stappen, knop) en bevatten naast de tekstversie een HTML-versie: welkomstmail aan de nieuwe clubbeheerder (met de zeven stappen van "Aan de slag"), afwijzing, melding aan jou van een nieuwe clubaanmelding, en de melding aan clubbeheerders bij een nieuwe coach-aanvraag. Alles in het Nederlands, geen externe afbeeldingen.
@@ -78,6 +84,10 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - **Snelstart individuele coach, nog niet gedaan:** (1) herkennen dat de club al Cluppie gebruikt (clubgids + callable) en dan doorverwijzen naar aansluiten; (2) welkomstuitleg voor coaches die via een uitnodiging binnenkomen (nu alleen voor wie zelf een team start); (3) de kaart Eerste stappen staat nog niet op de desktop-weergave.
 
 # Geschiedenis
+
+## Release 20261020e — bevestigingsmail in het Nederlands
+- `functions/verificatie-mail.js`: callable `verificatieMail` (ingelogd, eigen adres): `generateEmailVerificationLink` + opgemaakte mail via `mail/{id}`; al bevestigd → niets; `ratelimiet/ver_<uid>` 3 per uur. Hergebruikt `nederlandseLink` uit `wachtwoord-reset.js`. Test: `tests/verificatie-mail.test.js` (in `npm test`).
+- `public/js/verificatie.js` (nieuw, `stuurVerificatieMail`): gebruikt door `auth.js` (nieuw account) en `toegang.js` (opnieuw sturen); terugval op `sendEmailVerification`. Versie `node tools/versie.mjs 20261020e origin/main`. Geen rules- of `state.js`-wijziging.
 
 ## Release 20261020d — wachtwoord-vergeten-mail in het Nederlands
 - `functions/wachtwoord-reset.js`: callable `wachtwoordReset({ email })`, ook zonder inloggen. Maakt via Admin SDK een resetlink (`lang=nl`), schrijft een opgemaakte mail naar `mail/{id}` (→ `verstuurMail`). Altijd `{ ok: true }`; onbekend adres = geen mail maar hetzelfde antwoord; `ratelimiet/reset_<sha256 van adres>` (3 per uur). Pure delen (`nederlandseLink`, `maakResetMail`) en `verwerkReset` getest in `tests/wachtwoord-reset.test.js` (in `npm test`).

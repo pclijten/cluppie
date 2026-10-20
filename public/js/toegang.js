@@ -8,11 +8,12 @@
    Serverkant: functions/toegang.js. Data: uitnodigingen, aanvragen, toegangslog.
 ==================================================================== */
 import {
-  auth, db, functions, httpsCallable, sendEmailVerification,
+  auth, db, functions, httpsCallable,
   collection, doc, getDoc, getDocs, query, where
 } from './firebase.js?v=20261011g';
 import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261011g';
-import { bewaar } from './club-instellingen.js?v=20261020d';
+import { stuurVerificatieMail } from './verificatie.js?v=20261020e';
+import { bewaar } from './club-instellingen.js?v=20261020e';
 import { effectief } from './clubconfig.js?v=20261020c';
 
 export const PRIVACY_VERSIE = '2026-10';
@@ -72,7 +73,7 @@ export function toonVerificatieHint(){
     <button class="knop licht vol" id="verLater" style="margin-top:8px">Later</button>`);
   document.getElementById('verLater').onclick = sluitModal;
   document.getElementById('verOpnieuw').onclick = async () => {
-    try { await sendEmailVerification(auth.currentUser); meld('Mail verstuurd'); } catch(e){ meld('Versturen mislukt, probeer het zo opnieuw'); }
+    try { await stuurVerificatieMail(); meld('Mail verstuurd'); } catch(e){ meld(e && e.message && !/^(functions|auth)\//.test(e.message) && e.message.length < 120 ? e.message : 'Versturen mislukt, probeer het zo opnieuw'); }
   };
   document.getElementById('verOk').onclick = async () => {
     await auth.currentUser.reload();
@@ -298,7 +299,7 @@ export async function koppelToegang(v, herteken){
     klaar(() => roep('verwijderLid', { clubId, uid: b.dataset.lidWeg }), b, 'Uitgeschreven');
   });
 
-  q('#pvVoLees')?.addEventListener('click', () => import('./club.js?v=20261020d').then(m => m.modalVerwerkersovereenkomst()));
+  q('#pvVoLees')?.addEventListener('click', () => import('./club.js?v=20261020e').then(m => m.modalVerwerkersovereenkomst()));
   q('#pvOpslaan').onclick = (e) => klaar(async () => {
     const wijz = [
       ['privacy.contactNaam', q('#pvNaam').value.trim()], ['privacy.contactEmail', q('#pvMail').value.trim()],
