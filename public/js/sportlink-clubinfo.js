@@ -33,7 +33,7 @@ export async function verkleinSportlinkLogo(dataUrl){
     const type = (/data:([^;]+)/.exec(kop) || [])[1] || 'image/png';
     const bin = atob(b64), bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    const { verwerkLogo } = await import('./club-instellingen.js?v=20261020c');
+    const { verwerkLogo } = await import('./club-instellingen.js?v=20261020d');
     return await verwerkLogo(new File([bytes], 'sportlink-logo.png', { type }));
   } catch (e){ console.warn('[clubinfo] logo verkleinen mislukt', e); return ''; }
 }
@@ -42,7 +42,7 @@ export async function verkleinSportlinkLogo(dataUrl){
 export async function leesbareKleur(hex){
   if (!/^#[0-9a-f]{6}$/i.test(hex || '')) return null;
   try {
-    const { kleurAdvies } = await import('./club-instellingen.js?v=20261020c');
+    const { kleurAdvies } = await import('./club-instellingen.js?v=20261020d');
     const a = kleurAdvies(hex);
     return a.ok ? hex.toLowerCase() : (a.advies || hex).toLowerCase();
   } catch { return hex.toLowerCase(); }

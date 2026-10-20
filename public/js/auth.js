@@ -122,14 +122,24 @@ async function wachtwoordLogin(adresRuw, wachtwoord, knop){
 async function wachtwoordVergeten(adresRuw){
   const adres = (adresRuw||'').trim();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(adres)) return meld('Vul eerst je e-mailadres in');
+  const klaar = () => meld('Staat er een account op ' + adres + '? Dan is er een mail met een link onderweg (check ook je spam).');
   try {
-    await sendPasswordResetEmail(auth, adres);
-    meld('Reset-link gestuurd naar ' + adres + ' (check ook je spam)');
+    /* eigen Nederlandse mail via de server; antwoordt altijd hetzelfde, zodat niet te raden is wie een account heeft */
+    await httpsCallable(functions, 'wachtwoordReset')({ email: adres });
+    klaar();
   } catch(e){
-    if (e.code === 'auth/user-not-found')
-      meld('Geen account met dit e-mailadres gevonden');
-    else
+    if (e.code === 'functions/not-found' || e.code === 'functions/unavailable' || e.code === 'functions/internal'){
+      /* functie nog niet gedeployed: de standaardmail van Firebase als terugval */
+      try { await sendPasswordResetEmail(auth, adres); klaar(); }
+      catch(e2){
+        if (e2.code === 'auth/user-not-found') klaar();
+        else meld('Kon geen reset-mail sturen: ' + (e2.code||e2.message));
+      }
+    } else if (e.code === 'functions/invalid-argument'){
+      meld('Vul een geldig e-mailadres in');
+    } else {
       meld('Kon geen reset-mail sturen: ' + (e.code||e.message));
+    }
   }
 }
 
@@ -202,7 +212,7 @@ export async function joinMetCode(code, naam = null){
   }
   if (res.status === 'aanvraag'){
     S._aanvraagVerstuurd = { club: res.clubNaam, team: res.naam };
-    import('./toegang.js?v=20261020c').then(m => m.toonAanvraagVerstuurd(res));
+    import('./toegang.js?v=20261020d').then(m => m.toonAanvraagVerstuurd(res));
     return null;
   }
   if (!res.teamId){ if (res.clubNaam) meld('Gekoppeld aan ' + res.clubNaam); return null; }
