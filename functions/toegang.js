@@ -340,6 +340,54 @@ exports.privacyOverzicht = onCall({ region: REGIO, cors: true }, async (request)
   return { huidigeVersie: PRIVACY_VERSIE, per };
 });
 
+/* ---------- [20261020a] ondersteuningsmodus voor de eindbaas ----------
+   De eindbaas kan in precies één club tijdelijk als clubbeheerder werken (zie ondersteuningActief in
+   firestore.rules). Start en stop komen in het toegangslog van de club. Een club kan het uitzetten via
+   instellingen.toegang.ondersteuning = false. Het document ondersteuning/{uid} = { clubId, start, tot }. */
+const ONDERSTEUNING_UREN = 2;
+const PLATFORM_EMAIL = 'pclijten@gmail.com';
+async function eindbaasVan(db, request){
+  const t = request.auth && request.auth.token;
+  if (!t || !t.email || t.email_verified !== true) return false;
+  if (t.email === PLATFORM_EMAIL) return true;
+  const p = (await db.doc('platform/instellingen').get()).data() || {};
+  return (p.beheerders || []).includes(t.email);
+}
+const ondersteuningToegestaan = (club) => club?.instellingen?.toegang?.ondersteuning !== false;
+
+exports.startOndersteuning = onCall({ region: REGIO, cors: true }, async (request) => {
+  const db = getFirestore();
+  vereisIngelogd(request);
+  if (!(await eindbaasVan(db, request))) throw new HttpsError('permission-denied', 'Alleen voor de eindbaas van het platform.');
+  const clubId = String(request.data?.clubId || '');
+  const club = clubId ? (await clubRef(db, clubId).get()).data() : null;
+  if (!club) throw new HttpsError('not-found', 'Club bestaat niet.');
+  if (!ondersteuningToegestaan(club)) throw new HttpsError('failed-precondition', 'Deze club heeft ondersteuning door Cluppie uitgezet.');
+  const ref = db.doc(`ondersteuning/${request.auth.uid}`);
+  const bestaand = (await ref.get()).data();
+  /* nog actief in een andere club: eerst die sessie netjes afsluiten in het log */
+  if (bestaand && bestaand.clubId !== clubId && bestaand.tot?.toMillis && bestaand.tot.toMillis() > Date.now())
+    await log(db, bestaand.clubId, 'ondersteuning_stop', { door: request.auth.uid, doorNaam: 'Cluppie (eindbaas)', details: 'overgestapt naar een andere club' });
+  const tot = Timestamp.fromMillis(Date.now() + ONDERSTEUNING_UREN * 3600000);
+  await ref.set({ clubId, start: FieldValue.serverTimestamp(), tot });
+  await log(db, clubId, 'ondersteuning_start', { door: request.auth.uid, doorNaam: 'Cluppie (eindbaas)', details: `tot ${ONDERSTEUNING_UREN} uur` });
+  return { clubId, tot: tot.toMillis() };
+});
+
+exports.stopOndersteuning = onCall({ region: REGIO, cors: true }, async (request) => {
+  const db = getFirestore();
+  vereisIngelogd(request);
+  if (!(await eindbaasVan(db, request))) throw new HttpsError('permission-denied', 'Alleen voor de eindbaas van het platform.');
+  const ref = db.doc(`ondersteuning/${request.auth.uid}`);
+  const d = (await ref.get()).data();
+  if (d){
+    await ref.delete();
+    await log(db, d.clubId, 'ondersteuning_stop', { door: request.auth.uid, doorNaam: 'Cluppie (eindbaas)' });
+  }
+  return { ok: true };
+});
+exports.ondersteuningToegestaan = ondersteuningToegestaan;
+
 /* ---------- voorstel: inactieve leden (alleen lezen, voor de beheerder) ---------- */
 exports.PRIVACY_VERSIE = PRIVACY_VERSIE;
 module.exports.verwijderUidUitAlles = verwijderUidUitAlles;

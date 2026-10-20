@@ -5,7 +5,7 @@
    bewerken, én het uitlenen van een speler aan een ander team binnen de
    club (thematisch dezelfde "speler"-context, vandaar in één bestand). */
 import { teamsOpId } from './teams-ophalen.js?v=20261011g';
-import { beleidsplanNaam, cfg } from './clubconfig.js?v=20261019i';
+import { beleidsplanNaam, cfg } from './clubconfig.js?v=20261020a';
 import {
   db, collection, doc, addDoc, deleteDoc, updateDoc, setDoc,
   getDoc, getDocs, query, where, serverTimestamp, documentId, deleteField,
@@ -25,7 +25,7 @@ import { isBouwCoordinator } from './coordinatoren.js?v=20261011g';
 import { ico } from './icons.js?v=20260922c';
 import { rondesVoorTeam, rondeSpelers, datumKort } from './evaluatierondes.js?v=20261011g';
 
-import { toonThemaInfo } from './teams-leerlijn.js?v=20261019i';
+import { toonThemaInfo } from './teams-leerlijn.js?v=20261020a';
 import { telGebruik } from './tracker.js?v=20261011g';
 import { opkomstVoor, teltMee } from './opkomst.js?v=20260922c';
 import { heeftElftallen, filterOpElftal, elftalPillen } from './elftallen.js?v=20261011g';
@@ -35,7 +35,7 @@ import { heeftElftallen, filterOpElftal, elftalPillen } from './elftallen.js?v=2
    import). Dynamic import() binnen de aanroepende functie is het patroon
    dat de rest van de app ook al gebruikt (zie club.js/wedstrijd.js). */
 async function herrenderTeam(){
-  const m = await import('./teams.js?v=20261019k');
+  const m = await import('./teams.js?v=20261020a');
   m.renderTeam();
 }
 

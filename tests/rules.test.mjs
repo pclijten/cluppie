@@ -212,3 +212,40 @@ test('speelstijl: huidig leest de club, legt vast de admin; antwoorden alleen de
   await assertFails(setDoc(doc(als('coachA'), 'clubs/A/speelstijlRondes/r1/antwoorden/coachA'), { antwoorden: {} }));
   await assertSucceeds(getDoc(doc(als('coordA'), 'clubs/A/speelstijlRondes/r1/antwoorden/coordA')));
 });
+
+/* ---------- [20261020a] ondersteuningsmodus van de eindbaas ---------- */
+const zetOndersteuning = (uid, clubId, tot) => env.withSecurityRulesDisabled(c => setDoc(doc(c.firestore(), 'ondersteuning/' + uid), { clubId, tot }));
+
+test('ondersteuning: zonder modus ziet de eindbaas de teamlijst, maar geen spelers en schrijft niet', async () => {
+  const db = als('paul', PLATFORM);
+  await assertSucceeds(getDoc(doc(db, 'teams/t1')));
+  await assertFails(getDoc(doc(db, 'teams/t1/spelers/s1')));
+  await assertFails(getDoc(doc(db, 'teams/t1/beoordelingen/b1')));
+  await assertFails(setDoc(doc(db, 'teams/t1/spelers/s2'), { naam: 'Nieuw' }));
+  await assertFails(updateDoc(doc(db, 'teams/t1'), { naam: 'Anders' }));
+});
+test('ondersteuning: in de modus werkt de eindbaas als clubbeheerder in precies die club', async () => {
+  await zetOndersteuning('paul', 'A', morgen);
+  const db = als('paul', PLATFORM);
+  await assertSucceeds(getDoc(doc(db, 'teams/t1/spelers/s1')));
+  await assertSucceeds(getDoc(doc(db, 'teams/t1/beoordelingen/b1')));
+  await assertSucceeds(setDoc(doc(db, 'teams/t1/spelers/s2'), { naam: 'Nieuw', nr: 9 }));
+  await assertSucceeds(updateDoc(doc(db, 'teams/t1'), { naam: 'JO11-2' }));
+  await assertSucceeds(updateDoc(doc(db, 'clubs/A'), { naam: 'Club A (nieuw)' }));
+  await assertFails(getDoc(doc(db, 'teams/tB/spelers/s1')));
+  await assertFails(setDoc(doc(db, 'teams/tB/spelers/s2'), { naam: 'Nieuw' }));
+});
+test('ondersteuning: verlopen modus geeft geen rechten meer', async () => {
+  await zetOndersteuning('paul', 'A', gisteren);
+  const db = als('paul', PLATFORM);
+  await assertFails(getDoc(doc(db, 'teams/t1/spelers/s1')));
+  await assertFails(updateDoc(doc(db, 'teams/t1'), { naam: 'Anders' }));
+});
+test('ondersteuning: alleen de eindbaas, en het document is niet door een client te schrijven', async () => {
+  await zetOndersteuning('coachA', 'A', morgen);
+  await assertFails(updateDoc(doc(als('coachA'), 'clubs/A'), { naam: 'Gekaapt' }));
+  await assertFails(setDoc(doc(als('coachA'), 'ondersteuning/coachA'), { clubId: 'A', tot: morgen }));
+  await assertFails(setDoc(doc(als('paul', PLATFORM), 'ondersteuning/paul'), { clubId: 'A', tot: morgen }));
+  await assertSucceeds(getDoc(doc(als('coachA'), 'ondersteuning/coachA')));
+  await assertFails(getDoc(doc(als('coachB'), 'ondersteuning/coachA')));
+});

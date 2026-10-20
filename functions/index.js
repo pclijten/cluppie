@@ -63,6 +63,7 @@ const slh = require('./sportlink-hulp');
 Object.assign(exports, { uitnodigingInfo: toegang.uitnodigingInfo, sluitAan: toegang.sluitAan, maakUitnodiging: toegang.maakUitnodiging,
   trekUitnodigingIn: toegang.trekUitnodigingIn, beoordeelAanvraag: toegang.beoordeelAanvraag, wijzigRol: toegang.wijzigRol,
   verwijderLid: toegang.verwijderLid, bevestigPrivacy: toegang.bevestigPrivacy, privacyOverzicht: toegang.privacyOverzicht, codeBezet: avg.codeBezet,
+  startOndersteuning: toegang.startOndersteuning, stopOndersteuning: toegang.stopOndersteuning,
   exporteerMijnGegevens: avg.exporteerMijnGegevens, verwijderMijnAccount: avg.verwijderMijnAccount, bewaartermijnen: avg.bewaartermijnen });
 
 if (!admin.apps.length) admin.initializeApp();
