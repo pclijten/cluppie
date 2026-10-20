@@ -2,7 +2,7 @@
 
 Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
 
-## Stand (bijgewerkt 20-10-2026, versie 20261020c)
+## Stand (bijgewerkt 20-10-2026, versie 20261020d)
 - **Firestore-rules:** per club afgeschermd (teams, trainingen, video's, documenten, berichten via clublidmaatschap). Getest in de emulator: `npm run test:rules` (21 scenario's, laatst 20/20 groen op 11-10; de 21e is in 20261011f toegevoegd). Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.
 - **Cloud Functions:** live in `europe-west1` (Node 22, 2nd gen). Iedere nieuwe callable heeft na de eerste deploy de invoker `allUsers` nodig (`gcloud run services add-iam-policy-binding <naam-in-kleine-letters> …`), anders krijgt de app een CORS-/`internal`-fout.
 - **Tests:** `npm test` (17 suites, laatst 13-10 allemaal groen; nieuw: `vaste-afmeldingen`. Eerst één keer `cd functions && npm install`) en `node tests/toegang.test.js` (aansluiten/uitnodigen, 24 scenario's). Pariteit met ASV'33: `node tools/pariteit.mjs ../cluppieasv33` (10 verwachte verschillen in `bouw-hub.js`, `club.js` en `teams-spelers.js`: het overzetten loopt hier via de server; ASV'33 PR #5 is sinds 20261013a gepoort).
@@ -23,9 +23,12 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - [ ] AI per club aanzetten zodra de Anthropic-limiet het toelaat (eind oktober).
 - [ ] E-mail: eigen function `verstuurMail` (`functions/mail.js`) in gebruik nemen: `firebase functions:secrets:set SMTP_WACHTWOORD`, daarna `firebase deploy --only functions:verstuurMail` (vraagt SMTP_HOST, poort, gebruiker en afzender). Testen met een document in de collectie `mail` (Console → Firestore: `to`, `message.subject`, `message.text`) en kijken of `delivery.state` op SUCCESS komt. De Trigger Email-extensie is dus niet nodig (Firebase Extensions wordt op 31-03-2027 stopgezet).
 
-**Voor Paul — Opgemaakte aanmeldmails in het Nederlands (release 20261020c, branch `mooie-aanmeldmail`)**
+**Voor Paul — Opgemaakte mails in het Nederlands (release 20261020c + 20261020d, branch `mooie-aanmeldmail`)**
 - [ ] PR reviewen en mergen. Wat het doet: de vier mails rond aanmelden zijn nu opgemaakt (donkere kop met Cluppie-C, rode accentlijn, genummerde stappen, knop) en bevatten naast de tekstversie een HTML-versie: welkomstmail aan de nieuwe clubbeheerder (met de zeven stappen van "Aan de slag"), afwijzing, melding aan jou van een nieuwe clubaanmelding, en de melding aan clubbeheerders bij een nieuwe coach-aanvraag. Alles in het Nederlands, geen externe afbeeldingen.
-- [ ] Deploy: `firebase deploy --only functions:meldClubAan,functions:beoordeelClubAanmelding,functions:meldNieuweAanvraag,functions:verstuurMail --project cluppie-ad329`. Geen nieuwe functies, dus geen invoker nodig. Zonder deploy van `verstuurMail` gaat de HTML niet mee (dan blijft het tekstmail).
+- [ ] **Wachtwoord vergeten (20261020d):** de standaardmail van Firebase (Engels, `noreply@…firebaseapp.com`, belandt in spam) is vervangen door een eigen opgemaakte Nederlandse mail vanaf paul@cluppie.io. Nieuwe callable `wachtwoordReset` (`functions/wachtwoord-reset.js`): antwoordt altijd `ok` (niet te raden wie een account heeft), max. 3 per uur per adres, link via Admin SDK met `lang=nl`. `auth.js` valt terug op de oude Firebase-mail zolang de functie niet gedeployed is. De app meldt nu neutraal "Staat er een account op …? Dan is er een mail onderweg" (de oude melding "Geen account gevonden" is bewust weg).
+- [ ] Deploy: `firebase deploy --only functions:meldClubAan,functions:beoordeelClubAanmelding,functions:meldNieuweAanvraag,functions:verstuurMail,functions:wachtwoordReset --project cluppie-ad329`. **Nieuw: `wachtwoordReset` is een callable en heeft de invoker nodig** (anders CORS-/`internal`-fout, en dan valt de app terug op de Firebase-mail): `gcloud run services add-iam-policy-binding wachtwoordreset --region=europe-west1 --member=allUsers --role=roles/run.invoker --project=cluppie-ad329`. Zonder deploy van `verstuurMail` gaat de HTML niet mee (dan blijft het tekstmail).
+- [ ] Optioneel, ook in de Console: Authentication → Templates → Wachtwoord opnieuw instellen → taal op Nederlands en de afzender op een eigen domein; dat geldt voor de terugvalmail en de verificatiemail (`sendEmailVerification` in `auth.js` gebruikt nog de Firebase-standaard).
+- [ ] Controle op spam: de mails komen van paul@cluppie.io via Strato. Zet SPF/DKIM voor cluppie.io goed en kijk in Gmail → Origineel weergeven of SPF/DKIM "PASS" tonen.
 - [ ] Testen: laat een testclub aanmelden en goedkeuren, en bekijk de mail in Gmail, Outlook en op je telefoon. Niet in een echt mailprogramma bekeken (wel in Chromium op 700 en 375 px breed).
 - [ ] Niet gedaan: de overige mails (bijv. uitnodigingen) zijn er niet; als die er komen, gebruik `maakMail()` uit `functions/mail-sjabloon.js`.
 
@@ -74,6 +77,10 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 ---
 
 # Geschiedenis
+
+## Release 20261020d — wachtwoord-vergeten-mail in het Nederlands
+- `functions/wachtwoord-reset.js`: callable `wachtwoordReset({ email })`, ook zonder inloggen. Maakt via Admin SDK een resetlink (`lang=nl`), schrijft een opgemaakte mail naar `mail/{id}` (→ `verstuurMail`). Altijd `{ ok: true }`; onbekend adres = geen mail maar hetzelfde antwoord; `ratelimiet/reset_<sha256 van adres>` (3 per uur). Pure delen (`nederlandseLink`, `maakResetMail`) en `verwerkReset` getest in `tests/wachtwoord-reset.test.js` (in `npm test`).
+- `public/js/auth.js`: `wachtwoordVergeten` roept de callable aan; bij `not-found`/`unavailable`/`internal` valt hij terug op `sendPasswordResetEmail`. Versie via `node tools/versie.mjs 20261020d origin/main`. Geen rules- of `state.js`-wijziging.
 
 ## Release 20261020c — aanmeldmails opgemaakt (HTML) en in het Nederlands
 - Nieuw: `functions/mail-sjabloon.js` (`maakMail({ voorkop, titel, alineas, stappen, gegevens, knop, slot, voet })` → `{ text, html }`; puur, alles ge-escaped, knop alleen `https://`). Tabelgebaseerde HTML met inline stijlen, 600 px breed, merkkleuren (`#e2342f` accent, `#0e1013` kop), geen externe afbeeldingen (de C in de kop is tekst), tekstversie blijft als terugval.
