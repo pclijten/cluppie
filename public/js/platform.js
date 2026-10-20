@@ -7,7 +7,7 @@
 ==================================================================== */
 import { db, collection, getDocs, doc, getDoc, setDoc, serverTimestamp, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261011g';
-import { logoImgVoorDoc, DISTRICTEN, kalenderId, valideerKalender, ORIGINEEL } from './clubconfig.js?v=20261020b';
+import { logoImgVoorDoc, DISTRICTEN, kalenderId, valideerKalender, ORIGINEEL } from './clubconfig.js?v=20261020c';
 import { STARTLIJST_STAPPEN } from './startlijst.js?v=20261011d';
 import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261019i';
 
@@ -136,6 +136,35 @@ function aanmeldKaart(a){
   </div>`;
 }
 
+/* [20261020b] Individuele coaches: accounts zonder club (eigen team, aanvraag open of nog niets gestart).
+   Bron: platformstats/overzicht.individueel (Cloud Function platformOverzichtNu / nachtelijk). */
+const STATUS_COACH = {
+  'eigen-team': { tekst: 'eigen team', soort: 'ok' },
+  'wacht-op-club': { tekst: 'wacht op club', soort: 'let' },
+  'nog-geen-team': { tekst: 'nog geen team', soort: '' },
+};
+const aantalTeams = n => `${n} team${n === 1 ? '' : 's'}`;
+function coachRij(c){
+  const st = STATUS_COACH[c.status] || { tekst: c.status, soort: '' };
+  const team = (c.teams || []).map(t => `${t.naam || t.categorie}${t.spelers ? ` · ${t.spelers} spelers` : ''}`).join(' | ');
+  const mail = c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : '';
+  return `<div class="pf-coach">
+    <div class="pf-coach-naam"><b>${esc(c.naam)}</b>${c.nieuw ? ' <span class="pf-nieuw">nieuw</span>' : ''}<small>${mail}</small></div>
+    <div class="pf-coach-team">${team ? esc(team) : '<span class="meta">geen team</span>'}</div>
+    <div class="pf-coach-meta">${chip(st.tekst, st.soort)}<small>aangemeld ${esc(c.aangemeld ? datum(c.aangemeld) : '?')} · laatst ingelogd ${esc(c.laatsteLogin ? relatief(new Date(c.laatsteLogin).toISOString()) : 'nooit')}</small></div>
+  </div>`;
+}
+function individueleKaart(ind, terugval){
+  if (terugval) return '';
+  if (!ind) return `<div class="kaart"><div class="sectie-kop" style="margin-top:0">Individuele coaches</div><p class="cb-uitleg" style="margin:0">Verschijnt na het deployen van <code>platformOverzichtNu</code> en een keer Vernieuwen.</p></div>`;
+  const alle = PF.coachAlle === true, lijst = alle ? ind.lijst : ind.lijst.slice(0, 8);
+  const kop = `${ind.totaal} account${ind.totaal === 1 ? '' : 's'} zonder club · ${ind.eigenTeam || 0} met eigen team · ${ind.wachtOpClub || 0} wachten op een club · ${ind.nogGeenTeam || 0} nog geen team`;
+  return `<div class="kaart"><div class="sectie-kop" style="margin-top:0">Individuele coaches <small>${esc(kop)}</small></div>
+    ${lijst.length ? lijst.map(coachRij).join('') : '<p class="cb-uitleg" style="margin:0">Nog geen coaches buiten een club.</p>'}
+    ${ind.lijst.length > 8 ? `<button class="knop licht klein" id="pfCoachAlle" style="margin-top:8px">${alle ? 'Toon minder' : `Toon alle ${ind.lijst.length}`}</button>` : ''}
+    ${ind.afgekapt ? '<p class="cb-uitleg" style="margin:8px 0 0">Alleen de nieuwste worden getoond.</p>' : ''}</div>`;
+}
+
 function tekenPlatform(o, aanmeldingen){
   const t = o.totalen || {};
   const clubs = (o.clubs || []).map(k => o.terugval ? { ...k, terugvalRij: true } : k);
@@ -147,6 +176,7 @@ function tekenPlatform(o, aanmeldingen){
     ? [kpi(t.clubs || 0, 'clubs'), kpi(t.teams || 0, 'teams'), kpi(totWacht, 'aanvragen open', '', totWacht ? 'let' : '')]
     : [kpi(`${t.actieveClubs || 0}<small>/${t.clubs || 0}</small>`, 'actieve clubs', 'laatste 14 dagen'),
        kpi(t.coaches30 || 0, 'actieve coaches', 'laatste 30 dagen'),
+       kpi(t.individueel != null ? t.individueel : '–', 'individuele coaches', t.individueelNieuw ? `${t.individueelNieuw} nieuw (7 dagen)` : 'zonder club', t.individueelNieuw ? 'let' : ''),
        kpi(totWacht, 'aanvragen open', `${t.wachtend || 0} coaches · ${aanmeldingen.length} clubs`, totWacht ? 'let' : ''),
        kpi(t.aiMaand || 0, 'AI-aanroepen', 'deze maand')];
   const seg = (id, label, n) => `<button data-pf-filter="${id}" class="${PF.filter === id ? 'actief' : ''}">${label}${n != null ? ` <small>${n}</small>` : ''}</button>`;
@@ -161,6 +191,7 @@ function tekenPlatform(o, aanmeldingen){
           <button class="knop fluo klein" id="pfNieuweClub">+ Nieuwe club</button></span>
       </div>
       <div class="pf-kpis">${kpis.join('')}</div>
+      ${individueleKaart(o.individueel, o.terugval)}
       ${aanmeldingen.length ? `<div class="kaart"><div class="sectie-kop" style="margin-top:0">Nieuwe clubs die zich aanmeldden</div>${aanmeldingen.map(aanmeldKaart).join('')}</div>` : ''}
       ${aandacht.length && !o.terugval ? `<div class="kaart pf-signalen"><div class="sectie-kop" style="margin-top:0">Vraagt aandacht</div>
         ${aandacht.flatMap(k => (k.signalen || []).map(s => `<button class="pf-sigrij" data-platform-club="${esc(k.id)}"><span class="pf-licht ${s.niveau}"></span><b>${esc(k.naam)}</b><span>${esc(s.tekst)}</span></button>`)).slice(0, 12).join('')}</div>` : ''}
@@ -179,8 +210,9 @@ function tekenPlatform(o, aanmeldingen){
     const pos = zoek.selectionStart; opnieuw();
     const z = document.getElementById('pfZoek'); if (z){ z.focus(); try { z.setSelectionRange(pos, pos); } catch (e) {} }
   };
+  document.getElementById('pfCoachAlle')?.addEventListener('click', () => { PF.coachAlle = !PF.coachAlle; opnieuw(); });
   document.getElementById('pfKalenders')?.addEventListener('click', () => openKalenders());
-  document.getElementById('pfNieuweClub')?.addEventListener('click', () => import('./club.js?v=20261020b').then(m => m.modalNieuwClub()));
+  document.getElementById('pfNieuweClub')?.addEventListener('click', () => import('./club.js?v=20261020c').then(m => m.modalNieuwClub()));
   document.getElementById('pfVernieuw')?.addEventListener('click', async e => {
     const k = e.currentTarget; k.disabled = true; k.textContent = 'Bezig…';
     try { await httpsCallable(functions, 'platformOverzichtNu')({}); meld('Cijfers bijgewerkt'); openPlatform(); }
@@ -196,10 +228,10 @@ function tekenPlatform(o, aanmeldingen){
   document.querySelectorAll('[data-platform-club]').forEach(b => b.onclick = async () => {
     const id = b.dataset.platformClub;
     b.disabled = true;
-    const ond = await import('./ondersteuning.js?v=20261020b').catch(() => null);
+    const ond = await import('./ondersteuning.js?v=20261020c').catch(() => null);
     if (!ond || !(await ond.startOndersteuning(id))){ b.disabled = false; return; }
     sluitModal();
-    import('./club.js?v=20261020b').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
+    import('./club.js?v=20261020c').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
   });
   document.querySelectorAll('[data-aanmeld-ok], [data-aanmeld-af]').forEach(b => b.onclick = async () => {
     const id = b.dataset.aanmeldOk || b.dataset.aanmeldAf, goed = !!b.dataset.aanmeldOk;

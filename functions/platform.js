@@ -14,6 +14,7 @@
 
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { getAuth } = require('firebase-admin/auth');
 
 const REGIO = 'europe-west1';
 const PRIVACY_VERSIE = '2026-10';     // gelijk aan functions/toegang.js
@@ -85,6 +86,81 @@ function beoordeelClub(k, nuMs = Date.now()){
   return { status, signalen };
 }
 
+/* ---- individuele coaches: wie heeft zich aangemeld zonder bij een club te horen ----
+   PURE (getest). Een account telt als individueel als de uid in geen enkele club zit (clubs.leden/admins)
+   en niet in een team dat bij een club hoort. Status:
+     'eigen-team'   heeft een team zonder club (Begin met mijn eigen team)
+     'wacht-op-club' heeft een aanvraag open bij een club
+     'nog-geen-team' account aangemaakt, nog niets gestart
+   Alleen naam, e-mail, datums en teamnaam/categorie/aantal spelers; geen spelernamen. */
+function bepaalIndividueleCoaches({ gebruikers = [], teams = [], clubs = [], aanvragen = [], uitsluiten = [], nuMs = Date.now(), max = 300 }){
+  const inClub = new Set();
+  for (const c of clubs){ Object.keys(c.leden || {}).forEach(u => inClub.add(u)); Object.keys(c.admins || {}).forEach(u => inClub.add(u)); }
+  for (const t of teams) if (t.club) Object.keys(t.leden || {}).forEach(u => inClub.add(u));
+  const eigen = {};
+  for (const t of teams){
+    if (t.club) continue;
+    for (const u of Object.keys(t.leden || {})) (eigen[u] ||= []).push({ id: t.id, naam: t.naam || '', categorie: t.categorie || '', spelers: Number(t.spelers) || 0 });
+  }
+  const wacht = new Set(aanvragen.map(a => a.uid).filter(Boolean));
+  const weg = new Set(uitsluiten.map(e => String(e || '').toLowerCase()));
+  const lijst = [];
+  for (const g of gebruikers){
+    if (!g || !g.uid || inClub.has(g.uid)) continue;
+    if (g.email && weg.has(String(g.email).toLowerCase())) continue;
+    const status = eigen[g.uid] ? 'eigen-team' : wacht.has(g.uid) ? 'wacht-op-club' : 'nog-geen-team';
+    const teamNaam = (eigen[g.uid] && eigen[g.uid][0]?.naam) || '';
+    lijst.push({
+      uid: g.uid, naam: g.naam || (g.email ? String(g.email).split('@')[0] : 'Coach'), email: g.email || '',
+      aangemeld: g.aangemeld || null, laatsteLogin: g.laatsteLogin || null, status,
+      nieuw: !!g.aangemeld && (nuMs - g.aangemeld) < 7 * 86400000,
+      teams: eigen[g.uid] || [], teamNaam,
+    });
+  }
+  lijst.sort((a, b) => (b.aangemeld || 0) - (a.aangemeld || 0));
+  const tel = st => lijst.filter(x => x.status === st).length;
+  return {
+    totaal: lijst.length, nieuw7: lijst.filter(x => x.nieuw).length,
+    eigenTeam: tel('eigen-team'), wachtOpClub: tel('wacht-op-club'), nogGeenTeam: tel('nog-geen-team'),
+    lijst: lijst.slice(0, max), afgekapt: lijst.length > max,
+  };
+}
+
+/* Alle Auth-accounts (paginagewijs), alleen de velden die we nodig hebben. */
+async function leesAuthGebruikers(auth = getAuth(), maxTotaal = 5000){
+  const uit = []; let token;
+  do {
+    const r = await auth.listUsers(1000, token);
+    for (const u of r.users){
+      uit.push({ uid: u.uid, email: u.email || '', naam: u.displayName || '',
+        aangemeld: u.metadata && u.metadata.creationTime ? Date.parse(u.metadata.creationTime) : null,
+        laatsteLogin: u.metadata && u.metadata.lastSignInTime ? Date.parse(u.metadata.lastSignInTime) : null });
+    }
+    token = r.pageToken;
+  } while (token && uit.length < maxTotaal);
+  return uit;
+}
+
+async function individueleCoaches(db, clubs, aanvragen, nuMs){
+  const [gebruikers, teamSnap, platformDoc] = await Promise.all([
+    leesAuthGebruikers(),
+    db.collection('teams').select('club', 'leden', 'naam', 'categorie', 'ledenInfo').get(),
+    db.doc('platform/instellingen').get(),
+  ]);
+  const teams = teamSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  /* aantal spelers alleen voor teams zonder club (klein getal); alleen een telling */
+  const solo = teams.filter(t => !t.club);
+  for (const t of solo){
+    try { t.spelers = (await db.collection(`teams/${t.id}/spelers`).count().get()).data().count; } catch (e) { t.spelers = 0; }
+  }
+  /* de naam die de coach zelf gaf (ledenInfo) gaat voor op het Auth-profiel */
+  const naamUit = {};
+  for (const t of teams) for (const [u, i] of Object.entries(t.ledenInfo || {})) if (i && i.naam && !naamUit[u]) naamUit[u] = i.naam;
+  for (const g of gebruikers) if (!g.naam && naamUit[g.uid]) g.naam = naamUit[g.uid];
+  const beheerders = ((platformDoc.data() || {}).beheerders || []);
+  return bepaalIndividueleCoaches({ gebruikers, teams, clubs, aanvragen, uitsluiten: [PLATFORM_EMAIL, 'paul@cluppie.io', ...beheerders], nuMs });
+}
+
 async function clubKerncijfers(db, clubDoc, aanvragenPerClub, nuMs){
   const id = clubDoc.id, c = clubDoc.data() || {};
   const teamSnap = await db.collection('teams').where('club', '==', id).get();
@@ -149,6 +225,11 @@ async function bouwPlatformOverzicht(db = getFirestore(), nuMs = Date.now()){
     try { lijst.push(await clubKerncijfers(db, c, perClub, nuMs)); }
     catch (e){ console.error('[platformOverzicht]', c.id, e.message || e); lijst.push({ id: c.id, naam: c.data().naam || c.id, status: 'rood', signalen: [{ niveau: 'rood', tekst: 'cijfers ophalen mislukt' }] }); }
   }
+  /* individuele coaches (zonder club): mag het overzicht nooit laten mislukken */
+  let individueel = null;
+  try {
+    individueel = await individueleCoaches(db, clubs.docs.map(c => ({ id: c.id, ...c.data() })), aanvragen.docs.map(d => d.data()), nuMs);
+  } catch (e){ console.error('[platformOverzicht] individuele coaches', e.message || e); }
   const volgorde = { rood: 0, oranje: 1, groen: 2 };
   lijst.sort((a, b) => (volgorde[a.status] - volgorde[b.status]) || String(a.naam).localeCompare(String(b.naam)));
   const som = f => lijst.reduce((n, k) => n + (f(k) || 0), 0);
@@ -159,7 +240,9 @@ async function bouwPlatformOverzicht(db = getFirestore(), nuMs = Date.now()){
       actieveClubs: lijst.filter(k => k.laatsteGebruik && (nuMs - Date.parse(k.laatsteGebruik)) < 14 * 86400000).length,
       coaches30: som(k => k.coaches30), teams: som(k => k.teams), wachtend: som(k => k.wachtend),
       aanmeldingen: aanmeldingen.size, aiMaand: som(k => k.ai && k.ai.maand),
+      ...(individueel ? { individueel: individueel.totaal, individueelNieuw: individueel.nieuw7 } : {}),
     },
+    ...(individueel ? { individueel } : {}),
     bijgewerkt: FieldValue.serverTimestamp(),
   };
   /* vergelijking: alleen deelnemende clubs, per club de eigen waarden apart (alleen voor die club leesbaar) */
@@ -178,4 +261,4 @@ const platformOverzichtNu = onCall({ region: REGIO, timeoutSeconds: 300, memory:
   return { clubs: o.clubs.length };
 });
 
-module.exports = { benchmarkWaarden, benchmarkOverzicht, bouwPlatformOverzicht, platformOverzichtNu, beoordeelClub, startlijstKlaar, STARTLIJST_IDS, isPlatformBeheerder };
+module.exports = { bepaalIndividueleCoaches, benchmarkWaarden, benchmarkOverzicht, bouwPlatformOverzicht, platformOverzichtNu, beoordeelClub, startlijstKlaar, STARTLIJST_IDS, isPlatformBeheerder };

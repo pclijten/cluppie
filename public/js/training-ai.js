@@ -18,7 +18,7 @@ import {
   functions, httpsCallable
 } from './firebase.js?v=20261011g';
 import { laadPdfJs } from './pdf-viewer.js?v=20261011g';
-import { aiAan } from './clubconfig.js?v=20261020b';
+import { aiAan } from './clubconfig.js?v=20261020c';
 import { S } from './state.js?v=20261011g';
 
 /* ---------- PDF → tekst per pagina + diagram-PNG's ---------- */
@@ -263,23 +263,27 @@ export async function leesPdf(file){
    Geeft een map { volgnr: downloadURL } terug. */
 export async function uploadDiagrammen(clubId, mapId, diagramBlobs){
   const urls = {};
-  for (const { volgnr, blob } of diagramBlobs){
-    if (!blob) continue;
+  // [20261013c] alle diagrammen tegelijk omhoog i.p.v. één voor één
+  await Promise.all(diagramBlobs.filter(d => d.blob).map(async ({ volgnr, blob }) => {
     const path = `clubs/${clubId}/trainingen/${mapId}/diagram${volgnr}.png`;
     const r = sRef(storage, path);
     await uploadBytes(r, blob, { contentType: 'image/png' });
     urls[volgnr] = await getDownloadURL(r);
-  }
+  }));
   return urls;
 }
 
 /* ---------- AI-structurering ---------- */
 
-/* Roept de Cloud Function aan. Geeft { oefeningen } terug. */
-export async function structureer(paginas){
+/* Roept de Cloud Function aan. Geeft { oefeningen } terug.
+   [20261013c] `model` is een sleutel ('standaard' | 'nauwkeurig', zie
+   AI_MODELLEN in upload-wachtrij.js). Welk model daarbij hoort bepaalt de
+   Cloud Function (whitelist), zodat de client nooit zelf een willekeurig
+   (duur) model kan kiezen. */
+export async function structureer(paginas, model = 'standaard'){
   if (!aiAan()) throw new Error('AI-functies zijn uitgeschakeld voor deze club');
   const fn = httpsCallable(functions, 'structureerTraining');
-  const res = await fn({ clubId: S.clubId || S.team?.club || null, paginas });
+  const res = await fn({ clubId: S.clubId || S.team?.club || null, paginas, ...(model && model !== 'standaard' ? { model } : {}) });
   const oefeningen = res?.data?.oefeningen;
   if (!Array.isArray(oefeningen) || !oefeningen.length){
     throw new Error('AI leverde geen oefeningen op');

@@ -1,4 +1,4 @@
-/* ==================== SNELSTART (PURE LOGICA) [20261020b] ====================
+/* ==================== SNELSTART (PURE LOGICA) [20261020c] ====================
    Voor een trainer die zelf begint, zonder club. Geen DOM en geen Firebase, zodat het te testen is
    (tests/snelstart.test.mjs). De schermen staan in snelstart.js.
 

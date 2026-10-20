@@ -32,7 +32,7 @@ import { S, clubAfkorting } from './state.js?v=20261011g';
 import * as C from './config.js?v=20261011g';
 import { db, doc, getDoc } from './firebase.js?v=20261011g';
 import { zetContentClub } from './content.js?v=20261011g';
-import { weerVanTeam } from './snelstart-logica.js?v=20261020b';
+import { weerVanTeam } from './snelstart-logica.js?v=20261020c';
 
 /* ---------- Standaardwaarden ---------- */
 export const NEUTRAAL = Object.freeze({

@@ -2,7 +2,7 @@
 
 Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
 
-## Stand (bijgewerkt 14-10-2026, versie 20261014a)
+## Stand (bijgewerkt 20-10-2026, versie 20261020b)
 - **Firestore-rules:** per club afgeschermd (teams, trainingen, video's, documenten, berichten via clublidmaatschap). Getest in de emulator: `npm run test:rules` (21 scenario's, laatst 20/20 groen op 11-10; de 21e is in 20261011f toegevoegd). Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.
 - **Cloud Functions:** live in `europe-west1` (Node 22, 2nd gen). Iedere nieuwe callable heeft na de eerste deploy de invoker `allUsers` nodig (`gcloud run services add-iam-policy-binding <naam-in-kleine-letters> …`), anders krijgt de app een CORS-/`internal`-fout.
 - **Tests:** `npm test` (17 suites, laatst 13-10 allemaal groen; nieuw: `vaste-afmeldingen`. Eerst één keer `cd functions && npm install`) en `node tests/toegang.test.js` (aansluiten/uitnodigen, 24 scenario's). Pariteit met ASV'33: `node tools/pariteit.mjs ../cluppieasv33` (10 verwachte verschillen in `bouw-hub.js`, `club.js` en `teams-spelers.js`: het overzetten loopt hier via de server; ASV'33 PR #5 is sinds 20261013a gepoort).
@@ -22,6 +22,16 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - [ ] App Check: na een paar dagen in Console → App Check → APIs kijken; bij ~100% geldige verzoeken Enforce aan voor Firestore, Storage en Functions.
 - [ ] AI per club aanzetten zodra de Anthropic-limiet het toelaat (eind oktober).
 - [ ] E-mail: eigen function `verstuurMail` (`functions/mail.js`) in gebruik nemen: `firebase functions:secrets:set SMTP_WACHTWOORD`, daarna `firebase deploy --only functions:verstuurMail` (vraagt SMTP_HOST, poort, gebruiker en afzender). Testen met een document in de collectie `mail` (Console → Firestore: `to`, `message.subject`, `message.text`) en kijken of `delivery.state` op SUCCESS komt. De Trigger Email-extensie is dus niet nodig (Firebase Extensions wordt op 31-03-2027 stopgezet).
+
+**Voor Paul — Trainingsupload, blokplanning en individuele coaches (release 20261020b, branch `training-upload-blokplanning`)**
+- [ ] PR reviewen en mergen. Wat het doet: (1) uit ASV'33 gepoort (releases van 13-10): een zip of meerdere PDF's met blok-namen in één keer inplannen (`training-plan.js`), uploaden op de achtergrond met wachtrij en concept (`upload-wachtrij.js`), drie trainingen tegelijk omzetten, "zichtbaar voor het team vanaf" ook bij een losse training, Overzicht per groep horizontaal scrollen en afwijkers weggooien; (2) nieuw: in het eindbaasscherm staat een kaart **Individuele coaches** (accounts zonder club: eigen team, aanvraag open of nog niets gestart, met "nieuw"-label voor de laatste 7 dagen) en een extra KPI.
+- [ ] **Eerst** `cd functions && npm install` en `npm test` (nieuw: `tests/trainingplan.test.mjs`, `tests/individuele-coaches.test.mjs`; allebei groen op 20-10, de hele reeks eindigde groen). Geen rules-wijziging.
+- [ ] Deploy: `firebase deploy --only functions:structureerTraining,functions:platformOverzichtNu,functions:aggregeerGebruikNacht --project cluppie-ad329` (de nachtelijke functie bouwt hetzelfde overzicht). Geen nieuwe functies, dus geen invoker nodig. Daarna in het platformscherm één keer **Vernieuwen**: pas dan verschijnt de kaart Individuele coaches.
+- [ ] **AVG:** het eindbaasscherm toont van individuele coaches naam, e-mailadres, aanmelddatum, laatste login, teamnaam en aantal spelers (geen spelersnamen). Alleen voor de platformbeheerder leesbaar (`platformstats`). Noem dit in privacyverklaring en gebruiksvoorwaarden en laat een privacyadviseur kijken.
+- [ ] "Nauwkeuriger" AI-model staat bewust **uit**. Aanzetten kan pas als jij het model-id kiest: zet `MODEL_NAUWKEURIG` in `functions/index.js` en `NAUWKEURIG_AAN = true` in `public/js/upload-wachtrij.js` samen aan, en deploy `structureerTraining`. Controleer het model-id eerst (zie ook het punt over `MODEL` hieronder).
+- [ ] JSZip staat nu lokaal in `public/vendor/jszip.min.js` (v3.10.1, geen externe CDN, past bij de CSP). In ASV'33 komt hij nog van jsdelivr.
+- [ ] Niet in een echte browser bekeken (414×896 en desktop): het uploadvlak met zip, het blokvenster, de weergave Plannen, het label rechtsonder en de kaart Individuele coaches in het platformscherm. Even bekijken na de deploy.
+- [ ] Niet gedaan: een mail aan jou zodra een nieuwe individuele coach zich aanmeldt (nu alleen zichtbaar in het scherm); eventueel een Auth-trigger of een melding bij Vernieuwen.
 
 **Voor Paul — Ondersteuningsmodus voor de eindbaas (release 20261020a, branch `ondersteuningsmodus`)**
 - [ ] PR reviewen en mergen. Wat het doet: de eindbaas opent een club vanuit het platformdashboard en werkt dan maximaal 2 uur als clubbeheerder in precies die club (balk "Je werkt als eindbaas in …" met stopknop). Zonder de modus ziet de eindbaas alleen de teamlijst per club, geen spelers. Start en stop staan in het toegangslog van de club; handelingen daartussen worden niet apart gelogd. Een club kan het uitzetten (Toegang & privacy → "Cluppie mag meekijken en helpen", standaard aan).
@@ -59,6 +69,12 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - **Snelstart individuele coach, nog niet gedaan:** (1) herkennen dat de club al Cluppie gebruikt (clubgids + callable) en dan doorverwijzen naar aansluiten; (2) welkomstuitleg voor coaches die via een uitnodiging binnenkomen (nu alleen voor wie zelf een team start); (3) de kaart Eerste stappen staat nog niet op de desktop-weergave.
 
 # Geschiedenis
+
+## Release 20261020b — trainingsupload en blokplanning gepoort, individuele coaches in het eindbaasscherm
+- **Gepoort uit ASV'33** (PR #6–#11, 13-10-2026): nieuwe modules `training-plan.js` en `upload-wachtrij.js`, koppelpunten in `club.js`, zichtbaarheidsfilter in `teams.js` (`zichtbaarVanaf`), weekweergave in `teams-training.js`, parallelle diagram-upload in `training-ai.js`, CSS-blokken `BLOKPLANNING` en `UPLOADWACHTRIJ`. Aanpassingen voor cluppie.io: JSZip lokaal in `vendor/`, de wijzigingenlijst als twee neutrale regels, geen ASV-teksten (bewaakt in `tests/trainingplan.test.mjs`). Training-documenten krijgen zoals altijd `club` en `clubNaam`, dus de bestaande rules blijven gelden.
+- **Modelkeuze:** `structureerTraining` accepteert `model` (`standaard` | `nauwkeurig`, whitelist; anders `invalid-argument`). `MODEL_NAUWKEURIG` is `null`, dus nu altijd het standaardmodel; de keuze is in de app verborgen (`NAUWKEURIG_AAN = false`).
+- **Eindbaasscherm:** `bepaalIndividueleCoaches` in `functions/platform.js` (puur, getest) + `leesAuthGebruikers` (Admin Auth `listUsers`) → `platformstats/overzicht.individueel` en `totalen.individueel`/`individueelNieuw`. Een account telt als individueel als het in geen enkele club zit; de eindbaas zelf wordt uitgesloten. Mislukt het lezen, dan blijft de rest van het overzicht gewoon werken. Client: kaart en KPI in `platform.js`, stijlen `.pf-coach*`.
+- `state.js` niet aangeraakt. Versie via `node tools/versie.mjs 20261020b origin/main`.
 
 ## Release 20261018a — eigen mailfunctie (vervangt de Trigger Email-extensie)
 - `functions/mail.js`: `verstuurMail` (trigger op `mail/{id}`, `europe-west1`) verstuurt elk nieuw document via SMTP (nodemailer). Zelfde documentvorm als de extensie (`to`, `message.subject/text`), dus `aanmelding.js` bleef ongewijzigd. Resultaat in het document: `delivery.state` PROCESSING → SUCCESS of ERROR (met `error`).
@@ -249,7 +265,7 @@ Uitgevoerd met `tools/overstap-eu.ps1`; `(default)` staat in `europe-west1`, bes
   `gcloud run services add-iam-policy-binding zetspelerover --region=europe-west1 --member=allUsers --role=roles/run.invoker --project=cluppie-ad329`
 
 
-## Release 20261020b — Snelstart voor trainers zonder club
+## Release 20261020c — Snelstart voor trainers zonder club
 - Nieuw: `snelstart.js` (schermen) en `snelstart-logica.js` (zuivere logica, `tests/snelstart.test.mjs`, in `npm test`). Vervangt de twee losse schermen van "Begin met mijn eigen team": uitleg, club + plaats (verplicht), categorie met standaard JO11/MO11, privacybevestiging.
 - Team krijgt `eigenClub: { naam, plaats, lat, lon, clubcode? }`. `club` en `clubNaam` blijven voor echte clubs. Geen rules-wijziging nodig (coach mag `eigenClub` schrijven; `club`/`leden`/`werkwijzeVrij` niet).
 - Weer voor teams zonder club: `weerLocatie()` valt terug op `eigenClub` (Open-Meteo, geen sleutel).

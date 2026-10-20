@@ -18,16 +18,33 @@ import { htmlClubJeugdplan, koppelClubJeugdplan } from './club-jeugdplan.js?v=20
 import { htmlClubSpeelstijl, koppelClubSpeelstijl } from './speelstijl.js?v=20261019g';
 import { rechtenVoor } from './seizoensplan-club.js?v=20261019f';
 import { clubEvaluatiesOphalen, htmlClubEvaluaties, koppelClubEvaluaties } from './club-evaluaties.js?v=20261011g';
-import { startClubContentListener, htmlClubContent, koppelClubContent } from './club-content.js?v=20261020b';
+import { startClubContentListener, htmlClubContent, koppelClubContent } from './club-content.js?v=20261020c';
 import { htmlInzichtTabs, htmlInzichtTab, openRapport } from './club-inzicht.js?v=20261011g';
 import { telGebruik, telNav } from './tracker.js?v=20261011g';
 import { ico } from './icons.js?v=20260922c';
-import { INSTEL_TABS, INSTEL_BASIS, NIEUWE_TABS, htmlInstelNieuw, koppelInstelNieuw, htmlAlgemeenMelding, koppelAlgemeenMelding, modalNieuweClub } from './club-instellingen.js?v=20261020b';
-import { pasClubConfigToe, clubAfk, effectief } from './clubconfig.js?v=20261020b';
+import { INSTEL_TABS, INSTEL_BASIS, NIEUWE_TABS, htmlInstelNieuw, koppelInstelNieuw, htmlAlgemeenMelding, koppelAlgemeenMelding, modalNieuweClub } from './club-instellingen.js?v=20261020c';
+import { pasClubConfigToe, clubAfk, effectief } from './clubconfig.js?v=20261020c';
 import { startlijstStatus } from './startlijst.js?v=20261011d';
 import { teamSleutel as teamSleutelClub } from './sportlink-sleutel.js?v=20261011d';
-import { htmlTeamsBeheer, koppelTeamsBeheer, htmlTeamBeheer, koppelTeamBeheer, htmlCoaches, koppelCoaches, aandachtRedenen, groepen as beheerGroepen } from './club-beheer.js?v=20261020b';
+import { htmlTeamsBeheer, koppelTeamsBeheer, htmlTeamBeheer, koppelTeamBeheer, htmlCoaches, koppelCoaches, aandachtRedenen, groepen as beheerGroepen } from './club-beheer.js?v=20261020c';
+import { isBlokUpload, isZip, startBlokUpload, hervatBlokUpload, htmlPlannen, koppelPlannen, zichtbaarLabel } from './training-plan.js?v=20261020c';
+import { initWachtrij, voegToeAanWachtrij, htmlUploadPaneel, htmlModelKeuze } from './upload-wachtrij.js?v=20261020c';
 import { rondesVan, voortgangOphalen, htmlEvalRondes, htmlRondeDetail, htmlRondeFormulier, koppelRondeFormulier, koppelRondeDetail, startConcept } from './evaluatierondes.js?v=20261011g';
+
+/* [20261013b] Uploadwachtrij: trainingen worden op de achtergrond verwerkt.
+   De wachtrij leeft in upload-wachtrij.js; de schermen die hij nodig heeft
+   (preview, alleen-PDF, navigatie, concept hervatten) wonen hier. */
+initWachtrij({
+  toonPreview: (file, meta, ctx) => toonPreview(file, meta, ctx),
+  toonAlleenPdf: (file, meta, ctx, boodschap) => toonAlleenPdfKeuze(file, meta, ctx, boodschap),
+  naarTrainingen: (clubId) => {
+    if (!clubId) return;
+    if (S.clubId === clubId && S.club){ S.clubTab = 'trainingen'; toon('club'); renderClub(); }
+    else { openClub(clubId); S.clubTab = 'trainingen'; }
+  },
+  trainingenGewijzigd: () => { if (S.club && S.clubTab === 'trainingen') renderClub(); },
+  hervatConcept: (job) => hervatBlokUpload(job, blokCtx(S.clubTeams || [], S.clubTrainingen || [])),
+});
 
 /* drempels voor het clubdashboard ("aandacht nodig") — [20260929c] per club
    instelbaar (Instellingen → Regels), gelezen uit ACTIEF.dashboard.
@@ -38,7 +55,7 @@ const DASH_OPKOMST_LAAG = () => ACTIEF.dashboard.opkomstLaag;
 
 /* openTeam en modalNieuwTeam komen uit teams.js; om kringverwijzing te
    vermijden importeren we ze lui binnen de functies die ze nodig hebben. */
-async function teamsModule(){ return await import('./teams.js?v=20261020b'); }
+async function teamsModule(){ return await import('./teams.js?v=20261020c'); }
 
 /* ==================== CLUB AANMAKEN ==================== */
 /* [20260929c] Aanmaken in vier stappen (club, uiterlijk, koppeling, startinhoud):
@@ -57,9 +74,9 @@ export function openClub(clubId){
     if (!snap.exists()){ verlaatClubView(); return; }
     const eersteKeer = !S.club || S.club.id !== snap.id;
     S.club = {id:snap.id, ...snap.data()};
-    if (eersteKeer && S.club.admins?.[S.user?.uid]) import('./toegang.js?v=20261020b').then(m => m.meldOpenAanvragen(clubId));
+    if (eersteKeer && S.club.admins?.[S.user?.uid]) import('./toegang.js?v=20261020c').then(m => m.meldOpenAanvragen(clubId));
     /* [20261020a] niet zelf beheerder van deze club: staat de ondersteuningsmodus van de eindbaas nog aan, dan komt de balk terug */
-    else if (eersteKeer) import('./ondersteuning.js?v=20261020b').then(m => m.herstelBalk()).catch(() => {});
+    else if (eersteKeer) import('./ondersteuning.js?v=20261020c').then(m => m.herstelBalk()).catch(() => {});
     pasClubConfigToe(S.club);      // [20260929c] club-instellingen → config.js, vóór het renderen
     renderClub();
   }, (err) => {
@@ -73,7 +90,7 @@ export function openClub(clubId){
 export function verlaatClubView(){
   stopUnsubs('club', 'clubContent');
   S.clubId = null; S.club = null;
-  import('./teams.js?v=20261020b').then(m => { m.renderTeams(); toon('teams'); });
+  import('./teams.js?v=20261020c').then(m => { m.renderTeams(); toon('teams'); });
 }
 
 async function clubTeamsOphalen(){
@@ -1139,7 +1156,7 @@ async function renderClub(opts = {}){
     teams, herteken: hertekenClub, openBeheer,
     nieuwTeam: async () => (await teamsModule()).modalNieuwTeam(S.clubId),
     importPdf: () => modalImporteerPDF(),
-    importSportlink: () => import('./club-sportlink-import.js?v=20261020b').then(m => m.modalTeamsUitSportlink(teams, () => renderClub())),
+    importSportlink: () => import('./club-sportlink-import.js?v=20261020c').then(m => m.modalTeamsUitSportlink(teams, () => renderClub())),
     alleLinks: () => modalAlleLinks(teams),
   });
   if (tab === 'teambeheer') koppelTeamBeheer(v, {
@@ -1518,19 +1535,20 @@ function htmlClubTrainingenDesk(teams, trainingen){
       <button class="trd-drop" id="trainingUpload" type="button">
         <span class="trd-drop-ic">${ico('admin-upload', 20)}</span>
         <span class="trd-drop-t"><b>PDF-training(en) toevoegen</b>
-          <small>Sleep PDF's hierheen of klik om te kiezen — meerdere tegelijk verdeel je daarna per groep</small></span>
-        <input type="file" id="trainingFile" accept="application/pdf" multiple style="display:none">
+          <small>Sleep PDF's of een zip hierheen of klik om te kiezen — meerdere tegelijk verdeel je per groep, een heel blok plan je in één keer</small></span>
+        <input type="file" id="trainingFile" accept="application/pdf,.zip,application/zip" multiple style="display:none">
       </button>
       ${uploadHulpHtml()}
       <div class="segment trd-seg" id="trainWeergave">
         <button data-weergave="lijst" class="${weergave==='lijst'?'actief':''}">Lijst</button>
         <button data-weergave="overzicht" class="${weergave==='overzicht'?'actief':''}">Overzicht per groep</button>
+        <button data-weergave="plannen" class="${weergave==='plannen'?'actief':''}">Plannen</button>
       </div>
       <button class="trd-knop" id="trGroepenBeheer" type="button">${ico('navigation-settings', 16)}${groepen.length ? 'Groepen beheren' : 'Trainingsgroepen instellen'}</button>
     </div>`;
 
-  return `<div class="trd">${werkbalk}${weergave === 'overzicht'
-    ? trdOverzicht() : trdLijst()}</div>`;
+  return `<div class="trd">${werkbalk}${htmlUploadPaneel()}${weergave === 'overzicht'
+    ? trdOverzicht() : weergave === 'plannen' ? `<div class="bp-plannen">${htmlPlannen(trainingen, teams, groepen)}</div>` : trdLijst()}</div>`;
 
   /* ---------- Overzicht per groep ---------- */
   function trdOverzicht(){
@@ -1557,27 +1575,29 @@ function htmlClubTrainingenDesk(teams, trainingen){
       return { ok:false, tekst:`${mist.size} team${mist.size>1?'s':''} mist ${gaten} slot${gaten>1?'s':''}`, kort:`${gaten} gat${gaten>1?'en':''}` };
     };
 
+    // [20261013d] de matrix toont álle weken en scrolt horizontaal (team-kolom
+    // blijft staan); de status/tegels kijken nog naar het venster `weken`.
+    const kolommen = alleWeken;
     const matrix = ids => {
-      if (!weken.length) return `<div class="kaart leeg" style="margin:0">Nog geen weken — upload een eerste PDF en koppel hem aan een team.</div>`;
-      const kop = `<thead><tr><th class="trd-teamkop">Team</th>${weken.map(w => {
+      if (!kolommen.length) return `<div class="kaart leeg" style="margin:0">Nog geen weken — upload een eerste PDF en koppel hem aan een team.</div>`;
+      const kop = `<thead><tr><th class="trd-teamkop">Team</th>${kolommen.map(w => {
         const nu = w.nr === nuWeek;
         return `<th class="${nu?'nu':''}">${esc(w.label)}${nu?'<small>deze week</small>':''}</th>`;
       }).join('')}</tr></thead>`;
       const rijen = ids.map(id => {
-        let gevuld = 0;
-        const cellen = weken.map(w => {
+        const gevuld = weken.filter(w => trsVoor(id, w.key).length).length;
+        const cellen = kolommen.map(w => {
           const nu = w.nr === nuWeek ? ' class="nu"' : '';
           const items = trsVoor(id, w.key)
             .slice().sort((a, b) => trdChipLabel(a).localeCompare(trdChipLabel(b), 'nl', { numeric:true }));
           if (!items.length) return `<td${nu}><span class="trd-gat">— niets</span></td>`;
-          gevuld++;
           return `<td${nu}><div class="trd-cel">${items.map(t =>
             `<button class="trd-chip" data-tdownload="${esc(t.url)}" title="${esc(t.bestandsnaam || t.titel || '')}">${ico('action-check', 12)}<span>${esc(trdChipLabel(t))}</span></button>`
           ).join('')}</div></td>`;
         }).join('');
-        return `<tr><th>${esc(teamById.get(id)?.naam || '?')}<small>${gevuld}/${weken.length} ${weken.length===1?'week':'weken'}</small></th>${cellen}</tr>`;
+        return `<tr><th>${esc(teamById.get(id)?.naam || '?')}<small>${gevuld}/${weken.length} recente ${weken.length===1?'week':'weken'}</small></th>${cellen}</tr>`;
       }).join('');
-      return `<table class="trd-mx">${kop}<tbody>${rijen}</tbody></table>`;
+      return `<div class="trd-mxscroll"><table class="trd-mx">${kop}<tbody>${rijen}</tbody></table></div>`;
     };
 
     const inGroep = new Set(groepen.flatMap(g => g.teams || []));
@@ -1601,11 +1621,7 @@ function htmlClubTrainingenDesk(teams, trainingen){
       </button>` : ''}</div>`;
 
     const venster = alleWeken.length > TRD_WEKEN ? `
-      <div class="trd-venster">
-        <button type="button" data-trd-venster="${terug + 1}" ${terug >= maxTerug ? 'disabled' : ''}>‹ Eerder</button>
-        <span>${esc(bereik)}</span>
-        <button type="button" data-trd-venster="${terug - 1}" ${terug <= 0 ? 'disabled' : ''}>Later ›</button>
-      </div>` : '';
+      <div class="trd-venster"><span class="trd-scrollhint">‹ Scroll opzij voor andere weken · status over ${esc(bereik)} ›</span></div>` : '';
 
     const blokken = gdata.map(({ g, ids, st }) => `
       <div class="tm-groep trd-groep${st.ok ? ' dicht' : ''}" id="trd-g-${esc(g.id)}">
@@ -1665,7 +1681,7 @@ function htmlClubTrainingenDesk(teams, trainingen){
         <div class="trd-rij">
           <div class="trd-rt"><span class="trd-pdf${ai?' ai':''}">${ai?'AI':'PDF'}</span>
             <div class="trd-rt-m"><div class="trd-tt">${esc(t.titel || t.bestandsnaam || 'Training')}</div>
-              ${toonBest ? `<div class="trd-fb">${esc(t.bestandsnaam)}</div>` : ''}</div></div>
+              ${toonBest ? `<div class="trd-fb">${esc(t.bestandsnaam)}</div>` : ''}${zichtbaarLabel(t) ? `<div class="bp-zv-badge">${esc(zichtbaarLabel(t))}</div>` : ''}</div></div>
           <div class="trd-teams">${teamsHtml(t)}</div>
           <span class="trd-ai${ai?' ja':''}">${ai ? '✓ uitgelezen' : '—'}</span>
           <div class="trd-act">
@@ -1706,10 +1722,10 @@ function htmlClubTrainingen(teams, trainingen){
   // weergave identiek zijn.
   const uploadBlok = `
     <button class="upload-knop" id="trainingUpload">📄 PDF-training(en) toevoegen
-      <input type="file" id="trainingFile" accept="application/pdf" multiple style="display:none"></button>
+      <input type="file" id="trainingFile" accept="application/pdf,.zip,application/zip" multiple style="display:none"></button>
     ${uploadHulpHtml()}
     <div class="tr-boven-acties">
-      <span class="tr-boven-hint">Meerdere PDF's tegelijk kan — je verdeelt ze daarna per groep.</span>
+      <span class="tr-boven-hint">Meerdere PDF's, of een zip met een heel blok, kan ook.</span>
       <button class="link" id="trGroepenBeheer">${groepen.length ? '⚙️ Groepen beheren' : '＋ Trainingsgroepen instellen'}</button>
     </div>`;
 
@@ -1718,11 +1734,21 @@ function htmlClubTrainingen(teams, trainingen){
     <div class="segment tr-weergave" id="trainWeergave" style="margin-bottom:14px">
       <button data-weergave="lijst" class="${weergave==='lijst'?'actief':''}">Lijst</button>
       <button data-weergave="overzicht" class="${weergave==='overzicht'?'actief':''}">Overzicht per groep</button>
+      <button data-weergave="plannen" class="${weergave==='plannen'?'actief':''}">Plannen</button>
     </div>`;
+
+  if (weergave === 'plannen'){
+    return `
+      ${uploadBlok}
+      ${htmlUploadPaneel()}
+      ${weergaveKies}
+      <div class="bp-plannen">${htmlPlannen(trainingen, teams, groepen)}</div>`;
+  }
 
   if (weergave === 'overzicht'){
     return `
       ${uploadBlok}
+      ${htmlUploadPaneel()}
       ${weergaveKies}
       ${htmlClubTrainingenOverzicht(teams, trainingen)}`;
   }
@@ -1744,7 +1770,8 @@ function htmlClubTrainingen(teams, trainingen){
         <div class="ico${heeftAi?' ai':''}">${heeftAi?`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.2 5.2 6 18h12L13.8 5.2a1.9 1.9 0 0 0-3.6 0Z"/><path d="M8.3 11.5h7.4"/><path d="M4.5 18h15"/></svg>`:'PDF'}</div>
         <div class="t"><div class="t-titel">${esc(t.titel || t.bestandsnaam)}</div>
           ${toonBest ? `<div class="t-best">${esc(t.bestandsnaam)}</div>` : ''}
-          <div class="t-meta">${esc(t.week || '')}${t.week?' · ':''}${esc(teamNamen)}</div></div>
+          <div class="t-meta">${esc(t.week || '')}${t.week?' · ':''}${esc(teamNamen)}</div>
+          ${zichtbaarLabel(t) ? `<div class="bp-zv-badge">${esc(zichtbaarLabel(t))}</div>` : ''}</div>
         <div class="acties">
           <button data-tdownload="${esc(t.url)}" title="Openen">↗</button>
           ${tekstKnop}
@@ -1759,6 +1786,7 @@ function htmlClubTrainingen(teams, trainingen){
 
   return `
     ${uploadBlok}
+    ${htmlUploadPaneel()}
     ${weergaveKies}
     ${lijst}`;
 }
@@ -2243,8 +2271,7 @@ function koppelClubTab(v, tab, teams, trainingen, videos, documenten){
     input.onchange = e => {
       const files = [...e.target.files]; if (!files.length) return;
       e.target.value = '';   // zelfde bestand later opnieuw kunnen kiezen
-      if (files.length === 1) modalNieuweTraining(files[0], teams);
-      else modalMeerdereTrainingen(files, teams);
+      uploadGekozen(files, teams, trainingen);
     };
     // [20260925a] desktop: groepstegel → groep openklappen en ernaartoe scrollen
     v.querySelectorAll('[data-trd-naar]').forEach(b => b.onclick = () => {
@@ -2252,22 +2279,40 @@ function koppelClubTab(v, tab, teams, trainingen, videos, documenten){
       doel.classList.remove('dicht');
       doel.scrollIntoView({ behavior:'smooth', block:'start' });
     });
+    // [20261013d] matrix: naar deze week scrollen en alle groepen synchroon laten scrollen
+    const scrollers = [...v.querySelectorAll('.trd-mxscroll')];
+    if (scrollers.length){
+      const eerste = scrollers[0];
+      const doel = eerste.querySelector('thead th.nu') || eerste.querySelector('thead th:last-child');
+      const teamKol = eerste.querySelector('thead th.trd-teamkop')?.offsetWidth || 150;
+      const x = doel ? Math.max(0, doel.offsetLeft - teamKol - 24) : 0;
+      let bezig = false;
+      scrollers.forEach(sc => {
+        sc.scrollLeft = x;
+        sc.addEventListener('scroll', () => {
+          if (bezig) return; bezig = true;
+          scrollers.forEach(o => { if (o !== sc) o.scrollLeft = sc.scrollLeft; });
+          bezig = false;
+        }, { passive:true });
+      });
+    }
     // desktop: weekvenster verschuiven (runtime-veld op S, geen state.js-wijziging)
     v.querySelectorAll('[data-trd-venster]').forEach(b => b.onclick = () => {
       S._trdVenster = Math.max(0, Number(b.dataset.trdVenster) || 0); renderClub();
     });
     // PDF's op het uploadvlak slepen (werkt overal waar slepen kan)
     const pdfUitDrop = e => [...(e.dataTransfer?.files || [])]
-      .filter(f => f.type === 'application/pdf' || /\.pdf$/i.test(f.name));
+      .filter(f => f.type === 'application/pdf' || /\.pdf$/i.test(f.name) || isZip(f));
     ['dragenter','dragover'].forEach(n => knop.addEventListener(n, e => { e.preventDefault(); knop.classList.add('sleep'); }));
     knop.addEventListener('dragleave', () => knop.classList.remove('sleep'));
     knop.addEventListener('drop', e => {
       e.preventDefault(); knop.classList.remove('sleep');
       const files = pdfUitDrop(e);
-      if (!files.length){ meld('Alleen PDF-bestanden kunnen hier worden toegevoegd'); return; }
-      if (files.length === 1) modalNieuweTraining(files[0], teams);
-      else modalMeerdereTrainingen(files, teams);
+      if (!files.length){ meld('Alleen PDF- of zip-bestanden kunnen hier worden toegevoegd'); return; }
+      uploadGekozen(files, teams, trainingen);
     });
+    // [20261013a] Plannen-weergave: week laten vervallen / terugzetten
+    koppelPlannen(v, trainingen, { renderClub: () => renderClub() });
     const grpBeheer = v.querySelector('#trGroepenBeheer');
     if (grpBeheer) grpBeheer.onclick = () => modalTrainingsGroepen(teams);
     v.querySelectorAll('[data-tdownload]').forEach(b => b.onclick = () => window.open(b.dataset.tdownload, '_blank'));
@@ -2433,7 +2478,7 @@ function koppelClubTab(v, tab, teams, trainingen, videos, documenten){
     if (slAlles) slAlles.onclick = () => { S._clubSlAlles = !S._clubSlAlles; hertekenClub(); };
     v.querySelectorAll('[data-sl-koppel]').forEach(b => b.onclick = () => { S._cbTeam = b.dataset.slKoppel; S._cbUitnodig = null; naarClubTab('teambeheer'); });
     v.querySelector('#btnSeizoensovergang')?.addEventListener('click', () =>
-      import('./club-seizoen.js?v=20261020b').then(m => m.modalSeizoensovergang(teams, () => renderClub())));
+      import('./club-seizoen.js?v=20261020c').then(m => m.modalSeizoensovergang(teams, () => renderClub())));
     const nieuwSeizoenBtn = v.querySelector('#btnNieuwSeizoen');
     if (nieuwSeizoenBtn) nieuwSeizoenBtn.onclick = () => modalNieuwSeizoen();
     const migreerBtn = v.querySelector('#migreerSeizoen');
@@ -2494,7 +2539,7 @@ function koppelClubTab(v, tab, teams, trainingen, videos, documenten){
     if (testBtn) testBtn.onclick = async () => {
       const uit = v.querySelector('#slTestUit'), id = (v.querySelector('#clientIdInput').value || '').trim();
       testBtn.disabled = true; uit.innerHTML = '<div class="sl-laden"><span class="sl-spin"></span>Sportlink vragen…</div>';
-      const { zoekClubInSportlink, htmlClubVondst, verkleinSportlinkLogo } = await import('./sportlink-clubinfo.js?v=20261020b');
+      const { zoekClubInSportlink, htmlClubVondst, verkleinSportlinkLogo } = await import('./sportlink-clubinfo.js?v=20261020c');
       try {
         const info = await zoekClubInSportlink(id, S.clubId);
         const logo = info.gevonden ? (S.club.instellingen?.identiteit?.logo || await verkleinSportlinkLogo(info.logo)) : '';
@@ -2531,7 +2576,7 @@ function koppelClubTab(v, tab, teams, trainingen, videos, documenten){
 /* ==================== UITNODIGEN ==================== */
 export function modalUitnodig(team){
   /* [AVG] persoonlijke, verlopende uitnodigingen i.p.v. de vaste teamlink (zie toegang.js) */
-  import('./toegang.js?v=20261020b').then(m => m.modalUitnodigNieuw(team));
+  import('./toegang.js?v=20261020c').then(m => m.modalUitnodigNieuw(team));
 }
 
 function modalAlleLinks(teams){
@@ -2746,6 +2791,40 @@ function isoWeek(d){
   return 1 + Math.round(((date - week1) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
 }
 
+/* [20261013a] Eén ingang voor alles wat op het uploadvlak landt. Een zip, of
+   meerdere PDF's met blok-namen ("Blok 2 - Week 1 - Training 1"), gaat naar
+   de blokplanning in training-plan.js; al het andere werkt precies als
+   voorheen (één PDF → losse upload, meerdere → verdelen per groep). */
+function blokCtx(teams, trainingen){
+  return {
+    teams, trainingen,
+    groepen: trainingsGroepen(),
+    bouwGroepen: bouwGroepen(teams),
+    renderClub: () => renderClub(),
+    oudeFlow: lijst => lijst.length === 1 ? modalNieuweTraining(lijst[0], teams) : modalMeerdereTrainingen(lijst, teams),
+  };
+}
+
+/* "Groep D · 10 teams" als de selectie precies een trainingsgroep is, anders namen of aantal. */
+function teamsTekstVan(ids, teams){
+  const set = new Set(ids);
+  const g = trainingsGroepen().find(x => {
+    const gi = (x.teams || []).filter(id => teams.some(t => t.id === id));
+    return gi.length && gi.length === set.size && gi.every(id => set.has(id));
+  });
+  if (g) return `${g.naam || ('Groep ' + g.id)} · ${ids.length} team${ids.length === 1 ? '' : 's'}`;
+  if (ids.length <= 3) return ids.map(id => teams.find(t => t.id === id)?.naam || '?').join(', ');
+  return `${ids.length} teams`;
+}
+
+function uploadGekozen(files, teams, trainingen){
+  const pdfs = files.filter(f => f.type === 'application/pdf' || /\.pdf$/i.test(f.name));
+  const oudeFlow = lijst => lijst.length === 1 ? modalNieuweTraining(lijst[0], teams) : modalMeerdereTrainingen(lijst, teams);
+  if (isBlokUpload(files)) return startBlokUpload(files, blokCtx(teams, trainingen));
+  if (!pdfs.length) return meld('Alleen PDF- of zip-bestanden kunnen hier worden toegevoegd');
+  oudeFlow(pdfs);
+}
+
 /* ==================== MEERDERE TRAININGEN TEGELIJK ====================
    De club-admin krijgt wekelijks een setje PDF's binnen en wil ze in één keer
    verdelen. Dit scherm laat per bestand een trainingsgroep kiezen (met een gok
@@ -2764,6 +2843,8 @@ function modalMeerdereTrainingen(files, teams){
     return groepen.some(g => g.id === l) ? l : '';
   };
   const keuze = files.map(f => raad(f.name));
+  let mmModel = 'standaard';                 // [20261013c] AI-model voor deze upload
+  let mmZicht = '';                          // [20261013f] zichtbaar vanaf (leeg = meteen)
 
   if (!groepen.length){
     // zonder groepen heeft de multi-flow weinig zin: bied beheer aan, of val
@@ -2807,14 +2888,35 @@ function modalMeerdereTrainingen(files, teams){
         <input class="invoer" id="mmWeek" value="Week ${weekNr}" autocomplete="off"></div>
       <div class="mm-lijst">${rijen}</div>
       ${samenv}
+      <div class="veldgroep"><label for="mmZicht">Zichtbaar voor het team vanaf</label>
+      <input class="invoer" type="date" id="mmZicht" value="${esc(mmZicht)}">
+      <p class="bp-hint">Leeg laten = meteen zichtbaar. Tot die datum zie jij hem wel in het beheer, coaches nog niet.</p></div>
+      ${htmlModelKeuze('mmModel', mmModel)}
       <button class="knop vol" id="mmStart" ${zonder?'disabled':''}>Verwerken en verdelen</button>
       <button class="link" id="mmGroepen" style="display:block;margin:10px auto 0">⚙️ Groepen beheren</button>`);
 
     $$('.mm-select').forEach(s => s.onchange = () => { keuze[+s.dataset.i] = s.value; teken(); });
+    const mmModelEl = $('#mmModel'); if (mmModelEl) mmModelEl.onchange = e => { mmModel = e.target.value; };
+    $('#mmZicht').onchange = e => { mmZicht = e.target.value; };
     $('#mmGroepen').onclick = () => { sluitModal(); modalTrainingsGroepen(teams); };
-    $('#mmStart').onclick = () => {
+    $('#mmStart').onclick = async () => {
       if (keuze.some(k => !k)) return meld('Kies voor elk bestand een groep');
-      verwerkRij(0, false);
+      // [20261013b] alles in één keer naar de wachtrij; verwerken loopt op de achtergrond
+      const wk = week();
+      const items = [];
+      files.forEach((f, i) => {
+        const g = groepen.find(x => x.id === keuze[i]);
+        const tms = (g?.teams || []).filter(id => teams.some(t => t.id === id));
+        if (!tms.length){ meld(`Groep ${keuze[i]} heeft geen teams — ${f.name} overgeslagen`); return; }
+        items.push({ file: f, titel: `Week ${weekNr} - ${f.name.replace(/\.pdf$/i,'')}`, week: wk, teams: tms, aiModel: mmModel,
+          ...(mmZicht ? { extra: { zichtbaarVanaf: mmZicht } } : {}) });
+      });
+      if (!items.length) return;
+      $('#mmStart').disabled = true;
+      await voegToeAanWachtrij({ naam: `${items.length} training${items.length===1?'':'en'} · ${wk}`, teamsTxt: 'per trainingsgroep', items });
+      sluitModal();
+      meld(`${items.length} training${items.length===1?'':'en'} in de wachtrij · voortgang bovenaan Trainingen`);
+      renderClub();
     };
   };
 
@@ -2825,7 +2927,7 @@ function modalMeerdereTrainingen(files, teams){
     if (vasteWeek === null) vasteWeek = week();   // vastleggen vóór de modal wisselt
     if (i >= files.length){
       sluitModal(); renderClub();
-      meld(`${files.length} training${files.length===1?'':'en'} verwerkt`);
+      meld(`${files.length} training${files.length===1?'':'en'} in de wachtrij · voortgang bovenaan Trainingen`);
       return;
     }
     const f = files[i];
@@ -2907,6 +3009,10 @@ function modalNieuweTraining(file, teams, voorBouw = null, batchMeta = null){
         ${groepen.length ? '<button class="knop licht klein" id="mTrGroepen">⚙️ Groepen beheren</button>' : ''}
       </div>
     </div>
+    <div class="veldgroep"><label for="mTrZicht">Zichtbaar voor het team vanaf</label>
+      <input class="invoer" type="date" id="mTrZicht" value="">
+      <p class="bp-hint">Leeg laten = meteen zichtbaar. Tot die datum zie jij hem wel in het beheer, coaches nog niet.</p></div>
+    ${htmlModelKeuze('mTrModel', 'standaard')}
     <button class="knop vol" id="mTrOk">Uploaden en delen</button>
     ${uploadHulpHtml('text-align:center')}`);
   const sync = () => $$('#mTrTeams label').forEach(l => l.classList.toggle('aan', l.querySelector('input').checked));
@@ -2932,8 +3038,20 @@ function modalNieuweTraining(file, teams, voorBouw = null, batchMeta = null){
     const dagRaw = $('#mTrDag')?.value || '';
     const meta = { titel, week, teams: gekozen };
     if (dagRaw) meta.trainingsdag = parseInt(dagRaw, 10);        // vaste dag voor álle teams
-    if (batchMeta?.onKlaar) meta.onKlaar = batchMeta.onKlaar;   // doorrollen in batch
-    startTrainingVerwerking(file, meta);
+    // [20261013b] naar de wachtrij: goedgekeurd door de AI-controle = meteen gedeeld,
+    // afwijkers wachten bovenaan Trainingen. Het venster sluit meteen.
+    // [20261013f] optionele zichtbaarheidsdatum (zelfde veld als de blokplanning)
+    const zichtVanaf = ($('#mTrZicht')?.value || '').trim();
+    const knop = $('#mTrOk'); if (knop){ knop.disabled = true; knop.textContent = 'In de wachtrij…'; }
+    await voegToeAanWachtrij({ naam: titel, teamsTxt: teamsTekstVan(gekozen, teams), items: [{
+      file, titel, week, teams: gekozen, ...(meta.trainingsdag ? { trainingsdag: meta.trainingsdag } : {}),
+      aiModel: $('#mTrModel')?.value || 'standaard',
+      ...(zichtVanaf ? { extra: { zichtbaarVanaf: zichtVanaf } } : {}),
+    }] });
+    if (batchMeta?.onKlaar){ batchMeta.onKlaar(); return; }   // doorrollen in batch (één voor één)
+    sluitModal();
+    meld('Training in de wachtrij · voortgang bovenaan Trainingen');
+    renderClub();
   };
 }
 
@@ -2982,7 +3100,7 @@ async function startTrainingVerwerking(file, meta){
     rest.map(t=>`<div>${t}</div>`).join('');
 
   try {
-    const ai = await import('./training-ai.js?v=20261020b');
+    const ai = await import('./training-ai.js?v=20261020c');
 
     toonVerwerk(stap([], 'PDF inlezen…', ['Diagrammen opslaan','Oefeningen structureren','Controleren']));
     const { paginas, diagramBlobs, bytes, aantalPaginas } = await ai.leesPdf(file);
@@ -3115,6 +3233,7 @@ function toonPreview(file, meta, ctx){
         club: S.clubId, clubNaam: S.club.naam,
         titel: meta.titel, week: meta.week, bestandsnaam: file.name,
         ...(meta.trainingsdag ? { trainingsdag: meta.trainingsdag } : {}),
+        ...(meta.extra || {}),
         path: ctx.pdfPath, url: ctx.pdfUrl,
         mapId: ctx.mapId,
         oefeningen, diagramUrls, doelen,
@@ -3159,7 +3278,7 @@ async function startTrainingHerstructureer(file, meta, ctx){
   const mod = $('.modal'); if (!mod) return;
   zetTrainingModalInhoud('Opnieuw genereren', `<div class="tr-verwerk"><div class="tr-spin"></div><p>De AI probeert de opmaak nog een keer.</p></div>`);
   try {
-    const ai = await import('./training-ai.js?v=20261020b');
+    const ai = await import('./training-ai.js?v=20261020c');
     // Ook de diagrammen opnieuw uitlezen én overschrijven: zo herstelt "opnieuw
     // genereren" ook een fout diagram (bv. een logo/avatar dat als veld doorkwam),
     // niet alleen de tekst-layout. uploadDiagrammen schrijft naar dezelfde paden
@@ -3187,6 +3306,7 @@ async function deelAlleenPdf(file, meta, ctx){
       club: S.clubId, clubNaam: S.club.naam,
       titel: meta.titel, week: meta.week, bestandsnaam: file.name,
       ...(meta.trainingsdag ? { trainingsdag: meta.trainingsdag } : {}),
+      ...(meta.extra || {}),
       path: ctx.pdfPath, url: ctx.pdfUrl,
       teams: meta.teams,
       gemaakt: serverTimestamp(),
@@ -3225,6 +3345,9 @@ function modalBewerkTraining(t, teams){
       <input class="invoer" id="mTbTitel" value="${esc(t.titel || '')}" autocomplete="off"></div>
     <div class="veldgroep"><label>Week / periode</label>
       <input class="invoer" id="mTbWeek" value="${esc(t.week || '')}" autocomplete="off"></div>
+    <div class="veldgroep"><label for="mTbZicht">Zichtbaar voor het team vanaf</label>
+      <input class="invoer" type="date" id="mTbZicht" value="${esc(t.zichtbaarVanaf || '')}">
+      <p class="bp-hint">Leeg = meteen zichtbaar.</p></div>
     <div class="veldgroep"><label>Trainingsdoelen <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-2)">— getoond als suggestie bij wedstrijden in deze week</span></label>
       <div class="tr-doelen" style="margin:0">
         <div id="mTbDoelLijst">${(Array.isArray(t.doelen)?t.doelen:[]).map(d=>`<div class="tr-doel-rij"><span class="stip"></span><input class="tr-doel-inp mTbDoelInp" value="${esc(d||'')}" placeholder="Trainingsdoel…" maxlength="80"><span class="tr-doel-x" title="Verwijderen">✕</span></div>`).join('')}</div>
@@ -3272,9 +3395,11 @@ function modalBewerkTraining(t, teams){
     const titel = $('#mTbTitel').value.trim() || t.bestandsnaam || 'Training';
     const week  = $('#mTbWeek').value.trim();
     const doelen = mTbLeesDoelen();   // lezen vóór sluitModal — daarna is de DOM weg
+    // [20261013g] zichtbaarheidsdatum ook vóór sluitModal lezen (leeg = meteen)
+    const zicht = ($('#mTbZicht')?.value || '').trim();
     sluitModal();
     try {
-      await updateDoc(doc(db,'trainingen',t.id), {teams: gekozen, titel, week, doelen});
+      await updateDoc(doc(db,'trainingen',t.id), {teams: gekozen, titel, week, doelen, zichtbaarVanaf: zicht || null});
       meld('Training bijgewerkt'); renderClub();
     } catch(e){
       console.error(e); meld('Opslaan mislukt: ' + (e.code || e.message));
@@ -3704,7 +3829,7 @@ function koppelClientIdUitleg(v){
     catch(e){ if (navigator.share) navigator.share({ text: t }).catch(() => {}); else meld('Kopiëren lukt niet op dit apparaat'); }
   };
   const imp = v.querySelector('#slTeamsImport');
-  if (imp) imp.onclick = () => import('./club-sportlink-import.js?v=20261020b').then(m => m.modalTeamsUitSportlink(S.clubTeams || [], () => renderClub()));
+  if (imp) imp.onclick = () => import('./club-sportlink-import.js?v=20261020c').then(m => m.modalTeamsUitSportlink(S.clubTeams || [], () => renderClub()));
 }
 
 /* Kaart "Aan de slag" op de club-hub (alleen beheerders, tot alles klaar of weggeklikt). */
@@ -3736,7 +3861,7 @@ function koppelStartlijst(v, teams){
     const a = b.dataset.startlijst, stap = b.dataset.stap;
     if (a === 'vo') return modalVerwerkersovereenkomst();
     if (a.startsWith('instellingen:')){ S._clubInstelTab = a.split(':')[1]; return naarClubTab('instel'); }
-    if (stap === 'teams' && S.club.sportlinkClientId) return import('./club-sportlink-import.js?v=20261020b').then(m => m.modalTeamsUitSportlink(teams, () => renderClub()));
+    if (stap === 'teams' && S.club.sportlinkClientId) return import('./club-sportlink-import.js?v=20261020c').then(m => m.modalTeamsUitSportlink(teams, () => renderClub()));
     naarClubTab(a);
   });
 }
@@ -3789,4 +3914,4 @@ function kiesWeekbrief(teams){
   });
 }
 
-function laadVergelijk(v){ import('./club-vergelijk.js?v=20261020b').then(m => m.vulVergelijk(v, hertekenClub)); }
+function laadVergelijk(v){ import('./club-vergelijk.js?v=20261020c').then(m => m.vulVergelijk(v, hertekenClub)); }

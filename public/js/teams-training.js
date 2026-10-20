@@ -10,7 +10,7 @@ import {
   S, $, $$, esc, meld, datumNL, speler, initialen, openModal, sluitModal, toon, isBeheerder
 } from './state.js?v=20261011g';
 import { telGebruik } from './tracker.js?v=20261011g';
-import { voorbeeldTeamcode } from './clubconfig.js?v=20261020b';
+import { voorbeeldTeamcode } from './clubconfig.js?v=20261020c';
 import { ico } from './icons.js?v=20260922c';
 
 import {
@@ -18,8 +18,8 @@ import {
   SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo, isoWeek,
   catLabel,
 } from './config.js?v=20261011g';
-import { htmlKompas } from './teams-leerlijn.js?v=20261020b';
-import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261020b';
+import { htmlKompas } from './teams-leerlijn.js?v=20261020c';
+import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261020c';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
 import {
   MAX_WEKEN, weekdagVan, plusDagen, eersteOpDag, regelDatums, actieveRegels, vastOp, vastePrefill, redenVanRegel
@@ -399,14 +399,20 @@ export function htmlTeamTrainingen(){
     // zodat de eerste PDF op de eerste trainingsdag valt.
     const perWeek = new Map();   // key -> {weekNr, jaar, items[]}
     for (const t of pdfs){
-      const wn = weekNrUit(t.week);
-      const jaar = wn ? (t.seizoenJaar || jaarVoorWeek(wn, t.gemaakt?.seconds)) : null;
+      // [20261013a] ingeplande blok-trainingen hebben een vaste weekStart
+      // (maandag, 'YYYY-MM-DD'): die bepaalt week én jaar, ook ver vooruit.
+      const ws = /^\d{4}-\d{2}-\d{2}$/.test(t.weekStart || '') ? new Date(t.weekStart + 'T12:00') : null;
+      const wn = ws ? isoWeek(ws) : weekNrUit(t.week);
+      const jaar = ws ? new Date(ws.getTime() + 3 * 86400000).getFullYear()
+        : (wn ? (t.seizoenJaar || jaarVoorWeek(wn, t.gemaakt?.seconds)) : null);
       const key = wn ? `${jaar}-${String(wn).padStart(2,'0')}` : 'onbekend';
       if (!perWeek.has(key)) perWeek.set(key, {weekNr:wn, jaar, items:[]});
       perWeek.get(key).items.push(t);
     }
     for (const g of perWeek.values()){
-      g.items.sort((a,b) => (a.gemaakt?.seconds||0) - (b.gemaakt?.seconds||0));
+      g.items.sort((a,b) =>
+        ((a.plan?.id && a.plan.id === b.plan?.id) ? (a.trainingNr||0) - (b.trainingNr||0) : 0)
+        || (a.gemaakt?.seconds||0) - (b.gemaakt?.seconds||0));
     }
 
     // sorteer de weken: bekende weken nieuw → oud, 'onbekend' altijd onderaan.
