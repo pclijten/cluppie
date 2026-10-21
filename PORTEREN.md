@@ -300,3 +300,15 @@ Uitgevoerd met `tools/overstap-eu.ps1`; `(default)` staat in `europe-west1`, bes
 - Weer voor teams zonder club: `weerLocatie()` valt terug op `eigenClub` (Open-Meteo, geen sleutel).
 - Teamscherm: kaart Eerste stappen (alleen team zonder club); bestaande losse teams zonder `eigenClub` krijgen een tip. Instellingen: kaart Club en plaats. Vlaggen staan in `gebruikers/{uid}/meta/onboarding.snelstart`.
 - Deploy: alleen hosting. De kennisbank (`functions/kennis.js`) gaat mee met de volgende `chatHulp`-deploy: `firebase deploy --only functions:chatHulp --project cluppie-ad329`.
+
+## Release 20261021a — Eindbaas-instellingen, O-leeftijden, datuminvoer, trainingen
+- **AI alleen door de eindbaas**: `clubs/{id}.platformModules.ai` (standaard uit; bestaande clubs staan dus ook uit tot de eindbaas het in het platformscherm aanzet) en optioneel `aiLimiet`. Server: `aiVanClub()` in `functions/onderdelen.js`, gebruikt door `vereisAI`. Clubbeheerder ziet alleen nog een infotekst.
+- **Maximale videogrootte alleen eindbaas**: `platformModules.maxVideoMB` (5–300, standaard 100), client-side afgedwongen; Storage-limiet blijft 300 MB.
+- JO → O in de weergave (KNVB 2026/27) in teams-hub, leerlijn, desktop en speeltijden; interne sleutels blijven JO/MO.
+- Vaste team-aanvink (`vasteCodes`) alleen nog zichtbaar voor de eindbaas (migratie cluppieasv33).
+- `datum-invoer.js`: halfgetypte jaartallen (0002) triggeren geen herberekening meer in datumvelden.
+- Speeltijden per categorie: uitleg waarom invullen ertoe doet.
+- Trainingscontrole: editor/diff leesbaar in licht thema (geen zwarte achtergrond meer).
+- ">" bij een training zonder PDF (seizoensplan) opent de tekst in plaats van een leeg scherm.
+- Teamscherm Trainingen: melding als er al trainingen klaarstaan die pas later zichtbaar worden (`zichtbaarVanaf`).
+- Deploy functions (vereisAI gewijzigd): `firebase deploy --only functions --project cluppie-ad329`. Daarna in het platformscherm AI per club aanzetten.

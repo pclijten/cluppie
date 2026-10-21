@@ -228,7 +228,7 @@ const waarschuw = e => { e.preventDefault(); e.returnValue = ''; };
 const MAX_TEGELIJK = 3;
 let actief = 0;
 let aiBelofte = null;
-const aiModule = () => (aiBelofte ||= import('./training-ai.js?v=20261020c'));
+const aiModule = () => (aiBelofte ||= import('./training-ai.js?v=20261021a'));
 
 function volgende(){
   for (const job of jobs){

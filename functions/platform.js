@@ -204,7 +204,7 @@ async function clubKerncijfers(db, clubDoc, aanvragenPerClub, nuMs){
     wachtend: aanvragenPerClub[id] || 0,
     sessies30: nav.length, coaches30: uids.size, laatsteGebruik,
     sportlink: { gekoppeld: !!c.sportlinkClientId, fouten, laatsteSync },
-    ai: { aan: ai.aan === true, maand: aiDoc.aantal || 0, limiet: Number(ai.maandLimiet) > 0 ? Number(ai.maandLimiet) : 0 },
+    ai: { aan: require('./onderdelen').aiVanClub(c).aan, maand: aiDoc.aantal || 0, limiet: require('./onderdelen').aiVanClub(c).limiet || 0 },
     privacy: { vo: !!pv.verwerkersovereenkomst?.geaccepteerd, contact: !!pv.contactEmail, akkoord, totaal: personen.length },
     startlijst: { gedaan: STARTLIJST_IDS.filter(s => sl[s]).length, totaal: STARTLIJST_IDS.length, open: STARTLIJST_IDS.filter(s => !sl[s]) },
     benchmarkAan: c.instellingen?.benchmark === true,

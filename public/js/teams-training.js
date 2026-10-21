@@ -10,7 +10,7 @@ import {
   S, $, $$, esc, meld, datumNL, speler, initialen, openModal, sluitModal, toon, isBeheerder
 } from './state.js?v=20261011g';
 import { telGebruik } from './tracker.js?v=20261011g';
-import { voorbeeldTeamcode } from './clubconfig.js?v=20261020c';
+import { voorbeeldTeamcode } from './clubconfig.js?v=20261021a';
 import { ico } from './icons.js?v=20260922c';
 
 import {
@@ -18,8 +18,8 @@ import {
   SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo, isoWeek,
   catLabel,
 } from './config.js?v=20261011g';
-import { htmlKompas } from './teams-leerlijn.js?v=20261020c';
-import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261020e';
+import { htmlKompas } from './teams-leerlijn.js?v=20261021a';
+import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261021a';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
 import {
   MAX_WEKEN, weekdagVan, plusDagen, eersteOpDag, regelDatums, actieveRegels, vastOp, vastePrefill, redenVanRegel
@@ -486,7 +486,12 @@ export function htmlTeamTrainingen(){
     <div class="sectie-kop">${ico('admin-document',15)} Gedeelde oefenstof</div>
     ${pdfLijst}`;
 
-  return htmlKompas() + afgelastSectie + pdfSectie;
+  // [20261021a] trainingen die al zijn aangemaakt maar pas later zichtbaar worden
+  const later = Object.values(S._trainingenLater || {}).filter(x => (x.teams || []).includes(S.teamId)).map(x => x.vanaf).sort();
+  const laterHtml = later.length
+    ? `<div class="bp-zv-badge" style="margin:0 0 12px;display:block">${later.length} training${later.length === 1 ? '' : 'en'} staan klaar en worden zichtbaar vanaf ${esc(new Date(later[0] + 'T12:00').toLocaleDateString('nl-NL', { weekday:'long', day:'numeric', month:'long' }))}.</div>`
+    : '';
+  return htmlKompas() + afgelastSectie + laterHtml + pdfSectie;
 }
 
 /* ---------- Tab: video's ---------- */

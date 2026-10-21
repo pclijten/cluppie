@@ -215,6 +215,9 @@ export function pasClubConfigToe(club){
     werkwijze: (club.instellingen && club.instellingen.werkwijze) || 'vrij',
     leiding: { admins: club.admins || {}, hoofdJeugd: club.hoofdJeugd || {}, bouwCoordinatoren: club.bouwCoordinatoren || {},
       eigenBouwen: Array.isArray(club.eigenBouwen) ? club.eigenBouwen : [] } };
+  /* [20261021] maximale videogrootte: alleen de eindbaas (platformModules.maxVideoMB); buiten de handtekening zoals S._clubPlatform */
+  { const pv = Number(club.platformModules && club.platformModules.maxVideoMB);
+    C.ACTIEF.maxVideoMB = pv > 0 ? pv : C.ACTIEF_STANDAARD.maxVideoMB; }
   if (sig === _sig) return;
   _sig = sig;
   HUIDIG = { clubId: club.id, naam: club.naam || '', eff, huidigSeizoen: club.huidigSeizoen || '' };
@@ -270,7 +273,6 @@ export function pasClubConfigToe(club){
   Object.assign(C.ACTIEF.tijdstraf, C.ACTIEF_STANDAARD.tijdstraf, R.tijdstraf || {});
   Object.assign(C.ACTIEF.bouwGrenzen, C.ACTIEF_STANDAARD.bouwGrenzen, R.bouwGrenzen || {});
   Object.assign(C.ACTIEF.dashboard, C.ACTIEF_STANDAARD.dashboard, R.dashboard || {});
-  C.ACTIEF.maxVideoMB = Number(R.maxVideoMB) > 0 ? Number(R.maxVideoMB) : C.ACTIEF_STANDAARD.maxVideoMB;
   C.ACTIEF.formatie11 = String((eff.pedagogiek && eff.pedagogiek.formatie11) || '').trim();
 
   /* modules-standaard voor teams zonder eigen keuze (zie modAan in state.js) */
@@ -377,7 +379,8 @@ export function clubAfk(club){
 export function clubNaamNu(){ return HUIDIG ? HUIDIG.naam : ''; }
 export function kompasNaam(){ return (cfg().identiteit.kompasNaam || 'Club-kompas').trim(); }
 export function beleidsplanNaam(){ return (cfg().identiteit.beleidsplanNaam || 'jeugdbeleidsplan').trim(); }
-export function aiAan(){ return cfg().ai.aan !== false; }
+/* [20261021] AI staat standaard uit en wordt alleen door de eindbaas aangezet (clubs/{id}.platformModules.ai) */
+export function aiAan(){ return !!(S._clubPlatform && S._clubPlatform.platformModules && S._clubPlatform.platformModules.ai === true) && cfg().ai.aan !== false; }
 export function weerSleutel(){ const l = weerLocatie(); return l ? `${l.lat},${l.lon}` : ''; }
 export function weerLocatie(){
   const l = cfg().locatie;
