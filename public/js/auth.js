@@ -1,10 +1,11 @@
 import {
   auth, db, GoogleAuthProvider, signInWithPopup, signOut,
   signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail,
-  collection, doc, addDoc, setDoc, getDoc, serverTimestamp, increment, functions, httpsCallable, sendEmailVerification
+  collection, doc, addDoc, setDoc, getDoc, serverTimestamp, increment, functions, httpsCallable
 } from './firebase.js?v=20261011g';
 import { S, $, meld } from './state.js?v=20261011g';
 import { startTracker } from './tracker.js?v=20261011g';
+import { stuurVerificatieMail } from './verificatie.js?v=20261020e';
 
 /* ====================================================================
    AANMELD-FLOW — Google of e-mail+wachtwoord.
@@ -95,7 +96,7 @@ async function wachtwoordLogin(adresRuw, wachtwoord, knop){
         || e.code === 'auth/invalid-login-credentials'){
       try {
         const nieuw = await createUserWithEmailAndPassword(auth, adres, wachtwoord);
-        try { await sendEmailVerification(nieuw.user); meld('We hebben een bevestigingsmail gestuurd naar ' + adres); } catch(_) {}
+        try { await stuurVerificatieMail(); meld('We hebben een bevestigingsmail gestuurd naar ' + adres); } catch(_) {}
       } catch(e2){
         if (e2.code === 'auth/email-already-in-use')
           meld('Onjuist wachtwoord voor dit account. Probeer opnieuw of gebruik "wachtwoord vergeten".');
@@ -212,7 +213,7 @@ export async function joinMetCode(code, naam = null){
   }
   if (res.status === 'aanvraag'){
     S._aanvraagVerstuurd = { club: res.clubNaam, team: res.naam };
-    import('./toegang.js?v=20261020d').then(m => m.toonAanvraagVerstuurd(res));
+    import('./toegang.js?v=20261020e').then(m => m.toonAanvraagVerstuurd(res));
     return null;
   }
   if (!res.teamId){ if (res.clubNaam) meld('Gekoppeld aan ' + res.clubNaam); return null; }

@@ -212,7 +212,7 @@ function tekenPlatform(o, aanmeldingen){
   };
   document.getElementById('pfCoachAlle')?.addEventListener('click', () => { PF.coachAlle = !PF.coachAlle; opnieuw(); });
   document.getElementById('pfKalenders')?.addEventListener('click', () => openKalenders());
-  document.getElementById('pfNieuweClub')?.addEventListener('click', () => import('./club.js?v=20261020d').then(m => m.modalNieuwClub()));
+  document.getElementById('pfNieuweClub')?.addEventListener('click', () => import('./club.js?v=20261020e').then(m => m.modalNieuwClub()));
   document.getElementById('pfVernieuw')?.addEventListener('click', async e => {
     const k = e.currentTarget; k.disabled = true; k.textContent = 'Bezig…';
     try { await httpsCallable(functions, 'platformOverzichtNu')({}); meld('Cijfers bijgewerkt'); openPlatform(); }
@@ -228,10 +228,10 @@ function tekenPlatform(o, aanmeldingen){
   document.querySelectorAll('[data-platform-club]').forEach(b => b.onclick = async () => {
     const id = b.dataset.platformClub;
     b.disabled = true;
-    const ond = await import('./ondersteuning.js?v=20261020d').catch(() => null);
+    const ond = await import('./ondersteuning.js?v=20261020e').catch(() => null);
     if (!ond || !(await ond.startOndersteuning(id))){ b.disabled = false; return; }
     sluitModal();
-    import('./club.js?v=20261020d').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
+    import('./club.js?v=20261020e').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
   });
   document.querySelectorAll('[data-aanmeld-ok], [data-aanmeld-af]').forEach(b => b.onclick = async () => {
     const id = b.dataset.aanmeldOk || b.dataset.aanmeldAf, goed = !!b.dataset.aanmeldOk;
