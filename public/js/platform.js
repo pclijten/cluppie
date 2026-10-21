@@ -7,7 +7,7 @@
 ==================================================================== */
 import { db, collection, getDocs, doc, getDoc, setDoc, serverTimestamp, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261011g';
-import { logoImgVoorDoc, DISTRICTEN, kalenderId, valideerKalender, ORIGINEEL } from './clubconfig.js?v=20261020c';
+import { logoImgVoorDoc, DISTRICTEN, kalenderId, valideerKalender, ORIGINEEL } from './clubconfig.js?v=20261021a';
 import { STARTLIJST_STAPPEN } from './startlijst.js?v=20261011d';
 import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261019i';
 
@@ -40,6 +40,7 @@ async function leesPlatformModules(){
     return m;
   } catch (e) { console.warn('[platform] onderdelen lezen mislukt', e.code || e.message); return null; }
 }
+const NAAM_BEHEERD = { leren: 'Leren van gebruik', ai: 'AI-functies' };
 async function zetPlatformModule(clubId, sleutel, waarde){
   await setDoc(doc(db, 'clubs', clubId), { platformModules: { [sleutel]: waarde } }, { merge: true });
   PM[clubId] = { ...PM[clubId], platformModules: { ...(PM[clubId]?.platformModules || {}), [sleutel]: waarde } };
@@ -47,7 +48,12 @@ async function zetPlatformModule(clubId, sleutel, waarde){
 function onderdelenRij(k){
   if (!PM || !PM[k.id]) return '';
   const leren = PM[k.id].platformModules.leren === true;
-  return `<div class="pf-onderdelen"><button type="button" class="pf-onderdeel ${leren ? 'aan' : ''}" data-pf-od="${esc(k.id)}|leren" aria-pressed="${leren}" aria-label="Leren van gebruik ${leren ? 'aan' : 'uit'} voor ${esc(k.naam)}">Leren van gebruik: ${leren ? 'aan' : 'uit'}</button>${BEHEERD.map(sl => { const aan = platformToegestaan(PM[k.id], sl);
+  const pm = PM[k.id].platformModules, ai = pm.ai === true;
+  /* [20261021] AI en maximale videogrootte beheert alleen de eindbaas (standaard: AI uit, video 100 MB) */
+  const extra = `<div class="pf-onderdelen"><button type="button" class="pf-onderdeel ${ai ? 'aan' : ''}" data-pf-od="${esc(k.id)}|ai" aria-pressed="${ai}" aria-label="AI-functies ${ai ? 'aan' : 'uit'} voor ${esc(k.naam)}">AI-functies: ${ai ? 'aan' : 'uit'}</button>`
+    + `<label class="pf-getal">AI per maand <input type="number" min="0" max="100000" inputmode="numeric" placeholder="onbeperkt" data-pf-num="${esc(k.id)}|aiLimiet" value="${pm.aiLimiet == null ? '' : esc(pm.aiLimiet)}"></label>`
+    + `<label class="pf-getal">Video max (MB) <input type="number" min="5" max="300" inputmode="numeric" data-pf-num="${esc(k.id)}|maxVideoMB" value="${Number(pm.maxVideoMB) > 0 ? esc(pm.maxVideoMB) : 100}"></label></div>`;
+  return extra + `<div class="pf-onderdelen"><button type="button" class="pf-onderdeel ${leren ? 'aan' : ''}" data-pf-od="${esc(k.id)}|leren" aria-pressed="${leren}" aria-label="Leren van gebruik ${leren ? 'aan' : 'uit'} voor ${esc(k.naam)}">Leren van gebruik: ${leren ? 'aan' : 'uit'}</button>${BEHEERD.map(sl => { const aan = platformToegestaan(PM[k.id], sl);
     return `<button type="button" class="pf-onderdeel ${aan ? 'aan' : ''}" data-pf-od="${esc(k.id)}|${sl}" aria-pressed="${aan}" aria-label="${esc(ONDERDEEL_NAMEN[sl])} ${aan ? 'aan' : 'uit'} voor ${esc(k.naam)}">${esc(ONDERDEEL_NAMEN[sl])}: ${aan ? 'aan' : 'uit'}</button>`; }).join('')}</div>`;
 }
 
@@ -212,26 +218,37 @@ function tekenPlatform(o, aanmeldingen){
   };
   document.getElementById('pfCoachAlle')?.addEventListener('click', () => { PF.coachAlle = !PF.coachAlle; opnieuw(); });
   document.getElementById('pfKalenders')?.addEventListener('click', () => openKalenders());
-  document.getElementById('pfNieuweClub')?.addEventListener('click', () => import('./club.js?v=20261020e').then(m => m.modalNieuwClub()));
+  document.getElementById('pfNieuweClub')?.addEventListener('click', () => import('./club.js?v=20261021a').then(m => m.modalNieuwClub()));
   document.getElementById('pfVernieuw')?.addEventListener('click', async e => {
     const k = e.currentTarget; k.disabled = true; k.textContent = 'Bezig…';
     try { await httpsCallable(functions, 'platformOverzichtNu')({}); meld('Cijfers bijgewerkt'); openPlatform(); }
     catch (x){ k.disabled = false; k.textContent = 'Vernieuwen'; meld('Vernieuwen mislukt: ' + (x.code === 'functions/not-found' ? 'functie nog niet gedeployed' : (x.message || x.code))); }
   });
   document.querySelectorAll('[data-pf-od]').forEach(b => b.onclick = async () => {
-    const [clubId, sl] = b.dataset.pfOd.split('|'), nieuw = sl === 'leren' ? PM[clubId]?.platformModules?.leren !== true : !platformToegestaan(PM[clubId], sl);
+    const [clubId, sl] = b.dataset.pfOd.split('|'), nieuw = (sl === 'leren' || sl === 'ai') ? PM[clubId]?.platformModules?.[sl] !== true : !platformToegestaan(PM[clubId], sl);
     b.disabled = true;
-    try { await zetPlatformModule(clubId, sl, nieuw); meld(`${sl === 'leren' ? 'Leren van gebruik' : ONDERDEEL_NAMEN[sl]} ${nieuw ? 'aan' : 'uit'} voor deze club`); opnieuw(); }
+    try { await zetPlatformModule(clubId, sl, nieuw); meld(`${NAAM_BEHEERD[sl] || ONDERDEEL_NAMEN[sl]} ${nieuw ? 'aan' : 'uit'} voor deze club`); opnieuw(); }
     catch (x){ b.disabled = false; meld('Opslaan mislukt: ' + (x.code === 'permission-denied' ? 'rules nog niet gedeployed?' : (x.message || x.code))); }
+  });
+  /* [20261021] getalvelden per club: AI-limiet per maand en maximale videogrootte */
+  document.querySelectorAll('[data-pf-num]').forEach(inp => inp.onchange = async () => {
+    const [clubId, sl] = inp.dataset.pfNum.split('|'), raw = inp.value.trim();
+    let w;
+    if (sl === 'aiLimiet'){ w = raw === '' ? null : Math.round(Number(raw)); if (w !== null && !(w >= 0 && w <= 100000)) return meld('Vul een aantal tussen 0 en 100.000 in, of laat het leeg'); }
+    else { w = Math.round(Number(raw)); if (!(w >= 5 && w <= 300)) return meld('Kies een videogrootte tussen 5 en 300 MB'); }
+    inp.disabled = true;
+    try { await zetPlatformModule(clubId, sl, w); meld(sl === 'aiLimiet' ? 'AI-limiet opgeslagen' : 'Videogrootte opgeslagen'); }
+    catch (x){ meld('Opslaan mislukt: ' + (x.code === 'permission-denied' ? 'rules nog niet gedeployed?' : (x.message || x.code))); }
+    inp.disabled = false;
   });
   /* [20261020a] een club openen = ondersteuningsmodus starten (maximaal 2 uur, in het toegangslog van de club) */
   document.querySelectorAll('[data-platform-club]').forEach(b => b.onclick = async () => {
     const id = b.dataset.platformClub;
     b.disabled = true;
-    const ond = await import('./ondersteuning.js?v=20261020e').catch(() => null);
+    const ond = await import('./ondersteuning.js?v=20261021a').catch(() => null);
     if (!ond || !(await ond.startOndersteuning(id))){ b.disabled = false; return; }
     sluitModal();
-    import('./club.js?v=20261020e').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
+    import('./club.js?v=20261021a').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
   });
   document.querySelectorAll('[data-aanmeld-ok], [data-aanmeld-af]').forEach(b => b.onclick = async () => {
     const id = b.dataset.aanmeldOk || b.dataset.aanmeldAf, goed = !!b.dataset.aanmeldOk;

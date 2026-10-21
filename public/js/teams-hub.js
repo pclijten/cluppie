@@ -12,16 +12,16 @@
    bewust NIET terug uit teams.js (geen circulaire import). */
 import { db, doc, updateDoc, deleteField } from './firebase.js?v=20261011g';
 import { S, esc, meld, datumNL, modAan, openModal } from './state.js?v=20261011g';
-import { AFWEZIG_REDENEN, afwezigRedenInfo } from './config.js?v=20261011g';
+import { AFWEZIG_REDENEN, afwezigRedenInfo, catLabel } from './config.js?v=20261011g';
 import { ico } from './icons.js?v=20260922c';
-import { logoImg, primaireClubId } from './clubconfig.js?v=20261020c';
+import { logoImg, primaireClubId } from './clubconfig.js?v=20261021a';
 import { analyseWedstrijd, WISSEL_BEURT } from './analyse.js?v=20261011g';
 import { telGebruik } from './tracker.js?v=20261011g';
 import { ongelezenBerichten } from './berichten.js?v=20261011g';
 import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261012a';
 import { htmlRondeBalk } from './evaluatierondes.js?v=20261011g';
 import { onderdeelAan } from './onderdelen.js?v=20261019i';
-import { eersteStappenPlaats } from './snelstart.js?v=20261020e';
+import { eersteStappenPlaats } from './snelstart.js?v=20261021a';
 import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261011g';
 import { isAfgelast, telMee, soortPill, wedstrijdInfo, htmlAfgelastBanner, afgelastMeldingen, deelTekst } from './wedstrijd-status.js?v=20261012h';
 
@@ -80,7 +80,7 @@ export function htmlHub(updInfo){
     <div class="hub-teamrij">
       <button class="hub-teamnaam" id="hubTeamKnop">${esc(S.team.naam)}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4 4 4-4"/></svg></button>
-      <span class="hub-teamsub">${S.team.categorie ? esc(S.team.categorie)+' · ' : ''}${esc(S.team.format)} tegen ${esc(S.team.format)}</span>
+      <span class="hub-teamsub">${S.team.categorie ? esc(catLabel(S.team.categorie))+' · ' : ''}${esc(S.team.format)} tegen ${esc(S.team.format)}</span>
       <div class="hub-teamkeuze" id="hubTeamKeuze">
         ${S.teams.map(t => `
           <button data-hub-team="${t.id}" class="${t.id === S.teamId ? 'actief' : ''}">${esc(t.naam)}

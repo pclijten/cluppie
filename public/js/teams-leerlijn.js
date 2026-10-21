@@ -10,9 +10,9 @@
    blijft in config.js staan; dat verandert niet via het contentbeheer-tabblad. */
 import { S, $, esc, openModal, modAan } from './state.js?v=20261011g';
 import { skillDomein, leercurveThema, isoWeek, kompasIndexVoorWeek,
-         LEERCURVE, leercurveRelevant } from './config.js?v=20261011g';
+         LEERCURVE, leercurveRelevant, catLabel } from './config.js?v=20261011g';
 import { contentVoorThema, kompasTips } from './content.js?v=20261011g';
-import { beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261020c';
+import { beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261021a';
 
 /* ---------- Leerlijn-blok: kompas + leerlijn (Training-tab) ----------
    Eén rustig blok waarin de coach met de pijltjes door twee series bladert:
@@ -79,7 +79,7 @@ export function htmlKompas(){
     tekst = `${esc(it.titel)} <span class="ll-info-ico">ℹ️</span>`;
   } else {
     const d = skillDomein(it.domein);
-    label = `📈 Leerlijn · ${esc(S.team?.categorie || '')}`;
+    label = `📈 Leerlijn · ${esc(catLabel(S.team?.categorie || ''))}`;
     bron  = `<span class="ll-dombadge" style="background:${d?.kleur||'var(--accent)'}">${esc(it.domein)}</span>${esc(d?.naam || '')}`;
     const zin = eersteZin(it.tekst);
     tekst = `<span class="ll-titel">${esc(it.thema)}.</span> ${esc(zin)} <span class="ll-info-ico">ℹ️</span>`;

@@ -11,10 +11,10 @@ import {
   auth, db, functions, httpsCallable,
   collection, doc, getDoc, getDocs, query, where
 } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261011g';
+import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261011g';
 import { stuurVerificatieMail } from './verificatie.js?v=20261020e';
-import { bewaar } from './club-instellingen.js?v=20261020e';
-import { effectief } from './clubconfig.js?v=20261020c';
+import { bewaar } from './club-instellingen.js?v=20261021a';
+import { effectief } from './clubconfig.js?v=20261021a';
 
 export const PRIVACY_VERSIE = '2026-10';
 const roep = (naam, data) => httpsCallable(functions, naam)(data || {}).then(r => r.data);
@@ -185,7 +185,7 @@ export async function koppelToegang(v, herteken){
   /* --- instellingen --- */
   const html1 = kaart('Hoe sluiten coaches aan?', `
     <label class="ci-schakel"><input type="checkbox" id="tgGoed" ${T.goedkeuring ? 'checked' : ''}><span><b>Aanvragen goedkeuren</b> — nieuwe coaches komen pas binnen na jouw goedkeuring (aanbevolen)</span></label>
-    <label class="ci-schakel" style="margin-top:8px"><input type="checkbox" id="tgVast" ${T.vasteCodes ? 'checked' : ''}><span>Oude vaste team- en clubcodes blijven werken (zet uit zodra alle coaches zijn aangesloten)</span></label>
+    ${isPlatformBeheerder() ? `<label class="ci-schakel" style="margin-top:8px"><input type="checkbox" id="tgVast" ${T.vasteCodes ? 'checked' : ''}><span>Oude vaste team- en clubcodes blijven werken (alleen eindbaas: voor de migratie vanuit cluppieasv33)</span></label>` : ''}
     <label class="ci-schakel" style="margin-top:8px"><input type="checkbox" id="tgOnd" ${T.ondersteuning !== false ? 'checked' : ''}><span><b>Cluppie mag meekijken en helpen</b> — de eindbaas kan tijdelijk (maximaal 2 uur) als beheerder in jullie club werken om te ondersteunen. Elke start en stop staat in het toegangslog.</span></label>
     <button class="knop vol klein" id="tgOpslaan" style="margin-top:10px">Opslaan</button>`);
 
@@ -255,7 +255,7 @@ export async function koppelToegang(v, herteken){
     <label class="ci-schakel"><input type="checkbox" id="pvAch" ${P.achternamen ? 'checked' : ''}><span>Achternaam van spelers vastleggen (uit = alleen voornaam, aanbevolen)</span></label>
     <label class="ci-schakel" style="margin-top:6px"><input type="checkbox" id="pvVo" ${vo?.geaccepteerd ? 'checked' : ''}><span>De club heeft een <b>verwerkersovereenkomst</b> met Cluppie afgesloten${vo?.geaccepteerd ? ` (vastgelegd ${datumKort(vo.tijd)} door ${esc(vo.naam || '—')})` : ''}</span></label>
     <button class="cb-link" id="pvVoLees" type="button" style="margin-top:4px">Lees de overeenkomst en accepteer digitaal ›</button>
-    <p class="cb-uitleg" style="margin:6px 0 0">AI-functies staan onder “AI &amp; modules”; voor nieuwe clubs staan ze standaard uit.</p>
+    <p class="cb-uitleg" style="margin:6px 0 0">AI-functies worden door Cluppie beheerd en staan standaard uit.</p>
     <button class="knop vol klein" id="pvOpslaan" style="margin-top:10px">Opslaan</button>`);
 
   /* --- log --- */
@@ -273,7 +273,7 @@ export async function koppelToegang(v, herteken){
   };
 
   q('#tgOpslaan').onclick = (e) => klaar(() => bewaar([['toegang', {
-    goedkeuring: q('#tgGoed').checked, standaardRol: 'coach', vasteCodes: q('#tgVast').checked, ondersteuning: q('#tgOnd').checked }]]), e.currentTarget, 'Opgeslagen');
+    goedkeuring: q('#tgGoed').checked, standaardRol: 'coach', vasteCodes: q('#tgVast') ? q('#tgVast').checked : T.vasteCodes, ondersteuning: q('#tgOnd').checked }]]), e.currentTarget, 'Opgeslagen');
 
   qa('[data-ar-goed]').forEach(b => b.onclick = () => klaar(() =>
     roep('beoordeelAanvraag', { clubId, uid: b.dataset.arGoed, besluit: 'goed', rol: 'coach' }), b, 'Goedgekeurd'));
@@ -299,7 +299,7 @@ export async function koppelToegang(v, herteken){
     klaar(() => roep('verwijderLid', { clubId, uid: b.dataset.lidWeg }), b, 'Uitgeschreven');
   });
 
-  q('#pvVoLees')?.addEventListener('click', () => import('./club.js?v=20261020e').then(m => m.modalVerwerkersovereenkomst()));
+  q('#pvVoLees')?.addEventListener('click', () => import('./club.js?v=20261021a').then(m => m.modalVerwerkersovereenkomst()));
   q('#pvOpslaan').onclick = (e) => klaar(async () => {
     const wijz = [
       ['privacy.contactNaam', q('#pvNaam').value.trim()], ['privacy.contactEmail', q('#pvMail').value.trim()],

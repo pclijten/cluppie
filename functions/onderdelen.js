@@ -19,4 +19,12 @@ function platformToegestaan(club, sleutel){
   const s = seconden(club && club.gemaakt);
   return !(s !== null && s >= GRENS_SEC);
 }
-module.exports = { BEHEERD, GRENS_SEC, platformToegestaan };
+/* [20261021] AI en maximale videogrootte beheert alleen de eindbaas: clubs/{id}.platformModules.{ai, aiLimiet, maxVideoMB}.
+   AI staat standaard UIT; zonder `ai === true` weigert de server alle AI-functies. */
+function aiVanClub(club){
+  const pm = (club && club.platformModules) || {}, eigen = (club && club.instellingen && club.instellingen.ai) || {};
+  const l = pm.aiLimiet;
+  const limiet = (l === null || l === undefined || l === '' || !Number.isFinite(Number(l)) || Number(l) < 0) ? null : Math.round(Number(l));
+  return { aan: pm.ai === true && eigen.aan !== false, limiet };
+}
+module.exports = { BEHEERD, GRENS_SEC, platformToegestaan, aiVanClub };

@@ -128,7 +128,7 @@ async function vereisLid(request, rollen = null){
   return { clubId, rol };
 }
 
-/* AI-instellingen van de club: clubs/{id}.instellingen.ai = { aan, maandLimiet }.
+/* AI-instellingen van de club: alleen de eindbaas, clubs/{id}.platformModules = { ai, aiLimiet } (zie onderdelen.js aiVanClub).
    Ontbreekt het (bestaande club zonder instellingen) → AI aan, geen limiet. */
 async function vereisAI(request, rollen = null, onderdeel = null){
   const r = await vereisLid(request, rollen);
@@ -136,10 +136,11 @@ async function vereisAI(request, rollen = null, onderdeel = null){
   const club = (await db.doc(PADEN.club(r.clubId)).get()).data() || {};
   /* [20261013b] eindbaas heeft dit onderdeel voor de club uitgezet: weigeren vóórdat er AI-gebruik geteld wordt */
   if (onderdeel && !require('./onderdelen').platformToegestaan(club, onderdeel)) throw new HttpsError('failed-precondition', 'Dit onderdeel staat niet aan voor deze club.');
-  const ai = club.instellingen?.ai || {};
-  if (ai.aan === false) throw new HttpsError('failed-precondition', 'AI staat uit voor deze club.');
-  const limiet = Number(ai.maandLimiet);
-  if (Number.isFinite(limiet) && limiet >= 0 && ai.maandLimiet !== null && ai.maandLimiet !== ''){
+  /* [20261021] AI staat standaard uit en wordt alleen door de eindbaas aangezet (platformModules.ai) */
+  const aiBeleid = require('./onderdelen').aiVanClub(club);
+  if (!aiBeleid.aan) throw new HttpsError('failed-precondition', 'AI staat uit voor deze club.');
+  const limiet = aiBeleid.limiet;
+  if (limiet !== null){
     const maand = new Date().toISOString().slice(0, 7);
     const ref = db.doc(PADEN.aiGebruik(r.clubId, maand));
     await db.runTransaction(async tx => {

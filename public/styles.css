@@ -911,7 +911,9 @@ textarea.invoer{font-family:inherit;line-height:1.5;resize:vertical;min-height:6
 
 /* ---------- Onderdelen door de eindbaas uitgezet [20261013b] ---------- */
 .cb-mcel.geblokkeerd, .cb-mkol.geblokkeerd, .cb-schakelrij.geblokkeerd, .ci-schakel.geblokkeerd{ opacity:.45; cursor:not-allowed; }
-.pf-onderdelen{ display:flex; flex-wrap:wrap; gap:6px; padding:2px 14px 12px; }
+.pf-onderdelen{ display:flex; flex-wrap:wrap; gap:6px; padding:2px 14px 12px; align-items:center; }
+.pf-getal{ display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-2); }
+.pf-getal input{ width:84px; padding:6px 8px; border:1px solid var(--hair); border-radius:8px; background:var(--surface); color:var(--ink); font:inherit; }
 .pf-onderdeel{ display:inline-flex; align-items:center; gap:6px; font:inherit; font-size:calc(12px * var(--fs)); font-weight:600; padding:6px 11px; min-height:34px; border-radius:999px; border:1px solid var(--hair); background:var(--surface-2); color:var(--ink-2); cursor:pointer; }
 .pf-onderdeel.aan{ background:color-mix(in srgb, var(--accent) 16%, transparent); border-color:color-mix(in srgb, var(--accent) 45%, transparent); color:var(--ink); }
 .pf-onderdeel:disabled{ opacity:.5; cursor:default; }
@@ -2414,7 +2416,7 @@ body{ background:var(--bg); color:var(--ink); }
 
 .trb-uitleg{font-size:calc(12.5px * var(--fs));color:var(--ink-2);line-height:1.5;background:var(--card);border-radius:10px;padding:11px 13px;border:1px solid var(--hair);margin-bottom:14px}
 .trb-uitleg b{color:var(--ink)}
-.trb-uitleg b.del-b{color:#ff8f8b}
+.trb-uitleg b.del-b{color:var(--accent)}
 .trb-uitleg .minor-b{border-bottom:1px dashed var(--ink-2)}
 
 .trb-oef{background:var(--card);border-radius:var(--radius);padding:15px 14px 8px;margin-bottom:14px;box-shadow:var(--shadow)}
@@ -2424,12 +2426,12 @@ body{ background:var(--bg); color:var(--ink); }
 
 /* diff-tekst */
 .trb-diff{font-size:calc(14px * var(--fs));line-height:1.75;color:var(--ink);margin-bottom:10px}
-.trb-diff ins{background:rgba(53,196,122,.22);color:#7ee2a8;text-decoration:none;border-radius:3px;padding:1px 3px}
-.trb-diff del{background:rgba(226,52,47,.20);color:#ff8f8b;text-decoration:line-through;border-radius:3px;padding:1px 3px}
+.trb-diff ins{background:rgba(53,196,122,.22);color:var(--ink);text-decoration:none;border-radius:3px;padding:1px 3px}
+.trb-diff del{background:rgba(226,52,47,.20);color:var(--ink-2);text-decoration:line-through;border-radius:3px;padding:1px 3px}
 .trb-diff .minor{border-bottom:1px dashed var(--ink-2)}
 
 /* bewerk-veld */
-.trb-bewerk{font-size:calc(14px * var(--fs));line-height:1.6;color:var(--ink);background:var(--pitch-ink);border:1.5px solid var(--hair);border-radius:9px;padding:10px 12px;min-height:44px;margin-bottom:10px;white-space:pre-wrap}
+.trb-bewerk{font-size:calc(14px * var(--fs));line-height:1.6;color:var(--ink);background:var(--bg);border:1.5px solid var(--hair);border-radius:9px;padding:10px 12px;min-height:44px;margin-bottom:10px;white-space:pre-wrap}
 .trb-bewerk:focus{outline:none;border-color:var(--accent)}
 
 .trb-opslaan{position:sticky;bottom:0;display:flex;gap:8px;padding:12px 0 4px;background:linear-gradient(to top, var(--bg) 70%, transparent);margin-top:4px}
@@ -5411,6 +5413,9 @@ textarea.lj-namen{min-height:130px}
 .cb-schakelrij svg{color:var(--ink-2);flex-shrink:0}
 .cb-schakelrij .cb-persoon-n{font-size:calc(14px * var(--fs))}
 .cb-uitleg{font-size:calc(12px * var(--fs));color:var(--ink-2);line-height:1.45;margin-top:8px}
+.cb-waarom ul{margin:6px 0 0;padding-left:18px}
+.cb-waarom li{margin:3px 0}
+.cb-waarom b{color:var(--ink)}
 .cb-tags{display:flex;flex-wrap:wrap;gap:5px}
 .cb-tag{display:inline-flex;align-items:center;gap:5px;font-size:calc(11.5px * var(--fs));font-weight:600;padding:3px 9px;border-radius:99px;background:var(--surface-2);color:var(--ink)}
 .cb-tag i{width:7px;height:7px;border-radius:2px}

@@ -13,13 +13,13 @@ import {
   db, doc, collection, addDoc, updateDoc, setDoc, deleteDoc, getDocs, query, where, writeBatch, serverTimestamp
 } from './firebase.js?v=20261011g';
 import { S, $, esc, meld, openModal, sluitModal, nieuweCode, isPlatformBeheerder } from './state.js?v=20261011g';
-import { ACTIEF, SEIZOEN_FALLBACK, parseFormatie, aantalVeldspelers, SKILLS, LEERCURVE } from './config.js?v=20261011g';
+import { ACTIEF, SEIZOEN_FALLBACK, parseFormatie, aantalVeldspelers, SKILLS, LEERCURVE, catLabel } from './config.js?v=20261011g';
 import {
   effectief, isLegacy, mergeLijst, LIJST_DEFS, ORIGINEEL, NEUTRAAL, CLUPPIE_LOGO, ICOONNAMEN,
   valideerKalender, herlaadKalender, pasClubConfigToe, clubAfk, DISTRICTEN
-} from './clubconfig.js?v=20261020c';
-import { MODULE_DEFS } from './club-beheer.js?v=20261020c';
-import { lerenBeschikbaar } from './leren-signalen.js?v=20261020c';
+} from './clubconfig.js?v=20261021a';
+import { MODULE_DEFS } from './club-beheer.js?v=20261021a';
+import { lerenBeschikbaar } from './leren-signalen.js?v=20261021a';
 import { doorPlatformUit, werkwijzeVan } from './onderdelen.js?v=20261019i';
 
 /* ---------- Tabs ---------- */
@@ -367,7 +367,7 @@ function catKaart(){
     return `<div class="ci-rij ${r.uit ? 'uit' : ''}">
       <label class="ci-aan"><input type="checkbox" data-cc="aan" data-i="${i}" ${r.uit ? '' : 'checked'}></label>
       <div class="ci-velden">
-        <div class="ci-naam">${r.extra ? `<input class="invoer" maxlength="14" placeholder="Naam, bv. JO18" value="${esc(r.key)}" data-cc="key" data-i="${i}" style="max-width:150px">` : esc(r.key)} <small>${r.geslacht === 'm' ? 'meiden' : 'jongens/overig'}</small></div>
+        <div class="ci-naam">${r.extra ? `<input class="invoer" maxlength="14" placeholder="Naam, bv. O18" value="${esc(r.key)}" data-cc="key" data-i="${i}" style="max-width:150px">` : esc(catLabel(r.key))} <small>${r.geslacht === 'm' ? 'alleen meiden' : 'jongens en meiden'}</small></div>
         <label class="ci-veld smal"><span class="ci-l">Tegen</span><select class="invoer" data-cc="f" data-k="format" data-i="${i}">${['4', '5', '6', '7', '8', '9', '10', '11'].map(n => `<option value="${n}" ${String(r.f.format) === n ? 'selected' : ''}>${n}v${n}</option>`).join('')}</select></label>
         <label class="ci-veld smal"><span class="ci-l">Periodes</span><select class="invoer" data-cc="f" data-k="periodes" data-i="${i}"><option value="2" ${Number(r.f.periodes) === 2 ? 'selected' : ''}>2 helften</option><option value="4" ${Number(r.f.periodes) === 4 ? 'selected' : ''}>4 kwarten</option></select></label>
         <label class="ci-veld smal"><span class="ci-l">Min. per periode</span><input class="invoer" type="number" step="0.5" min="5" max="60" value="${esc(r.f.duur)}" data-cc="f" data-k="duur" data-i="${i}"></label>
@@ -378,7 +378,14 @@ function catKaart(){
   }).join('');
   return `<div class="cb-kaart" data-catkaart>
     <div class="cb-kaart-kop"><b>Speeltijden per categorie</b></div>
-    <p class="cb-uitleg">Wedstrijdvorm en speeltijd die een nieuw team of een nieuwe wedstrijd automatisch krijgt. Standaard volgens de KNVB; pas aan als jullie afwijken. Bestaande wedstrijden veranderen niet.</p>
+    <p class="cb-uitleg">Hier leg je per leeftijdscategorie vast hoe jullie wedstrijden spelen. Elk nieuw team en elke nieuwe wedstrijd begint met deze waarden; bestaande wedstrijden veranderen niet. De standaard volgt de KNVB: pas het alleen aan als jullie competitie afwijkt.</p>
+    <div class="cb-uitleg cb-waarom"><b>Waarom is dit belangrijk?</b>
+      <ul>
+        <li><b>Opstelling:</b> “Tegen” bepaalt hoeveel spelers er in de opstelling staan (8 tegen 8, 11 tegen 11).</li>
+        <li><b>Speeltijd per speler:</b> Cluppie rekent de gespeelde minuten van elke speler uit met het aantal periodes en de minuten per periode. Kloppen die niet, dan kloppen het speeltijdoverzicht en de verwachte speeltijd bij geplande wissels ook niet.</li>
+        <li><b>Wedstrijdklok en wissels:</b> de klok, de rust en de wisselmomenten volgen deze indeling (2 helften of 4 kwarten).</li>
+        <li><b>Minder handwerk:</b> coaches hoeven dit niet bij elke wedstrijd zelf in te stellen, en teams van dezelfde categorie spelen dan overal hetzelfde.</li>
+      </ul></div>
     ${body}
     <div class="rij" style="margin-top:10px">
       <button type="button" class="knop licht klein" data-cc="nieuw" data-g="j">+ Categorie</button>
@@ -512,7 +519,7 @@ export function koppelInstelNieuw(v, herteken){
   else if (sub === 'pedagogiek') koppelPedagogiek(v, herteken);
   else if (sub === 'regels') koppelRegels(v, herteken);
   else if (sub === 'ai') koppelAI(v, herteken);
-  else if (sub === 'toegang') import('./toegang.js?v=20261020e').then(m => m.koppelToegang(v, herteken));
+  else if (sub === 'toegang') import('./toegang.js?v=20261021a').then(m => m.koppelToegang(v, herteken));
 }
 
 /* ---------- Identiteit ---------- */
@@ -779,9 +786,7 @@ function tabRegels(eff){
       <div class="rij"><div style="flex:1">${veldGroep('Inactief na (dagen)', getal('rgDagen', d.dagenInactief, 3, 90))}</div>
         <div style="flex:1">${veldGroep('Lage opkomst onder (%)', getal('rgOpkomst', d.opkomstLaag, 10, 95))}</div></div>
       <button class="knop vol klein" id="rgDash">Opslaan</button>`)}
-    ${kaart('Uploads', '', `
-      ${veldGroep('Maximale videogrootte (MB)', getal('rgVideo', r.maxVideoMB || D.maxVideoMB, 5, 500))}
-      <button class="knop vol klein" id="rgUpload">Opslaan</button>`)}`;
+    ${kaart('Uploads', '', `<p class="cb-uitleg" style="margin:0">De maximale videogrootte (nu <b>${ACTIEF.maxVideoMB} MB</b>) wordt door Cluppie beheerd.</p>`)}`;
 }
 function koppelRegels(v, herteken){
   const n = id => Number(v.querySelector('#' + id).value);
@@ -801,16 +806,12 @@ function koppelRegels(v, herteken){
     if (!(dg >= 3 && dg <= 90 && op >= 10 && op <= 95)) return 'Controleer de waarden (dagen 3–90, opkomst 10–95%)';
     await bewaar([['regels.dashboard', { dagenInactief: dg, opkomstLaag: op }]]);
   });
-  knop('rgUpload', async () => {
-    const mb = Math.round(n('rgVideo')); if (!(mb >= 5 && mb <= 500)) return 'Kies tussen 5 en 500 MB';
-    await bewaar([['regels.maxVideoMB', mb]]);
-  });
 }
 
 /* ---------- AI & modules ---------- */
 function tabAI(eff){
   const ai = eff.ai || {}, std = (eff.modules && eff.modules.standaard) || {};
-  const aan = ai.aan !== false;
+  const aiStaatAan = !!(S._clubPlatform && S._clubPlatform.platformModules && S._clubPlatform.platformModules.ai === true) && ai.aan !== false;
   return `
     ${kaart('Werkwijze trainingen', '', `
       <p class="cb-uitleg" style="margin:0 0 8px">Wie mag trainingen en seizoensplannen maken? Dit regelt alleen wat trainers in de app zien.</p>
@@ -818,12 +819,7 @@ function tabAI(eff){
       <label class="ci-schakel"><input type="radio" name="wzKeuze" value="club" ${werkwijzeVan({ werkwijze: ((eff && eff.werkwijze) || (S.club?.instellingen?.werkwijze)) }) === 'club' ? 'checked' : ''}><span><b>Club stuurt</b> · hoofd jeugd en bouwcoördinatoren maken het plan. Trainers krijgen de trainingen onder Oefenstof en bouwen zelf niets.</span></label>
       <p class="cb-uitleg">Een team dat anders werkt (bijvoorbeeld een nieuwe trainer) zet je per team op “mag zelf plannen” onder Teams. Bestaande clubs blijven op Trainers vrij staan tot je zelf kiest.</p>
       <button class="knop vol klein" id="wzOpslaan">Opslaan</button>`)}
-    ${kaart('AI-functies', '', `
-      <label class="ci-schakel"><input type="checkbox" id="aiAan" ${aan ? 'checked' : ''}><span>AI-functies aan voor deze club</span></label>
-      <p class="cb-uitleg">Trainingen structureren, wedstrijdverslagen en de hulp-chatbot. Uit = de knoppen verdwijnen bij alle coaches. Er gaan nooit spelersnamen naar de AI.</p>
-      ${veldGroep('Maximaal aantal AI-aanroepen per maand (optioneel)', `<input class="invoer" type="number" inputmode="numeric" id="aiLimiet" min="0" max="100000" value="${ai.maandLimiet ?? ''}" placeholder="onbeperkt">`,
-        'De server dwingt dit af (Cloud Function).')}
-      <button class="knop vol klein" id="aiOpslaan">Opslaan</button>`)}
+    ${kaart('AI-functies', '', `<p class="cb-uitleg" style="margin:0">AI-functies (trainingen structureren, wedstrijdverslagen, de hulp-chatbot) staan voor jullie club <b>${aiStaatAan ? 'aan' : 'uit'}</b>. Cluppie beheert dit; wil je AI gebruiken, vraag het dan aan. Er gaan nooit spelersnamen naar de AI.</p>`)}
     ${kaart('Help de app verbeteren', '', `
       ${lerenBeschikbaar()
         ? `<label class="ci-schakel"><input type="checkbox" id="lerenAan" ${(eff.leren && eff.leren.meedoen) ? 'checked' : ''}><span>Anoniem meedoen</span></label>`
@@ -839,12 +835,6 @@ function koppelAI(v, herteken){
   v.querySelector('#wzOpslaan')?.addEventListener('click', e => vangFout(e.currentTarget, async () => {
     const k = v.querySelector('input[name="wzKeuze"]:checked')?.value === 'club' ? 'club' : 'vrij';
     await bewaar([['werkwijze', k]]); meld(k === 'club' ? 'Werkwijze: Club stuurt' : 'Werkwijze: Trainers vrij'); herteken();
-  }));
-  v.querySelector('#aiOpslaan')?.addEventListener('click', e => vangFout(e.currentTarget, async () => {
-    const raw = v.querySelector('#aiLimiet').value.trim();
-    const lim = raw === '' ? null : Math.max(0, Math.round(Number(raw)));
-    if (raw !== '' && !Number.isFinite(lim)) return meld('Vul een geldig aantal in');
-    await bewaar([['ai', { aan: v.querySelector('#aiAan').checked, maandLimiet: lim }]]); meld('Opgeslagen'); herteken();
   }));
   v.querySelector('#lerenOpslaan')?.addEventListener('click', e => vangFout(e.currentTarget, async () => {
     await bewaar([['leren', { meedoen: v.querySelector('#lerenAan').checked }]]); meld('Opgeslagen'); herteken();
@@ -922,7 +912,7 @@ export function modalNieuweClub(naCreatie){
         W.naam = b.querySelector('#wzNaam').value; W.district = b.querySelector('#wzDistrict').value;
         k.disabled = true; uit.innerHTML = '<div class="sl-laden"><span class="sl-spin"></span>Club opzoeken in Sportlink…</div>';
         try {
-          const { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261020e');
+          const { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261021a');
           const info = await zoekClubInSportlink(id);
           if (info.gevonden){
             const [logo, kleur] = await Promise.all([verkleinSportlinkLogo(info.logo), leesbareKleur(info.kleur)]);
@@ -931,7 +921,7 @@ export function modalNieuweClub(naCreatie){
             W.slVondst = htmlClubVondst(info, { logo, kleur });
           } else { W.clubcode = ''; W.slVondst = htmlClubVondst(info); }
         } catch (x){
-          const { htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261020e');
+          const { htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261021a');
           W.slVondst = htmlClubVondst(null, { fout: x });
         }
         k.disabled = false; teken();
