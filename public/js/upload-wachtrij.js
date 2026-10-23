@@ -23,8 +23,8 @@
 import {
   db, storage, collection, addDoc, serverTimestamp, sRef, uploadBytes, getDownloadURL, deleteObject
 } from './firebase.js?v=20260922c';
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20260922c';
-import { telGebruik } from './tracker.js?v=20260922c';
+import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261023a';
+import { telGebruik } from './tracker.js?v=20261023a';
 
 /* [20261013c] AI-model per upload. Alleen een sleutel; de Cloud Function
    structureerTraining koppelt die aan een model (whitelist). */
@@ -228,7 +228,7 @@ const waarschuw = e => { e.preventDefault(); e.returnValue = ''; };
 const MAX_TEGELIJK = 3;
 let actief = 0;
 let aiBelofte = null;
-const aiModule = () => (aiBelofte ||= import('./training-ai.js?v=20261021a'));
+const aiModule = () => (aiBelofte ||= import('./training-ai.js?v=20261023a'));
 
 function volgende(){
   for (const job of jobs){
@@ -280,7 +280,7 @@ async function jobKlaar(job){
 async function verwerkItem(job, it, ai){
   const file = await leesBestand(job.id, it.idx, it.naam);
   if (!file) throw new Error('bestand niet meer beschikbaar op dit apparaat');
-  const mapId = String(Date.now());
+  const mapId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;   // uniek: parallelle uploads in dezelfde ms mogen geen map delen
   const veiligeNaam = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
   const pdfPath = `clubs/${job.clubId}/trainingen/${mapId}/${veiligeNaam}`;
 

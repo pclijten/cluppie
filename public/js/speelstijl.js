@@ -7,9 +7,9 @@
      clubs/{id}/speelstijl/huidig                         vastgelegde uitkomst (speelstijl-logica huidigDoc)
      clubs/{id}/speelstijlRondes/{rondeId}                { naam, modus:'kort'|'volledig', status:'open'|'dicht', door, gemaaktMs }
      clubs/{id}/speelstijlRondes/{rondeId}/antwoorden/{uid} { rol, antwoorden, bijgewerktMs } */
-import { S, esc, meld } from './state.js?v=20261011g';
+import { S, esc, meld } from './state.js?v=20261023a';
 import { db, doc, collection, getDocs, setDoc } from './firebase.js?v=20261011g';
-import { rechtenVoor } from './seizoensplan-club.js?v=20261019f';
+import { rechtenVoor } from './seizoensplan-club.js?v=20261023a';
 import * as L from './speelstijl-logica.js?v=20261019e';
 
 const uidNu = () => S.user?.uid || '';

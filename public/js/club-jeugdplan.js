@@ -9,12 +9,12 @@
      clubs/{id}/seizoensplannen/{planId}/toewijzingen/{teamId}  { planVersie, aantal, overgeslagen, status, door, toegewezenMs }
      trainingen/{id}  — gegenereerd door toewijzen (bron 'seizoensplan', seizoensplanId, teams:[teamId])
    Alle writes merge:true. Rechten zelf staan in de rules; dit scherm toont alleen wat mag. */
-import { S, esc, meld } from './state.js?v=20261011g';
+import { S, esc, meld } from './state.js?v=20261023a';
 import { db, doc, collection, getDocs, setDoc, updateDoc, deleteField, query, where, writeBatch, serverTimestamp } from './firebase.js?v=20261011g';
-import { bouwNaam, catLabel, SEIZOEN_FALLBACK } from './config.js?v=20261011g';
+import { bouwNaam, catLabel, SEIZOEN_FALLBACK } from './config.js?v=20261023a';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019f';
-import { MODELLEN, ACCENTEN, beschikbareThemas, maandagVan, standaardVrij, weekKalender } from './seizoensplan-logica.js?v=20261019f';
-import { rechtenVoor, magVoorBouw, teamsVoorPlan, planVoorTeam, trainingDocs, bezetteWeken, JEUGDBOUWEN } from './seizoensplan-club.js?v=20261019f';
+import { MODELLEN, ACCENTEN, beschikbareThemas, maandagVan, standaardVrij, weekKalender } from './seizoensplan-logica.js?v=20261023a';
+import { rechtenVoor, magVoorBouw, teamsVoorPlan, planVoorTeam, trainingDocs, bezetteWeken, JEUGDBOUWEN } from './seizoensplan-club.js?v=20261023a';
 
 const VORMEN = BIBLIOTHEEK.vormen;
 const vandaagIso = () => new Date().toISOString().slice(0, 10);

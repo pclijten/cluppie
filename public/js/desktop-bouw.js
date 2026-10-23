@@ -8,15 +8,15 @@
    eigen teams opent desktop.js in de gewone teamschermen.
    Tekent in een eigen view (#view-dkbouw) binnen #app.
 =============================================================== */
-import { S, $, esc, meld, isBeheerder, toon } from './state.js?v=20261011g';
-import { BOUWEN, NIVEAUS, niveauKleur, bouwVanCategorie } from './config.js?v=20261011g';
+import { S, $, esc, meld, isBeheerder, toon } from './state.js?v=20261023a';
+import { BOUWEN, NIVEAUS, niveauKleur, bouwVanCategorie } from './config.js?v=20261023a';
 import { ico } from './icons.js?v=20260922c';
-import { analyseWedstrijd } from './analyse.js?v=20261011g';
-import { laadBouwData, zetBouwContext, presentiePctTeam, presentiePctWedstrijdTeam, uitslagenTeam, modalNieuweUitleningVanuitBouw } from './bouw-hub.js?v=20261021a';
-import { trekUitleningIn, definitiefOverzetten } from './teams-spelers.js?v=20261021a';
-import { htmlMeekijk } from './desktop-schermen.js?v=20261021a';
-import { rondeStatusTeam } from './evaluatierondes.js?v=20261011g';
-import { isSelectieBouw, htmlRadarBlok, htmlSelectieTegel, htmlSelectieScherm, selectieKlik, selectieInvoer } from './selectie-bouw.js?v=20261021a';
+import { analyseWedstrijd } from './analyse.js?v=20261023a';
+import { laadBouwData, zetBouwContext, presentiePctTeam, presentiePctWedstrijdTeam, uitslagenTeam, modalNieuweUitleningVanuitBouw } from './bouw-hub.js?v=20261023a';
+import { trekUitleningIn, definitiefOverzetten } from './teams-spelers.js?v=20261023a';
+import { htmlMeekijk } from './desktop-schermen.js?v=20261023a';
+import { rondeStatusTeam } from './evaluatierondes.js?v=20261023a';
+import { isSelectieBouw, htmlRadarBlok, htmlSelectieTegel, htmlSelectieScherm, selectieKlik, selectieInvoer } from './selectie-bouw.js?v=20261023a';
 
 const cache = new Map();          // 'clubId|bouw' → context uit laadBouwData
 const bezig = new Map();          // lopende laadacties
@@ -215,7 +215,7 @@ async function klik(e){
   const ctx = cache.get(huidig.clubId + '|' + huidig.bouw);
   const a = b.dataset.bk, id = b.dataset.id;
   if (a === 'ververs'){ await laadBouw(huidig.clubId, huidig.bouw, true); teken(); return; }
-  if (a === 'weekbrief'){ import('./club-weekbrief.js?v=20261011g').then(m => m.openWeekbrief(ctx?.teams || [], bouwNaamVan(huidig.bouw))); return; }
+  if (a === 'weekbrief'){ import('./club-weekbrief.js?v=20261023a').then(m => m.openWeekbrief(ctx?.teams || [], bouwNaamVan(huidig.bouw))); return; }
   if (a === 'naaruit'){ huidig.scherm = 'uit'; teken(); return; }
   if (a === 'selmaken'){ huidig.scherm = 'selmaken'; teken(); window.scrollTo(0, 0); return; }
   if (a === 'naardash'){ huidig.scherm = 'dash'; teken(); window.scrollTo(0, 0); return; }
