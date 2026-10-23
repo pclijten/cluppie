@@ -11,18 +11,18 @@
    alleen HTML + de opslaghulpjes voor de wedstrijd-presentie. Het importeert
    bewust NIET terug uit teams.js (geen circulaire import). */
 import { db, doc, updateDoc, deleteField } from './firebase.js?v=20261011g';
-import { S, esc, meld, datumNL, modAan, openModal } from './state.js?v=20261011g';
-import { AFWEZIG_REDENEN, afwezigRedenInfo, catLabel } from './config.js?v=20261011g';
+import { S, esc, meld, datumNL, modAan, openModal } from './state.js?v=20261023a';
+import { AFWEZIG_REDENEN, afwezigRedenInfo, catLabel } from './config.js?v=20261023a';
 import { ico } from './icons.js?v=20260922c';
-import { logoImg, primaireClubId } from './clubconfig.js?v=20261021a';
-import { analyseWedstrijd, WISSEL_BEURT } from './analyse.js?v=20261011g';
-import { telGebruik } from './tracker.js?v=20261011g';
-import { ongelezenBerichten } from './berichten.js?v=20261011g';
-import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261012a';
-import { htmlRondeBalk } from './evaluatierondes.js?v=20261011g';
-import { onderdeelAan } from './onderdelen.js?v=20261019i';
-import { eersteStappenPlaats } from './snelstart.js?v=20261021a';
-import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261011g';
+import { logoImg, primaireClubId } from './clubconfig.js?v=20261023a';
+import { analyseWedstrijd, WISSEL_BEURT } from './analyse.js?v=20261023a';
+import { telGebruik } from './tracker.js?v=20261023a';
+import { ongelezenBerichten } from './berichten.js?v=20261023a';
+import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261023a';
+import { htmlRondeBalk } from './evaluatierondes.js?v=20261023a';
+import { onderdeelAan } from './onderdelen.js?v=20261023a';
+import { eersteStappenPlaats } from './snelstart.js?v=20261023a';
+import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261023a';
 import { isAfgelast, telMee, soortPill, wedstrijdInfo, htmlAfgelastBanner, afgelastMeldingen, deelTekst } from './wedstrijd-status.js?v=20261012h';
 
 

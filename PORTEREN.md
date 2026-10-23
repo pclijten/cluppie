@@ -2,7 +2,7 @@
 
 Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
 
-## Stand (bijgewerkt 20-10-2026, versie 20261020e)
+## Stand (bijgewerkt 23-10-2026, versie 20261023a)
 - **Firestore-rules:** per club afgeschermd (teams, trainingen, video's, documenten, berichten via clublidmaatschap). Getest in de emulator: `npm run test:rules` (21 scenario's, laatst 20/20 groen op 11-10; de 21e is in 20261011f toegevoegd). Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.
 - **Cloud Functions:** live in `europe-west1` (Node 22, 2nd gen). Iedere nieuwe callable heeft na de eerste deploy de invoker `allUsers` nodig (`gcloud run services add-iam-policy-binding <naam-in-kleine-letters> …`), anders krijgt de app een CORS-/`internal`-fout.
 - **Tests:** `npm test` (17 suites, laatst 13-10 allemaal groen; nieuw: `vaste-afmeldingen`. Eerst één keer `cd functions && npm install`) en `node tests/toegang.test.js` (aansluiten/uitnodigen, 24 scenario's). Pariteit met ASV'33: `node tools/pariteit.mjs ../cluppieasv33` (10 verwachte verschillen in `bouw-hub.js`, `club.js` en `teams-spelers.js`: het overzetten loopt hier via de server; ASV'33 PR #5 is sinds 20261013a gepoort).
@@ -11,6 +11,12 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 
 ## Open
 **Voor Paul (console/terminal)**
+**Voor Paul — Plaatjes bij de juiste oefening (release 20261023a, branch `fix/plaatjes-herstel`, overgenomen uit ASV'33 PR #12, #13 en #14)**
+- [ ] PR reviewen en mergen. Alleen client: geen rules-, Storage- of functions-deploy nodig (beheerders en hoofd jeugd mogen `diagramUrls` al schrijven; Storage staat clublid-schrijven toe).
+- [ ] Hard verversen na het mergen (nieuwe `CACHE_VERSIE`).
+- [ ] Per club met oude uploads: Club → Trainingen als beheerder. Staat er een kaart ‘Plaatjes herstellen’, dan eenmaal op de knop drukken en de pagina open laten tot het klaar is. De plaatjes worden opnieuw uit de eigen PDF van elke training gemaakt; PDF, tekst en video's blijven. De oude, overschreven plaatjes zijn niet terug te halen.
+- [ ] Niet getest tegen echte Firebase en niet met een echte PDF; graag één training controleren na het herstellen.
+
 - [ ] Release 20261013b (branch `onderdelen-aan-uit`): PR reviewen en mergen. **Eerst** `npm run test:rules` draaien (Java nodig, kon hier niet), daarna deployen: `firebase deploy --only firestore:rules --project cluppie-ad329` en `firebase deploy --only functions:personaliseerTraining,functions:seizoensVoorstel --project cluppie-ad329`. Zonder die twee deploys kan een clubbeheerder de eindbaas-schakelaar nog omzeilen.
 - [x] Release 20261013a (branch `vaste-afmelding`, gemerged als PR #19): PR reviewen en mergen. Alleen client, geen rules- of functions-deploy voor de vaste afmelding. De bijgewerkte kennisbank (`functions/kennis.js`) gaat mee bij de eerstvolgende deploy van `chatHulp`: `firebase deploy --only functions:chatHulp --project cluppie-ad329`.
 - [ ] In ASV'33 (`cluppieasv33`): niets te doen voor de vaste afmelding (daar komt hij vandaan).

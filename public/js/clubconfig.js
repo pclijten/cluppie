@@ -28,10 +28,10 @@
 
    Een club-document zonder instellingen.v krijgt de neutrale standaard totdat de
    beheerder de waarden in Instellingen "vastlegt". */
-import { S, clubAfkorting } from './state.js?v=20261011g';
-import * as C from './config.js?v=20261011g';
+import { S, clubAfkorting } from './state.js?v=20261023a';
+import * as C from './config.js?v=20261023a';
 import { db, doc, getDoc } from './firebase.js?v=20261011g';
-import { zetContentClub } from './content.js?v=20261011g';
+import { zetContentClub } from './content.js?v=20261023a';
 import { weerVanTeam } from './snelstart-logica.js?v=20261020c';
 
 /* ---------- Standaardwaarden ---------- */

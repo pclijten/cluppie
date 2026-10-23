@@ -5,7 +5,7 @@ import {
 import {
   S, $, $$, esc, meld, mmss, uurMin, datumNL, speler, spelerNaam, spelerNr,
   openModal, sluitModal, toon, stopUnsubs, modAan, bewaarPositie
-} from './state.js?v=20261011g';
+} from './state.js?v=20261023a';
 import {
   FORMATIES, LIJN_NAAM, bouwSlots, slotLijn, catInfo, isToernooi,
   parseFormatie, formatieBestaat, formatieNamen, aantalVeldspelers,
@@ -14,17 +14,17 @@ import {
   clubFormatie11, doelSuggesties, isoWeek, SEIZOEN_FALLBACK,
   WISSEL_REDENEN, wisselReden, AFWEZIG_REDENEN, afwezigRedenInfo, slotPositieNaam,
   catLabel,
-} from './config.js?v=20261011g';
-import { kwartGespeeld, effectieveLineup, analyseKwart, analyseWedstrijd, speeltijdReserve, disciplinaireTijd, WISSEL_BEURT, analyseKwartVerwacht, analyseWedstrijdVerwacht } from './analyse.js?v=20261011g';
+} from './config.js?v=20261023a';
+import { kwartGespeeld, effectieveLineup, analyseKwart, analyseWedstrijd, speeltijdReserve, disciplinaireTijd, WISSEL_BEURT, analyseKwartVerwacht, analyseWedstrijdVerwacht } from './analyse.js?v=20261023a';
 import { ico } from './icons.js?v=20260922c';
-import { laadClubgids, zoekTegenstanders, plekVoor, pouleTeamnamen, clubVanTeam } from './clubgids.js?v=20261012h';
-import { aiAan, eigenClubTokens, voorbeeldTegenstander, beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261021a';
+import { laadClubgids, zoekTegenstanders, plekVoor, pouleTeamnamen, clubVanTeam } from './clubgids.js?v=20261023a';
+import { aiAan, eigenClubTokens, voorbeeldTegenstander, beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261023a';
 
-import { telGebruik, telNav } from './tracker.js?v=20261011g';
+import { telGebruik, telNav } from './tracker.js?v=20261023a';
 import { opkomstVoor, teltMee, MIN_OPKOMST_TRAININGEN } from './opkomst.js?v=20260922c';
-import { openInvoegSheet, bewaarWedstrijdAlsSjabloon, zetNaToepassenCallback } from './opstelling-sjabloon.js?v=20261021a';
+import { openInvoegSheet, bewaarWedstrijdAlsSjabloon, zetNaToepassenCallback } from './opstelling-sjabloon.js?v=20261023a';
 import { heeftElftallen, elftalWedstrijd, elftalNaam, hoortBijElftal, spelersVoorElftal, filterOpElftal,
-  elftalFilter, elftalFilterHtml } from './elftallen.js?v=20261011g';
+  elftalFilter, elftalFilterHtml } from './elftallen.js?v=20261023a';
 
 /* ==================== AANMAKEN ==================== */
 function leegKwart(){ return {lineup:{}, events:[], plan:[], correcties:{}, klok:{base:0, running:false, start:0}}; }
@@ -623,7 +623,7 @@ export function openWedstrijd(wid){
   if (!S.teamId || !wid){
     console.warn('[Cluppie] openWedstrijd afgebroken: ontbrekende teamId of wid', {teamId:S.teamId, wid});
     S.wedstrijdId = null;
-    if (S.teamId) import('./teams.js?v=20261021a').then(m => m.renderTeam?.());
+    if (S.teamId) import('./teams.js?v=20261023a').then(m => m.renderTeam?.());
     return;
   }
   S.wedstrijdId = wid; S.kwart = '1'; S.geselecteerd = null; S._confroOpen = false; S._wizardActief = false;
@@ -669,7 +669,7 @@ export function sluitWedstrijd(naarTab){
   verbergWijzigOpzet();
   if (typeof naarTab === 'string') S.teamTab = naarTab;
   bewaarPositie();
-  import('./teams.js?v=20261021a').then(m => { m.renderTeam(); toon('team'); });
+  import('./teams.js?v=20261023a').then(m => { m.renderTeam(); toon('team'); });
 }
 /* Speeltijd van INGELEENDE spelers in déze wedstrijd wegschrijven op het
    leen-record zelf (clubs/{clubId}/uitleningen/{leenId}), zodat het
@@ -2700,7 +2700,7 @@ export function htmlStats(){
 export function koppelStatsBlad(root){
   (root || document).querySelectorAll('[data-statsblad]').forEach(b => b.onclick = () => {
     S.statsBlad = b.dataset.statsblad;
-    import('./teams.js?v=20261021a').then(m => m.renderTeam?.());
+    import('./teams.js?v=20261023a').then(m => m.renderTeam?.());
   });
 }
 
@@ -3208,7 +3208,7 @@ ${confroHtml}
   const bsj = v.querySelector('#bewaarSjabloon');
   if (bsj) bsj.onclick = () => bewaarWedstrijdAlsSjabloon(w);
   const tbk = v.querySelector('#tactiekbordKnop');
-  if (tbk) tbk.onclick = () => import('./tactiekbord.js?v=20261011g').then(m => m.openTactiekLijst(w));
+  if (tbk) tbk.onclick = () => import('./tactiekbord.js?v=20261023a').then(m => m.openTactiekLijst(w));
   v.querySelector('#doelBanner').onclick = () => toonWijzigOpzet('doel');
   v.querySelector('#subFormatieKlik').onclick = (e) => { e.stopPropagation(); toonKwartFormatie(); };
   { const kfk = v.querySelector('#kwartFormatieKnop'); if (kfk) kfk.onclick = toonKwartFormatie; }
@@ -3235,7 +3235,7 @@ ${confroHtml}
   { const bwk = v.querySelector('#bijwerkKnop'); if (bwk) bwk.onclick = () => { S.bijwerkKwart = S.kwart; toonBijwerkScherm(); }; }
   const teamEvalKnop = v.querySelector('#teamEvalKnop');
   if (teamEvalKnop) teamEvalKnop.onclick = () => {
-    import('./teams.js?v=20261021a').then(m => m.modalTeamEvaluatie(S.wedstrijdId));
+    import('./teams.js?v=20261023a').then(m => m.modalTeamEvaluatie(S.wedstrijdId));
   };
   v.querySelectorAll('[data-corrigeer-goal]').forEach(b => b.onclick = e => {
     e.stopPropagation(); modalGoalCorrigeren(Number(b.dataset.corrigeerGoal));

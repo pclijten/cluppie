@@ -5,7 +5,7 @@
    bewerken, én het uitlenen van een speler aan een ander team binnen de
    club (thematisch dezelfde "speler"-context, vandaar in één bestand). */
 import { teamsOpId } from './teams-ophalen.js?v=20261011g';
-import { beleidsplanNaam, cfg } from './clubconfig.js?v=20261021a';
+import { beleidsplanNaam, cfg } from './clubconfig.js?v=20261023a';
 import {
   db, collection, doc, addDoc, deleteDoc, updateDoc, setDoc,
   getDoc, getDocs, query, where, serverTimestamp, documentId, deleteField,
@@ -13,29 +13,29 @@ import {
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, speler, uurMin, openModal, sluitModal, modAan, isBeheerder
-} from './state.js?v=20261011g';
+} from './state.js?v=20261023a';
 import {
   niveau, niveauKleur, NIVEAUS, SKILLS, skillDomein,
   LEERCURVE, leercurveRelevant, leercurveThema, snelTag, SNEL_TAGS,
   POSITIE_GROEPEN, SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo,
   wisselReden, isToernooi
-} from './config.js?v=20261011g';
-import { analyseWedstrijd, speeltijdReserve, disciplinaireTijd, telaatTijd, persoonlijkeNoemer } from './analyse.js?v=20261011g';
-import { isBouwCoordinator } from './coordinatoren.js?v=20261011g';
+} from './config.js?v=20261023a';
+import { analyseWedstrijd, speeltijdReserve, disciplinaireTijd, telaatTijd, persoonlijkeNoemer } from './analyse.js?v=20261023a';
+import { isBouwCoordinator } from './coordinatoren.js?v=20261023a';
 import { ico } from './icons.js?v=20260922c';
-import { rondesVoorTeam, rondeSpelers, datumKort } from './evaluatierondes.js?v=20261011g';
+import { rondesVoorTeam, rondeSpelers, datumKort } from './evaluatierondes.js?v=20261023a';
 
-import { toonThemaInfo } from './teams-leerlijn.js?v=20261021a';
-import { telGebruik } from './tracker.js?v=20261011g';
+import { toonThemaInfo } from './teams-leerlijn.js?v=20261023a';
+import { telGebruik } from './tracker.js?v=20261023a';
 import { opkomstVoor, teltMee } from './opkomst.js?v=20260922c';
-import { heeftElftallen, filterOpElftal, elftalPillen } from './elftallen.js?v=20261011g';
+import { heeftElftallen, filterOpElftal, elftalPillen } from './elftallen.js?v=20261023a';
 
 /* Cross-module her-render: teams.js importeert functies van hieruit, dus
    deze module mag teams.js niet statisch terug-importeren (circulaire
    import). Dynamic import() binnen de aanroepende functie is het patroon
    dat de rest van de app ook al gebruikt (zie club.js/wedstrijd.js). */
 async function herrenderTeam(){
-  const m = await import('./teams.js?v=20261021a');
+  const m = await import('./teams.js?v=20261023a');
   m.renderTeam();
 }
 

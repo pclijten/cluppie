@@ -5,8 +5,8 @@
    Het versturen blokkeert nooit en meldt nooit een fout: de app werkt hetzelfde zonder.
    De server controleert beide schakelaars opnieuw (functions/leren.js). */
 import { functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S } from './state.js?v=20261011g';
-import { cfg } from './clubconfig.js?v=20261021a';
+import { S } from './state.js?v=20261023a';
+import { cfg } from './clubconfig.js?v=20261023a';
 
 export function lerenAan(){
   return !!(S._clubPlatform && S._clubPlatform.platformModules && S._clubPlatform.platformModules.leren === true)

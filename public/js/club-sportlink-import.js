@@ -10,9 +10,9 @@
    team zonder zichzelf aanmaken); coaches komen binnen via de teamlink. */
 
 import { db, doc, getDoc, collection, writeBatch, serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal, teamCode } from './state.js?v=20261011g';
-import { CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, bouwVanCategorie, catLabel } from './config.js?v=20261011g';
-import { clubAfk } from './clubconfig.js?v=20261021a';
+import { S, esc, meld, openModal, sluitModal, teamCode } from './state.js?v=20261023a';
+import { CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, bouwVanCategorie, catLabel } from './config.js?v=20261023a';
+import { clubAfk } from './clubconfig.js?v=20261023a';
 import { eigenClubPatronen, teamSleutel } from './sportlink-sleutel.js?v=20261011d';
 
 const BOUW_NAAM = { onder: 'Onderbouw', midden: 'Middenbouw', boven: 'Bovenbouw' };
