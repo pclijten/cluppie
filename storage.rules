@@ -10,18 +10,23 @@ service firebase.storage {
         && (club(c).get('leden', {}).get(request.auth.uid, false) == true
             || club(c).get('admins', {}).get(request.auth.uid, false) == true);
     }
+    /* [20261103] trainingscoördinator: alleen lezen van trainingen (pdf en plaatjes) en video's */
+    function trainco(c) {
+      return ingelogd() && firestore.exists(/databases/(default)/documents/clubs/$(c))
+        && club(c).get('trainingscoordinatoren', {}).get(request.auth.uid, false) == true;
+    }
     function beheerder(c) {
       return ingelogd() && firestore.exists(/databases/(default)/documents/clubs/$(c))
         && club(c).get('admins', {}).get(request.auth.uid, false) == true;
     }
 
     match /clubs/{clubId}/videos/{f} {
-      allow read: if lid(clubId);
+      allow read: if lid(clubId) || trainco(clubId);
       allow write: if lid(clubId) && request.resource.size < 300 * 1024 * 1024 && request.resource.contentType.matches('video/.*');
       allow delete: if beheerder(clubId);
     }
     match /clubs/{clubId}/trainingvideos/{t}/{f} {
-      allow read: if lid(clubId);
+      allow read: if lid(clubId) || trainco(clubId);
       allow write: if lid(clubId) && request.resource.size < 300 * 1024 * 1024 && request.resource.contentType.matches('video/.*');
       allow delete: if lid(clubId);
     }
@@ -31,7 +36,7 @@ service firebase.storage {
       allow delete: if beheerder(clubId);
     }
     match /clubs/{clubId}/trainingen/{m}/{f} {
-      allow read: if lid(clubId);
+      allow read: if lid(clubId) || trainco(clubId);
       allow write: if lid(clubId) && request.resource.size < 50 * 1024 * 1024;
       allow delete: if lid(clubId);
     }

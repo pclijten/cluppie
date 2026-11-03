@@ -19,10 +19,10 @@
    ============================================================================ */
 
 import { functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc } from './state.js?v=20261023a';
-import { telGebruik } from './tracker.js?v=20261023a';
-import { aiAan } from './clubconfig.js?v=20261023a';
-import { startOnboarding, startOnboardingHoofdstuk, heeftOnboardingHoofdstuk } from './onboarding.js?v=20261023a';
+import { S, esc } from './state.js?v=20261103b';
+import { telGebruik } from './tracker.js?v=20261103b';
+import { aiAan } from './clubconfig.js?v=20261103b';
+import { startOnboarding, startOnboardingHoofdstuk, heeftOnboardingHoofdstuk } from './onboarding.js?v=20261103b';
 
 /* Sessiegeschiedenis — leeft alleen zolang de app open is. */
 let berichten = [];   // [{role:'user'|'assistant', content:'...'}]

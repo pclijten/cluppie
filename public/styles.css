@@ -6147,3 +6147,208 @@ h3.tm-kop2{font-size:calc(20px * var(--fs))}
 .pf-coach-meta{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
 .pf-nieuw{font-size:calc(11px * var(--fs));font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:2px 7px;border-radius:99px;color:var(--accent);background:color-mix(in srgb, var(--accent) 14%, transparent)}
 @media (max-width:640px){.pf-coach{grid-template-columns:1fr}}
+
+
+/* ===== [20261102] Trainingsmomenten (teambeheer) ===== */
+.tmo-lijst{display:flex;flex-direction:column;gap:10px}
+.tmo-rij{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.tmo-rij .tmo-dag{flex:1 1 140px;min-width:130px;min-height:44px}
+.tmo-rij .tmo-tijd{flex:0 0 112px;min-height:44px}
+.tmo-tot{color:var(--ink-2);font-size:calc(14px * var(--fs))}
+.tmo-weg{width:44px;height:44px;border-radius:10px;border:1px solid var(--line-d);background:transparent;color:#ff8a84;font:inherit;cursor:pointer}
+.tmo-let{color:var(--warn)}
+
+/* ===== [20261103] Trainingscoördinator-app =====
+   Volgt de vormtaal van de app: kaart/knop/segment/sectie-kop uit de basis,
+   een zijbalk zoals #zijbalk op desktop en een onderbalk op mobiel. */
+.tc-app{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);overflow:hidden}
+.tc-app *{box-sizing:border-box}
+.tc-app a{color:inherit}
+.tc-schil{display:flex;flex:1;min-height:0}
+.tc-hoofd{flex:1;min-width:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+.tc-inhoud-wrap{max-width:1320px;margin:0 auto;padding:12px 14px 24px}
+.tc-voorbeeld{position:relative;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:8px 14px;background:var(--accent);color:#fff;font-size:calc(13.5px * var(--fs));font-weight:600}
+
+/* mobiel: bovenbalk + onderbalk */
+.tc-balk{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:10px;padding:calc(8px + env(safe-area-inset-top,0px)) 14px 8px;background:var(--surface);border-bottom:1px solid var(--line-d)}
+.tc-balk img,.tc-merk img{width:34px;height:34px;object-fit:contain;flex-shrink:0}
+.tc-balk span,.tc-merk span{display:flex;flex-direction:column;flex:1;min-width:0}
+.tc-balk b,.tc-merk b{font-size:20px;font-weight:700;line-height:1.05;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tc-balk small,.tc-merk small{font-size:11.5px;color:var(--ink-2)}
+.tc-uit{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;color:var(--ink-2);background:transparent;border:0;flex-shrink:0}
+.tc-uit:hover{background:var(--op-vlak);color:var(--ink)}
+.tc-onder{position:fixed;left:0;right:0;bottom:0;z-index:5;display:flex;background:var(--surface);border-top:1px solid var(--line-d);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px))}
+.tc-onder button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;min-height:52px;padding:4px 2px;border:0;background:transparent;color:var(--ink-2);font-size:calc(11.5px * var(--fs));font-weight:600;border-radius:10px}
+.tc-onder button.actief{color:var(--accent)}
+
+/* desktop: zijbalk zoals #zijbalk */
+.tc-zij{display:none}
+@media (min-width:1000px){
+  .tc-balk,.tc-onder{display:none}
+  .tc-hoofd{padding-bottom:0}
+  .tc-inhoud-wrap{padding:24px 32px 40px}
+  .tc-zij{display:flex;flex-direction:column;width:256px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--line-d);padding:12px 10px 10px}
+  .tc-merk{display:flex;align-items:center;gap:10px;padding:6px;margin-bottom:10px}
+  .tc-nav{flex:1;overflow-y:auto}
+  .tc-navkop{font-size:11.5px;font-weight:600;color:var(--ink-2);opacity:.8;padding:7px 10px 2px}
+  .tc-link{display:flex;align-items:center;gap:10px;width:100%;padding:7px 10px;border:0;border-radius:8px;background:transparent;color:var(--ink-2);font-size:14px;font-weight:500;text-align:left}
+  .tc-link:hover{background:var(--op-vlak);color:var(--ink)}
+  .tc-link.actief{background:var(--op-vlak-2);color:var(--ink);font-weight:600}
+  .tc-link.actief svg{color:var(--accent)}
+  .tc-terugapp{margin-bottom:6px;color:var(--ink)}
+  .tc-ik{display:flex;align-items:center;gap:10px;border-top:1px solid var(--line-d);padding:10px 0 0 4px}
+  .tc-ik > span:nth-child(2){flex:1;min-width:0;display:flex;flex-direction:column}
+  .tc-ik b{font-size:13px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tc-ik small{font-size:11.5px;color:var(--ink-2)}
+  .tc-avatar{width:32px;height:32px;border-radius:50%;background:var(--op-vlak-2);display:grid;place-items:center;font-weight:700;font-size:13px;color:var(--ink);flex-shrink:0}
+}
+
+/* kop, filters, weeknavigatie */
+.tc-kop{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:4px 0 12px}
+.tc-meta{font-size:calc(12.5px * var(--fs));color:var(--ink-2)}
+.tc-h1{margin:2px 0 0;font-size:calc(30px * var(--fs));font-weight:700;line-height:1.05;text-transform:uppercase;color:var(--ink)}
+.tc-h2{margin:2px 0 8px;font-size:calc(21px * var(--fs));font-weight:700;line-height:1.1;text-transform:uppercase;color:var(--ink)}
+@media (min-width:1000px){ .tc-h1{font-size:calc(38px * var(--fs))} }
+.tc-filters{display:flex;gap:6px;overflow-x:auto;padding:3px;margin-bottom:12px;background:var(--surface-2);border-radius:11px;scrollbar-width:none}
+.tc-filters::-webkit-scrollbar{display:none}
+.tc-filter{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:9px 12px;border:0;border-radius:9px;background:transparent;color:var(--ink-2);font-weight:600;font-size:calc(14px * var(--fs));white-space:nowrap}
+.tc-filter span{font-size:12px;opacity:.75}
+.tc-filter.actief{background:var(--accent);color:#fff}
+.tc-weeknav{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.tc-weektitel{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center}
+.tc-weektitel b{font-size:calc(22px * var(--fs));font-weight:700;text-transform:uppercase;color:var(--ink);line-height:1.05}
+.tc-weektitel small{font-size:12.5px;color:var(--ink-2)}
+.tc-rond{width:44px;height:44px;padding:0;border-radius:50%}
+.tc-vandaag{flex-shrink:0}
+.tc-leeg{text-align:center;color:var(--ink-2);padding:28px 16px}
+.tc-leeg-klein{font-size:calc(13.5px * var(--fs));color:var(--ink-2);padding:4px 2px}
+.tc-app em{font-style:normal;color:var(--warn)}
+
+/* weekplanning */
+.tc-dagen{display:grid;grid-template-columns:1fr;gap:12px}
+@media (min-width:760px){ .tc-dagen{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))} }
+.tc-dag{margin:0;display:flex;flex-direction:column;gap:8px}
+.tc-dag-kop{display:flex;align-items:baseline;gap:8px;color:var(--ink-2);font-size:13px}
+.tc-dag-kop b{font-size:calc(19px * var(--fs));font-weight:700;text-transform:uppercase;color:var(--ink)}
+.tc-dag-tel{margin-left:auto;min-width:22px;text-align:center;border-radius:999px;background:var(--surface-2);font-weight:700;color:var(--ink)}
+.tc-dag-tel:empty{display:none}
+.tc-slot{display:flex;align-items:center;gap:10px;width:100%;padding:10px;border:1px solid var(--line-d);border-radius:10px;background:var(--surface-2);color:var(--ink);text-align:left}
+.tc-slot:hover{border-color:var(--accent)}
+.tc-slot-tijd{flex:0 0 auto;min-width:74px;font-weight:700;font-size:13px;color:var(--ink)}
+.tc-slot-tekst{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.tc-slot-tekst b{font-size:calc(18px * var(--fs));font-weight:700;line-height:1.05}
+.tc-slot-tekst span{font-size:13px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tc-slot-tekst small,.tc-teamrij small{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-2)}
+.tc-slot-pijl{color:var(--ink-2)}
+
+/* overzichtstabel */
+.tc-samenvatting{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
+.tc-samenvatting .kaart{margin:0;display:flex;flex-direction:column;padding:10px 12px}
+.tc-samenvatting b{font-size:calc(26px * var(--fs));font-weight:700;line-height:1;color:var(--ink)}
+.tc-samenvatting span{font-size:12px;color:var(--ink-2)}
+.tc-samenvatting .s-mist b{color:var(--accent)}
+.tc-legenda{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0 0 10px;font-size:12.5px;color:var(--ink-2)}
+.tc-legenda span::before{content:'';display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-2px}
+.tc-legenda .l-ok::before{background:color-mix(in srgb,var(--in) 22%,var(--surface));border:1px solid var(--in)}
+.tc-legenda .l-mist::before{background:color-mix(in srgb,var(--accent) 18%,var(--surface));border:1px solid var(--accent)}
+.tc-legenda .l-leeg::before{background:var(--surface-2);border:1px solid var(--line-d)}
+.tc-tabelwrap{overflow:auto;background:var(--surface);border:1px solid var(--line-d);border-radius:var(--radius);max-height:calc(100vh - 260px)}
+.tc-tabel{border-collapse:separate;border-spacing:0;width:100%;min-width:640px;font-size:calc(13px * var(--fs))}
+.tc-tabel th,.tc-tabel td{padding:6px;border-bottom:1px solid var(--line-d);text-align:center;vertical-align:middle}
+.tc-tabel thead th{position:sticky;top:0;z-index:2;background:var(--surface);font-weight:700;color:var(--ink);text-transform:uppercase;font-size:12px}
+.tc-tabel thead th small{display:block;font-weight:400;text-transform:none;color:var(--ink-2)}
+.tc-tabel .tc-teamcel{position:sticky;left:0;z-index:1;background:var(--surface);text-align:left;min-width:140px;border-right:1px solid var(--line-d)}
+.tc-tabel thead .tc-teamcel{z-index:3}
+.tc-teamcel b{display:block;font-size:calc(17px * var(--fs));font-weight:700;color:var(--ink);line-height:1.1}
+.tc-teamcel small{display:block;font-weight:400;font-size:11.5px;color:var(--ink-2)}
+.tc-groeprij th{position:sticky;left:0;text-align:left;background:var(--surface-2);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-2)}
+.tc-cel{min-width:96px}
+@media (max-width:600px){ .tc-tabel .tc-teamcel{min-width:104px} .tc-teamcel b{font-size:calc(15px * var(--fs))} }
+.tc-cel button,.tc-cel span{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:100%;min-height:44px;padding:5px 6px;border-radius:8px;border:1px solid transparent;font-size:12.5px;line-height:1.2}
+.tc-cel button + button{margin-top:4px}
+.tc-cel b{font-weight:600;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.tc-cel small{font-size:11px;opacity:.8}
+.tc-cel.c-ok button{background:color-mix(in srgb,var(--in) 18%,var(--surface));border-color:color-mix(in srgb,var(--in) 55%,transparent);color:var(--ink)}
+.tc-cel.c-ok button:hover{border-color:var(--in)}
+.tc-cel.c-mist span{background:color-mix(in srgb,var(--accent) 15%,var(--surface));border-color:color-mix(in srgb,var(--accent) 60%,transparent);color:var(--accent)}
+.tc-cel.c-leeg span{color:var(--ink-2);opacity:.6}
+.tc-zonderdag{display:block;margin-top:4px;padding:3px 8px;border-radius:6px;border:1px solid var(--warn);background:transparent;color:var(--warn);font-size:11.5px;text-align:left}
+
+/* trainingen */
+.tc-raster{display:grid;grid-template-columns:1fr;gap:12px}
+@media (min-width:760px){ .tc-raster{grid-template-columns:repeat(2,1fr)} }
+@media (min-width:1300px){ .tc-raster{grid-template-columns:repeat(3,1fr)} }
+.tc-trkaart{margin:0;display:flex;flex-direction:column;gap:8px}
+.tc-labels{display:flex;flex-wrap:wrap;gap:6px}
+.tc-labels:empty{display:none}
+.tc-label{padding:3px 9px;border-radius:999px;background:var(--surface-2);font-size:12px;font-weight:600;color:var(--ink-2)}
+.tc-label.wacht{display:inline-block;margin-top:6px;background:transparent;border:1px solid var(--warn);color:var(--warn)}
+.tc-teams{display:flex;flex-direction:column;gap:6px;flex:1}
+.tc-teamrij{display:grid;grid-template-columns:auto 1fr;gap:0 10px;align-items:center;padding:8px 10px;border-radius:10px;background:var(--surface-2)}
+.tc-teamrij b{grid-row:span 2;font-size:calc(18px * var(--fs));font-weight:700;color:var(--ink);min-width:58px}
+.tc-teamrij > span{font-size:13px;color:var(--ink)}
+.tc-knop-vol{width:100%;background:var(--accent);color:#fff;text-decoration:none}
+
+/* weekscherm */
+.tc-mini{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:0;border:0;background:transparent;border-radius:10px;overflow:hidden}
+.tc-mini img{width:100%;aspect-ratio:4/3;object-fit:cover;background:#fff;border-radius:6px}
+.tc-teamchips{display:flex;flex-wrap:wrap;gap:5px;flex:1;align-content:flex-start}
+.tc-teamchips span{padding:3px 8px;border-radius:7px;background:var(--surface-2);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:calc(15px * var(--fs));color:var(--ink)}
+.tc-samenvatting button.kaart{border:1px solid var(--line-d);text-align:left;color:var(--ink);cursor:pointer}
+.tc-samenvatting button.kaart:disabled{cursor:default}
+.tc-mistknop.s-mist{border-color:color-mix(in srgb,var(--accent) 50%,var(--line-d))}
+.tc-mistknop.actief{background:color-mix(in srgb,var(--accent) 12%,var(--surface));border-color:var(--accent)}
+.tc-schemakop{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:6px}
+.tc-schemaknop{min-width:220px}
+.tc-slot-mist{border-color:color-mix(in srgb,var(--accent) 55%,transparent);background:color-mix(in srgb,var(--accent) 10%,var(--surface));cursor:default}
+.tc-slot-mist .tc-slot-tekst span{color:var(--accent);font-weight:600}
+/* trainingen per trainingsnummer */
+.tc-blokken{margin-top:18px}
+.tc-blokken + .tc-blokken{margin-top:28px;padding-top:18px;border-top:2px solid var(--line-d)}
+.tc-blokkop{display:flex;align-items:baseline;gap:10px;margin:0 0 10px}
+.tc-blokkop b{font-size:calc(26px * var(--fs));font-weight:700;text-transform:uppercase;color:var(--ink);line-height:1;padding-left:10px;border-left:4px solid var(--accent)}
+.tc-blokkop span{font-size:13px;color:var(--ink-2)}
+.tc-trtitel{margin:0;font-size:calc(24px * var(--fs));letter-spacing:.3px}
+.tc-hoofdteams{display:flex;flex-wrap:wrap;align-items:center;gap:4px 0;margin-top:-4px;font-size:calc(13px * var(--fs));font-weight:600;color:var(--ink-2)}
+.tc-hoofdteams span + span::before{content:'·';margin:0 6px;color:var(--accent);font-weight:700}
+.tc-teamlijst{flex:1;font-size:calc(12px * var(--fs));color:var(--ink-2);line-height:1.45}
+.tc-teamchips span{font-size:calc(13px * var(--fs));padding:2px 7px}
+/* video's */
+.tc-videos{display:grid;grid-template-columns:1fr;gap:12px}
+@media (min-width:760px){ .tc-videos{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))} }
+.tc-video{margin:0;padding:0;overflow:hidden;display:flex;flex-direction:column;text-decoration:none;color:var(--ink)}
+.tc-video-beeld{position:relative;display:grid;place-items:center;aspect-ratio:16/9;background:var(--surface-2);color:var(--ink-2)}
+.tc-video-beeld img{width:100%;height:100%;object-fit:cover}
+.tc-video-beeld i{position:absolute;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.6);color:#fff;font-style:normal;font-size:18px}
+.tc-video-tekst{display:flex;flex-direction:column;gap:3px;padding:10px 12px 12px}
+.tc-video-tekst b{font-weight:600}
+.tc-video-tekst small{font-size:12.5px;color:var(--ink-2)}
+
+/* training-detail */
+.tc-terug{margin:2px 0 6px}
+.tc-inhoud.trw-nav{top:calc(51px + env(safe-area-inset-top,0px));margin:0 -14px 12px;background:var(--bg);border-bottom:1px solid var(--line-d)}
+.tc-inhoud .trw-chip{text-decoration:none}
+.tc-anker{scroll-margin-top:118px}
+@media (min-width:1000px){ .tc-anker{scroll-margin-top:70px} }
+.tc-detail{display:flex;flex-direction:column;gap:14px}
+.tc-detail-hoofd{min-width:0}
+.tc-detail-zij{display:flex;flex-direction:column;gap:12px}
+.tc-detail-zij .kaart{margin:0;display:flex;flex-direction:column;gap:6px}
+.tc-vormen{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.tc-vorm{margin:0;padding:0;overflow:hidden;display:flex;flex-direction:column;text-align:left;border:1px solid var(--line-d);cursor:zoom-in}
+.tc-vorm img{width:100%;aspect-ratio:4/3;object-fit:contain;background:#fff}
+.tc-vorm span{padding:8px 10px;font-weight:600;font-size:calc(13.5px * var(--fs));color:var(--ink)}
+.tc-oefeningen .trw-oef{background:var(--surface);border:1px solid var(--line-d);box-shadow:none}
+.tc-pdfnaam{margin:0;font-size:13px;color:var(--ink-2);word-break:break-word}
+@media (min-width:1000px){
+  .tc-inhoud.trw-nav{top:0;margin:0 -32px 14px;padding:10px 32px}
+  .tc-detail{flex-direction:row;align-items:flex-start}
+  .tc-vormen{grid-template-columns:repeat(4,1fr)}
+  .tc-detail-hoofd{flex:1}
+  .tc-detail-zij{flex:0 0 340px;position:sticky;top:64px}
+}
+
+
+/* Coaches verwijderen / aanmeldingen weigeren (clubbeheer) */
+.cb-coachrij,.cb-persoon{align-items:center}
+.cb-verwijder{margin-left:auto;flex:0 0 auto;min-height:40px}

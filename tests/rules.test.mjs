@@ -4,7 +4,7 @@
 import { test, before, after, beforeEach } from 'node:test';
 import fs from 'node:fs';
 import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, updateDoc, getDocs, collection, query, where, Timestamp, deleteDoc, documentId } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, getDocs, collection, query, where, Timestamp, deleteDoc, deleteField, documentId } from 'firebase/firestore';
 
 let env;
 const PLATFORM = { email: 'pclijten@gmail.com', email_verified: true };
@@ -248,4 +248,44 @@ test('ondersteuning: alleen de eindbaas, en het document is niet door een client
   await assertFails(setDoc(doc(als('paul', PLATFORM), 'ondersteuning/paul'), { clubId: 'A', tot: morgen }));
   await assertSucceeds(getDoc(doc(als('coachA'), 'ondersteuning/coachA')));
   await assertFails(getDoc(doc(als('coachB'), 'ondersteuning/coachA')));
+});
+
+/* ---------- [20261103] trainingscoördinator ---------- */
+test('trainingscoördinator: leest club, teams, trainingen en video\'s; geen spelers, geen schrijven, andere club dicht', async () => {
+  await env.withSecurityRulesDisabled(async ctx => {
+    const db = ctx.firestore();
+    await updateDoc(doc(db, 'clubs/A'), { trainingscoordinatoren: { tcA: true }, trainingscoordinatorenInfo: { tcA: { naam: 'Tom' } } });
+    await setDoc(doc(db, 'videos/v1'), { club: 'A', titel: 'Video' });
+    await setDoc(doc(db, 'documenten/dc1'), { club: 'A', titel: 'Doc' });
+    await setDoc(doc(db, 'trainingen/tr1/onderdelen/o1'), { tekst: 'x' });
+  });
+  const tc = als('tcA');
+  await assertSucceeds(getDoc(doc(tc, 'clubs/A')));
+  await assertSucceeds(getDocs(query(collection(tc, 'clubs'), where('trainingscoordinatoren.tcA', '==', true))));
+  await assertSucceeds(getDoc(doc(tc, 'teams/t1')));
+  await assertSucceeds(getDocs(query(collection(tc, 'teams'), where('club', '==', 'A'))));
+  await assertSucceeds(getDoc(doc(tc, 'trainingen/tr1')));
+  await assertSucceeds(getDocs(query(collection(tc, 'trainingen'), where('club', '==', 'A'))));
+  await assertSucceeds(getDocs(query(collection(tc, 'videos'), where('club', '==', 'A'))));
+  await assertSucceeds(getDoc(doc(tc, 'trainingen/tr1/onderdelen/o1')));
+  /* niet: spelers en andere teamgegevens, documenten, een andere club, en elke schrijfactie */
+  await assertFails(getDocs(collection(tc, 'teams/t1/spelers')));
+  await assertFails(getDoc(doc(tc, 'teams/t1/spelers/s1')));
+  await assertFails(getDoc(doc(tc, 'teams/t1/beoordelingen/b1')));
+  await assertFails(getDoc(doc(tc, 'documenten/dc1')));
+  await assertFails(getDoc(doc(tc, 'clubs/B')));
+  await assertFails(getDoc(doc(tc, 'teams/tB')));
+  await assertFails(updateDoc(doc(tc, 'teams/t1'), { naam: 'x' }));
+  await assertFails(updateDoc(doc(tc, 'clubs/A'), { trainingscoordinatoren: { tcA: true, tcA2: true } }));
+  await assertFails(setDoc(doc(tc, 'videos/v2'), { club: 'A', titel: 'x' }));
+  await assertFails(updateDoc(doc(tc, 'trainingen/tr1'), { titel: 'x' }));
+});
+test('trainingscoördinator: zonder toekenning geen toegang, en zelf toekennen kan niet', async () => {
+  await assertFails(getDocs(query(collection(als('stranger'), 'teams'), where('club', '==', 'A'))));
+  await assertFails(updateDoc(doc(als('coachA'), 'clubs/A'), { 'trainingscoordinatoren.coachA': true }));
+  await assertFails(updateDoc(doc(als('stranger'), 'clubs/A'), { 'trainingscoordinatoren.stranger': true }));
+});
+test('trainingscoördinator: clubbeheerder mag toekennen en intrekken', async () => {
+  await assertSucceeds(updateDoc(doc(als('adminA'), 'clubs/A'), { 'trainingscoordinatoren.tcA': true }));
+  await assertSucceeds(updateDoc(doc(als('adminA'), 'clubs/A'), { 'trainingscoordinatoren.tcA': deleteField() }));
 });

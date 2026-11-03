@@ -11,10 +11,10 @@ import {
   auth, db, functions, httpsCallable,
   collection, doc, getDoc, getDocs, query, where
 } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261023a';
+import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261103b';
 import { stuurVerificatieMail } from './verificatie.js?v=20261020e';
-import { bewaar } from './club-instellingen.js?v=20261023a';
-import { effectief } from './clubconfig.js?v=20261023a';
+import { bewaar } from './club-instellingen.js?v=20261103b';
+import { effectief } from './clubconfig.js?v=20261103b';
 
 export const PRIVACY_VERSIE = '2026-10';
 const roep = (naam, data) => httpsCallable(functions, naam)(data || {}).then(r => r.data);
@@ -88,8 +88,10 @@ export function toonAanvraagVerstuurd(res){
   openModal(`
     <h2>Aanvraag verstuurd</h2>
     <p style="font-size:calc(13.5px * var(--fs));color:var(--ink-2);line-height:1.5;margin-bottom:12px">
-      Je aanvraag voor <b>${esc(res.naam || res.clubNaam || 'het team')}</b>${res.clubNaam && res.naam ? ' bij ' + esc(res.clubNaam) : ''} is verstuurd.
-      Zodra een coach of beheerder van de club hem goedkeurt, zie je het team in de app.</p>
+      ${res.rol === 'trainco'
+        ? `Je aanmelding als trainingscoördinator${res.clubNaam ? ' bij <b>' + esc(res.clubNaam) + '</b>' : ''} is verstuurd. Zodra een beheerder van de club je accepteert, kun je de trainingen bekijken.`
+        : `Je aanvraag voor <b>${esc(res.naam || res.clubNaam || 'het team')}</b>${res.clubNaam && res.naam ? ' bij ' + esc(res.clubNaam) : ''} is verstuurd.
+      Zodra een coach of beheerder van de club hem goedkeurt, zie je het team in de app.`}</p>
     <button class="knop vol" id="avOk">Begrepen</button>`);
   document.getElementById('avOk').onclick = sluitModal;
 }
@@ -192,7 +194,7 @@ export async function koppelToegang(v, herteken){
   /* --- aanvragen --- */
   const html2 = kaart(`Aanvragen${aanvragen.length ? ` (${aanvragen.length})` : ''}`, aanvragen.length ? aanvragen.map(a => `
     <div style="${rijStijl};flex-wrap:wrap">
-      <div style="flex:1;min-width:150px"><b>${esc(a.naam)}</b><div class="cb-uitleg" style="margin:0">${esc(a.teamNaam || 'club')} · ${datumKort(a.gemaakt)}</div></div>
+      <div style="flex:1;min-width:150px"><b>${esc(a.naam)}</b><div class="cb-uitleg" style="margin:0">${esc(a.rol === 'trainco' ? 'trainingscoördinator' : (a.teamNaam || 'club'))} · ${datumKort(a.gemaakt)}</div></div>
       <button class="knop klein" data-ar-goed="${esc(a.uid)}">Goedkeuren</button>
       <button class="knop licht klein" data-ar-af="${esc(a.uid)}">Afwijzen</button>
     </div>`).join('') : '<p class="cb-uitleg" style="margin:0">Geen openstaande aanvragen.</p>');
@@ -275,9 +277,11 @@ export async function koppelToegang(v, herteken){
   q('#tgOpslaan').onclick = (e) => klaar(() => bewaar([['toegang', {
     goedkeuring: q('#tgGoed').checked, standaardRol: 'coach', vasteCodes: q('#tgVast') ? q('#tgVast').checked : T.vasteCodes, ondersteuning: q('#tgOnd').checked }]]), e.currentTarget, 'Opgeslagen');
 
+  /* een aanmelding als trainingscoördinator heeft een eigen aanvraagdocument */
+  const soortVan = uid => aanvragen.some(a => a.uid === uid && a.rol === 'trainco') && !aanvragen.some(a => a.uid === uid && a.rol !== 'trainco') ? { soort: 'trainco' } : {};
   qa('[data-ar-goed]').forEach(b => b.onclick = () => klaar(() =>
-    roep('beoordeelAanvraag', { clubId, uid: b.dataset.arGoed, besluit: 'goed', rol: 'coach' }), b, 'Goedgekeurd'));
-  qa('[data-ar-af]').forEach(b => b.onclick = () => klaar(() => roep('beoordeelAanvraag', { clubId, uid: b.dataset.arAf, besluit: 'af' }), b, 'Afgewezen'));
+    roep('beoordeelAanvraag', { clubId, uid: b.dataset.arGoed, besluit: 'goed', rol: 'coach', ...soortVan(b.dataset.arGoed) }), b, 'Goedgekeurd'));
+  qa('[data-ar-af]').forEach(b => b.onclick = () => klaar(() => roep('beoordeelAanvraag', { clubId, uid: b.dataset.arAf, besluit: 'af', ...soortVan(b.dataset.arAf) }), b, 'Afgewezen'));
 
   q('#tgInvMaak').onclick = (e) => klaar(async () => {
     const teamId = q('#tgInvTeam').value || null;
@@ -299,7 +303,7 @@ export async function koppelToegang(v, herteken){
     klaar(() => roep('verwijderLid', { clubId, uid: b.dataset.lidWeg }), b, 'Uitgeschreven');
   });
 
-  q('#pvVoLees')?.addEventListener('click', () => import('./club.js?v=20261023a').then(m => m.modalVerwerkersovereenkomst()));
+  q('#pvVoLees')?.addEventListener('click', () => import('./club.js?v=20261103b').then(m => m.modalVerwerkersovereenkomst()));
   q('#pvOpslaan').onclick = (e) => klaar(async () => {
     const wijz = [
       ['privacy.contactNaam', q('#pvNaam').value.trim()], ['privacy.contactEmail', q('#pvMail').value.trim()],

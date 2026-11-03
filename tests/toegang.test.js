@@ -63,6 +63,29 @@ const throws = async (f, code, m) => { try { await f(); ok(false, m + ' (geen fo
   await T.verwijderLid(req('adm', { clubId: 'c1', uid: 'u6' }));
   ok(!store.get('teams/t2').leden.u6 && !store.get('clubs/c1').leden.u6 && !store.get('teams/t2').rollen.u6, 'lid volledig verwijderd');
   await throws(() => T.verwijderLid(req('adm', { clubId: 'c1', uid: 'adm' })), 'failed-precondition', 'enige admin niet verwijderbaar');
+  // 11 trainingscoördinator: aanmelding via persoonlijke uitnodiging, altijd met aanvraag, nooit clublid
+  await throws(() => T.maakUitnodiging(req('coachA', { clubId: 'c1', rol: 'trainco' })), 'permission-denied', 'coach mag geen coördinator-uitnodiging maken');
+  await throws(() => T.maakUitnodiging(req('adm', { clubId: 'c1', teamId: 't1', rol: 'trainco' })), 'permission-denied', 'coördinator-uitnodiging geldt voor de hele club');
+  const tinv = await T.maakUitnodiging(req('adm', { clubId: 'c1', rol: 'trainco', geldigDagen: 30, maxGebruik: 3 }));
+  ok(store.get(`uitnodigingen/${tinv.id}`).rol === 'trainco', 'uitnodiging heeft rol trainco');
+  const tr1 = await T.sluitAan(req('tc1', { code: tinv.code, naam: 'Tom' }));
+  ok(tr1.status === 'aanvraag' && tr1.rol === 'trainco', 'trainco: altijd een aanvraag, ook als de club zonder goedkeuring werkt');
+  ok(!store.get('clubs/c1').leden.tc1 && !store.get('clubs/c1').trainingscoordinatoren?.tc1, 'trainco: nog geen lid en nog geen coördinator');
+  ok(store.get('aanvragen/c1_tc1_trainco')?.rol === 'trainco', 'trainco: eigen aanvraagdocument');
+  await throws(() => T.beoordeelAanvraag(req('coachA', { clubId: 'c1', uid: 'tc1', soort: 'trainco', besluit: 'goed' })), 'permission-denied', 'coach mag een coördinator niet accepteren');
+  await throws(() => T.beoordeelAanvraag(req('adm', { clubId: 'c1', uid: 'tc1', besluit: 'goed' })), 'not-found', 'zonder soort geen trainco-aanvraag gevonden');
+  await T.beoordeelAanvraag(req('adm', { clubId: 'c1', uid: 'tc1', soort: 'trainco', besluit: 'goed' }));
+  const cl = store.get('clubs/c1');
+  ok(cl.trainingscoordinatoren.tc1 === true && cl.trainingscoordinatorenInfo.tc1.naam === 'Tom', 'trainco: coördinator na acceptatie');
+  ok(!cl.leden.tc1, 'trainco: blijft géén clublid');
+  ok(!store.get('aanvragen/c1_tc1_trainco'), 'trainco: aanvraag opgeruimd');
+  const tr2 = await T.sluitAan(req('tc1', { code: tinv.code, naam: 'Tom' }));
+  ok(tr2.status === 'lid' && tr2.rol === 'trainco', 'trainco: al coördinator geeft status lid');
+  await T.sluitAan(req('tc2', { code: tinv.code, naam: 'Tess' }));
+  await T.beoordeelAanvraag(req('adm', { clubId: 'c1', uid: 'tc2', soort: 'trainco', besluit: 'af' }));
+  ok(!store.get('aanvragen/c1_tc2_trainco') && !store.get('clubs/c1').trainingscoordinatoren.tc2, 'trainco: afgewezen geeft geen rol');
+  await T.verwijderLid(req('adm', { clubId: 'c1', uid: 'tc1' }));
+  ok(!store.get('clubs/c1').trainingscoordinatoren.tc1 && !store.get('clubs/c1').trainingscoordinatorenInfo.tc1, 'trainco: verwijderLid haalt de rol weg');
   // 10 rate limit
   for (let i = 0; i < 10; i++) { try { await T.sluitAan(req('spam', { code: 'ZZZZZZ' })); } catch (e) {} }
   await throws(() => T.sluitAan(req('spam', { code: 'ZZZZZZ' })), 'resource-exhausted', 'rate limit');

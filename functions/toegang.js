@@ -6,6 +6,9 @@
      uitnodigingen/{id}   { clubId, teamId?, teamNaam?, code, gemaaktDoor, gemaaktDoorNaam, gemaakt,
                             verlooptOp, maxGebruik, gebruikt, ingetrokken }
      aanvragen/{clubId_uid} { clubId, uid, naam, teamId?, teamNaam?, via, uitnodigingId?, gemaakt }
+     aanvragen/{clubId_uid_trainco} idem met rol: 'trainco' (aanmelding als trainingscoördinator; de persoon is
+                            pas na acceptatie `clubs/{id}.trainingscoordinatoren.<uid>` en géén clublid)
+     uitnodigingen met rol: 'trainco' zijn alleen door een clubbeheerder te maken en geven alleen die aanvraag.
      toegangslog/{auto}   { clubId, gebeurtenis, uid, naam, door, doorNaam, teamId?, details, tijd }
      privacyKennisname/{uid} { versie, tijd }
      rateLimit/{sleutel}  { n, tot }
@@ -112,7 +115,7 @@ exports.uitnodigingInfo = onCall({ region: REGIO, cors: true }, async (request) 
     if (d.ingetrokken || d.verlooptOp.toMillis() < Date.now() || d.gebruikt >= d.maxGebruik)
       throw new HttpsError('not-found', 'Uitnodiging niet meer geldig.');
     const club = (await clubRef(db, d.clubId).get()).data() || {};
-    return { naam: d.teamNaam || club.naam || '', clubNaam: club.naam || '' };
+    return { naam: d.teamNaam || club.naam || '', clubNaam: club.naam || '', ...(d.rol === 'trainco' ? { rol: 'trainco' } : {}) };
   }
   const t = await db.collection('teams').where('code', '==', code).limit(1).get();
   if (!t.empty){
@@ -133,6 +136,9 @@ exports.maakUitnodiging = onCall({ region: REGIO, cors: true }, async (request) 
   const teamId = request.data?.teamId ? String(request.data.teamId) : null;
   const { club, team } = await vereisBeheerVan(db, request, clubId, teamId);
   if (!teamId && !isClubAdminDoc(club, request.auth.uid)) throw new HttpsError('permission-denied', 'Alleen een clubbeheerder.');
+  const rolUitn = request.data?.rol === 'trainco' ? 'trainco' : null;
+  if (rolUitn && (teamId || !isClubAdminDoc(club, request.auth.uid)))
+    throw new HttpsError('permission-denied', 'Een uitnodiging voor een trainingscoördinator is voor de hele club en alleen door een clubbeheerder te maken.');
   const geldigDagen = Math.min(60, Math.max(1, Number(request.data?.geldigDagen) || 14));
   const maxGebruik = Math.min(50, Math.max(1, Number(request.data?.maxGebruik) || 5));
   const teamDoc = teamId ? (team || (await db.doc(`teams/${teamId}`).get()).data()) : null;
@@ -144,8 +150,9 @@ exports.maakUitnodiging = onCall({ region: REGIO, cors: true }, async (request) 
     clubId, teamId, teamNaam: teamDoc?.naam || null, code, gemaaktDoor: door, gemaaktDoorNaam: doorNaam,
     gemaakt: FieldValue.serverTimestamp(), verlooptOp: Timestamp.fromMillis(Date.now() + geldigDagen * DAG),
     maxGebruik, gebruikt: 0, ingetrokken: false,
+    ...(rolUitn ? { rol: rolUitn } : {}),
   });
-  await log(db, clubId, 'uitnodiging_gemaakt', { door, doorNaam, teamId, details: `${geldigDagen} dagen, max ${maxGebruik}x` });
+  await log(db, clubId, 'uitnodiging_gemaakt', { door, doorNaam, teamId, details: `${geldigDagen} dagen, max ${maxGebruik}x${rolUitn ? ', trainingscoördinator' : ''}` });
   return { id: ref.id, code, geldigDagen, maxGebruik };
 });
 
@@ -184,13 +191,14 @@ exports.sluitAan = onCall({ region: REGIO, cors: true }, async (request) => {
     throw new HttpsError('failed-precondition', 'Bevestig eerst je e-mailadres (kijk in je mail) en probeer het opnieuw.');
 
   /* 1. code opzoeken: uitnodiging → oude teamcode → oude clubcode */
-  let doel = null, uitnodigingRef = null, via = 'uitnodiging';
+  let doel = null, uitnodigingRef = null, via = 'uitnodiging', uitnodigingRol = null;
   const u = await db.collection('uitnodigingen').where('code', '==', code).limit(1).get();
   if (!u.empty){
     const d = u.docs[0].data();
     if (d.ingetrokken || d.verlooptOp.toMillis() < Date.now() || d.gebruikt >= d.maxGebruik)
       throw new HttpsError('not-found', 'Deze uitnodiging is verlopen of ingetrokken. Vraag een nieuwe aan.');
     uitnodigingRef = u.docs[0].ref;
+    uitnodigingRol = d.rol === 'trainco' ? 'trainco' : null;
     doel = { clubId: d.clubId, teamId: d.teamId || null };
   } else {
     const t = await db.collection('teams').where('code', '==', code).limit(1).get();
@@ -211,6 +219,22 @@ exports.sluitAan = onCall({ region: REGIO, cors: true }, async (request) => {
   const teamDoc = doel.teamId ? (await db.doc(`teams/${doel.teamId}`).get()).data() : null;
   const clubNaam = club?.naam || teamDoc?.clubNaam || '';
   const teamNaam = teamDoc?.naam || '';
+
+  /* aanmelding als trainingscoördinator: nooit meteen lid of coördinator. Er komt een aanvraag
+     (ook als de club verder zonder goedkeuring werkt); pas na acceptatie door een clubbeheerder
+     krijgt de persoon leesrechten, en alleen op teams, trainingen en video's — niet op spelers. */
+  if (uitnodigingRol === 'trainco'){
+    if (!doel.clubId || !club) throw new HttpsError('not-found', 'Deze uitnodiging werkt niet (meer).');
+    if (club.trainingscoordinatoren?.[uid] === true)
+      return { status: 'lid', club: doel.clubId, clubNaam, naam: '', rol: 'trainco' };
+    await uitnodigingRef.update({ gebruikt: FieldValue.increment(1) });
+    await db.doc(`aanvragen/${doel.clubId}_${uid}_trainco`).set({
+      clubId: doel.clubId, uid, naam, teamId: null, teamNaam: '', rol: 'trainco', via,
+      uitnodigingId: uitnodigingRef.id, gemaakt: FieldValue.serverTimestamp(),
+    });
+    await log(db, doel.clubId, 'aanvraag', { uid, naam, details: 'trainingscoördinator' });
+    return { status: 'aanvraag', club: doel.clubId, clubNaam, naam: '', rol: 'trainco' };
+  }
 
   /* al lid? */
   if ((doel.teamId && teamDoc?.leden?.[uid]) || (!doel.teamId && club?.leden?.[uid]))
@@ -242,11 +266,27 @@ exports.sluitAan = onCall({ region: REGIO, cors: true }, async (request) => {
 exports.beoordeelAanvraag = onCall({ region: REGIO, cors: true }, async (request) => {
   const db = getFirestore();
   const clubId = String(request.data?.clubId || ''), uid = String(request.data?.uid || '');
-  const ref = db.doc(`aanvragen/${clubId}_${uid}`);
+  const soortTrainco = request.data?.soort === 'trainco';
+  const ref = db.doc(`aanvragen/${clubId}_${uid}${soortTrainco ? '_trainco' : ''}`);
   const a = (await ref.get()).data();
   if (!a) throw new HttpsError('not-found', 'Aanvraag bestaat niet (meer).');
-  const { club } = await vereisBeheerVan(db, request, clubId, a.teamId);
+  const { club } = await vereisBeheerVan(db, request, clubId, soortTrainco ? null : a.teamId);
   const door = request.auth.uid, doorNaam = await naamVan(db, clubId, door);
+  /* aanmelding als trainingscoördinator: alleen een clubbeheerder (teamId is hier altijd null) */
+  if (soortTrainco){
+    if (a.rol !== 'trainco') throw new HttpsError('failed-precondition', 'Dit is geen aanmelding als trainingscoördinator.');
+    if (request.data?.besluit === 'goed'){
+      await clubRef(db, clubId).update({
+        [`trainingscoordinatoren.${uid}`]: true, [`trainingscoordinatorenInfo.${uid}`]: { naam: a.naam },
+      });
+      await ref.delete();
+      await log(db, clubId, 'goedgekeurd', { uid, naam: a.naam, door, doorNaam, details: 'trainingscoördinator' });
+      return { ok: true, rol: 'trainco' };
+    }
+    await ref.delete();
+    await log(db, clubId, 'afgewezen', { uid, naam: a.naam, door, doorNaam, details: 'trainingscoördinator' });
+    return { ok: true };
+  }
   if (request.data?.besluit === 'goed'){
     const rol = request.data?.rol === 'coach' ? 'coach' : (request.data?.rol === 'assistent' ? 'assistent' : toegangInst(club).standaardRol);
     await pasLidmaatschapToe(db, { clubId, teamId: a.teamId, uid, naam: a.naam, rol });
@@ -283,13 +323,14 @@ async function verwijderUidUitClubs(db, uid, clubId = null){
   const ids = new Set();
   if (clubId) ids.add(clubId);
   else {
-    for (const k of ['leden', 'admins'])
+    for (const k of ['leden', 'admins', 'trainingscoordinatoren'])
       (await db.collection('clubs').where(`${k}.${uid}`, '==', true).get()).docs.forEach(d => ids.add(d.id));
     (await db.collection('clubs').where('eigenBouwCoaches', 'array-contains', uid).get()).docs.forEach(d => ids.add(d.id));
   }
   for (const id of ids){
     const ref = clubRef(db, id), c = (await ref.get()).data() || {};
-    const upd = { [`leden.${uid}`]: del, [`ledenInfo.${uid}`]: del, [`admins.${uid}`]: del, [`adminsInfo.${uid}`]: del, [`bouwCoordinatorenInfo.${uid}`]: del };
+    const upd = { [`leden.${uid}`]: del, [`ledenInfo.${uid}`]: del, [`admins.${uid}`]: del, [`adminsInfo.${uid}`]: del, [`bouwCoordinatorenInfo.${uid}`]: del,
+      [`trainingscoordinatoren.${uid}`]: del, [`trainingscoordinatorenInfo.${uid}`]: del };
     for (const bouw of Object.keys(c.bouwCoordinatoren || {})) upd[`bouwCoordinatoren.${bouw}.${uid}`] = del;
     if (Array.isArray(c.eigenBouwCoaches)) upd.eigenBouwCoaches = FieldValue.arrayRemove(uid);
     await ref.update(upd);
