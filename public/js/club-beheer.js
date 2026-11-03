@@ -13,12 +13,14 @@
    per ongeluk wordt overschreven. Dit bestand importeert niets uit club.js
    (geen kringimport): club.js geeft een api-object mee. */
 import { db, doc, updateDoc } from './firebase.js?v=20261011g';
-import { S, esc, meld, modAan } from './state.js?v=20261023a';
-import { BOUWEN, catLabel } from './config.js?v=20261023a';
-import { kompasNaam } from './clubconfig.js?v=20261023a';
-import { onderdeelAan, doorPlatformUit, werkwijzeVan } from './onderdelen.js?v=20261023a';
+import { S, esc, meld, modAan } from './state.js?v=20261103b';
+import { BOUWEN, catLabel } from './config.js?v=20261103b';
+import { kompasNaam } from './clubconfig.js?v=20261103b';
+import { onderdeelAan, doorPlatformUit, werkwijzeVan } from './onderdelen.js?v=20261103b';
 import { ico } from './icons.js?v=20260922c';
-import { eigenBouwenVanTeam, bouwVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261023a';
+import { momentenVanTeam, htmlMomentenKaart, koppelMomentenKaart, DAGEN_KORT } from './trainingsmomenten.js?v=20261103b';
+import { verwijderCoach } from './trainco-beheer.js?v=20261103b';
+import { eigenBouwenVanTeam, bouwVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261103b';
 
 /* [sleutel, naam, kort, icoon, uitleg] — 'lijstjes' was eerder niet door de beheerder te regelen */
 export const MODULE_DEFS = [
@@ -62,6 +64,7 @@ export function aandachtRedenen(t, sync){
   const r = [];
   if (!coachesVanTeam(t).length) r.push('geen coach');
   if (!(Array.isArray(t.trainingsdagen) && t.trainingsdagen.length)) r.push('geen trainingsdagen');
+  else if (momentenVanTeam(t).some(m => !m.start || !m.eind)) r.push('trainingstijd ontbreekt');
   const s = sync ? slStatus(t, sync) : 'ok';
   if (s === 'nee' || s === 'fout') r.push('Sportlink');
   return r;
@@ -93,8 +96,9 @@ function filterBalk(teams, sync){
 /* ---------- Teams ---------- */
 function statusChips(t, sync){
   const s = [];
-  const d = Array.isArray(t.trainingsdagen) ? [...t.trainingsdagen].sort((a, b) => a - b) : [];
-  s.push(d.length ? `<span class="cb-st">${ico('planning-calendar', 12)} ${d.map(n => DAG_KORT[n - 1]).filter(Boolean).join(' + ')}</span>`
+  const mo = momentenVanTeam(t);
+  const zonderTijd = mo.some(m => !m.start || !m.eind);
+  s.push(mo.length ? `<span class="cb-st${zonderTijd ? ' let' : ''}">${ico('planning-calendar', 12)} ${mo.map(m => (DAGEN_KORT[m.dag - 1] || '') + (m.start ? ' ' + m.start + (m.eind ? '–' + m.eind : '') : '')).join(' + ')}${zonderTijd ? ' · tijd ontbreekt' : ''}</span>`
                   : `<span class="cb-st let">${ico('planning-calendar', 12)} Geen trainingsdagen</span>`);
   const st = slStatus(t, sync), slNaam = String(t.sportlinkNaam || '').trim();
   if (st === 'ok') s.push(`<span class="cb-st ok">${ico('action-check', 12)} Sportlink${slNaam ? ' ↔ ' + esc(slNaam) : ''}</span>`);
@@ -190,7 +194,6 @@ export function htmlTeamBeheer(t, sync, teams){
   if (!t) return '<div class="kaart leeg">Dit team bestaat niet meer.</div>';
   const co = coachesVanTeam(t);
   const link = location.origin + location.pathname + '?team=' + (t.code || '');
-  const dagen = Array.isArray(t.trainingsdagen) ? [...t.trainingsdagen].sort((a, b) => a - b) : [];
   const st = slStatus(t, sync), s = sync?.[t.id] || {};
   const slNaam = String(t.sportlinkNaam || '').trim();
   const bouwTags = [
@@ -232,11 +235,7 @@ export function htmlTeamBeheer(t, sync, teams){
       <div class="cb-regel"><span class="cb-lbl">Status</span><span class="cb-val">${slRegel}</span></div>
     </div>
 
-    <div class="cb-kaart">
-      <div class="cb-kaart-kop">${ico('planning-calendar', 18)}<b>Trainingsdagen</b></div>
-      <div class="dag-opties">${DAG_KORT.map((d, i) => `<button type="button" class="dag-opt ${dagen.includes(i + 1) ? 'aan' : ''}" data-cb-dag="${i + 1}">${d}</button>`).join('')}</div>
-      <p class="cb-uitleg">${dagen.length ? dagen.map((d, i) => `Training ${i + 1} → ${DAG_LANG[d - 1]}`).join(' · ') + '. ' : 'Nog geen vaste dagen; oefenstof krijgt dan geen dag. '}Wordt direct opgeslagen. Coaches kunnen dit niet zelf wijzigen.</p>
-    </div>
+    ${htmlMomentenKaart(t)}
 
     <div class="cb-kaart">
       <div class="cb-kaart-kop">${ico('admin-permissions', 18)}<b>Onderdelen voor coaches</b></div>
@@ -267,14 +266,7 @@ export function koppelTeamBeheer(v, api){
     const tekst = `Hoi! Je bent uitgenodigd als coach van ${t.naam} in Cluppie. Open deze link en log in:\n${v.querySelector('#cbLink')?.textContent || ''}`;
     window.open('https://wa.me/?text=' + encodeURIComponent(tekst), '_blank');
   });
-  v.querySelectorAll('[data-cb-dag]').forEach(b => b.onclick = async () => {
-    const nr = Number(b.dataset.cbDag);
-    const huidig = Array.isArray(t.trainingsdagen) ? t.trainingsdagen : [];
-    const dagen = (huidig.includes(nr) ? huidig.filter(x => x !== nr) : [...huidig, nr]).sort((a, c) => a - c);
-    b.classList.toggle('aan');
-    try { await updateDoc(doc(db, 'teams', t.id), { trainingsdagen: dagen }); t.trainingsdagen = dagen; meld('Trainingsdagen opgeslagen'); api.herteken(); }
-    catch(e){ b.classList.toggle('aan'); meld('Opslaan mislukt: ' + (e.code || e.message)); }
-  });
+  koppelMomentenKaart(v, t, api);
   v.querySelector('[data-cb-wz]')?.addEventListener('click', async e => {
     const b = e.currentTarget, nieuw = t.werkwijzeVrij !== true;
     b.querySelector('.lj-schakel')?.classList.toggle('aan', nieuw);
@@ -297,6 +289,8 @@ export function htmlCoaches(teams){
   for (const t of sorteer(teams)) for (const c of coachesVanTeam(t)) pak(c.uid, c.naam).teams.push(t);
   for (const [uid, a] of Object.entries(S.club?.adminsInfo || {})) pak(uid, a?.naam).rollen.push(['admin', 'Beheerder']);
   for (const b of BOUWEN) for (const uid of Object.keys(S.club?.bouwCoordinatoren?.[b.id] || {})) if (S.club.bouwCoordinatoren[b.id][uid] === true) pak(uid, S.club.bouwCoordinatorenInfo?.[uid]?.naam).rollen.push(['coord', 'Coörd. ' + b.naam]);
+  for (const uid of Object.keys(S.club?.trainingscoordinatoren || {})) if (S.club.trainingscoordinatoren[uid] === true) pak(uid, S.club.trainingscoordinatorenInfo?.[uid]?.naam).rollen.push(['coord', 'Trainingscoörd.']);
+  S._cbCoachTeams = teams;
   for (const eb of eigenBouwen()) for (const uid of Object.keys(eb.coaches || {})) if (eb.coaches[uid] === true) pak(uid, S.club.eigenBouwCoachesInfo?.[uid]?.naam).rollen.push(['coord', eb.naam]);
   const zoek = String(S._cbZoek || '').trim().toLowerCase();
   const lijst = [...m.values()].filter(c => !zoek || c.naam.toLowerCase().includes(zoek) || c.teams.some(t => (t.naam || '').toLowerCase().includes(zoek)))
@@ -311,12 +305,18 @@ export function htmlCoaches(teams){
     <div class="cb-legenda">${lijst.length} coach${lijst.length === 1 ? '' : 'es'} · tik een team om het te beheren</div>
     <div id="cbCoachLijst">${lijst.map(c => `<div class="cb-coachrij"><div class="cb-av">${esc(twee(c.naam))}</div>
       <div class="cb-persoon-n">${esc(c.naam)}${c.uid === S.user?.uid ? ' <small class="cb-inline">jij</small>' : ''} ${c.rollen.map(([k, r]) => `<span class="cb-rol ${k}">${esc(r)}</span>`).join(' ')}
-        <div class="cb-tags">${c.teams.map(t => `<button class="cb-tag" data-cb-team="${esc(t.id)}"><i style="background:${esc(kleurVan(t))}"></i>${esc(t.naam)}</button>`).join('') || '<span class="cb-tag">Geen eigen team</span>'}</div></div></div>`).join('')
+        <div class="cb-tags">${c.teams.map(t => `<button class="cb-tag" data-cb-team="${esc(t.id)}"><i style="background:${esc(kleurVan(t))}"></i>${esc(t.naam)}</button>`).join('') || '<span class="cb-tag">Geen eigen team</span>'}</div></div>
+      ${c.uid === S.user?.uid || c.rollen.some(([k]) => k === 'admin') ? '' : `<button class="knop licht klein cb-verwijder" data-cb-verwijder="${esc(c.uid)}" data-cb-naam="${esc(c.naam)}">Verwijderen</button>`}</div>`).join('')
       || '<div class="kaart leeg">Geen coaches gevonden.</div>'}</div>`;
 }
 /* api: { herteken(), openBeheer(id) } */
 export function koppelCoaches(v, api){
   v.querySelectorAll('[data-cb-team]').forEach(b => b.onclick = () => api.openBeheer(b.dataset.cbTeam));
+  v.querySelectorAll('[data-cb-verwijder]').forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    const ok = await verwijderCoach(b.dataset.cbVerwijder, b.dataset.cbNaam, S._cbCoachTeams || []);
+    if (ok) api.herteken(); else b.disabled = false;
+  });
   const z = v.querySelector('#cbZoek');
   if (z) z.oninput = () => {
     S._cbZoek = z.value;

@@ -11,6 +11,15 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 
 ## Open
 **Voor Paul (console/terminal)**
+**Voor Paul — Trainingstijden + trainingscoördinator + coach verwijderen (release 20261103b, branch `asv33-trainco-momenten`, overgenomen uit ASV'33)**
+- [ ] `npm run test:rules` draaien (Java nodig; de emulator kon in de bouwomgeving niet downloaden, dus de 3 nieuwe rules-tests zijn niet gedraaid).
+- [ ] `cd functions && npm install && node tests/toegang.test.js` (scenario 11 = trainco) en `npm test`.
+- [ ] Rules deployen: `firebase deploy --only firestore:rules,storage --project cluppie-ad329`.
+- [ ] Alleen de gewijzigde functions deployen (geen `--only functions` zonder namen): `firebase deploy --only functions:maakUitnodiging,functions:sluitAan,functions:beoordeelAanvraag,functions:uitnodigingInfo,functions:verwijderLid --project cluppie-ad329`. Bestaande callables, dus geen nieuwe invoker nodig.
+- [ ] PR mergen; daarna proef: Club > Coaches > Trainingscoördinator > link maken, in een tweede account openen, inloggen, accepteren, scherm bekijken (ook `?trainco=1`).
+- [ ] Per team de trainingsdagen met tijden invullen (Club > Teams).
+- Bronvermelding (Training ontwikkeld door …) is bewust niet overgenomen.
+- Lijstjes, desktop paspoortstijl en clubbeheer-herindeling/evaluatierondes staan al in cluppie.io (3-11-2026 vergeleken met ASV'33 t/m PR #26: code en CSS gelijk op bewuste multi-tenant-verschillen als clubconfig, thema-kleuren en Sportlink). Selectie-bouw en Kracht & Beweging: nog niet apart gecontroleerd.
 **Voor Paul — Plaatjes bij de juiste oefening (release 20261023a, branch `fix/plaatjes-herstel`, overgenomen uit ASV'33 PR #12, #13 en #14)**
 - [ ] PR reviewen en mergen. Alleen client: geen rules-, Storage- of functions-deploy nodig (beheerders en hoofd jeugd mogen `diagramUrls` al schrijven; Storage staat clublid-schrijven toe).
 - [ ] Hard verversen na het mergen (nieuwe `CACHE_VERSIE`).
@@ -90,6 +99,9 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - **Snelstart individuele coach, nog niet gedaan:** (1) herkennen dat de club al Cluppie gebruikt (clubgids + callable) en dan doorverwijzen naar aansluiten; (2) welkomstuitleg voor coaches die via een uitnodiging binnenkomen (nu alleen voor wie zelf een team start); (3) de kaart Eerste stappen staat nog niet op de desktop-weergave.
 
 # Geschiedenis
+
+## Release 20261103b — trainingstijden per team, trainingscoördinator, coach verwijderen
+Trainingsmomenten (dag + begin/eind) per team (`teams/{id}.trainingsmomenten`, `trainingsdagen` blijft afgeleid). Nieuwe rol trainingscoördinator: `clubs/{id}.trainingscoordinatoren.<uid>`, geen clublid, alleen lezen op teams/trainingen/video's (rules + storage), nooit spelers; uitnodigen via `maakUitnodiging` (rol `trainco`), aanmelding via `sluitAan` en acceptatie via `beoordeelAanvraag` (soort `trainco`); verwijderen ruimt de rol op. Nieuw: `trainingsmomenten.js`, `trainco.js`, `trainco-beheer.js`, Verwijderen-knop bij coaches.
 
 ## Release 20261020e — bevestigingsmail in het Nederlands
 - `functions/verificatie-mail.js`: callable `verificatieMail` (ingelogd, eigen adres): `generateEmailVerificationLink` + opgemaakte mail via `mail/{id}`; al bevestigd → niets; `ratelimiet/ver_<uid>` 3 per uur. Hergebruikt `nederlandseLink` uit `wachtwoord-reset.js`. Test: `tests/verificatie-mail.test.js` (in `npm test`).

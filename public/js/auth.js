@@ -3,8 +3,8 @@ import {
   signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail,
   collection, doc, addDoc, setDoc, getDoc, serverTimestamp, increment, functions, httpsCallable
 } from './firebase.js?v=20261011g';
-import { S, $, meld } from './state.js?v=20261023a';
-import { startTracker } from './tracker.js?v=20261023a';
+import { S, $, meld } from './state.js?v=20261103b';
+import { startTracker } from './tracker.js?v=20261103b';
 import { stuurVerificatieMail } from './verificatie.js?v=20261020e';
 
 /* ====================================================================
@@ -213,7 +213,7 @@ export async function joinMetCode(code, naam = null){
   }
   if (res.status === 'aanvraag'){
     S._aanvraagVerstuurd = { club: res.clubNaam, team: res.naam };
-    import('./toegang.js?v=20261023a').then(m => m.toonAanvraagVerstuurd(res));
+    import('./toegang.js?v=20261103b').then(m => m.toonAanvraagVerstuurd(res));
     return null;
   }
   if (!res.teamId){ if (res.clubNaam) meld('Gekoppeld aan ' + res.clubNaam); return null; }
@@ -236,7 +236,9 @@ export async function checkUitnodiging(){
       pendingTeamInfo = null;
     } else {
       $('#uitnodigTitel').textContent = info.naam;
-      $('#uitnodigSubtitel').textContent = info.clubNaam
+      $('#uitnodigSubtitel').textContent = info.rol === 'trainco'
+        ? 'Je bent uitgenodigd als trainingscoördinator' + (info.clubNaam ? ' bij ' + info.clubNaam : '') + '. Log in om je aan te melden.'
+        : info.clubNaam
         ? 'Je bent uitgenodigd als coach bij ' + info.clubNaam + '. Log in om aan te sluiten.'
         : 'Je bent uitgenodigd als coach. Log in om aan te sluiten.';
       pendingTeamInfo = {code, teamNaam: info.naam};

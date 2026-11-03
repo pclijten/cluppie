@@ -3,13 +3,13 @@
    Stappen: bron → (AI-analyse óf handmatig splitsen) → controleren/aanpassen → opslaan als CONCEPT
    in clubs/{id}/content. Niets wordt aan coaches getoond tot de beheerder het publiceert (tabblad Content).
    Het plan van een andere club mag alleen worden gebruikt met toestemming van die club. */
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261023a';
-import { LEERCURVE } from './config.js?v=20261023a';
+import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261103b';
+import { LEERCURVE } from './config.js?v=20261103b';
 import { functions, httpsCallable } from './firebase.js?v=20261011g';
 import { uploadHulpHtml, UPLOAD_HULP } from './upload-hulp.js?v=20261019h';
-import { aiAan, kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261023a';
-import { opslaanContent } from './content.js?v=20261023a';
-import { huidigeContentLijst } from './club-content.js?v=20261023a';
+import { aiAan, kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261103b';
+import { opslaanContent } from './content.js?v=20261103b';
+import { huidigeContentLijst } from './club-content.js?v=20261103b';
 
 const MAX_STUK = 12000;
 const slug = t => String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60);
@@ -42,8 +42,8 @@ export function splitsOpKoppen(tekst){
 }
 
 async function pdfNaarTekst(file){
-  const { laadPdfJs } = await import('./pdf-viewer.js?v=20261023a');
-  const { regelsUitTekstItems } = await import('./training-ai.js?v=20261023a');
+  const { laadPdfJs } = await import('./pdf-viewer.js?v=20261103b');
+  const { regelsUitTekstItems } = await import('./training-ai.js?v=20261103b');
   await laadPdfJs();
   const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
   const paginas = [];

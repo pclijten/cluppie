@@ -42,6 +42,10 @@ service cloud.firestore {
     }
 
     /* hoofd jeugdopleiding (club-breed seizoensplan): veld clubs/{id}.hoofdJeugd.{uid} = true; alleen de clubadmin zet dat */
+    /* [20261103] trainingscoördinator: alleen lezen, en alleen teams, trainingen en video's van de club
+       (nooit spelers, wedstrijden, berichten of documenten). De rechtenbron is clubs/{id}.trainingscoordinatoren.<uid>;
+       alleen een clubbeheerder zet die, via de Cloud Function beoordeelAanvraag of rechtstreeks in het clubdocument. */
+    function isTraincoVanClub(c) { return echt() && clubBestaat(c) && club(c).get('trainingscoordinatoren', {}).get(uid(), false) == true; }
     function isHoofdJeugd(c) { return echt() && clubBestaat(c) && club(c).get('hoofdJeugd', {}).get(uid(), false) == true; }
     function isJeugdPlanner(c) { return isClubAdmin(c) || isHoofdJeugd(c); }
     function isSpeelstijlDeelnemer(c) { return isJeugdPlanner(c) || isCoordinatorVanBouw(c, 'onder') || isCoordinatorVanBouw(c, 'midden') || isCoordinatorVanBouw(c, 'boven'); }
@@ -97,7 +101,8 @@ service cloud.firestore {
       allow read: if isPlatform()
         || (echt() && (resource.data.get('leden', {}).get(uid(), false) == true
                        || resource.data.get('admins', {}).get(uid(), false) == true
-                       || uid() in resource.data.get('eigenBouwCoaches', [])));
+                       || uid() in resource.data.get('eigenBouwCoaches', [])
+                       || resource.data.get('trainingscoordinatoren', {}).get(uid(), false) == true));
       /* aanmaken: alleen platformbeheerder (zoals de client-gating), maker is zelf admin en lid */
       allow create: if isPlatform()
         && request.resource.data.admins.get(uid(), false) == true
@@ -192,7 +197,8 @@ service cloud.firestore {
       allow read: if (echt() && resource == null)
                   || isPlatform()      /* [20261020a] teamlijst per club voor het platformoverzicht; spelers e.d. alleen in de ondersteuningsmodus */
                   || (echt() && (resource.data.get('leden', {}).get(uid(), false) == true
-                                 || (resource.data.get('club', null) != null && isClubLid(resource.data.club))))
+                                 || (resource.data.get('club', null) != null && isClubLid(resource.data.club))
+                                 || (resource.data.get('club', null) != null && isTraincoVanClub(resource.data.club))))
                   || heeftDeelToegang(teamId);
       allow create: if echt() && (
         (request.resource.data.leden.get(uid(), false) == true
@@ -230,6 +236,7 @@ service cloud.firestore {
        (de client queryt met where('club','==',…), zie teams.js clubChunks). Documenten zonder
        `club` (oude data) zijn alleen voor de platformbeheerder bereikbaar. */
     function clubInhoudLezen() { return isPlatform() || (echt() && resource.data.get('club', null) != null && isClubLid(resource.data.club)); }
+    function traincoInhoudLezen() { return echt() && resource.data.get('club', null) != null && isTraincoVanClub(resource.data.club); }
     function clubInhoudNieuw() { return echt() && request.resource.data.get('club', null) != null && isClubLid(request.resource.data.club); }
     function clubInhoudBeheer() { return isPlatform() || (echt() && resource.data.get('club', null) != null && isClubAdmin(resource.data.club)); }
     function clubInhoudNieuwBeheer() { return echt() && request.resource.data.get('club', null) != null && isClubAdmin(request.resource.data.club); }
@@ -241,7 +248,7 @@ service cloud.firestore {
     function trainingSchrijver(id) { return echt() && magTrainingSchrijven(get(/databases/$(database)/documents/trainingen/$(id)).data); }
 
     match /trainingen/{id} {
-      allow read: if clubInhoudLezen()
+      allow read: if clubInhoudLezen() || traincoInhoudLezen()
         || (anoniem() && exists(/databases/$(database)/documents/trainingToegang/$(uid()))
             && get(/databases/$(database)/documents/trainingToegang/$(uid())).data.trainingId == id
             && get(/databases/$(database)/documents/trainingToegang/$(uid())).data.vervaltOp > request.time);
@@ -249,12 +256,12 @@ service cloud.firestore {
       allow update: if echt() && magTrainingSchrijven(resource.data) && magTrainingSchrijven(request.resource.data);
       allow delete: if echt() && magTrainingSchrijven(resource.data);
       match /{sub=**} {
-        allow read: if echt() && trainingClub(id) != null && isClubLid(trainingClub(id));
+        allow read: if echt() && trainingClub(id) != null && (isClubLid(trainingClub(id)) || isTraincoVanClub(trainingClub(id)));
         allow write: if trainingSchrijver(id);
       }
     }
     match /videos/{id} {
-      allow read: if clubInhoudLezen();
+      allow read: if clubInhoudLezen() || traincoInhoudLezen();
       allow create: if clubInhoudNieuw();
       allow update, delete: if clubInhoudBeheer();
     }
