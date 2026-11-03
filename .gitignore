@@ -15,3 +15,6 @@ _to_delete/
 _fase1-backup/
 *.zip
 .env
+
+# Kopie van skills voor een andere AI-tool (aangemaakt door npx skills)
+agent/
