@@ -19,7 +19,7 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - [ ] PR mergen; daarna proef: Club > Coaches > Trainingscoördinator > link maken, in een tweede account openen, inloggen, accepteren, scherm bekijken (ook `?trainco=1`).
 - [ ] Per team de trainingsdagen met tijden invullen (Club > Teams).
 - Bronvermelding (Training ontwikkeld door …) is bewust niet overgenomen.
-- Nog niet gepoort uit ASV'33 (staat niet in deze PR): Lijstjes, desktop paspoortstijl, Selectie-bouw, Kracht & Beweging, clubbeheer-herindeling/evaluatierondes.
+- Lijstjes, desktop paspoortstijl en clubbeheer-herindeling/evaluatierondes staan al in cluppie.io (3-11-2026 vergeleken met ASV'33 t/m PR #26: code en CSS gelijk op bewuste multi-tenant-verschillen als clubconfig, thema-kleuren en Sportlink). Selectie-bouw en Kracht & Beweging: nog niet apart gecontroleerd.
 **Voor Paul — Plaatjes bij de juiste oefening (release 20261023a, branch `fix/plaatjes-herstel`, overgenomen uit ASV'33 PR #12, #13 en #14)**
 - [ ] PR reviewen en mergen. Alleen client: geen rules-, Storage- of functions-deploy nodig (beheerders en hoofd jeugd mogen `diagramUrls` al schrijven; Storage staat clublid-schrijven toe).
 - [ ] Hard verversen na het mergen (nieuwe `CACHE_VERSIE`).
