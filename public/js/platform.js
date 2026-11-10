@@ -6,10 +6,10 @@
    ene club; start en stop staan in het toegangslog van de club.
 ==================================================================== */
 import { db, collection, getDocs, doc, getDoc, setDoc, serverTimestamp, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261103b';
-import { logoImgVoorDoc, DISTRICTEN, kalenderId, valideerKalender, ORIGINEEL } from './clubconfig.js?v=20261103b';
+import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261110a';
+import { logoImgVoorDoc, DISTRICTEN, kalenderId, valideerKalender, ORIGINEEL } from './clubconfig.js?v=20261110a';
 import { STARTLIJST_STAPPEN } from './startlijst.js?v=20261011d';
-import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261103b';
+import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261110a';
 
 /* [20261011d] Platformdashboard: eigen breed scherm i.p.v. een lijstje.
    Bron: platformstats/overzicht (Cloud Function platformOverzichtNu / nachtelijk), met
@@ -53,7 +53,9 @@ function onderdelenRij(k){
   const extra = `<div class="pf-onderdelen"><button type="button" class="pf-onderdeel ${ai ? 'aan' : ''}" data-pf-od="${esc(k.id)}|ai" aria-pressed="${ai}" aria-label="AI-functies ${ai ? 'aan' : 'uit'} voor ${esc(k.naam)}">AI-functies: ${ai ? 'aan' : 'uit'}</button>`
     + `<label class="pf-getal">AI per maand <input type="number" min="0" max="100000" inputmode="numeric" placeholder="onbeperkt" data-pf-num="${esc(k.id)}|aiLimiet" value="${pm.aiLimiet == null ? '' : esc(pm.aiLimiet)}"></label>`
     + `<label class="pf-getal">Video max (MB) <input type="number" min="5" max="300" inputmode="numeric" data-pf-num="${esc(k.id)}|maxVideoMB" value="${Number(pm.maxVideoMB) > 0 ? esc(pm.maxVideoMB) : 100}"></label></div>`;
-  return extra + `<div class="pf-onderdelen"><button type="button" class="pf-onderdeel ${leren ? 'aan' : ''}" data-pf-od="${esc(k.id)}|leren" aria-pressed="${leren}" aria-label="Leren van gebruik ${leren ? 'aan' : 'uit'} voor ${esc(k.naam)}">Leren van gebruik: ${leren ? 'aan' : 'uit'}</button>${BEHEERD.map(sl => { const aan = platformToegestaan(PM[k.id], sl);
+  /* [20261110] Scouting (AI-rapport over de tegenstander, alleen eerste elftal): kost per rapport, dus standaard uit */
+  const scout = pm.scouting === true;
+  return extra + `<div class="pf-onderdelen"><button type="button" class="pf-onderdeel ${leren ? 'aan' : ''}" data-pf-od="${esc(k.id)}|leren" aria-pressed="${leren}" aria-label="Leren van gebruik ${leren ? 'aan' : 'uit'} voor ${esc(k.naam)}">Leren van gebruik: ${leren ? 'aan' : 'uit'}</button><button type="button" class="pf-onderdeel ${scout ? 'aan' : ''}" data-pf-od="${esc(k.id)}|scouting" aria-pressed="${scout}" aria-label="Scouting ${scout ? 'aan' : 'uit'} voor ${esc(k.naam)}">Scouting: ${scout ? 'aan' : 'uit'}</button>${BEHEERD.map(sl => { const aan = platformToegestaan(PM[k.id], sl);
     return `<button type="button" class="pf-onderdeel ${aan ? 'aan' : ''}" data-pf-od="${esc(k.id)}|${sl}" aria-pressed="${aan}" aria-label="${esc(ONDERDEEL_NAMEN[sl])} ${aan ? 'aan' : 'uit'} voor ${esc(k.naam)}">${esc(ONDERDEEL_NAMEN[sl])}: ${aan ? 'aan' : 'uit'}</button>`; }).join('')}</div>`;
 }
 
@@ -218,16 +220,16 @@ function tekenPlatform(o, aanmeldingen){
   };
   document.getElementById('pfCoachAlle')?.addEventListener('click', () => { PF.coachAlle = !PF.coachAlle; opnieuw(); });
   document.getElementById('pfKalenders')?.addEventListener('click', () => openKalenders());
-  document.getElementById('pfNieuweClub')?.addEventListener('click', () => import('./club.js?v=20261103b').then(m => m.modalNieuwClub()));
+  document.getElementById('pfNieuweClub')?.addEventListener('click', () => import('./club.js?v=20261110a').then(m => m.modalNieuwClub()));
   document.getElementById('pfVernieuw')?.addEventListener('click', async e => {
     const k = e.currentTarget; k.disabled = true; k.textContent = 'Bezig…';
     try { await httpsCallable(functions, 'platformOverzichtNu')({}); meld('Cijfers bijgewerkt'); openPlatform(); }
     catch (x){ k.disabled = false; k.textContent = 'Vernieuwen'; meld('Vernieuwen mislukt: ' + (x.code === 'functions/not-found' ? 'functie nog niet gedeployed' : (x.message || x.code))); }
   });
   document.querySelectorAll('[data-pf-od]').forEach(b => b.onclick = async () => {
-    const [clubId, sl] = b.dataset.pfOd.split('|'), nieuw = (sl === 'leren' || sl === 'ai') ? PM[clubId]?.platformModules?.[sl] !== true : !platformToegestaan(PM[clubId], sl);
+    const [clubId, sl] = b.dataset.pfOd.split('|'), nieuw = (sl === 'leren' || sl === 'ai' || sl === 'scouting') ? PM[clubId]?.platformModules?.[sl] !== true : !platformToegestaan(PM[clubId], sl);
     b.disabled = true;
-    try { await zetPlatformModule(clubId, sl, nieuw); meld(`${NAAM_BEHEERD[sl] || ONDERDEEL_NAMEN[sl]} ${nieuw ? 'aan' : 'uit'} voor deze club`); opnieuw(); }
+    try { await zetPlatformModule(clubId, sl, nieuw); meld(`${NAAM_BEHEERD[sl] || ONDERDEEL_NAMEN[sl] || (sl === 'scouting' ? 'Scouting' : sl)} ${nieuw ? 'aan' : 'uit'} voor deze club`); opnieuw(); }
     catch (x){ b.disabled = false; meld('Opslaan mislukt: ' + (x.code === 'permission-denied' ? 'rules nog niet gedeployed?' : (x.message || x.code))); }
   });
   /* [20261021] getalvelden per club: AI-limiet per maand en maximale videogrootte */
@@ -245,10 +247,10 @@ function tekenPlatform(o, aanmeldingen){
   document.querySelectorAll('[data-platform-club]').forEach(b => b.onclick = async () => {
     const id = b.dataset.platformClub;
     b.disabled = true;
-    const ond = await import('./ondersteuning.js?v=20261103b').catch(() => null);
+    const ond = await import('./ondersteuning.js?v=20261110a').catch(() => null);
     if (!ond || !(await ond.startOndersteuning(id))){ b.disabled = false; return; }
     sluitModal();
-    import('./club.js?v=20261103b').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
+    import('./club.js?v=20261110a').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
   });
   document.querySelectorAll('[data-aanmeld-ok], [data-aanmeld-af]').forEach(b => b.onclick = async () => {
     const id = b.dataset.aanmeldOk || b.dataset.aanmeldAf, goed = !!b.dataset.aanmeldOk;

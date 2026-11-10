@@ -7,11 +7,11 @@
    De platformbeheerder kan daarnaast de standaard zelf bewerken (schakelaar).
    Zichtbaar voor elke clubbeheerder (isBeheerder(), zie club.js). De echte
    afdwinging van wie waar mag schrijven staat in de Firestore-regels. */
-import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261103b';
+import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261110a';
 import {
   startContentAdminListener, opslaanContent, verwijderContent, seedContentNaarFirestore, kopieerStandaardNaarClub
-} from './content.js?v=20261103b';
-import { kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261103b';
+} from './content.js?v=20261110a';
+import { kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261110a';
 
 const scope = () => (S._contentScope === 'globaal' && isPlatformBeheerder()) ? 'globaal' : 'club';
 const categorieLabel = () => ({
@@ -51,15 +51,15 @@ export function htmlClubContent(lijst){
       const items = lijst.filter(c => c.categorie === cat).sort((a,b) => (a.volgorde||0)-(b.volgorde||0));
       if (!items.length) return '';
       return `
-        <div class="kaart" style="margin-bottom:14px">
-          <h3 style="margin-bottom:8px">${CATEGORIE_LABEL[cat] || cat}</h3>
+        <div class="kaart u-mb-md">
+          <h3 class="u-mb-xs">${CATEGORIE_LABEL[cat] || cat}</h3>
           ${items.map(c => `
             <div class="lijst-item" data-content-open="${c.id}" style="cursor:pointer">
-              <div style="flex:1;min-width:0">
-                <div style="font-weight:600;font-size:calc(13.5px * var(--fs))">${esc(c.titel || '(geen titel)')}</div>
-                <div style="font-size:calc(11.5px * var(--fs));color:var(--ink-2)">
-                  #${c.volgorde ?? '·'} · ${c.status === 'gepubliceerd' ? '✅ gepubliceerd' : '📝 concept'}
-                  ${(c.tags||[]).length ? ' · ' + c.tags.map(esc).join(', ') : ''}
+              <div class="u-flex-1" style="min-width:0">
+                <div class="u-fw-6 u-t-md">${esc(c.titel || '(geen titel)')}</div>
+                <div class="u-t-xs u-zacht">
+                  #${c.volgorde ?? '·'}<span class="sep" aria-hidden="true"></span>${c.status === 'gepubliceerd' ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4.6 12.4 9.6 17.4 19.6 6.6"/></svg> gepubliceerd' : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15.4 4.8 19.2 8.6 9 18.8l-4 1.2 1.2-4z"/><path d="M13.4 6.8 17.2 10.6"/></svg> concept'}
+                  ${(c.tags||[]).length ? '<span class="sep" aria-hidden="true"></span>' + c.tags.map(esc).join(', ') : ''}
                 </div>
               </div>
             </div>`).join('')}
@@ -72,7 +72,7 @@ function modalContentBewerk(item){
   const isNieuw = !item;
   const c = item || { categorie:'leercurve', tags:[], volgorde:1, status:'concept', titel:'', achtergrond:'', tips:[] };
   openModal(`
-    <h2>${isNieuw ? '+ Nieuwe tekst' : '✏️ ' + esc(c.titel || '')}</h2>
+    <h2>${isNieuw ? '+ Nieuwe tekst' : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15.4 4.8 19.2 8.6 9 18.8l-4 1.2 1.2-4z"/><path d="M13.4 6.8 17.2 10.6"/></svg> ' + esc(c.titel || '')}</h2>
     <div class="veldgroep"><label>Categorie</label>
       <select class="invoer" id="cCategorie">
         <option value="leercurve" ${c.categorie==='leercurve'?'selected':''}>Leerlijn-thema</option>
@@ -95,7 +95,7 @@ function modalContentBewerk(item){
         <option value="gepubliceerd" ${c.status==='gepubliceerd'?'selected':''}>Gepubliceerd</option>
       </select></div>
     <button class="knop vol" id="cOpslaan">Opslaan</button>
-    ${!isNieuw ? `<button class="knop licht vol" id="cVerwijderen" style="margin-top:8px">🗑 Verwijderen</button>` : ''}
+    ${!isNieuw ? `<button class="knop licht vol u-mt-xs" id="cVerwijderen" ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5.4 7.4h13.2"/><path d="M7.4 7.4 8.3 20h7.4l.9-12.6"/><path d="M9.6 4.4h4.8l.6 3H9z"/><path d="M10.6 11v5.4M13.4 11v5.4"/></svg> Verwijderen</button>` : ''}
   `);
   document.getElementById('cOpslaan').onclick = async () => {
     const titel = document.getElementById('cTitel').value.trim();
@@ -139,7 +139,7 @@ export function koppelClubContent(v, herteken){
     catch(e){ meld('Kopiëren mislukt: ' + (e.code || e.message)); }
   });
   v.querySelector('#btnContentNieuw')?.addEventListener('click', () => modalContentBewerk(null));
-  v.querySelector('#btnBeleidsplan')?.addEventListener('click', () => import('./club-beleidsplan.js?v=20261103b').then(m => m.openBeleidsplanImport()));
+  v.querySelector('#btnBeleidsplan')?.addEventListener('click', () => import('./club-beleidsplan.js?v=20261110a').then(m => m.openBeleidsplanImport()));
   v.querySelector('#btnContentSeed')?.addEventListener('click', async () => {
     meld('Bezig met seeden…');
     try {

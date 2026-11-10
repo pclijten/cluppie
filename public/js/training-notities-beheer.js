@@ -20,8 +20,8 @@ import {
   db, collection, doc, query, where, getDocs, getDoc, setDoc, serverTimestamp,
   functions, httpsCallable
 } from './firebase.js?v=20261011g';
-import { S, esc, isBeheerder, bewaakTerug, vangnetStilTerugAlsNodig } from './state.js?v=20261103b';
-import { blokId } from './training-aantekeningen.js?v=20261103b';
+import { S, esc, isBeheerder, bewaakTerug, vangnetStilTerugAlsNodig, terugLaag } from './state.js?v=20261110a';
+import { blokId } from './training-aantekeningen.js?v=20261110a';
 
 let _overlay = null;
 
@@ -44,6 +44,8 @@ function bouwOverlay(){
     <div class="tnb-stage"></div>`;
   document.body.appendChild(el);
   el.querySelector('.tnb-terug').onclick = () => sluitBeheerNotities();
+  /* Hardware-terug sluit het notities-overzicht (z-index 65). */
+  terugLaag('tnb', { z:65, vast:true, open: () => el.classList.contains('open'), sluit: sluitBeheerNotities });
   el.querySelectorAll('.tnb-schakel button').forEach(b => {
     b.onclick = () => {
       el.querySelectorAll('.tnb-schakel button').forEach(x => x.classList.remove('actief'));
@@ -205,7 +207,7 @@ function bindAiKnoppen(stage, trainingId, notities, bidx){
     const toon = (tekst, gecachet) => {
       houder.innerHTML = `
         <div class="tnb-ai-kaart">
-          <div class="tnb-ai-kop"><span class="tnb-ai-badge">✦ AI-samenvatting</span><span class="tnb-ai-anoniem">anoniem${gecachet ? '' : ' · zojuist'}</span></div>
+          <div class="tnb-ai-kop"><span class="tnb-ai-badge">✦ AI-samenvatting</span><span class="tnb-ai-anoniem">anoniem${gecachet ? '' : '<span class="sep" aria-hidden="true"></span>zojuist'}</span></div>
           <div class="tnb-ai-tekst">${esc(tekst)}</div>
         </div>`;
     };

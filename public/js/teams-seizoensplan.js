@@ -19,18 +19,18 @@
 
    Tabblad: 'seizoensplan'. Importeert NIET uit teams.js; teams.js geeft zetTeamTab mee. */
 import { db, doc, collection, getDoc, getDocs, setDoc, addDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261103b';
-import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261103b';
-import { aiAan } from './clubconfig.js?v=20261103b';
-import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261103b';
-import { trainingenVanPlan } from './seizoensplan-club.js?v=20261103b';
-import { onderdeelAan } from './onderdelen.js?v=20261103b';
+import { S, esc, meld } from './state.js?v=20261110a';
+import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261110a';
+import { aiAan } from './clubconfig.js?v=20261110a';
+import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261110a';
+import { trainingenVanPlan } from './seizoensplan-club.js?v=20261110a';
+import { onderdeelAan } from './onderdelen.js?v=20261110a';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019f';
-import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261103b';
+import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261110a';
 import {
   MODELLEN, ACCENTEN, maakSeizoensplan, weekKalender, herreken, standaardVrij, maandagVan, beschikbareThemas, themaVolgorde,
   valideerBlokken, positieOp, positieWeek, teamSignalen, stelBijsturingVoor, pasVoorstelToe,
-} from './seizoensplan-logica.js?v=20261103b';
+} from './seizoensplan-logica.js?v=20261110a';
 
 const VORMEN = BIBLIOTHEEK.vormen;
 const KLEUREN = ['var(--accent)', '#4a8fe0', '#e0a526', '#3fb27f', '#a855f7', '#f08a24', '#14b8a6', '#ec4899'];

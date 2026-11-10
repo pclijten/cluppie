@@ -592,6 +592,39 @@ exports.samenvatHotspot = onCall(
   }
 );
 
+/* ---------- 2d-bis. TRAININGSDOELEN SAMENVATTEN (Nu-kaart) ----------
+   [20261110, uit ASV'33] Eén korte regel die de doelen van een training samenvat.
+   Alleen de doelteksten uit de oefenstof gaan mee: geen namen, geen spelers, geen teamgegevens.
+   Telt mee in de AI-limiet van de club; staat AI uit, dan toont de app gewoon het eerste doel. */
+const DOELEN_SYSTEEM = 'Je vat trainingsdoelen van een jeugdvoetbaltraining samen tot één allesomvattend doel. ' +
+  'Schrijf maximaal één korte regel (circa 60 tekens, nooit meer dan 90), in het Nederlands, ' +
+  'zonder punt aan het eind, zonder aanhalingstekens en zonder opsomming. Geef alleen die regel.';
+function schoonDoelen(lijst){
+  return (Array.isArray(lijst) ? lijst : []).map(d => String(d || '').replace(/\s+/g, ' ').trim().slice(0, 160)).filter(Boolean).slice(0, 12);
+}
+function schoonSamenvatting(t){
+  let tekst = String(t || '').split('\n')[0].replace(/^["'\-•\s]+|["'.\s]+$/g, '').trim();
+  if (tekst.length > 90) tekst = tekst.slice(0, 89).replace(/\s+\S*$/, '') + '…';
+  return tekst;
+}
+exports.vatDoelenSamen = onCall(
+  { region: REGIO, secrets: [ANTHROPIC_API_KEY], cors: true, maxInstances: 5, timeoutSeconds: 30 },
+  async (request) => {
+    const doelen = schoonDoelen(request.data?.doelen);
+    if (doelen.length < 2) throw new HttpsError('invalid-argument', 'Minstens twee doelen.');
+    const { clubId, rol } = await vereisAI(request);
+    const namen = await namenVoorScrub(clubId, request.auth.uid, rol);
+    const tekst = schoonSamenvatting(await claude({
+      apiKey: ANTHROPIC_API_KEY.value(),
+      system: [{ type: 'text', text: DOELEN_SYSTEEM }],
+      messages: [{ role: 'user', content: doelen.map(d => '- ' + scrubPII(d, namen)).join('\n') }],
+      maxTokens: 80, temperature: 0.2,
+    }));
+    if (!tekst) throw new HttpsError('internal', 'Lege samenvatting.');
+    return { tekst };
+  }
+);
+
 /* ---------- 2e. BELEIDSPLAN ANALYSEREN ====================
    Een clubbeheerder importeert het eigen (jeugd)beleidsplan. De client stuurt de tekst in stukken
    (max ~12.000 tekens); deze functie haalt er voorstellen voor clubcontent uit: leerlijn-thema's,

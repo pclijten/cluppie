@@ -5,7 +5,7 @@
    Dit draait via Cloud Functions (exporteerMijnGegevens, verwijderMijnAccount).
 ==================================================================== */
 import { auth, functions, httpsCallable, signOut } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261103b';
+import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261110a';
 
 export function openPrivacy(){
   openModal(`

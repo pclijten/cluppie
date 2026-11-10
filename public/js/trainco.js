@@ -21,13 +21,13 @@
    Rechten staan in firestore.rules (zie TRAININGSCOORDINATOR-RULES.md); dit
    bestand levert alleen de weergave. */
 import { auth, db, signOut, collection, query, where, onSnapshot, getDocs } from './firebase.js?v=20261011g';
-import { S, esc, bewaakTerug } from './state.js?v=20261103b';
-import { BOUWEN, isoWeek, youtubeId, youtubeThumb, youtubeWatch } from './config.js?v=20261103b';
-import { bouwVanTeam, eigenBouwenVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261103b';
-import { oefHtml, diagramVoorOefening, openLightbox } from './training-weergave.js?v=20261103b';
-import { logoImgVoorDoc } from './clubconfig.js?v=20261103b';
-import { ico } from './icons.js?v=20260922c';
-import { momentenVanTeam, DAGEN_LANG, DAGEN_KORT } from './trainingsmomenten.js?v=20261103b';
+import { S, esc, bewaakTerug, doeTerug } from './state.js?v=20261110a';
+import { BOUWEN, isoWeek, youtubeId, youtubeThumb, youtubeWatch } from './config.js?v=20261110a';
+import { bouwVanTeam, eigenBouwenVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261110a';
+import { oefHtml, diagramVoorOefening, openLightbox } from './training-weergave.js?v=20261110a';
+import { logoImgVoorDoc } from './clubconfig.js?v=20261110a';
+import { ico } from './icons.js?v=20261110a';
+import { momentenVanTeam, DAGEN_LANG, DAGEN_KORT } from './trainingsmomenten.js?v=20261110a';
 
 const T = {
   club: null, teams: [], trainingen: [], videos: [], laden: { teams: true, trainingen: true }, fout: '',
@@ -72,8 +72,9 @@ export async function bootVoorbeeld(user){
 /* ---------- boot ---------- */
 /* Trainer die óók trainingscoördinator is: opent het scherm vanuit de
    coach-app (menu-item), met een knop terug naar zijn team. */
-export function openVanuitApp(){
-  const club = (S.traincoClubs || [])[0];
+export function openVanuitApp(clubId){
+  const lijst = S.traincoClubs || [];
+  const club = (clubId && lijst.find(c => c.id === clubId)) || lijst[0];
   if (club) bootTrainco(club, false, true);
 }
 export function bootTrainco(club, voorbeeld, vanuitApp = false){
@@ -106,6 +107,11 @@ export function bootTrainco(club, voorbeeld, vanuitApp = false){
   document.body.appendChild(el);
   T.el = el;
   el.addEventListener('click', klik);
+  el.addEventListener('change', e => {
+    const sel = e.target.closest('[data-tc-groep-kies]'); if (!sel) return;
+    T.groep = sel.value; try { localStorage.setItem('cluppie_trainco_groep', T.groep); } catch(err){}
+    teken();
+  });
 
   const fout = naam => err => {
     console.error(`[Cluppie] trainingscoördinator: "${naam}" niet leesbaar:`, err.code, err.message);
@@ -231,15 +237,16 @@ function kop(meta, titel, extra = ''){
 function filterBalk(teams){
   const opties = filterOpties(teams);
   if (!opties.some(o => o.id === T.groep)) T.groep = 'alle';
-  return `<div class="tc-filters" role="tablist" aria-label="Kies teams">${opties.map(o =>
-    `<button class="tc-filter${T.groep === o.id ? ' actief' : ''}" data-tc-groep="${esc(o.id)}" role="tab" aria-selected="${T.groep === o.id}">${esc(o.naam)}<span>${o.n}</span></button>`).join('')}</div>`;
+  return `<div class="tc-filters"><label for="tcGroep">Teams</label>
+    <select id="tcGroep" class="invoer tc-select" data-tc-groep-kies>${opties.map(o =>
+      `<option value="${esc(o.id)}"${T.groep === o.id ? ' selected' : ''}>${o.id === 'alle' ? 'Alle teams' : esc(o.naam)} (${o.n})</option>`).join('')}</select></div>`;
 }
 function weekNav(){
   const ma = maandagNu(T.weekOffset), zo = plusDagen(ma, 6);
   const nr = isoWeek(plusDagen(ma, 3));
   return `<div class="tc-weeknav">
     <button class="knop licht tc-rond" data-tc-week="-1" aria-label="Vorige week">${ico('navigation-back', 20)}</button>
-    <div class="tc-weektitel"><b class="cond">Week ${nr}</b><small>${esc(kortDatum(ma))} – ${esc(kortDatum(zo))}${T.weekOffset === 0 ? ' · deze week' : ''}</small></div>
+    <div class="tc-weektitel"><b class="cond">Week ${nr}</b><small>${esc(kortDatum(ma))} – ${esc(kortDatum(zo))}${T.weekOffset === 0 ? '<span class="sep" aria-hidden="true"></span>deze week' : ''}</small></div>
     <button class="knop licht tc-rond" data-tc-week="1" aria-label="Volgende week">${ico('navigation-forward', 20)}</button>
     ${T.weekOffset !== 0 ? '<button class="knop licht klein tc-vandaag" data-tc-week="0">Deze week</button>' : ''}
   </div>`;
@@ -247,7 +254,7 @@ function weekNav(){
 function teamRij(p){
   return `<div class="tc-teamrij">
     <b class="cond">${esc(p.team.naam)}</b>
-    <span>${p.datum ? esc(lokaleDatumTekst(p.datum)) + (tijdVan(p.moment) ? ' · ' + esc(tijdVan(p.moment)) : ' · <em>tijd nog niet ingesteld</em>') : '<em>dag nog niet bekend</em>'}</span>
+    <span>${p.datum ? esc(lokaleDatumTekst(p.datum)) + (tijdVan(p.moment) ? '<span class="sep" aria-hidden="true"></span>' + esc(tijdVan(p.moment)) : '<span class="sep" aria-hidden="true"></span><em>tijd nog niet ingesteld</em>') : '<em>dag nog niet bekend</em>'}</span>
     <small>${ico('team-members', 15)}${esc(spelersTekst(p.team))}</small>
   </div>`;
 }
@@ -282,6 +289,22 @@ function trainingNr(tr){
   return m ? Number(m[1]) : null;
 }
 const hoofdteams = teams => [...new Set(teams.map(groepVan))].sort(vergelijkGroep);
+/* Per dag de teams die deze training die dag krijgen: "Maandag  O8-1, O9-1".
+   De dag komt uit het trainingsmoment van het team (of de trainingsdag van de
+   training zelf); teams zonder dag staan onderaan onder "Geen dag". */
+function dagRegels(g){
+  const perDag = new Map();
+  for (const r of g.regels){
+    const dag = r.moment?.dag || 0;
+    if (!perDag.has(dag)) perDag.set(dag, new Map());
+    perDag.get(dag).set(r.team.id, r.team);
+  }
+  const dagen = [...perDag.keys()].sort((a, b) => (a === 0) - (b === 0) || a - b);
+  return dagen.map(d => {
+    const namen = sorteerTeams([...perDag.get(d).values()]).map(t => t.naam).join(', ');
+    return `<b>${d ? DAGEN_LANG[d - 1] : 'Geen dag'}</b><span>${esc(namen)}</span>`;
+  }).join('');
+}
 function htmlTrainingKaart(g){
   const vormen = oefenvormen(g.tr).slice(0, 4);
   const teams = sorteerTeams([...new Map(g.regels.map(r => [r.team.id, r.team])).values()]);
@@ -290,7 +313,7 @@ function htmlTrainingKaart(g){
     <div class="tc-hoofdteams">${hoofdteams(teams).map(h => `<span>${esc(h)}</span>`).join('')}</div>
     ${vormen.length ? `<button class="tc-mini" data-tc-open="${esc(g.tr.id)}" aria-label="Bekijk ${esc(trTitel(g.tr))}">${vormen.map(v => `<img src="${esc(v.url)}" alt="" loading="lazy">`).join('')}</button>` : ''}
     <div class="tc-labels">${vormen.length ? `<span class="tc-label">${oefenvormen(g.tr).length} oefenvorm${oefenvormen(g.tr).length === 1 ? '' : 'en'}</span>` : ''}${g.tr.url ? '<span class="tc-label">PDF</span>' : ''}<span class="tc-label">${teams.length} team${teams.length === 1 ? '' : 's'}</span>${vanafLabel(g.tr)}</div>
-    <div class="tc-teamlijst" title="${esc(teams.map(t => t.naam).join(', '))}">${esc(teams.map(t => t.naam).join(' · '))}</div>
+    <div class="tc-dagregels">${dagRegels(g)}</div>
     <button class="knop tc-knop-vol" data-tc-open="${esc(g.tr.id)}">Bekijk training</button>
   </article>`;
 }
@@ -311,11 +334,11 @@ function htmlSchemaTeam(w){
     return '<td class="tc-cel c-leeg"><span>–</span></td>';
   };
   const zonderDag = team => inWeek.filter(p => p.team.id === team.id && !p.datum)
-    .map(p => `<button class="tc-zonderdag" data-tc-open="${esc(p.tr.id)}">${esc(trTitel(p.tr))} · geen dag</button>`).join('');
+    .map(p => `<button class="tc-zonderdag" data-tc-open="${esc(p.tr.id)}">${esc(trTitel(p.tr))}<span class="sep" aria-hidden="true"></span>geen dag</button>`).join('');
   const groepen = new Map();
   for (const t of rijTeams){ const g = bouwNaamVan(t); if (!groepen.has(g)) groepen.set(g, []); groepen.get(g).push(t); }
   const rij = t => `<tr>
-      <th scope="row" class="tc-teamcel"><b class="cond">${esc(t.naam)}</b><small>${esc(spelersTekst(t))}${momentenVanTeam(t).length ? '' : ' · <em>geen trainingsdag</em>'}</small>${zonderDag(t)}</th>
+      <th scope="row" class="tc-teamcel"><b class="cond">${esc(t.naam)}</b><small>${esc(spelersTekst(t))}${momentenVanTeam(t).length ? '' : '<span class="sep" aria-hidden="true"></span><em>geen trainingsdag</em>'}</small>${zonderDag(t)}</th>
       ${dagen.map(d => cel(t, d)).join('')}</tr>`;
   const body = [...groepen.entries()].map(([g, l]) => `${groepen.size > 1 ? `<tr class="tc-groeprij"><th colspan="${dagen.length + 1}">${esc(g)}</th></tr>` : ''}${l.map(rij).join('')}`).join('');
   if (!rijTeams.length) return '<div class="kaart tc-leeg">Geen teams om te tonen.</div>';
@@ -355,13 +378,13 @@ function htmlTrainingenScherm(alle){
   const sleutels = [...blokken.keys()].sort((a, b) => (a === 'x') - (b === 'x') || a - b);
   const eersteGroep = g => hoofdteams(g.regels.map(r => r.team))[0] || '';
   return `
-    ${kop(esc(T.club.naam || '') + ' · trainingscoördinator', 'Trainingen')}
+    ${kop(esc(T.club.naam || '') + ', trainingscoördinator', 'Trainingen')}
     ${filterBalk(T.teams)}
     ${weekNav()}
     ${w.trainingen.length ? sleutels.map(k => {
       const lijst = blokken.get(k).sort((a, b) => vergelijkGroep(eersteGroep(a), eersteGroep(b)));
       return `<section class="tc-blokken">
-        <div class="tc-blokkop"><b class="cond">${k === 'x' ? 'Overige trainingen' : 'Training ' + k}</b><span>${lijst.length} versie${lijst.length === 1 ? '' : 's'} · ${lijst.reduce((n, g) => n + new Set(g.regels.map(r => r.team.id)).size, 0)} teams</span></div>
+        <div class="tc-blokkop"><b class="cond">${k === 'x' ? 'Overige trainingen' : 'Training ' + k}</b><span>${lijst.length} versie${lijst.length === 1 ? '' : 's'}<span class="sep" aria-hidden="true"></span>${lijst.reduce((n, g) => n + new Set(g.regels.map(r => r.team.id)).size, 0)} teams</span></div>
         <div class="tc-raster">${lijst.map(htmlTrainingKaart).join('')}</div>
       </section>`; }).join('')
       : '<div class="kaart tc-leeg">Voor deze week staan nog geen trainingen klaar. Blader met de pijlen naar een andere week.</div>'}`;
@@ -372,14 +395,14 @@ function htmlRoosterScherm(alle){
   const nMist = w.ontbreekt.length;
   if (!nMist) T.alleenMist = false;
   return `
-    ${kop(esc(T.club.naam || '') + ' · trainingscoördinator', 'Weekrooster')}
+    ${kop(esc(T.club.naam || '') + ', trainingscoördinator', 'Weekrooster')}
     ${filterBalk(T.teams)}
     ${weekNav()}
     <div class="tc-samenvatting">
       <div class="kaart"><b class="cond">${w.trainingen.length}</b><span>training${w.trainingen.length === 1 ? '' : 'en'} deze week</span></div>
       <div class="kaart"><b class="cond">${w.teams.length}</b><span>teams</span></div>
       <button class="kaart tc-mistknop ${nMist ? 's-mist' : ''} ${T.alleenMist ? 'actief' : ''}" data-tc-mist ${nMist ? '' : 'disabled'} aria-pressed="${!!T.alleenMist}">
-        <b class="cond">${nMist}</b><span>ontbreken${T.alleenMist ? ' · filter aan' : ''}</span></button>
+        <b class="cond">${nMist}</b><span>ontbreken${T.alleenMist ? '<span class="sep" aria-hidden="true"></span>filter aan' : ''}</span></button>
     </div>
     <div class="tc-schemakop">
       <div class="tc-legenda">${schema === 'team' ? '<span class="l-ok">Training gekoppeld</span><span class="l-mist">Team traint, maar heeft geen training</span><span class="l-leeg">Geen training op die dag</span>' : ''}</div>
@@ -404,11 +427,11 @@ function htmlVideos(){
     return `<a class="kaart tc-video" href="${esc(link || '#')}" target="_blank" rel="noopener">
       <span class="tc-video-beeld">${yid ? `<img src="${esc(youtubeThumb(yid))}" alt="" loading="lazy">` : ico('training-video', 34)}<i>▶</i></span>
       <span class="tc-video-tekst"><b>${esc(v.titel || 'Video')}</b>
-        <small>${esc(sorteerTeams(teams).map(t => t.naam).join(', '))}${datum ? ' · ' + esc(datum) : ''}</small></span>
+        <small>${esc(sorteerTeams(teams).map(t => t.naam).join(', '))}${datum ? '<span class="sep" aria-hidden="true"></span>' + esc(datum) : ''}</small></span>
     </a>`;
   };
   return `
-    ${kop(esc(T.club.naam || '') + ' · trainingscoördinator', 'Video’s')}
+    ${kop(esc(T.club.naam || '') + ', trainingscoördinator', 'Video’s')}
     ${filterBalk(basisTeams)}
     ${lijst.length ? `<div class="tc-videos">${lijst.map(kaart).join('')}</div>` : '<div class="kaart tc-leeg">Voor deze groep zijn nog geen video’s gedeeld.</div>'}`;
 }
@@ -429,7 +452,7 @@ function htmlDetail(alle){
   const regels = alle.filter(p => p.tr.id === tr.id).sort((a, b) => (a.datum?.getTime() || 9e15) - (b.datum?.getTime() || 9e15) || a.team.naam.localeCompare(b.team.naam, 'nl', { numeric: true }));
   const oef = Array.isArray(tr.oefeningen) ? tr.oefeningen : [];
   const vormen = oefenvormen(tr);
-  const groepen = regels.map(r => bouwNaamVan(r.team)).filter((v, i, a) => a.indexOf(v) === i).join(' · ');
+  const groepen = regels.map(r => bouwNaamVan(r.team)).filter((v, i, a) => a.indexOf(v) === i).join(', ');
   // inhoudsopgave, zoals bij de coaches
   const inhoud = [
     vormen.length ? ['tc-vormen', 'Oefenvormen'] : null,
@@ -439,7 +462,7 @@ function htmlDetail(alle){
   ].filter(Boolean);
   return `
     ${terug}
-    <div class="tc-kop"><div><div class="tc-meta">${esc(groepen)}${tr.week ? ' · ' + esc(tr.week) : ''}</div><h1 class="cond tc-h1">${esc(trTitel(tr))}</h1>${vanafLabel(tr)}</div></div>
+    <div class="tc-kop"><div><div class="tc-meta">${esc(groepen)}${tr.week ? '<span class="sep" aria-hidden="true"></span>' + esc(tr.week) : ''}</div><h1 class="cond tc-h1">${esc(trTitel(tr))}</h1>${vanafLabel(tr)}</div></div>
     <nav class="trw-nav tc-inhoud" aria-label="Inhoudsopgave">${inhoud.map(([id, n]) => `<a class="trw-chip" href="#${id}" data-tc-naar="${id}">${esc(n)}</a>`).join('')}</nav>
     <div class="tc-detail">
       <div class="tc-detail-hoofd">
@@ -447,13 +470,13 @@ function htmlDetail(alle){
           <div class="tc-vormen">${vormen.map(v => `<button class="kaart tc-vorm" data-tc-zoom="${esc(v.url)}" data-tc-zoomtitel="${esc(v.titel)}"><img src="${esc(v.url)}" alt="" loading="lazy"><span>${esc(v.titel)}</span></button>`).join('')}</div>
         </section>` : ''}
         ${oef.length ? `<section class="tc-anker"><div class="sectie-kop">Training</div>
-          <div class="trw-inline tc-oefeningen">${oef.map((o, i) => oefHtml(i + 1, o, tr.diagramUrls || {}).replace('<section class="trw-oef">', `<section class="trw-oef tc-anker" id="tc-oef-${i}">`)).join('')}${bronHtml()}</div>
+          <div class="trw-inline tc-oefeningen">${oef.map((o, i) => oefHtml(i + 1, o, tr.diagramUrls || {}).replace('<section class="trw-oef">', `<section class="trw-oef tc-anker" id="tc-oef-${i}">`)).join('')}</div>
         </section>` : '<div class="kaart tc-leeg">Voor deze training is alleen de PDF beschikbaar.</div>'}
       </div>
       <aside class="tc-detail-zij">
-        <section id="tc-wanneer" class="kaart tc-anker"><div class="sectie-kop" style="margin-top:0">Wie traint wanneer</div>
+        <section id="tc-wanneer" class="kaart tc-anker"><div class="sectie-kop u-mt-0">Wie traint wanneer</div>
           ${regels.map(teamRij).join('') || '<div class="tc-leeg-klein">Nog niet aan een team gekoppeld</div>'}</section>
-        ${tr.url ? `<section id="tc-pdf" class="kaart tc-anker"><div class="sectie-kop" style="margin-top:0">PDF</div>
+        ${tr.url ? `<section id="tc-pdf" class="kaart tc-anker"><div class="sectie-kop u-mt-0">PDF</div>
           <p class="tc-pdfnaam">${esc(tr.bestandsnaam || trTitel(tr))}</p>
           <a class="knop tc-knop-vol" href="${esc(tr.url)}" target="_blank" rel="noopener">${ico('admin-document', 18)} PDF openen</a></section>` : ''}
       </aside>
@@ -510,8 +533,7 @@ function klik(e){
   if (fig && T.el.contains(fig)){ openLightbox(fig.dataset.zoom, fig.dataset.zoomtitel); return; }
   const b = e.target.closest('button,a'); if (!b || !T.el.contains(b)) return;
   const d = b.dataset;
-  if (d.tcGroep){ T.groep = d.tcGroep; try { localStorage.setItem('cluppie_trainco_groep', T.groep); } catch(err){} teken(); }
-  else if (d.tcSchema){ T.schema = d.tcSchema; teken(); }
+  if (d.tcSchema){ T.schema = d.tcSchema; teken(); }
   else if (b.hasAttribute('data-tc-mist')){ T.alleenMist = !T.alleenMist; teken(); }
   else if (d.tcPagina){ if (d.tcPagina === T.pagina && !T.detail) return; bewaar(); T.pagina = d.tcPagina; T.detail = null; teken(); naarBoven(); }
   else if (d.tcWeek !== undefined){ T.weekOffset = d.tcWeek === '0' ? 0 : T.weekOffset + Number(d.tcWeek); teken(); }
@@ -520,7 +542,7 @@ function klik(e){
   else if (d.tcZoom){ openLightbox(d.tcZoom, d.tcZoomtitel); }
   // Zelfde weg als de terugknop van de telefoon (vangnet in state.js), zodat
   // beide altijd precies één stap teruggaan.
-  else if (b.hasAttribute('data-tc-terug')){ history.back(); }
+  else if (b.hasAttribute('data-tc-terug')){ doeTerug(); }
   else if (b.hasAttribute('data-tc-naarapp')){ sluitTrainco(); }
   else if (b.hasAttribute('data-tc-uitloggen')){
     T.unsub.forEach(u => { try { u(); } catch(err){} }); T.unsub = [];

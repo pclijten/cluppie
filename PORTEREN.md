@@ -2,14 +2,24 @@
 
 Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
 
-## Stand (bijgewerkt 23-10-2026, versie 20261023a)
+## Stand (bijgewerkt 10-11-2026, versie 20261110a)
 - **Firestore-rules:** per club afgeschermd (teams, trainingen, video's, documenten, berichten via clublidmaatschap). Getest in de emulator: `npm run test:rules` (21 scenario's, laatst 20/20 groen op 11-10; de 21e is in 20261011f toegevoegd). Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.
 - **Cloud Functions:** live in `europe-west1` (Node 22, 2nd gen). Iedere nieuwe callable heeft na de eerste deploy de invoker `allUsers` nodig (`gcloud run services add-iam-policy-binding <naam-in-kleine-letters> …`), anders krijgt de app een CORS-/`internal`-fout.
-- **Tests:** `npm test` (17 suites, laatst 13-10 allemaal groen; nieuw: `vaste-afmeldingen`. Eerst één keer `cd functions && npm install`) en `node tests/toegang.test.js` (aansluiten/uitnodigen, 24 scenario's). Pariteit met ASV'33: `node tools/pariteit.mjs ../cluppieasv33` (10 verwachte verschillen in `bouw-hub.js`, `club.js` en `teams-spelers.js`: het overzetten loopt hier via de server; ASV'33 PR #5 is sinds 20261013a gepoort).
+- **Tests:** `npm test` (17 suites, laatst 13-10 allemaal groen; nieuw: `vaste-afmeldingen`. Eerst één keer `cd functions && npm install`) en `node tests/toegang.test.js` (aansluiten/uitnodigen, 24 scenario's). Pariteit met ASV'33: `node tools/pariteit.mjs ../cluppieasv33` (stand 10-11: ASV'33 t/m PR #42 gepoort; resterende meldingen zijn bewust: overzetten via de server, trainco-beheer via functions, bronvermelding niet overgenomen, `nu-test.js` is een ASV-testpagina).
 - **Versies:** elke release `node tools/versie.mjs JJJJMMDDx origin/main` (zet `?v=` in gewijzigde modules en hun importeurs + `CACHE_VERSIE` in `sw.js`).
 - **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
 
 ## Open
+**Voor Paul — ASV'33-updates van 5 t/m 9 november (release 20261110a, branch `asv33-november`)**
+- [ ] PR reviewen en mergen. Gepoort uit ASV'33 PR #27–#42: Nu-kaart bovenaan de team-hub, rustiger startscherm (tegels achter "Alles"), wedstrijdvoorbereiding (Tegenstander / Praktisch / Plan) met knoppenduo op de wedstrijdkaart, wedstrijdplek met route/veld/kleedkamer, duidelijkere wedstrijdknoppen en het nieuwe zijlijnscherm (proef), trainingscoördinator op het startscherm + teams-dropdown en trainingsdag per team, Android-terugknop via een lagenstapel (`terugLaag` in `state.js`), stats-fixes (lopende klok, tabel op telefoon), poule-uitslagen met elk streepje, en het nieuwe stijlsysteem (tokens, SVG-iconen i.p.v. emoji). `state.js` is gewijzigd (terugknop): dus een volledige versie-bump, `node tools/versie.mjs 20261110a origin/main`.
+- [ ] Clubkleur: het stijlsysteem kent nu ook `--accent-vlak` en `--accent-ink`; `zetKleur` in `clubconfig.js` zet ze mee (tekst op het vlak wit of donker naar contrast). Even een club met een lichte kleur (geel) bekijken.
+- [ ] Deploy de nieuwe AI-functie voor de doelregel op de Nu-kaart: `firebase deploy --only functions:vatDoelenSamen --project cluppie-ad329` en `gcloud run services add-iam-policy-binding vatdoelensamen --region=europe-west1 --member=allUsers --role=roles/run.invoker --project=cluppie-ad329`. Telt mee in de AI-limiet per club; zonder AI of zonder club staat het eerste doel er.
+- [ ] **Scouting (eerste elftal):** de client is gepoort, maar de bron van `scoutTegenstander` (`functions/scouting.js`) staat niet in de ASV'33-repo en dus ook niet hier. In cluppie.io staat Scouting achter een nieuwe eindbaas-schakelaar per club (platformscherm, standaard uit). De Sportlink-analyse in de voorbereiding (dezelfde functie, `cijfers: true`) verschijnt pas als de functie er is; tot dan valt die kaart stil weg. Actie: `functions/scouting.js` uit je ASV-functions hierheen kopiëren (geen namen/club ASV), deployen en de invoker openzetten.
+- [ ] Bewust niet overgenomen: de bronvermelding (Arnoud Jonker), `nu-test.html`/`nu-test.js` (ASV-testpagina) en de nieuwe `over.html` (cluppie.io heeft een eigen).
+- [ ] Bestaande fouten meegenomen: `trainco.js` riep `bronHtml()` aan (bestond niet → coördinatorscherm brak bij een training met oefeningen) en `teams-training.js` gebruikte `PLAN_TYPE` (bestond daar niet → eigen dag opslaan zonder label brak). Allebei hersteld; graag ook in ASV'33 rechtzetten.
+- [ ] **Individuele trainer (zelfde release):** het lege startscherm toont nu drie paden ("Ik train zelf een team", "Ik heb een uitnodiging of code", clubaanmelding) in plaats van "Vraag je hoofdtrainer…"; dit was besluit 6 uit de snelstart-analyse van 20-10. Nieuwe deellink `https://www.cluppie.io/?start=trainer` opent de snelstart direct; de landingspagina (`over.html`) heeft "Begin als trainer" in de hero en een eerlijkere tekst (Sportlink en AI horen bij een club). De kaart Eerste stappen staat nu ook op het desktop-dashboard. Desktop-dashboard telt "nog X dagen" voortaan in kalenderdagen (om 22:00 stond bij een wedstrijd van morgen "nog vandaag").
+- [ ] Niet getest tegen echte Firebase. Wel: `npm test` en `tests/toegang.test.js` groen, ESLint `no-undef` schoon op alle modules, alle benoemde imports bestaan, en schermen (startscherm, team-hub, voorbereiding; telefoon 414×896 en desktop 1440) gerenderd met een nep-Firestore zonder consolefouten, zowel als clubcoach als als individuele trainer.
+
 **Voor Paul (console/terminal)**
 **Voor Paul — Trainingstijden + trainingscoördinator + coach verwijderen (release 20261103b, branch `asv33-trainco-momenten`, overgenomen uit ASV'33)**
 - [ ] `npm run test:rules` draaien (Java nodig; de emulator kon in de bouwomgeving niet downloaden, dus de 3 nieuwe rules-tests zijn niet gedraaid).
@@ -81,6 +91,7 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - [ ] KNVB schriftelijk om toestemming vragen als KNVB-vormen getoond of bewerkt moeten worden; nu is de bibliotheek eigen werk.
 
 **Bouwen**
+- [ ] Platformcentrum voor de eindbaas (eigen ruimte: Overzicht, Uitrol, Clubs, Trainers, Instellingen) en AI voor losse trainers: impactanalyse `claude/eindbaas-platformcentrum-impactanalyse.md` in het Cluppie.io-project + mockup. Wacht op jouw akkoord op de 9 beslispunten.
 - [ ] Trainingsbibliotheek uitbreiden: omschakelen balwinst/balverlies (vanaf O14), dunne cellen (Teamsport O13, Technische vaardigheden O13, Dieptespel O8), keepervormen, O14+.
 - [ ] Sportlink: na de eerste weekendcontrole (`checkAfgelastingen`, vr 16–22 en za/zo 7–14) in de logs kijken of het aantal calls en markeringen klopt.
 - [ ] Een clubbeheerder kan in zijn eigen club `sportlinkClubcode` aanpassen. Misbruik (de code van een andere club invullen om diens aanmelding te blokkeren) is onwaarschijnlijk; eventueel het veld in de rules alleen voor functions/platform schrijfbaar maken.
@@ -96,9 +107,12 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - `over.html`/`readme.html`, PWA-manifest en icons: één per domein, niet per club.
 
 ---
-- **Snelstart individuele coach, nog niet gedaan:** (1) herkennen dat de club al Cluppie gebruikt (clubgids + callable) en dan doorverwijzen naar aansluiten; (2) welkomstuitleg voor coaches die via een uitnodiging binnenkomen (nu alleen voor wie zelf een team start); (3) de kaart Eerste stappen staat nog niet op de desktop-weergave.
+- **Snelstart individuele coach, nog niet gedaan:** (1) herkennen dat de club al Cluppie gebruikt (clubgids + callable) en dan doorverwijzen naar aansluiten; (2) welkomstuitleg voor coaches die via een uitnodiging binnenkomen (nu alleen voor wie zelf een team start). (3) Eerste stappen op de desktop: gedaan in 20261110a.
 
 # Geschiedenis
+
+## Release 20261110a — ASV'33 PR #27–#42 gepoort
+Per bestand een 3-weg-merge (basis ASV'33 PR #26, waartegen eerder vergeleken was): 105 conflicten, waarvan 47 cosmetisch automatisch overgezet (iconen, scheidingstekens, utility-classes) en de rest met de hand (clubconfig, Sportlink, snelstart, platformbeheer blijven leidend). Nieuwe modules: `nu-scherm.js`, `nu-context.js`, `doel-samenvatting.js`, `wedstrijd-voorbereiding.js`. Nieuw in functions: `vatDoelenSamen` (alleen doelteksten, PII-scrub, `vereisAI`). Eindbaas-schakelaar `platformModules.scouting`.
 
 ## Release 20261103b — trainingstijden per team, trainingscoördinator, coach verwijderen
 Trainingsmomenten (dag + begin/eind) per team (`teams/{id}.trainingsmomenten`, `trainingsdagen` blijft afgeleid). Nieuwe rol trainingscoördinator: `clubs/{id}.trainingscoordinatoren.<uid>`, geen clublid, alleen lezen op teams/trainingen/video's (rules + storage), nooit spelers; uitnodigen via `maakUitnodiging` (rol `trainco`), aanmelding via `sluitAan` en acceptatie via `beoordeelAanvraag` (soort `trainco`); verwijderen ruimt de rol op. Nieuw: `trainingsmomenten.js`, `trainco.js`, `trainco-beheer.js`, Verwijderen-knop bij coaches.
