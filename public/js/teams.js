@@ -651,9 +651,9 @@ export function renderTeams(){
           <div class="meta">${Object.keys(t.leden||{}).length} coach(es)<span class="sep" aria-hidden="true"></span>code ${esc(t.code)}</div></div>
           <span class="pijl">›</span>
         </button>`).join('')}`
-      : !S.clubs.length ? `<div class="kaart leeg">Nog geen teams.<br>${isPlatformBeheerder()
-          ? '<b>Maak een team aan</b>, sluit je aan met een teamcode, of <b>start een club</b> om meerdere teams te beheren.'
-          : 'Vraag je hoofdtrainer om een uitnodigingslink, of sluit je aan met een teamcode die je hebt gekregen.'}</div><div id="mijnAanvragen"></div>` : ''}
+      : !S.clubs.length ? (isPlatformBeheerder()
+          ? `<div class="kaart leeg">Nog geen teams.<br><b>Maak een team aan</b>, sluit je aan met een teamcode, of <b>start een club</b> om meerdere teams te beheren.</div><div id="mijnAanvragen"></div>`
+          : `<div id="mijnAanvragen"></div>${(S.traincoClubs || []).length ? '' : startPadenHtml()}`) : ''}
 
     ${(S.traincoClubs || []).length ? `<div class="sectie-kop u-mt-2xs">Coördinator</div>
       ${S.traincoClubs.map(c => `
@@ -673,9 +673,7 @@ export function renderTeams(){
     <button class="knop club-knop vol" id="nieuwClub" style="margin-top:8px">🏛 Nieuwe club aanmaken</button>
     <button class="knop licht vol" id="platformKnop" style="margin-top:8px">Platform: alle clubs</button>`
     : `
-    ${!S.teams.length && !S.clubs.length ? `<button class="knop vol" id="eigenTeam" style="margin-top:14px">Begin met mijn eigen team</button>
-    <p class="meta" style="margin:6px 2px 0">In een paar stappen staat je team klaar: club en plaats, categorie, en je ziet meteen wat je als eerste doet. Zonder club heb je geen Sportlink en geen AI-hulp.</p>` : ''}
-    <button class="knop licht vol" id="joinTeam" style="margin-top:14px">Aansluiten met teamcode</button>
+    ${toonStartPaden() ? '' : `<button class="knop licht vol" id="joinTeam" style="margin-top:14px">Aansluiten met teamcode</button>`}
     ${S.clubs.length ? '' : '<div id="mijnClubAanmelding" style="margin-top:14px"></div>'}`}`;
 
   v.querySelector('#uitloggen').onclick = () => { stopAlleListeners(); doSignOut(); };
@@ -701,6 +699,8 @@ export function renderTeams(){
   });
   const nt = v.querySelector('#nieuwTeam'); if (nt) nt.onclick = () => modalNieuwTeam();
   const et = v.querySelector('#eigenTeam'); if (et) et.onclick = () => startEigenTeam();
+  /* [20261110] deelbare link https://www.cluppie.io/?start=trainer (landingspagina) opent de snelstart meteen, één keer per sessie */
+  if (et && /[?&]start=trainer\b/.test(location.search) && !S._startTrainerGetoond){ S._startTrainerGetoond = true; setTimeout(() => startEigenTeam(), 0); }
   v.querySelector('#joinTeam').onclick = modalJoinTeam;
   const nc = v.querySelector('#nieuwClub'); if (nc) nc.onclick = () => import('./club.js?v=20261110a').then(m => m.modalNieuwClub());
 
@@ -2961,4 +2961,26 @@ export async function openTrainingDoc(id){
     try { await setDoc(doc(db,'gebruikers',S.user.uid,'gelezen',id), {tijd: serverTimestamp()}); } catch(e){}
   }
   return true;
+}
+
+/* ==================== [20261110] Startscherm zonder team: drie paden ====================
+   Voor wie nog geen team, geen club en geen coördinatorrol heeft: drie gelijkwaardige keuzes
+   (besluit 6 uit de snelstart-impactanalyse van 20-10). De clubaanmelding staat eronder
+   (#mijnClubAanmelding, club-aanmelden.js). */
+function toonStartPaden(){
+  return !S.teams.length && !S.clubs.length && !(S.traincoClubs || []).length && !isPlatformBeheerder();
+}
+function startPadenHtml(){
+  return `<div class="start-paden">
+    <p class="start-intro">Hoe wil je beginnen?</p>
+    <button class="start-pad hoofd" id="eigenTeam">
+      <span class="start-pad-ico">${ico('team-trainer', 22)}</span>
+      <span class="start-pad-tekst"><b>Ik train zelf een team</b><small>Binnen een minuut klaar: opstelling en eerlijke speeltijd, trainingen en evaluaties. Je club hoeft niet mee te doen.</small></span>
+      <span class="pijl">›</span></button>
+    <button class="start-pad" id="joinTeam">
+      <span class="start-pad-ico">${ico('team-add', 22)}</span>
+      <span class="start-pad-tekst"><b>Ik heb een uitnodiging of code</b><small>Van je club of een collega-trainer. Met een link zit je na het inloggen meteen in het team.</small></span>
+      <span class="pijl">›</span></button>
+    <p class="start-voet">Zonder club heb je geen Sportlink-koppeling en geen AI-hulp. Sluit je club zich later aan, dan gaat je team mee.</p>
+  </div>`;
 }

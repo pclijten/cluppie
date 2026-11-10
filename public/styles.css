@@ -6995,3 +6995,21 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible, input:focu
 .vb-bron-nr { color: var(--elf2); font-weight: 600; font-variant-numeric: tabular-nums; }
 .vb-bron-tekst { display: flex; flex-direction: column; min-width: 0; }
 .vb-bron-datum { font-size: var(--t-xs); font-weight: 700; color: var(--ink-2); }
+
+/* ==================== [20261110] Startscherm zonder team: drie paden ==================== */
+.start-paden{display:flex;flex-direction:column;gap:var(--space-sm);margin-top:var(--space-sm)}
+.start-intro{font-family:var(--font-display);font-weight:700;font-size:var(--t-xl);text-transform:uppercase;letter-spacing:.3px;color:var(--ink);margin:0 2px}
+.start-pad{display:flex;align-items:center;gap:var(--space-md);width:100%;text-align:left;padding:var(--space-md);border-radius:var(--radius);border:1px solid var(--line-d);background:var(--surface);color:var(--ink);font:inherit;cursor:pointer}
+.start-pad:hover{border-color:var(--hover-rand)}
+.start-pad.hoofd{border-color:color-mix(in srgb,var(--accent-vlak) 55%,transparent);background:color-mix(in srgb,var(--accent-vlak) 10%,var(--surface))}
+.start-pad-ico{flex:0 0 auto;width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--surface-2);color:var(--ink)}
+.start-pad.hoofd .start-pad-ico{background:var(--accent-vlak);color:var(--accent-ink)}
+.start-pad-tekst{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--space-3xs)}
+.start-pad-tekst b{font-size:var(--t-lg);font-weight:700}
+.start-pad-tekst small{font-size:var(--t-sm);color:var(--ink-2);line-height:1.45}
+.start-voet{font-size:var(--t-xs);color:var(--ink-2);line-height:1.5;margin:0 2px}
+/* [20261110] Eerste stappen op het desktop-dashboard (team zonder club) */
+html.desk .dk-dash-body .dk-ss{grid-column:1 / -1;position:relative;z-index:2}
+html.desk .dk-dash-body .dk-ss:empty{display:none}
+html.desk .dk-ss .sn-kaart{margin:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--space-sm) var(--space-md)}
+html.desk .dk-ss .sn-kop,html.desk .dk-ss .sn-balk,html.desk .dk-ss .sn-voet,html.desk .dk-ss p,html.desk .dk-ss .rij{grid-column:1 / -1}

@@ -17,6 +17,7 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - [ ] **Scouting (eerste elftal):** de client is gepoort, maar de bron van `scoutTegenstander` (`functions/scouting.js`) staat niet in de ASV'33-repo en dus ook niet hier. In cluppie.io staat Scouting achter een nieuwe eindbaas-schakelaar per club (platformscherm, standaard uit). De Sportlink-analyse in de voorbereiding (dezelfde functie, `cijfers: true`) verschijnt pas als de functie er is; tot dan valt die kaart stil weg. Actie: `functions/scouting.js` uit je ASV-functions hierheen kopiëren (geen namen/club ASV), deployen en de invoker openzetten.
 - [ ] Bewust niet overgenomen: de bronvermelding (Arnoud Jonker), `nu-test.html`/`nu-test.js` (ASV-testpagina) en de nieuwe `over.html` (cluppie.io heeft een eigen).
 - [ ] Bestaande fouten meegenomen: `trainco.js` riep `bronHtml()` aan (bestond niet → coördinatorscherm brak bij een training met oefeningen) en `teams-training.js` gebruikte `PLAN_TYPE` (bestond daar niet → eigen dag opslaan zonder label brak). Allebei hersteld; graag ook in ASV'33 rechtzetten.
+- [ ] **Individuele trainer (zelfde release):** het lege startscherm toont nu drie paden ("Ik train zelf een team", "Ik heb een uitnodiging of code", clubaanmelding) in plaats van "Vraag je hoofdtrainer…"; dit was besluit 6 uit de snelstart-analyse van 20-10. Nieuwe deellink `https://www.cluppie.io/?start=trainer` opent de snelstart direct; de landingspagina (`over.html`) heeft "Begin als trainer" in de hero en een eerlijkere tekst (Sportlink en AI horen bij een club). De kaart Eerste stappen staat nu ook op het desktop-dashboard. Desktop-dashboard telt "nog X dagen" voortaan in kalenderdagen (om 22:00 stond bij een wedstrijd van morgen "nog vandaag").
 - [ ] Niet getest tegen echte Firebase. Wel: `npm test` en `tests/toegang.test.js` groen, ESLint `no-undef` schoon op alle modules, alle benoemde imports bestaan, en schermen (startscherm, team-hub, voorbereiding; telefoon 414×896 en desktop 1440) gerenderd met een nep-Firestore zonder consolefouten, zowel als clubcoach als als individuele trainer.
 
 **Voor Paul (console/terminal)**
@@ -105,7 +106,7 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - `over.html`/`readme.html`, PWA-manifest en icons: één per domein, niet per club.
 
 ---
-- **Snelstart individuele coach, nog niet gedaan:** (1) herkennen dat de club al Cluppie gebruikt (clubgids + callable) en dan doorverwijzen naar aansluiten; (2) welkomstuitleg voor coaches die via een uitnodiging binnenkomen (nu alleen voor wie zelf een team start); (3) de kaart Eerste stappen staat nog niet op de desktop-weergave.
+- **Snelstart individuele coach, nog niet gedaan:** (1) herkennen dat de club al Cluppie gebruikt (clubgids + callable) en dan doorverwijzen naar aansluiten; (2) welkomstuitleg voor coaches die via een uitnodiging binnenkomen (nu alleen voor wie zelf een team start). (3) Eerste stappen op de desktop: gedaan in 20261110a.
 
 # Geschiedenis
 

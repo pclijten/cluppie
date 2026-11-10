@@ -242,13 +242,15 @@ function htmlDashboard(){
   const kk = w ? kwartenKlaar(w) : null;
   const titel = w ? `${datumMooi(w.datum, { weekday:'long' })} ${w.thuis ? 'thuis tegen' : 'uit bij'}` : 'Geen wedstrijd gepland';
   const tegen = w ? (w.tegenstander || '').replace(/\s+(J|M)O\d+.*$/i, '') || w.tegenstander : '';
-  const dagen = w ? Math.max(0, Math.round((aftrapMs(w) - Date.now()) / 86400000)) : 0;
+  /* [20261110] kalenderdagen, niet afgeronde uren: om 22:00 is een wedstrijd van morgen 10:00 "1 dag", niet "vandaag" */
+  const dagen = w ? (() => { const v = new Date(); v.setHours(0, 0, 0, 0); const d = new Date(w.datum + 'T00:00:00'); return Math.max(0, Math.round((d - v) / 86400000)); })() : 0;
 
   return `<div class="dk-scherm dk-dash">
     ${kop('Dashboard', `${heeftElftallen() ? knop('Selectie 1e + 2e', 'tab', '', 'stats-bars').replace('data-dk="tab"', 'data-dk="tab" data-tab="stats"') : ''}${knop('Presentie vandaag', 'presentie', '', 'attendance-present')}${w ? knop('Start wedstrijd', 'openw', 'rood', 'training-start').replace('data-dk="openw"', `data-dk="openw" data-id="${esc(w.id)}"`) : knop('Nieuwe wedstrijd', 'nieuwew', 'rood', 'action-add')}`)}
     <div class="dk-dash-body"><div class="dk-spook">${w ? esc(String(Number(w.datum.slice(8, 10)))) : '33'}</div>
       <div class="dk-hallo"><div><h1 class="dk-groot">${esc(titel)} ${tegen ? `<span class="dk-omlijnd">${esc(tegen)}</span>` : ''}</h1>
         <p>${w ? `Nog ${dagen === 0 ? 'vandaag' : dagen === 1 ? '1 dag' : dagen + ' dagen'}. De opstelling staat voor ${kk.klaar} van de ${kk.totaal} ${kk.totaal === 2 ? 'helften' : 'periodes'} klaar.` : 'Voeg een wedstrijd toe of wacht op de volgende Sportlink-sync.'}</p></div></div>
+      ${S.team && !S.team.club ? '<div id="ssKaart" class="dk-ss"></div>' : ''}
       ${w ? `<div class="dk-blok dk-wed">
         <div><h3>${ico('planning-calendar', 18)}Volgende wedstrijd</h3>
           <div class="dk-vs">${esc(S.team.naam)}<span>tegen</span><span class="dk-omlijnd">${esc(w.tegenstander || '')}</span></div>
@@ -1061,6 +1063,8 @@ function koppel(v){
   v.oninput = e => { const t = e.target.closest('[data-dkin]'); if (t && evConcept) evConcept[t.dataset.dkin] = t.value; };
   tikAftel();
   tekenPdfs(v);
+  /* [20261110] Eerste stappen voor een team zonder club, ook op de desktop (zelfde kaart als op de telefoon) */
+  if (v.querySelector('#ssKaart')) import('./snelstart.js?v=20261110a').then(m => m.koppelEersteStappen(v, { zetTeamTab })).catch(() => {});
 }
 
 /* aftelklok (1× per seconde, alleen zolang het element bestaat) */
