@@ -22,7 +22,7 @@
 import {
   db, collection, doc, addDoc, deleteDoc, query, where, getDocs, serverTimestamp
 } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261103b';
+import { S, esc, meld, terugLaag } from './state.js?v=20261110a';
 
 /* Interne toestand voor de op dit moment geopende training. */
 let _actief = null;   // { teamId, trainingId, stage, laagAan, notities:[], actiefItem, veldRefs }
@@ -140,7 +140,7 @@ function wisselLaag(knop){
   _actief.stage.classList.toggle('trw-laag-aan', _actief.laagAan);
   if (_actief.laagAan){
     toonNotities();
-    meld('Notities aan — tik op een regel');
+    meld('Notities aan: tik op een regel');
   } else {
     verbergNotities();
     sluitMenu();
@@ -190,7 +190,7 @@ function plaatsPin(item, notitie, nr){
   blok.className = 'trw-notitieblok' + (eigen ? '' : ' andermans');
   blok.id = 'trwblk-' + notitie.id;
   const wisKnop = eigen
-    ? `<button class="trw-wis" data-id="${notitie.id}" aria-label="Verwijderen">🗑</button>` : '';
+    ? `<button class="trw-wis" data-id="${notitie.id}" aria-label="Verwijderen"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5.4 7.4h13.2"/><path d="M7.4 7.4 8.3 20h7.4l.9-12.6"/><path d="M9.6 4.4h4.8l.6 3H9z"/><path d="M10.6 11v5.4M13.4 11v5.4"/></svg></button>` : '';
   blok.innerHTML = `
     <div class="trw-nb-rij">
       <span class="trw-nb-pinref">${nr}</span>
@@ -218,7 +218,7 @@ function plaatsFilmpje(item, notitie){
   const blok = document.createElement('div');
   blok.className = 'trw-filmblok';
   const wisKnop = eigen
-    ? `<button class="trw-wis" data-id="${notitie.id}" aria-label="Verwijderen">🗑</button>` : '';
+    ? `<button class="trw-wis" data-id="${notitie.id}" aria-label="Verwijderen"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5.4 7.4h13.2"/><path d="M7.4 7.4 8.3 20h7.4l.9-12.6"/><path d="M9.6 4.4h4.8l.6 3H9z"/><path d="M10.6 11v5.4M13.4 11v5.4"/></svg></button>` : '';
   const vid = youtubeId(notitie.youtubeUrl);
   const thumb = vid ? `https://img.youtube.com/vi/${vid}/mqdefault.jpg` : '';
   blok.innerHTML = `
@@ -259,11 +259,13 @@ function openMenu(item){
   const isG = item.classList.contains('trw-gemarkeerd');
   menu.innerHTML = `
     <button data-a="markeer"><span class="trw-rm-ico mrk">▮</span>${isG ? 'Weghalen' : 'Aandacht'}</button>
-    <button data-a="opmerking"><span class="trw-rm-ico">💬</span>Opmerking</button>
+    <button data-a="opmerking"><span class="trw-rm-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 5.5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 3.2V16.5H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z"/><path d="M8 9.5h8M8 12.5h5"/></svg></span>Opmerking</button>
     <button data-a="filmpje"><span class="trw-rm-ico">▶</span>Filmpje</button>`;
   // plaats menu na de <li> of <p>
   const na = item.closest('li') || item;
   na.after(menu);
+  /* Hardware-terug sluit eerst dit regelmenu. */
+  terugLaag('regelmenu', { z:46, open: () => menu.isConnected, sluit: sluitMenu });
   menu.querySelectorAll('button').forEach(b => {
     b.onclick = (e) => { e.stopPropagation(); menuActie(b.dataset.a, item); };
   });
@@ -327,6 +329,8 @@ function openInvoer(type, item){
   const inv = overlay.querySelector('.trw-vel-in');
   setTimeout(() => inv.focus(), 100);
   const sluit = () => overlay.remove();
+  /* Hardware-terug sluit het invoer-vel (z-index 70). */
+  terugLaag('vel', { z:70, open: () => overlay.isConnected, sluit });
   overlay.querySelector('.trw-vel-annuleer').onclick = sluit;
   overlay.addEventListener('click', e => { if (e.target === overlay) sluit(); });
   overlay.querySelector('.trw-vel-opslaan').onclick = async () => {

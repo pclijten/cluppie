@@ -19,10 +19,10 @@
    ============================================================================ */
 
 import { functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc } from './state.js?v=20261103b';
-import { telGebruik } from './tracker.js?v=20261103b';
-import { aiAan } from './clubconfig.js?v=20261103b';
-import { startOnboarding, startOnboardingHoofdstuk, heeftOnboardingHoofdstuk } from './onboarding.js?v=20261103b';
+import { S, esc, terugLaag, terugLaagWeg } from './state.js?v=20261110a';
+import { telGebruik } from './tracker.js?v=20261110a';
+import { aiAan } from './clubconfig.js?v=20261110a';
+import { startOnboarding, startOnboardingHoofdstuk, heeftOnboardingHoofdstuk } from './onboarding.js?v=20261110a';
 
 /* Sessiegeschiedenis — leeft alleen zolang de app open is. */
 let berichten = [];   // [{role:'user'|'assistant', content:'...'}]
@@ -46,7 +46,7 @@ export function initChatbot(){
   achter.innerHTML = `
     <div class="cb-paneel">
       <div class="cb-kop">
-        <div class="cb-avatar">🐝</div>
+        <div class="cb-avatar"></div>
         <div><div class="cb-naam">Cluppie-hulp</div>
           <div class="cb-sub">Vragen over de app</div></div>
         <button class="cb-x" id="cbX" aria-label="Sluiten">✕</button>
@@ -91,13 +91,15 @@ function openChat(){
   const lijf = document.getElementById('cbLijf');
   // eerste keer: welkom + startchips
   if (!berichten.length && !lijf.children.length){
-    bot('Hoi! Ik beantwoord vragen over het <b>gebruik van Cluppie</b>. Waar kan ik je mee helpen? 👇');
+    bot('Hoi! Ik beantwoord vragen over het <b>gebruik van Cluppie</b>. Waar kan ik je mee helpen?');
     toonChips(START_CHIPS);
   }
   achter.classList.add('open');
+  /* Hardware-terug sluit de hulpchat (z-index 5000, boven alles). */
+  terugLaag('chat', { z:5000, open: () => achter.classList.contains('open'), sluit: sluitChat });
   setTimeout(() => document.getElementById('cbInput')?.focus(), 300);
 }
-function sluitChat(){ document.getElementById('cbAchter')?.classList.remove('open'); }
+function sluitChat(){ document.getElementById('cbAchter')?.classList.remove('open'); terugLaagWeg('chat'); }
 
 function toonChips(lijst){
   const c = document.getElementById('cbChips');
@@ -199,8 +201,8 @@ function naspel(antwoord, hfd){
   const wrap = document.createElement('div');
   wrap.className = 'cb-actie';
   const label = hfd
-    ? `🎓 Laat me ${HFD_LABEL[hfd] || 'dit onderdeel'} zien`
-    : '🎓 Start de rondleiding';
+    ? `Laat me ${HFD_LABEL[hfd] || 'dit onderdeel'} zien`
+    : 'Start de rondleiding';
   wrap.innerHTML = `<button class="cb-actie-knop" id="cbTour">${esc(label)}</button>`;
   lijf.appendChild(wrap);
   lijf.scrollTop = lijf.scrollHeight;

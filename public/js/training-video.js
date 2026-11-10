@@ -21,7 +21,7 @@
    naar een export. */
 
 import { db, doc, updateDoc, storage, sRef, uploadBytes, getDownloadURL, deleteObject } from './firebase.js?v=20261011g';
-import { S, esc, meld, bewaakTerug, vangnetStilTerugAlsNodig } from './state.js?v=20261103b';
+import { S, esc, meld, bewaakTerug, vangnetStilTerugAlsNodig, terugLaag } from './state.js?v=20261110a';
 
 const MAX_BYTES = 100 * 1024 * 1024;   // 100 MB
 const TOEGESTAAN = ['video/mp4', 'video/quicktime', 'video/webm'];   // mp4, mov, webm
@@ -83,7 +83,7 @@ function zetBalkKnop(){
     knop = document.createElement('button');
     knop.className = 'trw-video-knop';
     knop.setAttribute('aria-label', 'Video-uitleg');
-    knop.innerHTML = '🎬<span class="stip"></span>';
+    knop.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="13" height="12" rx="2.2"/><path d="M16 10l5-3v10l-5-3z"/></svg><span class="stip"></span>';
     const nb = balk.querySelector('.trw-notitie-knop');
     if (nb) balk.insertBefore(knop, nb); else balk.appendChild(knop);
   }
@@ -142,7 +142,7 @@ function tekenPerOefening(){
       const tegel = document.createElement('div');
       tegel.className = 'trw-video-tegel';
       tegel.innerHTML = `
-        <div class="tv-thumb">🎬</div>
+        <div class="tv-thumb"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="13" height="12" rx="2.2"/><path d="M16 10l5-3v10l-5-3z"/></svg></div>
         <div class="tv-t">
           <div class="tv-titel">Video-uitleg bekijken</div>
           <div class="tv-sub">${esc(vid.naam || 'Filmpje')}</div>
@@ -279,7 +279,7 @@ function bouwPopup(){
   el.innerHTML = `
     <div class="trw-vpop">
       <div class="trw-vpop-kop">
-        <span class="trw-vpop-badge">🎬 UITLEG</span>
+        <span class="trw-vpop-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="13" height="12" rx="2.2"/><path d="M16 10l5-3v10l-5-3z"/></svg> UITLEG</span>
         <div class="trw-vpop-titel"></div>
         <button class="trw-vpop-sluit" aria-label="Sluiten">✕</button>
       </div>
@@ -291,6 +291,8 @@ function bouwPopup(){
   document.body.appendChild(el);
   el.querySelector('.trw-vpop-sluit').onclick = () => sluitPopup();
   el.addEventListener('click', e => { if (e.target === el) sluitPopup(); });
+  /* Hardware-terug sluit de video-popup (z-index 80). */
+  terugLaag('vpop', { z:80, vast:true, open: () => el.classList.contains('open'), sluit: sluitPopup });
   _pop = el;
   return el;
 }

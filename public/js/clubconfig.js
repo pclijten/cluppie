@@ -28,10 +28,10 @@
 
    Een club-document zonder instellingen.v krijgt de neutrale standaard totdat de
    beheerder de waarden in Instellingen "vastlegt". */
-import { S, clubAfkorting } from './state.js?v=20261103b';
-import * as C from './config.js?v=20261103b';
+import { S, clubAfkorting } from './state.js?v=20261110a';
+import * as C from './config.js?v=20261110a';
 import { db, doc, getDoc } from './firebase.js?v=20261011g';
-import { zetContentClub } from './content.js?v=20261103b';
+import { zetContentClub } from './content.js?v=20261110a';
 import { weerVanTeam } from './snelstart-logica.js?v=20261020c';
 
 /* ---------- Standaardwaarden ---------- */
@@ -291,10 +291,21 @@ export function pasClubConfigToe(club){
   try { document.dispatchEvent(new CustomEvent('clubconfig', { detail: { clubId: club.id } })); } catch (e) {}
 }
 
+/* [20261110] Het stijlsysteem (uit ASV'33) kent naast --accent (tekst/lijnen) ook --accent-vlak
+   (knoppen, vlakken) en --accent-ink (tekst óp dat vlak). Een clubkleur zet alle drie; de
+   tekstkleur op het vlak is wit of donker, wat het meeste contrast geeft. */
+function inkOp(hex){
+  const n = parseInt(hex.slice(1), 16);
+  const l = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(c => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; })
+    .reduce((s, c, i) => s + c * [0.2126, 0.7152, 0.0722][i], 0);
+  return (1.05 / (l + 0.05)) >= ((l + 0.05) / 0.0559) ? '#fdfdfe' : '#0b0d10';
+}
 function zetKleur(hex){
   const st = document.documentElement.style;
-  if (hex === '#e2342f'){ st.removeProperty('--accent'); st.removeProperty('--grass'); st.removeProperty('--grass-2'); return; }
+  const props = ['--accent', '--grass', '--grass-2', '--accent-vlak', '--accent-ink'];
+  if (hex === '#e2342f'){ props.forEach(p => st.removeProperty(p)); return; }
   st.setProperty('--accent', hex); st.setProperty('--grass', hex); st.setProperty('--grass-2', donker(hex));
+  st.setProperty('--accent-vlak', hex); st.setProperty('--accent-ink', inkOp(hex));
 }
 
 /* ---------- Loginscherm-branding (vóór het inloggen is de club nog onbekend) ---------- */
@@ -439,4 +450,4 @@ export async function laadPlatformConfig(){
 }
 
 /* ---------- Icoonkeuze voor eigen tags/redenen ---------- */
-export { ICOONNAMEN } from './icons.js?v=20260922c';
+export { ICOONNAMEN } from './icons.js?v=20261110a';
