@@ -91,6 +91,7 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - [ ] KNVB schriftelijk om toestemming vragen als KNVB-vormen getoond of bewerkt moeten worden; nu is de bibliotheek eigen werk.
 
 **Bouwen**
+- [ ] Platformcentrum voor de eindbaas (eigen ruimte: Overzicht, Uitrol, Clubs, Trainers, Instellingen) en AI voor losse trainers: impactanalyse `claude/eindbaas-platformcentrum-impactanalyse.md` in het Cluppie.io-project + mockup. Wacht op jouw akkoord op de 9 beslispunten.
 - [ ] Trainingsbibliotheek uitbreiden: omschakelen balwinst/balverlies (vanaf O14), dunne cellen (Teamsport O13, Technische vaardigheden O13, Dieptespel O8), keepervormen, O14+.
 - [ ] Sportlink: na de eerste weekendcontrole (`checkAfgelastingen`, vr 16–22 en za/zo 7–14) in de logs kijken of het aantal calls en markeringen klopt.
 - [ ] Een clubbeheerder kan in zijn eigen club `sportlinkClubcode` aanpassen. Misbruik (de code van een andere club invullen om diens aanmelding te blokkeren) is onwaarschijnlijk; eventueel het veld in de rules alleen voor functions/platform schrijfbaar maken.
