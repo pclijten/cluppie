@@ -1,0 +1,65 @@
+name: Deploy Cloud Functions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "functions/**"
+  workflow_dispatch:
+    inputs:
+      functies:
+        description: "Alleen deze functies (komma-gescheiden, bv. chatHulp,verstuurMail). Leeg = alle."
+        required: false
+        default: ""
+
+concurrency:
+  group: deploy-functions
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code ophalen
+        uses: actions/checkout@v4
+
+      - name: Node 22 installeren
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+
+      - name: Dependencies installeren
+        working-directory: functions
+        run: npm ci
+
+      - name: Parameters (.env) voor functions schrijven
+        env:
+          FUNCTIONS_ENV: ${{ secrets.FUNCTIONS_ENV }}
+        run: |
+          if [ -n "$FUNCTIONS_ENV" ]; then
+            printf '%s\n' "$FUNCTIONS_ENV" > "functions/.env.${{ secrets.FIREBASE_PROJECT_ID }}"
+          else
+            echo "::warning::Secret FUNCTIONS_ENV ontbreekt; parameters als SMTP_HOST kunnen dan niet ingevuld worden."
+          fi
+
+      - name: Inloggen bij Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Functions deployen
+        env:
+          FUNCTIES: ${{ github.event.inputs.functies }}
+        run: |
+          DOEL="functions"
+          if [ -n "$FUNCTIES" ]; then
+            DOEL=$(echo "$FUNCTIES" | tr -d ' ' | tr ',' '\n' | sed 's/^/functions:/' | paste -sd, -)
+          fi
+          echo "Deploy: $DOEL"
+          # Geen --force: als er functies verwijderd zouden worden, stopt de deploy in plaats van te wissen.
+          npx --yes firebase-tools@latest deploy \
+            --only "$DOEL" \
+            --project "${{ secrets.FIREBASE_PROJECT_ID }}" \
+            --non-interactive
