@@ -7,9 +7,9 @@
 ==================================================================== */
 import { db, collection, getDocs, doc, getDoc, setDoc, serverTimestamp, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261110a';
-import { logoImgVoorDoc, DISTRICTEN, kalenderId, valideerKalender, ORIGINEEL } from './clubconfig.js?v=20261110a';
+import { logoImgVoorDoc, DISTRICTEN, kalenderId, valideerKalender, ORIGINEEL } from './clubconfig.js?v=20261111a';
 import { STARTLIJST_STAPPEN } from './startlijst.js?v=20261011d';
-import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261110a';
+import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261111a';
 
 /* [20261011d] Platformdashboard: eigen breed scherm i.p.v. een lijstje.
    Bron: platformstats/overzicht (Cloud Function platformOverzichtNu / nachtelijk), met
@@ -80,7 +80,15 @@ async function leesAanmeldingen(){
   catch (e) { return []; }
 }
 
-export async function openPlatform(){
+/* [20261111a] Het platform is een eigen ruimte geworden (platform-centrum.js). openPlatform()
+   blijft het ingangspunt (startscherm, einde ondersteuningsmodus); de oude brede pop-up hieronder
+   blijft als openPlatformOud() bestaan tot het centrum in productie bewezen is. */
+export async function openPlatform(scherm){
+  if (!isPlatformBeheerder()) return;
+  const m = await import('./platform-centrum.js?v=20261111a');
+  return m.openCentrum(scherm);
+}
+export async function openPlatformOud(){
   if (!isPlatformBeheerder()) return;
   openModal('<h2>Platform</h2><div class="kaart leeg">Cijfers laden…</div>', { vorm: 'breed' });
   let o = await leesOverzicht();
@@ -220,10 +228,10 @@ function tekenPlatform(o, aanmeldingen){
   };
   document.getElementById('pfCoachAlle')?.addEventListener('click', () => { PF.coachAlle = !PF.coachAlle; opnieuw(); });
   document.getElementById('pfKalenders')?.addEventListener('click', () => openKalenders());
-  document.getElementById('pfNieuweClub')?.addEventListener('click', () => import('./club.js?v=20261110a').then(m => m.modalNieuwClub()));
+  document.getElementById('pfNieuweClub')?.addEventListener('click', () => import('./club.js?v=20261111a').then(m => m.modalNieuwClub()));
   document.getElementById('pfVernieuw')?.addEventListener('click', async e => {
     const k = e.currentTarget; k.disabled = true; k.textContent = 'Bezig…';
-    try { await httpsCallable(functions, 'platformOverzichtNu')({}); meld('Cijfers bijgewerkt'); openPlatform(); }
+    try { await httpsCallable(functions, 'platformOverzichtNu')({}); meld('Cijfers bijgewerkt'); openPlatformOud(); }
     catch (x){ k.disabled = false; k.textContent = 'Vernieuwen'; meld('Vernieuwen mislukt: ' + (x.code === 'functions/not-found' ? 'functie nog niet gedeployed' : (x.message || x.code))); }
   });
   document.querySelectorAll('[data-pf-od]').forEach(b => b.onclick = async () => {
@@ -247,10 +255,10 @@ function tekenPlatform(o, aanmeldingen){
   document.querySelectorAll('[data-platform-club]').forEach(b => b.onclick = async () => {
     const id = b.dataset.platformClub;
     b.disabled = true;
-    const ond = await import('./ondersteuning.js?v=20261110a').catch(() => null);
+    const ond = await import('./ondersteuning.js?v=20261111a').catch(() => null);
     if (!ond || !(await ond.startOndersteuning(id))){ b.disabled = false; return; }
     sluitModal();
-    import('./club.js?v=20261110a').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
+    import('./club.js?v=20261111a').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
   });
   document.querySelectorAll('[data-aanmeld-ok], [data-aanmeld-af]').forEach(b => b.onclick = async () => {
     const id = b.dataset.aanmeldOk || b.dataset.aanmeldAf, goed = !!b.dataset.aanmeldOk;
@@ -276,7 +284,7 @@ function seizoenen(){
 }
 const KAL_DISTRICTEN = DISTRICTEN.filter(d => d.id !== 'zuid2');   // Zuid I en II delen één kalender
 
-async function openKalenders(){
+export async function openKalenders(){
   openModal('<h2>KNVB-kalenders</h2><div class="kaart leeg">Laden…</div>');
   const szs = seizoenen(), staat = {};
   let leesFout = false;
@@ -298,8 +306,8 @@ async function openKalenders(){
       <b></b>${szs.map(s => `<b>${esc(s)}</b>`).join('')}
       ${KAL_DISTRICTEN.map(d => `<span>${esc(d.id === 'zuid1' ? 'Zuid I / II' : d.naam)}</span>${szs.map(sz => cel(sz, d)).join('')}`).join('')}
     </div>
-    <button class="knop licht vol" id="kalTerug" style="margin-top:14px">Terug naar het platform</button>`);
-  document.getElementById('kalTerug')?.addEventListener('click', () => openPlatform());
+    <button class="knop licht vol" id="kalTerug" style="margin-top:14px">Klaar</button>`);
+  document.getElementById('kalTerug')?.addEventListener('click', () => sluitModal());
   document.querySelectorAll('[data-kal]').forEach(b => b.onclick = () => { const [sz, di] = b.dataset.kal.split('|'); kalenderEditor(sz, di, staat[b.dataset.kal]); });
 }
 

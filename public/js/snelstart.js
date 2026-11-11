@@ -2,7 +2,7 @@
    Trainer die zelf begint, zonder club: uitleg, club + plaats, team met slimme standaarden,
    en daarna de kaart "Eerste stappen" op het teamscherm. Logica en tests: snelstart-logica.js.
    Gegevens: teams/{id}.eigenClub en gebruikers/{uid}/meta/onboarding.snelstart (alleen UI-vlaggen). */
-import { db, collection, doc, addDoc, updateDoc, setDoc, getDoc, getDocs, serverTimestamp } from './firebase.js?v=20261011g';
+import { db, collection, doc, addDoc, updateDoc, setDoc, getDoc, getDocs, serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { S, $, $$, esc, meld, teamCode, openModal, sluitModal } from './state.js?v=20261110a';
 import { CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, bouwVanCategorie, catLabel } from './config.js?v=20261110a';
 import {
@@ -117,7 +117,7 @@ export async function openSnelstart(){
       <button class="knop vol" id="ssVerder">Laten we beginnen</button>
       <button class="knop licht vol" id="ssRond" style="margin-top:8px">Liever eerst een rondleiding</button>`);
     $('#ssVerder').onclick = tekenStap2;
-    $('#ssRond').onclick = () => { sluitModal(); import('./onboarding.js?v=20261110a').then(m => m.startOnboarding(true)); };
+    $('#ssRond').onclick = () => { sluitModal(); import('./onboarding.js?v=20261111a').then(m => m.startOnboarding(true)); };
   };
 
   const tekenStap2 = () => {
@@ -200,7 +200,7 @@ export async function openSnelstart(){
           eigenClub: st.club, gemaakt: serverTimestamp(),
         });
         sluitModal();
-        import('./teams.js?v=20261110a').then(m => m.openTeam(ref.id));
+        import('./teams.js?v=20261111a').then(m => m.openTeam(ref.id));
       } catch (e){ console.error(e); knop.disabled = false; meld('Team aanmaken mislukt, probeer het nog eens'); }
     };
   };
@@ -222,7 +222,7 @@ export function modalClubPlaats(){
       await updateDoc(doc(db, 'teams', t.id), { eigenClub });
       t.eigenClub = eigenClub;
       sluitModal(); meld('Opgeslagen');
-      import('./teams.js?v=20261110a').then(m => m.renderTeam && m.renderTeam());
+      import('./teams.js?v=20261111a').then(m => m.renderTeam && m.renderTeam());
     } catch (err){ console.error(err); meld('Opslaan mislukt, probeer het nog eens'); }
   };
 }
@@ -258,22 +258,65 @@ export async function koppelEersteStappen(v, { zetTeamTab } = {}){
   }
   if (S.teamId !== teamId || !el.isConnected) return;
   const status = eersteStappenStatus(team, { spelers: S.spelers.length, wedstrijden: S.wedstrijden.length, training });
-  let html = '';
+  let html = koppelKaart(team);
   if (toonEersteStappen(team, { verborgen: !!vl.eersteStappenWeg, status })){
-    html = `<section class="kaart sn-kaart"><div class="sn-kop"><b>Eerste stappen</b><span>${status.gedaan} van ${status.totaal}</span></div>
+    html += `<section class="kaart sn-kaart"><div class="sn-kop"><b>Eerste stappen</b><span>${status.gedaan} van ${status.totaal}</span></div>
       <div class="sn-balk" role="progressbar" aria-valuemin="0" aria-valuemax="${status.totaal}" aria-valuenow="${status.gedaan}"><i style="width:${Math.round(100 * status.gedaan / status.totaal)}%"></i></div>
       ${status.stappen.map(s => `<button class="sn-stap ${s.klaar ? 'klaar' : ''} ${s.id === status.volgende ? 'nu' : ''}" data-ss-tab="${s.tab}">
         <span class="sn-vink" aria-hidden="true">${s.klaar ? '✓' : ''}</span><span class="sn-tekst"><b>${esc(s.titel)}</b><small>${esc(s.uitleg)}</small></span></button>`).join('')}
       <div class="sn-voet"><button class="sn-link" id="ssRondleiding">Liever een rondleiding?</button><button class="sn-link" id="ssVerberg">Verberg</button></div></section>`;
   } else if (toonClubTip(team, { verborgen: !!vl.clubTipWeg })){
-    html = `<section class="kaart sn-kaart"><div class="sn-kop"><b>Vul je club en plaats in</b></div>
+    html += `<section class="kaart sn-kaart"><div class="sn-kop"><b>Vul je club en plaats in</b></div>
       <p class="meta" style="margin:0 0 10px">Dan zie je het weer op je teamscherm en weet ik waar je speelt.</p>
       <div class="rij"><button class="knop vol" id="ssClubVul">Invullen</button><button class="knop licht" id="ssClubWeg">Later</button></div></section>`;
   }
   el.innerHTML = html;
+  koppelKnoppen(el, team, teamId, () => koppelEersteStappen(v, { zetTeamTab }));
   el.querySelectorAll('[data-ss-tab]').forEach(b => b.onclick = () => zetTeamTab && zetTeamTab(b.dataset.ssTab));
-  const r = el.querySelector('#ssRondleiding'); if (r) r.onclick = () => import('./onboarding.js?v=20261110a').then(m => m.startOnboarding(true));
+  const r = el.querySelector('#ssRondleiding'); if (r) r.onclick = () => import('./onboarding.js?v=20261111a').then(m => m.startOnboarding(true));
   const w = el.querySelector('#ssVerberg'); if (w) w.onclick = async () => { el.innerHTML = ''; await zetVlag('eersteStappenWeg', true); };
   const cv = el.querySelector('#ssClubVul'); if (cv) cv.onclick = modalClubPlaats;
   const cw = el.querySelector('#ssClubWeg'); if (cw) cw.onclick = async () => { el.innerHTML = ''; await zetVlag('clubTipWeg', true); };
+}
+
+/* ==================== [20261111b] Team aan je club koppelen ====================
+   Cluppie (de eindbaas) zag dat de club die de trainer zelf invulde al Cluppie gebruikt en zette
+   een voorstel klaar: teams/{id}.koppelVoorstel = { clubId, clubNaam, status }. De trainer vraagt de
+   koppeling aan (functie vraagKoppelingAan); de clubbeheerder keurt goed in Toegang & privacy. */
+function koppelKaart(team){
+  const kv = team && team.koppelVoorstel;
+  if (!kv || !kv.clubId) return '';
+  const club = esc(kv.clubNaam || 'Je club');
+  if (kv.status === 'open') return `<section class="kaart sn-kaart"><div class="sn-kop"><b>${club} gebruikt Cluppie</b></div>
+    <p class="meta" style="margin:0 0 10px">Wil je ${esc(team.naam || 'je team')} bij de club onderbrengen? Je spelers, wedstrijden en trainingen gaan mee.
+      De clubbeheerder keurt het goed en ziet daarna je team en spelers. De club bepaalt dan ook welke onderdelen je gebruikt, en de Sportlink-koppeling komt er via de club bij.</p>
+    <div class="rij"><button class="knop fluo vol" id="ssKoppel">Vraag aan bij ${club}</button><button class="knop licht" id="ssKoppelNee">Liever niet</button></div></section>`;
+  if (kv.status === 'aangevraagd') return `<section class="kaart sn-kaart"><div class="sn-kop"><b>Aanvraag ligt bij ${club}</b></div>
+    <p class="meta" style="margin:0">De clubbeheerder beoordeelt je aanvraag. Tot die tijd werk je gewoon door; er verandert niets aan je team.</p></section>`;
+  if (kv.status === 'afgewezen') return `<section class="kaart sn-kaart"><div class="sn-kop"><b>${club} heeft je aanvraag niet goedgekeurd</b></div>
+    <p class="meta" style="margin:0 0 10px">Je team blijft zoals het was. Wil je toch bij de club, neem dan contact op met de jeugdcoördinator.</p>
+    <div class="rij"><button class="knop licht" id="ssKoppelGezien">Begrepen</button></div></section>`;
+  return '';
+}
+function koppelKnoppen(el, team, teamId, opnieuw){
+  const zet = async status => {
+    try { await updateDoc(doc(db, 'teams', teamId), { 'koppelVoorstel.status': status }); } catch (e){ console.warn('[koppelen]', e.code); }
+    if (S.team && S.teamId === teamId && S.team.koppelVoorstel) S.team.koppelVoorstel.status = status;
+    opnieuw();
+  };
+  const ja = el.querySelector('#ssKoppel');
+  if (ja) ja.onclick = async () => {
+    ja.disabled = true; ja.textContent = 'Bezig…';
+    try {
+      const r = await httpsCallable(functions, 'vraagKoppelingAan')({ teamId });
+      meld(`Aanvraag verstuurd naar ${r?.data?.clubNaam || team.koppelVoorstel.clubNaam || 'de club'}`);
+      if (S.team && S.teamId === teamId && S.team.koppelVoorstel) S.team.koppelVoorstel.status = 'aangevraagd';
+      opnieuw();
+    } catch (e){
+      ja.disabled = false; ja.textContent = `Vraag aan bij ${team.koppelVoorstel.clubNaam || 'de club'}`;
+      meld(e?.code === 'functions/not-found' && /function/i.test(e.message || '') ? 'Koppelen is nog niet beschikbaar' : (e?.message || 'Aanvragen mislukt, probeer het later opnieuw'));
+    }
+  };
+  const nee = el.querySelector('#ssKoppelNee'); if (nee) nee.onclick = () => zet('geweigerd');
+  const gezien = el.querySelector('#ssKoppelGezien'); if (gezien) gezien.onclick = () => zet('gezien');
 }

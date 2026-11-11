@@ -138,8 +138,11 @@ const beoordeelClubAanmelding = onCall({ region: REGIO, cors: true }, async (req
   if (a.sportlinkClubcode && !(await db.collection('clubs').where('sportlinkClubcode', '==', a.sportlinkClubcode).limit(1).get()).empty)
     throw new HttpsError('already-exists', 'Er bestaat al een club met deze Sportlink-clubcode. Wijs de aanmelding af of koppel de aanvrager aan die club.');
   const clubRef = db.collection('clubs').doc();
+  /* [20261111b] onderdelen en limieten volgens de standaard van de eindbaas (platform/instellingen.standaard) */
+  const standaard = ((await db.doc('platform/instellingen').get()).data() || {}).standaard;
   await clubRef.set({
     naam: a.clubNaam, code: await vrijeClubCode(db),
+    platformModules: require('./onderdelen').modulesVoorNieuweClub(standaard),
     ...(a.sportlinkClientId ? { sportlinkClientId: a.sportlinkClientId } : {}),
     ...(a.sportlinkClubcode ? { sportlinkClubcode: a.sportlinkClubcode } : {}),
     admins: { [a.uid]: true }, adminsInfo: { [a.uid]: { naam } }, leden: { [a.uid]: true },

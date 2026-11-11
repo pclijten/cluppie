@@ -39,6 +39,19 @@ export function platformToegestaan(club, sleutel){
   return !(s !== null && s >= GRENS_SEC);
 }
 
+
+/* [20261111b] platformModules voor een nieuwe club, uit platform/instellingen.standaard.
+   Zonder standaard: zoals tot nu (Training maken en Seizoensplanning uit, AI uit, video 100 MB).
+   Zelfde functie als functions/onderdelen.js (tests/onderdelen.test.mjs vergelijkt ze). */
+export function modulesVoorNieuweClub(standaard){
+  const s = standaard || {}, l = s.aiLimiet, v = Math.round(Number(s.maxVideoMB));
+  return {
+    trainingsmodule: s.trainingsmodule === true, seizoensplan: s.seizoensplan === true, ai: s.ai === true,
+    aiLimiet: (l === null || l === undefined || l === '' || !Number.isFinite(Number(l)) || Number(l) < 0) ? null : Math.round(Number(l)),
+    maxVideoMB: Number.isFinite(v) && v >= 5 && v <= 300 ? v : 100,
+  };
+}
+
 /* Laag 4. `club` = { werkwijze, leiding:{ admins, hoofdJeugd, bouwCoordinatoren } }. */
 export function werkwijzeVan(club){ return club && club.werkwijze === 'club' ? 'club' : 'vrij'; }
 

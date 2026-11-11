@@ -7013,3 +7013,129 @@ html.desk .dk-dash-body .dk-ss{grid-column:1 / -1;position:relative;z-index:2}
 html.desk .dk-dash-body .dk-ss:empty{display:none}
 html.desk .dk-ss .sn-kaart{margin:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--space-sm) var(--space-md)}
 html.desk .dk-ss .sn-kop,html.desk .dk-ss .sn-balk,html.desk .dk-ss .sn-voet,html.desk .dk-ss p,html.desk .dk-ss .rij{grid-column:1 / -1}
+
+/* ===== [20261111a] Platformcentrum (platform-centrum.js) =====
+   Schil = die van de trainingscoördinator-app (.tc-*); hieronder alleen wat het
+   platform extra heeft: kerncijfers, takenlijst, uitrolkolommen, clubtabel en de
+   clubdetail-lade. Onder .modal-achter (50), zodat pop-ups erboven blijven. */
+.pc-app{z-index:45}
+.pc-wrap{display:flex;flex-direction:column;gap:var(--space-md)}
+.pc-kop{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-sm);flex-wrap:wrap}
+.pc-kop .tc-meta{margin:var(--space-2xs) 0 0;max-width:68ch}
+.pc-knoppen{display:flex;gap:var(--space-xs);flex-wrap:wrap;align-items:center}
+.pc-knoppen .knop svg{vertical-align:-3px}
+.pc-uitleg{margin:0;max-width:72ch;line-height:1.5}
+.pc-tel{margin-left:auto;font-size:11.5px;font-weight:700;line-height:1;padding:3px 7px;border-radius:99px;background:var(--accent-vlak);color:var(--accent-ink)}
+.tc-onder button{position:relative}
+.pc-tel-stip{position:absolute;top:6px;left:calc(50% + 8px);width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.pc-draait svg{animation:pc-draai 1s linear infinite}
+@keyframes pc-draai{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.pc-draait svg{animation:none}}
+
+.pc-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--space-sm)}
+.pc-kpis-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.pc-kpi{background:var(--surface);border:1px solid var(--line-d);border-radius:var(--radius);padding:var(--space-sm) var(--space-md)}
+.pc-kpi .g{font-family:var(--font-display);font-weight:800;font-size:32px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+.pc-kpi .g small{font-size:18px;color:var(--ink-2)}
+.pc-kpi .l{font-weight:600;margin-top:var(--space-2xs);color:var(--ink)}
+.pc-kpi .s{font-size:var(--t-xs);color:var(--ink-2)}
+.pc-kpi.let .g{color:var(--warn)}
+@media (max-width:860px){.pc-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.pc-kpis-3{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+.pc-twee{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:var(--space-md);align-items:start}
+@media (max-width:999px){.pc-twee{grid-template-columns:minmax(0,1fr)}}
+.pc-blok{display:flex;flex-direction:column;gap:var(--space-2xs);min-width:0;margin:0}
+.pc-blok-kop{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-sm)}
+.pc-blok-kop small{color:var(--ink-2);font-size:var(--t-sm)}
+.pc-blok .tc-h2{margin:0}
+.pc-taak{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--space-sm);padding:var(--space-sm) 0;border-top:1px solid var(--line-d);width:100%;text-align:left;background:transparent;border-left:0;border-right:0;border-bottom:0;color:inherit;font:inherit}
+.pc-blok-kop + .pc-taak,.pc-blok > .tc-h2 + .pc-taak{border-top:0}
+.pc-taak > .pc-taak-tekst:first-child{grid-column:1 / 3}
+.pc-taak-tekst{min-width:0;display:flex;flex-direction:column;gap:2px}
+.pc-taak-tekst b{color:var(--ink);font-weight:600}
+.pc-taak-tekst small{color:var(--ink-2);font-size:var(--t-sm);line-height:1.4}
+.pc-fase-rij{cursor:pointer}
+.pc-fase-rij:hover b{color:var(--accent)}
+.pc-stip{width:10px;height:10px;border-radius:50%;background:var(--ink-2)}
+.pc-stip.rood{background:var(--accent)} .pc-stip.oranje{background:var(--warn)} .pc-stip.info{background:var(--ok)}
+.pc-zeker{color:var(--accent);border-color:var(--accent)}
+.pc-bericht{margin:var(--space-2xs) 0 0;font-size:var(--t-sm);color:var(--ink);line-height:1.45}
+@media (max-width:560px){
+  .pc-taak{grid-template-columns:auto minmax(0,1fr)}
+  .pc-taak > .knop,.pc-taak > .pc-knoppen{grid-column:2}
+}
+
+/* uitrol */
+.pc-trechter{display:grid;grid-template-columns:repeat(5,minmax(190px,1fr));gap:var(--space-sm);overflow-x:auto;padding-bottom:var(--space-2xs)}
+.pc-kolom{background:var(--surface);border:1px solid var(--line-d);border-radius:var(--radius);padding:var(--space-sm);display:flex;flex-direction:column;gap:var(--space-xs);min-width:0}
+.pc-kolom h3{margin:0;display:flex;justify-content:space-between;font-size:12px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-2)}
+.pc-kolom h3 b{color:var(--ink);font-variant-numeric:tabular-nums}
+.pc-ck{display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;padding:var(--space-sm);border-radius:10px;border:1px solid transparent;background:var(--surface-2);color:var(--ink);font:inherit;cursor:pointer}
+.pc-ck:hover{border-color:var(--hover-rand)}
+.pc-ck-kop{display:flex;align-items:center;gap:var(--space-xs);min-width:0}
+.pc-ck-kop b{font-size:var(--t-md);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-ck small{color:var(--ink-2);font-size:12px;line-height:1.35}
+.pc-balk{display:block;height:5px;border-radius:99px;background:var(--line-d);overflow:hidden}
+.pc-balk i{display:block;height:100%;background:var(--ok)}
+.pc-volgende{font-size:12px;font-weight:600;color:var(--accent)}
+
+/* clubs- en trainerstabel */
+.pc-zoekrij{display:flex;gap:var(--space-sm);flex-wrap:wrap;align-items:center}
+.pc-zoekrij .invoer{flex:1 1 260px;min-width:0;width:auto}
+.pc-fasechip{border:0;cursor:pointer;font:inherit;font-size:12px}
+.pc-tabel-wrap{overflow-x:auto;border:1px solid var(--line-d);border-radius:var(--radius);background:var(--surface)}
+.pc-tabel{width:100%;border-collapse:collapse;min-width:780px}
+.pc-tabel th{font-size:11.5px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-2);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line-d);white-space:nowrap}
+.pc-tabel td{padding:11px 12px;border-bottom:1px solid var(--line-d);color:var(--ink);font-variant-numeric:tabular-nums;vertical-align:middle}
+.pc-tabel tr:last-child td{border-bottom:0}
+.pc-tabel .r{text-align:right}
+.pc-tabel tbody tr[data-pc]{cursor:pointer}
+.pc-tabel tbody tr[data-pc]:hover td,.pc-tabel tbody tr[data-pc]:focus-visible td{background:var(--op-vlak)}
+.pc-tabel tbody tr[data-pc]:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.pc-naam b{display:block;font-weight:600}
+.pc-naam small,.pc-sub{display:block;color:var(--ink-2);font-size:12px}
+.pc-mail{user-select:all;word-break:break-all}
+.pc-nieuw{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:99px;background:var(--accent-vlak);color:var(--accent-ink);vertical-align:2px}
+.pc-tabel .knop svg{vertical-align:-3px}
+
+/* schakelaars en getallen (instellingen, clubdetail) */
+.pc-schakel{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-sm);align-items:center;padding:var(--space-sm) 0;border-top:1px solid var(--line-d)}
+.pc-blok > .tc-h2 + .pc-schakel,.pc-lade-body > .tc-meta + .pc-schakel{border-top:0}
+.pc-schakel b{color:var(--ink);font-weight:600}
+.pc-schakel small{display:block;color:var(--ink-2);font-size:var(--t-sm);line-height:1.4}
+.pc-sw{position:relative;width:46px;height:28px;border-radius:99px;border:1px solid var(--line-d);background:var(--surface-2);padding:0;cursor:pointer;flex-shrink:0}
+.pc-sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--ink-2);transition:left var(--dur-short,.15s) var(--ease-out,ease)}
+.pc-sw[aria-checked="true"]{background:var(--ok);border-color:transparent}
+.pc-sw[aria-checked="true"]::after{left:21px;background:#fff}
+.pc-sw:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.pc-getal{width:110px;text-align:right}
+
+/* clubdetail-lade */
+.pc-lade-achter{position:fixed;inset:0;z-index:46;background:color-mix(in srgb,#000 45%,transparent)}
+.pc-lade{position:fixed;top:0;right:0;bottom:0;z-index:47;width:min(540px,100%);display:flex;flex-direction:column;background:var(--bg);border-left:1px solid var(--line-d);box-shadow:var(--shadow);padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) 0}
+.pc-lade-kop{display:flex;align-items:flex-start;gap:var(--space-sm);padding:var(--space-md) var(--space-md) var(--space-sm);border-bottom:1px solid var(--line-d)}
+.pc-lade-kop .club-shirt{flex-shrink:0}
+.pc-lade-titel{flex:1;min-width:0}
+.pc-lade-titel .tc-h2{margin:0}
+.pc-lade-titel .tc-meta{margin:2px 0 0}
+.pc-lade-tabs{display:flex;gap:var(--space-2xs);padding:var(--space-xs) var(--space-md) 0;overflow-x:auto;border-bottom:1px solid var(--line-d)}
+.pc-lade-tabs button{border:0;background:transparent;color:var(--ink-2);font:inherit;font-weight:600;padding:var(--space-xs) var(--space-xs) 10px;border-bottom:2px solid transparent;white-space:nowrap;cursor:pointer}
+.pc-lade-tabs button.actief{color:var(--ink);border-bottom-color:var(--accent)}
+.pc-lade-body{flex:1;overflow-y:auto;padding:var(--space-md);display:flex;flex-direction:column;gap:var(--space-sm)}
+.pc-lade-body .tc-meta{margin:0}
+.pc-chips{display:flex;flex-wrap:wrap;gap:6px}
+.pc-signaal{border-radius:12px;padding:var(--space-sm);font-size:var(--t-sm);line-height:1.45;color:var(--ink);background:color-mix(in srgb,var(--warn) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--warn) 35%,transparent)}
+.pc-signaal.rood{background:color-mix(in srgb,var(--accent) 10%,var(--surface));border-color:color-mix(in srgb,var(--accent) 35%,transparent)}
+.pc-signaal.info{background:var(--surface);border-color:var(--line-d)}
+.pc-log{margin:4px 0 0;padding-left:18px;color:var(--ink-2);font-size:var(--t-sm)}
+.pc-app .tc-h1,.pc-app .tc-h2{font-family:var(--font-display)}
+.pc-taak .knop{width:auto;justify-self:end}
+@media (max-width:560px){
+  .pc-taak .knop,.pc-taak > .pc-knoppen{justify-self:start}
+}
+@media (max-width:860px){
+  .pc-kpis:not(.pc-kpis-3) .pc-kpi:last-child:nth-child(odd){grid-column:1 / -1}
+}
+.pc-tabel .pf-licht{display:inline-block;vertical-align:middle}
+.pc-rechts{justify-content:flex-end;flex-wrap:nowrap}
+.pc-blok > .pc-schakel:first-child{border-top:0}

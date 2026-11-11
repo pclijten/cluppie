@@ -5,8 +5,8 @@
    (#helpZoek) wordt door de hub (teams.js/koppelTeamTab) aangesloten,
    want die werkt direct op het gerenderde DOM-element. */
 import { esc } from './state.js?v=20261110a';
-import { beleidsplanNaam } from './clubconfig.js?v=20261110a';
-import { onboardingHerstartBlok } from './onboarding.js?v=20261110a';
+import { beleidsplanNaam } from './clubconfig.js?v=20261111a';
+import { onboardingHerstartBlok } from './onboarding.js?v=20261111a';
 
 export function htmlHandleiding(){
   return `<div class="hl">

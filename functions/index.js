@@ -64,6 +64,7 @@ Object.assign(exports, { uitnodigingInfo: toegang.uitnodigingInfo, sluitAan: toe
   trekUitnodigingIn: toegang.trekUitnodigingIn, beoordeelAanvraag: toegang.beoordeelAanvraag, wijzigRol: toegang.wijzigRol,
   verwijderLid: toegang.verwijderLid, bevestigPrivacy: toegang.bevestigPrivacy, privacyOverzicht: toegang.privacyOverzicht, codeBezet: avg.codeBezet,
   startOndersteuning: toegang.startOndersteuning, stopOndersteuning: toegang.stopOndersteuning,
+  stelKoppelingVoor: toegang.stelKoppelingVoor, vraagKoppelingAan: toegang.vraagKoppelingAan,
   exporteerMijnGegevens: avg.exporteerMijnGegevens, verwijderMijnAccount: avg.verwijderMijnAccount, bewaartermijnen: avg.bewaartermijnen });
 
 if (!admin.apps.length) admin.initializeApp();
@@ -152,11 +153,22 @@ async function vereisAI(request, rollen = null, onderdeel = null){
   return r;
 }
 
+/* [20261111b] AI voor clubleden, of voor een trainer zonder club (alleen als de eindbaas dat aanzet:
+   platform/instellingen.soloAI). Zonder clubId en met teamId → functions/solo-ai.js. Alleen gebruikt
+   door functies die geen clubgegevens nodig hebben (Training maken, Seizoensplanning, doelregel). */
+const soloAI = require('./solo-ai');
+async function vereisAIOfSolo(request, rollen = null, onderdeel = null){
+  if (!String(request.data?.clubId || '').trim() && String(request.data?.teamId || '').trim())
+    return soloAI.vereisSoloAI({ db: getFirestore(), request, HttpsError, FieldValue });
+  return vereisAI(request, rollen, onderdeel);
+}
+
 /* ==================== 1b. GEBRUIKSSTATISTIEKEN ==================== */
 const gebruik = require('./gebruik');
 exports.aggregeerGebruik = gebruik.maakCallable(vereisLid);
 exports.aggregeerGebruikNacht = gebruik.aggregeerGebruikNacht;
 exports.platformOverzichtNu = require('./platform').platformOverzichtNu;
+exports.zetPlatformInstellingen = require('./platform').zetPlatformInstellingen;
 /* [20261019b] leren van gebruik (fase 1h): anonieme signalen + maandelijkse samenvatting; staat standaard uit (zie functions/leren.js) */
 Object.assign(exports, require('./leren').maakFuncties({ onCall, onSchedule, HttpsError, getFirestore, FieldValue, vereisLid, isPlatformBeheerder: require('./platform').isPlatformBeheerder }));
 const aanmelding = require('./aanmelding');
@@ -541,7 +553,7 @@ exports.structureerTraining = onCall(
    personaliseerTraining en seizoensVoorstel (zie trainingsai.js). Zelfde toegang en
    AI-limiet als de andere AI-functies; de app werkt ook zonder deze functies. */
 Object.assign(exports, require('./trainingsai').maak({
-  onCall, HttpsError, secrets: [ANTHROPIC_API_KEY], REGIO, vereisAI, claude, apiKey: () => ANTHROPIC_API_KEY.value(), scrubPII,
+  onCall, HttpsError, secrets: [ANTHROPIC_API_KEY], REGIO, vereisAI: vereisAIOfSolo, claude, apiKey: () => ANTHROPIC_API_KEY.value(), scrubPII,
 }));
 
 /* ---------- 2d. HOTSPOT-SAMENVATTING ====================
@@ -612,8 +624,8 @@ exports.vatDoelenSamen = onCall(
   async (request) => {
     const doelen = schoonDoelen(request.data?.doelen);
     if (doelen.length < 2) throw new HttpsError('invalid-argument', 'Minstens twee doelen.');
-    const { clubId, rol } = await vereisAI(request);
-    const namen = await namenVoorScrub(clubId, request.auth.uid, rol);
+    const r = await vereisAIOfSolo(request);
+    const namen = r.solo ? await soloAI.namenVanTeam(getFirestore(), r.teamId) : await namenVoorScrub(r.clubId, request.auth.uid, r.rol);
     const tekst = schoonSamenvatting(await claude({
       apiKey: ANTHROPIC_API_KEY.value(),
       system: [{ type: 'text', text: DOELEN_SYSTEEM }],
