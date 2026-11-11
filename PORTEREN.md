@@ -2,7 +2,7 @@
 
 Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
 
-## Stand (bijgewerkt 11-11-2026, versie 20261111a)
+## Stand (bijgewerkt 11-11-2026, versie 20261111b)
 - **Firestore-rules:** per club afgeschermd (teams, trainingen, video's, documenten, berichten via clublidmaatschap). Getest in de emulator: `npm run test:rules` (21 scenario's, laatst 20/20 groen op 11-10; de 21e is in 20261011f toegevoegd). Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.
 - **Cloud Functions:** live in `europe-west1` (Node 22, 2nd gen). Iedere nieuwe callable heeft na de eerste deploy de invoker `allUsers` nodig (`gcloud run services add-iam-policy-binding <naam-in-kleine-letters> …`), anders krijgt de app een CORS-/`internal`-fout.
 - **Tests:** `npm test` (17 suites, laatst 13-10 allemaal groen; nieuw: `vaste-afmeldingen`. Eerst één keer `cd functions && npm install`) en `node tests/toegang.test.js` (aansluiten/uitnodigen, 24 scenario's). Pariteit met ASV'33: `node tools/pariteit.mjs ../cluppieasv33` (stand 10-11: ASV'33 t/m PR #42 gepoort; resterende meldingen zijn bewust: overzetten via de server, trainco-beheer via functions, bronvermelding niet overgenomen, `nu-test.js` is een ASV-testpagina).
@@ -10,8 +10,21 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
 
 ## Open
+**Voor Paul — Training maken luistert beter (release 20261111b, branch `training-weer`)**
+- [ ] PR reviewen en mergen. Alleen client, geen rules- of functions-deploy.
+- [ ] Gevonden bij het doorlopen van Training maken: (1) "Regen of koud" gaf in 76% van de gevallen exact dezelfde training (alleen een ondergrens op de zwaarte, die de meeste vormen al haalden); (2) Half veld veranderde in 100% van de gevallen niets en kwart veld liet in 70% van de plannen vormen te groot voor het veld; (3) Duur, Niveau en Spelers werkten pas door na "Maak training".
+- [ ] Opgelost in `trainingsplanner.js`: weer is nu `koud | regen | warm` (`WEER`, `opbouwVoor`), oude `slechtWeer: true` = koud. Koud/regen: ontvangst 1′, drinkpauzes −2′, vrijgekomen minuten naar warming-up (max 12′) en partij (max 20′), rust tussen rondes max 1′, zwaarte 2–3 en liever 3 in de kern. Warm: max zwaarte 2, drinkpauzes +2′ van het partijspel af, rust min. 2′. Nieuwe controle `weer`. Kleiner veld: vormen die passen krijgen voorrang en anders wordt het vak evenredig kleiner (melding). Nu nog 10% gelijk bij kou (dan verandert wel de tijdsindeling).
+- [ ] `teams-trainingsmodule.js`: Plan B heeft chips Koud/Regen/Warm, het weer gaat mee in de bewaarde training (`profiel.weer`), duur/niveau/spelers rekenen meteen opnieuw.
+- [ ] Tests: `tests/trainingscontext.test.mjs` uitgebreid (weer verandert tijdsindeling en vormen, totale duur klopt, kleiner veld past). `npm test` groen. Niet in een echte browser bekeken.
+
+**Voor Paul — Mockup ter goedkeuring (11-11): wedstrijd opzetten, Training maken, weervoorstel**
+- [ ] Mockup "Cluppie wizard en training" (claude.ai artifact) bekijken en akkoord geven. Bouwen na akkoord:
+  - Wedstrijd opzetten op desktop in de inhoud naast de zijbalk (nu `.wz-achter` `position:fixed; inset:0` over alles), rustiger letters (Inter i.p.v. Barlow-hoofdletters, tegels zonder grote cijfers). Telefoon blijft volledig scherm.
+  - Training maken op desktop: instellingen in een vast paneel links, training als tijdlijn met kleine tekening per vorm; Weer als keuze in het paneel i.p.v. verstopt achter Aanpassen.
+  - Weervoorstel: Open-Meteo (al in gebruik) op het trainingsmoment van het team (`trainingsmomenten`, anders 18:00), alleen binnen 7 dagen. Grenzen: gevoelstemperatuur ≤ 5 °C → koud; ≥ 1 mm/u of kans ≥ 70% → regen; ≥ 25 °C → warm; onweer → waarschuwing. Kaart met "Pas aan" / "Nee, zo laten". Alleen coördinaten en datum naar buiten.
+
 **Voor Paul — Platformcentrum, AI voor losse trainers en koppelen (release 20261111a, branch `platformcentrum`)**
-- [ ] PR reviewen en mergen. Mockup goedgekeurd op 11-11 ("perfect"); de 9 beslispunten uit `claude/eindbaas-platformcentrum-impactanalyse.md` zijn gebouwd zoals voorgesteld. AI voor losse trainers is gebouwd maar staat **standaard uit**.
+- [x] PR reviewen en mergen (PR #55, gemerged). Mockup goedgekeurd op 11-11 ("perfect"); de 9 beslispunten uit `claude/eindbaas-platformcentrum-impactanalyse.md` zijn gebouwd zoals voorgesteld. AI voor losse trainers is gebouwd maar staat **standaard uit**.
 - [ ] **Functions deployen** (geen rules-wijziging nodig):
   `firebase deploy --only functions:platformOverzichtNu,functions:aggregeerGebruikNacht,functions:zetPlatformInstellingen,functions:stelKoppelingVoor,functions:vraagKoppelingAan,functions:beoordeelAanvraag,functions:beoordeelClubAanmelding,functions:personaliseerTraining,functions:seizoensVoorstel,functions:vatDoelenSamen --project cluppie-ad329`
   en de invoker openzetten voor de drie nieuwe: `for f in zetplatforminstellingen stelkoppelingvoor vraagkoppelingaan; do gcloud run services add-iam-policy-binding $f --region=europe-west1 --member=allUsers --role=roles/run.invoker --project=cluppie-ad329; done`
@@ -27,7 +40,7 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - [ ] Getest: `npm test` (nieuw: `platform-logica.test.mjs`, `koppelen.test.js`, uitbreiding `onderdelen.test.mjs`), `tests/toegang.test.js`, ESLint `no-undef`, en schermen met een nep-Firestore op 414×896 en 1440 breed, donker en licht (platformcentrum, losse trainer met koppelvoorstel, nieuwe gebruiker, clubcoach). Niet tegen echte Firebase.
 
 **Voor Paul — ASV'33-updates van 5 t/m 9 november (release 20261110a, branch `asv33-november`)**
-- [ ] PR reviewen en mergen. Gepoort uit ASV'33 PR #27–#42: Nu-kaart bovenaan de team-hub, rustiger startscherm (tegels achter "Alles"), wedstrijdvoorbereiding (Tegenstander / Praktisch / Plan) met knoppenduo op de wedstrijdkaart, wedstrijdplek met route/veld/kleedkamer, duidelijkere wedstrijdknoppen en het nieuwe zijlijnscherm (proef), trainingscoördinator op het startscherm + teams-dropdown en trainingsdag per team, Android-terugknop via een lagenstapel (`terugLaag` in `state.js`), stats-fixes (lopende klok, tabel op telefoon), poule-uitslagen met elk streepje, en het nieuwe stijlsysteem (tokens, SVG-iconen i.p.v. emoji). `state.js` is gewijzigd (terugknop): dus een volledige versie-bump, `node tools/versie.mjs 20261110a origin/main`.
+- [x] PR reviewen en mergen (PR #54, gemerged). Gepoort uit ASV'33 PR #27–#42: Nu-kaart bovenaan de team-hub, rustiger startscherm (tegels achter "Alles"), wedstrijdvoorbereiding (Tegenstander / Praktisch / Plan) met knoppenduo op de wedstrijdkaart, wedstrijdplek met route/veld/kleedkamer, duidelijkere wedstrijdknoppen en het nieuwe zijlijnscherm (proef), trainingscoördinator op het startscherm + teams-dropdown en trainingsdag per team, Android-terugknop via een lagenstapel (`terugLaag` in `state.js`), stats-fixes (lopende klok, tabel op telefoon), poule-uitslagen met elk streepje, en het nieuwe stijlsysteem (tokens, SVG-iconen i.p.v. emoji). `state.js` is gewijzigd (terugknop): dus een volledige versie-bump, `node tools/versie.mjs 20261110a origin/main`.
 - [ ] Clubkleur: het stijlsysteem kent nu ook `--accent-vlak` en `--accent-ink`; `zetKleur` in `clubconfig.js` zet ze mee (tekst op het vlak wit of donker naar contrast). Even een club met een lichte kleur (geel) bekijken.
 - [ ] Deploy de nieuwe AI-functie voor de doelregel op de Nu-kaart: `firebase deploy --only functions:vatDoelenSamen --project cluppie-ad329` en `gcloud run services add-iam-policy-binding vatdoelensamen --region=europe-west1 --member=allUsers --role=roles/run.invoker --project=cluppie-ad329`. Telt mee in de AI-limiet per club; zonder AI of zonder club staat het eerste doel er.
 - [ ] **Scouting (eerste elftal):** de client is gepoort, maar de bron van `scoutTegenstander` (`functions/scouting.js`) staat niet in de ASV'33-repo en dus ook niet hier. In cluppie.io staat Scouting achter een nieuwe eindbaas-schakelaar per club (platformscherm, standaard uit). De Sportlink-analyse in de voorbereiding (dezelfde functie, `cijfers: true`) verschijnt pas als de functie er is; tot dan valt die kaart stil weg. Actie: `functions/scouting.js` uit je ASV-functions hierheen kopiëren (geen namen/club ASV), deployen en de invoker openzetten.
@@ -125,6 +138,9 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - **Snelstart individuele coach, nog niet gedaan:** (1) herkennen dat de club al Cluppie gebruikt (clubgids + callable) en dan doorverwijzen naar aansluiten; (2) welkomstuitleg voor coaches die via een uitnodiging binnenkomen (nu alleen voor wie zelf een team start). (3) Eerste stappen op de desktop: gedaan in 20261110a.
 
 # Geschiedenis
+
+## Release 20261111b — Training maken: weer, veld en directe updates
+Planner: `WEER`, `weerVan`, `opbouwVoor` en weer in `rondeIndeling`/`bouwOnderdeel`/`score`/`valideer`; ruimte-voorkeur en evenredig verkleinen bij half/kwart veld. Scherm: Koud/Regen/Warm, `profiel.weer`, live herberekenen. `state.js` niet aangeraakt; versie-bump raakte 40 bestanden via de importketen van `trainingsplanner.js`.
 
 ## Release 20261111a — Platformcentrum, AI voor losse trainers, koppelen
 Goedgekeurde mockup "Cluppie Platformcentrum" gebouwd. Nieuwe modules `platform-centrum.js`, `platform-logica.js`, `functions/solo-ai.js`; nieuwe callables `zetPlatformInstellingen`, `stelKoppelingVoor`, `vraagKoppelingAan`; `beoordeelAanvraag` kent soort `team`. `modulesVoorNieuweClub` in beide `onderdelen.js`.
