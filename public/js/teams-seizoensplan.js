@@ -22,15 +22,15 @@ import { db, doc, collection, getDoc, getDocs, setDoc, addDoc, functions, httpsC
 import { S, esc, meld } from './state.js?v=20261110a';
 import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261110a';
 import { aiAan, aiDoel } from './clubconfig.js?v=20261111a';
-import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261111b';
-import { trainingenVanPlan } from './seizoensplan-club.js?v=20261111b';
+import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261111c';
+import { trainingenVanPlan } from './seizoensplan-club.js?v=20261111c';
 import { onderdeelAan } from './onderdelen.js?v=20261111a';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019f';
 import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261111b';
 import {
   MODELLEN, ACCENTEN, maakSeizoensplan, weekKalender, herreken, standaardVrij, maandagVan, beschikbareThemas, themaVolgorde,
   valideerBlokken, positieOp, positieWeek, teamSignalen, stelBijsturingVoor, pasVoorstelToe,
-} from './seizoensplan-logica.js?v=20261111b';
+} from './seizoensplan-logica.js?v=20261111c';
 
 const VORMEN = BIBLIOTHEEK.vormen;
 const KLEUREN = ['var(--accent)', '#4a8fe0', '#e0a526', '#3fb27f', '#a855f7', '#f08a24', '#14b8a6', '#ec4899'];
@@ -39,6 +39,7 @@ const dk = iso => iso ? new Date(iso + 'T12:00:00').toLocaleDateString('nl-NL', 
 const seizoenSleutel = () => String(S.huidigSeizoen || SEIZOEN_FALLBACK).replace(/[^0-9a-z]+/gi, '-').replace(/^-|-$/g, '');
 const planRef = () => doc(db, 'teams', S.teamId, 'seizoensplan', seizoenSleutel());
 
+function plusDagenIso(iso, n){ const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 function bouwKey(){ const b = S.team?.bouw; return ['onder', 'midden', 'boven'].includes(b) ? b : bouwVanCategorie(S.team?.categorie); }
 function seizoenStartJaar(){ const m = String(S.huidigSeizoen || SEIZOEN_FALLBACK).match(/(\d{4})/); return m ? Number(m[1]) : new Date().getFullYear(); }
 function aanwezigeSpelers(){ const n = (S.spelers || []).filter(p => p && !p.gast && !p._ingeleend).length; return Math.max(6, Math.min(24, n || 12)); }
@@ -298,7 +299,12 @@ export function koppelSeizoensplan(v, { zetTeamTab }){
     else if (d.spUitleg) verduidelijk(d.spUitleg);
     else if (d.spOpen){
       const [wk, t] = d.spOpen.split(':').map(Number), pos = positieWeek(s.plan, wk);
-      S._tmVoorinvul = { week: wk, thema: pos.blok.thema, themaHand: true, duur: s.plan.params.duur, niv: s.plan.params.niveau, seed: t, n: aanwezigeSpelers() };
+      /* [20261111c] de datum van die seizoensweek meegeven (training t op de t-de trainingsdag), zodat
+         Training maken, de leerlijn en "Zet op Oefenstof" dezelfde week gebruiken */
+      const ma = s.plan.kal.filter(x => !x.vrij)[wk - 1]?.iso;
+      const dagen = (Array.isArray(S.team?.trainingsdagen) ? S.team.trainingsdagen.map(Number) : []).sort((a, b) => a - b);
+      const datum = ma ? plusDagenIso(ma, (dagen.length ? dagen[(t - 1) % dagen.length] : 1) - 1) : undefined;
+      S._tmVoorinvul = { thema: pos.blok.thema, themaHand: true, duur: s.plan.params.duur, niv: s.plan.params.niveau, seed: t, n: aanwezigeSpelers(), ...(datum ? { datum } : {}) };
       zetTeamTab('trainingsmodule');
     }
   });

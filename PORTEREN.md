@@ -2,7 +2,7 @@
 
 Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
 
-## Stand (bijgewerkt 11-11-2026, versie 20261111b)
+## Stand (bijgewerkt 11-11-2026, versie 20261111c)
 - **Firestore-rules:** per club afgeschermd (teams, trainingen, video's, documenten, berichten via clublidmaatschap). Getest in de emulator: `npm run test:rules` (21 scenario's, laatst 20/20 groen op 11-10; de 21e is in 20261011f toegevoegd). Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.
 - **Cloud Functions:** live in `europe-west1` (Node 22, 2nd gen). Iedere nieuwe callable heeft na de eerste deploy de invoker `allUsers` nodig (`gcloud run services add-iam-policy-binding <naam-in-kleine-letters> …`), anders krijgt de app een CORS-/`internal`-fout.
 - **Tests:** `npm test` (17 suites, laatst 13-10 allemaal groen; nieuw: `vaste-afmeldingen`. Eerst één keer `cd functions && npm install`) en `node tests/toegang.test.js` (aansluiten/uitnodigen, 24 scenario's). Pariteit met ASV'33: `node tools/pariteit.mjs ../cluppieasv33` (stand 10-11: ASV'33 t/m PR #42 gepoort; resterende meldingen zijn bewust: overzetten via de server, trainco-beheer via functions, bronvermelding niet overgenomen, `nu-test.js` is een ASV-testpagina).
@@ -10,6 +10,13 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
 
 ## Open
+**Voor Paul — Review trainingen en seizoensplan + leerlijn hersteld (release 20261111c, branch `leerlijn-week`)**
+- [ ] PR reviewen en mergen. Alleen client, geen rules- of functions-deploy.
+- [ ] Hersteld: Training maken zocht het thema op met het ISO-weeknummer (week 47) alsof het de seizoensweek was, waardoor vrijwel altijd een ander thema dan in het seizoensplan verscheen (`seizoensweekOp` in `seizoensplan-logica.js`, test in `tests/seizoensplan.test.mjs`). Training maken laadt het seizoensplan nu ook zonder eerst Seizoen te openen. "Open in Training maken" geeft de datum van die week mee. Seizoenstrainingen krijgen `trainingNr` (training 1 boven 2 op Oefenstof).
+- [ ] **Voorstel lezen en beslissen:** `porteren/trainingen-seizoensplan-review.md` (ook als projectdoc). Zes beslispunten: één seizoensplan per team, trainingen per week zichtbaar i.p.v. het hele seizoen, Training maken past de geplande training aan, losse trainers trainingen onder het team (rules), Oefenstof → Trainingen, niveau/duur sterker. Na akkoord: mockup.
+- [ ] Bekend en nog niet opgelost (zie review): dubbele trainingen als teamplan en clubplan allebei op een team staan; Oefenstof toont het hele seizoen (±80 trainingen, nieuwste bovenaan, alles "nieuw"); losse trainers krijgen niets op Oefenstof (rules eisen `club`); thema-check in de evaluatie ziet het plan pas na het openen van Seizoen.
+- [ ] Getest: `npm test` groen, acorn op de gewijzigde modules. Niet in een browser bekeken.
+
 **Voor Paul — Training maken luistert beter (release 20261111b, branch `training-weer`)**
 - [ ] PR reviewen en mergen. Alleen client, geen rules- of functions-deploy.
 - [ ] Gevonden bij het doorlopen van Training maken: (1) "Regen of koud" gaf in 76% van de gevallen exact dezelfde training (alleen een ondergrens op de zwaarte, die de meeste vormen al haalden); (2) Half veld veranderde in 100% van de gevallen niets en kwart veld liet in 70% van de plannen vormen te groot voor het veld; (3) Duur, Niveau en Spelers werkten pas door na "Maak training".

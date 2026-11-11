@@ -138,6 +138,14 @@ export function positieOp(plan, isoDatum){
   const idx = Math.max(0, Math.min(b.weken - 1, w.nr - b.vanafWeek));
   return { weekNr: w.nr, blok: b, weekInBlok: idx + 1, fase: b.fasen[idx] };
 }
+/* Seizoensweek (nr in de kalender) die bij een datum hoort. Valt de datum in een vrije week of na het
+   seizoen, dan de laatste trainingsweek ervóór; vóór de start week 1. Nooit een ISO-kalenderweek. */
+export function seizoensweekOp(kal, isoDatum){
+  const m = maandagVan(isoDatum);
+  let nr = 1;
+  for (const w of kal || []){ if (w.iso > m) break; if (w.nr) nr = w.nr; }
+  return nr;
+}
 export function positieWeek(plan, weekNr){
   const b = plan.blokken.find(x => weekNr >= x.vanafWeek && weekNr <= x.totWeek) || plan.blokken[plan.blokken.length - 1];
   const idx = Math.max(0, Math.min(b.weken - 1, weekNr - b.vanafWeek));

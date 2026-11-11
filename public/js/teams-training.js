@@ -19,7 +19,7 @@ import {
   catLabel,
 } from './config.js?v=20261110a';
 import { htmlKompas } from './teams-leerlijn.js?v=20261111a';
-import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261111b';
+import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261111c';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
 import {
   MAX_WEKEN, weekdagVan, plusDagen, eersteOpDag, regelDatums, actieveRegels, vastOp, vastePrefill, redenVanRegel
@@ -412,6 +412,8 @@ export function htmlTeamTrainingen(){
     for (const g of perWeek.values()){
       g.items.sort((a,b) =>
         ((a.plan?.id && a.plan.id === b.plan?.id) ? (a.trainingNr||0) - (b.trainingNr||0) : 0)
+        // [20261111c] seizoenstrainingen worden in één batch geschreven (zelfde tijdstempel): op nummer
+        || ((a.seizoensplanId && a.seizoensplanId === b.seizoensplanId) ? (a.trainingNr || Number(String(a.id).split('_').pop()) || 0) - (b.trainingNr || Number(String(b.id).split('_').pop()) || 0) : 0)
         || (a.gemaakt?.seconds||0) - (b.gemaakt?.seconds||0));
     }
 

@@ -105,4 +105,9 @@ ok('handmatige trainingen tellen mee als bezette week, seizoenstrainingen niet',
   assert.equal(C.botsingen(uit1.docs, new Set([40])), uit1.docs.filter(d => d.week === 'Week 40').length);
 });
 
+ok('elke seizoenstraining heeft een trainingNr binnen de week', () => {
+  assert.ok(uit1.docs.every(d => d.trainingNr >= 1));
+  assert.ok(uit1.docs.some(d => d.trainingNr === 2));
+});
+
 console.log(`seizoensplan-club: ${n} controles geslaagd`);

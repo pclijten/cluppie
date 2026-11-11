@@ -29,8 +29,9 @@ import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
 import { TERUGBLIK_VRAGEN, zetAntwoord, terugblikKlaar, terugblikSamenvatting, signaalVormBewaard, signaalVormGewisseld, signaalTerugblik, signaalMateriaal, signaalGat, gatRedenen } from './leren-logica.js?v=20261019b';
 import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261111a';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261012e';
-import { positieWeek } from './seizoensplan-logica.js?v=20261111b';
-import { oefeningVan } from './seizoensplan-club.js?v=20261111b';
+import { positieWeek, seizoensweekOp, weekKalender, standaardVrij, maandagVan } from './seizoensplan-logica.js?v=20261111c';
+import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261111c';
+import { oefeningVan } from './seizoensplan-club.js?v=20261111c';
 import { onderdeelAan } from './onderdelen.js?v=20261111a';
 
 const VORMEN = BIBLIOTHEEK.vormen;
@@ -93,15 +94,20 @@ function staat(){
 }
 
 /* Thema en blokfase van de leerlijn voor week t.w. */
+/* [20261111c] De positie volgt uit de datum van de training, niet uit het ISO-weeknummer: week 47 in
+   november is seizoensweek ±12, niet week 47 van de jaarlijn (gaf tot nu toe vrijwel altijd het verkeerde thema). */
 function leerlijnNu(){
   const t = staat(), lv = leeftijdVanCategorie(S.team?.categorie);
   const plan = onderdeelAan('seizoensplan') && S._spPlan && S._spPlan.teamId === S.teamId ? S._spPlan.plan : null;
-  if (plan?.blokken?.length){
-    const p = positieWeek(plan, Math.max(1, Math.min(plan.trainingsweken || 36, t.week)));
+  if (plan?.blokken?.length && plan.kal?.length){
+    const p = positieWeek(plan, seizoensweekOp(plan.kal, t.datum));
     return { blok: p.blok.nr, thema: p.blok.thema, fase: p.fase, weekInBlok: p.weekInBlok, weken: p.blok.weken, bron: 'seizoensplan' };
   }
-  const lijn = jaarlijn({ bouw: bouwKey(), leeftijd: lv, weken: 36, beschikbaar: THEMAS_BESCHIKBAAR() });
-  const p = blokVoorWeek(lijn, t.week);
+  const y = Number(String(S.huidigSeizoen || SEIZOEN_FALLBACK).match(/(\d{4})/)?.[1]) || new Date().getFullYear();
+  const start = maandagVan(`${y}-08-24`), eind = `${y + 1}-06-06`;
+  const kal = weekKalender(start, eind, standaardVrij(start, eind));
+  const lijn = jaarlijn({ bouw: bouwKey(), leeftijd: lv, weken: kal.filter(w => !w.vrij).length, beschikbaar: THEMAS_BESCHIKBAAR() });
+  const p = blokVoorWeek(lijn, seizoensweekOp(kal, t.datum));
   return { blok: p.blok.nr, thema: p.blok.thema, fase: p.fase, weekInBlok: p.weekInBlok, weken: p.blok.weken, bron: 'standaard' };
 }
 function themaOpties(){
@@ -127,8 +133,13 @@ function maak(){
 /* ---------- HTML ---------- */
 export function htmlTrainingsmodule(){
   const t = staat();
-  if (S._tmVoorinvul){ Object.assign(t, S._tmVoorinvul); t.duur = kiesDuur(t.duur); S._tmVoorinvul = null; maak(); }
+  if (S._tmVoorinvul){ Object.assign(t, S._tmVoorinvul); t.duur = kiesDuur(t.duur); t.week = isoVan(datumUit(t.datum)).week; t.nHand = false; t.bewaardId = null; S._tmVoorinvul = null; maak(); }
   if (!t.plan) maak();
+  /* [20261111c] het seizoensplan van het team laden, ook als de coach het tabblad Seizoen nog niet opende;
+     daarna het thema opnieuw kiezen (alleen als de coach het niet zelf koos en niets bewaards open heeft) */
+  if (onderdeelAan('seizoensplan') && !(S._sp && S._sp.teamId === S.teamId && S._sp.geladen)){
+    laadSeizoensplanVoorTeam().then(() => { const u = staat(); if (!u.themaHand && !u.bewaardId && S._spPlan?.teamId === S.teamId){ maak(); teken(); } }).catch(() => {});
+  }
   if (!t.lijst) laadBewaard();
   if (!t.cxGeladen) laadContext();
   return `<div id="tmRoot" class="tm">${htmlInhoud()}</div>`;

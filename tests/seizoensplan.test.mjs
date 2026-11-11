@@ -62,4 +62,16 @@ assert.equal(sig.perThema['Scoren'].nee, 3);
 /* positie en datum */
 const pos = L.positieOp(plan, '2026-08-24'); assert.equal(pos.weekNr, 1); assert.equal(pos.fase, 'Ontdek');
 assert.equal(L.positieOp(plan, '2020-01-01'), null);
+/* [20261111c] seizoensweek uit een datum (Training maken), nooit het ISO-weeknummer */
+assert.equal(L.seizoensweekOp(plan.kal, '2026-08-26'), 1, 'eerste week');
+assert.equal(L.seizoensweekOp(plan.kal, '2020-01-01'), 1, 'vóór de start: week 1');
+{
+  const w = plan.kal.find(x => x.nr === 12);
+  assert.equal(L.seizoensweekOp(plan.kal, w.iso), 12, 'datum in seizoensweek 12');
+  const vrij = plan.kal.findIndex(x => x.vrij);
+  if (vrij > 0) assert.equal(L.seizoensweekOp(plan.kal, plan.kal[vrij].iso), plan.kal.slice(0, vrij).filter(x => x.nr).pop().nr, 'vrije week: laatste trainingsweek ervoor');
+  assert.equal(L.seizoensweekOp(plan.kal, '2099-01-01'), plan.trainingsweken, 'na het seizoen: laatste week');
+  const nov = L.positieWeek(plan, L.seizoensweekOp(plan.kal, '2026-11-17'));
+  assert.equal(nov.blok.thema, L.positieOp(plan, '2026-11-17').blok.thema, 'november: zelfde thema als de jaarlijn');
+}
 console.log('seizoensplan: alle controles geslaagd');
