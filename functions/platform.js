@@ -100,7 +100,9 @@ function bepaalIndividueleCoaches({ gebruikers = [], teams = [], clubs = [], aan
   const eigen = {};
   for (const t of teams){
     if (t.club) continue;
-    for (const u of Object.keys(t.leden || {})) (eigen[u] ||= []).push({ id: t.id, naam: t.naam || '', categorie: t.categorie || '', spelers: Number(t.spelers) || 0 });
+    /* [20261111] eigenClub = club en plaats die de trainer zelf invulde (snelstart); het platformcentrum herkent daarmee of die club al Cluppie gebruikt */
+    const ec = t.eigenClub && t.eigenClub.naam ? { naam: String(t.eigenClub.naam).slice(0, 80), plaats: String(t.eigenClub.plaats || '').slice(0, 80) } : null;
+    for (const u of Object.keys(t.leden || {})) (eigen[u] ||= []).push({ id: t.id, naam: t.naam || '', categorie: t.categorie || '', spelers: Number(t.spelers) || 0, ...(ec ? { eigenClub: ec } : {}) });
   }
   const wacht = new Set(aanvragen.map(a => a.uid).filter(Boolean));
   const weg = new Set(uitsluiten.map(e => String(e || '').toLowerCase()));
@@ -144,7 +146,7 @@ async function leesAuthGebruikers(auth = getAuth(), maxTotaal = 5000){
 async function individueleCoaches(db, clubs, aanvragen, nuMs){
   const [gebruikers, teamSnap, platformDoc] = await Promise.all([
     leesAuthGebruikers(),
-    db.collection('teams').select('club', 'leden', 'naam', 'categorie', 'ledenInfo').get(),
+    db.collection('teams').select('club', 'leden', 'naam', 'categorie', 'ledenInfo', 'eigenClub').get(),
     db.doc('platform/instellingen').get(),
   ]);
   const teams = teamSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -208,6 +210,8 @@ async function clubKerncijfers(db, clubDoc, aanvragenPerClub, nuMs){
     privacy: { vo: !!pv.verwerkersovereenkomst?.geaccepteerd, contact: !!pv.contactEmail, akkoord, totaal: personen.length },
     startlijst: { gedaan: STARTLIJST_IDS.filter(s => sl[s]).length, totaal: STARTLIJST_IDS.length, open: STARTLIJST_IDS.filter(s => !sl[s]) },
     benchmarkAan: c.instellingen?.benchmark === true,
+    /* [20261111] alleen teamnamen, voor zoeken in het platformcentrum */
+    teamNamen: teams.map(t => String(t.naam || '')).filter(Boolean).sort().slice(0, 80),
   };
   k._bench = benchmarkWaarden(gebruikDocs, teams.length, uids.size, personen.length);
   return { ...k, ...beoordeelClub(k, nuMs) };

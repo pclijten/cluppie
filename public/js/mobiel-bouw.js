@@ -10,11 +10,11 @@
 ================================================================= */
 import { S, $, esc, meld, toon, terugView } from './state.js?v=20261110a';
 import { BOUWEN } from './config.js?v=20261110a';
-import { laadBouw, teamRijen, richting } from './desktop-bouw.js?v=20261110a';
-import { zetBouwContext, modalNieuweUitleningVanuitBouw } from './bouw-hub.js?v=20261110a';
-import { trekUitleningIn } from './teams-spelers.js?v=20261110a';
-import { htmlMobielTeam } from './desktop-schermen.js?v=20261110a';
-import { isSelectieBouw, htmlRadarMobiel, htmlSelectieTegelMobiel, htmlSelectieMobiel, selectieKlik, selectieInvoer } from './selectie-bouw.js?v=20261110a';
+import { laadBouw, teamRijen, richting } from './desktop-bouw.js?v=20261111a';
+import { zetBouwContext, modalNieuweUitleningVanuitBouw } from './bouw-hub.js?v=20261111a';
+import { trekUitleningIn } from './teams-spelers.js?v=20261111a';
+import { htmlMobielTeam } from './desktop-schermen.js?v=20261111a';
+import { isSelectieBouw, htmlRadarMobiel, htmlSelectieTegelMobiel, htmlSelectieMobiel, selectieKlik, selectieInvoer } from './selectie-bouw.js?v=20261111a';
 
 /* Hardware-terug in de bouw-omgeving: precies de ‹-knop bovenin (team → lijst,
    Selectie maken → dashboard, anders terug naar het teamsoverzicht). */
@@ -154,7 +154,7 @@ async function klik(e){
   if (a === 'terug'){
     if (st.teamId){ st.teamId = null; st.keuze = {}; teken(); return; }
     if (st.tab === 'selmaken'){ st.tab = 'dash'; teken(); window.scrollTo(0, 0); return; }
-    const m = await import('./teams.js?v=20261110a'); m.renderTeams(); toon('teams'); return;
+    const m = await import('./teams.js?v=20261111a'); m.renderTeams(); toon('teams'); return;
   }
   if (a === 'tab'){ st.tab = id; st.teamId = null; st.keuze = {}; teken(); window.scrollTo(0, 0); return; }
   if (a === 'team'){ st.teamId = id; st.pag = 'sel'; st.keuze = {}; teken(); window.scrollTo(0, 0); return; }
@@ -162,7 +162,7 @@ async function klik(e){
   if (a === 'selmaken'){ st.tab = 'selmaken'; st.teamId = null; teken(); window.scrollTo(0, 0); return; }
   if (a === 'speler'){ st.pag = 'evs'; st.keuze = { speler:id }; teken(); return; }
   if (a === 'wedstrijd'){ st.keuze = { wedstrijd:id }; teken(); return; }
-  if (a === 'eigen'){ const m = await import('./teams.js?v=20261110a'); m.openTeam(st.teamId, { sel:'spelers', evs:'spelers', evw:'evaluatie', stat:'stats' }[st.pag] || 'hub'); return; }
+  if (a === 'eigen'){ const m = await import('./teams.js?v=20261111a'); m.openTeam(st.teamId, { sel:'spelers', evs:'spelers', evw:'evaluatie', stat:'stats' }[st.pag] || 'hub'); return; }
   if (a === 'nieuwleen'){ zetBouwContext(cache); modalNieuweUitleningVanuitBouw(() => teken()); return; }
   if (a === 'weekbrief'){ import('./club-weekbrief.js?v=20261110a').then(m => m.openWeekbrief(cache.teams || [], huidigeBouw().naam)); return; }
   if (a === 'terug-leen'){ const u = cache.uitleningen.find(x => x.id === id); if (!u) return;
