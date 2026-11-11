@@ -8,11 +8,11 @@
    config.js maar uit content.js (Firestore-collectie 'content') — zie
    CONTENTBEHEER in het clubdashboard. Structurele data (thema/vanaf/domein)
    blijft in config.js staan; dat verandert niet via het contentbeheer-tabblad. */
-import { S, $, esc, openModal, modAan } from './state.js?v=20261110a';
+import { S, $, esc, openModal, modAan } from './state.js?v=20261111d';
 import { skillDomein, leercurveThema, isoWeek, kompasIndexVoorWeek,
-         LEERCURVE, leercurveRelevant, catLabel } from './config.js?v=20261110a';
-import { contentVoorThema, kompasTips } from './content.js?v=20261110a';
-import { beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261111a';
+         LEERCURVE, leercurveRelevant, catLabel } from './config.js?v=20261111d';
+import { contentVoorThema, kompasTips } from './content.js?v=20261111d';
+import { beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261111d';
 
 /* ---------- Leerlijn-blok: kompas + leerlijn (Training-tab) ----------
    Eén rustig blok waarin de coach met de pijltjes door twee series bladert:

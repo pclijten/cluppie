@@ -12,10 +12,10 @@
    blijven daarnaast werken zoals ze werkten.
    Getekend in Club → Bouwen (sinds 20260929a, daarvoor Club → Instellingen), boven de eigen bouwen.
 ======================================================== */
-import { S, esc, meld } from './state.js?v=20261110a';
+import { S, esc, meld } from './state.js?v=20261111d';
 import { db, doc, updateDoc } from './firebase.js?v=20261011g';
-import { BOUWEN, bouwVanCategorie } from './config.js?v=20261110a';
-import { koppelCoordinatorenBeheer } from './coordinatoren.js?v=20261110a';
+import { BOUWEN, bouwVanCategorie } from './config.js?v=20261111d';
+import { koppelCoordinatorenBeheer } from './coordinatoren.js?v=20261111d';
 
 const KLEUR = { onder:'#35c47a', midden:'#3b82f6', boven:'#a855f7' };
 const KORT  = Object.fromEntries(BOUWEN.map(b => [b.id, b.kort]));

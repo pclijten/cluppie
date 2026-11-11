@@ -11,19 +11,19 @@
    alleen HTML + de opslaghulpjes voor de wedstrijd-presentie. Het importeert
    bewust NIET terug uit teams.js (geen circulaire import). */
 import { db, doc, updateDoc, deleteField } from './firebase.js?v=20261011g';
-import { S, esc, meld, datumNL, modAan, openModal } from './state.js?v=20261110a';
-import { AFWEZIG_REDENEN, afwezigRedenInfo, catLabel } from './config.js?v=20261110a';
+import { S, esc, meld, datumNL, modAan, openModal } from './state.js?v=20261111d';
+import { AFWEZIG_REDENEN, afwezigRedenInfo, catLabel } from './config.js?v=20261111d';
 import { ico } from './icons.js?v=20261110a';
-import { logoImg, primaireClubId } from './clubconfig.js?v=20261111a';
-import { analyseWedstrijd, WISSEL_BEURT } from './analyse.js?v=20261110a';
-import { telGebruik } from './tracker.js?v=20261110a';
-import { ongelezenBerichten } from './berichten.js?v=20261110a';
-import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261110a';
-import { htmlRondeBalk } from './evaluatierondes.js?v=20261110a';
-import { onderdeelAan } from './onderdelen.js?v=20261111a';
-import { eersteStappenPlaats } from './snelstart.js?v=20261111c';
-import { htmlNu } from './nu-scherm.js?v=20261111c';
-import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261110a';
+import { logoImg, primaireClubId } from './clubconfig.js?v=20261111d';
+import { analyseWedstrijd, WISSEL_BEURT } from './analyse.js?v=20261111d';
+import { telGebruik } from './tracker.js?v=20261111d';
+import { ongelezenBerichten } from './berichten.js?v=20261111d';
+import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261111d';
+import { htmlRondeBalk } from './evaluatierondes.js?v=20261111d';
+import { onderdeelAan } from './onderdelen.js?v=20261111d';
+import { eersteStappenPlaats } from './snelstart.js?v=20261111d';
+import { htmlNu } from './nu-scherm.js?v=20261111d';
+import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261111d';
 import { isAfgelast, telMee, soortPill, wedstrijdInfo, htmlAfgelastBanner, afgelastMeldingen, deelTekst } from './wedstrijd-status.js?v=20261012h';
 
 
@@ -96,16 +96,16 @@ export function htmlHub(updInfo){
 
   /* Secties conform de goedgekeurde mockup (v4, feedback 18 aug). */
   const secties = [
-    ['Oefenstof', [
-      tegel('trainingen',       'Oefenstof',    'training-cones', oefenstofOngelezen || null),
+    ['Trainingen', [
+      tegel('trainingen',       'Trainingen',    'training-cones', oefenstofOngelezen || null),
       `<button class="hub-tegel" data-open-tactiek="1">${ico('football-tactics', 40)}<span class="hub-tnaam">Tactiek</span></button>`,
       tegel('videos',           'Video\u2019s', 'training-video'),
       ...(onderdeelAan('trainingsmodule') ? [tegel('trainingsmodule',  'Training maken', 'training-plan')] : []),
       ...(onderdeelAan('seizoensplan') ? [tegel('seizoensplan',     'Seizoen',      'planning-month')] : []),
     ]],
     ['Presentie', [
-      tegel('presentietraining','Training',     'training-cones'),
-      tegel('preswedstrijd',    'Wedstrijd',    'football-whistle'),
+      tegel('presentietraining','Aanwezig training', 'training-cones'),
+      tegel('preswedstrijd',    'Aanwezig wedstrijd', 'football-whistle'),
       tegel('stats',            'Stats',        'stats-bars'),
     ]],
     ['Wedstrijden', [

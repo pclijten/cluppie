@@ -8,13 +8,14 @@
    Een onderdeel is zichtbaar als laag 1 het toestaat én modAan() (laag 2 en 3) aan zegt.
    Vierde laag, werkwijze (clubs/{id}.instellingen.werkwijze): bij 'club' (Club stuurt) bouwen alleen
    admins, hoofd jeugd en (bouw)coördinatoren zelf een training of seizoensplan; een gewone trainer
-   ziet die tegels niet, tenzij het team een uitzondering heeft (teams/{id}.werkwijzeVrij === true).
+   ziet Training maken niet, tenzij het team een uitzondering heeft (teams/{id}.werkwijzeVrij === true).
+   Seizoen ziet hij wel, maar alleen lezen ([20261111d]).
    Standaard is 'vrij' (Trainers vrij). Een team zonder club kent geen werkwijze: alles open.
    Dit is een organisatiekeuze in de interface, geen beveiliging.
    Bewust een eigen module: modAan staat in state.js en daar iets in wijzigen kost een release
    van ~30 bestanden. Dit geldt alleen voor de sleutels in BEHEERD; de andere modules lopen
    gewoon via modAan(). Zonder imports van firebase, dus ook los te testen. */
-import { S, modAan } from './state.js?v=20261110a';
+import { S, modAan } from './state.js?v=20261111d';
 
 export const BEHEERD = ['trainingsmodule', 'seizoensplan'];
 export const NAMEN = { trainingsmodule: 'Training maken', seizoensplan: 'Seizoensplanning' };
@@ -76,6 +77,9 @@ export function werkwijzeToestaat(sleutel, team, club = S._clubPlatform, uid = S
 /* Is het onderdeel nu zichtbaar voor dit team? */
 export function onderdeelAan(sleutel, team = S.team){
   if (!BEHEERD.includes(sleutel)) return modAan(sleutel, team);
+  /* [20261111d] Seizoen blijft bij Club stuurt zichtbaar (alleen lezen): de coach ziet het plan van de club.
+     Wie mag bouwen bepaalt werkwijzeToestaat() in het scherm zelf. */
+  if (sleutel === 'seizoensplan') return platformToegestaan(S._clubPlatform, sleutel) && modAan(sleutel, team);
   return platformToegestaan(S._clubPlatform, sleutel) && modAan(sleutel, team) && werkwijzeToestaat(sleutel, team);
 }
 

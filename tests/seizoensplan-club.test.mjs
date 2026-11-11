@@ -110,4 +110,53 @@ ok('elke seizoenstraining heeft een trainingNr binnen de week', () => {
   assert.ok(uit1.docs.some(d => d.trainingNr === 2));
 });
 
+/* [20261111d] clubplan per team en uitrol zonder dubbelingen */
+ok('duur bij de leeftijd, tenzij het plan een vaste duur kiest', () => {
+  assert.equal(C.duurVoorTeam('leeftijd', 7), 45); assert.equal(C.duurVoorTeam(undefined, 11), 60); assert.equal(C.duurVoorTeam(null, 15), 75);
+  assert.equal(C.duurVoorTeam(60, 7), 60);
+});
+ok('trainingen per week volgen de trainingsdagen van het team', () => {
+  assert.equal(C.tpwVoorTeam(2, { trainingsdagen: [2, 4, 5] }), 3);
+  assert.equal(C.tpwVoorTeam(2, { trainingsdagen: [3] }), 1);
+  assert.equal(C.tpwVoorTeam(2, {}), 2);
+  assert.equal(C.spelersVoorPlanner(0), 12); assert.equal(C.spelersVoorPlanner(30), 24); assert.equal(C.spelersVoorPlanner(9), 9);
+});
+const kalPlan = { model: 'leercurve', bouw: 'midden', params: { start: '2026-08-24', eind: '2027-06-06', vrij: [], accent: [], tpw: 2, niveau: 2 } };
+const teamD = { id: 'tD', categorie: 'O11-1', trainingsdagen: [2, 4], club: 'A' };
+const planD = C.planVoorTeam(kalPlan, teamD, L.beschikbareThemas(vormen));
+const uitD = C.trainingDocs({ plan: planD, team: teamD, clubId: 'A', planId: 'pD', planVersie: 1, vormen, aantalSpelers: 12 });
+ok('trainingsdocs: zichtbaar vanaf de maandag van de week ervoor, vaste dag en datum', () => {
+  const d = uitD.docs[0];
+  assert.equal(d.weekStart, '2026-08-24'); assert.equal(d.zichtbaarVanaf, '2026-08-17');
+  assert.equal(d.trainingsdag, 2); assert.equal(d.datum, '2026-08-25');
+  assert.equal(uitD.docs[1].trainingsdag, 4); assert.equal(uitD.docs[1].datum, '2026-08-27');
+  assert.equal(planD.params.duur, 60);
+});
+ok('oude seizoenstraining zonder zichtbaarVanaf: berekend uit week en jaar', () => {
+  assert.equal(C.zichtbaarVanafVan({ bron: 'seizoensplan', week: 'Week 47', seizoenJaar: 2026 }), '2026-11-09');
+  assert.equal(C.zichtbaarVanafVan({ bron: 'upload', week: 'Week 47' }), null);
+});
+ok('uitrol: zichtbare en aangepaste trainingen blijven, geen tweede training in die week, verleden niet gevuld', () => {
+  const vandaag = '2026-11-11';
+  const nieuw = uitD.docs;
+  const ws = '2026-11-16', ws2 = '2026-11-23';
+  const eigenNu = { id: 'e1', bron: 'seizoensplan', seizoensplanId: 'team_tD', weekStart: '2026-11-09', zichtbaarVanaf: '2026-11-02' };
+  const eigenVolgende = { id: 'e2', bron: 'seizoensplan', seizoensplanId: 'team_tD', weekStart: ws, zichtbaarVanaf: '2026-11-09' };
+  const eigenLater = { id: 'e3', bron: 'seizoensplan', seizoensplanId: 'team_tD', weekStart: ws2, zichtbaarVanaf: '2026-11-16' };
+  const aangepast = { id: 'e4', bron: 'seizoensplan', seizoensplanId: 'team_tD', weekStart: '2026-11-30', zichtbaarVanaf: '2026-11-23', aangepast: true };
+  const hand = { id: 'h1', bron: 'upload', week: 'Week 49' };
+  const r = C.uitrolPlan({ nieuw, bestaande: [eigenNu, eigenVolgende, eigenLater, aangepast, hand], planId: 'pD', vandaag, vervangt: id => String(id).startsWith('team_') });
+  assert.ok(r.schrijf.every(d => d.weekStart >= '2026-11-09'), 'geen weken uit het verleden');
+  assert.ok(!r.schrijf.some(d => ['2026-11-09', ws, '2026-11-30'].includes(d.weekStart)), 'geen tweede training in een vaste week');
+  assert.ok(r.schrijf.some(d => d.weekStart === ws2), 'latere week komt uit het nieuwe plan');
+  assert.deepEqual(r.verwijder.map(d => d.id), ['e3'], 'alleen het niet-zichtbare deel van het vervangen plan verdwijnt');
+  assert.ok(!r.verwijder.some(d => d.id === 'h1'));
+});
+ok('uitrol opnieuw met hetzelfde plan: niets dubbel, niets verwijderd', () => {
+  const vandaag = '2026-08-01';
+  const r1 = C.uitrolPlan({ nieuw: uitD.docs, bestaande: [], planId: 'pD', vandaag });
+  const r2 = C.uitrolPlan({ nieuw: uitD.docs, bestaande: r1.schrijf.map(d => ({ ...d, bron: 'seizoensplan', seizoensplanId: 'pD' })), planId: 'pD', vandaag });
+  assert.equal(r2.schrijf.length, uitD.docs.length); assert.equal(r2.verwijder.length, 0);
+});
+
 console.log(`seizoensplan-club: ${n} controles geslaagd`);

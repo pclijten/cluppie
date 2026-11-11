@@ -12,7 +12,7 @@
    club-evaluaties.js) — de rest van de app heeft deze library nooit
    nodig, dus pas ophalen op het moment dat een trainer echt een
    training opent. */
-import { meld, bewaakTerug, vangnetStilTerugAlsNodig } from './state.js?v=20261110a';
+import { meld, bewaakTerug, vangnetStilTerugAlsNodig } from './state.js?v=20261111d';
 
 const PDFJS_VERSIE = '3.11.174';
 const PDFJS_BASE = 'vendor/pdfjs-3/';   // zelf gehost (AVG: geen CDN-verbinding)
@@ -127,7 +127,7 @@ export async function openPdfViewer({ url, titel, meta }){
   dlBtn.disabled = true;
   dlBtn.onclick = null;
   teller.textContent = '';
-  stage.innerHTML = `<div class="pdfv-laad"><div class="pdfv-spinner"></div>Oefenstof laden…</div>`;
+  stage.innerHTML = `<div class="pdfv-laad"><div class="pdfv-spinner"></div>Training laden…</div>`;
   el.classList.add('open');
   zetViewportZoombaar(true);
   bewaakTerug();

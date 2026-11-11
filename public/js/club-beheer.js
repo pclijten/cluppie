@@ -13,14 +13,14 @@
    per ongeluk wordt overschreven. Dit bestand importeert niets uit club.js
    (geen kringimport): club.js geeft een api-object mee. */
 import { db, doc, updateDoc } from './firebase.js?v=20261011g';
-import { S, esc, meld, modAan } from './state.js?v=20261110a';
-import { BOUWEN, catLabel } from './config.js?v=20261110a';
-import { kompasNaam } from './clubconfig.js?v=20261111a';
-import { onderdeelAan, doorPlatformUit, werkwijzeVan } from './onderdelen.js?v=20261111a';
+import { S, esc, meld, modAan } from './state.js?v=20261111d';
+import { BOUWEN, catLabel } from './config.js?v=20261111d';
+import { kompasNaam } from './clubconfig.js?v=20261111d';
+import { onderdeelAan, doorPlatformUit, werkwijzeVan } from './onderdelen.js?v=20261111d';
 import { ico } from './icons.js?v=20261110a';
-import { momentenVanTeam, htmlMomentenKaart, koppelMomentenKaart, DAGEN_KORT } from './trainingsmomenten.js?v=20261110a';
-import { verwijderCoach } from './trainco-beheer.js?v=20261110a';
-import { eigenBouwenVanTeam, bouwVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261110a';
+import { momentenVanTeam, htmlMomentenKaart, koppelMomentenKaart, DAGEN_KORT } from './trainingsmomenten.js?v=20261111d';
+import { verwijderCoach } from './trainco-beheer.js?v=20261111d';
+import { eigenBouwenVanTeam, bouwVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261111d';
 
 /* [sleutel, naam, kort, icoon, uitleg] — 'lijstjes' was eerder niet door de beheerder te regelen */
 export const MODULE_DEFS = [
@@ -30,8 +30,8 @@ export const MODULE_DEFS = [
   ['leerplein',  'Leerplein',  'Plein', 'football-tactics',  'Uitleg en voorbeeld-loopacties per leerthema op het tactiekbord.'],
   ['lijstjes',   'Lijstjes',   'Lijst', 'attendance-fill',   'Lijstjes voor aanwezigheid, kledingmaten en ouderhulp.'],
   /* [20261013b] door de eindbaas per club vrijgegeven (zie onderdelen.js) */
-  ['trainingsmodule', 'Training maken', 'Maken', 'training-plan', 'Complete trainingen samenstellen (Oefenstof → Training maken).'],
-  ['seizoensplan', 'Seizoensplanning', 'Seizoen', 'planning-month', 'Jaarlijn in blokken met bijsturing op basis van evaluaties (Oefenstof → Seizoen).'],
+  ['trainingsmodule', 'Training maken', 'Maken', 'training-plan', 'Complete trainingen samenstellen (Trainingen → Training maken).'],
+  ['seizoensplan', 'Seizoensplanning', 'Seizoen', 'planning-month', 'Jaarlijn in blokken met bijsturing op basis van evaluaties (Trainingen → Seizoen).'],
 ];
 document.addEventListener('clubconfig', () => { const d = MODULE_DEFS.find(m => m[0] === 'kompas'); if (d) d[1] = kompasNaam(); });
 const DAG_KORT = ['Ma','Di','Wo','Do','Vr','Za','Zo'];

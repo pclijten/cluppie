@@ -289,3 +289,19 @@ test('trainingscoördinator: clubbeheerder mag toekennen en intrekken', async ()
   await assertSucceeds(updateDoc(doc(als('adminA'), 'clubs/A'), { 'trainingscoordinatoren.tcA': true }));
   await assertSucceeds(updateDoc(doc(als('adminA'), 'clubs/A'), { 'trainingscoordinatoren.tcA': deleteField() }));
 });
+
+/* [20261111d] seizoensplan toewijzen: de bouwcoördinator schrijft trainingen voor teams uit zijn eigen bouw */
+test('trainingen: bouwcoördinator schrijft voor een team uit de eigen bouw, niet daarbuiten', async () => {
+  const tr = (team) => ({ club: 'A', teams: [team], bron: 'seizoensplan', titel: 'Seizoensplan · week 1 · training 1' });
+  await assertSucceeds(setDoc(doc(als('coordA'), 'trainingen/spC1'), tr('t1')));
+  await assertSucceeds(deleteDoc(doc(als('coordA'), 'trainingen/spC1')));
+  await assertFails(setDoc(doc(als('coordA'), 'trainingen/spC2'), tr('t2')));
+  await assertFails(setDoc(doc(als('coordA'), 'trainingen/spC3'), { ...tr('t1'), club: 'B' }));
+  await assertFails(setDoc(doc(als('coordA'), 'trainingen/spC4'), { club: 'A', teams: ['t1', 't2'], titel: 'x' }));
+});
+test('trainingen van een team zonder club: onder het team, alleen voor de coach', async () => {
+  await env.withSecurityRulesDisabled(c => setDoc(doc(c.firestore(), 'teams/tLos'), { naam: 'O9-1', leden: { losA: true } }));
+  await assertSucceeds(setDoc(doc(als('losA'), 'teams/tLos/trainingen/sp1'), { teams: ['tLos'], bron: 'seizoensplan', titel: 'x' }));
+  await assertSucceeds(getDoc(doc(als('losA'), 'teams/tLos/trainingen/sp1')));
+  await assertFails(getDoc(doc(als('coachA'), 'teams/tLos/trainingen/sp1')));
+});

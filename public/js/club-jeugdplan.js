@@ -1,23 +1,26 @@
 /* ==================== SEIZOENSPLAN JEUGD — CLUBSCHERM [20261017a] ====================
    Clubbreed seizoensplan voor de jeugd: de hoofd jeugdopleiding (of de clubadmin) maakt het plan,
    een bouwcoördinator maakt het voor zijn eigen bouw. Toewijzen zet de trainingen van het hele
-   seizoen op het tabblad Oefenstof van elk team (zie seizoensplan-club.js).
+   seizoen op het tabblad Trainingen van elk team, per week zichtbaar (zie seizoensplan-club.js).
 
    Datamodel:
      clubs/{id}.hoofdJeugd {uid:true}, hoofdJeugdInfo {uid:{naam}}, instellingen.jeugdRolNaam
-     clubs/{id}/seizoensplannen/{planId}   { naam, bouw, model, params, bibliotheekVersie, planVersie, door, gemaaktMs, bijgewerktMs }
+     clubs/{id}/seizoensplannen/{planId}   { naam, bouw, model, params, bibliotheekVersie, planVersie, door, gemaaktMs, bijgewerktMs,
+                                             toegewezen:{teamId:true} }  ← [20261111d] het teamscherm zoekt hierop
      clubs/{id}/seizoensplannen/{planId}/toewijzingen/{teamId}  { planVersie, aantal, overgeslagen, status, door, toegewezenMs }
      trainingen/{id}  — gegenereerd door toewijzen (bron 'seizoensplan', seizoensplanId, teams:[teamId])
    Alle writes merge:true. Rechten zelf staan in de rules; dit scherm toont alleen wat mag. */
-import { S, esc, meld } from './state.js?v=20261110a';
+import { S, esc, meld } from './state.js?v=20261111d';
 import { db, doc, collection, getDocs, setDoc, updateDoc, deleteField, query, where, writeBatch, serverTimestamp } from './firebase.js?v=20261011g';
-import { bouwNaam, catLabel, SEIZOEN_FALLBACK } from './config.js?v=20261110a';
+import { bouwNaam, catLabel, SEIZOEN_FALLBACK } from './config.js?v=20261111d';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019f';
-import { MODELLEN, ACCENTEN, beschikbareThemas, maandagVan, standaardVrij, weekKalender } from './seizoensplan-logica.js?v=20261111c';
-import { rechtenVoor, magVoorBouw, teamsVoorPlan, planVoorTeam, trainingDocs, bezetteWeken, JEUGDBOUWEN } from './seizoensplan-club.js?v=20261111c';
+import { MODELLEN, ACCENTEN, beschikbareThemas, maandagVan, standaardVrij, weekKalender } from './seizoensplan-logica.js?v=20261111d';
+import { rechtenVoor, magVoorBouw, teamsVoorPlan, planVoorTeam, trainingDocs, uitrolPlan, spelersVoorPlanner, duurVoorLeeftijd, JEUGDBOUWEN } from './seizoensplan-club.js?v=20261111d';
+import { bestaandeTrainingen, voerUit } from './seizoensplan-trainingen.js?v=20261111d';
 
 const VORMEN = BIBLIOTHEEK.vormen;
 const vandaagIso = () => new Date().toISOString().slice(0, 10);
+const vandaagLokaal = () => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`; };
 const dk = iso => iso ? new Date(iso + 'T12:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) : '';
 const chip = (attr, w, t, aan) => `<button class="tm-chip${aan ? ' aan' : ''}" ${attr}="${esc(String(w))}">${esc(t)}</button>`;
 const uidNu = () => S.user?.uid || '';
@@ -31,11 +34,11 @@ function formStandaard(){
   const y = Number((String(S.huidigSeizoen || SEIZOEN_FALLBACK).match(/(\d{4})/) || [0, new Date().getFullYear()])[1]);
   const start = maandagVan(vandaagIso() > `${y}-08-24` ? vandaagIso() : `${y}-08-24`), eind = `${y + 1}-06-06`;
   return { naam: `Seizoensplan ${S.huidigSeizoen || SEIZOEN_FALLBACK}`, bouw: isAdmin() ? 'club' : (rechtenVoor(S.club, uidNu()).bouwen[0] || 'onder'),
-    model: 'leercurve', start, eind, vrij: standaardVrij(start, eind), accent: [], tpw: 2, duur: 60, niveau: 2 };
+    model: 'leercurve', start, eind, vrij: standaardVrij(start, eind), accent: [], tpw: 2, duur: 'leeftijd', niveau: 2 };
 }
 function formVan(plan){
   const p = plan.params || {};
-  return { naam: plan.naam, bouw: plan.bouw, model: plan.model, start: p.start, eind: p.eind, vrij: p.vrij || [], accent: p.accent || [], tpw: p.tpw || 2, duur: p.duur || 60, niveau: p.niveau || 2 };
+  return { naam: plan.naam, bouw: plan.bouw, model: plan.model, start: p.start, eind: p.eind, vrij: p.vrij || [], accent: p.accent || [], tpw: p.tpw || 2, duur: p.duur || 'leeftijd', niveau: p.niveau || 2 };
 }
 
 /* ---------- laden ---------- */
@@ -107,7 +110,8 @@ function htmlForm(rechten){
     <div class="tm-rij"><span class="tm-l">Start</span><input type="date" class="tm-select" id="cjpStart" value="${esc(f.start)}"></div>
     <div class="tm-rij"><span class="tm-l">Einde</span><input type="date" class="tm-select" id="cjpEind" value="${esc(f.eind)}"></div>
     <div class="tm-rij"><span class="tm-l">Trainingen per week</span><div class="tm-stap"><button data-cjp-tpw="-1" aria-label="Minder">−</button><b>${f.tpw}</b><button data-cjp-tpw="1" aria-label="Meer">+</button></div></div>
-    <div class="tm-rij"><span class="tm-l">Duur</span><div class="tm-chips">${[45, 60, 75].map(d => chip('data-cjp-duur', d, d + '′', f.duur === d)).join('')}</div></div>
+    <div class="tm-info" style="margin:-4px 0 8px">Heeft een team trainingsdagen ingevuld, dan telt dat aantal. Bij de leeftijd: t/m O8 45′, t/m O11 60′, daarboven 75′.</div>
+    <div class="tm-rij" style="align-items:flex-start"><span class="tm-l">Duur</span><div class="tm-chips">${chip('data-cjp-duur', 'leeftijd', 'Bij de leeftijd', f.duur === 'leeftijd')}${[45, 60, 75].map(d => chip('data-cjp-duur', d, d + '′', f.duur === d)).join('')}</div></div>
     <div class="tm-rij"><span class="tm-l">Niveau</span><div class="tm-chips">${['Basis', 'Midden', 'Hoog'].map((x, i) => chip('data-cjp-niv', i + 1, x, f.niveau === i + 1)).join('')}</div></div>
     <div class="tm-rij" style="align-items:flex-start"><span class="tm-l">Vrije weken</span><div class="tm-chips">${(f.vrij || []).map(m => `<button class="tm-chip aan" data-cjp-vrijweg="${esc(m)}" title="Weer meetellen">wk ${dk(m)} ✕</button>`).join('') || '<span class="tm-info">geen</span>'}</div></div>
     <div class="tm-rij"><span class="tm-l">Week vrij maken</span><input type="date" class="tm-select" id="cjpVrijNieuw" aria-label="Vrije week toevoegen"></div>
@@ -139,13 +143,23 @@ function htmlDetail(rechten){
       ${scope.length ? scope.map(t => {
         const rij = toew[t.id];
         const achter = rij && (rij.planVersie || 0) < (p.planVersie || 1);
-        const status = !rij ? `<span class="tm-badge">nog niet toegewezen</span>` : achter ? `<span class="tm-badge" style="color:var(--accent)">bijwerken (v${rij.planVersie})</span>` : `<span class="tm-badge">actief · ${rij.aantal || 0} trainingen</span>`;
-        return `<div class="tm-rij" style="padding:8px 0;border-bottom:1px solid var(--hair)"><div><b>${esc(t.naam)}</b><div class="tm-info">${esc(catLabel(t.categorie))} · ${esc(bouwNaam(bouwVanTeamUi(t)))}</div></div>
-          <div style="display:flex;gap:6px;align-items:center">${status}${mag ? `<button class="knop klein ${!rij || achter ? 'fluo' : 'licht'}" data-cjp="toewijs" data-team="${esc(t.id)}">${!rij ? 'Toewijzen' : achter ? 'Bijwerken' : 'Opnieuw'}</button>` : ''}</div></div>`;
+        const volgtAnder = !rij && (c.plannen || []).some(x => x.id !== p.id && x.toegewezen?.[t.id]);
+        const status = !rij ? `<span class="tm-badge">${volgtAnder ? 'volgt ander plan' : 'nog niet toegewezen'}</span>` : achter ? `<span class="tm-badge" style="color:var(--accent)">bijwerken (v${rij.planVersie})</span>` : `<span class="tm-badge">volgt dit plan</span>`;
+        const dagen = Array.isArray(t.trainingsdagen) && t.trainingsdagen.length ? `${t.trainingsdagen.length}× per week` : 'geen trainingsdagen';
+        return `<div class="tm-rij" style="padding:8px 0;border-bottom:1px solid var(--hair)"><div><b>${esc(t.naam)}</b><div class="tm-info">${esc(catLabel(t.categorie))} · ${esc(bouwNaam(bouwVanTeamUi(t)))} · ${esc(dagen)} · ${p.params?.duur === 'leeftijd' || !p.params?.duur ? duurVoorLeeftijd(Number(String(t.categorie).match(/O(\d+)/)?.[1]) || 99) : p.params.duur}′</div></div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;min-width:0">${status}${mag ? `<button class="knop klein ${!rij || achter ? 'fluo' : 'licht'}" data-cjp="toewijs" data-team="${esc(t.id)}">${!rij ? 'Toewijzen' : achter ? 'Bijwerken' : 'Opnieuw'}</button>` : ''}</div></div>`;
       }).join('') : `<div class="tm-info">Geen teams in deze bouw.</div>`}
-      ${mag && scope.length ? `<button class="knop vol fluo" data-cjp="toewijs-alles" style="margin-top:12px">Wijs toe aan alle ${scope.length} teams</button>` : ''}
+      ${c.bevestig && c.bevestig.planId === p.id ? htmlBevestig(c.bevestig) : ''}
+      ${mag && scope.length && !c.bevestig ? `<button class="knop vol fluo" data-cjp="toewijs-alles" style="margin-top:12px"${c.bezig ? ' disabled' : ''}>${c.bezig ? 'Bezig…' : `Wijs toe aan alle ${scope.length} teams`}</button>` : ''}
+      ${(c.meldingen?.[p.id] || []).length ? `<div class="tm-info" style="margin-top:10px"><b>Meldingen van de planner</b><ul class="tm-ul">${c.meldingen[p.id].slice(0, 12).map(m => `<li>${esc(m)}</li>`).join('')}</ul></div>` : ''}
       ${!mag ? `<div class="tm-info" style="margin-top:8px">Je kunt dit plan bekijken; toewijzen doet de hoofd jeugdopleiding, de clubadmin of de bouwcoördinator van deze bouw.</div>` : ''}
     </div>`;
+}
+function htmlBevestig(b){
+  const namen = b.eigen.map(id => C().teams.find(t => t.id === id)?.naam || id);
+  return `<div class="kaart" style="margin-top:12px;border-color:var(--warn)"><b>${esc(namen.join(', '))} ${namen.length === 1 ? 'heeft' : 'hebben'} een eigen seizoensplan van de trainer</b>
+    <div class="tm-info">Toewijzen vervangt dat plan. Trainingen die al zichtbaar zijn of die de trainer heeft aangepast blijven staan; de rest komt uit dit plan.</div>
+    <div class="tm-rij" style="justify-content:flex-start;gap:8px;margin-top:8px"><button class="knop klein fluo" data-cjp="bevestig-ja">Vervang en wijs toe</button><button class="knop klein licht" data-cjp="bevestig-zonder">${namen.length === 1 ? 'Sla dit team over' : 'Sla deze teams over'}</button><button class="knop klein licht" data-cjp="bevestig-nee">Annuleren</button></div></div>`;
 }
 const bouwVanTeamUi = t => (t.bouw && JEUGDBOUWEN.includes(t.bouw)) ? t.bouw : (t.categorie ? (Number(String(t.categorie).match(/O(\d+)/)?.[1]) <= 9 ? 'onder' : Number(String(t.categorie).match(/O(\d+)/)?.[1]) <= 11 ? 'midden' : 'boven') : 'boven');
 
@@ -176,58 +190,69 @@ async function bewaarPlan(){
   c.bezig = false; c.opnieuw?.();
 }
 
-/* Toewijzen: per team de trainingen van het seizoen op Oefenstof zetten. Vraagt één keer vooraf
-   als er al handmatige trainingen in dezelfde week staan (beide blijven, of die weken overslaan). */
-async function toewijs(planId, teamIds){
+/* Toewijzen: per team het plan berekenen (leeftijd, trainingsdagen, aantal spelers van dat team) en de
+   trainingen op Trainingen zetten, per week zichtbaar (zie uitrolPlan).
+   [20261111d] Eén seizoensplan per team: dit plan vervangt het eigen plan van de trainer en een eerder
+   toegewezen clubplan. Al zichtbare en door de coach aangepaste trainingen blijven staan. Heeft een
+   team een eigen plan van de trainer, dan vraagt het scherm eerst een bevestiging (bij Trainers vrij). */
+async function spelersVan(teamId){
+  try { const snap = await getDocs(collection(db, 'teams', teamId, 'spelers')); return snap.docs.filter(d => !d.data().gearchiveerd && !d.data().gast).length; }
+  catch (e){ return 0; }
+}
+async function heeftEigenPlan(t){
+  try { const snap = await getDocs(collection(db, 'teams', t.id, 'seizoensplan')); return snap.docs.some(d => d.id === seizoenSleutelTeam() && !d.data().vervangenDoorClub); }
+  catch (e){ return false; }
+}
+/* zelfde sleutel als teams-seizoensplan.js */
+function seizoenSleutelTeam(){ return String(S.huidigSeizoen || SEIZOEN_FALLBACK).replace(/[^0-9a-z]+/gi, '-').replace(/^-|-$/g, ''); }
+
+async function toewijs(planId, teamIds, { bevestigd = false } = {}){
   const c = C(); const p = c.plannen.find(x => x.id === planId); if (!p) return;
   if (!magVoorBouw(rechtenVoor(S.club, uidNu()), p.bouw)) return meld('Je mag dit plan niet toewijzen');
   const beschikbaar = beschikbareThemas(VORMEN);
   const teams = teamsVoorPlan(p, c.teams).filter(t => teamIds.includes(t.id));
   if (!teams.length) return meld('Geen teams om toe te wijzen');
-  c.bezig = true; c.opnieuw?.();
+  /* 0. eigen plannen van trainers: eerst bevestigen (in het scherm, geen pop-up) */
+  if (!bevestigd){
+    c.bezig = true; c.opnieuw?.();
+    const eigen = [];
+    for (const t of teams) if (await heeftEigenPlan(t)) eigen.push(t.id);
+    c.bezig = false;
+    if (eigen.length){ c.bevestig = { planId, teamIds: teams.map(t => t.id), eigen }; c.opnieuw?.(); return; }
+  }
+  c.bevestig = null; c.bezig = true; c.opnieuw?.();
+  const vandaag = vandaagLokaal();
+  const anderePlannen = (c.plannen || []).filter(x => x.id !== p.id);
+  const meldingen = [];
   try {
-    /* 1. berekenen en botsingen zoeken */
-    const werk = [];
+    let geschreven = 0, verwijderd = 0, behouden = 0;
     for (const t of teams){
-      const snap = await getDocs(query(collection(db, 'trainingen'), where('club', '==', S.clubId), where('teams', 'array-contains', t.id)));
-      const bestaande = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      const planT = planVoorTeam(p, t, beschikbaar);
-      const { docs } = trainingDocs({ plan: planT, team: t, clubId: S.clubId, planId: p.id, planVersie: p.planVersie || 1, vormen: VORMEN, aantalSpelers: 12 });
-      const bezet = bezetteWeken(bestaande);
-      const botsend = docs.filter(d => bezet.has(Number(String(d.week).match(/\d+/)?.[0])));
-      werk.push({ t, bestaande, docs, bezet, botsend });
-    }
-    /* 2. één keer vragen bij botsingen */
-    const botsTeams = werk.filter(w => w.botsend.length);
-    let overslaan = false;
-    if (botsTeams.length){
-      const regels = botsTeams.map(w => `${w.t.naam}: week ${[...new Set(w.botsend.map(d => d.seizoensWeek))].length} seizoensweken`).join('\n');
-      const ok = confirm(`Bij ${botsTeams.length} team(s) staan al handmatige trainingen in dezelfde week:\n${regels}\n\nOK = seizoenstrainingen erbij (beide blijven).\nAnnuleren = die weken overslaan.`);
-      overslaan = !ok;
-    }
-    /* 3. wegschrijven in batches van max 400 */
-    let geschreven = 0, overgeslagen = 0, verwijderd = 0;
-    for (const w of werk){
-      const nieuweIds = new Set(w.docs.map(d => d.id));
-      const teVerwijderen = w.bestaande.filter(d => d.bron === 'seizoensplan' && d.seizoensplanId === p.id && !nieuweIds.has(d.id));
-      const schrijf = w.docs.filter(d => !(overslaan && w.bezet.has(Number(String(d.week).match(/\d+/)?.[0]))));
-      overgeslagen += w.docs.length - schrijf.length;
-      const ops = [
-        ...schrijf.map(d => ({ soort: 'set', ref: doc(db, 'trainingen', d.id), data: { ...d, gemaakt: serverTimestamp() } })),
-        ...teVerwijderen.map(d => ({ soort: 'del', ref: doc(db, 'trainingen', d.id) })),
-      ];
-      for (let i = 0; i < ops.length; i += 400){
-        const batch = writeBatch(db);
-        ops.slice(i, i + 400).forEach(o => o.soort === 'set' ? batch.set(o.ref, o.data, { merge: true }) : batch.delete(o.ref));
-        await batch.commit();
-      }
-      geschreven += schrijf.length; verwijderd += teVerwijderen.length;
-      await setDoc(doc(db, 'clubs', S.clubId, 'seizoensplannen', p.id, 'toewijzingen', w.t.id), {
-        teamId: w.t.id, planVersie: p.planVersie || 1, aantal: schrijf.length, overgeslagen: w.docs.length - schrijf.length,
-        status: 'actief', door: uidNu(), toegewezenMs: Date.now(),
+      const team = { ...t, club: S.clubId };
+      const aantal = spelersVoorPlanner(await spelersVan(t.id));
+      const planT = planVoorTeam(p, team, beschikbaar);
+      const { docs, meldingen: m } = trainingDocs({ plan: planT, team, clubId: S.clubId, planId: p.id, planVersie: p.planVersie || 1, vormen: VORMEN, aantalSpelers: aantal });
+      m.slice(0, 3).forEach(x => meldingen.push(`${t.naam}, ${x}`));
+      const bestaande = await bestaandeTrainingen(team);
+      const r = uitrolPlan({ nieuw: docs, bestaande, planId: p.id, vandaag, vervangt: id => !!id && id !== p.id });
+      await voerUit([
+        ...r.schrijf.map(d => ({ soort: 'set', ref: doc(db, 'trainingen', d.id), data: { ...d, gemaakt: serverTimestamp() } })),
+        ...r.verwijder.map(d => ({ soort: 'del', ref: doc(db, 'trainingen', d.id) })),
+      ]);
+      geschreven += r.schrijf.length; verwijderd += r.verwijder.length; behouden += r.vast.length;
+      await setDoc(doc(db, 'clubs', S.clubId, 'seizoensplannen', p.id, 'toewijzingen', t.id), {
+        teamId: t.id, planVersie: p.planVersie || 1, aantal: r.schrijf.length, behouden: r.vast.length,
+        duur: planT.params.duur, tpw: planT.params.tpw, spelers: aantal, status: 'actief', door: uidNu(), toegewezenMs: Date.now(),
       }, { merge: true });
+      /* het team volgt nu dit plan: in het plan markeren, uit andere clubplannen halen, eigen plan archiveren */
+      await updateDoc(doc(db, 'clubs', S.clubId, 'seizoensplannen', p.id), { [`toegewezen.${t.id}`]: true });
+      for (const ander of anderePlannen) if (ander.toegewezen?.[t.id]){
+        try { await updateDoc(doc(db, 'clubs', S.clubId, 'seizoensplannen', ander.id), { [`toegewezen.${t.id}`]: deleteField() }); ander.toegewezen[t.id] = false; } catch (e){ /* ander plan van een andere bouw: geen rechten, het nieuwste plan wint op het teamscherm */ }
+      }
+      if (await heeftEigenPlan(t)){ try { await setDoc(doc(db, 'teams', t.id, 'seizoensplan', seizoenSleutelTeam()), { vervangenDoorClub: p.id, vervangenMs: Date.now() }, { merge: true }); } catch (e){ /* geen rechten: het teamscherm kiest toch het clubplan */ } }
     }
-    meld(`Toegewezen aan ${teams.length} team(s): ${geschreven} trainingen${overgeslagen ? `, ${overgeslagen} overgeslagen` : ''}${verwijderd ? `, ${verwijderd} vervallen` : ''}`);
+    p.toegewezen = { ...(p.toegewezen || {}), ...Object.fromEntries(teams.map(t => [t.id, true])) };
+    c.meldingen = { [p.id]: meldingen };
+    meld(`Toegewezen aan ${teams.length} team(s): ${geschreven} trainingen gepland${behouden ? `, ${behouden} al zichtbaar of aangepast (blijven staan)` : ''}${verwijderd ? `, ${verwijderd} vervallen` : ''}`);
     await laadToewijzingen(p.id);
   } catch (e){ meld('Toewijzen mislukt: ' + (e.code || e.message)); }
   c.bezig = false; c.opnieuw?.();
@@ -252,7 +277,7 @@ export function koppelClubJeugdplan(v, teams, opnieuw){
     }
     if (d.cjpBouw){ c.form.bouw = d.cjpBouw; return opnieuw(); }
     if (d.cjpModel){ c.form.model = d.cjpModel; return opnieuw(); }
-    if (d.cjpDuur){ c.form.duur = Number(d.cjpDuur); return opnieuw(); }
+    if (d.cjpDuur){ c.form.duur = d.cjpDuur === 'leeftijd' ? 'leeftijd' : Number(d.cjpDuur); return opnieuw(); }
     if (d.cjpNiv){ c.form.niveau = Number(d.cjpNiv); return opnieuw(); }
     if (d.cjpTpw){ c.form.tpw = Math.max(1, Math.min(3, c.form.tpw + Number(d.cjpTpw))); return opnieuw(); }
     if (d.cjpVrijweg){ c.form.vrij = (c.form.vrij || []).filter(m => m !== d.cjpVrijweg); return opnieuw(); }
@@ -271,6 +296,9 @@ export function koppelClubJeugdplan(v, teams, opnieuw){
       case 'terug': c.sel = null; c.nieuw = false; c.bewerk = null; return opnieuw();
       case 'bewaar': return bewaarPlan();
       case 'toewijs': return toewijs(c.sel, [b.dataset.team]);
+      case 'bevestig-ja': { const bv = c.bevestig; if (bv) return toewijs(bv.planId, bv.teamIds, { bevestigd: true }); return; }
+      case 'bevestig-zonder': { const bv = c.bevestig; if (!bv) return; const rest = bv.teamIds.filter(id => !bv.eigen.includes(id)); c.bevestig = null; if (!rest.length) return opnieuw(); return toewijs(bv.planId, rest, { bevestigd: true }); }
+      case 'bevestig-nee': c.bevestig = null; return opnieuw();
       case 'toewijs-alles': {
         const p = c.plannen.find(x => x.id === c.sel);
         return toewijs(c.sel, teamsVoorPlan(p, c.teams).map(t => t.id));

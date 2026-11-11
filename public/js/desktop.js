@@ -13,17 +13,17 @@
    de DOM (MutationObserver op #app) om te weten welk scherm actief is.
    Stijl: blok "DESKTOP-SCHIL" achteraan in styles.css (html.desk).
 ========================================================================== */
-import { S, $, esc, modAan, isBeheerder, isPlatformBeheerder, stopUnsubs, meld } from './state.js?v=20261110a';
+import { S, $, esc, modAan, isBeheerder, isPlatformBeheerder, stopUnsubs, meld } from './state.js?v=20261111d';
 import { ico } from './icons.js?v=20261110a';
-import { logoImg, primaireClubId } from './clubconfig.js?v=20261111a';
-import { BOUWEN, catLabel } from './config.js?v=20261110a';
-import { openTeam, zetTeamTab, verlaatTeamView, updatesInfo, renderTeam } from './teams.js?v=20261111c';
-import { initSchermen, ruimOp } from './desktop-schermen.js?v=20261111c';
-import { openBouw, bouwTeams, bouwHuidig, zetHerteken, bouwIsSelectie } from './desktop-bouw.js?v=20261111c';
-import { ongelezenBerichten } from './berichten.js?v=20261110a';
-import { evaluatieOpen } from './teams-hub.js?v=20261111c';
-import { onderdeelAan } from './onderdelen.js?v=20261111a';
-import { telNav } from './tracker.js?v=20261110a';
+import { logoImg, primaireClubId } from './clubconfig.js?v=20261111d';
+import { BOUWEN, catLabel } from './config.js?v=20261111d';
+import { openTeam, zetTeamTab, verlaatTeamView, updatesInfo, renderTeam } from './teams.js?v=20261111d';
+import { initSchermen, ruimOp } from './desktop-schermen.js?v=20261111d';
+import { openBouw, bouwTeams, bouwHuidig, zetHerteken, bouwIsSelectie } from './desktop-bouw.js?v=20261111d';
+import { ongelezenBerichten } from './berichten.js?v=20261111d';
+import { evaluatieOpen } from './teams-hub.js?v=20261111d';
+import { onderdeelAan } from './onderdelen.js?v=20261111d';
+import { telNav } from './tracker.js?v=20261111d';
 
 const K_KLEIN = 'cluppie_zijbalk_klein';
 let openBouwSleutel = null, openBouwTeam = null;
@@ -57,9 +57,9 @@ function rolNaam(){
    loopt onze vervolgstap gegarandeerd ná die render. */
 async function sluitOpenWedstrijd(){
   if (huidigeView() !== 'wedstrijd' && !S.wedstrijdId) return;
-  const w = await import('./wedstrijd.js?v=20261111c');
+  const w = await import('./wedstrijd.js?v=20261111d');
   w.sluitWedstrijd();
-  await import('./teams.js?v=20261111c');
+  await import('./teams.js?v=20261111d');
   await new Promise(r => requestAnimationFrame(() => r()));
 }
 /* Club-view verlaten zónder terug te springen naar het teamoverzicht
@@ -75,7 +75,7 @@ async function gaNaarTab(tab, opties = {}){
   telNav('desk:' + tab, 'zijbalk');
   const view = huidigeView();
   if (view === 'wedstrijd'){
-    const w = await import('./wedstrijd.js?v=20261111c');
+    const w = await import('./wedstrijd.js?v=20261111d');
     if (opties.profiel) S._beoordeelProfiel = opties.profiel;
     w.sluitWedstrijd(tab);
     return;
@@ -101,16 +101,16 @@ async function naarOverzicht(){
   teamKeuzeOpen = false;
   await sluitOpenWedstrijd();
   if (S.teamId){ verlaatTeamView(); return; }
-  if (huidigeView() === 'club'){ const c = await import('./club.js?v=20261111c'); c.verlaatClubView(); }
+  if (huidigeView() === 'club'){ const c = await import('./club.js?v=20261111d'); c.verlaatClubView(); }
 }
 async function openClubDesk(id){
   await sluitOpenWedstrijd();
   if (S.teamId) verlaatTeamView();
-  const c = await import('./club.js?v=20261111c');
+  const c = await import('./club.js?v=20261111d');
   c.openClub(id);
 }
 async function openBouwDesk(clubId, bouw){
-  const b = await import('./bouw-hub.js?v=20261111c');
+  const b = await import('./bouw-hub.js?v=20261111d');
   b.openBouwHub(clubId, bouw);
 }
 /* Bouw-omgeving openen: eerst een open wedstrijd/club/team netjes verlaten. */
@@ -154,17 +154,17 @@ async function voerActieUit(actie, data = {}){
     if (data.pag === 'dash' || data.pag === 'uit' || data.pag === 'selmaken') return naarBouw(data.club, data.bouw, data.pag);
     return naarBouwPag(data.club, data.bouw, data.team, data.pag);
   }
-  if (actie === 'trainco')    return import('./trainco.js?v=20261111a').then(m => m.openVanuitApp());
-  if (actie === 'platform')   return import('./platform.js?v=20261111c').then(m => m.openPlatform());
+  if (actie === 'trainco')    return import('./trainco.js?v=20261111d').then(m => m.openVanuitApp());
+  if (actie === 'platform')   return import('./platform.js?v=20261111d').then(m => m.openPlatform());
   if (actie === 'coordbeheer'){
     await openClubDesk(data.id);
     S.clubTab = 'bouwen';          // [20260929a] coördinatoren staan nu onder Club → Bouwen
     return;
   }
-  if (actie === 'chat')       return import('./chatbot.js?v=20261111c').then(m => m.openChatbot());
+  if (actie === 'chat')       return import('./chatbot.js?v=20261111d').then(m => m.openChatbot());
   if (actie === 'tactiek'){
     if (!S.teamId){ const tid = laatsteTeamId(); if (tid) openTeam(tid); }
-    return import('./tactiekbord.js?v=20261110a').then(m => m.openTactiekBibliotheek());
+    return import('./tactiekbord.js?v=20261111d').then(m => m.openTactiekBibliotheek());
   }
   if (actie === 'speler'){ S._dkModus = null; S._profielTab = 'overzicht'; return gaNaarTab('spelers', { profiel: data.id }); }
   if (actie === 'selectie'){ S._dkModus = null; return gaNaarTab('spelers'); }
@@ -176,7 +176,7 @@ async function voerActieUit(actie, data = {}){
   }
   if (actie === 'wedstrijd'){
     if (huidigeView() !== 'team' && huidigeView() !== 'wedstrijd') return;
-    return import('./wedstrijd.js?v=20261111c').then(m => m.openWedstrijd(data.id));
+    return import('./wedstrijd.js?v=20261111d').then(m => m.openWedstrijd(data.id));
   }
 }
 
@@ -374,7 +374,7 @@ function palItems(){
     uit.push({ groep:'Pagina\u2019s', ico:it.ico, naam:it.naam, sub:kop, actie: it.tab ? 'tab' : it.actie, data:{ tab:it.tab, id:it.id, club:it.club, bouw:it.bouw } });
   uit.push({ groep:'Pagina\u2019s', ico:'communication-push', naam:'Wat is er nieuw', sub:'Updates', actie:'tab', data:{ tab:'updates' } });
   uit.push({ groep:'Pagina\u2019s', ico:'navigation-settings', naam:'Instellingen', sub:'Team', actie:'tab', data:{ tab:'instellingen' } });
-  uit.push({ groep:'Pagina\u2019s', ico:'training-cones', naam:'Oefenstof (alle)', sub:'Training', actie:'tab', data:{ tab:'trainingen' } });
+  uit.push({ groep:'Pagina\u2019s', ico:'training-cones', naam:'Trainingen (alle)', sub:'Training', actie:'tab', data:{ tab:'trainingen' } });
   uit.push({ groep:'Pagina\u2019s', ico:'navigation-help', naam:'Help en handleiding', sub:'', actie:'tab', data:{ tab:'help' } });
   if (S.teams.length > 1) for (const t of S.teams)
     uit.push({ groep:'Teams', ico:'team-team', naam:t.naam, sub: t.id === S.teamId ? 'huidig team' : '', actie:'team', data:{ id:t.id } });

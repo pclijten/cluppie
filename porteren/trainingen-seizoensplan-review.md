@@ -88,3 +88,7 @@ Het lastigste punt: een coördinator ziet twee verschillende dingen die allebei 
 | 6 | Niveau/duur sterker laten werken | Na praktijktest |
 
 Volgende stap na akkoord: mockup (telefoon 414×896 en desktop) van Team › Trainingen, Team › Seizoen en Club › Seizoen, daarna code in twee releases (1–3 en 5 client-only; 4 met rules).
+
+## Uitgevoerd (11-11-2026)
+
+Beslispunten 1–5 akkoord ("prima") en gebouwd in releases 20261111c en 20261111d (PR #57), volgens de mockup "Cluppie Trainingen en Seizoen". Punt 6 wacht op een praktijktest. Release B (losse trainers) bleek zonder rules-wijziging te kunnen: de trainingen staan onder het team. Wel één rules-wijziging gevonden en gemaakt: een bouwcoördinator kon de trainingen van zijn eigen bouw niet schrijven, waardoor toewijzen door een coördinator mislukte. Details en deploy-volgorde in PORTEREN.md.
