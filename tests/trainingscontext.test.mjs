@@ -114,15 +114,47 @@ const ZUINIG = L.PRESETS.zuinig.materiaal;
     const p = maakPlan(VORMEN, { ...o, slechtWeer: true });
     plannen++; if (p.onderdelen.length < 4) kort++;
     laag += p.onderdelen.filter(x => x.vorm.intensiteit < 2).length;
-    if (!p.meldingen.some(m => /Regen of koud/.test(m))) zonder++;
+    if (!p.meldingen.some(m => /^Koud:/.test(m))) zonder++;
     const gewoon = maakPlan(VORMEN, o);
-    eis(!gewoon.meldingen.some(m => /Regen of koud/.test(m)), 'zonder slechtWeer geen weermelding');
+    eis(!gewoon.meldingen.some(m => /^(Koud|Regen|Warm):/.test(m)), 'zonder weer geen weermelding');
   }
   eis(kort === 0, `regen of koud: altijd vier vormen (${kort} van ${plannen} korter)`);
   eis(zonder === 0, 'regen of koud: melding met tips aanwezig');
   eis(laag <= Math.ceil(plannen * 0.05), `regen of koud: bijna nooit een vorm met zwaarte 1 buiten de afsluiting (${laag} van ${plannen * 4})`);
   const o = basis({ aantalSpelers: 12 });
   gelijk(ids(maakPlan(VORMEN, { ...o, slechtWeer: false })), ids(maakPlan(VORMEN, o)), 'slechtWeer=false verandert niets');
+}
+
+/* 7b2. [20261111b] weer verandert de training echt: tijdsindeling, rust en meestal ook de vormen */
+{
+  let gelijk_ = 0, plannen = 0;
+  for (const lft of [7, 9, 11, 13, 16]) for (const N of [8, 12, 16]) for (const duur of [45, 60, 75]) for (const thema of ['Positiespel opbouw', 'Uitspelen 1:1', 'Scoren']){
+    const o = basis({ categorie: 'O' + lft, aantalSpelers: N, duur, thema });
+    const gewoon = maakPlan(VORMEN, o);
+    for (const weer of ['koud', 'regen', 'warm']){
+      const p = maakPlan(VORMEN, { ...o, weer }); plannen++;
+      const tot = p.onderdelen.reduce((a, x) => a + x.minuten, 0) + p.overgang.ontvangst + p.overgang.tussen + p.overgang.afsluiting;
+      eis(tot === duur, `${weer}: totale duur blijft ${duur} (${tot})`);
+      eis(p.onderdelen.every(x => x.minuten <= (x.slot === 'partij' ? 20 : 15)), `${weer}: geen vorm te lang`);
+      eis(p.controle.checks.some(c => c.id === 'weer'), `${weer}: weercontrole aanwezig`);
+      if (weer !== 'warm') eis(p.onderdelen.every(x => !(x.rondes > 1 && x.rust > 1)), `${weer}: rust tussen rondes max 1 min`);
+      if (weer === 'warm') eis(p.overgang.tussen > gewoon.overgang.tussen, 'warm: langere drinkpauzes');
+      else if (duur < 75) eis(p.overgang.ontvangst + p.overgang.tussen < gewoon.overgang.ontvangst + gewoon.overgang.tussen, `${weer}: kortere pauzes bij ${duur} min`);
+      if (ids(p) === ids(gewoon)) gelijk_++;
+    }
+  }
+  eis(gelijk_ <= plannen * 0.6, `weer kiest vaak andere vormen (${gelijk_} van ${plannen} met dezelfde vormen)`);
+  gelijk(maakPlan(VORMEN, basis({ slechtWeer: true })).profiel.weer, 'koud', 'oude slechtWeer = koud');
+}
+
+/* 7b3. [20261111b] een kleiner veld past: geen vorm groter dan de beschikbare ruimte */
+{
+  let te = 0, plannen = 0;
+  for (const lft of [9, 11, 13, 16]) for (const N of [10, 14, 18]) for (const veld of ['half', 'kwart']){
+    const p = maakPlan(VORMEN, basis({ categorie: 'O' + lft, aantalSpelers: N, duur: 60, context: { materiaal: null, veld } })); plannen++;
+    if (!p.controle.checks.find(c => c.id === 'veld').ok) te++;
+  }
+  eis(te === 0, `kleiner veld: alles past op het veld (${te} van ${plannen} te groot)`);
 }
 
 /* 7c. de vormen met weinig materiaal bestaan en vragen echt weinig */

@@ -28,6 +28,39 @@ export const OPBOUW = {
 export const kiesDuur = (d) => { d = Number(d) || 60; return d <= 52 ? 45 : d <= 67 ? 60 : 75; };
 export const overgangMinuten = (duur) => { const o = OPBOUW[kiesDuur(duur)].overgang; return o.ontvangst + o.tussen + o.afsluiting; };
 function s(slot, minuten){ return { slot, minuten }; }
+
+/* ───────────── Weer ───────────── */
+/* [20261111b] Weer verandert de training echt (vóór deze release zette "Regen of koud" alleen een ondergrens op de
+   zwaarte, en in driekwart van de gevallen kwam er precies dezelfde training uit):
+     koud / regen: kortere ontvangst en kortere drinkpauzes, de vrijgekomen minuten naar warming-up en partijspel,
+                   vormen waarin spelers veel bewegen (zwaarte 2–3, liever 3 in de kern), rust tussen rondes max. 1 minuut;
+     warm:         geen zware vormen (max. zwaarte 2), langere drinkpauzes (van de partijtijd af) en minstens 2 minuten
+                   rust tussen rondes.
+   Grenzen zijn gewoonte onder trainers, geen onderzochte norm voor jeugd. */
+export const WEER = {
+  koud:  { naam: 'Koud', melding: 'Koud: korte uitleg (liefst al bij de eerste vorm), korte drinkpauzes en vormen waarin iedereen beweegt. Spelers houden een lange broek, handschoenen en muts aan; trek na de training meteen iets warms aan.' },
+  regen: { naam: 'Regen', melding: 'Regen: korte uitleg en korte pauzes, iedereen in beweging. Het veld is glad: geen slidings en kortere passes; keepers met handschoenen.' },
+  warm:  { naam: 'Warm', melding: 'Warm: geen zware vormen, langere drinkpauzes en wat meer rust tussen de rondes. Laat iedereen een eigen bidon meenemen en zoek de schaduw op in de pauzes.' },
+};
+export const weerVan = (o) => (o && WEER[o.weer]) ? o.weer : (o && o.slechtWeer ? 'koud' : null);
+/* Tijdsindeling bij dit weer: kopie van OPBOUW[duur], nooit boven de maximale vormduur. */
+export function opbouwVoor(duur, weer){
+  const b = OPBOUW[kiesDuur(duur)];
+  const onderdelen = b.onderdelen.map(x => ({ ...x })), overgang = { ...b.overgang };
+  const sl = (k) => onderdelen.find(x => x.slot === k);
+  if (weer === 'koud' || weer === 'regen'){
+    let vrij = 0;
+    if (overgang.ontvangst > 1){ vrij += overgang.ontvangst - 1; overgang.ontvangst = 1; }
+    const minTussen = 2;
+    if (overgang.tussen > minTussen){ const d = Math.min(2, overgang.tussen - minTussen); vrij += d; overgang.tussen -= d; }
+    for (const [k, max] of [['warming-up', 12], ['partij', MAX_PARTIJ]]){ const o = sl(k); const d = Math.min(vrij, max - o.minuten); o.minuten += d; vrij -= d; }
+    overgang.tussen += vrij;                                   /* wat nergens past, blijft pauze */
+  } else if (weer === 'warm'){
+    const p = sl('partij'); const d = Math.min(2, p.minuten - 10);
+    p.minuten -= d; overgang.tussen += d;
+  }
+  return { onderdelen, overgang };
+}
 const SLOT_FASEN = {
   'warming-up': ['warming-up'],
   kern1:        ['positiespel', 'spelvorm'],
@@ -83,12 +116,15 @@ export function schaalVeld(v, groepGrootte){
 
 /* Rondes en rondeduur binnen de beschikbare minuten. Een partijspel van meer dan 15 minuten krijgt altijd
    een onderbreking (minstens 2 rondes met rust ertussen). Een ronde duurt nooit langer dan 15 minuten. */
-export function rondeIndeling(v, minuten){
-  const { ronde, rondes: [rMin, rMax], rust } = v.duur;
+export function rondeIndeling(v, minuten, weer = null){
+  const { ronde, rondes: [rMin, rMax] } = v.duur;
+  let rust = v.duur.rust;
+  if ((weer === 'koud' || weer === 'regen') && rust > 1) rust = 1;
+  if (weer === 'warm' && rMax > 1) rust = Math.max(rust, 2);
   const lang = minuten > MAX_VORM && v.fase === 'partijspel';
   let r = clamp(Math.round((minuten + rust) / (ronde + rust)), rMin, rMax);
   let rs = rust;
-  if (lang){ r = 2; rs = Math.max(rust, 2); }
+  if (lang){ r = 2; rs = (weer === 'koud' || weer === 'regen') ? 1 : Math.max(rust, 2); }
   let rd = Math.floor((minuten - (r - 1) * rs) / r);
   while (rd > MAX_VORM && r < 6){ r++; rd = Math.floor((minuten - (r - 1) * rs) / r); }
   return { rondes: r, ronde: Math.max(1, rd), rust: rs };
@@ -113,7 +149,9 @@ export function maakPlan(vormen, o){
   const doelC = clamp((FASE_COMPLEXITEIT[blokFase] ?? 2) + (niveau - 2), 1, 3);
   const recent = o.recent || [];
   const seed = String(o.seed ?? 0);
+  const weer = weerVan(o);
   const cx = contextVan(o, leeftijd);
+  const opb = opbouwVoor(duur, weer);
   const ruimte = o.ruimteM2 ?? cx.ruimteM2 ?? standaardRuimte(leeftijd);
   const meldingen = [];
   if (cx.lichtMelding) meldingen.push(cx.lichtMelding);
@@ -123,23 +161,23 @@ export function maakPlan(vormen, o){
   const intens = [];                                  /* intensiteit van de gekozen onderdelen tot nu toe */
   const soorten = [];                                 /* soort spelvorm van de gekozen onderdelen (voor variatie) */
 
-  for (const sl of OPBOUW[duur].onderdelen){
+  for (const sl of opb.onderdelen){
     const kand = kandidatenCx(vormen, sl.slot, { leeftijd: lftBib, N, gebruikt }, cx, meldingen);
     let gekozen = null;
     if (sl.slot === 'partij' && !kand.length){
       /* te weinig spelers voor de wedstrijdvorm → kleine voetbalechte vorm */
       const klein = kandidatenCx(vormen, 'kern2', { leeftijd: lftBib, N, gebruikt }, cx, meldingen).filter(v => v.voetbalecht);
       if (klein.length){
-        gekozen = beste(klein, { ...o, doelC, recent, seed, thema: o.thema, slot: 'kern2', intens, soorten });
+        gekozen = beste(klein, { ...o, weer, ruimte, doelC, recent, seed, thema: o.thema, slot: 'kern2', intens, soorten });
         meldingen.push(`Met ${N} spelers past de wedstrijdvorm niet; als partijspel is een kleine voetbalvorm gekozen.`);
       }
     } else {
-      gekozen = beste(kand, { ...o, doelC, recent, seed, thema: o.thema, slot: sl.slot, intens, soorten });
+      gekozen = beste(kand, { ...o, weer, ruimte, doelC, recent, seed, thema: o.thema, slot: sl.slot, intens, soorten });
     }
     if (!gekozen){ meldingen.push(`Geen passende vorm gevonden voor ${SLOT_NAAM[sl.slot]} (leeftijd ${leeftijd}, ${N} spelers).`); continue; }
     gebruikt.add(gekozen.id);
     intens.push(gekozen.intensiteit); soorten.push(gekozen.soort);
-    const od = bouwOnderdeel(gekozen, sl, { N, thema: o.thema });
+    const od = bouwOnderdeel(gekozen, sl, { N, thema: o.thema, weer, ruimte });
     if (gekozen.fase === 'partijspel' && N < gekozen.spelers.ideaal)
       meldingen.push(`Partijspel met ${N} spelers: speel ${Math.floor(N / 2)} tegen ${Math.ceil(N / 2)} op hetzelfde veld, of laat een speler als joker meedoen.`);
     onderdelen.push(od);
@@ -155,10 +193,10 @@ export function maakPlan(vormen, o){
     const sl = { slot: onderdelen[idx].slot, minuten: onderdelen[idx].minuten };
     const ander = new Set(gebruikt); ander.delete(onderdelen[idx].vormId);
     const kand = kandidaten(vormen, sl.slot, { leeftijd: lftBib, N, gebruikt: ander }, cx).filter(v => v.intensiteit < 3);
-    const nieuw = beste(kand, { ...o, doelC, recent, seed, thema: o.thema, slot: sl.slot, intens: [], soorten: onderdelen.filter((_, j) => j !== idx).map(x => x.vorm.soort) });
+    const nieuw = beste(kand, { ...o, weer, ruimte, doelC, recent, seed, thema: o.thema, slot: sl.slot, intens: [], soorten: onderdelen.filter((_, j) => j !== idx).map(x => x.vorm.soort) });
     if (!nieuw) break;
     gebruikt.delete(onderdelen[idx].vormId); gebruikt.add(nieuw.id);
-    onderdelen[idx] = bouwOnderdeel(nieuw, sl, { N, thema: o.thema });
+    onderdelen[idx] = bouwOnderdeel(nieuw, sl, { N, thema: o.thema, weer, ruimte });
     meldingen.push('Een zware vorm is vervangen door een rustiger alternatief om overbelasting te voorkomen.');
   }
 
@@ -169,10 +207,10 @@ export function maakPlan(vormen, o){
     const ander = new Set(gebruikt); ander.delete(onderdelen[idx].vormId);
     const zonderDrie = (v) => { let r = 0; return onderdelen.every((x, j) => { r = (j === idx ? v.intensiteit : x.vorm.intensiteit) === 3 ? r + 1 : 0; return r <= 2; }); };
     const kand = kandidaten(vormen, sl.slot, { leeftijd: lftBib, N, gebruikt: ander }, cx).filter(v => filter(v) && zonderDrie(v));
-    const nieuw = beste(kand, { ...o, doelC, recent, seed, thema: o.thema, slot: sl.slot, intens: [], soorten: onderdelen.filter((_, j) => j !== idx).map(x => x.vorm.soort) });
+    const nieuw = beste(kand, { ...o, weer, ruimte, doelC, recent, seed, thema: o.thema, slot: sl.slot, intens: [], soorten: onderdelen.filter((_, j) => j !== idx).map(x => x.vorm.soort) });
     if (!nieuw) return false;
     gebruikt.delete(onderdelen[idx].vormId); gebruikt.add(nieuw.id);
-    onderdelen[idx] = bouwOnderdeel(nieuw, sl, { N, thema: o.thema });
+    onderdelen[idx] = bouwOnderdeel(nieuw, sl, { N, thema: o.thema, weer, ruimte });
     return true;
   };
   for (let ronde = 0; ronde < 3 && themaPct() < 60; ronde++){
@@ -190,13 +228,15 @@ export function maakPlan(vormen, o){
   }
 
   /* afsluiting: geen vierde of vijfde vorm, maar de laatste minuten (uitlopen en terugblik) */
-  const ov = OPBOUW[duur].overgang;
+  const ov = opb.overgang;
   const afsKand = kandidatenCx(vormen, 'afsluiting', { leeftijd: lftBib, N, gebruikt: new Set() }, cx, meldingen);
   const afsV = afsKand.sort((a, b) => hash(a.id + seed) - hash(b.id + seed))[0] || null;
-  const afsluiting = afsV ? bouwOnderdeel(afsV, { slot: 'afsluiting', minuten: ov.afsluiting }, { N, thema: o.thema }) : null;
+  const afsluiting = afsV ? bouwOnderdeel(afsV, { slot: 'afsluiting', minuten: ov.afsluiting }, { N, thema: o.thema, weer }) : null;
   if (o.duur && kiesDuur(o.duur) !== Number(o.duur)) meldingen.push(`Een training duurt ${duur} minuten (keuze: ${DUREN.join(', ')}); ${o.duur} is daarop afgerond.`);
 
-  const plan = { profiel: { categorie: o.categorie, leeftijd, aantalSpelers: N, niveau, duur, thema: o.thema, blokFase, doelComplexiteit: doelC },
+  const verkleind = onderdelen.filter(x => x.verkleind);
+  if (verkleind.length) meldingen.push(`Het veld is kleiner gemaakt bij ${verkleind.map(x => x.vorm.naam).join(', ')}, zodat het past op de ruimte die je hebt.`);
+  const plan = { profiel: { categorie: o.categorie, leeftijd, aantalSpelers: N, niveau, duur, thema: o.thema, blokFase, doelComplexiteit: doelC, ...(weer ? { weer } : {}) },
                  onderdelen, afsluiting, overgang: { ...ov }, meldingen, ruimteM2: ruimte };
   if (cx.actief) plan.context = cx.context;
   plan.controle = valideer(plan);
@@ -241,7 +281,8 @@ function kandidatenCx(vormen, slot, a, cx, meldingen){
 /* Praktische context → grenzen voor de planner. Zonder context: alles uit, gedrag zoals vroeger. */
 function contextVan(o, leeftijd){
   const c = o.context || null;
-  const actief = !!(c && (c.materiaal || c.veld || c.wedstrijddag) ) || !!o.halfVeld || !!o.slechtWeer;
+  const weer = weerVan(o);
+  const actief = !!(c && (c.materiaal || c.veld || c.wedstrijddag) ) || !!o.halfVeld || !!weer;
   if (!actief) return { actief: false, context: { materiaal: null }, maxIntensiteit: 0, minIntensiteit: 0, weerMelding: null, ruimteM2: undefined, lichtMelding: null };
   const context = { materiaal: c?.materiaal || null, veld: c?.veld || null, wedstrijddag: c?.wedstrijddag || null };
   const licht = dagVoorWedstrijd(o.datum, context);
@@ -250,9 +291,9 @@ function contextVan(o, leeftijd){
   const heeftVeld = !!context.veld || !!o.halfVeld;
   return {
     actief: true, context,
-    maxIntensiteit: licht ? MAX_INTENSITEIT_VOOR_WEDSTRIJD : 0,
-    minIntensiteit: o.slechtWeer ? 2 : 0,
-    weerMelding: o.slechtWeer ? 'Regen of koud: vormen waarin spelers veel bewegen, geen lange uitleg en korte pauzes. Laat de spelers warme kleding aan houden in de pauzes. Dit is gewoonte onder trainers, niet onderzocht bij jeugd.' : null,
+    maxIntensiteit: (licht || weer === 'warm') ? MAX_INTENSITEIT_VOOR_WEDSTRIJD : 0,
+    minIntensiteit: (weer === 'koud' || weer === 'regen') ? 2 : 0,
+    weerMelding: weer ? WEER[weer].melding : null,
     ruimteM2: heeftVeld ? ruimteM2(veld, standaardRuimte(leeftijd)) : undefined,
     lichtMelding: licht ? 'De dag voor de wedstrijd: lichter, met maximaal zwaarte 2. Dit is gewoonte onder trainers, niet onderzocht bij jeugd.' : null,
   };
@@ -274,7 +315,14 @@ function score(v, o){
   const iv = o.intens || [];
   if (v.intensiteit === 3 && iv.length >= 2 && iv[iv.length - 1] === 3 && iv[iv.length - 2] === 3) sc -= 12;   /* nooit drie zware onderdelen achter elkaar */
   else if (v.intensiteit === 3 && iv[iv.length - 1] === 3) sc -= 3;
-  if (o.slot === 'warming-up' && v.intensiteit === 3) sc -= 4;                                            /* eerst rustig opwarmen */
+  const kou = o.weer === 'koud' || o.weer === 'regen';
+  if (o.slot === 'warming-up' && v.intensiteit === 3) sc -= kou ? 1 : 4;                                   /* eerst rustig opwarmen (bij kou mag het sneller) */
+  if (kou && o.slot !== 'warming-up' && o.slot !== 'afsluiting' && v.intensiteit === 3) sc += 3;            /* bij kou: liever veel beweging */
+  if (o.weer === 'warm' && v.intensiteit === 3) sc -= 4;
+  if (o.ruimte && o.slot !== 'afsluiting'){                                                                /* past de vorm op het veld dat er is? */
+    const gr2 = groepsindeling(v, o.aantalSpelers), vd = schaalVeld(v, gr2.groepGrootte);
+    if (vd.b * vd.l * gr2.groepen > o.ruimte) sc -= 6;
+  }
   if (o.slot === 'kern1' && v.fase === 'positiespel') sc += 1;
   if ((o.slot === 'kern1' || o.slot === 'kern2') && v.voetbalecht) sc += 3;   /* ruim de helft van de tijd voetbalecht */
   if (v.soort && (o.soorten || []).includes(v.soort)) sc -= 4;                                              /* liever een andere soort spelvorm dan eerder in de training */
@@ -290,14 +338,20 @@ export function rangschik(vormen, slot, o){ /* alternatieven voor 'wissel vorm' 
   return kand.map(v => ({ v, s: score(v, { ...o, slot, doelC, recent: o.recent || [], seed: o.seed ?? 0, intens: o.intens || [], soorten: o.soorten || [] }) })).sort((a, b) => b.s - a.s).map(x => x.v);
 }
 
-export function bouwOnderdeel(v, sl, { N, thema }){
+export function bouwOnderdeel(v, sl, { N, thema, weer = null, ruimte = null }){
   const gr = groepsindeling(v, N);
-  const veld = schaalVeld(v, gr.groepGrootte);
-  const ri = rondeIndeling(v, sl.minuten);
+  let veld = schaalVeld(v, gr.groepGrootte), verkleind = false;
+  /* past het niet op de ruimte die er is (half of kwart veld), dan wordt het vak evenredig kleiner */
+  if (ruimte && sl.slot !== 'afsluiting' && veld.b * veld.l * gr.groepen > ruimte){
+    const f = Math.sqrt(ruimte / (veld.b * veld.l * gr.groepen));
+    veld = { b: Math.max(5, Math.floor(veld.b * f)), l: Math.max(5, Math.floor(veld.l * f)) };
+    verkleind = true;
+  }
+  const ri = rondeIndeling(v, sl.minuten, weer);
   const regel = v.themaregelVorm ? (THEMAREGEL_BRON[thema] || null) : null;
   return {
     slot: sl.slot, slotNaam: SLOT_NAAM[sl.slot], minuten: sl.minuten, vormId: v.id, vorm: v,
-    ...gr, veld, ...ri, themaregel: regel,
+    ...gr, veld, ...ri, themaregel: regel, ...(verkleind ? { verkleind: true } : {}),
     ruimtePerSpeler: Math.round((veld.b * veld.l) / gr.groepGrootte),
     totaleRuimte: Math.round(veld.b * veld.l * gr.groepen),
   };
@@ -379,6 +433,15 @@ export function valideer(plan){
   if (plan.context && plan.context.materiaal){
     const mis = ond.concat(plan.afsluiting ? [plan.afsluiting] : []).map(o => ({ o, h: haalbaar(o.vorm, o.groepen, plan.context) })).filter(x => !x.h.ok);
     c.push({ id: 'materiaal', ok: mis.length === 0, tekst: mis.length ? `Materiaal mist bij: ${mis.map(x => `${x.o.vorm.naam} (${Object.entries(x.h.tekort).map(([k, n]) => n + ' ' + (MATERIAAL_NAAM[k] || k).toLowerCase()).join(', ')})`).join('; ')}` : 'Het materiaal van het team is genoeg (eventueel met de vervangers)' });
+  }
+
+  const weer = plan.profiel.weer;
+  if (weer === 'koud' || weer === 'regen'){
+    const stil = ond.filter(o => o.vorm.intensiteit < 2), lang = ond.filter(o => o.rondes > 1 && o.rust > 1);
+    c.push({ id: 'weer', ok: !stil.length && !lang.length, tekst: stil.length ? `Bij ${WEER[weer].naam.toLowerCase()} weer staan spelers stil in: ${stil.map(o => o.vorm.naam).join(', ')}` : lang.length ? `Lange rust tussen de rondes in: ${lang.map(o => o.vorm.naam).join(', ')}` : `${WEER[weer].naam}: iedereen in beweging, korte pauzes` });
+  } else if (weer === 'warm'){
+    const zwaar = ond.filter(o => o.vorm.intensiteit > 2);
+    c.push({ id: 'weer', ok: !zwaar.length, tekst: zwaar.length ? `Zware vorm bij warm weer: ${zwaar.map(o => o.vorm.naam).join(', ')}` : 'Warm: geen zware vormen en extra drinkpauzes' });
   }
 
   c.push({ id: 'avg', ok: true, tekst: 'Geen namen of persoonsgegevens gebruikt (alleen teamprofiel)' });

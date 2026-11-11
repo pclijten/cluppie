@@ -23,14 +23,14 @@ import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } fr
 import { aiAan, aiDoel } from './clubconfig.js?v=20261111a';
 import { ico } from './icons.js?v=20261110a';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019f';
-import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, OPBOUW, kiesDuur, SLOT_NAAM, groepsindeling } from './trainingsplanner.js?v=20261110a';
+import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, kiesDuur, SLOT_NAAM, groepsindeling, opbouwVoor, WEER } from './trainingsplanner.js?v=20261111b';
 import { MATERIAAL, MATERIAAL_NAAM, PRESETS, presetVan, VELDEN, schoonContext, behoefte, haalbaar, valtAf, tipTekst } from './trainingscontext-logica.js?v=20261019a';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
 import { TERUGBLIK_VRAGEN, zetAntwoord, terugblikKlaar, terugblikSamenvatting, signaalVormBewaard, signaalVormGewisseld, signaalTerugblik, signaalMateriaal, signaalGat, gatRedenen } from './leren-logica.js?v=20261019b';
 import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261111a';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261012e';
-import { positieWeek } from './seizoensplan-logica.js?v=20261110a';
-import { oefeningVan } from './seizoensplan-club.js?v=20261110a';
+import { positieWeek } from './seizoensplan-logica.js?v=20261111b';
+import { oefeningVan } from './seizoensplan-club.js?v=20261111b';
 import { onderdeelAan } from './onderdelen.js?v=20261111a';
 
 const VORMEN = BIBLIOTHEEK.vormen;
@@ -87,7 +87,7 @@ function staat(){
     const lv = leeftijdVanCategorie(S.team?.categorie);
     const datum = volgendeTrainingsdag();
     S._tm = { teamId: S.teamId, n: aanwezigeSpelers(), duur: standaardDuur(lv), niv: 2, datum, week: isoVan(datumUit(datum)).week, thema: null, themaHand: false,
-      tb: {}, tbVerzonden: {}, nHand: false, halfVeld: false, slechtWeer: false, cx: schoonContext(null), cxGeladen: false, seed: 1, knop: { druk: 0, complexiteit: 0, stijl: 'punten' }, open: null, tab: {}, pas: false, ckOpen: false, plan: null, bewaardId: null, lijst: null, ai: {}, aiBezig: false, meerOpen: false };
+      tb: {}, tbVerzonden: {}, nHand: false, halfVeld: false, weer: null, cx: schoonContext(null), cxGeladen: false, seed: 1, knop: { druk: 0, complexiteit: 0, stijl: 'punten' }, open: null, tab: {}, pas: false, ckOpen: false, plan: null, bewaardId: null, lijst: null, ai: {}, aiBezig: false, meerOpen: false };
   }
   return S._tm;
 }
@@ -118,7 +118,7 @@ function maak(){
   if (!t.themaHand) t.thema = ll.thema;
   if (!themaOpties().includes(t.thema)) t.thema = themaOpties()[0] || ll.thema;
   t.plan = maakPlan(VORMEN, { categorie: S.team?.categorie, leeftijd: lv, aantalSpelers: t.n, niveau: t.niv, duur: t.duur, thema: t.thema,
-    blokFase: ll.fase, seed: `${S.teamId}:${t.week}:${t.seed}`, recent: [], context: t.cx, datum: t.datum, halfVeld: t.halfVeld, slechtWeer: t.slechtWeer });
+    blokFase: ll.fase, seed: `${S.teamId}:${t.week}:${t.seed}`, recent: [], context: t.cx, datum: t.datum, halfVeld: t.halfVeld, weer: t.weer });
   t.plan.profiel.week = t.week;
   t.plan.profiel.datum = t.datum;
   t.bewaardId = null; t.ai = {}; t.open = null; t.tab = {};
@@ -175,12 +175,12 @@ function htmlFormulier(){
 }
 
 const SLOT_KLEUR = { ontvangst: '#5b6573', 'warming-up': '#4a8fe0', kern1: '#35c47a', kern2: '#f5b13d', partij: '#e2342f', afsluiting: '#8a6fe0' };
-const CHECK_NAAM = { duur: 'Duur', opbouw: 'Opbouw', vormduur: 'Vormduur', warmingup: 'Warming-up', voetbalecht: 'Voetbalecht', thema: 'Thema', wachtrij: 'Geen wachtrij', ruimte: 'Ruimte', veld: 'Veld', intensiteit: 'Belasting', rust: 'Drinkpauze', groepen: 'Groepen', coach: 'Coachinfo', variatie: 'Variatie', materiaal: 'Materiaal' };
+const CHECK_NAAM = { weer: 'Weer', duur: 'Duur', opbouw: 'Opbouw', vormduur: 'Vormduur', warmingup: 'Warming-up', voetbalecht: 'Voetbalecht', thema: 'Thema', wachtrij: 'Geen wachtrij', ruimte: 'Ruimte', veld: 'Veld', intensiteit: 'Belasting', rust: 'Drinkpauze', groepen: 'Groepen', coach: 'Coachinfo', variatie: 'Variatie', materiaal: 'Materiaal' };
 
 function htmlResultaat(){
   const t = staat(), p = t.plan;
   if (!p) return '';
-  const ov = p.overgang || OPBOUW[kiesDuur(p.profiel.duur)].overgang;
+  const ov = p.overgang || opbouwVoor(p.profiel.duur, p.profiel.weer).overgang;
   const tussen = Math.round((ov.tussen / 3) * 10) / 10;
   const fouten = p.controle.checks.filter(c => !c.ok);
   const segs = [['ontvangst', ov.ontvangst, 'Ontvangst'], ...p.onderdelen.map(o => [o.slot, o.minuten, SLOT_NAAM[o.slot].replace(' spelvorm', '')]), ...(p.afsluiting ? [['afsluiting', p.afsluiting.minuten, 'Afsluiting']] : [])];
@@ -204,7 +204,7 @@ function htmlResultaat(){
   if (t.pas) h += `<div class="kaart tm-knoppen">
     <div class="tm-rij"><span class="tm-l">Druk</span><div class="tm-chips">${[[-1, 'Rustiger'], [0, 'Normaal'], [1, 'Hoger']].map(([v, x]) => chip('data-tm-druk', v, x, t.knop.druk === v)).join('')}</div></div>
     <div class="tm-rij"><span class="tm-l">Moeilijkheid</span><div class="tm-chips">${[[-1, 'Lichter'], [0, 'Normaal'], [1, 'Zwaarder']].map(([v, x]) => chip('data-tm-cx', v, x, t.knop.complexiteit === v)).join('')}</div></div>
-    <div class="tm-rij"><span class="tm-l">Plan B</span><div class="tm-chips">${chip('data-tm-half', 1, 'Half veld (veld gedeeld)', t.halfVeld)}${chip('data-tm-weer', 1, 'Regen of koud', t.slechtWeer)}</div></div>
+    <div class="tm-rij"><span class="tm-l">Plan B</span><div class="tm-chips">${chip('data-tm-half', 1, 'Half veld (veld gedeeld)', t.halfVeld)}${Object.entries(WEER).map(([k, w]) => chip('data-tm-weer', k, w.naam, t.weer === k)).join('')}</div></div>
     ${aiAan() ? `<div class="tm-rij"><span class="tm-l">AI-uitleg</span><button class="knop klein licht" data-tm-ai="1"${t.aiBezig ? ' disabled' : ''}>${t.aiBezig ? 'Bezig…' : (Object.keys(t.ai).length ? 'Opnieuw afstemmen' : 'Afstemmen op mijn team')}</button></div>`
       : `<div class="tm-info">AI-uitleg staat uit voor deze club; je ziet de standaardtekst uit de bibliotheek.</div>`}
   </div>`;
@@ -322,23 +322,23 @@ function openBewaarde(id){
   let plan;
   if (!nieuweOpbouw){
     /* training uit de oude opbouw (5 onderdelen, 90 min): opnieuw samengesteld met dezelfde instellingen */
-    plan = maakPlan(VORMEN, { categorie: pr.categorie || S.team?.categorie, aantalSpelers: N, niveau: pr.niveau || 2, duur, thema: pr.thema, blokFase: pr.blokFase, seed: id, recent: [] });
+    plan = maakPlan(VORMEN, { categorie: pr.categorie || S.team?.categorie, aantalSpelers: N, niveau: pr.niveau || 2, duur, thema: pr.thema, blokFase: pr.blokFase, seed: id, recent: [], weer: pr.weer || null });
     plan.meldingen.unshift('Deze training is gemaakt met de oude opbouw. Hij is opnieuw samengesteld met maximaal 4 vormen.');
   } else {
     const onderdelen = [];
     for (const o of d.onderdelen){
       const v = VORMEN.find(x => x.id === o.vormId);
       if (!v){ meld('Een vorm uit deze training bestaat niet meer in de bibliotheek'); continue; }
-      onderdelen.push(bouwOnderdeel(v, { slot: o.slot, minuten: o.minuten }, { N, thema: pr.thema }));
+      onderdelen.push(bouwOnderdeel(v, { slot: o.slot, minuten: o.minuten }, { N, thema: pr.thema, weer: pr.weer || null }));
     }
-    const ov = { ...OPBOUW[duur].overgang };
+    const ov = { ...opbouwVoor(duur, pr.weer || null).overgang };
     const av = d.afsluitingId ? VORMEN.find(x => x.id === d.afsluitingId) : null;
-    const afsluiting = av ? bouwOnderdeel(av, { slot: 'afsluiting', minuten: ov.afsluiting }, { N, thema: pr.thema })
+    const afsluiting = av ? bouwOnderdeel(av, { slot: 'afsluiting', minuten: ov.afsluiting }, { N, thema: pr.thema, weer: pr.weer || null })
       : maakPlan(VORMEN, { categorie: pr.categorie || S.team?.categorie, aantalSpelers: N, niveau: pr.niveau || 2, duur, thema: pr.thema, blokFase: pr.blokFase, seed: id, recent: [] }).afsluiting;
     plan = { profiel: { ...pr, duur }, onderdelen, afsluiting, overgang: ov, meldingen: [], ruimteM2: leeftijdVanCategorie(pr.categorie) >= 13 ? 6000 : 3500 };
     plan.controle = valideer(plan);
   }
-  Object.assign(t, { n: N, nHand: true, duur, niv: pr.niveau || t.niv, week: pr.week || t.week, datum: pr.datum || t.datum, thema: pr.thema, themaHand: true, knop: d.knop || t.knop, plan, bewaardId: id, tb: d.terugblik || {}, ai: {}, open: null, tab: {} });
+  Object.assign(t, { n: N, nHand: true, duur, niv: pr.niveau || t.niv, week: pr.week || t.week, datum: pr.datum || t.datum, thema: pr.thema, themaHand: true, knop: d.knop || t.knop, weer: pr.weer || null, plan, bewaardId: id, tb: d.terugblik || {}, ai: {}, open: null, tab: {} });
   plan.profiel.week = pr.week;
   if (terugblikKlaar(t.tb)) t.tbVerzonden[id] = true;
   teken(); window.scrollTo({ top: 0 });
@@ -386,8 +386,8 @@ export function koppelTrainingsmodule(v){
   root.addEventListener('click', async e => {
     const b = e.target.closest('button'); if (!b) return;
     const d = b.dataset;
-    if (d.tmN){ t.n = Math.max(6, Math.min(24, t.n + Number(d.tmN))); t.nHand = true; teken(); }
-    else if (d.tmTerugpres !== undefined){ t.nHand = false; t.n = verwachtAantal(t.datum).n; teken(); }
+    if (d.tmN){ t.n = Math.max(6, Math.min(24, t.n + Number(d.tmN))); t.nHand = true; maak(); teken(); }
+    else if (d.tmTerugpres !== undefined){ t.nHand = false; t.n = verwachtAantal(t.datum).n; maak(); teken(); }
     else if (d.tmPreset !== undefined){
       const k = d.tmPreset;
       if (k === 'eigen') return;
@@ -402,9 +402,10 @@ export function koppelTrainingsmodule(v){
     else if (d.tmVeld !== undefined){ t.cx.veld = d.tmVeld || null; t.meerOpen = true; bewaarContext(); maak(); teken(); }
     else if (d.tmWd !== undefined){ t.cx.wedstrijddag = Number(d.tmWd) || null; t.meerOpen = true; bewaarContext(); maak(); teken(); }
     else if (d.tmHalf !== undefined){ t.halfVeld = !t.halfVeld; maak(); teken(); }
-    else if (d.tmWeer !== undefined){ t.slechtWeer = !t.slechtWeer; maak(); teken(); }
-    else if (d.tmDuur){ t.duur = Number(d.tmDuur); teken(); }
-    else if (d.tmNiv){ t.niv = Number(d.tmNiv); teken(); }
+    else if (d.tmWeer !== undefined){ t.weer = t.weer === d.tmWeer ? null : (WEER[d.tmWeer] ? d.tmWeer : null); maak(); teken(); }
+    /* [20261111b] duur, niveau en spelers werken meteen door (eerder pas na "Maak training") */
+    else if (d.tmDuur){ t.duur = Number(d.tmDuur); maak(); teken(); }
+    else if (d.tmNiv){ t.niv = Number(d.tmNiv); maak(); teken(); }
     else if (d.tmMaak){ t.seed++; maak(); stuurSignalen(gatRedenen(t.plan).map(r => signaalGat(leeftijdVanCategorie(S.team?.categorie), r))); teken(); const r = root.querySelector('.tm-kop2'); if (r) window.scrollTo({ top: r.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' }); }
     else if (d.tmOpenVorm !== undefined){ const i = Number(d.tmOpenVorm); t.open = t.open === i ? null : i; teken(); }
     else if (d.tmTab){ const [i, k] = d.tmTab.split(':'); t.tab[Number(i)] = k; teken(); }
@@ -416,10 +417,10 @@ export function koppelTrainingsmodule(v){
     else if (d.tmWissel !== undefined){
       const i = Number(d.tmWissel), od = t.plan.onderdelen[i];
       const lst = rangschik(VORMEN, od.slot, { categorie: S.team?.categorie, aantalSpelers: t.n, niveau: t.niv, thema: t.thema, doelC: t.plan.profiel.doelComplexiteit,
-        uitsluiten: t.plan.onderdelen.map(o => o.vormId), seed: t.seed, context: t.cx, datum: t.datum, halfVeld: t.halfVeld, slechtWeer: t.slechtWeer });
+        uitsluiten: t.plan.onderdelen.map(o => o.vormId), seed: t.seed, context: t.cx, datum: t.datum, halfVeld: t.halfVeld, weer: t.weer });
       if (!lst[0]){ meld('Geen andere passende vorm gevonden'); return; }
       stuurSignalen([signaalVormGewisseld(leeftijdVanCategorie(S.team?.categorie), od)]);
-      t.plan.onderdelen[i] = bouwOnderdeel(lst[0], { slot: od.slot, minuten: od.minuten }, { N: t.n, thema: t.thema });
+      t.plan.onderdelen[i] = bouwOnderdeel(lst[0], { slot: od.slot, minuten: od.minuten }, { N: t.n, thema: t.thema, weer: t.weer, ruimte: t.plan.ruimteM2 });
       t.plan.controle = valideer(t.plan); t.bewaardId = null; delete t.ai[od.slot]; teken();
     }
     else if (d.tmTb){
