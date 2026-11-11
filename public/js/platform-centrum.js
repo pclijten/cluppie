@@ -15,10 +15,11 @@
 import { db, collection, getDocs, doc, getDoc, setDoc, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { S, esc, meld, isPlatformBeheerder, terugLaag, terugLaagWeg, bewaakTerug } from './state.js?v=20261110a';
 import { ico } from './icons.js?v=20261110a';
-import { logoImgVoorDoc, DISTRICTEN, CLUPPIE_LOGO } from './clubconfig.js?v=20261110a';
+import { logoImgVoorDoc, DISTRICTEN, CLUPPIE_LOGO } from './clubconfig.js?v=20261111a';
 import { STARTLIJST_STAPPEN } from './startlijst.js?v=20261011d';
-import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261110a';
-import { FASES, FASE_NAAM, faseVan, volgendeStap, filterClubs, vandaagDoen, trainersMetClub, kpiWaarden, dagenSinds } from './platform-logica.js?v=20261111a';
+import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261111a';
+import { FASES, FASE_NAAM, STANDAARD, KOPPEL_NAAM, faseVan, volgendeStap, filterClubs, vandaagDoen, trainersMetClub, kpiWaarden, dagenSinds } from './platform-logica.js?v=20261111a';
+import { modulesVoorNieuweClub } from './onderdelen.js?v=20261111a';
 
 const STAP_NAAM = Object.fromEntries(STARTLIJST_STAPPEN.map(s => [s.id, s.titel]));
 const MENU = [
@@ -90,11 +91,12 @@ async function laad(){
   }
   P.laden = false; teken();
 }
+const uitrol = () => ({ ...STANDAARD, ...(P.platform?.uitrol || {}) });
 function verrijk(){
-  const nu = Date.now();
+  const nu = Date.now(), u = uitrol();
   P.clubs = (P.o.clubs || []).map(k => {
-    const fase = faseVan(k, nu);
-    return { ...k, fase, volgende: volgendeStap(k, fase, STAP_NAAM, nu) };
+    const fase = faseVan(k, nu, u);
+    return { ...k, fase, volgende: volgendeStap(k, fase, STAP_NAAM, nu, u) };
   });
   P.trainers = trainersMetClub(P.o.individueel, P.clubs);
 }
@@ -258,7 +260,23 @@ function trainerRij(t){
     <td>${team ? esc(team) : '<span class="tc-meta">—</span>'}</td>
     <td>${t.eigenClub ? esc(t.eigenClub.naam) + (t.eigenClub.plaats ? `<small class="pc-sub">${esc(t.eigenClub.plaats)}</small>` : '') : '—'}${t.club ? ' ' + chip('doet mee', 'ok') : ''}</td>
     <td>${chip(st, soort)}</td><td>${esc(act)}</td>
-    <td class="r">${t.email ? `<button class="knop licht klein" data-pc="kopieer" data-tekst="${esc(t.email)}">${ico('action-copy', 15)} E-mail</button>` : ''}${t.club ? ` <button class="knop licht klein" data-pc="club" data-id="${esc(t.club.id)}">Club</button>` : ''}</td></tr>`;
+    <td class="r"><span class="pc-knoppen pc-rechts">${t.email ? `<button class="knop licht klein" data-pc="kopieer" data-tekst="${esc(t.email)}">${ico('action-copy', 15)} E-mail</button>` : ''}${koppelKnop(t)}</span></td></tr>`;
+}
+/* [20261111b] Koppel aan club: zet een voorstel klaar dat de trainer in zijn app ziet. */
+function koppelKnop(t){
+  if (!t.club || !t.teamId || t.status !== 'eigen-team') return '';
+  if (t.koppel) return chip(KOPPEL_NAAM[t.koppel] || t.koppel, t.koppel === 'aangevraagd' ? 'let' : t.koppel === 'open' ? '' : 'uit');
+  const zeker = P.bevestig === 'k:' + t.teamId;
+  return `<button class="knop ${zeker ? 'fluo' : 'licht'} klein" data-pc="koppel" data-team="${esc(t.teamId)}" data-club="${esc(t.club.id)}">${zeker ? `Voorstel naar ${esc(t.naam.split(' ')[0])}?` : 'Koppel aan club'}</button>`;
+}
+function soloAIBlok(){
+  const s = { aan: false, limiet: 20, ...(P.platform?.soloAI || {}) };
+  const gebruikt = P.o?.totalen?.aiSolo || 0;
+  return `<section class="kaart pc-blok">
+    <div class="pc-schakel"><div><b>AI-hulp voor losse trainers</b><small>Uitleg bij Training maken, een jaarvoorstel in Seizoensplanning en de doelregel op de Nu-kaart. Kost per aanroep; geldt voor alle trainers zonder club.${s.aan ? ` Deze maand ${gebruikt} aanroep${gebruikt === 1 ? '' : 'en'}.` : ''}</small></div>
+      <button type="button" class="pc-sw" role="switch" aria-checked="${s.aan === true}" aria-label="AI-hulp voor losse trainers" data-pc="soloai"></button></div>
+    <div class="pc-schakel"><div><b>Maximum per trainer per maand</b><small>Daarna werkt alles gewoon zonder AI.</small></div>
+      <input class="invoer pc-getal" type="number" inputmode="numeric" min="0" max="1000" id="pcSoloLimiet" value="${esc(s.limiet)}" aria-label="Maximum AI-aanroepen per trainer per maand"></div></section>`;
 }
 function htmlTrainers(){
   const ind = P.o.individueel;
@@ -266,7 +284,8 @@ function htmlTrainers(){
   const lijst = P.alleTrainers ? P.trainers : P.trainers.slice(0, 25);
   const herkend = P.trainers.filter(t => t.club).length;
   return `${kop('Trainers zonder club', `${ind.totaal} account${ind.totaal === 1 ? '' : 's'} · ${ind.eigenTeam || 0} met eigen team · ${ind.wachtOpClub || 0} wachten op een club · ${ind.nogGeenTeam || 0} nog geen team${herkend ? ` · <b>${herkend}</b> bij een club die al meedoet` : ''}`)}
-    <p class="tc-meta pc-uitleg">Een losse trainer heeft alle onderdelen behalve de Sportlink-koppeling en AI-hulp. "Doet mee" betekent dat de club die de trainer zelf invulde al Cluppie gebruikt. De trainer kan dan bij die club aansluiten met een uitnodiging van de clubbeheerder.</p>
+    ${soloAIBlok()}
+    <p class="tc-meta pc-uitleg">"Doet mee" betekent dat de club die de trainer zelf invulde al Cluppie gebruikt. Met Koppel aan club ziet de trainer in de app een voorstel om zijn team bij de club onder te brengen; daarna keurt de clubbeheerder het goed. Spelers, wedstrijden en trainingen gaan mee.</p>
     <div class="pc-tabel-wrap"><table class="pc-tabel">
       <thead><tr><th>Trainer</th><th>Team</th><th>Club (zelf ingevuld)</th><th>Status</th><th>Activiteit</th><th></th></tr></thead>
       <tbody>${lijst.length ? lijst.map(trainerRij).join('') : '<tr><td colspan="6" class="tc-leeg">Nog geen trainers buiten een club.</td></tr>'}</tbody></table></div>
@@ -277,18 +296,29 @@ function htmlTrainers(){
 /* ---------- Instellingen ---------- */
 function htmlInstellingen(){
   const beheerders = P.platform?.beheerders || [];
+  const st = modulesVoorNieuweClub(P.platform?.standaard), u = uitrol();
+  const sw = (sl, naam, uitleg, aan) => `<div class="pc-schakel"><div><b>${esc(naam)}</b>${uitleg ? `<small>${esc(uitleg)}</small>` : ''}</div>
+    <button type="button" class="pc-sw" role="switch" aria-checked="${aan}" aria-label="${esc(naam)} voor nieuwe clubs" data-pc="standaard" data-sl="${sl}"></button></div>`;
+  const getal = (id, naam, uitleg, waarde, attr) => `<div class="pc-schakel"><div><b>${esc(naam)}</b>${uitleg ? `<small>${esc(uitleg)}</small>` : ''}</div>
+    <input class="invoer pc-getal" type="number" inputmode="numeric" id="${id}" value="${waarde == null ? '' : esc(waarde)}" ${attr} aria-label="${esc(naam)}"></div>`;
   return `${kop('Instellingen', 'Geldt voor het hele platform. Per club pas je onderdelen en limieten aan in het clubdetail.')}
     <div class="pc-twee">
       <section class="kaart pc-blok"><h2 class="tc-h2">Standaard voor nieuwe clubs</h2>
-        <div class="pc-schakel"><div><b>Training maken en Seizoensplanning</b><small>Aan voor elke nieuwe club; per club uit te zetten.</small></div>${chip('aan', 'ok')}</div>
-        <div class="pc-schakel"><div><b>AI-functies</b><small>Uit voor elke nieuwe club; jij zet het per club aan, met een maandlimiet.</small></div>${chip('uit')}</div>
-        <div class="pc-schakel"><div><b>Video's</b><small>Maximaal 100 MB per video.</small></div>${chip('100 MB')}</div>
-        <div class="pc-schakel"><div><b>Uitrol</b><small>Proef: eerste ${14} dagen na de start. Slapend: ${21} dagen geen gebruik.</small></div></div>
-        <p class="tc-meta">Deze standaarden zelf aanpassen komt in de volgende release.</p></section>
-      <section class="kaart pc-blok"><h2 class="tc-h2">Gedeelde gegevens</h2>
-        <div class="pc-taak"><div class="pc-taak-tekst"><b>KNVB-kalenders</b><small>Speeldagen per district en seizoen; clubs krijgen ze automatisch.</small></div><button class="knop licht klein" data-pc="kalenders">Beheren</button></div>
-        <div class="pc-taak"><div class="pc-taak-tekst"><b>Platformbeheerders</b><small>${esc(['jij', ...beheerders].join(' · '))}</small></div></div>
-        <div class="pc-taak"><div class="pc-taak-tekst"><b>Cijfers</b><small>${bijgewerkt() || 'Nog niet bijgewerkt'}. Elke nacht vanzelf.</small></div><button class="knop licht klein" data-pc="vernieuw">Vernieuwen</button></div></section>
+        <p class="tc-meta">Zo begint elke club die je vanaf nu goedkeurt of aanmaakt. Bestaande clubs veranderen niet.</p>
+        ${sw('trainingsmodule', 'Training maken', '', st.trainingsmodule)}
+        ${sw('seizoensplan', 'Seizoensplanning', '', st.seizoensplan)}
+        ${sw('ai', 'AI-functies', 'Kost per aanroep.', st.ai)}
+        ${getal('pcStAiLimiet', 'AI per maand', 'Leeg = onbeperkt', st.aiLimiet, 'min="0" max="100000" placeholder="onbeperkt"')}
+        ${getal('pcStVideo', 'Video max (MB)', 'Tussen 5 en 300', st.maxVideoMB, 'min="5" max="300"')}</section>
+      <div class="pc-wrap">
+        <section class="kaart pc-blok"><h2 class="tc-h2">Uitrol</h2>
+          ${getal('pcProef', 'Proefperiode (dagen)', 'Zo lang staat een club na de start in Proef.', u.proefDagen, 'min="1" max="90"')}
+          ${getal('pcSlapend', 'Slapend na (dagen)', 'Zonder gebruik gaat een club naar Slapend.', u.slapendDagen, 'min="7" max="120"')}</section>
+        <section class="kaart pc-blok"><h2 class="tc-h2">Gedeelde gegevens</h2>
+          <div class="pc-taak"><div class="pc-taak-tekst"><b>KNVB-kalenders</b><small>Speeldagen per district en seizoen; clubs krijgen ze automatisch.</small></div><button class="knop licht klein" data-pc="kalenders">Beheren</button></div>
+          <div class="pc-taak"><div class="pc-taak-tekst"><b>Platformbeheerders</b><small>${esc(['jij', ...beheerders].join(' · '))}</small></div></div>
+          <div class="pc-taak"><div class="pc-taak-tekst"><b>Cijfers</b><small>${bijgewerkt() || 'Nog niet bijgewerkt'}. Elke nacht vanzelf.</small></div><button class="knop licht klein" data-pc="vernieuw">Vernieuwen</button></div></section>
+      </div>
     </div>`;
 }
 
@@ -431,11 +461,21 @@ async function klik(e){
   if (a === 'goedkeuren' || a === 'afwijzen') return beoordeel(b, a === 'goedkeuren');
   if (a === 'schakel') return schakel(b);
   if (a === 'meehelpen') return meehelpen(b);
+  if (a === 'koppel') return koppel(b);
+  if (a === 'soloai') return bewaarPlatform({ soloAI: { ...soloNu(), aan: b.getAttribute('aria-checked') !== 'true' } }, b);
+  if (a === 'standaard') return bewaarPlatform({ standaard: { ...modulesVoorNieuweClub(P.platform?.standaard), [b.dataset.sl]: b.getAttribute('aria-checked') !== 'true' } }, b);
 }
 function invoer(e){
   if (e.target.id === 'pcZoek'){ P.zoek = e.target.value; teken(); }
 }
 async function wijzig(e){
+  /* [20261111b] platforminstellingen (Trainers, Instellingen) */
+  const id = e.target.id, val = e.target.value.trim();
+  if (id === 'pcSoloLimiet') return bewaarPlatform({ soloAI: { ...soloNu(), limiet: val } }, e.target);
+  if (id === 'pcStAiLimiet' || id === 'pcStVideo')
+    return bewaarPlatform({ standaard: { ...modulesVoorNieuweClub(P.platform?.standaard), [id === 'pcStVideo' ? 'maxVideoMB' : 'aiLimiet']: val === '' ? null : val } }, e.target);
+  if (id === 'pcProef' || id === 'pcSlapend')
+    return bewaarPlatform({ uitrol: { ...uitrol(), [id === 'pcProef' ? 'proefDagen' : 'slapendDagen']: val } }, e.target);
   const inp = e.target.closest('[data-pcnum]'); if (!inp || !P.lade) return;
   const sl = inp.dataset.pcnum, raw = inp.value.trim(), clubId = P.lade.clubId;
   let w;
@@ -487,6 +527,32 @@ async function meehelpen(b){
   if (!ond || !(await ond.startOndersteuning(id))){ b.disabled = false; return; }
   sluitCentrum();
   import('./club.js?v=20261111a').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
+}
+const soloNu = () => ({ aan: false, limiet: 20, ...(P.platform?.soloAI || {}) });
+/* platform/instellingen schrijven kan alleen via de functie zetPlatformInstellingen (valideert ook) */
+async function bewaarPlatform(deel, el){
+  if (el) el.disabled = true;
+  try {
+    const r = await httpsCallable(functions, 'zetPlatformInstellingen')(deel);
+    const d = r?.data;
+    P.platform = { ...(P.platform || {}), ...(d && typeof d === 'object' && Object.keys(d).length ? d : deel) };
+    if (deel.uitrol) verrijk();
+    meld('Opgeslagen');
+  } catch (x){
+    meld(x.code === 'functions/not-found' ? 'Functie zetPlatformInstellingen is nog niet gedeployed' : 'Opslaan mislukt: ' + (x.message || x.code));
+  }
+  teken();
+}
+async function koppel(b){
+  const teamId = b.dataset.team, clubId = b.dataset.club;
+  if (P.bevestig !== 'k:' + teamId){ P.bevestig = 'k:' + teamId; return teken(); }
+  b.disabled = true;
+  try {
+    const r = await httpsCallable(functions, 'stelKoppelingVoor')({ teamId, clubId });
+    meld(`Voorstel staat klaar; de trainer ziet het in de app${r?.data?.clubNaam ? ' (' + r.data.clubNaam + ')' : ''}`);
+    const t = P.trainers.find(x => x.teamId === teamId); if (t) t.koppel = 'open';
+    P.bevestig = null; teken();
+  } catch (x){ b.disabled = false; meld(x.code === 'functions/not-found' && /function/i.test(x.message || '') ? 'Functie stelKoppelingVoor is nog niet gedeployed' : 'Mislukt: ' + (x.message || x.code)); }
 }
 async function kopieer(tekst){
   try { await navigator.clipboard.writeText(tekst); meld('Gekopieerd'); }

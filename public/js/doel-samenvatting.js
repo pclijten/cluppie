@@ -12,6 +12,7 @@
    Faalt de AI, dan blijft de eerste doelregel staan: de kaart breekt nooit. */
 import { functions, httpsCallable, db, doc, updateDoc } from './firebase.js?v=20261011g';
 import { S } from './state.js?v=20261110a';
+import { aiAan, aiDoel } from './clubconfig.js?v=20261111a';
 
 const MAX_TEKENS = 90;
 const geheugen = new Map();      // id+hash -> tekst (deze sessie)
@@ -48,10 +49,9 @@ export function haalSamenvatting(t){
   if (bezig.has(sleutel)) return bezig.get(sleutel);
   const p = (async () => {
     try {
-      /* [cluppie.io] AI hoort bij een club (eindbaas-schakelaar + maandlimiet); zonder club: eerste doel */
-      const clubId = S.team?.club || S.club?.id || '';
-      if (!clubId) return '';
-      const res = await httpsCallable(functions, 'vatDoelenSamen')({ clubId, doelen });
+      /* [20261111b] AI per club (eindbaas-schakelaar + maandlimiet) of voor losse trainers (platform/instellingen.soloAI); anders: eerste doel */
+      if (!aiAan()) return '';
+      const res = await httpsCallable(functions, 'vatDoelenSamen')({ ...aiDoel(), doelen });
       const tekst = opschonen(res?.data?.tekst);
       if (!tekst || tekst.length > MAX_TEKENS + 30) return '';
       geheugen.set(sleutel, tekst);

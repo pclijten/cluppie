@@ -391,7 +391,22 @@ export function clubNaamNu(){ return HUIDIG ? HUIDIG.naam : ''; }
 export function kompasNaam(){ return (cfg().identiteit.kompasNaam || 'Club-kompas').trim(); }
 export function beleidsplanNaam(){ return (cfg().identiteit.beleidsplanNaam || 'jeugdbeleidsplan').trim(); }
 /* [20261021] AI staat standaard uit en wordt alleen door de eindbaas aangezet (clubs/{id}.platformModules.ai) */
-export function aiAan(){ return !!(S._clubPlatform && S._clubPlatform.platformModules && S._clubPlatform.platformModules.ai === true) && cfg().ai.aan !== false; }
+export function aiAan(){
+  /* [20261111b] team zonder club: AI alleen als de eindbaas het voor losse trainers aanzet (platform/instellingen.soloAI) */
+  if (S.team && S.teamId && !S.team.club) return S._soloAI === true;
+  return !!(S._clubPlatform && S._clubPlatform.platformModules && S._clubPlatform.platformModules.ai === true) && cfg().ai.aan !== false;
+}
+/* Voor AI-functies: via de club, of (team zonder club) via het team. */
+export function aiDoel(){ return S.team && S.team.club ? { clubId: S.team.club } : { teamId: S.teamId }; }
+let _soloAIGeladen = 0;
+export async function laadSoloAI(){
+  if (Date.now() - _soloAIGeladen < 10 * 60000) return false;
+  _soloAIGeladen = Date.now();
+  const was = S._soloAI === true;
+  try { S._soloAI = (((await getDoc(doc(db, 'platform', 'instellingen'))).data() || {}).soloAI || {}).aan === true; }
+  catch (e){ S._soloAI = false; }
+  return was !== S._soloAI;
+}
 export function weerSleutel(){ const l = weerLocatie(); return l ? `${l.lat},${l.lon}` : ''; }
 export function weerLocatie(){
   const l = cfg().locatie;

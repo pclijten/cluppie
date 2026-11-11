@@ -14,7 +14,7 @@ import {
 import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261110a';
 import { stuurVerificatieMail } from './verificatie.js?v=20261020e';
 import { bewaar } from './club-instellingen.js?v=20261111a';
-import { effectief } from './clubconfig.js?v=20261110a';
+import { effectief } from './clubconfig.js?v=20261111a';
 
 export const PRIVACY_VERSIE = '2026-10';
 const roep = (naam, data) => httpsCallable(functions, naam)(data || {}).then(r => r.data);
@@ -194,9 +194,11 @@ export async function koppelToegang(v, herteken){
   /* --- aanvragen --- */
   const html2 = kaart(`Aanvragen${aanvragen.length ? ` (${aanvragen.length})` : ''}`, aanvragen.length ? aanvragen.map(a => `
     <div style="${rijStijl};flex-wrap:wrap">
-      <div style="flex:1;min-width:150px"><b>${esc(a.naam)}</b><div class="cb-uitleg" style="margin:0">${esc(a.rol === 'trainco' ? 'trainingscoördinator' : (a.teamNaam || 'club'))} · ${datumKort(a.gemaakt)}</div></div>
-      <button class="knop klein" data-ar-goed="${esc(a.uid)}">Goedkeuren</button>
-      <button class="knop licht klein" data-ar-af="${esc(a.uid)}">Afwijzen</button>
+      <div style="flex:1;min-width:150px"><b>${esc(a.naam)}</b><div class="cb-uitleg" style="margin:0">${a.rol === 'team'
+        ? `wil team <b>${esc(a.teamNaam || '')}</b>${a.spelers ? ` (${a.spelers} spelers)` : ''} bij de club onderbrengen. Spelers, wedstrijden en trainingen gaan mee; ${esc(a.naam)} wordt coach van dit team.`
+        : esc(a.rol === 'trainco' ? 'trainingscoördinator' : (a.teamNaam || 'club'))} · ${datumKort(a.gemaakt)}</div></div>
+      <button class="knop klein" data-ar-goed="${esc(a.uid)}" data-ar-soort="${a.rol === 'trainco' || a.rol === 'team' ? a.rol : ''}">${a.rol === 'team' ? 'Team toevoegen' : 'Goedkeuren'}</button>
+      <button class="knop licht klein" data-ar-af="${esc(a.uid)}" data-ar-soort="${a.rol === 'trainco' || a.rol === 'team' ? a.rol : ''}">Afwijzen</button>
     </div>`).join('') : '<p class="cb-uitleg" style="margin:0">Geen openstaande aanvragen.</p>');
 
   /* --- uitnodigingen --- */
@@ -278,10 +280,11 @@ export async function koppelToegang(v, herteken){
     goedkeuring: q('#tgGoed').checked, standaardRol: 'coach', vasteCodes: q('#tgVast') ? q('#tgVast').checked : T.vasteCodes, ondersteuning: q('#tgOnd').checked }]]), e.currentTarget, 'Opgeslagen');
 
   /* een aanmelding als trainingscoördinator heeft een eigen aanvraagdocument */
-  const soortVan = uid => aanvragen.some(a => a.uid === uid && a.rol === 'trainco') && !aanvragen.some(a => a.uid === uid && a.rol !== 'trainco') ? { soort: 'trainco' } : {};
+  /* [20261111b] soort staat op de knop: trainingscoördinator, team koppelen of gewone aanvraag (één persoon kan er meer hebben) */
+  const soortVan = b => b.dataset.arSoort ? { soort: b.dataset.arSoort } : {};
   qa('[data-ar-goed]').forEach(b => b.onclick = () => klaar(() =>
-    roep('beoordeelAanvraag', { clubId, uid: b.dataset.arGoed, besluit: 'goed', rol: 'coach', ...soortVan(b.dataset.arGoed) }), b, 'Goedgekeurd'));
-  qa('[data-ar-af]').forEach(b => b.onclick = () => klaar(() => roep('beoordeelAanvraag', { clubId, uid: b.dataset.arAf, besluit: 'af', ...soortVan(b.dataset.arAf) }), b, 'Afgewezen'));
+    roep('beoordeelAanvraag', { clubId, uid: b.dataset.arGoed, besluit: 'goed', rol: 'coach', ...soortVan(b) }), b, b.dataset.arSoort === 'team' ? 'Team toegevoegd aan de club' : 'Goedgekeurd'));
+  qa('[data-ar-af]').forEach(b => b.onclick = () => klaar(() => roep('beoordeelAanvraag', { clubId, uid: b.dataset.arAf, besluit: 'af', ...soortVan(b) }), b, 'Afgewezen'));
 
   q('#tgInvMaak').onclick = (e) => klaar(async () => {
     const teamId = q('#tgInvTeam').value || null;

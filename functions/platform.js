@@ -102,7 +102,9 @@ function bepaalIndividueleCoaches({ gebruikers = [], teams = [], clubs = [], aan
     if (t.club) continue;
     /* [20261111] eigenClub = club en plaats die de trainer zelf invulde (snelstart); het platformcentrum herkent daarmee of die club al Cluppie gebruikt */
     const ec = t.eigenClub && t.eigenClub.naam ? { naam: String(t.eigenClub.naam).slice(0, 80), plaats: String(t.eigenClub.plaats || '').slice(0, 80) } : null;
-    for (const u of Object.keys(t.leden || {})) (eigen[u] ||= []).push({ id: t.id, naam: t.naam || '', categorie: t.categorie || '', spelers: Number(t.spelers) || 0, ...(ec ? { eigenClub: ec } : {}) });
+    /* [20261111b] stand van een koppelvoorstel (open / aangevraagd / afgewezen), voor het platformcentrum */
+    const kv = t.koppelVoorstel && t.koppelVoorstel.clubId ? { clubId: t.koppelVoorstel.clubId, status: t.koppelVoorstel.status || 'open' } : null;
+    for (const u of Object.keys(t.leden || {})) (eigen[u] ||= []).push({ id: t.id, naam: t.naam || '', categorie: t.categorie || '', spelers: Number(t.spelers) || 0, ...(ec ? { eigenClub: ec } : {}), ...(kv ? { koppel: kv } : {}) });
   }
   const wacht = new Set(aanvragen.map(a => a.uid).filter(Boolean));
   const weg = new Set(uitsluiten.map(e => String(e || '').toLowerCase()));
@@ -146,7 +148,7 @@ async function leesAuthGebruikers(auth = getAuth(), maxTotaal = 5000){
 async function individueleCoaches(db, clubs, aanvragen, nuMs){
   const [gebruikers, teamSnap, platformDoc] = await Promise.all([
     leesAuthGebruikers(),
-    db.collection('teams').select('club', 'leden', 'naam', 'categorie', 'ledenInfo', 'eigenClub').get(),
+    db.collection('teams').select('club', 'leden', 'naam', 'categorie', 'ledenInfo', 'eigenClub', 'koppelVoorstel').get(),
     db.doc('platform/instellingen').get(),
   ]);
   const teams = teamSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -234,6 +236,10 @@ async function bouwPlatformOverzicht(db = getFirestore(), nuMs = Date.now()){
   try {
     individueel = await individueleCoaches(db, clubs.docs.map(c => ({ id: c.id, ...c.data() })), aanvragen.docs.map(d => d.data()), nuMs);
   } catch (e){ console.error('[platformOverzicht] individuele coaches', e.message || e); }
+  /* [20261111b] AI-gebruik van trainers zonder club deze maand (alleen een telling) */
+  let aiSolo = 0;
+  try { (await db.collection('aiGebruikSolo').where('maand', '==', new Date(nuMs).toISOString().slice(0, 7)).get()).docs.forEach(d => { aiSolo += Number(d.data().aantal) || 0; }); }
+  catch (e){ console.warn('[platformOverzicht] aiGebruikSolo', e.message || e); }
   const volgorde = { rood: 0, oranje: 1, groen: 2 };
   lijst.sort((a, b) => (volgorde[a.status] - volgorde[b.status]) || String(a.naam).localeCompare(String(b.naam)));
   const som = f => lijst.reduce((n, k) => n + (f(k) || 0), 0);
@@ -243,7 +249,7 @@ async function bouwPlatformOverzicht(db = getFirestore(), nuMs = Date.now()){
       clubs: lijst.length,
       actieveClubs: lijst.filter(k => k.laatsteGebruik && (nuMs - Date.parse(k.laatsteGebruik)) < 14 * 86400000).length,
       coaches30: som(k => k.coaches30), teams: som(k => k.teams), wachtend: som(k => k.wachtend),
-      aanmeldingen: aanmeldingen.size, aiMaand: som(k => k.ai && k.ai.maand),
+      aanmeldingen: aanmeldingen.size, aiMaand: som(k => k.ai && k.ai.maand) + aiSolo, aiSolo,
       ...(individueel ? { individueel: individueel.totaal, individueelNieuw: individueel.nieuw7 } : {}),
     },
     ...(individueel ? { individueel } : {}),
@@ -259,10 +265,48 @@ async function bouwPlatformOverzicht(db = getFirestore(), nuMs = Date.now()){
   return overzicht;
 }
 
+/* ---- [20261111b] platform/instellingen: alleen via deze callable (de regels laten de client niet schrijven) ----
+   PURE (getest): valideert en geeft alleen de bekende velden terug; ontbrekende delen blijven ongemoeid.
+     soloAI    { aan, limiet }                               AI voor trainers zonder club
+     standaard { trainingsmodule, seizoensplan, ai, aiLimiet, maxVideoMB }   onderdelen voor nieuwe clubs
+     uitrol    { proefDagen, slapendDagen }                  fases in het platformcentrum          */
+function geheel(v, min, max){ const n = Math.round(Number(v)); return Number.isFinite(n) && n >= min && n <= max ? n : null; }
+function schoonPlatformInstellingen(d = {}){
+  const uit = {}, fout = t => { throw Object.assign(new Error(t), { code: 'invalid-argument' }); };
+  if (d.soloAI){
+    const limiet = geheel(d.soloAI.limiet, 0, 1000);
+    if (limiet === null) fout('Kies een AI-limiet per trainer tussen 0 en 1000.');
+    uit.soloAI = { aan: d.soloAI.aan === true, limiet };
+  }
+  if (d.standaard){
+    const s = d.standaard, l = s.aiLimiet;
+    const aiLimiet = (l === null || l === '' || l === undefined) ? null : geheel(l, 0, 100000);
+    if (l !== null && l !== '' && l !== undefined && aiLimiet === null) fout('Kies een AI-limiet tussen 0 en 100.000, of laat hem leeg.');
+    const maxVideoMB = geheel(s.maxVideoMB, 5, 300);
+    if (maxVideoMB === null) fout('Kies een videogrootte tussen 5 en 300 MB.');
+    uit.standaard = { trainingsmodule: s.trainingsmodule === true, seizoensplan: s.seizoensplan === true, ai: s.ai === true, aiLimiet, maxVideoMB };
+  }
+  if (d.uitrol){
+    const proefDagen = geheel(d.uitrol.proefDagen, 1, 90), slapendDagen = geheel(d.uitrol.slapendDagen, 7, 120);
+    if (proefDagen === null || slapendDagen === null) fout('Proef: 1 tot 90 dagen. Slapend: 7 tot 120 dagen.');
+    uit.uitrol = { proefDagen, slapendDagen };
+  }
+  if (!Object.keys(uit).length) fout('Niets om op te slaan.');
+  return uit;
+}
+const zetPlatformInstellingen = onCall({ region: REGIO }, async (request) => {
+  if (!(await isPlatformBeheerder(request))) throw new HttpsError('permission-denied', 'Alleen voor de platformbeheerder.');
+  let schoon;
+  try { schoon = schoonPlatformInstellingen(request.data || {}); }
+  catch (e){ throw new HttpsError('invalid-argument', e.message); }
+  await getFirestore().doc('platform/instellingen').set({ ...schoon, bijgewerkt: FieldValue.serverTimestamp() }, { merge: true });
+  return schoon;
+});
+
 const platformOverzichtNu = onCall({ region: REGIO, timeoutSeconds: 300, memory: '512MiB' }, async (request) => {
   if (!(await isPlatformBeheerder(request))) throw new HttpsError('permission-denied', 'Alleen voor de platformbeheerder.');
   const o = await bouwPlatformOverzicht();
   return { clubs: o.clubs.length };
 });
 
-module.exports = { bepaalIndividueleCoaches, benchmarkWaarden, benchmarkOverzicht, bouwPlatformOverzicht, platformOverzichtNu, beoordeelClub, startlijstKlaar, STARTLIJST_IDS, isPlatformBeheerder };
+module.exports = { schoonPlatformInstellingen, zetPlatformInstellingen, bepaalIndividueleCoaches, benchmarkWaarden, benchmarkOverzicht, bouwPlatformOverzicht, platformOverzichtNu, beoordeelClub, startlijstKlaar, STARTLIJST_IDS, isPlatformBeheerder };

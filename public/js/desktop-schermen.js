@@ -24,9 +24,9 @@ import { analyseWedstrijd, speeltijdReserve, kwartGespeeld } from './analyse.js?
 import { teltMee } from './opkomst.js?v=20260922c';
 import { vastOp, vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
 import { themaOpDatum } from './seizoensplan-logica.js?v=20261110a';
-import { onderdeelAan } from './onderdelen.js?v=20261110a';
+import { onderdeelAan } from './onderdelen.js?v=20261111a';
 import { ico } from './icons.js?v=20261110a';
-import { beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261110a';
+import { beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261111a';
 import { renderTeam, zetTeamTab, modalTeamEvaluatie, planningItems } from './teams.js?v=20261111a';
 import { evaluatieOpen, presWedstrijdKeuzes, htmlWedstrijdInfo, koppelWedstrijdInfo } from './teams-hub.js?v=20261111a';
 import { isAfgelast, telMee, soortPill, statusBadge } from './wedstrijd-status.js?v=20261012h';

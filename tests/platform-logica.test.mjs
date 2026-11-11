@@ -83,4 +83,13 @@ assert.equal(k.wacht, 3);
 assert.equal(k.wachtUitleg, '1 club · 1 coach · 1 sync');
 assert.equal(k.aiClubs, 1);
 
+/* koppelvoorstel: niet meer in Vandaag doen zodra er een voorstel loopt */
+const ind2 = { lijst: [{ uid: 'u1', naam: 'Sanne', status: 'eigen-team', teams: [{ id: 'tm', naam: 'MO13-1', eigenClub: { naam: 'SV Brakel' }, koppel: { clubId: 'b', status: 'open' } }] },
+  { uid: 'u2', naam: 'Kees', status: 'eigen-team', teams: [{ id: 'tk', naam: 'O8-1', eigenClub: { naam: 'SV Brakel' }, koppel: { clubId: 'b', status: 'geweigerd' } }] }] };
+const tr2 = L.trainersMetClub(ind2, clubs);
+assert.equal(tr2[0].teamId, 'tm');
+assert.equal(tr2[0].koppel, 'open');
+assert.equal(tr2[1].koppel, 'geweigerd');
+assert.deepEqual(L.vandaagDoen({ trainers: tr2 }), [], 'trainers met een voorstel (ook geweigerd) staan niet meer in Vandaag doen');
+
 console.log('platform-logica: alle controles geslaagd');

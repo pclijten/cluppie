@@ -10,17 +10,17 @@
    instellingen.v heeft (legacy) worden bij de eerste wijziging eerst alle
    huidige waarden vastgelegd, zodat er niets verspringt. */
 import {
-  db, doc, collection, addDoc, updateDoc, setDoc, deleteDoc, getDocs, query, where, writeBatch, serverTimestamp
+  db, doc, collection, addDoc, updateDoc, setDoc, deleteDoc, getDoc, getDocs, query, where, writeBatch, serverTimestamp
 } from './firebase.js?v=20261011g';
 import { S, $, esc, meld, openModal, sluitModal, nieuweCode, isPlatformBeheerder } from './state.js?v=20261110a';
 import { ACTIEF, SEIZOEN_FALLBACK, parseFormatie, aantalVeldspelers, SKILLS, LEERCURVE, catLabel } from './config.js?v=20261110a';
 import {
   effectief, isLegacy, mergeLijst, LIJST_DEFS, ORIGINEEL, NEUTRAAL, CLUPPIE_LOGO, ICOONNAMEN,
   valideerKalender, herlaadKalender, pasClubConfigToe, clubAfk, DISTRICTEN
-} from './clubconfig.js?v=20261110a';
-import { MODULE_DEFS } from './club-beheer.js?v=20261110a';
-import { lerenBeschikbaar } from './leren-signalen.js?v=20261110a';
-import { doorPlatformUit, werkwijzeVan } from './onderdelen.js?v=20261110a';
+} from './clubconfig.js?v=20261111a';
+import { MODULE_DEFS } from './club-beheer.js?v=20261111a';
+import { lerenBeschikbaar } from './leren-signalen.js?v=20261111a';
+import { doorPlatformUit, werkwijzeVan, modulesVoorNieuweClub } from './onderdelen.js?v=20261111a';
 
 /* ---------- Tabs ---------- */
 export const INSTEL_TABS = [
@@ -1022,6 +1022,10 @@ async function maakClub(W, bronnen){
     instellingen: eff,
     gemaakt: serverTimestamp(),
   };
+  /* [20261111b] onderdelen en limieten volgens de standaard van de eindbaas (platform/instellingen.standaard) */
+  let standaard = null;
+  try { standaard = ((await getDoc(doc(db, 'platform', 'instellingen'))).data() || {}).standaard || null; } catch (e) { /* lezen mislukt: standaard van de code */ }
+  data.platformModules = modulesVoorNieuweClub(standaard);
   if (W.clientId) data.sportlinkClientId = W.clientId;
   if (W.clubcode && W.clientId) data.sportlinkClubcode = W.clubcode;
   const ref = await addDoc(collection(db, 'clubs'), data);

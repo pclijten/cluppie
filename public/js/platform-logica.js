@@ -14,6 +14,7 @@ export const FASES = [
 ];
 export const FASE_NAAM = Object.fromEntries(FASES.map(f => [f.id, f.naam]));
 export const STANDAARD = { proefDagen: 14, slapendDagen: 21 };
+export const KOPPEL_NAAM = { open: 'voorstel bij trainer', aangevraagd: 'wacht op club', afgewezen: 'club wees af', gezien: 'club wees af', geweigerd: 'trainer wil los blijven' };
 
 const DAG = 86400000;
 export function dagenSinds(iso, nuMs = Date.now()){
@@ -91,7 +92,7 @@ export function vandaagDoen({ clubs = [], aanmeldingen = [], trainers = [] } = {
       uit.push({ soort: 'club', niveau, clubId: k.id, titel: `${k.naam}: ${s.tekst}`, sub: [FASE_NAAM[k.fase] || '', k.teams != null ? k.teams + ' teams' : ''].filter(Boolean).join(' · ') });
   };
   sig('rood');
-  for (const t of trainers) if (t.club && t.club.id && t.status === 'eigen-team')
+  for (const t of trainers) if (t.club && t.club.id && t.status === 'eigen-team' && !t.koppel)
     uit.push({ soort: 'trainer', niveau: 'oranje', uid: t.uid, clubId: t.club.id,
       titel: `${t.naam} traint bij ${t.club.naam}, dat al Cluppie gebruikt`,
       sub: `los team ${(t.teams || []).map(x => x.naam).filter(Boolean).join(', ') || ''}`.trim() + ' · kan aan de club gekoppeld worden' });
@@ -104,7 +105,11 @@ export function trainersMetClub(individueel, clubs = []){
   return ((individueel && individueel.lijst) || []).map(t => {
     const eigen = (t.teams || []).map(x => x.eigenClub).find(Boolean) || t.eigenClub || null;
     const c = eigen ? herkenClub(eigen.naam, clubs) : null;
-    return { ...t, eigenClub: eigen, club: c ? { id: c.id, naam: c.naam } : null };
+    /* [20261111b] team om te koppelen en de stand van een koppelvoorstel (open / aangevraagd / afgewezen / geweigerd) */
+    const team = (t.teams || []).find(x => x.eigenClub) || (t.teams || [])[0] || null;
+    const kv = (t.teams || []).map(x => x.koppel).find(Boolean) || null;
+    return { ...t, eigenClub: eigen, club: c ? { id: c.id, naam: c.naam } : null, teamId: team ? team.id : null,
+      koppel: kv ? kv.status || 'open' : null };
   });
 }
 

@@ -15,14 +15,14 @@
 ========================================================================== */
 import { S, $, esc, modAan, isBeheerder, isPlatformBeheerder, stopUnsubs, meld } from './state.js?v=20261110a';
 import { ico } from './icons.js?v=20261110a';
-import { logoImg, primaireClubId } from './clubconfig.js?v=20261110a';
+import { logoImg, primaireClubId } from './clubconfig.js?v=20261111a';
 import { BOUWEN, catLabel } from './config.js?v=20261110a';
 import { openTeam, zetTeamTab, verlaatTeamView, updatesInfo, renderTeam } from './teams.js?v=20261111a';
 import { initSchermen, ruimOp } from './desktop-schermen.js?v=20261111a';
 import { openBouw, bouwTeams, bouwHuidig, zetHerteken, bouwIsSelectie } from './desktop-bouw.js?v=20261111a';
 import { ongelezenBerichten } from './berichten.js?v=20261110a';
 import { evaluatieOpen } from './teams-hub.js?v=20261111a';
-import { onderdeelAan } from './onderdelen.js?v=20261110a';
+import { onderdeelAan } from './onderdelen.js?v=20261111a';
 import { telNav } from './tracker.js?v=20261110a';
 
 const K_KLEIN = 'cluppie_zijbalk_klein';
@@ -154,7 +154,7 @@ async function voerActieUit(actie, data = {}){
     if (data.pag === 'dash' || data.pag === 'uit' || data.pag === 'selmaken') return naarBouw(data.club, data.bouw, data.pag);
     return naarBouwPag(data.club, data.bouw, data.team, data.pag);
   }
-  if (actie === 'trainco')    return import('./trainco.js?v=20261110a').then(m => m.openVanuitApp());
+  if (actie === 'trainco')    return import('./trainco.js?v=20261111a').then(m => m.openVanuitApp());
   if (actie === 'platform')   return import('./platform.js?v=20261111a').then(m => m.openPlatform());
   if (actie === 'coordbeheer'){
     await openClubDesk(data.id);

@@ -5,7 +5,7 @@
    bewerken, én het uitlenen van een speler aan een ander team binnen de
    club (thematisch dezelfde "speler"-context, vandaar in één bestand). */
 import { teamsOpId } from './teams-ophalen.js?v=20261011g';
-import { beleidsplanNaam, cfg } from './clubconfig.js?v=20261110a';
+import { beleidsplanNaam, cfg } from './clubconfig.js?v=20261111a';
 import {
   db, collection, doc, addDoc, deleteDoc, updateDoc, setDoc,
   getDoc, getDocs, query, where, serverTimestamp, documentId, deleteField,
@@ -25,7 +25,7 @@ import { isBouwCoordinator } from './coordinatoren.js?v=20261110a';
 import { ico } from './icons.js?v=20261110a';
 import { rondesVoorTeam, rondeSpelers, datumKort } from './evaluatierondes.js?v=20261110a';
 
-import { toonThemaInfo } from './teams-leerlijn.js?v=20261110a';
+import { toonThemaInfo } from './teams-leerlijn.js?v=20261111a';
 import { telGebruik } from './tracker.js?v=20261110a';
 import { opkomstVoor, teltMee } from './opkomst.js?v=20260922c';
 import { heeftElftallen, filterOpElftal, elftalPillen } from './elftallen.js?v=20261110a';

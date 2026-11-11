@@ -82,7 +82,7 @@ onAuthStateChanged(auth, async user => {
     startTeams();
     registreerLogin();
     if (new URLSearchParams(location.search).get('trainco')){
-      import('./trainco.js?v=20261110a').then(m => m.bootVoorbeeld(user)).catch(() => {});
+      import('./trainco.js?v=20261111a').then(m => m.bootVoorbeeld(user)).catch(() => {});
     }
 
     /* Hulp-chatbot: paneel klaarzetten. Openen gebeurt via de "Hulpchat"-tegel

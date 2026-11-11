@@ -100,3 +100,16 @@ console.log('onderdelen: client en server stemmen overeen');
   zet('club', {}, 'u1');
   assert.equal(O.onderdeelAan('kompas'), true, 'andere onderdelen ongemoeid');
 }
+
+/* [20261111b] platformModules voor een nieuwe club: client en server gelijk */
+{
+  const { createRequire } = await import('node:module');
+  const srv = createRequire(import.meta.url)('../functions/onderdelen.js');
+  const gevallen = [undefined, null, {}, { trainingsmodule: true, seizoensplan: true, ai: true, aiLimiet: 50, maxVideoMB: 150 },
+    { aiLimiet: '', maxVideoMB: 2 }, { aiLimiet: -3, maxVideoMB: '80' }, { ai: 'ja', aiLimiet: 12.6 }];
+  for (const g of gevallen) assert.deepEqual(O.modulesVoorNieuweClub(g), srv.modulesVoorNieuweClub(g), JSON.stringify(g));
+  assert.deepEqual(O.modulesVoorNieuweClub(), { trainingsmodule: false, seizoensplan: false, ai: false, aiLimiet: null, maxVideoMB: 100 }, 'zonder standaard: zoals tot nu');
+  assert.equal(O.modulesVoorNieuweClub({ maxVideoMB: '80' }).maxVideoMB, 80);
+  assert.equal(O.modulesVoorNieuweClub({ ai: 'ja' }).ai, false, 'alleen echte true');
+  console.log('onderdelen: standaard voor nieuwe clubs gelijk');
+}

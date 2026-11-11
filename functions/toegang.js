@@ -266,12 +266,25 @@ exports.sluitAan = onCall({ region: REGIO, cors: true }, async (request) => {
 exports.beoordeelAanvraag = onCall({ region: REGIO, cors: true }, async (request) => {
   const db = getFirestore();
   const clubId = String(request.data?.clubId || ''), uid = String(request.data?.uid || '');
-  const soortTrainco = request.data?.soort === 'trainco';
-  const ref = db.doc(`aanvragen/${clubId}_${uid}${soortTrainco ? '_trainco' : ''}`);
+  const soortTrainco = request.data?.soort === 'trainco', soortTeam = request.data?.soort === 'team';
+  const ref = db.doc(`aanvragen/${clubId}_${uid}${soortTrainco ? '_trainco' : soortTeam ? '_team' : ''}`);
   const a = (await ref.get()).data();
   if (!a) throw new HttpsError('not-found', 'Aanvraag bestaat niet (meer).');
-  const { club } = await vereisBeheerVan(db, request, clubId, soortTrainco ? null : a.teamId);
+  const { club } = await vereisBeheerVan(db, request, clubId, (soortTrainco || soortTeam) ? null : a.teamId);
   const door = request.auth.uid, doorNaam = await naamVan(db, clubId, door);
+  /* [20261111b] een los team dat bij de club wil horen: alleen een clubbeheerder */
+  if (soortTeam){
+    if (a.rol !== 'team' || !a.teamId) throw new HttpsError('failed-precondition', 'Dit is geen aanvraag om een team te koppelen.');
+    if (request.data?.besluit === 'goed'){
+      await zetTeamNaarClub(db, { clubId, club, teamId: a.teamId, uid, naam: a.naam, aanvraagRef: ref });
+      await log(db, clubId, 'goedgekeurd', { uid, naam: a.naam, door, doorNaam, teamId: a.teamId, details: `team ${a.teamNaam || ''} gekoppeld`.trim() });
+      return { ok: true, rol: 'coach', teamId: a.teamId };
+    }
+    await ref.delete();
+    try { await db.doc(`teams/${a.teamId}`).update({ 'koppelVoorstel.status': 'afgewezen' }); } catch (e) { /* team bestaat niet meer */ }
+    await log(db, clubId, 'afgewezen', { uid, naam: a.naam, door, doorNaam, teamId: a.teamId, details: 'team koppelen' });
+    return { ok: true };
+  }
   /* aanmelding als trainingscoördinator: alleen een clubbeheerder (teamId is hier altijd null) */
   if (soortTrainco){
     if (a.rol !== 'trainco') throw new HttpsError('failed-precondition', 'Dit is geen aanmelding als trainingscoördinator.');
@@ -381,6 +394,72 @@ exports.privacyOverzicht = onCall({ region: REGIO, cors: true }, async (request)
   return { huidigeVersie: PRIVACY_VERSIE, per };
 });
 
+/* ---------- [20261111b] een los team aan een club koppelen ----------
+   Een trainer die zonder club begon, kan zijn team later bij zijn club onderbrengen. Spelers,
+   wedstrijden en trainingen blijven bij het team (subcollecties van teams/{id}); alleen het
+   teamdocument krijgt de club. Drie stappen, met akkoord van trainer én clubbeheerder:
+     1. stelKoppelingVoor (eindbaas): teams/{id}.koppelVoorstel = { clubId, clubNaam, status: 'open' }
+     2. vraagKoppelingAan (trainer): aanvragen/{clubId}_{uid}_team (rol 'team'), status 'aangevraagd'
+     3. beoordeelAanvraag met soort 'team' (clubbeheerder): zetTeamNaarClub                        */
+async function zetTeamNaarClub(db, { clubId, club, teamId, uid, naam, aanvraagRef }){
+  await db.runTransaction(async tx => {
+    const tRef = db.doc(`teams/${teamId}`);
+    const t = (await tx.get(tRef)).data();
+    if (!t) throw new HttpsError('not-found', 'Dit team bestaat niet meer.');
+    if (t.club && t.club !== clubId) throw new HttpsError('failed-precondition', 'Dit team hoort al bij een andere club.');
+    if (!t.leden?.[uid]) throw new HttpsError('failed-precondition', 'De aanvrager is geen coach meer van dit team.');
+    const leden = Object.keys(t.leden || {}).filter(u => t.leden[u] === true);
+    const clubUpd = { [`teams.${teamId}`]: true };
+    for (const u of leden){
+      clubUpd[`leden.${u}`] = true;
+      clubUpd[`ledenInfo.${u}`] = { naam: (u === uid ? naam : t.ledenInfo?.[u]?.naam) || 'Coach' };
+    }
+    tx.update(tRef, { club: clubId, clubNaam: club?.naam || '', [`rollen.${uid}`]: 'coach', [`ledenInfo.${uid}`]: { naam }, koppelVoorstel: FieldValue.delete(), gekoppeld: FieldValue.serverTimestamp() });
+    tx.update(clubRef(db, clubId), clubUpd);
+    if (aanvraagRef) tx.delete(aanvraagRef);
+  });
+}
+
+exports.stelKoppelingVoor = onCall({ region: REGIO, cors: true }, async (request) => {
+  const db = getFirestore();
+  vereisIngelogd(request);
+  if (!(await eindbaasVan(db, request))) throw new HttpsError('permission-denied', 'Alleen voor de eindbaas van het platform.');
+  const teamId = String(request.data?.teamId || ''), clubId = String(request.data?.clubId || '');
+  const team = teamId ? (await db.doc(`teams/${teamId}`).get()).data() : null;
+  if (!team) throw new HttpsError('not-found', 'Team bestaat niet.');
+  if (team.club) throw new HttpsError('failed-precondition', 'Dit team hoort al bij een club.');
+  const club = clubId ? (await clubRef(db, clubId).get()).data() : null;
+  if (!club) throw new HttpsError('not-found', 'Club bestaat niet.');
+  await db.doc(`teams/${teamId}`).update({ koppelVoorstel: { clubId, clubNaam: club.naam || '', status: 'open', tijd: FieldValue.serverTimestamp() } });
+  return { ok: true, clubNaam: club.naam || '' };
+});
+
+exports.vraagKoppelingAan = onCall({ region: REGIO, cors: true }, async (request) => {
+  const db = getFirestore();
+  vereisIngelogd(request);
+  const uid = request.auth.uid, teamId = String(request.data?.teamId || '');
+  await rateLimit(db, `koppelen|${uid}`, 5, 600);
+  const tRef = db.doc(`teams/${teamId}`);
+  const team = teamId ? (await tRef.get()).data() : null;
+  if (!team) throw new HttpsError('not-found', 'Team bestaat niet.');
+  if (!team.leden?.[uid]) throw new HttpsError('permission-denied', 'Je bent geen coach van dit team.');
+  if (team.club) throw new HttpsError('failed-precondition', 'Dit team hoort al bij een club.');
+  const v = team.koppelVoorstel;
+  if (!v || !v.clubId || v.status !== 'open') throw new HttpsError('failed-precondition', 'Er staat geen koppelvoorstel open voor dit team.');
+  const club = (await clubRef(db, v.clubId).get()).data();
+  if (!club) throw new HttpsError('not-found', 'Die club bestaat niet meer.');
+  const naam = schoonNaam(team.ledenInfo?.[uid]?.naam || request.auth.token?.name || '');
+  let spelers = 0;
+  try { spelers = (await db.collection(`teams/${teamId}/spelers`).get()).size || 0; } catch (e) { spelers = 0; }
+  await db.doc(`aanvragen/${v.clubId}_${uid}_team`).set({
+    clubId: v.clubId, uid, naam, teamId, teamNaam: team.naam || '', categorie: team.categorie || '', spelers,
+    rol: 'team', via: 'koppeling', gemaakt: FieldValue.serverTimestamp(),
+  });
+  await tRef.update({ 'koppelVoorstel.status': 'aangevraagd' });
+  await log(db, v.clubId, 'aanvraag', { uid, naam, teamId, details: 'team koppelen' });
+  return { ok: true, clubNaam: club.naam || v.clubNaam || '' };
+});
+
 /* ---------- [20261020a] ondersteuningsmodus voor de eindbaas ----------
    De eindbaas kan in precies één club tijdelijk als clubbeheerder werken (zie ondersteuningActief in
    firestore.rules). Start en stop komen in het toegangslog van de club. Een club kan het uitzetten via
@@ -428,6 +507,7 @@ exports.stopOndersteuning = onCall({ region: REGIO, cors: true }, async (request
   return { ok: true };
 });
 exports.ondersteuningToegestaan = ondersteuningToegestaan;
+exports.zetTeamNaarClub = zetTeamNaarClub;
 
 /* ---------- voorstel: inactieve leden (alleen lezen, voor de beheerder) ---------- */
 exports.PRIVACY_VERSIE = PRIVACY_VERSIE;

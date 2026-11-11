@@ -14,7 +14,7 @@ import {
   catLabel,
 } from './config.js?v=20261110a';
 import { kompasTips, startContentListener } from './content.js?v=20261110a';
-import { pasClubConfigToe, clubAfk, weerLocatie, weerSleutel, logoImg, logoImgVoorDoc, primaireClubId, voorbeeldTeamcode, laadPlatformConfig } from './clubconfig.js?v=20261110a';
+import { pasClubConfigToe, clubAfk, weerLocatie, weerSleutel, logoImg, logoImgVoorDoc, primaireClubId, voorbeeldTeamcode, laadPlatformConfig, laadSoloAI } from './clubconfig.js?v=20261111a';
 import { ico } from './icons.js?v=20261110a';
 
 import { analyseWedstrijd } from './analyse.js?v=20261110a';
@@ -25,7 +25,7 @@ import {
   openWedstrijd, modalNieuweWedstrijd, renderWedstrijd, koppelStatsBlad, exportStatsExcel
 } from './wedstrijd.js?v=20261111a';
 import { openSjabloonScherm, luisterSjablonen } from './opstelling-sjabloon.js?v=20261111a';
-import { onderdeelAan } from './onderdelen.js?v=20261110a';
+import { onderdeelAan } from './onderdelen.js?v=20261111a';
 import { koppelEersteStappen, koppelClubPlaatsInstelling } from './snelstart.js?v=20261111a';
 
 /* ---------- Submodules (teams.js-modulaire split) ----------
@@ -47,7 +47,7 @@ import {
   modalUitlenen, trekUitleningIn, modalLeenOverlay, definitiefOverzetten, herberekenDossier,
   modalGast, verwijderGast, modalKoppelGast, modalNotitie, startRondeFlow,
 } from './teams-spelers.js?v=20261111a';
-import { htmlKompas, toonThemaInfo, toonKompasInfo, kompasItems, kompasStartIndex } from './teams-leerlijn.js?v=20261110a';
+import { htmlKompas, toonThemaInfo, toonKompasInfo, kompasItems, kompasStartIndex } from './teams-leerlijn.js?v=20261111a';
 import { modalTeamEvaluatie, htmlStatsTab, htmlTeamEvaluatieDashboard, htmlSeizoenFilter } from './teams-evaluatie.js?v=20261111a';
 import {
   htmlTeamTrainingen, htmlPresentieTraining, htmlTeamVideos, htmlInstellingen,
@@ -67,8 +67,8 @@ import {
   htmlLijstjes, htmlLijst, lijstTitel, koppelLijstjes, luisterLijsten, lijstPlanningItems, openLijst,
 } from './teams-lijsten.js?v=20261110a';
 import { koppelOnboardingHerstart } from './onboarding.js?v=20261111a';
-import { htmlTrainingsmodule, koppelTrainingsmodule } from './teams-trainingsmodule.js?v=20261110a';
-import { htmlSeizoensplan, koppelSeizoensplan } from './teams-seizoensplan.js?v=20261110a';
+import { htmlTrainingsmodule, koppelTrainingsmodule } from './teams-trainingsmodule.js?v=20261111a';
+import { htmlSeizoensplan, koppelSeizoensplan } from './teams-seizoensplan.js?v=20261111a';
 import { htmlBerichtBalk, koppelBerichtBalk, htmlBerichtenArchief, ongelezenBerichten } from './berichten.js?v=20261110a';
 import { zetClubModus, kiesEigenThema, zetLettergrootte } from './thema.js?v=20260922c';
 
@@ -199,7 +199,7 @@ export function startTeams(){
        eigen, alleen-lezen scherm i.p.v. de lege coach-app. */
     if (!snap.size && !S._traincoGeprobeerd){
       S._traincoGeprobeerd = true;
-      import('./trainco.js?v=20261110a').then(m => m.probeerTrainco()).catch(() => {});
+      import('./trainco.js?v=20261111a').then(m => m.probeerTrainco()).catch(() => {});
     }
   }, meldFout('teams'));
   const q2 = query(collection(db,'clubs'), where('admins.'+S.user.uid, '==', true));
@@ -214,7 +214,7 @@ export function startTeams(){
     S.traincoClubs = snap.docs.map(d => ({id:d.id, ...d.data()}));
     /* Net geaccepteerd en geen eigen team: direct naar het coördinatorscherm. */
     if (S._teamsGeladen && !S.teams.length && S.traincoClubs.length)
-      import('./trainco.js?v=20261110a').then(m => m.probeerTrainco()).catch(() => {});
+      import('./trainco.js?v=20261111a').then(m => m.probeerTrainco()).catch(() => {});
     if (S.team && S.teamTab === 'meer' && !S.wedstrijdId) renderTeam();
     if (!S.teamId && !S.clubId) renderTeams();
   }, () => { S.traincoClubs = []; });
@@ -692,7 +692,7 @@ export function renderTeams(){
   v.querySelectorAll('[data-open-club]').forEach(b => b.onclick = () => import('./club.js?v=20261111a').then(m => m.openClub(b.dataset.openClub)));
   /* [20261109b] Trainingscoördinator als eigen rol op het startscherm. */
   v.querySelectorAll('[data-open-trainco-club]').forEach(b => b.onclick = () =>
-    import('./trainco.js?v=20261110a').then(m => m.openVanuitApp(b.dataset.openTraincoClub)));
+    import('./trainco.js?v=20261111a').then(m => m.openVanuitApp(b.dataset.openTraincoClub)));
   v.querySelectorAll('[data-open-bouw]').forEach(b => b.onclick = () => {
     const [clubId, bouw] = b.dataset.openBouw.split('|');
     import('./bouw-hub.js?v=20261111a').then(m => m.openBouwHub(clubId, bouw));
@@ -927,6 +927,8 @@ export function openTeam(teamId, beginTab = 'hub', opties = {}){
     if (S.team.club && !S.unsub.seizoen) startSeizoenListener(teamId);
     if (S.team.club) zorgClubLidmaatschap(S.team.club);
     if (!S.team.club) S.huidigSeizoen = SEIZOEN_FALLBACK; // los team zonder club: geen seizoenbeheer
+    /* [20261111b] los team: mag AI (platform/instellingen.soloAI)? Eén keer lezen, daarna het team opnieuw tekenen */
+    if (!S.team.club) laadSoloAI().then(veranderd => { if (veranderd && S.teamId === teamId && !S.wedstrijdId) renderTeam(); });
     if (!S.wedstrijdId) renderTeam();
   }, luisterfout('team'));
   S.unsub.spelers = onSnapshot(collection(db,'teams',teamId,'spelers'), snap => {
@@ -1191,6 +1193,7 @@ const UPDATES = [
   { datum:'2026-11-11', titel:'Makkelijker zelf beginnen', punten:[
     'Heb je nog geen team, dan kies je op het startscherm meteen hoe je begint: zelf een team trainen, of aansluiten met een uitnodiging of code. Je club hoeft niet mee te doen.',
     'Op de computer staat het teammenu pas in de zijbalk als je een team hebt, zodat je niet in lege schermen terechtkomt.',
+    'Train je zonder club en gebruikt je club Cluppie al? Dan kan Cluppie je voorstellen je team bij de club onder te brengen. Je spelers, wedstrijden en trainingen gaan mee; de clubbeheerder keurt het goed.',
   ]},
   { datum:'2026-11-09', titel:'Speeltijd in Stats klopt weer', punten:[
     'Werd de app gesloten terwijl de wedstrijdklok nog liep, dan bleef die klok op de achtergrond doortellen. Spelers die op dat moment in het veld stonden kregen zo veel te veel speeltijd, en wie op de bank zat te veel reservetijd. Een lopende klok telt nu nooit verder dan de ingestelde periodeduur, ook in oude wedstrijden.',
@@ -2517,7 +2520,7 @@ function koppelTeamTab(v, tab){
       zetTeamTab(b.dataset.meerOpen);
     });
     const tcKnop = v.querySelector('[data-open-trainco]');
-    if (tcKnop) tcKnop.onclick = () => import('./trainco.js?v=20261110a').then(m => m.openVanuitApp());
+    if (tcKnop) tcKnop.onclick = () => import('./trainco.js?v=20261111a').then(m => m.openVanuitApp());
     const chatKnop = v.querySelector('[data-open-hulpchat]');
     if (chatKnop) chatKnop.onclick = () =>
       import('./chatbot.js?v=20261111a').then(m => m.openChatbot());

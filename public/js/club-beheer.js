@@ -15,8 +15,8 @@
 import { db, doc, updateDoc } from './firebase.js?v=20261011g';
 import { S, esc, meld, modAan } from './state.js?v=20261110a';
 import { BOUWEN, catLabel } from './config.js?v=20261110a';
-import { kompasNaam } from './clubconfig.js?v=20261110a';
-import { onderdeelAan, doorPlatformUit, werkwijzeVan } from './onderdelen.js?v=20261110a';
+import { kompasNaam } from './clubconfig.js?v=20261111a';
+import { onderdeelAan, doorPlatformUit, werkwijzeVan } from './onderdelen.js?v=20261111a';
 import { ico } from './icons.js?v=20261110a';
 import { momentenVanTeam, htmlMomentenKaart, koppelMomentenKaart, DAGEN_KORT } from './trainingsmomenten.js?v=20261110a';
 import { verwijderCoach } from './trainco-beheer.js?v=20261110a';

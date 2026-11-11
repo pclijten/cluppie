@@ -21,10 +21,10 @@
 import { db, doc, collection, getDoc, getDocs, setDoc, addDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { S, esc, meld } from './state.js?v=20261110a';
 import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261110a';
-import { aiAan } from './clubconfig.js?v=20261110a';
+import { aiAan, aiDoel } from './clubconfig.js?v=20261111a';
 import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261110a';
 import { trainingenVanPlan } from './seizoensplan-club.js?v=20261110a';
-import { onderdeelAan } from './onderdelen.js?v=20261110a';
+import { onderdeelAan } from './onderdelen.js?v=20261111a';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019f';
 import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261110a';
 import {
@@ -238,7 +238,7 @@ async function maakConcept(metAI){
       const kal = weekKalender(f.start, f.eind, f.vrij || []), weken = kal.filter(w => !w.vrij).length;
       const toegestaan = themaVolgorde({ model: f.model, bouw: bouwKey(), leeftijd: lv, accent: f.accent || [], beschikbaar: bes });
       const alle = new Set(LEERCURVE_THEMAS(lv, bes));
-      const res = await httpsCallable(functions, 'seizoensVoorstel')({ clubId: S.team?.club || S.clubId, modus: 'jaarplan', categorie: catLabel(S.team?.categorie), bouw: bouwKey(), model: MODELLEN[f.model].naam,
+      const res = await httpsCallable(functions, 'seizoensVoorstel')({ ...aiDoel(), modus: 'jaarplan', categorie: catLabel(S.team?.categorie), bouw: bouwKey(), model: MODELLEN[f.model].naam,
         accent: f.accent || [], weken, toegestaneThemas: [...alle], voorkeursvolgorde: toegestaan, niveau: f.niveau });
       const bl = res?.data?.blokken;
       const ok = valideerBlokken(bl, { weken, toegestaan: alle });
@@ -267,7 +267,7 @@ async function beslis(id, besluit){
 async function verduidelijk(id){
   const s = staat(), r = voorstellen(); const v = r?.voorstellen.find(x => x.id === id); if (!v) return;
   try {
-    const res = await httpsCallable(functions, 'seizoensVoorstel')({ clubId: S.team?.club || S.clubId, modus: 'uitleg', categorie: catLabel(S.team?.categorie),
+    const res = await httpsCallable(functions, 'seizoensVoorstel')({ ...aiDoel(), modus: 'uitleg', categorie: catLabel(S.team?.categorie),
       voorstel: { titel: v.titel, thema: v.thema, soort: v.soort, feiten: v.feiten, gevolg: v.gevolg } });
     if (res?.data?.uitleg) s.besluit[id + ':uitleg'] = res.data.uitleg; else meld('Geen verduidelijking ontvangen');
   } catch (e){ meld('AI is nu niet bereikbaar'); }
