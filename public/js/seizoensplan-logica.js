@@ -12,7 +12,7 @@
      momenten  : aanvallen en verdedigen wisselen af; elk "moment van het spel" komt terug
      cyclus    : opbouwen · centrum · flank · verdedigen in korte cycli
    (Idee van periodes en herhaling: KNVB-seizoensplanning en De Voetbalmethode deel 4; geen tekst overgenomen.) */
-import { LEERCURVE, VOLGORDE_PER_BOUW, BLOKFASEN, jaarlijn } from './trainingsplanner.js?v=20261111b';
+import { LEERCURVE, VOLGORDE_PER_BOUW, BLOKFASEN, jaarlijn } from './trainingsplanner.js?v=20261111d';
 
 export const MODELLEN = {
   leercurve: { naam: 'Leercurve-thema’s', tekst: 'Eén thema per blok, in de vaste volgorde van de leercurve voor jouw bouw.', seq: null },
@@ -137,6 +137,14 @@ export function positieOp(plan, isoDatum){
   const b = plan.blokken.find(x => w.nr >= x.vanafWeek && w.nr <= x.totWeek) || plan.blokken[plan.blokken.length - 1];
   const idx = Math.max(0, Math.min(b.weken - 1, w.nr - b.vanafWeek));
   return { weekNr: w.nr, blok: b, weekInBlok: idx + 1, fase: b.fasen[idx] };
+}
+/* Seizoensweek (nr in de kalender) die bij een datum hoort. Valt de datum in een vrije week of na het
+   seizoen, dan de laatste trainingsweek ervóór; vóór de start week 1. Nooit een ISO-kalenderweek. */
+export function seizoensweekOp(kal, isoDatum){
+  const m = maandagVan(isoDatum);
+  let nr = 1;
+  for (const w of kal || []){ if (w.iso > m) break; if (w.nr) nr = w.nr; }
+  return nr;
 }
 export function positieWeek(plan, weekNr){
   const b = plan.blokken.find(x => weekNr >= x.vanafWeek && weekNr <= x.totWeek) || plan.blokken[plan.blokken.length - 1];

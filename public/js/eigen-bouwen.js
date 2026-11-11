@@ -17,9 +17,9 @@
    kan zichzelf geen toegang geven.
    Getekend in Club → Bouwen (sinds 20260929a), onder de standaardbouwen.
 ======================================================== */
-import { S, esc, meld } from './state.js?v=20261110a';
+import { S, esc, meld } from './state.js?v=20261111d';
 import { db, doc, updateDoc } from './firebase.js?v=20261011g';
-import { BOUWEN, bouwVanCategorie } from './config.js?v=20261110a';
+import { BOUWEN, bouwVanCategorie } from './config.js?v=20261111d';
 
 const KLEUREN = ['#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#a855f7', '#ef4444'];
 let concept = null;           // { id, naam, kleur, teams:[], coaches:{}, selectie:bool|null, nieuw:bool } — de bouw die open staat
@@ -124,7 +124,7 @@ function binnen(teams){
   };
   return `
     <div class="sectie-kop">Eigen bouwen</div>
-    <p class="cb-legenda">Maak zelf bouwen, zoals een Meidenbouw of Selectie. Een team mag in meerdere bouwen zitten. Oefenstof blijft bij de standaardbouw; gekoppelde coaches krijgen dezelfde rechten als een bouwcoördinator.</p>
+    <p class="cb-legenda">Maak zelf bouwen, zoals een Meidenbouw of Selectie. Een team mag in meerdere bouwen zitten. Trainingen blijven bij de standaardbouw; gekoppelde coaches krijgen dezelfde rechten als een bouwcoördinator.</p>
     ${lijst.map(b => concept && !concept.nieuw && concept.id === b.id ? editor() : rij(b)).join('')}
     ${concept?.nieuw ? editor() : ''}
     ${concept ? '' : `<div class="cb-acties"><button class="knop licht klein" id="ebNieuw">+ Nieuwe bouw</button>${lijst.some(b => /meiden/i.test(b.naam)) ? '' : '<button class="knop licht klein" id="ebMeiden">+ Meidenbouw met alle MO-teams</button>'}</div>`}`;

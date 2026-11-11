@@ -19,10 +19,10 @@
    spelers- of teamgegevens. Spelersnamen staan alleen op het scherm van de
    coach en nooit in de deeltekst. */
 import { db, doc, setDoc, updateDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261110a';
+import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261111d';
 import { ico } from './icons.js?v=20261110a';
-import { telGebruik, telNav } from './tracker.js?v=20261110a';
-import { plekHtml, routeUrl, presentieWedstrijd, afwezigTekst, opstellingKlaar } from './nu-scherm.js?v=20261111b';
+import { telGebruik, telNav } from './tracker.js?v=20261111d';
+import { plekHtml, routeUrl, presentieWedstrijd, afwezigTekst, opstellingKlaar } from './nu-scherm.js?v=20261111d';
 
 const p2 = n => String(n).padStart(2, '0');
 const isoVan = d => `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
@@ -558,7 +558,7 @@ function koppel(body){
     if (wd){
       const id = wd.dataset.vbWedstrijd;
       sluitModal();
-      const m = await import('./wedstrijd.js?v=20261111b');
+      const m = await import('./wedstrijd.js?v=20261111d');
       m.openWedstrijd(id);
       return;
     }

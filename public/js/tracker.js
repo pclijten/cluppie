@@ -16,7 +16,7 @@
    hidden, en pagehide) en als veiligheidsnet elke ~2 minuten. */
 
 import { db, doc, setDoc, increment, serverTimestamp } from './firebase.js?v=20261011g';
-import { S } from './state.js?v=20261110a';
+import { S } from './state.js?v=20261111d';
 
 const LS_BUFFER = 'cluppie_gebruik_buffer';   // {datum, tellingen:{ev:n}}
 const FLUSH_INTERVAL_MS = 2 * 60 * 1000;

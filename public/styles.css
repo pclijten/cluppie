@@ -522,6 +522,8 @@ textarea.invoer{font-family:inherit;line-height:1.5;resize:vertical;min-height:6
 .training-rij .t-meta{font-size:var(--t-xs);margin-top:var(--space-3xs);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .training-rij .acties{display:flex;gap:var(--space-2xs);flex-shrink:0}
 .training-rij button{width:34px;height:34px;border-radius:8px;color:var(--ink-2);font-size:var(--t-base)}
+/* [20261111d] Aanpassen op Trainingen: tekstknop i.p.v. vierkant icoon */
+.training-rij .acties button[data-tr-aanpassen]{width:auto;padding:0 var(--space-xs);font-size:var(--t-sm);font-weight:600}
 .training-rij.ongelezen{border-left:none;box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--uit) 45%, transparent)}
 .training-rij.ongelezen .ico{background:var(--uit);color:var(--wit)}
 

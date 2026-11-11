@@ -244,7 +244,14 @@ service cloud.firestore {
     /* trainingen schrijven: hoofd jeugdopleiding / clubadmin, of de coach van een training voor precies één team.
        Een training voor meerdere teams wijzigt alleen het hoofd jeugdopleiding of de clubadmin. */
     function isTrainingCoach(d) { return echt() && d.get('teams', []).size() == 1 && isVolCoach(d.get('teams', [])[0]); }
-    function magTrainingSchrijven(d) { return d.get('club', null) != null && (isJeugdPlanner(d.get('club', null)) || isTrainingCoach(d)); }
+    /* [20261111d] de bouwcoördinator wijst het seizoensplan van zijn bouw toe: hij mag trainingen voor precies
+       één team uit zijn eigen bouw schrijven (zelfde club) */
+    function isTrainingCoordinator(d) {
+      return echt() && d.get('teams', []).size() == 1 && teamBestaat(d.get('teams', [])[0])
+        && teamClub(d.get('teams', [])[0]) == d.get('club', null)
+        && isCoordinatorVanBouw(d.get('club', null), team(d.get('teams', [])[0]).get('bouw', '_'));
+    }
+    function magTrainingSchrijven(d) { return d.get('club', null) != null && (isJeugdPlanner(d.get('club', null)) || isTrainingCoach(d) || isTrainingCoordinator(d)); }
     function trainingSchrijver(id) { return echt() && magTrainingSchrijven(get(/databases/$(database)/documents/trainingen/$(id)).data); }
 
     match /trainingen/{id} {

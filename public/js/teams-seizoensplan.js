@@ -18,19 +18,19 @@
    Beide vallen onder de bestaande /teams/{teamId}/{sub=**}-rule. Geen spelersnamen of -scores.
 
    Tabblad: 'seizoensplan'. Importeert NIET uit teams.js; teams.js geeft zetTeamTab mee. */
-import { db, doc, collection, getDoc, getDocs, setDoc, addDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261110a';
-import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261110a';
-import { aiAan, aiDoel } from './clubconfig.js?v=20261111a';
-import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261111b';
-import { trainingenVanPlan } from './seizoensplan-club.js?v=20261111b';
-import { onderdeelAan } from './onderdelen.js?v=20261111a';
+import { db, doc, collection, getDoc, getDocs, setDoc, addDoc, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
+import { S, esc, meld } from './state.js?v=20261111d';
+import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261111d';
+import { aiAan, aiDoel } from './clubconfig.js?v=20261111d';
+import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261111d';
+import { trainingenVanPlan, planVoorTeam } from './seizoensplan-club.js?v=20261111d';
+import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261111d';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019f';
-import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261111b';
+import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261111d';
 import {
   MODELLEN, ACCENTEN, maakSeizoensplan, weekKalender, herreken, standaardVrij, maandagVan, beschikbareThemas, themaVolgorde,
   valideerBlokken, positieOp, positieWeek, teamSignalen, stelBijsturingVoor, pasVoorstelToe,
-} from './seizoensplan-logica.js?v=20261111b';
+} from './seizoensplan-logica.js?v=20261111d';
 
 const VORMEN = BIBLIOTHEEK.vormen;
 const KLEUREN = ['var(--accent)', '#4a8fe0', '#e0a526', '#3fb27f', '#a855f7', '#f08a24', '#14b8a6', '#ec4899'];
@@ -39,6 +39,7 @@ const dk = iso => iso ? new Date(iso + 'T12:00:00').toLocaleDateString('nl-NL', 
 const seizoenSleutel = () => String(S.huidigSeizoen || SEIZOEN_FALLBACK).replace(/[^0-9a-z]+/gi, '-').replace(/^-|-$/g, '');
 const planRef = () => doc(db, 'teams', S.teamId, 'seizoensplan', seizoenSleutel());
 
+function plusDagenIso(iso, n){ const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 function bouwKey(){ const b = S.team?.bouw; return ['onder', 'midden', 'boven'].includes(b) ? b : bouwVanCategorie(S.team?.categorie); }
 function seizoenStartJaar(){ const m = String(S.huidigSeizoen || SEIZOEN_FALLBACK).match(/(\d{4})/); return m ? Number(m[1]) : new Date().getFullYear(); }
 function aanwezigeSpelers(){ const n = (S.spelers || []).filter(p => p && !p.gast && !p._ingeleend).length; return Math.max(6, Math.min(24, n || 12)); }
@@ -50,11 +51,15 @@ function standaardForm(){
 }
 function staat(){
   if (!S._sp || S._sp.teamId !== S.teamId){
-    S._sp = { teamId: S.teamId, tab: 'opzet', plan: null, geladen: false, form: standaardForm(), log: [], aiBezig: false, besluit: {} };
+    S._sp = { teamId: S.teamId, tab: 'opzet', plan: null, eigen: null, clubPlan: null, geladen: false, form: standaardForm(), log: [], aiBezig: false, besluit: {} };
   }
   return S._sp;
 }
 const planVan = () => staat().plan;
+/* [20261111d] Eén plan per team. Heeft de club een plan aan dit team toegewezen, dan is dat hét plan
+   (alleen lezen). Bij Club stuurt kan de coach zonder uitzondering ook geen eigen plan maken. */
+function vanClub(){ return !!staat().clubPlan; }
+function alleenLezen(){ return vanClub() || !werkwijzeToestaat('seizoensplan', S.team); }
 
 /* Document → plan in het geheugen (kalender afgeleid uit de parameters). */
 function uitDoc(d){
@@ -69,15 +74,32 @@ function naarDoc(plan){
 }
 function deelS(){ S._spPlan = planVan() ? { teamId: S.teamId, plan: planVan() } : null; }
 
-export async function laadSeizoensplan(){
-  const s = staat(); if (s.geladen) return;
+export function laadSeizoensplan(){
+  const s = staat(); if (s.geladen) return s.belofte || Promise.resolve();
   s.geladen = true;
+  s.belofte = laadNu(s);
+  return s.belofte;
+}
+async function laadNu(s){
   try {
     const snap = await getDoc(planRef());
-    if (snap.exists()){ s.plan = uitDoc(snap.data()); s.form = { ...s.form, ...snap.data().params, model: snap.data().model }; s.tab = s.tab === 'opzet' ? 'jaarlijn' : s.tab; deelS(); }
+    if (snap.exists() && snap.data().params){ s.eigen = uitDoc(snap.data()); s.plan = s.eigen; s.form = { ...s.form, ...snap.data().params, model: snap.data().model }; s.tab = s.tab === 'opzet' ? 'jaarlijn' : s.tab; deelS(); }
+    if (S.team?.club){
+      try {
+        const cq = await getDocs(query(collection(db, 'clubs', S.team.club, 'seizoensplannen'), where(`toegewezen.${S.teamId}`, '==', true)));
+        const nieuwste = cq.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.bijgewerktMs || 0) - (a.bijgewerktMs || 0))[0];
+        if (nieuwste?.params){
+          const team = { id: S.teamId, categorie: S.team?.categorie, bouw: S.team?.bouw, trainingsdagen: S.team?.trainingsdagen };
+          s.clubPlan = { ...planVoorTeam(nieuwste, team, beschikbareThemas(VORMEN)), teamId: S.teamId, naam: nieuwste.naam || 'Seizoensplan', planId: nieuwste.id, bron: 'club' };
+          s.plan = s.clubPlan; s.tab = 'jaarlijn'; deelS();
+        }
+      } catch (e){ console.warn('[seizoensplan] clubplan laden mislukt', e.code || e); }
+    }
+    if (!s.plan && alleenLezen()) s.tab = 'jaarlijn';
     const lg = await getDocs(collection(db, 'teams', S.teamId, 'seizoensplan', seizoenSleutel(), 'voorstellen')).catch(() => ({ docs: [] }));
     s.log = lg.docs.map(d => ({ id: d.id, ...d.data() }));
   } catch (e){ console.warn('[seizoensplan] laden mislukt', e); }
+  s.klaar = true;
   teken();
 }
 export { laadSeizoensplan as laadSeizoensplanVoorTeam };
@@ -91,7 +113,9 @@ export function htmlSeizoensplan(){
 }
 function htmlInhoud(){
   const s = staat();
-  const tabs = [['opzet', '1 Opzet'], ['jaarlijn', '2 Jaarlijn'], ['bijsturing', '3 Bijsturing']];
+  const lezen = alleenLezen();
+  if (lezen && s.tab === 'opzet') s.tab = 'jaarlijn';
+  const tabs = lezen ? [['jaarlijn', 'Jaarlijn'], ['bijsturing', 'Signalen']] : [['opzet', '1 Opzet'], ['jaarlijn', '2 Jaarlijn'], ['bijsturing', '3 Bijsturing']];
   return `<div class="tm-tabs">${tabs.map(([k, t]) => `<button class="${s.tab === k ? 'aan' : ''}" data-sp-tab="${k}">${t}</button>`).join('')}</div>
     ${s.tab === 'opzet' ? htmlOpzet() : s.tab === 'jaarlijn' ? htmlJaarlijn() : htmlBijsturing()}`;
 }
@@ -128,7 +152,7 @@ function weekHtml(plan, weekNr, blok, alle){
   const w = plan.kal.filter(x => !x.vrij)[weekNr - 1];
   /* zelfde trainingen als op Trainingen komen (trainingenVanPlan), dus geen eigen rotatie of seed hier */
   const trainingen = alle.filter(x => x.w.nr === weekNr).map(x => `<div class="tm-sub">Training ${x.t}</div><ul class="tm-ul">${x.p.onderdelen.map(o => `<li>${o.minuten}′ ${esc(o.vorm.naam)}</li>`).join('')}</ul>
-      <button class="knop klein licht" data-sp-open="${weekNr}:${x.t}">Open in Training maken</button>`);
+      ${onderdeelAan('trainingsmodule') ? `<button class="knop klein licht" data-sp-open="${weekNr}:${x.t}">Open in Training maken</button>` : ''}`);
   return `<div class="tm-week"><div class="tm-wk-kop"><b>Week ${weekNr}</b><span class="tm-info">${dk(w?.iso)} · ${esc(pos.fase)}</span></div>${trainingen.join('')}<div class="tm-info" style="margin-top:6px">${esc(FASE_UITLEG[pos.fase] || '')}</div></div>`;
 }
 
@@ -140,13 +164,15 @@ function huidigeWeekNr(plan){
 
 function htmlJaarlijn(){
   const s = staat(), plan = s.plan;
+  if (!plan && alleenLezen()) return `<div class="kaart"><div class="tm-info">Er is nog geen seizoensplan voor dit team. De club maakt het plan; zodra je coördinator het toewijst, staat het hier en komen de trainingen per week op Trainingen.</div></div>`;
   if (!plan) return `<div class="kaart"><div class="tm-info">Er is nog geen seizoensplan. Maak er eerst een onder “1 Opzet”.</div><button class="knop klein licht" data-sp-tab="opzet" style="margin-top:8px">Naar opzet</button></div>`;
   const nu = huidigeWeekNr(plan), vanaf = nu, tot = Math.min(plan.trainingsweken, nu + 3);
-  const alle = onderdeelAan('trainingsmodule') ? trainingenVanPlan({ plan, team: { id: S.teamId, categorie: S.team?.categorie }, vormen: VORMEN, planId: `team_${S.teamId}_${seizoenSleutel()}`, aantalSpelers: aanwezigeSpelers() }) : [];
-  let h = `<div class="kaart"><div class="tm-kop2">Seizoensplan ${esc(catLabel(S.team?.categorie))}</div>
+  const alle = trainingenVanPlan({ plan, team: { id: S.teamId, categorie: S.team?.categorie }, vormen: VORMEN, planId: vanClub() ? plan.planId : `team_${S.teamId}_${seizoenSleutel()}`, aantalSpelers: aanwezigeSpelers() });
+  const eigenaar = vanClub() ? `<span class="tm-badge">Van de club · ${esc(plan.naam || 'seizoensplan')}</span> <span class="tm-info">alleen lezen</span>` : `<span class="tm-badge">Jouw plan</span>`;
+  let h = `<div class="kaart"><div class="tm-kop2">Seizoensplan ${esc(catLabel(S.team?.categorie))}</div><div style="margin:4px 0 6px">${eigenaar}</div>
     <div class="tm-info">${esc(MODELLEN[plan.model]?.naam || '')} · ${plan.trainingsweken} trainingsweken · ${plan.blokken.length} blokken · ${plan.params.tpw}× per week${plan.params.accent?.length ? ' · accent ' + esc(plan.params.accent.join(', ')) : ''}</div>
     <div class="tm-band">${plan.blokken.map((b, i) => `<i style="flex:${b.weken};background:${KLEUREN[i % KLEUREN.length]}" title="${esc(b.thema)}"></i>`).join('')}</div>
-    <div class="tm-info">Nu: week ${nu}. De komende vier weken zijn uitgewerkt; elke week komt de volgende erbij.</div></div>`;
+    <div class="tm-info">Nu: week ${nu}. Elke training komt op Trainingen op de maandag van de week ervoor; hier zie je de komende vier weken.</div></div>`;
   plan.blokken.forEach((b, i) => {
     h += `<div class="tm-blok" style="--c:${KLEUREN[i % KLEUREN.length]}"><h3>${esc(b.thema)} <span class="tm-badge">${esc(b.domein || '')}</span> <span class="tm-badge">${b.weken} wk · ${dk(b.van)} – ${dk(b.tot)}</span>${b.soort === 'herhaling' ? ' <span class="tm-badge">herhaling</span>' : ''}</h3>
       <div class="tm-info">${esc(b.fasen.join(' → '))}</div><div class="tm-waarom"><b>Waarom:</b> ${esc(b.waarom || '')}</div>`;
@@ -175,10 +201,10 @@ function voorstellen(){
 function htmlBijsturing(){
   const s = staat(), plan = s.plan;
   if (!plan) return `<div class="kaart"><div class="tm-info">Maak eerst een seizoensplan.</div></div>`;
-  if (plan.params.bijsturen === 'uit') return `<div class="kaart"><div class="tm-info">Bijsturen staat uit. De jaarlijn blijft zoals gepland. Je kunt dit aanzetten onder “1 Opzet”.</div></div>`;
+  if (plan.params.bijsturen === 'uit' && !vanClub()) return `<div class="kaart"><div class="tm-info">Bijsturen staat uit. De jaarlijn blijft zoals gepland. Je kunt dit aanzetten onder “1 Opzet”.</div></div>`;
   const r = voorstellen(), pos = positieWeek(plan, r.weekNr);
   let h = `<div class="kaart"><div class="tm-info">Nu in blok ${pos.blok.nr}: <b>${esc(pos.blok.thema)}</b>, week ${pos.weekInBlok}. Gebaseerd op ${r.signalen.metingen} wedstrijdevaluatie${r.signalen.metingen === 1 ? '' : 's'} van dit seizoen.</div></div>`;
-  if (r.opm) h += `<div class="tm-melding">${esc(r.opm)} Er verandert niets aan je jaarlijn.</div>`;
+  if (r.opm) h += `<div class="tm-melding">${esc(r.opm)} Er verandert niets aan ${vanClub() ? 'de' : 'je'} jaarlijn.</div>`;
   r.voorstellen.forEach(v => {
     const b = s.besluit[v.id];
     h += `<div class="kaart tm-voorstel"><div class="tm-sub" style="margin-top:0">Wijzigingsvoorstel</div><h3 class="tm-kop2">${esc(v.titel)}</h3>
@@ -187,7 +213,7 @@ function htmlBijsturing(){
       <div class="tm-feit"><span>${v.feiten.bron === 'categorie' ? 'Gemiddelde score laatste ' + v.feiten.metingen + ' wedstrijden' : 'Thema niet teruggekomen'}</span><b>${v.feiten.bron === 'categorie' ? String(v.feiten.gemiddelde).replace('.', ',') + ' / ' + v.feiten.schaal : v.feiten.nee + ' van ' + v.feiten.metingen}</b></div>
       ${v.feiten.bron === 'categorie' ? `<div class="tm-feit"><span>Wedstrijden met een lage score</span><b>${v.feiten.laag} van ${v.feiten.metingen}</b></div>` : ''}
       <div class="tm-info" style="margin-top:6px">Gevolg: ${esc(v.gevolg)}</div>
-      <div class="tm-rij" style="margin-top:10px">${b ? `<span class="tm-info">${b === 'ja' ? '✓ Toegepast' : 'Genegeerd — blijft gelogd'}</span>`
+      <div class="tm-rij" style="margin-top:10px">${alleenLezen() ? `<span class="tm-info">De club beslist over het plan. Bespreek dit signaal met je coördinator.</span>` : b ? `<span class="tm-info">${b === 'ja' ? '✓ Toegepast' : 'Genegeerd — blijft gelogd'}</span>`
         : `${v.toepasbaar ? `<button class="knop klein fluo" data-sp-besluit="ja" data-id="${esc(v.id)}">Toepassen</button>` : ''}<button class="knop klein licht" data-sp-besluit="nee" data-id="${esc(v.id)}">Negeren</button>${aiAan() ? `<button class="knop klein licht" data-sp-uitleg="${esc(v.id)}">Verduidelijk (AI)</button>` : ''}`}</div></div>`;
   });
   if (r.uitgesteld.length) h += `<div class="tm-info" style="margin:0 0 10px">Ook laag: ${r.uitgesteld.map(esc).join(', ')}. Dat bekijken we volgende week; er verandert maximaal één ding per week.</div>`;
@@ -214,6 +240,7 @@ function maakVanForm(blokkenUitAI){
 }
 async function bewaarPlan(plan){
   const s = staat();
+  if (alleenLezen()){ meld('Dit team volgt het seizoensplan van de club'); return false; }
   try {
     const d = naarDoc(plan);
     await setDoc(planRef(), { ...d, ...(s.plan ? {} : { gemaaktMs: Date.now() }) }, { merge: true });
@@ -221,10 +248,10 @@ async function bewaarPlan(plan){
   } catch (e){ meld('Opslaan mislukt: ' + (e.code || e.message)); return false; }
   /* de seizoenstrainingen naar het tabblad Trainingen; een mislukking hier houdt het plan wel bewaard */
   try {
-    const r = await zetSeizoenTrainingen({ plan, team: { id: S.teamId, categorie: S.team?.categorie }, clubId: S.team?.club || S.clubId,
+    const r = await zetSeizoenTrainingen({ plan, team: { id: S.teamId, categorie: S.team?.categorie, club: S.team?.club || null, trainingsdagen: S.team?.trainingsdagen },
       planId: `team_${S.teamId}_${seizoenSleutel()}`, planVersie: 1, vormen: VORMEN, aantalSpelers: aanwezigeSpelers() });
     if (r.meldingen?.length) console.warn('[seizoensplan] trainingen:', r.meldingen.slice(0, 5));
-  } catch (e){ meld('Plan bewaard, maar de trainingen zijn niet op Trainingen gezet: ' + (e.code || e.message)); return false; }
+  } catch (e){ meld('Plan bewaard, maar de trainingen staan nog niet op Trainingen: ' + (e.code || e.message)); return false; }
   return true;
 }
 async function maakConcept(metAI){
@@ -298,7 +325,12 @@ export function koppelSeizoensplan(v, { zetTeamTab }){
     else if (d.spUitleg) verduidelijk(d.spUitleg);
     else if (d.spOpen){
       const [wk, t] = d.spOpen.split(':').map(Number), pos = positieWeek(s.plan, wk);
-      S._tmVoorinvul = { week: wk, thema: pos.blok.thema, themaHand: true, duur: s.plan.params.duur, niv: s.plan.params.niveau, seed: t, n: aanwezigeSpelers() };
+      /* [20261111c] de datum van die seizoensweek meegeven (training t op de t-de trainingsdag), zodat
+         Training maken, de leerlijn en "Bewaar" dezelfde week gebruiken */
+      const ma = s.plan.kal.filter(x => !x.vrij)[wk - 1]?.iso;
+      const dagen = (Array.isArray(S.team?.trainingsdagen) ? S.team.trainingsdagen.map(Number) : []).sort((a, b) => a - b);
+      const datum = ma ? plusDagenIso(ma, (dagen.length ? dagen[(t - 1) % dagen.length] : 1) - 1) : undefined;
+      S._tmVoorinvul = { thema: pos.blok.thema, themaHand: true, duur: s.plan.params.duur, niv: s.plan.params.niveau, seed: t, n: aanwezigeSpelers(), ...(datum ? { datum } : {}) };
       zetTeamTab('trainingsmodule');
     }
   });

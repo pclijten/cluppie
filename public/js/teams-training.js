@@ -8,18 +8,19 @@ import {
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, speler, initialen, openModal, sluitModal, toon, isBeheerder
-} from './state.js?v=20261110a';
-import { telGebruik } from './tracker.js?v=20261110a';
-import { voorbeeldTeamcode } from './clubconfig.js?v=20261111a';
+} from './state.js?v=20261111d';
+import { telGebruik } from './tracker.js?v=20261111d';
+import { voorbeeldTeamcode } from './clubconfig.js?v=20261111d';
 import { ico } from './icons.js?v=20261110a';
 
 import {
   CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, youtubeId, youtubeThumb, youtubeWatch,
   SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo, isoWeek,
   catLabel,
-} from './config.js?v=20261110a';
-import { htmlKompas } from './teams-leerlijn.js?v=20261111a';
-import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261111b';
+} from './config.js?v=20261111d';
+import { onderdeelAan } from './onderdelen.js?v=20261111d';
+import { htmlKompas } from './teams-leerlijn.js?v=20261111d';
+import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261111d';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
 import {
   MAX_WEKEN, weekdagVan, plusDagen, eersteOpDag, regelDatums, actieveRegels, vastOp, vastePrefill, redenVanRegel
@@ -353,7 +354,10 @@ export function htmlPresentieTraining(){
     ${presentieLijst}`;
 }
 
-/* ---------- Tab: Oefenstof ----------
+/* ---------- Tab: Trainingen (heette Oefenstof) ----------
+   [20261111d] Volgorde: deze week en wat komt bovenaan (oplopend), eerdere weken samen onder
+   "Eerder" (ingeklapt). Seizoenstrainingen worden pas zichtbaar op de maandag van de week ervoor
+   (zie laadTrainingenVoorTeams in teams.js), dus "wat komt" is meestal alleen volgende week.
    Het kompas + de gedeelde oefenstof-PDF's. De presentie-sectie die hier
    vroeger tussen stond woont nu op zijn eigen tabblad (htmlPresentieTraining
    hierboven, tegel Presentie → Training op de hub). */
@@ -374,7 +378,11 @@ export function htmlTeamTrainingen(){
   const huidigeWeek = isoWeek();
 
   // één trainingsrij; `dagChip` wordt per week meegegeven (kan leeg zijn).
-  const pdfRijHtml = (t, dagChip) => {
+  const vandaagStr = (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; })();
+  const magAanpassen = onderdeelAan('trainingsmodule');
+  const pdfRijHtml = (t, dagChip, datumIso) => {
+    const aanpas = magAanpassen && (t.teams || []).length === 1 && Array.isArray(t.oefeningen) && t.oefeningen.length && datumIso && datumIso >= vandaagStr
+      ? `<button class="knop klein licht" data-tr-aanpassen="${esc(t.id)}" data-datum="${esc(datumIso)}" title="Pas aan in Training maken">Aanpassen</button>` : '';
     const ongelezen = !S.trainingenGelezen[t.id];
     const heeftAi = Array.isArray(t.oefeningen) && t.oefeningen.length;
     const chip = dagChip
@@ -384,16 +392,18 @@ export function htmlTeamTrainingen(){
       <div class="training-rij ${ongelezen?'ongelezen':''}" data-open-training="${t.id}" data-url="${esc(t.url)}" style="cursor:pointer">
         <div class="ico${heeftAi?' ai':''}">${heeftAi?`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="4.6" width="17.6" height="14.8" rx="2.4"/><path d="M12 4.6v14.8"/><circle cx="12" cy="12" r="2.8"/></svg>`:'PDF'}</div>
         <div class="t"><div class="t-titel">${esc(t.titel || t.bestandsnaam)}</div>
-          <div class="t-meta">${chip}${t.clubNaam?'<span class="sep" aria-hidden="true"></span>'+esc(t.clubNaam):''}</div></div>
+          <div class="t-meta">${chip}${t.fase&&t.bron==='seizoensplan'?'<span class="sep" aria-hidden="true"></span>'+esc(t.fase):''}${t.aangepast?'<span class="sep" aria-hidden="true"></span>aangepast':''}${t.clubNaam?'<span class="sep" aria-hidden="true"></span>'+esc(t.clubNaam):''}</div></div>
         <div class="acties">
-          <button title="Openen">↗</button>
+          ${aanpas || '<button title="Openen">↗</button>'}
         </div>
       </div>`;
   };
 
   let pdfLijst;
   if (!pdfs.length){
-    pdfLijst = `<div class="kaart leeg">Nog geen oefenstof gedeeld.<br>Elke zondag zet je clubadmin hier de oefenstof voor de komende week klaar.</div>`;
+    pdfLijst = S.team?.club
+      ? `<div class="kaart leeg">Nog geen trainingen voor deze week.<br>${onderdeelAan('trainingsmodule') ? 'Maak er een met Training maken, of maak een seizoensplan onder Seizoen.' : 'De club zet hier de trainingen per week klaar.'}</div>`
+      : `<div class="kaart leeg">Nog geen trainingen.<br>Maak er een met Training maken, of maak een seizoensplan onder Seizoen: dan staan de trainingen hier per week.</div>`;
   } else {
     // groepeer per weeknummer; binnen een week oud → nieuw (training 1 eerst),
     // zodat de eerste PDF op de eerste trainingsdag valt.
@@ -412,26 +422,31 @@ export function htmlTeamTrainingen(){
     for (const g of perWeek.values()){
       g.items.sort((a,b) =>
         ((a.plan?.id && a.plan.id === b.plan?.id) ? (a.trainingNr||0) - (b.trainingNr||0) : 0)
+        // [20261111c] seizoenstrainingen worden in één batch geschreven (zelfde tijdstempel): op nummer
+        || ((a.seizoensplanId && a.seizoensplanId === b.seizoensplanId) ? (a.trainingNr || Number(String(a.id).split('_').pop()) || 0) - (b.trainingNr || Number(String(b.id).split('_').pop()) || 0) : 0)
         || (a.gemaakt?.seconds||0) - (b.gemaakt?.seconds||0));
     }
 
-    // sorteer de weken: bekende weken nieuw → oud, 'onbekend' altijd onderaan.
-    const keys = [...perWeek.keys()].sort((a,b) => {
-      if (a === 'onbekend') return 1;
-      if (b === 'onbekend') return -1;
-      return b.localeCompare(a);
-    });
+    // sorteer de weken: deze week en later oplopend bovenaan, eerdere weken nieuw → oud onder "Eerder"
+    const nuJaar = (() => { const k = new Date(); k.setDate(k.getDate() + 3 - ((k.getDay() + 6) % 7)); return k.getFullYear(); })();
+    const nuKey = `${nuJaar}-${String(huidigeWeek).padStart(2,'0')}`;
+    const alle = [...perWeek.keys()].filter(k => k !== 'onbekend');
+    const komend = alle.filter(k => k >= nuKey).sort();
+    const eerder = alle.filter(k => k < nuKey).sort((a,b) => b.localeCompare(a));
+    if (perWeek.has('onbekend')) eerder.push('onbekend');
+    const keys = [...komend, ...eerder];
 
-    // welke week staat standaard open? de huidige week als die er is, anders de nieuwste.
+    // welke weken staan standaard open? deze week en de week erna; zonder komende weken de nieuwste eerdere.
     const huidigeKey = keys.find(k => perWeek.get(k).weekNr === huidigeWeek);
-    const standaardOpenKey = huidigeKey || keys.find(k => k !== 'onbekend') || keys[0];
+    const standaardOpenKey = huidigeKey || komend[0] || eerder[0] || keys[0];
+    const ookOpen = new Set(komend.slice(0, 2));
     const TOON_PDF = 5;
 
-    pdfLijst = keys.map(key => {
+    const weekHtml = key => {
       const g = perWeek.get(key);
       const items = g.items;
       const isHuidig = g.weekNr === huidigeWeek;
-      const standaardOpen = (key === standaardOpenKey);
+      const standaardOpen = (key === standaardOpenKey) || ookOpen.has(key);
       const open = standaardOpen ? !S._pdfDicht.has(key) : S._pdfDicht.has('open:'+key);
       const toonAlles = S._pdfToonAlles.has(key);
       const ongelezenInWeek = items.filter(t => !S.trainingenGelezen[t.id]).length;
@@ -455,14 +470,14 @@ export function htmlTeamTrainingen(){
       // wint; anders bepaalt de index binnen de week welke trainingsdag van het
       // team erbij hoort (training 1 → eerste dag, enz.).
       const rijen = zichtbaar.map((t, i) => {
-        let chip = '';
+        let chip = '', iso = '';
         if (g.weekNr){
           const d = t.trainingsdag
             ? datumVoorTraining(g.weekNr, g.jaar, [t.trainingsdag], 0)
             : datumVoorTraining(g.weekNr, g.jaar, trainingsdagen, i);
-          if (d) chip = dagChipTekst(d);
+          if (d){ chip = dagChipTekst(d); iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
         }
-        return pdfRijHtml(t, chip);
+        return pdfRijHtml(t, chip, iso);
       }).join('');
 
       return `
@@ -479,17 +494,22 @@ export function htmlTeamTrainingen(){
               ${(!toonAlles && meer > 0) ? `<button class="toon-meer" data-pdftoonmeer="${key}">Toon ${meer} eerdere uit deze week</button>` : ''}
             </div>` : ''}
         </div>`;
-    }).join('');
+    };
+    const eerderOpen = !!S._trEerderOpen;
+    const nEerder = eerder.reduce((a, k) => a + perWeek.get(k).items.length, 0);
+    pdfLijst = komend.map(weekHtml).join('')
+      + (eerder.length ? `<button class="maand-kop week-kop" data-tr-eerder="1"><span class="maand-naam">Eerder</span><span class="week-periode">${eerder.length} ${eerder.length === 1 ? 'week' : 'weken'} · ${nEerder} training${nEerder === 1 ? '' : 'en'}</span><span class="maand-pijl ${eerderOpen?'open':''}">▾</span></button>` : '')
+      + ((eerderOpen || !komend.length) ? eerder.map(weekHtml).join('') : '');
   }
 
   const pdfSectie = `
-    <div class="sectie-kop">${ico('admin-document',15)} Gedeelde oefenstof</div>
+    <div class="sectie-kop">${ico('admin-document',15)} Trainingen</div>
     ${pdfLijst}`;
 
   // [20261021a] trainingen die al zijn aangemaakt maar pas later zichtbaar worden
   const later = Object.values(S._trainingenLater || {}).filter(x => (x.teams || []).includes(S.teamId)).map(x => x.vanaf).sort();
   const laterHtml = later.length
-    ? `<div class="bp-zv-badge" style="margin:0 0 12px;display:block">${later.length} training${later.length === 1 ? '' : 'en'} staan klaar en worden zichtbaar vanaf ${esc(new Date(later[0] + 'T12:00').toLocaleDateString('nl-NL', { weekday:'long', day:'numeric', month:'long' }))}.</div>`
+    ? `<div class="bp-zv-badge" style="margin:0 0 12px;display:block">De volgende trainingen verschijnen vanaf ${esc(new Date(later[0] + 'T12:00').toLocaleDateString('nl-NL', { weekday:'long', day:'numeric', month:'long' }))}.${onderdeelAan('seizoensplan') ? ' Het hele seizoen staat onder Seizoen.' : ''}</div>`
     : '';
   return htmlKompas() + afgelastSectie + laterHtml + pdfSectie;
 }

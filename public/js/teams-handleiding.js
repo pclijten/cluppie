@@ -4,9 +4,9 @@
    wat hierboven al in dit bestand staat. De zoekfunctionaliteit
    (#helpZoek) wordt door de hub (teams.js/koppelTeamTab) aangesloten,
    want die werkt direct op het gerenderde DOM-element. */
-import { esc } from './state.js?v=20261110a';
-import { beleidsplanNaam } from './clubconfig.js?v=20261111a';
-import { onboardingHerstartBlok } from './onboarding.js?v=20261111b';
+import { esc } from './state.js?v=20261111d';
+import { beleidsplanNaam } from './clubconfig.js?v=20261111d';
+import { onboardingHerstartBlok } from './onboarding.js?v=20261111d';
 
 export function htmlHandleiding(){
   return `<div class="hl">
@@ -68,31 +68,31 @@ export function htmlHandleiding(){
     <h4 class="hl-hoofdstuk" id="hlh-plannen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="12" cy="14.5" r="1.4" fill="currentColor" stroke="none"/></svg> Trainen &amp; plannen</h4>
     <section class="hl-sec" data-zoek="trainingen & video's onder het tabblad training vind je de oefenstof voor je team, gedeeld als pdf. onder video staan youtube-links met oefeningen of beelden. elke zondag worden hier de trainingen voor de komende week en eventuele video's klaargezet, kijk er dus aan het begin van de week even in. een rood stipje op het tabblad laat zien dat er iets nieuws is.">
     <h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6.6 3.4h7L18.6 8.4v12.2h-12z"/><path d="M13.6 3.4V8.4h5"/></svg> Trainingen & <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="13" height="12" rx="2.2"/><path d="M16 10l5-3v10l-5-3z"/></svg> video's</h3>
-    <p>Onder het tabblad <b>Training</b> vind je de oefenstof voor je team, gedeeld als PDF. Onder <b>Video</b> staan YouTube-links met oefeningen of beelden.</p>
-    <div class="tip"><b>Elke zondag</b> worden hier de trainingen voor de komende week en eventuele video's klaargezet, kijk er dus aan het begin van de week even in. Een <b>rood stipje</b> op het tabblad laat zien dat er iets nieuws is.</div>
+    <p>Onder de tegel <b>Trainingen</b> staan de trainingen van je team: deze week en volgende week bovenaan, eerdere weken samen onder <b>Eerder</b>. Onder <b>Video's</b> staan YouTube-links met oefeningen of beelden.</p>
+    <div class="tip">Trainingen uit een seizoensplan verschijnen op de <b>maandag van de week ervoor</b>. Het hele seizoen zie je onder <b>Seizoen</b>. Een <b>rood stipje</b> op de tegel laat zien dat er iets nieuws is.</div>
     </section>
 
-    <section class="hl-sec" data-zoek="📝 training maken onder oefenstof staat de tegel training maken. vul in hoeveel spelers er zijn, hoe lang de training duurt (60, 75 of 90 minuten), het niveau van je team, de week in het seizoen en het thema, en tik op maak training. cluppie stelt een complete training samen uit een eigen bibliotheek van 48 vormen voor o8 t/m o13: warming-up, kernvormen, partijspel en afsluiting. elke vorm heeft een tekening, regels, coachpunten en een makkelijkere en moeilijkere variant. de app controleert zelf of de training klopt: de duur, of de oefeningen voetbalecht zijn, of ze bij het thema passen, of er geen wachtrijen zijn, of er genoeg ruimte per speler is en of de belasting goed verdeeld is. met druk, moeilijkheid en coachstijl stem je de training af op je team. met wissel vorm vervang je één onderdeel. tik op bewaar bij team om de training te bewaren, of deel hem via whatsapp; er worden geen spelersnamen in opgeslagen. training maken werkt zonder ai. heeft je club ai aangezet, dan wordt de uitleg per onderdeel persoonlijker gemaakt, zonder spelernamen. veldmaten en ruimte per speler zijn richtwaarden, geen knvb-normen.">
+    <section class="hl-sec" data-zoek="📝 training maken onder trainingen staat de tegel training maken. aanpassen geplande training vervangen seizoensplan spelers presentie weer koud regen warm veld materiaal duur 45 60 75 niveau thema maak training wissel vorm bewaar extra training whatsapp">
     <h3>📝 Training maken</h3>
-    <p>Onder <b>Oefenstof</b> staat de tegel <b>Training maken</b>. Vul in hoeveel spelers er zijn, hoe lang de training duurt (60, 75 of 90 minuten), het niveau van je team, de week in het seizoen en het thema, en tik op <b>Maak training</b>.</p>
+    <p>Onder <b>Trainingen</b> staat de tegel <b>Training maken</b>. Heeft je team een seizoensplan, dan opent hij op de eerstvolgende geplande training, met het thema en de fase van die week. Op Trainingen kun je ook bij een training op <b>Aanpassen</b> tikken.</p>
     <ul>
-      <li>Cluppie stelt een complete training samen uit een eigen bibliotheek van 48 vormen voor O8 t/m O13: warming-up, kernvormen, partijspel en afsluiting. Elke vorm heeft een tekening, regels, coachpunten en een makkelijkere en moeilijkere variant.</li>
-      <li>De app controleert zelf of de training klopt: de duur, of de oefeningen voetbalecht zijn, of ze bij het thema passen, of er geen wachtrijen zijn, of er genoeg ruimte per speler is en of de belasting goed verdeeld is.</li>
-      <li>Met <b>Druk</b>, <b>Moeilijkheid</b> en <b>Coachstijl</b> stem je de training af op je team. Met <b>Wissel vorm</b> vervang je één onderdeel.</li>
-      <li>Tik op <b>Bewaar bij team</b> om de training te bewaren, of deel hem via WhatsApp. Er worden geen spelersnamen in opgeslagen.</li>
+      <li>Het aantal spelers komt uit de presentie. Duur (45, 60 of 75 minuten), weer, veld en materiaal stel je zelf in; de training past zich meteen aan.</li>
+      <li>Een training heeft maximaal vier vormen: warming-up, twee kernvormen en een partijspel. Elke vorm heeft een tekening, regels, coachpunten en een makkelijkere en moeilijkere variant. Met <b>Wissel vorm</b> vervang je één onderdeel.</li>
+      <li><b>Bewaar</b> vervangt de geplande training op Trainingen; er komt er geen tweede naast. Wil je juist een extra training, tik dan op <b>Maak er een extra training van</b>.</li>
+      <li>Een aangepaste training blijft staan, ook als het seizoensplan later verandert.</li>
     </ul>
-    <div class="tip">Training maken werkt <b>zonder AI</b>. Heeft je club AI aangezet, dan wordt de uitleg per onderdeel persoonlijker gemaakt, zonder spelernamen. Veldmaten en ruimte per speler zijn richtwaarden, geen KNVB-normen: laat het weten als iets in de praktijk anders werkt.</div>
+    <div class="tip">Training maken werkt <b>zonder AI</b> en bewaart geen spelersnamen. Veldmaten en ruimte per speler zijn richtwaarden, geen KNVB-normen: laat het weten als iets in de praktijk anders werkt.</div>
     </section>
 
-    <section class="hl-sec" data-zoek="📆 seizoen: jaarlijn en bijsturing onder oefenstof staat ook de tegel seizoen. die werkt in drie stappen: 1 opzet: kies een opbouwmodel (leercurve-thema's, vier momenten van het spel of opbouw · centrum · flank · verdedigen) en vul start- en einddatum, vrije weken, trainingen per week, duur en eventueel een accent (maximaal twee) in. 2 jaarlijn: cluppie maakt een concept-jaarlijn in blokken van 4 tot 6 weken, met bij elk blok uitleg waarom. de eerste weken zijn uitgewerkt met trainingen; elke week komt er een week bij. 3 bijsturing: op basis van je teamevaluaties doet de app voorstellen, bijvoorbeeld een blok een week verlengen of een herhaalblok invoegen. dat gebeurt pas na minstens 3 wedstrijdevaluaties en maximaal één keer per week. jij kiest toepassen of negeren; er verandert nooit iets vanzelf. heeft je team een seizoensplan, dan vraagt de teamevaluatie na een wedstrijd ook of het thema van die week terugkwam (ja, deels of nee). dat is het beste signaal om bij te sturen. uitslagen sturen niets. dit werkt zonder ai; met ai aan krijg je ook een voorstel voor de jaaropbouw, dat de app altijd zelf controleert.">
+    <section class="hl-sec" data-zoek="📆 seizoen jaarlijn blokken bijsturing seizoensplan club eigen plan alleen lezen coördinator opzet opbouwmodel leercurve vrije weken trainingen per week duur accent signalen thema-check evaluatie">
     <h3>📆 Seizoen: jaarlijn en bijsturing</h3>
-    <p>Onder <b>Oefenstof</b> staat ook de tegel <b>Seizoen</b>. Die werkt in drie stappen:</p>
+    <p>Onder <b>Trainingen</b> staat ook de tegel <b>Seizoen</b>. Een team heeft één seizoensplan: van de club of je eigen plan.</p>
     <ul>
-      <li><b>1 Opzet</b>: kies een opbouwmodel (<i>Leercurve-thema's</i>, <i>Vier momenten van het spel</i> of <i>Opbouw · centrum · flank · verdedigen</i>) en vul start- en einddatum, vrije weken, trainingen per week, duur en eventueel een accent (maximaal twee) in.</li>
-      <li><b>2 Jaarlijn</b>: Cluppie maakt een concept-jaarlijn in blokken van 4 tot 6 weken, met bij elk blok uitleg waarom. De eerste weken zijn uitgewerkt met trainingen; elke week komt er een week bij.</li>
-      <li><b>3 Bijsturing</b>: op basis van je teamevaluaties doet de app voorstellen, bijvoorbeeld een blok een week verlengen of een herhaalblok invoegen. Dat gebeurt pas na minstens 3 wedstrijdevaluaties en maximaal één keer per week. Jij kiest <b>Toepassen</b> of <b>Negeren</b>; er verandert nooit iets vanzelf.</li>
+      <li><b>Van de club</b>: je coördinator of hoofd jeugd heeft het plan aan je team toegewezen. Je ziet de blokken en de komende weken, maar wijzigt niets. Signalen uit je evaluaties bespreek je met je coördinator.</li>
+      <li><b>Eigen plan</b> (als je club je vrij laat, of zonder club): kies onder <b>1 Opzet</b> een opbouwmodel, de datums, vrije weken, trainingen per week en duur. Cluppie maakt een jaarlijn in blokken van 4 tot 6 weken, met uitleg waarom.</li>
+      <li><b>Bijsturing</b>: na minstens 3 wedstrijdevaluaties doet de app hooguit één voorstel per week. Jij kiest <b>Toepassen</b> of <b>Negeren</b>. Toepassen verandert alleen trainingen die nog niet zichtbaar zijn.</li>
     </ul>
-    <div class="tip">Heeft je team een seizoensplan, dan vraagt de teamevaluatie na een wedstrijd ook of het thema van die week terugkwam (ja, deels of nee). Dat is het beste signaal om bij te sturen. Uitslagen sturen niets. Dit werkt <b>zonder AI</b>; met AI aan krijg je ook een voorstel voor de jaaropbouw, dat de app altijd zelf controleert.</div>
+    <div class="tip">De trainingen van het plan komen per week op Trainingen, op de maandag van de week ervoor. Heeft je team een seizoensplan, dan vraagt de evaluatie na een wedstrijd ook of het thema van die week terugkwam. Dat is het beste signaal om bij te sturen.</div>
     </section>
 
     <section class="hl-sec" data-zoek="🔁 vaste afmelding kan een speler een tijd lang op een vaste trainingsdag niet, bijvoorbeeld elke maandag gedurende 10 weken? tik op het tabblad presentie → training op vaste afmelding en kies speler, trainingsdag, startdatum, aantal weken en eventueel een reden. op die datums staat hij alvast op afwezig zodra je de presentie opent, met een 🔁-label. is hij er toch, tik dan op zijn naam. de afwezigheid telt pas mee in de opkomst als je de presentie die dag echt invult; gaat een training niet door, dan telt hij dus ook niet als gemist. onder de knoppen staan de lopende vaste afmeldingen. met stoppen haal je er een weg; toekomstige afmeldingen die uit die regel kwamen verdwijnen dan ook.">

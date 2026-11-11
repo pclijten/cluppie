@@ -17,7 +17,7 @@
 
    Per dag maximaal één moment (training 1 → eerste dag, training 2 → tweede). */
 import { db, doc, updateDoc } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261110a';
+import { S, esc, meld } from './state.js?v=20261111d';
 import { ico } from './icons.js?v=20261110a';
 
 export const DAGEN_LANG = ['Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag','Zondag'];
@@ -94,7 +94,7 @@ export function htmlMomentenKaart(t){
   return `
     <div class="cb-kaart" id="cbMomentenKaart">
       <div class="cb-kaart-kop">${ico('planning-calendar', 18)}<b>Trainingsmomenten</b></div>
-      ${c.lijst.length ? `<div class="tmo-lijst">${rijen}</div>` : '<p class="cb-uitleg u-mt-0">Nog geen vaste momenten. Oefenstof krijgt dan geen dag.</p>'}
+      ${c.lijst.length ? `<div class="tmo-lijst">${rijen}</div>` : '<p class="cb-uitleg u-mt-0">Nog geen vaste momenten. Trainingen krijgen dan geen dag.</p>'}
       ${ontbreekt && !c.gewijzigd ? '<p class="cb-uitleg tmo-let">Voor deze dagen ontbreekt nog een tijd. Vul begin- en eindtijd in en tik Opslaan.</p>' : ''}
       <div class="cb-acties" style="margin:var(--space-sm) 0 0">
         <button type="button" class="knop licht klein" id="tmoToevoegen">${ico('action-add', 15)} Moment toevoegen</button>
