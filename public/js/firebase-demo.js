@@ -362,14 +362,22 @@ TEAMS.forEach((t, ti) => {
       const voor = thuis ? w.doelThuis : w.doelUit, tegenD = thuis ? w.doelUit : w.doelThuis;
       for (let g = 0; g < voor; g++) goals.push({ type: 'voor', pid: kies(spelers.slice(3)), kwart: 1 + Math.floor(rnd() * periodes), sec: Math.floor(rnd() * duur * 60), ...(rnd() < 0.5 ? { assist: kies(spelers.slice(2)) } : {}) });
       for (let g = 0; g < tegenD; g++) goals.push({ type: 'tegen', pid: null, kwart: 1 + Math.floor(rnd() * periodes), sec: Math.floor(rnd() * duur * 60) });
+    }
+    /* opstelling per periode op de plekken van de formatie (K, V1, M1, A1 …), zoals bouwSlots in config.js:
+       vaste keeper, de veldspelers rouleren zodat de speeltijd eerlijk verdeeld is.
+       Ook de komende wedstrijd heeft al een opstelling, zodat de voorbereiding compleet is. */
+    {
+      const plekken = ['K', ...formatie.split('-').flatMap((n, i) => Array.from({ length: Number(n) }, (_, j) => 'VMA'[i] + (j + 1)))];
+      const veldspelers = spelers.slice(1), vrij = plekken.length - 1, stap = Math.max(1, veldspelers.length - vrij);
       for (let k = 1; k <= periodes; k++){
-        const veld = Number(t.format), rot = spelers.slice(k - 1).concat(spelers.slice(0, k - 1)).slice(0, veld);
-        kwarten[k].lineup = Object.fromEntries(rot.map((pid, i) => [String(i), pid]));
+        const start = ((k - 1 + w.ronde) * stap) % veldspelers.length;
+        const rij = veldspelers.slice(start).concat(veldspelers.slice(0, start)).slice(0, vrij);
+        kwarten[k].lineup = Object.fromEntries([['K', spelers[0]], ...rij.map((pid, i) => [plekken[i + 1], pid])]);
       }
     }
     zetSeed(`teams/${t.id}/wedstrijden/${wid}`, {
       type: 'normaal', tegenstander, thuis, format: t.format, periodes, formatie, datum: w.datum, aftrap: w.tijd, kwartduur: duur,
-      selectie: spelers, goals, kaarten: [], kwarten, seizoen: SEIZOEN, gemaakt: TS, opzetGedaan: w.doelThuis != null,
+      selectie: spelers, goals, kaarten: [], kwarten, seizoen: SEIZOEN, gemaakt: TS, opzetGedaan: true,
       bron: 'sportlink', sportlinkCode: w.code, competitie: `${basis} 3e klasse`, sportlinkSync: TS,
       info: { accommodatie: thuis ? 'Sportpark Cluppie, Utrecht' : `Sportpark ${tegenstander.split(' ').slice(0, -1).join(' ')}` },
     });

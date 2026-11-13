@@ -38,7 +38,7 @@
       <p class="lead">Trainingen die passen bij je team, binnen de speelstijl van je club.</p>
       <div class="acties">
         <a href="index.html?aanmelden" class="btn btn--vol cta-login">Meld je club aan</a>
-        <a href="#demo" class="btn btn--stil">Klik door de app</a>
+        <button type="button" class="btn btn--stil" data-demo-open>Klik door de app</button>
       </div>
       <p class="hero__noot">Voor trainers, coördinatoren en de technische commissie. Heb je al een uitnodiging? <a href="index.html" class="cta-login">Inloggen</a>.</p>
     </div>
@@ -161,28 +161,81 @@
   </ul>
 </section>
 
-<!-- 5b · De app zelf: de echte app in demomodus, met een verzonnen club -->
+<!-- 5b · De app zelf: schermen per rol (desktop), en de echte app in demomodus in een eigen venster -->
 <section class="demo" id="demo">
-  <div class="container demo__grid">
-    <div class="demo__tekst">
-      <h2>Klik zelf door de app</h2>
-      <p class="lead">Dit is de echte Cluppie, met een verzonnen club: cluppie.io. Acht teams, een poule met uitslagen, trainingen en evaluaties.</p>
-      <ul class="demo__rollen">
-        <li><strong>Als trainer</strong>Van O11-2 en O13-1: opstelling, wedstrijdvoorbereiding, evaluatie, de poule.</li>
-        <li><strong>Als bouwcoördinator</strong>Open de onderbouw vanaf het startscherm, en open de onderbouw, met uitslagen, teams en uitleningen.</li>
-        <li><strong>Als clubbeheerder en trainingscoördinator</strong>Het clubdashboard, het seizoensplan en het weekrooster.</li>
-      </ul>
-      <p class="zacht">Je kunt alles proberen. Er wordt niets bewaard: na verversen begint de demo opnieuw.</p>
-      <div class="acties">
-        <a href="index.html?demo" class="btn btn--stil" target="_blank" rel="noopener">Open op volledig scherm</a>
-      </div>
+  <div class="container">
+    <div class="demo__kop">
+      <h2>Zo ziet Cluppie eruit</h2>
+      <p class="lead">Op de telefoon langs het veld, en op de laptop thuis of in de bestuurskamer. Hieronder de laptopweergave, met een verzonnen club: cluppie.io.</p>
     </div>
-    <figure class="telefoon" data-lenis-prevent>
-      <iframe class="telefoon__scherm" title="Demo van de Cluppie-app" src="about:blank" data-src="index.html?demo" loading="lazy"></iframe>
-      <figcaption class="telefoon__start" data-keep><button type="button" class="btn btn--vol" data-demo-start>Start de demo</button></figcaption>
-    </figure>
+    <div class="wissel" data-wissel>
+      <div class="tabs tabs--rij" role="tablist" aria-label="Schermen per rol">
+        <button type="button" role="tab" id="st1" aria-controls="sp1" aria-selected="true">Trainer</button>
+        <button type="button" role="tab" id="st2" aria-controls="sp2" aria-selected="false" tabindex="-1">Evaluatie</button>
+        <button type="button" role="tab" id="st3" aria-controls="sp3" aria-selected="false" tabindex="-1">Training</button>
+        <button type="button" role="tab" id="st4" aria-controls="sp4" aria-selected="false" tabindex="-1">Bouwcoördinator</button>
+        <button type="button" role="tab" id="st5" aria-controls="sp5" aria-selected="false" tabindex="-1">Trainingscoördinator</button>
+      </div>
+      <figure class="scherm-foto" role="tabpanel" id="sp1" aria-labelledby="st1">
+        <div class="scherm-foto__beeld" data-slot="app-trainer-dashboard" data-kind="product" data-alt="Schermafbeelding van Cluppie op de laptop: trainer">
+          <img src="over/app/trainer-dashboard.jpg" width="1440" height="900" alt="Cluppie op de laptop, scherm trainer: Het dashboard van O11-2: de volgende wedstrijd met opstelling, de speeltijd tot nu toe en wat er nog te doen is." loading="lazy">
+        </div>
+        <figcaption>Het dashboard van O11-2: de volgende wedstrijd met opstelling, de speeltijd tot nu toe en wat er nog te doen is.</figcaption>
+      </figure>
+      <figure class="scherm-foto" role="tabpanel" id="sp2" aria-labelledby="st2" hidden>
+        <div class="scherm-foto__beeld" data-slot="app-trainer-evaluatie" data-kind="product" data-alt="Schermafbeelding van Cluppie op de laptop: evaluatie">
+          <img src="over/app/trainer-evaluatie.jpg" width="1440" height="900" alt="Cluppie op de laptop, scherm evaluatie: Na de wedstrijd: per thema een score in een paar tikken, met de teamscore en het seizoensverloop ernaast." loading="lazy">
+        </div>
+        <figcaption>Na de wedstrijd: per thema een score in een paar tikken, met de teamscore en het seizoensverloop ernaast.</figcaption>
+      </figure>
+      <figure class="scherm-foto" role="tabpanel" id="sp3" aria-labelledby="st3" hidden>
+        <div class="scherm-foto__beeld" data-slot="app-trainer-training" data-kind="product" data-alt="Schermafbeelding van Cluppie op de laptop: training">
+          <img src="over/app/trainer-training.jpg" width="1440" height="900" alt="Cluppie op de laptop, scherm training: De training van dinsdag, met aanwezigheid en de oefenvormen uit de bibliotheek." loading="lazy">
+        </div>
+        <figcaption>De training van dinsdag, met aanwezigheid en de oefenvormen uit de bibliotheek.</figcaption>
+      </figure>
+      <figure class="scherm-foto" role="tabpanel" id="sp4" aria-labelledby="st4" hidden>
+        <div class="scherm-foto__beeld" data-slot="app-bouwcoordinator" data-kind="product" data-alt="Schermafbeelding van Cluppie op de laptop: bouwcoördinator">
+          <img src="over/app/bouwcoordinator.jpg" width="1440" height="900" alt="Cluppie op de laptop, scherm bouwcoördinator: De onderbouw in één scherm: uitslagen, komende wedstrijden, elk team en de uitleningen." loading="lazy">
+        </div>
+        <figcaption>De onderbouw in één scherm: uitslagen, komende wedstrijden, elk team en de uitleningen.</figcaption>
+      </figure>
+      <figure class="scherm-foto" role="tabpanel" id="sp5" aria-labelledby="st5" hidden>
+        <div class="scherm-foto__beeld" data-slot="app-trainingscoordinator" data-kind="product" data-alt="Schermafbeelding van Cluppie op de laptop: trainingscoördinator">
+          <img src="over/app/trainingscoordinator.jpg" width="1440" height="900" alt="Cluppie op de laptop, scherm trainingscoördinator: Alle trainingen van de club per week, voor elk team te openen." loading="lazy">
+        </div>
+        <figcaption>Alle trainingen van de club per week, voor elk team te openen.</figcaption>
+      </figure>
+    </div>
+    <div class="demo__probeer">
+      <div>
+        <h3>Klik zelf door de app</h3>
+        <p>De echte Cluppie, met dezelfde verzonnen club. Als trainer, bouwcoördinator, clubbeheerder en trainingscoördinator. Er wordt niets bewaard.</p>
+      </div>
+      <button type="button" class="btn btn--vol" data-demo-open>Open de demo</button>
+    </div>
   </div>
 </section>
+
+<dialog class="demo-venster" aria-labelledby="demoTitel">
+  <div class="demo-venster__balk">
+    <p id="demoTitel" class="demo-venster__titel">Demo van Cluppie <span>verzonnen club, niets wordt bewaard</span></p>
+    <div class="seg" role="group" aria-label="Weergave">
+      <button type="button" data-weergave="telefoon" aria-pressed="true">Telefoon</button>
+      <button type="button" data-weergave="laptop" aria-pressed="false">Laptop</button>
+    </div>
+    <a class="demo-venster__los" href="index.html?demo" target="_blank" rel="noopener">Nieuw tabblad</a>
+    <button type="button" class="knopje knopje--donker" data-demo-dicht aria-label="Demo sluiten">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="demo-venster__vlak" data-weergave="telefoon">
+    <div class="demo-venster__toestel">
+      <iframe class="demo-venster__app" title="Demo van de Cluppie-app" src="about:blank"></iframe>
+      <p class="demo-venster__melding" hidden>De demo werkt alleen via een webadres, niet als je over.html als bestand opent. Bekijk hem op cluppie.io, of lokaal met <code>npm run serve</code>.</p>
+    </div>
+  </div>
+</dialog>
 
 <!-- 6 · De cirkel: middencirkel als schema, met een zaterdag ernaast -->
 <section class="cirkel">
@@ -493,14 +546,25 @@
   },{rootMargin:'-45% 0px -45% 0px'});
   document.querySelectorAll('.log [data-stap]').forEach(el=>sio.observe(el));
 
-  /* de demo laadt pas als iemand hem start (scheelt laden voor wie alleen leest) */
-  document.querySelector('[data-demo-start]')?.addEventListener('click', e=>{
-    if (location.protocol === 'file:'){
-      e.currentTarget.closest('.telefoon__start').innerHTML = '<p class="telefoon__melding">De app-demo werkt alleen via een webadres, niet als je over.html als bestand opent. Bekijk hem op cluppie.io of lokaal met <code>npm run serve</code>.</p>';
-      return;
-    }
-    const f=document.querySelector('.telefoon__scherm'); f.src=f.dataset.src; e.currentTarget.closest('.telefoon__start').hidden=true; f.focus();
-  });
+  /* de demo in een eigen venster: de pagina staat stil zolang het open is, Esc of het kruisje sluit het */
+  (()=>{
+    const venster=document.querySelector('.demo-venster'); if(!venster) return;
+    const app=venster.querySelector('.demo-venster__app'), vlak=venster.querySelector('.demo-venster__vlak');
+    const zetWeergave=w=>{ vlak.dataset.weergave=w; venster.querySelectorAll('[data-weergave]').forEach(b=>b.tagName==='BUTTON'&&b.setAttribute('aria-pressed', b.dataset.weergave===w)); };
+    const open=()=>{
+      zetWeergave(matchMedia('(min-width: 75rem)').matches ? 'laptop' : 'telefoon');
+      if (location.protocol === 'file:'){ app.hidden=true; venster.querySelector('.demo-venster__melding').hidden=false; }
+      else if (app.src==='about:blank' || !app.src.includes('demo')) app.src='index.html?demo';
+      window.__overLoco?.stop?.(); document.documentElement.classList.add('venster-open');
+      venster.showModal();
+    };
+    const dicht=()=>venster.close();
+    venster.addEventListener('close',()=>{ document.documentElement.classList.remove('venster-open'); window.__overLoco?.start?.(); });
+    venster.addEventListener('click',e=>{ if(e.target===venster) dicht(); });
+    venster.querySelectorAll('button[data-weergave]').forEach(b=>b.addEventListener('click',()=>zetWeergave(b.dataset.weergave)));
+    venster.querySelector('[data-demo-dicht]').addEventListener('click',dicht);
+    document.querySelectorAll('[data-demo-open]').forEach(b=>b.addEventListener('click',open));
+  })();
 
   /* voordat we naar index.html gaan: onthouden dat de intro is gezien,
      anders stuurt de gate daar ons meteen weer hierheen terug. */
