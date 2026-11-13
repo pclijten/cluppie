@@ -25,6 +25,24 @@ document.documentElement.classList.add('js');
 })();
 </script>
 <script>
+/* Demomodus (index.html?demo, gebruikt op over.html): de echte app, maar js/firebase.js wordt
+   via een import map vervangen door js/firebase-demo.js, een database in het geheugen met een
+   voorbeeldteam. Niets gaat naar Firebase. DEMO_VERSIE moet gelijk zijn aan de ?v= waarmee
+   alle modules firebase.js importeren; verhoog je die, verhoog hem dan ook hier. */
+(function(){
+  if (!/[?&]demo(=|&|$)/.test(location.search)) return;
+  var DEMO_VERSIE = '20261011g';
+  var echt = new URL('js/firebase.js?v=' + DEMO_VERSIE, location.href).href;
+  var kaart = { imports: {} };
+  kaart.imports[echt] = new URL('js/firebase-demo.js', location.href).href;
+  var s = document.createElement('script');
+  s.type = 'importmap';
+  s.textContent = JSON.stringify(kaart);
+  document.currentScript.after(s);
+  document.documentElement.classList.add('demo');
+})();
+</script>
+<script>
 /* Thema-gate (vóór paint, tegen flash): zet data-thema op <html> op basis van
    de laatst bekende clubdwang of persoonlijke voorkeur. De echte bron is het
    clubdocument (themaModus), maar dat is bij eerste paint nog niet geladen —
