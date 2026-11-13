@@ -20,7 +20,7 @@ import {
 } from './config.js?v=20261111d';
 import { onderdeelAan } from './onderdelen.js?v=20261111d';
 import { htmlKompas } from './teams-leerlijn.js?v=20261111d';
-import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261111d';
+import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261113a';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
 import {
   MAX_WEKEN, weekdagVan, plusDagen, eersteOpDag, regelDatums, actieveRegels, vastOp, vastePrefill, redenVanRegel
