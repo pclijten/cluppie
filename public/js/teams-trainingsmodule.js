@@ -246,7 +246,7 @@ function htmlOnderdeel(od, i){
   return `<div class="tm-vorm${open ? ' open' : ''}" style="--c:${SLOT_KLEUR[od.slot]}">
     <button class="tm-vk" data-tm-open-vorm="${i}" aria-expanded="${open}"><span class="tm-min">${od.minuten}′</span><span class="tm-schets" aria-hidden="true">${vormSvg(v, kn.veld)}</span>
       <span class="tm-mid"><span class="tm-slot">${esc(naam)}</span><span class="tm-nm">${esc(v.naam)}</span><span class="tm-vsub">${od.groepen}×${od.groepGrootte} · ${kn.veld.b}×${kn.veld.l} m · ${esc(v.doel)}</span></span><span class="tm-pij">⌄</span></button>
-    ${open ? `<div class="tm-vb">${vormSvg(v, kn.veld)}${TEKENING_LEGENDA}
+    ${open ? `<div class="tm-vb"><div class="tm-vb-teken">${vormSvg(v, kn.veld)}${TEKENING_LEGENDA}</div><div class="tm-vb-tekst">
       <div class="tm-feiten4"><div><b>Groepen</b>${od.groepen}×${od.groepGrootte}${od.wissel ? '+' + od.wissel : ''}</div><div><b>Veld</b>${kn.veld.b}×${kn.veld.l}</div><div><b>Tijd</b>${od.rondes ? od.rondes + '×' : ''}${od.ronde}′${od.rust ? '/' + od.rust + '′' : ''}</div><div><b>Materiaal</b>${m.pionnen || 0}p ${m.ballen || 0}b${m.doeltjes ? ' ' + m.doeltjes + 'd' : ''}</div></div>
       ${htmlMateriaalRegel(od)}
       <div class="tm-tabs">${TABS.map(([k, x]) => `<button class="${k === tab ? 'aan' : ''}" data-tm-tab="${i}:${k}">${x}</button>`).join('')}</div>
@@ -255,7 +255,7 @@ function htmlOnderdeel(od, i){
       ${tab === 'diff' ? `<div class="tm-diff"><div class="mak"><h4>Makkelijker</h4><ul class="tm-ul">${(v.makkelijker || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div><div class="moe"><h4>Moeilijker</h4><ul class="tm-ul">${(v.moeilijker || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div></div>` : ''}
       ${tab === 'var' ? ((v.varianten || []).map(x => `<div class="tm-var"><b>${esc(x.naam)}</b><span>${esc(x.uitleg)}</span></div>`).join('') || '<div class="tm-info">Geen varianten.</div>') : ''}
       <div class="tm-rij" style="margin-top:12px">${knoppen}<span class="tm-info">${esc((v.domeinen || []).join(' · '))} · niveau ${v.complexiteit}/3</span></div>
-    </div>` : ''}
+    </div></div>` : ''}
   </div>`;
 }
 

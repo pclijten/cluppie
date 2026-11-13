@@ -391,7 +391,7 @@ export function trainingenPerWeek(){
     g.items = g.items.map((t, i) => {
       let d = /^\d{4}-\d{2}-\d{2}$/.test(t.datum || '') ? new Date(t.datum + 'T12:00') : null;
       if (!d && g.weekNr) d = t.trainingsdag ? datumVoorTraining(g.weekNr, g.jaar, [t.trainingsdag], 0) : datumVoorTraining(g.weekNr, g.jaar, trainingsdagen, i);
-      return { t, iso: d ? isoStr(d) : '', chip: d ? dagChipTekst(d) : '' };
+      return { t, iso: d ? isoStr(d) : '', chip: d ? dagChipTekst(d) : '', weekNr: g.weekNr };
     });
   }
   const nuJaar = (() => { const k = new Date(); k.setDate(k.getDate() + 3 - ((k.getDay() + 6) % 7)); return k.getFullYear(); })();

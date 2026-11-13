@@ -7450,3 +7450,14 @@ html.desk .dk-ss .sn-kop,html.desk .dk-ss .sn-balk,html.desk .dk-ss .sn-voet,htm
   .trw-diagram, .trw-filmblok{ max-width:480px !important; margin-left:auto; margin-right:auto; }
   .dk-oefeningen .trw-diagram{ max-width:340px !important; margin-left:0; }
 }
+@media (min-width:1100px) and (min-height:520px){
+  /* [20261113b] Trainingen: titels mogen over twee regels */
+  .dk-drie-tr .dk-lijstkol .dk-li-t b{ white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; line-height:1.25; }
+  .dk-drie-tr .dk-eerder{ grid-template-columns:minmax(0,1fr) auto; margin-top:var(--space-sm); }
+}
+@media (min-width:1640px) and (min-height:520px){
+  /* [20261113b] opengeklapte vorm op een breed scherm: tekening links, uitleg rechts */
+  html.desk .tm-vb{ display:grid; grid-template-columns:minmax(0,380px) minmax(0,1fr); gap:20px; align-items:start; }
+  html.desk .tm-vb .tv-veld{ margin:0; max-width:100%; }
+  html.desk .tm-vb-teken{ position:sticky; top:var(--space-md); }
+}
