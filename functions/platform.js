@@ -162,7 +162,7 @@ async function individueleCoaches(db, clubs, aanvragen, nuMs){
   for (const t of teams) for (const [u, i] of Object.entries(t.ledenInfo || {})) if (i && i.naam && !naamUit[u]) naamUit[u] = i.naam;
   for (const g of gebruikers) if (!g.naam && naamUit[g.uid]) g.naam = naamUit[g.uid];
   const beheerders = ((platformDoc.data() || {}).beheerders || []);
-  return bepaalIndividueleCoaches({ gebruikers, teams, clubs, aanvragen, uitsluiten: [PLATFORM_EMAIL, 'paul@cluppie.io', 'info@cluppie.io', ...beheerders], nuMs });
+  return bepaalIndividueleCoaches({ gebruikers, teams, clubs, aanvragen, uitsluiten: [PLATFORM_EMAIL, 'paul@cluppie.io', ...beheerders], nuMs });
 }
 
 async function clubKerncijfers(db, clubDoc, aanvragenPerClub, nuMs){

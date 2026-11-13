@@ -22,11 +22,11 @@ import { db, doc, collection, getDoc, getDocs, setDoc, addDoc, query, where, fun
 import { S, esc, meld } from './state.js?v=20261113b';
 import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261113b';
 import { aiAan, aiDoel } from './clubconfig.js?v=20261113b';
-import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261113d';
-import { trainingenVanPlan, planVoorTeam } from './seizoensplan-club.js?v=20261113d';
+import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261113e';
+import { trainingenVanPlan, planVoorTeam } from './seizoensplan-club.js?v=20261113e';
 import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261113b';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019f';
-import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261113d';
+import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261113e';
 import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261113b';
 import {
   MODELLEN, ACCENTEN, maakSeizoensplan, weekKalender, herreken, standaardVrij, maandagVan, beschikbareThemas, themaVolgorde,

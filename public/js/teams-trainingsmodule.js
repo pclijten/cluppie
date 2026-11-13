@@ -23,7 +23,7 @@ import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } fr
 import { aiAan, aiDoel } from './clubconfig.js?v=20261113b';
 import { ico } from './icons.js?v=20261110a';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019f';
-import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261113d';
+import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261113e';
 import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, kiesDuur, SLOT_NAAM, groepsindeling, opbouwVoor, WEER } from './trainingsplanner.js?v=20261113b';
 import { MATERIAAL, MATERIAAL_NAAM, PRESETS, presetVan, VELDEN, schoonContext, behoefte, haalbaar, valtAf, tipTekst } from './trainingscontext-logica.js?v=20261019a';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
@@ -31,9 +31,9 @@ import { TERUGBLIK_VRAGEN, zetAntwoord, terugblikKlaar, terugblikSamenvatting, s
 import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261113b';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261012e';
 import { positieWeek, seizoensweekOp, weekKalender, standaardVrij, maandagVan } from './seizoensplan-logica.js?v=20261113b';
-import { trainingenRef } from './seizoensplan-trainingen.js?v=20261113d';
-import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261113d';
-import { oefeningVan, geplandeTraining, vormIdsVan } from './seizoensplan-club.js?v=20261113d';
+import { trainingenRef } from './seizoensplan-trainingen.js?v=20261113e';
+import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261113e';
+import { oefeningVan, geplandeTraining, vormIdsVan } from './seizoensplan-club.js?v=20261113e';
 import { onderdeelAan } from './onderdelen.js?v=20261113b';
 
 /* [20261113d] vormen uit basis + beheerlaag (bibliotheek.js) */

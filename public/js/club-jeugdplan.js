@@ -14,10 +14,10 @@ import { S, esc, meld } from './state.js?v=20261113b';
 import { db, doc, collection, getDocs, setDoc, updateDoc, deleteField, query, where, writeBatch, serverTimestamp } from './firebase.js?v=20261011g';
 import { bouwNaam, catLabel, SEIZOEN_FALLBACK } from './config.js?v=20261113b';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019f';
-import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261113d';
+import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261113e';
 import { MODELLEN, ACCENTEN, beschikbareThemas, maandagVan, standaardVrij, weekKalender } from './seizoensplan-logica.js?v=20261113b';
-import { rechtenVoor, magVoorBouw, teamsVoorPlan, planVoorTeam, trainingDocs, uitrolPlan, spelersVoorPlanner, duurVoorLeeftijd, JEUGDBOUWEN } from './seizoensplan-club.js?v=20261113d';
-import { bestaandeTrainingen, voerUit } from './seizoensplan-trainingen.js?v=20261113d';
+import { rechtenVoor, magVoorBouw, teamsVoorPlan, planVoorTeam, trainingDocs, uitrolPlan, spelersVoorPlanner, duurVoorLeeftijd, JEUGDBOUWEN } from './seizoensplan-club.js?v=20261113e';
+import { bestaandeTrainingen, voerUit } from './seizoensplan-trainingen.js?v=20261113e';
 
 /* [20261113d] vormen uit basis + beheerlaag (bibliotheek.js) */
 const vandaagIso = () => new Date().toISOString().slice(0, 10);
