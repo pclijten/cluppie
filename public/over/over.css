@@ -286,8 +286,8 @@ h3 { font-size: var(--text-title); line-height: 1.05; }
 }
 
 /* ---------- de beleving (over-beleving.js): alleen actief met script en zonder "minder beweging" ---------- */
-.veldkaart.is-3d .tekening { position: relative; }
-.veldkaart.is-3d .tekening > svg { visibility: hidden; }
+.tekening.is-3d { position: relative; }
+.tekening.is-3d > svg { visibility: hidden; }
 .veld3d { position: absolute; inset: 8px 0; width: 100%; height: calc(100% - 16px); border-radius: 12px; }
 .hero h1 .w, .voet__slot .w { display: inline-block; overflow: clip; vertical-align: top; padding-bottom: 0.06em; margin-bottom: -0.06em; }
 .hero h1 .w > span, .voet__slot .w > span { display: inline-block; }
@@ -329,3 +329,7 @@ h3 { font-size: var(--text-title); line-height: 1.05; }
 .telefoon__start[hidden] { display: none; }
 @media (max-width: 60rem) { .demo__grid { grid-template-columns: minmax(0, 1fr); } .telefoon { width: min(100%, 390px); } }
 .lenis.lenis-smooth .telefoon__scherm { pointer-events: auto; }
+
+.telefoon__melding { max-width: 26ch; padding: var(--space-lg); color: var(--color-ink); text-align: center; }
+.telefoon__melding code { font-size: var(--text-sm); }
+.vorm__veld > .veld3d { inset: var(--space-md); width: auto; height: auto; }

@@ -1,209 +1,257 @@
-/* ==================== OVER-PAGINA: 3D-VELD IN DE HERO ====================
-   De oefenvorm "Pass en ga: doorlopen na de pass" uit de Cluppie-bibliotheek, als
-   3D-veld. Dezelfde coördinaten als de tekening in de app (x en y in procenten van
-   het vak, 20 × 30 meter). Speler 1 passt naar 2, loopt door (pass en ga), en 2 schiet.
-   Als je wegscrolt kantelt de camera terug naar bovenaanzicht: dan is het weer de
-   tekening uit de app. De SVG-tekening blijft eronder staan voor schermlezers en als
-   terugval zonder WebGL. */
-import * as THREE from '../vendor/over/three.module.min.js';
+/* ==================== OVER-PAGINA: OEFENVORMEN IN 3D ====================
+   Maakt van elke oefenvorm uit de Cluppie-bibliotheek een 3D-veld, met dezelfde gegevens
+   als de tekening in de app (x en y in procenten van het vak, veld.b × veld.l in meters).
+   De lijnen worden één voor één gespeeld: bij een pass of schot gaat de bal mee, bij een
+   loopactie of dribbel loopt de speler mee. De SVG-tekening blijft eronder staan voor
+   schermlezers en als terugval zonder WebGL.
 
-const VORM = {
-  veld: { b: 20, l: 30 },
-  doeltjes: [{ x: 30, breed: 22 }, { x: 70, breed: 22 }],
-  spelers: [
-    { nr: 1, x: 30, y: 86 }, { nr: 2, x: 50, y: 75 }, { nr: 3, x: 70, y: 86 },
-    { nr: 4, x: 35, y: 45, tegen: true }, { nr: 5, x: 50, y: 35, tegen: true }, { nr: 6, x: 65, y: 45, tegen: true },
-  ],
-  pass: [[30, 86], [50, 75]], loop: [[30, 86], [28, 50]], schot: [[50, 75], [40, 6]],
-};
+   Klassiek script (geen module), zodat het ook werkt als je over.html als bestand opent.
+   Nodig: window.THREE (vendor/over/three.min.js) en window.gsap.
+   Gebruik: Veld3D.maak(box, vorm, { kantelBijScroll }) → { speel(), stop() } */
+(function(){
+  const THREE = window.THREE;
+  if (!THREE) return;
+  const KLEUR = { rand: 0x1d5a33, krijt: 0xf2f8f2, eigen: 0xd4302b, tegen: 0x4a8fe0, joker: 0xf2b23c, pion: 0xf08a24, geel: 0xffd23f, huid: 0xf1c7a3 };
+  const HEX = { eigen: '#d4302b', tegen: '#4a8fe0', joker: '#f2b23c' };
 
-/* kleuren van de pagina (zelfde waarden als de tokens in over/tokens.css) */
-const KLEUR = { gras: 0x2b7a45, gras2: 0x2f8249, rand: 0x1d5a33, krijt: 0xf2f8f2, rood: 0xd4302b, blauw: 0x4a8fe0, pion: 0xf08a24, geel: 0xffd23f, huid: 0xf1c7a3, nacht: 0x0e1116 };
-
-export function maakVeld(box, gsap, ScrollTrigger) {
-  const B = VORM.veld.b, L = VORM.veld.l;
-  const pos = (x, y) => new THREE.Vector3((x / 100 - 0.5) * B, 0, (y / 100 - 0.5) * L);
-
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  const canvas = renderer.domElement;
-  canvas.className = 'veld3d';
-  canvas.setAttribute('aria-hidden', 'true');
-  box.appendChild(canvas);
-
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(34, 1, 0.5, 200);
-
-  /* licht: zachte lucht + een avondzon die lange schaduwen geeft */
-  scene.add(new THREE.HemisphereLight(0xeaf4ff, 0x23402c, 1.25));
-  const zon = new THREE.DirectionalLight(0xfff1dc, 2.4);
-  zon.position.set(-12, 22, 10);
-  zon.castShadow = true;
-  zon.shadow.mapSize.set(1024, 1024);
-  Object.assign(zon.shadow.camera, { left: -20, right: 20, top: 22, bottom: -22, near: 1, far: 70 });
-  zon.shadow.radius = 4;
-  scene.add(zon);
-
-  /* gras met maaibanen */
-  const tex = (() => {
-    const c = document.createElement('canvas'); c.width = 64; c.height = 512;
-    const g = c.getContext('2d');
-    for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? '#2f8249' : '#2a7843'; g.fillRect(0, i * 64, 64, 64); }
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-  })();
-  const grond = new THREE.Mesh(new THREE.PlaneGeometry(B + 8, L + 8), new THREE.MeshStandardMaterial({ color: KLEUR.rand, roughness: 1 }));
-  grond.rotation.x = -Math.PI / 2; grond.position.y = -0.02; grond.receiveShadow = true; scene.add(grond);
-  const veld = new THREE.Mesh(new THREE.PlaneGeometry(B, L), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95 }));
-  veld.rotation.x = -Math.PI / 2; veld.receiveShadow = true; scene.add(veld);
-
-  /* krijtlijnen langs de rand */
-  const krijt = new THREE.MeshBasicMaterial({ color: KLEUR.krijt });
-  const lijn = (w, d, x, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.02, d), krijt); m.position.set(x, 0.01, z); scene.add(m); };
-  lijn(B, 0.12, 0, -L / 2); lijn(B, 0.12, 0, L / 2); lijn(0.12, L, -B / 2, 0); lijn(0.12, L, B / 2, 0);
-
-  /* doeltjes met net */
-  const wit = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
-  const netMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45 });
-  const doelen = VORM.doeltjes.map(d => {
-    const g = new THREE.Group(); const w = d.breed / 100 * B, h = 1.2, diep = 1.1;
-    const paal = new THREE.CylinderGeometry(0.06, 0.06, h, 10);
-    [-w / 2, w / 2].forEach(x => { const p = new THREE.Mesh(paal, wit); p.position.set(x, h / 2, 0); p.castShadow = true; g.add(p); });
-    const lat = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, w, 10), wit); lat.rotation.z = Math.PI / 2; lat.position.y = h; lat.castShadow = true; g.add(lat);
-    const pts = [];
-    for (let i = 0; i <= 10; i++) { const x = -w / 2 + i * w / 10; pts.push(x, h, 0, x, 0, -diep); }
-    for (let j = 0; j <= 4; j++) { const t = j / 4; pts.push(-w / 2, h * (1 - t), -diep * t, w / 2, h * (1 - t), -diep * t); }
-    const net = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(pts, 3)), netMat);
-    g.add(net); g.userData.net = net;
-    g.position.copy(pos(d.x, 0)); scene.add(g); return g;
+  /* gedeelde texturen en geometrie: één keer maken, voor alle velden */
+  const canvasTex = (w, h, teken) => { const c = document.createElement('canvas'); c.width = w; c.height = h; teken(c.getContext('2d')); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; };
+  const grasTex = canvasTex(64, 512, g => { for (let i = 0; i < 8; i++){ g.fillStyle = i % 2 ? '#2f8249' : '#2a7843'; g.fillRect(0, i * 64, 64, 64); } });
+  const balTex = canvasTex(512, 256, g => {
+    g.fillStyle = '#f7f7f3'; g.fillRect(0, 0, 512, 256); g.fillStyle = '#1b1f24';
+    const vijfhoek = (x, y, r) => { g.beginPath(); for (let k = 0; k < 5; k++){ const a = -Math.PI / 2 + k * Math.PI * 2 / 5; g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r * 1.0); } g.closePath(); g.fill(); };
+    [[64, 64], [192, 64], [320, 64], [448, 64], [0, 192], [128, 192], [256, 192], [384, 192], [512, 192]].forEach(([x, y]) => vijfhoek(x, y, 30));
+    vijfhoek(256, 6, 60); vijfhoek(256, 250, 60);
   });
-
-  /* pionnen op de hoeken van het vak */
-  const pionGeo = new THREE.ConeGeometry(0.26, 0.6, 18), pionMat = new THREE.MeshStandardMaterial({ color: KLEUR.pion, roughness: 0.6 });
-  const pionnen = [[0, 100], [100, 100], [0, 0], [100, 0]].map(([x, y]) => {
-    const p = new THREE.Mesh(pionGeo, pionMat); p.position.copy(pos(x, y)); p.position.y = 0.3; p.castShadow = true; scene.add(p); return p;
-  });
-
-  /* spelers: een poppetje in clubkleur met het rugnummer op een schijf erboven */
-  const nummer = (nr, bg, fg) => {
-    const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
-    g.fillStyle = bg; g.beginPath(); g.arc(64, 64, 60, 0, Math.PI * 2); g.fill();
-    g.lineWidth = 8; g.strokeStyle = '#ffffff'; g.stroke();
-    g.fillStyle = fg; g.font = '800 70px "Barlow Condensed", system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(nr), 64, 70);
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+  const nrTex = {};
+  const nummer = (nr, kant) => {
+    const k = `${kant}-${nr}`;
+    return nrTex[k] || (nrTex[k] = canvasTex(128, 128, g => {
+      g.fillStyle = HEX[kant] || HEX.eigen; g.beginPath(); g.arc(64, 64, 58, 0, Math.PI * 2); g.fill();
+      g.lineWidth = 8; g.strokeStyle = '#ffffff'; g.stroke();
+      g.fillStyle = kant === 'joker' ? '#1b1f24' : '#ffffff'; g.font = '800 72px "Barlow Condensed", system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(nr), 64, 70);
+    }));
   };
-  const lijfGeo = new THREE.CapsuleGeometry(0.34, 0.75, 6, 16), hoofdGeo = new THREE.SphereGeometry(0.24, 20, 16);
-  const huid = new THREE.MeshStandardMaterial({ color: KLEUR.huid, roughness: 0.7 });
-  const spelers = VORM.spelers.map(s => {
-    const g = new THREE.Group();
-    const kleur = s.tegen ? KLEUR.blauw : KLEUR.rood;
-    const lijf = new THREE.Mesh(lijfGeo, new THREE.MeshStandardMaterial({ color: kleur, roughness: 0.55 })); lijf.position.y = 0.72; lijf.castShadow = true; g.add(lijf);
-    const hoofd = new THREE.Mesh(hoofdGeo, huid); hoofd.position.y = 1.5; hoofd.castShadow = true; g.add(hoofd);
-    const bord = new THREE.Sprite(new THREE.SpriteMaterial({ map: nummer(s.nr, s.tegen ? '#4a8fe0' : '#d4302b', '#ffffff'), depthTest: false }));
-    bord.scale.set(0.9, 0.9, 1); bord.position.y = 2.35; g.add(bord);
-    g.position.copy(pos(s.x, s.y));
-    g.lookAt(pos(50, s.tegen ? 100 : 0).setY(0));
-    scene.add(g); return g;
-  });
+  const GEO = {
+    lijf: new THREE.CapsuleGeometry(0.34, 0.75, 6, 16), hoofd: new THREE.SphereGeometry(0.24, 20, 16),
+    pion: new THREE.ConeGeometry(0.26, 0.6, 18), bal: new THREE.SphereGeometry(0.22, 32, 24), paal: new THREE.CylinderGeometry(0.06, 0.06, 1, 10),
+  };
+  const MAT = {
+    huid: new THREE.MeshStandardMaterial({ color: KLEUR.huid, roughness: 0.7 }),
+    eigen: new THREE.MeshStandardMaterial({ color: KLEUR.eigen, roughness: 0.55 }),
+    tegen: new THREE.MeshStandardMaterial({ color: KLEUR.tegen, roughness: 0.55 }),
+    joker: new THREE.MeshStandardMaterial({ color: KLEUR.joker, roughness: 0.55 }),
+    pion: new THREE.MeshStandardMaterial({ color: KLEUR.pion, roughness: 0.6 }),
+    wit: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 }),
+    bal: new THREE.MeshStandardMaterial({ map: balTex, roughness: 0.45 }),
+    krijt: new THREE.MeshBasicMaterial({ color: KLEUR.krijt }),
+  };
 
-  /* bal: wit met rode vlakken, zoals de bal op de foto verderop */
-  const balTex = (() => {
-    const c = document.createElement('canvas'); c.width = 256; c.height = 128; const g = c.getContext('2d');
-    g.fillStyle = '#f6f6f2'; g.fillRect(0, 0, 256, 128); g.fillStyle = '#d4302b';
-    for (let i = 0; i < 8; i++) { g.beginPath(); const x = (i * 64) % 256 + (i > 3 ? 32 : 0), y = i > 3 ? 92 : 36; for (let k = 0; k < 5; k++) { const a = k / 5 * Math.PI * 2; g.lineTo(x + Math.cos(a) * 16, y + Math.sin(a) * 16); } g.fill(); }
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-  })();
-  const bal = new THREE.Mesh(new THREE.SphereGeometry(0.22, 24, 18), new THREE.MeshStandardMaterial({ map: balTex, roughness: 0.45 }));
-  bal.castShadow = true; scene.add(bal);
+  function maak(box, vorm, opts = {}){
+    const gsap = window.gsap;
+    const t = vorm.tekening || {}, B = vorm.veld?.b || 20, L = vorm.veld?.l || 25;
+    const pos = (x, y) => new THREE.Vector3((x / 100 - 0.5) * B, 0, (y / 100 - 0.5) * L);
 
-  /* krijtlijnen die zich tekenen: een plat lint dat vanaf het begin uitgroeit */
-  const lint = (van, naar, kleur, breed, streep) => {
-    const a = pos(...van), b = pos(...naar), len = a.distanceTo(b);
-    const g = new THREE.Group(); g.position.copy(a).setY(0.025); g.rotation.y = Math.atan2(-(b.z - a.z), b.x - a.x);
-    const mat = new THREE.MeshBasicMaterial({ color: kleur, transparent: true, opacity: 0.95 });
-    const binnen = new THREE.Group(); g.add(binnen);
-    if (streep) {
-      for (let d = 0; d < len - 0.6; d += 0.9) { const m = new THREE.Mesh(new THREE.PlaneGeometry(0.5, breed), mat); m.rotation.x = -Math.PI / 2; m.position.x = d + 0.25; binnen.add(m); }
-    } else {
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(len - 0.6, breed), mat); m.rotation.x = -Math.PI / 2; m.position.x = (len - 0.6) / 2; binnen.add(m);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    const canvas = renderer.domElement; canvas.className = 'veld3d'; canvas.setAttribute('aria-hidden', 'true');
+    box.appendChild(canvas);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(34, 1, 0.5, 300);
+    const S = Math.max(B, L);
+    scene.add(new THREE.HemisphereLight(0xeaf4ff, 0x23402c, 1.25));
+    const zon = new THREE.DirectionalLight(0xfff1dc, 2.4);
+    zon.position.set(-S * 0.6, S, S * 0.5); zon.castShadow = true; zon.shadow.mapSize.set(1024, 1024);
+    Object.assign(zon.shadow.camera, { left: -S, right: S, top: S, bottom: -S, near: 1, far: S * 4 });
+    scene.add(zon);
+
+    /* gras, rand, krijtlijnen */
+    const grond = new THREE.Mesh(new THREE.PlaneGeometry(B + 8, L + 8), new THREE.MeshStandardMaterial({ color: KLEUR.rand, roughness: 1 }));
+    grond.rotation.x = -Math.PI / 2; grond.position.y = -0.02; grond.receiveShadow = true; scene.add(grond);
+    const veld = new THREE.Mesh(new THREE.PlaneGeometry(B, L), new THREE.MeshStandardMaterial({ map: grasTex, roughness: 0.95 }));
+    veld.rotation.x = -Math.PI / 2; veld.receiveShadow = true; scene.add(veld);
+    const lijn = (w, d, x, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.02, d), MAT.krijt); m.position.set(x, 0.01, z); scene.add(m); };
+    lijn(B, 0.12, 0, -L / 2); lijn(B, 0.12, 0, L / 2); lijn(0.12, L, -B / 2, 0); lijn(0.12, L, B / 2, 0);
+    const kanten = new Set((t.doeltjes || []).map(d => d.kant));
+    if (kanten.has('boven') && kanten.has('onder')){
+      lijn(B, 0.1, 0, 0);
+      const cirkel = new THREE.Mesh(new THREE.RingGeometry(Math.min(B, L) * 0.11 - 0.06, Math.min(B, L) * 0.11 + 0.06, 48), MAT.krijt);
+      cirkel.rotation.x = -Math.PI / 2; cirkel.position.y = 0.012; scene.add(cirkel);
     }
-    const punt = new THREE.Mesh(new THREE.CircleGeometry(0.32, 3), mat); punt.rotation.x = -Math.PI / 2; punt.rotation.z = 0; punt.position.x = len - 0.45; binnen.add(punt);
-    binnen.scale.x = 0.0001; scene.add(g); return binnen;
-  };
-  const lPass = lint(VORM.pass[0], VORM.pass[1], KLEUR.krijt, 0.12, false);
-  const lLoop = lint(VORM.loop[0], VORM.loop[1], KLEUR.krijt, 0.1, true);
-  const lSchot = lint(VORM.schot[0], VORM.schot[1], KLEUR.geel, 0.18, false);
+    /* zones: doorschijnend vlak met gestippelde rand */
+    for (const z of t.zones || []){
+      const w = z.b / 100 * B, d = z.h / 100 * L, m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.08 }));
+      m.rotation.x = -Math.PI / 2; m.position.copy(pos(z.x + z.b / 2, z.y + z.h / 2)).setY(0.015); scene.add(m);
+    }
 
-  /* camera: van bovenaanzicht (de tekening) naar een lage hoek langs de lijn */
-  const boven = { pos: new THREE.Vector3(0, 46, 0.01), kijk: new THREE.Vector3(0, 0, 0) };
-  const schuin = { pos: new THREE.Vector3(9, 23, 31), kijk: new THREE.Vector3(0, 0, -1.2) };
-  const stand = { intro: 0, scroll: 0 };
-  const kijk = new THREE.Vector3();
-  const zetCamera = () => {
-    const t = stand.intro * (1 - stand.scroll);
-    camera.position.lerpVectors(boven.pos, schuin.pos, t);
-    kijk.lerpVectors(boven.kijk, schuin.kijk, t);
-    camera.lookAt(kijk);
-  };
+    /* doeltjes met net */
+    const netMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45 });
+    const doelen = (t.doeltjes || []).map(d => {
+      const g = new THREE.Group(), w = d.breed / 100 * B, h = Math.min(2, Math.max(1, w * 0.28)), diep = h * 0.9;
+      [-w / 2, w / 2].forEach(x => { const p = new THREE.Mesh(GEO.paal, MAT.wit); p.scale.y = h; p.position.set(x, h / 2, 0); p.castShadow = true; g.add(p); });
+      const lat = new THREE.Mesh(GEO.paal, MAT.wit); lat.scale.y = w; lat.rotation.z = Math.PI / 2; lat.position.y = h; lat.castShadow = true; g.add(lat);
+      const pts = [];
+      for (let i = 0; i <= 10; i++){ const x = -w / 2 + i * w / 10; pts.push(x, h, 0, x, 0, -diep); }
+      for (let j = 0; j <= 4; j++){ const f = j / 4; pts.push(-w / 2, h * (1 - f), -diep * f, w / 2, h * (1 - f), -diep * f); }
+      const net = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(pts, 3)), netMat);
+      g.add(net); g.userData.net = net;
+      const onder = d.kant === 'onder';
+      g.position.copy(pos(d.x, onder ? 100 : 0)); if (onder) g.rotation.y = Math.PI;
+      scene.add(g); return g;
+    });
 
-  const formaat = () => {
-    const r = box.getBoundingClientRect();
-    renderer.setSize(r.width, r.height, false);
-    camera.aspect = r.width / r.height;
-    /* bovenaanzicht: het hele vak moet passen */
-    boven.pos.y = Math.max(40, (L + 6) / 2 / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
-    camera.updateProjectionMatrix();
-  };
-  formaat();
-  new ResizeObserver(formaat).observe(box);
+    /* pionnen */
+    const pionnen = (t.pionnen || []).map(p => {
+      const m = new THREE.Mesh(GEO.pion, p[2] ? new THREE.MeshStandardMaterial({ color: p[2], roughness: 0.6 }) : MAT.pion);
+      m.position.copy(pos(p[0], p[1])).setY(0.3); m.castShadow = true; scene.add(m); return m;
+    });
 
-  /* begin- en eindstand van alles wat beweegt */
-  const start = pos(...VORM.pass[0]);
-  const zetBegin = () => {
-    stand.intro = 0;
-    spelers.forEach((s, i) => { s.position.copy(pos(VORM.spelers[i].x, VORM.spelers[i].y)); s.position.y = 6; s.scale.setScalar(0.001); });
-    pionnen.forEach(p => p.scale.setScalar(0.001));
-    bal.position.copy(start).add(new THREE.Vector3(0.5, 0.22, -0.3)); bal.scale.setScalar(0.001); bal.rotation.set(0, 0, 0);
-    [lPass, lLoop, lSchot].forEach(l => (l.scale.x = 0.0001));
-    doelen.forEach(d => d.userData.net.scale.set(1, 1, 1));
-  };
+    /* spelers */
+    const soortVan = k => (k === 'tegen' ? 'tegen' : k === 'keeper' || k === 'joker' ? 'joker' : 'eigen');
+    const spelers = (t.spelers || []).map(s => {
+      const g = new THREE.Group(), soort = soortVan(s.kant);
+      const lijf = new THREE.Mesh(GEO.lijf, MAT[soort]); lijf.position.y = 0.72; lijf.castShadow = true; g.add(lijf);
+      const hoofd = new THREE.Mesh(GEO.hoofd, MAT.huid); hoofd.position.y = 1.5; hoofd.castShadow = true; g.add(hoofd);
+      const bord = new THREE.Sprite(new THREE.SpriteMaterial({ map: nummer(s.kant === 'keeper' ? 'K' : s.nr, soort), depthTest: false }));
+      bord.scale.set(1, 1, 1); bord.position.y = 2.4; g.add(bord);
+      const thuis = pos(s.x, s.y);
+      g.userData = { thuis, xy: [s.x, s.y] };
+      g.position.copy(thuis);
+      g.lookAt(pos(50, soort === 'tegen' ? 100 : 0));
+      scene.add(g); return g;
+    });
 
-  const tl = gsap.timeline({ paused: true, defaults: { ease: 'power3.out' } });
-  const p1 = pos(...VORM.pass[1]).add(new THREE.Vector3(0.45, 0.22, 0.3));
-  const doel = pos(...VORM.schot[1]).add(new THREE.Vector3(0, 0.5, -0.6));
-  tl.call(zetBegin)
-    .to(stand, { intro: 1, duration: 2.2, ease: 'power2.inOut', onUpdate: zetCamera }, 0)
-    .to(pionnen.map(p => p.scale), { x: 1, y: 1, z: 1, duration: 0.5, stagger: 0.08, ease: 'back.out(2)' }, 0.2)
-    .to(spelers.map(s => s.scale), { x: 1, y: 1, z: 1, duration: 0.45, stagger: 0.09 }, 0.5)
-    .to(spelers.map(s => s.position), { y: 0, duration: 0.7, stagger: 0.09, ease: 'bounce.out' }, 0.5)
-    .to(bal.scale, { x: 1, y: 1, z: 1, duration: 0.4, ease: 'back.out(2)' }, 1.3)
-    /* pass: de bal rolt naar speler 2, de lijn tekent mee */
-    .to(lPass.scale, { x: 1, duration: 0.7, ease: 'power2.inOut' }, 2.2)
-    .to(bal.position, { x: p1.x, z: p1.z, duration: 0.7, ease: 'power2.out' }, 2.25)
-    .to(bal.rotation, { x: '-=9', duration: 0.7, ease: 'power2.out' }, 2.25)
-    /* en ga: speler 1 loopt door */
-    .to(lLoop.scale, { x: 1, duration: 0.9, ease: 'power1.inOut' }, 2.7)
-    .to(spelers[0].position, { x: pos(...VORM.loop[1]).x, z: pos(...VORM.loop[1]).z, duration: 1.1, ease: 'power1.inOut' }, 2.75)
-    /* schot op het doeltje */
-    .to(lSchot.scale, { x: 1, duration: 0.45, ease: 'power3.in' }, 3.6)
-    .to(bal.position, { x: doel.x, y: 0.5, z: doel.z, duration: 0.5, ease: 'power3.in' }, 3.65)
-    .to(bal.rotation, { x: '-=14', duration: 0.5, ease: 'power3.in' }, 3.65)
-    .to(doelen[0].userData.net.scale, { z: 1.35, duration: 0.18, yoyo: true, repeat: 1, ease: 'power2.out' }, 4.15)
-    .to(bal.position, { y: 0.22, duration: 0.4, ease: 'bounce.out' }, 4.2);
+    /* ballen: de spelbal, en bij "iedereen een bal" een bal bij elke eigen speler */
+    const ballen = [];
+    const maakBal = (x, z) => { const m = new THREE.Mesh(GEO.bal, MAT.bal); m.castShadow = true; m.userData.thuis = new THREE.Vector3(x, 0.22, z); scene.add(m); ballen.push(m); return m; };
+    let spelbal = null;
+    if (t.bal){ const p = pos(t.bal[0], t.bal[1]); const op = spelers.find(s => s.userData.thuis.distanceTo(p) < 1.2); spelbal = maakBal(p.x + (op ? 0.55 : 0), p.z + (op ? -0.35 : 0)); }
+    if (t.iedereenBal) spelers.forEach((s, i) => { if (soortVan((t.spelers[i] || {}).kant) === 'eigen') maakBal(s.userData.thuis.x + 0.5, s.userData.thuis.z - 0.3); });
 
-  /* bij wegscrollen kantelt de camera terug naar de tekening */
-  ScrollTrigger.create({
-    trigger: box.closest('.hero'), start: 'top top', end: 'bottom top', scrub: 0.6,
-    onUpdate: s => { stand.scroll = s.progress; zetCamera(); },
-  });
+    /* lijnen: een plat lint per stuk, dat vanaf het begin uitgroeit */
+    const lijnen = (t.lijnen || []).map(l => {
+      const punten = l.punten.map(p => pos(p[0], p[1]));
+      const kleur = l.soort === 'schot' ? KLEUR.geel : KLEUR.krijt, breed = l.soort === 'schot' ? 0.2 : 0.12, streep = l.soort === 'loopweg';
+      const mat = new THREE.MeshBasicMaterial({ color: kleur, transparent: true, opacity: 0.95 });
+      const stukken = [];
+      for (let i = 1; i < punten.length; i++){
+        const a = punten[i - 1], b = punten[i], len = a.distanceTo(b), laatste = i === punten.length - 1;
+        const g = new THREE.Group(); g.position.copy(a).setY(0.025); g.rotation.y = Math.atan2(-(b.z - a.z), b.x - a.x);
+        const binnen = new THREE.Group(); g.add(binnen);
+        const eind = laatste ? Math.max(0.3, len - 0.7) : len;
+        if (streep){ for (let d = 0; d < eind - 0.3; d += 0.9){ const m = new THREE.Mesh(new THREE.PlaneGeometry(0.5, breed), mat); m.rotation.x = -Math.PI / 2; m.position.x = d + 0.25; binnen.add(m); } }
+        else if (l.soort === 'dribbel'){ for (let d = 0; d < eind; d += 0.25){ const m = new THREE.Mesh(new THREE.PlaneGeometry(0.27, breed), mat); m.rotation.x = -Math.PI / 2; m.position.set(d + 0.12, 0, Math.sin(d * 2.4) * 0.22); binnen.add(m); } }
+        else { const m = new THREE.Mesh(new THREE.PlaneGeometry(eind, breed), mat); m.rotation.x = -Math.PI / 2; m.position.x = eind / 2; binnen.add(m); }
+        if (laatste){ const punt = new THREE.Mesh(new THREE.CircleGeometry(0.34, 3), mat); punt.rotation.x = -Math.PI / 2; punt.position.x = eind + 0.1; binnen.add(punt); }
+        scene.add(g); stukken.push(binnen);
+      }
+      return { soort: l.soort, punten, stukken };
+    });
 
-  /* alleen tekenen als het veld in beeld is */
-  let zichtbaar = true;
-  new IntersectionObserver(([e]) => { zichtbaar = e.isIntersecting; }).observe(box);
-  gsap.ticker.add(() => { if (zichtbaar) renderer.render(scene, camera); });
+    /* camera: van bovenaanzicht (de tekening) naar een schuine blik langs het veld */
+    const boven = { pos: new THREE.Vector3(0, 40, 0.01), kijk: new THREE.Vector3() };
+    const schuin = { pos: new THREE.Vector3(S * 0.32, S * 0.78, S * 1.02), kijk: new THREE.Vector3(0, 0, -S * 0.05) };
+    const stand = { intro: 0, kantel: 0 }, kijk = new THREE.Vector3();
+    const zetCamera = () => {
+      const f = stand.intro * (1 - stand.kantel);
+      camera.position.lerpVectors(boven.pos, schuin.pos, f); kijk.lerpVectors(boven.kijk, schuin.kijk, f); camera.lookAt(kijk);
+    };
+    const formaat = () => {
+      const r = box.getBoundingClientRect(); if (!r.width || !r.height) return;
+      renderer.setSize(r.width, r.height, false); camera.aspect = r.width / r.height;
+      const halfV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+      boven.pos.y = Math.max((L + 5) / 2 / halfV, (B + 5) / 2 / (halfV * camera.aspect));
+      camera.updateProjectionMatrix();
+      /* schuin: zoek de afstand waarop het hele vak (met de spelers erop) net in beeld past */
+      const richting = new THREE.Vector3(0.14, 0.78, 1).normalize(), v = new THREE.Vector3();
+      const hoeken = [];
+      for (const x of [-B / 2 - 0.3, B / 2 + 0.3]) for (const z of [-L / 2 - 1.2, L / 2 + 0.3]) for (const y of [0, 2.2]) hoeken.push(new THREE.Vector3(x, y, z));
+      let d = S * 0.5;
+      for (let i = 0; i < 120; i++, d *= 1.02){
+        camera.position.copy(richting).multiplyScalar(d); camera.lookAt(schuin.kijk); camera.updateMatrixWorld();
+        if (hoeken.every(h => { v.copy(h).project(camera); return Math.abs(v.x) <= 0.98 && Math.abs(v.y) <= 0.95; })) break;
+      }
+      schuin.pos.copy(richting).multiplyScalar(d);
+      zetCamera();
+    };
+    formaat(); new ResizeObserver(formaat).observe(box);
 
-  zetBegin(); zetCamera();
-  return { speel: () => tl.restart() };
-}
+    /* tijdlijn: opbouw, dan elke lijn op volgorde */
+    const vindSpeler = p => spelers.reduce((best, s) => { const d = s.position.distanceTo(p); return d < best.d ? { s, d } : best; }, { s: null, d: 2.2 }).s;
+    const vindBal = p => ballen.reduce((best, b) => { const d = b.position.distanceTo(p.clone().setY(0.22)); return d < best.d ? { b, d } : best; }, { b: null, d: 2.5 }).b;
+    const zetBegin = () => {
+      stand.intro = 0;
+      spelers.forEach(s => { s.position.copy(s.userData.thuis).setY(6); s.scale.setScalar(0.001); });
+      pionnen.forEach(p => p.scale.setScalar(0.001));
+      ballen.forEach(b => { b.position.copy(b.userData.thuis); b.scale.setScalar(0.001); b.rotation.set(0, 0, 0); });
+      lijnen.forEach(l => l.stukken.forEach(s => (s.scale.x = 0.0001)));
+      doelen.forEach(d => d.userData.net.scale.set(1, 1, 1));
+      zetCamera();
+    };
+    const tl = gsap.timeline({ paused: true, defaults: { ease: 'power3.out' } });
+    tl.call(zetBegin)
+      .to(stand, { intro: 1, duration: 2.2, ease: 'power2.inOut', onUpdate: zetCamera }, 0)
+      .to(pionnen.map(p => p.scale), { x: 1, y: 1, z: 1, duration: 0.45, stagger: 0.05, ease: 'back.out(2)' }, 0.2)
+      .to(spelers.map(s => s.scale), { x: 1, y: 1, z: 1, duration: 0.45, stagger: 0.07 }, 0.45)
+      .to(spelers.map(s => s.position), { y: 0, duration: 0.7, stagger: 0.07, ease: 'bounce.out' }, 0.45)
+      .to(ballen.map(b => b.scale), { x: 1, y: 1, z: 1, duration: 0.4, stagger: 0.03, ease: 'back.out(2)' }, 1.2);
+    /* de spelers en bal "volgen" tijdens de animatie een virtuele positie per lijn */
+    let tijd = 2.2;
+    const plek = new Map();   // object → huidige plek in de tijdlijn (bij het bouwen)
+    const plekVan = o => plek.get(o) || o.userData.thuis;
+    lijnen.forEach(l => {
+      const start = l.punten[0], eind = l.punten[l.punten.length - 1];
+      const ld = l.soort === 'schot' ? 0.5 : l.soort === 'pass' ? 0.75 : 1.1;
+      const perStuk = ld / l.stukken.length;
+      l.stukken.forEach((s, i) => tl.to(s.scale, { x: 1, duration: perStuk, ease: 'none' }, tijd + i * perStuk));
+      const route = [...l.punten.slice(1)];
+      const bal = [...ballen].sort((a, b) => plekVan(a).distanceTo(start) - plekVan(b).distanceTo(start))[0];
+      const balDichtbij = bal && plekVan(bal).distanceTo(start.clone().setY(0.22)) < 2.6;
+      if ((l.soort === 'pass' || l.soort === 'schot') && balDichtbij){
+        route.forEach((p, i) => {
+          const naar = p.clone(); naar.y = l.soort === 'schot' && i === route.length - 1 ? 0.5 : 0.22;
+          tl.to(bal.position, { x: naar.x, y: naar.y, z: naar.z, duration: perStuk, ease: l.soort === 'schot' ? 'power3.in' : 'power2.out' }, tijd + i * perStuk)
+            .to(bal.rotation, { x: `-=${l.soort === 'schot' ? 14 : 8}`, duration: perStuk, ease: 'power2.out' }, tijd + i * perStuk);
+        });
+        plek.set(bal, eind.clone().setY(0.22));
+        if (l.soort === 'schot'){
+          const doel = doelen.find(d => d.position.distanceTo(eind) < 4);
+          if (doel) tl.to(doel.userData.net.scale, { z: 1.35, duration: 0.18, yoyo: true, repeat: 1, ease: 'power2.out' }, tijd + ld - 0.05);
+          tl.to(bal.position, { y: 0.22, duration: 0.4, ease: 'bounce.out' }, tijd + ld + 0.05);
+        }
+      } else if (l.soort === 'loopweg' || l.soort === 'dribbel'){
+        const speler = spelers.reduce((best, s) => { const d = plekVan(s).distanceTo(start); return d < best.d ? { s, d } : best; }, { s: null, d: 2.4 }).s;
+        if (speler){
+          route.forEach((p, i) => tl.to(speler.position, { x: p.x, z: p.z, duration: perStuk, ease: 'power1.inOut' }, tijd + 0.05 + i * perStuk));
+          plek.set(speler, eind.clone());
+          if (l.soort === 'dribbel' && balDichtbij){
+            route.forEach((p, i) => tl.to(bal.position, { x: p.x + 0.45, z: p.z - 0.3, duration: perStuk, ease: 'power1.inOut' }, tijd + 0.05 + i * perStuk)
+              .to(bal.rotation, { x: '-=6', duration: perStuk }, tijd + 0.05 + i * perStuk));
+            plek.set(bal, eind.clone().setY(0.22));
+          }
+        }
+      }
+      tijd += ld * 0.85;
+    });
+    void vindSpeler; void vindBal;
+
+    /* hero: bij wegscrollen kantelt de camera terug naar de tekening */
+    if (opts.kantelBijScroll && window.ScrollTrigger){
+      window.ScrollTrigger.create({ trigger: opts.kantelBijScroll, start: 'top top', end: 'bottom top', scrub: 0.6,
+        onUpdate: st => { stand.kantel = st.progress; zetCamera(); } });
+    }
+
+    /* alleen tekenen als het veld zichtbaar is */
+    let zichtbaar = false;
+    new IntersectionObserver(([e]) => { zichtbaar = e.isIntersecting; }).observe(box);
+    const teken = () => { if (zichtbaar && box.offsetParent !== null) renderer.render(scene, camera); };
+    gsap.ticker.add(teken);
+    zetBegin();
+    return { speel: () => { formaat(); tl.restart(); }, stop: () => tl.pause() };
+  }
+
+  window.Veld3D = { maak };
+})();

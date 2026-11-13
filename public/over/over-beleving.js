@@ -41,16 +41,26 @@ if (gsap && ScrollTrigger && !rustig) {
   gsap.from('.hero h1 .w > span', { yPercent: 110, duration: 0.9, stagger: 0.07, ease: 'power4.out', delay: 0.1 });
   gsap.from('.hero .lead, .hero .acties, .hero__noot', { y: 18, opacity: 0, duration: 0.7, stagger: 0.08, ease: 'power3.out', delay: 0.45 });
 
-  /* ---------- hero: het 3D-veld (alleen met WebGL) ---------- */
-  const box = document.querySelector('.hero [data-tekening]');
+  /* ---------- elke oefenvorm in 3D (alleen met WebGL); de SVG blijft als terugval ---------- */
   const kanWebGL = (() => { try { return !!document.createElement('canvas').getContext('webgl2'); } catch { return false; } })();
-  if (box && kanWebGL) {
-    import(new URL('over/over-3d.js', document.baseURI).href).then(({ maakVeld }) => {
-      const veld = maakVeld(box, gsap, ScrollTrigger);
-      box.closest('.veldkaart').classList.add('is-3d');
-      veld.speel();
-      document.querySelector('[data-opnieuw]').addEventListener('click', e => { e.stopImmediatePropagation(); veld.speel(); }, true);
-    }).catch(() => { /* geen 3D: de SVG-tekening blijft staan */ });
+  if (window.Veld3D && kanWebGL){
+    const maak3D = box => {
+      if (box._veld3d) return box._veld3d;
+      const data = box.querySelector('script[data-vorm]');
+      if (!data) return null;
+      try {
+        const hero = box.closest('.hero');
+        box._veld3d = window.Veld3D.maak(box, JSON.parse(data.textContent), { kantelBijScroll: hero || null });
+        box.classList.add('is-3d');
+      } catch (e){ console.warn('[over] 3D niet gelukt', e); box._veld3d = null; }
+      return box._veld3d;
+    };
+    window.speel3D = box => { const v = box && maak3D(box); if (v) v.speel(); };
+    const io3 = new IntersectionObserver(es => es.forEach(e => {
+      if (e.isIntersecting && e.target.offsetParent !== null){ window.speel3D(e.target); io3.unobserve(e.target); }
+    }), { threshold: 0.3 });
+    document.querySelectorAll('[data-tekening]').forEach(box => io3.observe(box));
+    document.querySelector('[data-opnieuw]')?.addEventListener('click', () => window.speel3D(document.querySelector('.hero [data-tekening]')));
   }
 
   /* ---------- groene band: de zin licht woord voor woord op ---------- */
@@ -95,27 +105,43 @@ if (gsap && ScrollTrigger && !rustig) {
     const loper = document.createElement('div'); loper.className = 'loper'; loper.setAttribute('aria-hidden', 'true');
     loper.innerHTML = '<canvas width="128" height="128"></canvas>';
     rond.prepend(loper);
-    const illo = new Zdog.Illustration({ element: loper.querySelector('canvas'), zoom: 3.4 });
-    new Zdog.Shape({ addTo: illo, stroke: 30, color: '#f6f6f2' });
-    /* twaalf rode vijfhoeken, verdeeld zoals op een echte bal */
-    const vlak = (rx, ry) => {
-      const g = new Zdog.Group({ addTo: illo, rotate: { x: rx, y: ry } });
-      new Zdog.Polygon({ addTo: g, sides: 5, radius: 4.2, stroke: 1.5, fill: true, color: '#d4302b', translate: { z: 15 } });
+    const illo = new Zdog.Illustration({ element: loper.querySelector('canvas'), zoom: 3.6 });
+    const bol = new Zdog.Anchor({ addTo: illo });
+    new Zdog.Shape({ addTo: bol, stroke: 30, color: '#f4f4ef' });
+    /* twaalf zwarte vijfhoeken op de plekken van een echte voetbal (de hoekpunten van een icosaëder) */
+    const vlak = n => {
+      const ry = Math.atan2(n[0], n[2]), rx = -Math.asin(n[1]);
+      const buiten = new Zdog.Group({ addTo: bol, rotate: { y: ry } });
+      const binnen = new Zdog.Group({ addTo: buiten, rotate: { x: rx } });
+      new Zdog.Polygon({ addTo: binnen, sides: 5, radius: 5.2, stroke: 1, fill: true, color: '#1b1f24', translate: { z: 14.6 } });
     };
-    const a = Math.atan(2);
-    vlak(0, 0); vlak(Math.PI, 0);
-    for (let k = 0; k < 5; k++) { vlak(a, k * Zdog.TAU / 5); vlak(Math.PI - a, k * Zdog.TAU / 5 + Zdog.TAU / 10); }
+    const h = Math.atan(0.5);
+    vlak([0, 1, 0]); vlak([0, -1, 0]);
+    for (let k = 0; k < 5; k++){
+      const f1 = k * Zdog.TAU / 5, f2 = f1 + Zdog.TAU / 10;
+      vlak([Math.cos(h) * Math.sin(f1), Math.sin(h), Math.cos(h) * Math.cos(f1)]);
+      vlak([Math.cos(h) * Math.sin(f2), -Math.sin(h), Math.cos(h) * Math.cos(f2)]);
+    }
     const zetStand = s => {
       if (rond.dataset.stand === String(s)) return;
       rond.dataset.stand = s;
       rond.querySelectorAll('[data-naar]').forEach(b => b.setAttribute('aria-pressed', b.dataset.naar === String(s)));
     };
-    const hoekVan = p => 72 + 216 * p;
+    /* de bal rust bij de stations (evaluatie, tussen groeicurve en thema, training) en rolt ertussen */
+    const SLEUTELS = [[0, 36], [0.22, 36], [0.42, 180], [0.58, 180], [0.78, 324], [1, 324]];
+    const hoekVan = p => {
+      for (let i = 1; i < SLEUTELS.length; i++){
+        const [p0, h0] = SLEUTELS[i - 1], [p1, h1] = SLEUTELS[i];
+        if (p <= p1){ const f = (p - p0) / (p1 - p0 || 1), z = f * f * (3 - 2 * f); return h0 + (h1 - h0) * z; }
+      }
+      return 324;
+    };
     const zet = p => {
       const hoek = hoekVan(p);
       loper.style.rotate = hoek + 'deg';
-      illo.rotate.z = -hoek * Math.PI / 180 * 3.2; /* rollen: de bal draait over zijn eigen as */
-      illo.rotate.x = 0.5;
+      /* rollen: de bal draait in de looprichting, evenredig met de afgelegde weg */
+      bol.rotate.y = hoek * Math.PI / 180 * 4.5;
+      illo.rotate.x = -0.35;
       illo.updateRenderGraph();
       zetStand(p < 0.34 ? 1 : p < 0.67 ? 2 : 3);
     };

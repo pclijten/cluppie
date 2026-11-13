@@ -21,7 +21,9 @@ html = html.replace(/<!--tekening:([\w-]+)-->[\s\S]*?<!--\/tekening-->/g, (_, id
   n++;
   /* pathLength op doorgetrokken lijnen, zodat ze zich op de pagina kunnen "tekenen" */
   svg = svg.replace(/<path d="([^"]+)" class="tv-lijn tv-(pass|dribbel|schot)"/g, '<path d="$1" pathLength="1" class="tv-lijn tv-$2"');
-  return `<!--tekening:${id}-->${svg}<!--/tekening-->`;
+  /* de gegevens van de vorm erbij, voor de 3D-weergave (over/over-3d.js) */
+  const data = JSON.stringify({ naam: vorm.naam, veld: vorm.veld, tekening: vorm.tekening }).replace(/</g, '\\u003c');
+  return `<!--tekening:${id}-->${svg}<script type="application/json" data-vorm>${data}</script><!--/tekening-->`;
 });
 writeFileSync(pad, html);
 console.log(`over.html: ${n} tekening(en) bijgewerkt`);
