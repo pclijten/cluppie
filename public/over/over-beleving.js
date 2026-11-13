@@ -19,7 +19,7 @@ if (gsap && ScrollTrigger && !rustig) {
   /* ---------- zacht scrollen ---------- */
   const Loco = window.locomotiveScroll && (window.locomotiveScroll.default || window.locomotiveScroll);
   if (typeof Loco === 'function') {
-    loco = new Loco({
+    loco = window.__overLoco = new Loco({
       lenisOptions: { lerp: 0.11, smoothWheel: true },
       scrollCallback: () => ScrollTrigger.update(),
     });
