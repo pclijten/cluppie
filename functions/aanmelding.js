@@ -25,7 +25,7 @@ const { isPlatformBeheerder } = require('./platform');
 const { maakMail } = require('./mail-sjabloon');
 
 const REGIO = 'europe-west1';
-const PLATFORM_EMAIL = 'info@cluppie.io';   // ontvanger van de aanmeldmelding (NIET de beheerdercontrole: die staat in platform.js)
+const PLATFORM_EMAIL = 'paul@cluppie.io';   // ontvanger van de aanmeldmelding (NIET de beheerdercontrole: die staat in platform.js)
 const APP_URL = 'https://www.cluppie.io/';
 const DISTRICTEN = ['noord', 'oost', 'west1', 'west2', 'zuid1', 'zuid2'];
 

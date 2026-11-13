@@ -1,5 +1,5 @@
-/* Eén plek voor de hulptekst bij (PDF-)uploads: lukt het blijvend niet, dan mailen naar info@cluppie.io. */
-export const UPLOAD_CONTACT = 'info@cluppie.io';
+/* Eén plek voor de hulptekst bij (PDF-)uploads: lukt het blijvend niet, dan mailen naar paul@cluppie.io. */
+export const UPLOAD_CONTACT = 'paul@cluppie.io';
 export const UPLOAD_HULP = `Lukt uploaden steeds niet? Neem dan contact op met Cluppie: ${UPLOAD_CONTACT}`;
 
 /* Kleine melding onder een uploadknop/-venster. */
