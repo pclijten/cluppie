@@ -22,6 +22,7 @@ import { onderdeelAan } from './onderdelen.js?v=20261111d';
 import { htmlKompas } from './teams-leerlijn.js?v=20261111d';
 import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261113a';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
+import { spelersOpTraining } from './uitleen-regels.js?v=20261113b';
 import {
   MAX_WEKEN, weekdagVan, plusDagen, eersteOpDag, regelDatums, actieveRegels, vastOp, vastePrefill, redenVanRegel
 } from './vaste-afmeldingen.js?v=20261013a';
@@ -245,7 +246,7 @@ export function htmlPresentieTraining(){
   const rijHtml = (p, chip = '') => {
     const afw = (p.afwezig || []);
     const laat = (p.telaat || []);
-    const aanwezig = Math.max(0, S.spelers.length - afw.length);
+    const aanwezig = Math.max(0, (Array.isArray(p.selectie) ? p.selectie.length : S.spelers.length) - afw.length);
     const dat = new Date(p.datum+'T12:00').toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short'});
     const datMooi = dat.charAt(0).toUpperCase()+dat.slice(1);
     const afwNamen = afw.length
@@ -707,10 +708,11 @@ export function modalPresentie(bestaande = null, opties = {}){
   let redenen = bestaande ? JSON.parse(JSON.stringify(bestaande.afwezigRedenen || {})) : {};
   const kanDatumWijzigen = !bestaande;
   const startAnder = kanDatumWijzigen && !!opties.startAnder;
+  const opDatum = () => spelersOpTraining(S.spelers, datum);
   // [20261012] Nog geen record voor deze datum? Dan staan spelers met een
   // vaste afmelding alvast op afwezig (zie js/vaste-afmeldingen.js).
   const vulVastIn = () => {
-    const pf = vastePrefill(S.team, datum, S.spelers.map(p => p.id));
+    const pf = vastePrefill(S.team, datum, opDatum().lijst.map(p => p.id));
     afwezig = new Set(pf.afwezig); telaat = new Set(); redenen = pf.redenen;
   };
   if (!bestaande && !S.presentie.find(p => p.datum === datum)) vulVastIn();
@@ -720,7 +722,18 @@ export function modalPresentie(bestaande = null, opties = {}){
     return s.charAt(0).toUpperCase()+s.slice(1);
   };
 
-  const rijenHtml = () => S.spelers.map(p => {
+  /* [20261111] Wie hoort bij de training op déze datum? Een ingeleende speler
+     alleen op zijn afgesproken trainingsdag(en); een eigen speler die die dag
+     bij het lenende team traint staat grijs onderaan en telt niet mee. */
+  const eldersHtml = () => opDatum().elders.map(({ p, team }) => `
+    <div class="pres-speler pres-elders">
+      <div class="pres-speler-kop" aria-disabled="true">
+        <span class="pres-shirt">${esc(p.nummer ?? '·')}</span>
+        <span class="pres-naam">${esc(p.naam)}<small>Traint deze dag bij ${esc(team)}</small></span>
+        <span class="pres-status">⇄ ${esc(team)}</span>
+      </div>
+    </div>`).join('');
+  const rijenHtml = () => opDatum().lijst.map(p => {
     const isAfw = afwezig.has(p.id);
     const isLaat = telaat.has(p.id);
     const klasse = isAfw ? 'afwezig' : (isLaat ? 'telaat' : 'aanwezig');
@@ -745,7 +758,7 @@ export function modalPresentie(bestaande = null, opties = {}){
       <div class="pres-telaat-rij"><button type="button" class="pres-reden-chip telaat-chip actief" data-telaat="${p.id}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.2V12l3.4 2.2"/></svg> Te laat: tik om te wissen</button></div>
       ` : ''}
     </div>`;
-  }).join('');
+  }).join('') + eldersHtml();
 
   openModal(`
     <h2>Presentie training</h2>
@@ -824,10 +837,10 @@ export function modalPresentie(bestaande = null, opties = {}){
          "niet afwezig" als aanwezig, en krijgt een speler die later
          instroomt met terugwerkende kracht 100% over trainingen waar hij
          nog niet bij het team was. Zie js/opkomst.js. */
-      selectie: S.spelers.map(p => p.id),
-      aantalAanwezig: S.spelers.length - afwezig.size,
+      selectie: opDatum().lijst.map(p => p.id),
+      aantalAanwezig: opDatum().lijst.length - afwezig.size,
       aantalTeLaat: telaat.size,
-      aantalSpelers: S.spelers.length,
+      aantalSpelers: opDatum().lijst.length,
       door: S.user.displayName || (S.user.email||'').split('@')[0] || '',
       gewijzigd: serverTimestamp(),
     };
@@ -1169,10 +1182,27 @@ export async function stopVasteAfmelding(id){
   } catch(e){ meld('Stoppen mislukt: ' + (e.code || e.message)); }
 }
 
+/* ---------- Planning: formulier als paneel ----------
+   [20261111e] Op desktop/tablet schuift het formulier als paneel van rechts
+   over de planning (zelfde vorm als het uitleenformulier), in plaats van het
+   hele scherm te vervangen door de telefoonweergave. Op de telefoon blijft het
+   een volledig scherm (CSS: .modal-achter[data-vorm="paneel"]). */
+function openPlanPaneel(html){
+  openModal(html);
+  const achter = document.getElementById('modalAchter');
+  achter?.setAttribute('data-vorm', 'paneel');
+  const opEsc = e => { if (e.key === 'Escape' && achter?.classList.contains('open') && achter.dataset.vorm === 'paneel') sluitModal(); };
+  document.addEventListener('keydown', opEsc);
+  const opruimen = new MutationObserver(() => {
+    if (!achter?.classList.contains('open') || achter.dataset.vorm !== 'paneel'){ document.removeEventListener('keydown', opEsc); opruimen.disconnect(); }
+  });
+  if (achter) opruimen.observe(achter, { attributes: true, attributeFilter: ['class', 'data-vorm'] });
+}
+
 /* ---------- Planning: eigen dag toevoegen ---------- */
 export function modalEigenDag(){
   const vandaag = new Date().toISOString().slice(0,10);
-  openModal(`
+  openPlanPaneel(`
     <h2>Eigen dag toevoegen</h2>
     <p class="u-t-md u-zacht u-mb-sm">Voeg een eigen datum toe aan de planning, bijvoorbeeld een toernooi, teamuitje of trainingskamp.</p>
     <div class="veldgroep"><label>Datum</label>
@@ -1180,7 +1210,7 @@ export function modalEigenDag(){
     <div class="veldgroep"><label>Omschrijving</label>
       <input class="invoer" id="mEdLabel" placeholder="Bijv. Teamfoto, toernooi, vrij" autocomplete="off"></div>
     <div class="veldgroep"><label>Notitie (optioneel)</label>
-      <input class="invoer" id="mEdOpm" placeholder="Extra info" autocomplete="off"></div>
+      <textarea class="invoer plan-notitie" id="mEdOpm" rows="6" placeholder="Extra info, bijvoorbeeld adres, tijden, wat mee te nemen"></textarea></div>
     <button class="knop vol" id="mEdOk">Toevoegen</button>`);
   $('#mEdOk').onclick = async () => {
     const datum = $('#mEdDatum').value;
@@ -1205,7 +1235,7 @@ export function modalEigenDag(){
 export function modalPlanDag(it){
   const isEigen = it.bron === 'eigen';
   const typeOpties = [['wd','Wedstrijddag'],['beker','Beker'],['inhaal','Inhaal'],['vrij','Vrij'],['eigen','Eigen dag']];
-  openModal(`
+  openPlanPaneel(`
     <h2>${datumNL(it.datum)}</h2>
     <p class="u-t-sm u-zacht u-mb-sm">${isEigen ? 'Eigen dag bewerken of verwijderen.' : 'KNVB-speeldag aanpassen of verbergen voor dit team. De originele kalender blijft bewaard.'}</p>
     <div class="veldgroep"><label>Type</label>
@@ -1213,7 +1243,7 @@ export function modalPlanDag(it){
     <div class="veldgroep"><label>Omschrijving</label>
       <input class="invoer" id="mPdLabel" value="${esc(it.label||'')}" autocomplete="off"></div>
     <div class="veldgroep"><label>Notitie (optioneel)</label>
-      <input class="invoer" id="mPdOpm" value="${esc(it.opmerking||'')}" autocomplete="off"></div>
+      <textarea class="invoer plan-notitie" id="mPdOpm" rows="6">${esc(it.opmerking||'')}</textarea></div>
     <button class="knop vol" id="mPdOk">Opslaan</button>
     <div class="rij u-mt-xs">
       ${it.aangepast && !isEigen ? `<button class="knop licht u-flex-1" id="mPdReset" >Herstel KNVB</button>` : ''}

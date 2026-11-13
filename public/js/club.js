@@ -108,6 +108,14 @@ async function clubTeamsOphalen(){
   return [...result].sort((a,b) => (a.naam||'').localeCompare(b.naam||''));
 }
 
+/* Inzicht → Trainingen: lazy geladen, leest alleen als de tab open staat. */
+async function vulTrainingsgebruikTab(v){
+  const bak = v.querySelector('#tgInzicht');
+  if (!bak) return;
+  const m = await import('./club-trainingsgebruik.js?v=20261113b');
+  m.vulTrainingsgebruik(bak, S.clubTeams || []);
+}
+
 async function clubTrainingenOphalen(){
   const snap = await getDocs(query(collection(db,'trainingen'), where('club','==',S.clubId)));
   return snap.docs.map(d => ({id:d.id, ...d.data()}))
@@ -1171,10 +1179,11 @@ async function renderClub(opts = {}){
       S.clubInzichtTab = nieuw;
       v.querySelectorAll('.inzicht-tabs [data-inztab]').forEach(b => b.classList.toggle('actief', b === btn));
       const bak = v.querySelector('#inzichtInhoud');
-      if (bak){ bak.innerHTML = htmlInzichtTab(nieuw, S._gebruikstats); koppelInzichtRapporten(v); if (nieuw === 'vergelijk') laadVergelijk(v); }
+      if (bak){ bak.innerHTML = htmlInzichtTab(nieuw, S._gebruikstats); koppelInzichtRapporten(v); vulTrainingsgebruikTab(v); if (nieuw === 'vergelijk') laadVergelijk(v); }
     };
   });
   koppelInzichtRapporten(v);
+  vulTrainingsgebruikTab(v);
   if (isInzicht && (S.clubInzichtTab || 'teams') === 'vergelijk') laadVergelijk(v);
 
   const openBeheer = id => { S._cbTeam = id; S._cbUitnodig = null; naarClubTab('teambeheer'); };

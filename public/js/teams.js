@@ -4,7 +4,7 @@ import {
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, teamCode, clubAfkorting, speler, isBeheerder, isPlatformBeheerder,
-  openModal, sluitModal, toon, stopUnsubs, bewaakTerug, modAan, doeTerug,
+  openModal, sluitModal, toon, stopUnsubs, bewaakTerug, modAan, doeTerug, terugLaag,
   bewaarPositie, leesPositie, wisPositie
 } from './state.js?v=20261111d';
 import {
@@ -19,6 +19,7 @@ import { ico } from './icons.js?v=20261110a';
 
 import { analyseWedstrijd } from './analyse.js?v=20261111d';
 import { telGebruik, telNav } from './tracker.js?v=20261111d';
+import { logTrainingGeopend } from './training-log.js?v=20261113b';
 import { doSignOut, joinMetCode, zorgClubLidmaatschap } from './auth.js?v=20261113a';
 import { tekenPwaBanner } from './pwa.js?v=20261110a';
 import {
@@ -57,9 +58,10 @@ import {
 import { htmlTeamDocumenten } from './teams-documenten.js?v=20261111d';
 import {
   htmlHub, htmlPresWedstrijd, presWedstrijdKeuzeHtml, presWedstrijdBewaar,
-  htmlEvaluatieLijst, htmlLeerlijnOverzicht, htmlHistorieLijst, koppelWedstrijdInfo,
+  htmlEvaluatieLijst, htmlLeerlijnOverzicht, htmlHistorieLijst, koppelWedstrijdInfo, hubPasModus, pasHubAan,
 } from './teams-hub.js?v=20261113a';
 import { koppelNu } from './nu-scherm.js?v=20261113a';
+import { vandaagLokaal, leenActief } from './uitleen-regels.js?v=20261113b';
 import { htmlHandleiding } from './teams-handleiding.js?v=20261113a';
 import { koppelElftalFilter, modalElftalToewijzen, elftalPillWedstrijd } from './elftallen.js?v=20261111d';
 import { isAfgelast, telMee, soortPill, statusBadge, plekKort, markeerGezien } from './wedstrijd-status.js?v=20261012h';
@@ -1145,14 +1147,22 @@ function startUitleningenListener(teamId){
    gasten, dan roept de betreffende listener herbouwSpelers() aan. */
 function herbouwSpelers(){
   const eigenDocs = S._eigenSpelers || [];
-  const uitleningenIn  = S.uitleningenIn  || [];
-  const uitleningenUit = S.uitleningenUit || [];
+  /* [20261111] Alleen uitleningen die nog lopen (of nog moeten beginnen).
+     Een voorbije uitlening (tot < vandaag) blijft als record bestaan voor de
+     historie, maar de speler verdwijnt dan vanzelf bij het andere team. */
+  const vandaag = vandaagLokaal();
+  const uitleningenIn  = (S.uitleningenIn  || []).filter(u => leenActief(u, vandaag));
+  const uitleningenUit = (S.uitleningenUit || []).filter(u => leenActief(u, vandaag));
 
   // uitgaande uitlening per speler-id (informatief — blokkeert niet meer).
   // Een speler kan dezelfde dag bij zijn eigen team én bij het lenende team
   // spelen (bv. 9:00 bij ons, 11:00 elders); de coach ziet dat via het label
   // bij zijn naam en regelt zelf of het qua tijd past.
-  const uitgeleendPerId = new Map(uitleningenUit.map(u => [u.spelerId, u]));
+  const uitgeleendPerId = new Map();
+  for (const u of uitleningenUit){
+    if (!uitgeleendPerId.has(u.spelerId)) uitgeleendPerId.set(u.spelerId, []);
+    uitgeleendPerId.get(u.spelerId).push(u);
+  }
   // welke uitleningen hebben een gast geadopteerd
   const leenPerGast = new Map();
   for (const u of uitleningenIn) if (u.adopteertGast) leenPerGast.set(u.adopteertGast, u);
@@ -1162,9 +1172,10 @@ function herbouwSpelers(){
   // 1) eigen spelers (geen gast) — ook wie is uitgeleend blijft gewoon bruikbaar
   for (const p of eigenDocs){
     if (p.gast) continue;
-    const u = uitgeleendPerId.get(p.id);
+    const us = uitgeleendPerId.get(p.id);
+    const u = us?.[0];
     lijst.push(u
-      ? { ...p, _ingeleend:false, _uitgeleendAan: u.naarTeamNaam, _leenIdUit: u.id }
+      ? { ...p, _ingeleend:false, _uitgeleendAan: us.map(x => x.naarTeamNaam).join(', '), _leenIdUit: u.id, _leningenUit: us }
       : { ...p, _ingeleend:false });
   }
 
@@ -1186,6 +1197,7 @@ function herbouwSpelers(){
       _bronTeam: u.vanTeam,
       _bronTeamNaam: u.vanTeamNaam,
       _leenId: u.id,
+      _leen: u,
     });
   }
 
@@ -1204,7 +1216,7 @@ function herbouwSpelers(){
         _bronLeerpunten: s.leerpunten || [],   // alleen-lezen momentopname van het bronteam; p.leerpunten (eigen gast-notities) blijft ongemoeid
         meetelVanaf: u.overlay?.meetelVanaf ?? p.meetelVanaf ?? null,
         _ingeleend: true, _gast: true, _gekoppeld: true,
-        _bronTeam: u.vanTeam, _bronTeamNaam: u.vanTeamNaam, _leenId: u.id,
+        _bronTeam: u.vanTeam, _bronTeamNaam: u.vanTeamNaam, _leenId: u.id, _leen: u,
       });
     } else {
       lijst.push({ ...p, _ingeleend:false, _gast:true, _gekoppeld:false });
@@ -1235,6 +1247,52 @@ export function verlaatTeamView(){
    Coach-vriendelijk overzicht van wat er nieuw is in de app. Nieuwste bovenaan.
    Voeg een nieuwe release toe door bovenaan UPDATES een item te plaatsen. */
 const UPDATES = [
+  { datum:'2026-11-13', titel:'Startscherm past precies op je telefoon', punten:[
+    'Het startscherm van je team past nu op één scherm: je hoeft niet meer te scrollen om te zien wat er komt.',
+    'Bovenaan staat wat er nu of als eerste gebeurt. Onder Daarna zie je zoveel komende trainingen en wedstrijden als er passen; via Agenda › zie je de rest.',
+    'De knop Alles staat altijd onderaan. Tik erop en alle tegels schuiven van onderen omhoog. Tik ernaast of druk op terug om ze weer te sluiten.',
+  ]},
+  { datum:'2026-11-12', titel:'Opstelling: vorig kwart overnemen kan nu altijd', punten:[
+    'De knop "Eindopstelling overnemen" verschijnt nu zodra een eerder kwart een opstelling heeft, ook als je een kwart hebt overgeslagen. Hij pakt dan het laatst ingevulde kwart.',
+    'Staan er al spelers in het kwart, dan blijft er een rustige knop staan. De app vraagt eerst of je ze wilt vervangen.',
+    'Is een kwart al gespeeld (wissels of de klok heeft gelopen), dan verschijnt de knop niet, zodat gespeelde minuten nooit verloren gaan.',
+  ]},
+  { datum:'2026-11-12', titel:'Wedstrijdvoorbereiding: mooier bericht voor de groepsapp', punten:[
+    'Delen in de groepsapp geeft nu een overzichtelijk bericht: wedstrijd in vet bovenaan, daaronder datum, aanvang, plek en veld, elk op een eigen regel.',
+    'Het weer staat in een eigen blokje, met gevoelstemperatuur, of het droog blijft en alle tips (regenjas, handschoenen, water).',
+    'De route-link staat onderaan, zodat hij de rest van het bericht niet meer onderbreekt.',
+  ]},
+  { datum:'2026-11-11', titel:'Lijstjes: kolommen wijzigen en verschuiven', punten:[
+    'In Kolommen beheren tik je op een kolom om de naam, de opties (bij Keuze) of het type te wijzigen.',
+    'Hernoem je een optie (bijvoorbeeld S naar Small), dan schuift wat al is ingevuld gewoon mee.',
+    'Het type kan alleen veranderen zolang er nog niets in de kolom is ingevuld, zodat er nooit ongemerkt gegevens verdwijnen.',
+    'Met de pijltjes zet je de kolommen in een andere volgorde. De opmerking blijft altijd achteraan.',
+  ]},
+  { datum:'2026-11-11', titel:'Planning: eigen dag op de computer en ruimere notitie', punten:[
+    'Op de computer opent "Eigen dag" (en het aanpassen van een dag) als paneel rechts naast de planning, in plaats van de telefoonweergave. Klik ernaast of druk op Esc om te sluiten.',
+    'Het notitieveld is een stuk groter (en groter te slepen), zodat ook langere teksten (adres, tijden, wat mee te nemen) goed passen. Een nieuwe regel kan gewoon met Enter.',
+  ]},
+  { datum:'2026-11-11', titel:'Uitlenen: Wedstrijden en Meetrainen elk een eigen tabblad', punten:[
+    'Het uitleenformulier heeft nu twee tabbladen: Wedstrijden en Meetrainen. Elk tabblad heeft een eigen Ja/Nee en een eigen periode; op het tabblad zie je meteen wat er is ingesteld.',
+    'De keuze "Allebei" is weg: zet je beide tabbladen op Ja, dan speelt én traint de speler mee. Meetrainen kan nu ook langer of korter duren dan de wedstrijden.',
+    'Eén wedstrijd is de eerste keuze in het tabblad Wedstrijden.',
+    'Opgelost: bij Wijzigen sprong "Wedstrijden aanvinken" terug naar "Tot en met datum", en bij Meetrainen verscheen de lijst met wedstrijden.',
+  ]},
+  { datum:'2026-11-11', titel:'Uitlenen: eerst de teams van je eigen bouw', punten:[
+    'Bij "Naar team" staan eerst de teams van de eigen bouw, daarna de andere bouwen (de bouw erboven eerst).',
+    'Hogere teams staan bovenaan met een ↑, het dichtstbijzijnde hogere team eerst. Zo vind je het team waar je meestal naartoe uitleent het snelst.',
+  ]},
+  { datum:'2026-11-11', titel:'Uitlenen op desktop in een zijpaneel', punten:[
+    'Op een groter scherm opent het uitleenformulier nu als paneel aan de rechterkant. Het overzicht erachter blijft zichtbaar; klik ernaast of druk op Esc om te sluiten.',
+    'De knoppen Annuleren en Vastleggen blijven onderaan in beeld, ook als je scrollt (ook op de telefoon).',
+  ]},
+  { datum:'2026-11-11', titel:'Uitlenen: voor één wedstrijd of een hele periode', punten:[
+    'De coördinator kiest bij uitlenen nu tussen Eén wedstrijd en Uitgebreid. Uitgebreid: wedstrijden, meetrainen of allebei, tot een datum, voor een aantal wedstrijden of voor aangevinkte wedstrijden, en per trainingsdag bij welk team.',
+    'Na de einddatum is een uitlening vanzelf voorbij. Je hoeft een speler niet meer terug te zetten.',
+    'Traint een uitgeleende speler op een dag bij zijn eigen team, dan vult de eigen trainer gewoon de presentie in. Op dagen bij het andere team staat hij grijs en telt hij niet mee.',
+    'Een uitgeleende speler stond soms eerst als afwezig bij een wedstrijd. Hij staat nu meteen in de selectie, ook op het startscherm.',
+    'Uitlenen kan alleen nog door de coördinator van de bouw of de clubadmin. In Bouw › Uitleningen zie je per uitlening wat er is afgesproken en kun je wijzigen, verlengen of beëindigen.',
+  ]},
   { datum:'2026-11-13', titel:'Minder vastlopers', punten:[
     'De app start de verbindingen voor trainingen, video\'s, berichten en documenten alleen nog opnieuw als je teams echt veranderen. Dat maakt een bekende storing in de database minder waarschijnlijk.',
     'Loopt de verbinding met de database toch vast, dan zie je onderin een balk met een knop Herlaad. Je gegevens blijven bewaard.',
@@ -1978,6 +2036,24 @@ function htmlPouleInhoud(){
   return subtabs + (sub==='stand' ? standHtml : progHtml);
 }
 
+/* [20261113] Passend startscherm: bij draaien/venstermaat opnieuw passen, en ook
+   wanneer de team-view terug in beeld komt zonder nieuwe render (bv. na een wedstrijd). */
+let _hubPasTimer = null;
+addEventListener('resize', () => {
+  clearTimeout(_hubPasTimer);
+  _hubPasTimer = setTimeout(() => {
+    const v = document.querySelector('#view-team');
+    if (!v || !S.team || S.teamTab !== 'hub' || !v.classList.contains('actief')) return;
+    if (v.classList.contains('hub-pas') !== hubPasModus()) renderTeam(); else pasHubAan(v);
+  }, 200);
+});
+{
+  const v = document.querySelector('#view-team');
+  if (v && 'MutationObserver' in window) new MutationObserver(() => {
+    if (v.classList.contains('actief') && v.classList.contains('hub-pas')) requestAnimationFrame(() => pasHubAan(v));
+  }).observe(v, { attributes:true, attributeFilter:['class'] });
+}
+
 export function renderTeam(){
   if (!S.team) return;
   /* [20261111d] seizoensplan (eigen of van de club) één keer per team laden, zodat Training maken, de
@@ -1993,14 +2069,19 @@ export function renderTeam(){
      trainingen en leerlijn. Geeft de hook false terug (smal scherm, ander
      tabblad, "Gewone weergave" of een fout), dan gaat alles hieronder
      ongewijzigd door. Op telefoon bestaat S._deskRenderTeam niet eens. */
+  v.classList.remove('hub-pas');
   if (S._deskRenderTeam && S._deskRenderTeam(v, tab)) return;
 
   /* De hub is het startscherm van een team: eigen kop (begroeting + team-
-     dropdown) en tegels — géén standaard team-kop en géén onderbalk. */
+     dropdown) en tegels — géén standaard team-kop en géén onderbalk.
+     [20261113] Op een telefoon vult de hub precies het scherm (hub-pas). */
   if (tab === 'hub'){
+    v.classList.toggle('hub-pas', hubPasModus());
     v.innerHTML = htmlHub(updatesInfo());
     koppelTeamTab(v, tab);
     koppelEersteStappen(v, { zetTeamTab });
+    requestAnimationFrame(() => pasHubAan(v));
+    document.fonts?.ready?.then(() => pasHubAan(v));
     return;
   }
 
@@ -2426,10 +2507,29 @@ function koppelTeamTab(v, tab){
   if (tab === 'seizoensplan' && onderdeelAan(tab)){ koppelSeizoensplan(v, { zetTeamTab }); return; }
   if (tab === 'hub'){
     // Nu-blok bovenaan: kaart, Daarna-lijst en knoppen naar de bestaande schermen
-    koppelNu(v, { zetTeamTab, openTraining: openTrainingDoc, evaluatie: modAan('evaluaties') });
+    koppelNu(v, { zetTeamTab, openTraining: openTrainingDoc, evaluatie: modAan('evaluaties'), naTeken: () => pasHubAan(v) });
     // "Alles": de tegels open- en dichtklappen; de stand blijft bewaard
     const allesKnop = v.querySelector('#hubAllesKnop');
-    if (allesKnop) allesKnop.onclick = () => {
+    const sheetAchter = v.querySelector('#hubAllesAchter');
+    if (allesKnop && sheetAchter){
+      /* [20261113] Passend startscherm: "Alles" opent een paneel van onderen.
+         Tik ernaast, op een tegel of op de terugknop sluit het weer. */
+      const zetSheet = open => {
+        allesKnop.setAttribute('aria-expanded', String(open));
+        if (open){
+          sheetAchter.hidden = false;
+          requestAnimationFrame(() => sheetAchter.classList.add('open'));
+          terugLaag('hubAlles', { z:45, open: () => sheetAchter.isConnected && !sheetAchter.hidden, sluit: () => zetSheet(false) });
+        } else {
+          sheetAchter.classList.remove('open');
+          setTimeout(() => { if (!sheetAchter.classList.contains('open')) sheetAchter.hidden = true; }, 220);
+        }
+      };
+      allesKnop.onclick = () => zetSheet(sheetAchter.hidden);
+      sheetAchter.addEventListener('click', e => {
+        if (e.target === sheetAchter || e.target.closest('.hub-tegel, .hub-updates-link')) zetSheet(false);
+      });
+    } else if (allesKnop) allesKnop.onclick = () => {
       const lijst = v.querySelector('#hubAlles'), open = lijst.hidden;
       lijst.hidden = !open;
       allesKnop.setAttribute('aria-expanded', String(open));
@@ -3043,6 +3143,7 @@ export async function openTrainingDoc(id){
     await openOrigineel();
   }
 
+  logTrainingGeopend(S.teamId, id);
   if (!S.trainingenGelezen[id]){
     try { await setDoc(doc(db,'gebruikers',S.user.uid,'gelezen',id), {tijd: serverTimestamp()}); } catch(e){}
   }

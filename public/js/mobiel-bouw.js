@@ -11,8 +11,8 @@
 import { S, $, esc, meld, toon, terugView } from './state.js?v=20261111d';
 import { BOUWEN } from './config.js?v=20261111d';
 import { laadBouw, teamRijen, richting } from './desktop-bouw.js?v=20261113a';
-import { zetBouwContext, modalNieuweUitleningVanuitBouw } from './bouw-hub.js?v=20261113a';
-import { trekUitleningIn } from './teams-spelers.js?v=20261113a';
+import { zetBouwContext, modalNieuweUitleningVanuitBouw, splitsUitleningen, leenKaartInfo } from './bouw-hub.js?v=20261113a';
+import { trekUitleningIn, wijzigUitlening } from './teams-spelers.js?v=20261113a';
 import { htmlMobielTeam } from './desktop-schermen.js?v=20261113a';
 import { isSelectieBouw, htmlRadarMobiel, htmlSelectieTegelMobiel, htmlSelectieMobiel, selectieKlik, selectieInvoer } from './selectie-bouw.js?v=20261113a';
 
@@ -142,8 +142,19 @@ function teamsLijst(){
 }
 
 function uitleningen(){
-  return `${cache.uitleningen.map(u => `<div class="mb-kaart"><div class="mb-leenkop"><b>${esc(u.snapshot?.naam || 'Speler')}</b><span>${esc(u.vanTeamNaam || '?')} \u2192 ${esc(u.naarTeamNaam || '?')}</span></div>
-      <div class="mb-leenvoet">${richting(u, cache)}<button class="mb-pill" data-mb="terug-leen" data-id="${esc(u.id)}">Terugzetten</button></div></div>`).join('') || '<p class="mb-leeg">Geen actieve uitleningen in deze bouw.</p>'}
+  /* [20261111] Per uitlening: soort, wanneer, status en voortgang; voorbije
+     uitleningen 14 dagen apart zichtbaar. */
+  const kaart = (u, voorbij) => {
+    const i = leenKaartInfo(u), pct = i.status.voortgang;
+    return `<div class="mb-kaart${voorbij ? ' ul-voorbij' : ''}"><div class="mb-leenkop"><b>${esc(u.snapshot?.naam || 'Speler')}</b><span>${esc(u.vanTeamNaam || '?')} \u2192 ${esc(u.naarTeamNaam || '?')}</span>
+        <span class="ul-chip ${esc(i.status.toon)}">${esc(voorbij ? 'Voorbij' : i.status.tekst)}</span></div>
+      <div class="ul-bregel"><b>${esc(i.soort)}</b><span>${esc(i.wanneer)}</span></div>
+      ${!voorbij && pct != null ? `<div class="ul-balk" aria-hidden="true"><i style="width:${Math.round(pct * 100)}%"></i></div>` : ''}
+      ${voorbij ? '' : `<div class="mb-leenvoet">${richting(u, cache)}<span class="ul-bknoppen"><button class="mb-pill" data-mb="wijzig-leen" data-id="${esc(u.id)}">${u.tot ? 'Wijzigen / verlengen' : 'Wijzigen'}</button><button class="mb-pill" data-mb="terug-leen" data-id="${esc(u.id)}">Beëindigen</button></span></div>`}</div>`;
+  };
+  const voorbij = cache.uitleningenVoorbij || [];
+  return `${cache.uitleningen.map(u => kaart(u, false)).join('') || '<p class="mb-leeg">Geen lopende uitleningen in deze bouw.</p>'}
+    ${voorbij.length ? `<div class="mb-lbl ul-voorbijkop">Net voorbij<span>${voorbij.length}</span></div>${voorbij.map(u => kaart(u, true)).join('')}` : ''}
     <button class="mb-knop rood" data-mb="nieuwleen">+ Nieuwe uitlening</button>`;
 }
 
@@ -164,6 +175,12 @@ async function klik(e){
   if (a === 'wedstrijd'){ st.keuze = { wedstrijd:id }; teken(); return; }
   if (a === 'eigen'){ const m = await import('./teams.js?v=20261113a'); m.openTeam(st.teamId, { sel:'spelers', evs:'spelers', evw:'evaluatie', stat:'stats' }[st.pag] || 'hub'); return; }
   if (a === 'nieuwleen'){ zetBouwContext(cache); modalNieuweUitleningVanuitBouw(() => teken()); return; }
+  if (a === 'wijzig-leen'){ const u = cache.uitleningen.find(x => x.id === id); if (!u) return;
+    wijzigUitlening(u, st.clubId, nieuw => {
+      Object.assign(cache, splitsUitleningen([...cache.uitleningen.filter(x => x.id !== nieuw.id), nieuw, ...(cache.uitleningenVoorbij || [])]));
+      teken();
+    });
+    return; }
   if (a === 'weekbrief'){ import('./club-weekbrief.js?v=20261111d').then(m => m.openWeekbrief(cache.teams || [], huidigeBouw().naam)); return; }
   if (a === 'terug-leen'){ const u = cache.uitleningen.find(x => x.id === id); if (!u) return;
     try { if (await trekUitleningIn(u, st.clubId)){ cache.uitleningen = cache.uitleningen.filter(x => x.id !== id); teken(); } }

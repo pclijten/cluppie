@@ -20,6 +20,7 @@ import { afwezigRedenInfo, isoWeek } from './config.js?v=20261111d';
 import { bepaalNu, evenementen } from './nu-context.js?v=20261110a';
 import { momentenVanTeam } from './trainingsmomenten.js?v=20261111d';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
+import { effectieveSelectie, spelersOpWedstrijd, spelersOpTraining } from './uitleen-regels.js?v=20261113b';
 import { doelTeksten, samenvattingNu, haalSamenvatting } from './doel-samenvatting.js?v=20261111d';
 
 const p2 = n => String(n).padStart(2, '0');
@@ -63,9 +64,12 @@ export function opstellingKlaar(w){
   const nrs = periodeNrs(w);
   return { klaar: nrs.filter(n => Object.keys(w.kwarten?.[n]?.lineup || {}).length).length, totaal: nrs.length };
 }
+/* [20261111] Opgeslagen selectie + net ingeleende spelers die nog niet zijn
+   aangevuld (anders stonden die tot het openen van de wedstrijd als "niet in
+   de selectie"). Zonder opgeslagen selectie: iedereen die bij deze wedstrijd hoort. */
 function selectieVan(w){
-  if (Array.isArray(w.selectie) && w.selectie.length) return new Set(w.selectie);
-  return new Set(S.spelers.map(p => p.id));
+  if (Array.isArray(w.selectie) && w.selectie.length) return new Set(effectieveSelectie(w, S.spelers));
+  return new Set(spelersOpWedstrijd(S.spelers, w).lijst.map(p => p.id));
 }
 function naarContext(w, vandaag, nu){
   const st = klokStaat(w);
@@ -86,7 +90,7 @@ function naarContext(w, vandaag, nu){
 /* ---------- presentie: training (record of vaste afmeldingen) en wedstrijd ---------- */
 function presentieTraining(datum){
   const rec = S.presentie.find(p => p.datum === datum) || null;
-  const ids = S.spelers.map(p => p.id);
+  const ids = spelersOpTraining(S.spelers, datum).lijst.map(p => p.id);
   let afwezig, redenen, laat, vast = false;
   if (rec){ afwezig = rec.afwezig || []; redenen = rec.afwezigRedenen || {}; laat = rec.telaat || []; }
   else { const pf = vastePrefill(S.team, datum, ids); afwezig = pf.afwezig; redenen = pf.redenen; laat = []; vast = afwezig.length > 0; }
@@ -94,9 +98,10 @@ function presentieTraining(datum){
 }
 export function presentieWedstrijd(w){
   const sel = selectieVan(w), redenen = w.afwezigRedenen || {};
-  const afwezig = S.spelers.filter(p => !sel.has(p.id) && redenen[p.id]).map(p => p.id);
-  const nietMeeIds = S.spelers.filter(p => !sel.has(p.id) && !redenen[p.id]).map(p => p.id);
-  return { afwezig, redenen, laat: (w.telaat || []).filter(id => sel.has(id)), ja: sel.size, totaal: S.spelers.length, nietMee: nietMeeIds.length, nietMeeIds };
+  const basis = spelersOpWedstrijd(S.spelers, w).lijst;
+  const afwezig = basis.filter(p => !sel.has(p.id) && redenen[p.id]).map(p => p.id);
+  const nietMeeIds = basis.filter(p => !sel.has(p.id) && !redenen[p.id]).map(p => p.id);
+  return { afwezig, redenen, laat: (w.telaat || []).filter(id => sel.has(id)), ja: sel.size, totaal: basis.length, nietMee: nietMeeIds.length, nietMeeIds };
 }
 function nietMeeTekst(p){
   const namen = (p.nietMeeIds || []).map(naamVan).filter(Boolean).map(esc);
@@ -337,7 +342,7 @@ export function htmlNu(opties = {}){
   const live = c.soort === 'live' || (c.soort === 'wedstrijd' && c.fase === 'verzamelen');
   return `<section class="nu-blokje" aria-label="Nu">
     <div class="nu-kaart${live ? ' nu-s-live' : ''}">${kaartHtml(c, nu)}</div>
-    ${c.daarna.length ? `<h2 class="nu-sectiekop">Daarna</h2><div class="nu-daarna">${c.daarna.map(e => daarnaItem(e, nu)).join('')}</div>` : ''}
+    ${c.daarna.length ? `<h2 class="nu-sectiekop">Daarna<button type="button" class="nu-agenda" data-nu-tab="planning" hidden>Agenda &#8250;</button></h2><div class="nu-daarna">${c.daarna.map(e => daarnaItem(e, nu)).join('')}</div>` : ''}
   </section>`;
 }
 
@@ -364,8 +369,8 @@ export function koppelNu(v, ctx){
       open ? S._nuOpen.add(d.dataset.nuDaarna) : S._nuOpen.delete(d.dataset.nuDaarna);
       d.setAttribute('aria-expanded', String(open));
       clearTimeout(item._dicht);
-      if (open){ inhoud.hidden = false; void paneel.offsetHeight; item.classList.add('open'); }
-      else { item.classList.remove('open'); item._dicht = setTimeout(() => { if (!S._nuOpen.has(d.dataset.nuDaarna)) inhoud.hidden = true; }, 320); }
+      if (open){ inhoud.hidden = false; void paneel.offsetHeight; item.classList.add('open'); ctx.naTeken?.(); }
+      else { item.classList.remove('open'); item._dicht = setTimeout(() => { if (!S._nuOpen.has(d.dataset.nuDaarna)) inhoud.hidden = true; ctx.naTeken?.(); }, 320); }
       return;
     }
     const pt = ev.target.closest('[data-nu-pres-training]');
@@ -398,6 +403,6 @@ export function koppelNu(v, ctx){
     if (oud.contains(document.activeElement)) return;   // niet onder iemands vinger verversen
     const tmp = document.createElement('div'); tmp.innerHTML = htmlNu({ evaluatie: ctx.evaluatie });
     const nieuw = tmp.firstElementChild; if (!nieuw) return;
-    oud.replaceWith(nieuw); koppelNu(nieuw.parentElement, ctx);
+    oud.replaceWith(nieuw); koppelNu(nieuw.parentElement, ctx); ctx.naTeken?.();
   }, 60000);
 }

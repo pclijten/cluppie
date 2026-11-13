@@ -23,6 +23,7 @@ import { htmlRondeBalk } from './evaluatierondes.js?v=20261111d';
 import { onderdeelAan } from './onderdelen.js?v=20261111d';
 import { eersteStappenPlaats } from './snelstart.js?v=20261113a';
 import { htmlNu } from './nu-scherm.js?v=20261113a';
+import { spelersOpWedstrijd, effectieveSelectie, leenErbijNa } from './uitleen-regels.js?v=20261113b';
 import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261111d';
 import { isAfgelast, telMee, soortPill, wedstrijdInfo, htmlAfgelastBanner, afgelastMeldingen, deelTekst } from './wedstrijd-status.js?v=20261012h';
 
@@ -133,7 +134,10 @@ export function htmlHub(updInfo){
      de onderdelen waar iets nieuws of openstaands is; open/dicht blijft bewaard. */
   const nieuwIn = [oefenstofOngelezen, documentenOngelezen, evalOpen, ongelezenBerichten(),
     modAan('lijstjes') ? lijstjesOpenTotaal() : 0].filter(n => n > 0).length;
-  const allesOpen = (() => { try { return localStorage.getItem('cluppieHubAlles') === '1'; } catch(e){ return false; } })();
+  /* [20261113] Passend startscherm: op een telefoon (staand) vult de hub precies
+     het scherm en opent "Alles" als paneel van onderen; dan geen bewaarde open-stand. */
+  const pas = hubPasModus();
+  const allesOpen = pas ? false : (() => { try { return localStorage.getItem('cluppieHubAlles') === '1'; } catch(e){ return false; } })();
 
   /* Update-melding: alleen de onder-link met teller. De banner bovenaan de hub is
      bewust weg (6 nov): het startscherm blijft rustig. */
@@ -142,6 +146,12 @@ export function htmlHub(updInfo){
       <span class="upd-l-dot"></span>Wat is er nieuw?<span class="upd-l-pil">${upd.ongelezen} nieuw</span><span class="upd-l-pijl">&#8250;</span>
     </button>` : `
     <button class="hub-updates-link" data-hub-open="updates">Wat is er nieuw? Bekijk de updates &#8250;</button>`;
+
+  const tegelSecties = secties.map(([kop, tegels]) => `
+      <section class="hub-sectie">
+        <div class="hub-sectie-kop">${esc(kop)}</div>
+        <div class="hub-grid">${tegels.join('')}</div>
+      </section>`).join('');
 
   return `
     <div class="welkom-kop hub-kop">
@@ -164,27 +174,57 @@ export function htmlHub(updInfo){
       ${ico('navigation-dashboard', 22)}<span class="hub-alles-naam">${HUB_ALLES_LABEL}</span>${nieuwIn ? `<span class="hub-alles-tel" aria-label="${nieuwIn} met iets nieuws">${nieuwIn}</span>` : ''}
       <svg class="hub-alles-pijl" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg>
     </button>
-    <div class="hub-alles" id="hubAlles"${allesOpen ? '' : ' hidden'}>
-    ${secties.map(([kop, tegels]) => `
-      <section class="hub-sectie">
-        <div class="hub-sectie-kop">${esc(kop)}</div>
-        <div class="hub-grid">${tegels.join('')}</div>
-      </section>`).join('')}
+    ${pas ? `<div class="hub-sheet-achter" id="hubAllesAchter" hidden>
+      <div class="hub-alles hub-sheet" id="hubAlles" role="dialog" aria-label="${HUB_ALLES_LABEL}">
+        <div class="hub-sheet-greep" aria-hidden="true"></div>
+        ${tegelSecties}
+        ${updLink}
+      </div>
+    </div>` : `<div class="hub-alles" id="hubAlles"${allesOpen ? '' : ' hidden'}>
+    ${tegelSecties}
     </div>
-    ${updLink}`;
+    ${updLink}`}`;
+}
+
+/* ==================== PASSEND STARTSCHERM (13 nov) ====================
+   Alleen op een telefoon in staande stand (niet op desktop/tablet/landscape). */
+export function hubPasModus(){
+  if (document.documentElement.classList.contains('desk')) return false;
+  try { return matchMedia('(max-width:699px) and (orientation:portrait)').matches; } catch(e){ return false; }
+}
+
+/* Laat onder "Daarna" alleen hele regels zien die op het scherm passen; de rest
+   staat in de Agenda (link verschijnt dan naast de kop). Is een regel opengeklapt,
+   of past zelfs de kop niet (klein scherm + groot lettertype), dan mag het scherm
+   gewoon scrollen en blijft "Alles" onderaan staan. */
+export function pasHubAan(v){
+  if (!v || !v.classList.contains('hub-pas') || !v.classList.contains('actief')) return;
+  const items = [...v.querySelectorAll('.nu-daarna > .nu-d-item')];
+  const agenda = v.querySelector('.nu-agenda');
+  items.forEach(i => { i.hidden = false; });
+  if (agenda) agenda.hidden = true;
+  if (!items.length || items.some(i => i.classList.contains('open'))) return;
+  const teVeel = () => document.documentElement.scrollHeight - window.innerHeight > 1;
+  let zichtbaar = items.length;
+  while (zichtbaar > 0 && teVeel()) items[--zichtbaar].hidden = true;
+  if (zichtbaar < items.length && agenda) agenda.hidden = false;
 }
 
 /* ==================== PRESENTIE WEDSTRIJD ==================== */
 /* [20260928e] Standaardselectie als de wedstrijd er (nog) geen heeft: iedereen,
    of bij een team met 1e + 2e elftal de spelers van het elftal van die wedstrijd.
    Zelfde regel als normaliseerWedstrijd in wedstrijd.js. */
+/* [20261111] Uitleningen: alleen wie bij deze wedstrijd hoort (wedstrijdSpelers),
+   en een net ingeleende speler staat meteen in de selectie (effectieveSelectie). */
+const wedstrijdSpelers = w => spelersOpWedstrijd(S.spelers, w).lijst;
 function standaardSelectie(w){
-  if (Array.isArray(w.selectie) && w.selectie.length) return w.selectie;
+  if (Array.isArray(w.selectie) && w.selectie.length) return effectieveSelectie(w, S.spelers);
+  const basis = wedstrijdSpelers(w);
   if (heeftElftallen() && w.type !== 'toernooi'){
-    const e = spelersVoorElftal(S.spelers, elftalWedstrijd(w)).eigen;
+    const e = spelersVoorElftal(basis, elftalWedstrijd(w)).eigen;
     if (e.length) return e.map(p => p.id);
   }
-  return S.spelers.map(p => p.id);
+  return basis.map(p => p.id);
 }
 /* De wedstrijd waarvoor presentie getoond wordt: gekozen door de coach, of
    standaard de eerstvolgende (vandaag of later); zonder komende wedstrijden
@@ -216,7 +256,9 @@ export function htmlPresWedstrijd(){
   const laat = new Set(w.telaat || []);          // erbij, maar komt later
   const vanaf = w.telaatVanaf || {};             // wedstrijdminuut van aankomst
   const maxMin = Math.round((w.periodes || 4) * (w.kwartduur || 0)) || 90;
-  const aanwezigN = S.spelers.filter(p => sel.has(p.id)).length;
+  const basis = wedstrijdSpelers(w);
+  const elders = spelersOpWedstrijd(S.spelers, w).elders;
+  const aanwezigN = basis.filter(p => sel.has(p.id)).length;
 
   const kiezer = `
     <button class="pw-kiezer" id="pwKiezer">
@@ -229,7 +271,7 @@ export function htmlPresWedstrijd(){
   /* Team met 1e + 2e elftal: eerst het elftal van deze wedstrijd, dan de
      rest van de selectie ("niet mee" zonder redenkeuze). */
   const tweeElftallen = heeftElftallen() && w.type !== 'toernooi';
-  const groepen = tweeElftallen ? spelersVoorElftal(S.spelers, elftalWedstrijd(w)) : { eigen: S.spelers, rest: [] };
+  const groepen = tweeElftallen ? spelersVoorElftal(basis, elftalWedstrijd(w)) : { eigen: basis, rest: [] };
   const rij = (p, rest) => {
     const aanwezig = sel.has(p.id);
     const isLaat = aanwezig && laat.has(p.id);
@@ -255,12 +297,15 @@ export function htmlPresWedstrijd(){
   };
   const rijen = (tweeElftallen ? `<div class="elf-groep">${elftalNaam(elftalWedstrijd(w))}</div>` : '')
     + groepen.eigen.map(p => rij(p, false)).join('')
-    + (groepen.rest.length ? `<div class="elf-groep">Rest van de selectie</div>` + groepen.rest.map(p => rij(p, true)).join('') : '');
+    + (groepen.rest.length ? `<div class="elf-groep">Rest van de selectie</div>` + groepen.rest.map(p => rij(p, true)).join('') : '')
+    + elders.map(({ p, team }) => `<div class="pres-speler pres-elders"><div class="pres-speler-kop" aria-disabled="true">
+        <span class="pres-shirt">${esc(p.nummer ?? '·')}</span><span class="pres-naam">${esc(p.naam)}<small>Speelt deze dag alleen bij ${esc(team)}</small></span>
+        <span class="pres-status">⇄ ${esc(team)}</span></div></div>`).join('');
 
   return `
     ${kiezer}
     ${htmlWedstrijdInfo(w)}
-    <div class="pw-tel">${aanwezigN} van ${S.spelers.length} spelen mee${laat.size ? ` (${[...laat].filter(id => sel.has(id)).length} later)` : ''} · wijzigingen worden direct bewaard</div>
+    <div class="pw-tel">${aanwezigN} van ${basis.length} spelen mee${laat.size ? ` (${[...laat].filter(id => sel.has(id)).length} later)` : ''} · wijzigingen worden direct bewaard</div>
     <div class="pw-tel" style="margin-top:-4px">Komt iemand later? Tik hem op afwezig, kies <b>⏱ Komt later</b> en vul eventueel de wedstrijdminuut in. De tijd daarvóór telt niet mee in zijn speeltijd-%.</div>
     ${S.spelers.length ? rijen : `<div class="kaart leeg">Nog geen spelers in dit team.</div>`}
     <button class="knop vol u-mt-md" id="pwKlaar" >Klaar</button>`;
@@ -388,7 +433,7 @@ export async function presWedstrijdBewaar(wijzig){
   const vanaf = {...(w.telaatVanaf || {})};
   wijzig(sel, redenen, laat, vanaf);
 
-  const update = { selectie: [...sel] };
+  const update = { selectie: [...sel], leenErbij: leenErbijNa(w, S.spelers) };   /* [20261111] weggehaalde leners blijven weg */
   const schoon = {};
   for (const [pid, r] of Object.entries(redenen)) if (!sel.has(pid)) schoon[pid] = r;
   update.afwezigRedenen = schoon;
