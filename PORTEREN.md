@@ -10,6 +10,13 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
 
 ## Open
+**Voor Paul — Trainingsbibliotheek zelf beheren (release 20261113d, branch `bibliotheek`)**
+- [ ] PR reviewen en mergen. Mockup "Cluppie Bibliotheek beheren" goedgekeurd op 13-11 ("Perfect"), besluiten in `claude/trainingsbibliotheek-beheer-impactanalyse.md`.
+- [ ] **Eerst** `npm run test:rules` (2 nieuwe scenario's onderaan), dan deployen: `firebase deploy --only firestore:rules,firestore:indexes --project cluppie-ad329`. Nieuw: `platform/bibliotheek/vormen` (lezen ingelogd, schrijven platform), en een recursieve regel `/{pad=**}/trainingen/{id}` waarmee de platformbeheerder trainingen leest en alleen `oefeningen`, `vormIds`, `bibliotheekBijgewerktMs` bijwerkt. Index: `vormIds` (array-contains) voor collectie én collectiegroep. Wacht tot de index klaar is (Console → Firestore → Indexen) voordat je doorvoert.
+- [ ] Daarna in Platform › Bibliotheek één keer **Trainingen koppelen** (bestaande trainingen krijgen `vormIds` en per oefening een `bron`; vorm herkend aan de naam).
+- [ ] Wat er is: `bibliotheek.js` (basis + beheerlaag, `vormen()` voor de planner zonder uitgezette vormen, `vormOpId()` voor bewaarde trainingen), `platform-bibliotheek.js` (scherm), oefeningen krijgen `bron {vormId, slot, minuten, spelers}`, trainingsdocumenten `vormIds`. Bewaren voert door in alle trainingen met die vorm, behalve `aangepast: true` en trainingen in het verleden; "Alleen nieuwe trainingen" kan ook. Uitzetten vervangt de vorm in geplande trainingen door een vorm uit dezelfde fase en leeftijd. Excel export/import met controle vooraf. Tekeneditor: fase 2 (nieuwe vormen zonder tekening, dupliceren neemt de tekening mee).
+- [ ] Getest: `npm test` (nieuw `tests/bibliotheek.test.mjs`), ESLint, importcontrole, scherm gerenderd met nep-Firestore (1440 breed, donker). Doorvoeren en koppelen niet tegen echte Firebase getest (collectiegroep-query); eerst één vorm proberen en een training bekijken.
+
 **Voor Paul — Verzoeken 13-11 + ASV'33 PR #43–#56 (release 20261113b, branch `cluppie-io-13nov`)**
 - [ ] PR reviewen en mergen. Client plus twee functions (geen rules-wijziging).
 - [ ] Deploy van de mailfuncties (afzender/antwoordadres info@cluppie.io): `firebase deploy --only functions:verstuurMail,functions:meldClubAan --project cluppie-ad329`. Let op: `MAIL_VAN` staat al in `functions/.env.cluppie-ad329` (bij de eerste deploy gevraagd); zet die op `Cluppie <info@cluppie.io>` als Strato info@ als afzender toestaat (alias van de mailbox), anders blijft paul@ de afzender en gaan antwoorden via Reply-To naar info@.

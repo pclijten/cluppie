@@ -305,3 +305,16 @@ test('trainingen van een team zonder club: onder het team, alleen voor de coach'
   await assertSucceeds(getDoc(doc(als('losA'), 'teams/tLos/trainingen/sp1')));
   await assertFails(getDoc(doc(als('coachA'), 'teams/tLos/trainingen/sp1')));
 });
+
+/* [20261113d] trainingsbibliotheek: alleen de platformbeheerder schrijft; doorvoeren raakt alleen de oefeningen */
+test('bibliotheek: platform schrijft vormen, een coach niet; iedereen leest', async () => {
+  await assertSucceeds(setDoc(doc(als('baas', PLATFORM), 'platform/bibliotheek/vormen/eigen_x'), { velden: { naam: 'X' }, status: 'aan' }));
+  await assertFails(setDoc(doc(als('coachA'), 'platform/bibliotheek/vormen/eigen_y'), { velden: { naam: 'Y' } }));
+  await assertSucceeds(getDoc(doc(als('coachA'), 'platform/bibliotheek/vormen/eigen_x')));
+});
+test('bibliotheek doorvoeren: platform werkt alleen oefeningen bij', async () => {
+  await env.withSecurityRulesDisabled(c => setDoc(doc(c.firestore(), 'trainingen/bv1'), { club: 'A', teams: ['t1'], titel: 'x', oefeningen: [], vormIds: ['v1'] }));
+  await assertSucceeds(updateDoc(doc(als('baas', PLATFORM), 'trainingen/bv1'), { oefeningen: [{ titel: 'nieuw' }], bibliotheekBijgewerktMs: 1 }));
+  await assertFails(updateDoc(doc(als('baas', PLATFORM), 'trainingen/bv1'), { titel: 'anders' }));
+  await assertFails(updateDoc(doc(als('stranger'), 'trainingen/bv1'), { oefeningen: [] }));
+});
