@@ -8,19 +8,19 @@ import {
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, speler, initialen, openModal, sluitModal, toon, isBeheerder
-} from './state.js?v=20261111d';
-import { telGebruik } from './tracker.js?v=20261111d';
-import { voorbeeldTeamcode } from './clubconfig.js?v=20261111d';
+} from './state.js?v=20261113b';
+import { telGebruik } from './tracker.js?v=20261113b';
+import { voorbeeldTeamcode } from './clubconfig.js?v=20261113b';
 import { ico } from './icons.js?v=20261110a';
 
 import {
   CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, youtubeId, youtubeThumb, youtubeWatch,
   SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo, isoWeek,
   catLabel,
-} from './config.js?v=20261111d';
-import { onderdeelAan } from './onderdelen.js?v=20261111d';
-import { htmlKompas } from './teams-leerlijn.js?v=20261111d';
-import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261113a';
+} from './config.js?v=20261113b';
+import { onderdeelAan } from './onderdelen.js?v=20261113b';
+import { htmlKompas } from './teams-leerlijn.js?v=20261113b';
+import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261113b';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
 import { spelersOpTraining } from './uitleen-regels.js?v=20261113b';
 import {

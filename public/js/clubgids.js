@@ -8,7 +8,7 @@
    De zoekfuncties zijn PURE en getest (tests/clubgids.test.mjs). */
 
 import { db, collection, getDocs } from './firebase.js?v=20261011g';
-import { S } from './state.js?v=20261111d';
+import { S } from './state.js?v=20261113b';
 
 export async function laadClubgids(){
   if (Array.isArray(S._clubgids)) return S._clubgids;

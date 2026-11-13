@@ -5,8 +5,8 @@
    Dit draait via Cloud Functions (exporteerMijnGegevens, verwijderMijnAccount).
 ==================================================================== */
 import { auth, functions, httpsCallable, signOut } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261111d';
-import { klikgedragAan, zetKlikgedrag } from './tracker.js?v=20261111d';
+import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261113b';
+import { klikgedragAan, zetKlikgedrag } from './tracker.js?v=20261113b';
 
 /* [20261113b] Opt-out klikgedrag (privacyverklaring 2026-10). Ook gebruikt in Instellingen › Mijn account. */
 export function htmlKlikgedragKeuze(prefix){

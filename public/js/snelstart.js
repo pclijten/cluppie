@@ -4,13 +4,13 @@
    Gegevens: teams/{id}.eigenClub en gebruikers/{uid}/meta/onboarding.snelstart (alleen UI-vlaggen). */
 import { isFirestoreVastgelopen, toonHerlaadBalk } from './firestore-herstel.js?v=20261113a';
 import { db, collection, doc, addDoc, updateDoc, setDoc, getDoc, getDocs, serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, $, $$, esc, meld, teamCode, openModal, sluitModal } from './state.js?v=20261111d';
-import { CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, bouwVanCategorie, catLabel } from './config.js?v=20261111d';
+import { S, $, $$, esc, meld, teamCode, openModal, sluitModal } from './state.js?v=20261113b';
+import { CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, bouwVanCategorie, catLabel } from './config.js?v=20261113b';
 import {
   bouwEigenClub, valideerClub, valideerPlaats, standaardTeamNaam, categorieVoor, STANDAARD_CAT,
   eersteStappenStatus, toonEersteStappen, toonClubTip,
 } from './snelstart-logica.js?v=20261020c';
-import { koppelClubSuggesties, normNaam } from './clubgids.js?v=20261111d';
+import { koppelClubSuggesties, normNaam } from './clubgids.js?v=20261113b';
 
 /* ---------- Plaats opzoeken (Open-Meteo, zonder sleutel) ---------- */
 async function zoekPlaats(q){
@@ -130,7 +130,7 @@ export async function openSnelstart(){
       <button class="knop vol" id="ssVerder">Laten we beginnen</button>
       <button class="knop licht vol" id="ssRond" style="margin-top:8px">Liever eerst een rondleiding</button>`);
     $('#ssVerder').onclick = tekenStap2;
-    $('#ssRond').onclick = () => { sluitModal(); import('./onboarding.js?v=20261113a').then(m => m.startOnboarding(true)); };
+    $('#ssRond').onclick = () => { sluitModal(); import('./onboarding.js?v=20261113b').then(m => m.startOnboarding(true)); };
   };
 
   const tekenStap2 = () => {
@@ -224,7 +224,7 @@ export async function openSnelstart(){
           eigenClub: st.club, gemaakt: serverTimestamp(),
         });
         sluitModal();
-        import('./teams.js?v=20261113a').then(m => m.openTeam(ref.id));
+        import('./teams.js?v=20261113b').then(m => m.openTeam(ref.id));
       } catch (e){
         console.error(e); knop.disabled = false;
         if (isFirestoreVastgelopen(e)){ toonHerlaadBalk(); meld('De verbinding is vastgelopen. Herlaad de app en maak je team opnieuw aan.'); }
@@ -250,7 +250,7 @@ export function modalClubPlaats(){
       await updateDoc(doc(db, 'teams', t.id), { eigenClub });
       t.eigenClub = eigenClub;
       sluitModal(); meld('Opgeslagen');
-      import('./teams.js?v=20261113a').then(m => m.renderTeam && m.renderTeam());
+      import('./teams.js?v=20261113b').then(m => m.renderTeam && m.renderTeam());
     } catch (err){ console.error(err); meld('Opslaan mislukt, probeer het nog eens'); }
   };
 }
@@ -301,7 +301,7 @@ export async function koppelEersteStappen(v, { zetTeamTab } = {}){
   el.innerHTML = html;
   koppelKnoppen(el, team, teamId, () => koppelEersteStappen(v, { zetTeamTab }));
   el.querySelectorAll('[data-ss-tab]').forEach(b => b.onclick = () => zetTeamTab && zetTeamTab(b.dataset.ssTab));
-  const r = el.querySelector('#ssRondleiding'); if (r) r.onclick = () => import('./onboarding.js?v=20261113a').then(m => m.startOnboarding(true));
+  const r = el.querySelector('#ssRondleiding'); if (r) r.onclick = () => import('./onboarding.js?v=20261113b').then(m => m.startOnboarding(true));
   const w = el.querySelector('#ssVerberg'); if (w) w.onclick = async () => { el.innerHTML = ''; await zetVlag('eersteStappenWeg', true); };
   const cv = el.querySelector('#ssClubVul'); if (cv) cv.onclick = modalClubPlaats;
   const cw = el.querySelector('#ssClubWeg'); if (cw) cw.onclick = async () => { el.innerHTML = ''; await zetVlag('clubTipWeg', true); };

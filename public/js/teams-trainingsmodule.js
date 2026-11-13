@@ -18,22 +18,22 @@
    Tabblad: 'trainingsmodule'. Importeert NIET uit teams.js (geen kringimport); teams.js geeft
    zetTeamTab mee aan koppelTrainingsmodule(). */
 import { db, collection, addDoc, setDoc, getDoc, getDocs, deleteDoc, doc, functions, httpsCallable, serverTimestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261111d';
-import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } from './config.js?v=20261111d';
-import { aiAan, aiDoel } from './clubconfig.js?v=20261111d';
+import { S, esc, meld } from './state.js?v=20261113b';
+import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } from './config.js?v=20261113b';
+import { aiAan, aiDoel } from './clubconfig.js?v=20261113b';
 import { ico } from './icons.js?v=20261110a';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019f';
-import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, kiesDuur, SLOT_NAAM, groepsindeling, opbouwVoor, WEER } from './trainingsplanner.js?v=20261111d';
+import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, kiesDuur, SLOT_NAAM, groepsindeling, opbouwVoor, WEER } from './trainingsplanner.js?v=20261113b';
 import { MATERIAAL, MATERIAAL_NAAM, PRESETS, presetVan, VELDEN, schoonContext, behoefte, haalbaar, valtAf, tipTekst } from './trainingscontext-logica.js?v=20261019a';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
 import { TERUGBLIK_VRAGEN, zetAntwoord, terugblikKlaar, terugblikSamenvatting, signaalVormBewaard, signaalVormGewisseld, signaalTerugblik, signaalMateriaal, signaalGat, gatRedenen } from './leren-logica.js?v=20261019b';
-import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261111d';
+import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261113b';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261012e';
-import { positieWeek, seizoensweekOp, weekKalender, standaardVrij, maandagVan } from './seizoensplan-logica.js?v=20261111d';
-import { trainingenRef } from './seizoensplan-trainingen.js?v=20261111d';
-import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261111d';
-import { oefeningVan, geplandeTraining } from './seizoensplan-club.js?v=20261111d';
-import { onderdeelAan } from './onderdelen.js?v=20261111d';
+import { positieWeek, seizoensweekOp, weekKalender, standaardVrij, maandagVan } from './seizoensplan-logica.js?v=20261113b';
+import { trainingenRef } from './seizoensplan-trainingen.js?v=20261113b';
+import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261113b';
+import { oefeningVan, geplandeTraining } from './seizoensplan-club.js?v=20261113b';
+import { onderdeelAan } from './onderdelen.js?v=20261113b';
 
 const VORMEN = BIBLIOTHEEK.vormen;
 const THEMAS_BESCHIKBAAR = () => new Set(VORMEN.flatMap(v => v.thema));

@@ -17,7 +17,7 @@
 
    Per dag maximaal één moment (training 1 → eerste dag, training 2 → tweede). */
 import { db, doc, updateDoc } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261111d';
+import { S, esc, meld } from './state.js?v=20261113b';
 import { ico } from './icons.js?v=20261110a';
 
 export const DAGEN_LANG = ['Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag','Zondag'];
