@@ -7421,3 +7421,32 @@ html.desk .dk-ss .sn-kop,html.desk .dk-ss .sn-balk,html.desk .dk-ss .sn-voet,htm
   html.desk .modal-achter[data-vorm="scherm"] .modal{ max-width:640px; }
   html.desk .modal-achter[data-vorm="scherm"] .modal-kop{ padding-top:var(--space-lg); }
 }
+
+/* ==================== [20261113b] TRAINING MAKEN: overzichtelijker ====================
+   Telefoon: kleine schets per vorm in de tijdlijn en een kleinere tekening als je hem openklapt.
+   Desktop: instellingen in een vast paneel links, de training als tijdlijn rechts. */
+.tm-schets{ flex:none; width:64px; aspect-ratio:4/3; border-radius:7px; overflow:hidden; background:var(--veld); display:block; }
+.tm-schets svg{ width:100%; height:100%; display:block; margin:0; border-radius:0; object-fit:cover; }
+.tm-vk .tm-mid{ min-width:0; flex:1; }
+.tm-vb .tv-veld{ max-width:420px; margin:8px auto; }
+.tm-vorm.open .tm-schets{ display:none; }
+@media (min-width:1100px) and (min-height:520px){
+  html.desk .tm{ display:grid; grid-template-columns:330px minmax(0,1fr); gap:0 24px; align-items:start; }
+  html.desk .tm-zij{ grid-column:1; grid-row:1; position:sticky; top:var(--space-md); }
+  html.desk .tm-bewaard{ grid-column:1; grid-row:2; }
+  html.desk .tm-hoofd{ grid-column:2; grid-row:1 / span 2; min-width:0; }
+  html.desk .tm-zij .tm-form{ padding:var(--space-md); }
+  html.desk .tm-zij .tm-rij{ flex-wrap:wrap; gap:6px; }
+  html.desk .tm-zij .tm-rij .tm-l{ flex-basis:100%; }
+  html.desk .tm-zij .tm-select{ width:100%; max-width:100%; }
+  html.desk .tm-zij{ max-height:calc(100vh - 110px); overflow-y:auto; scrollbar-width:thin; }
+  html.desk .tm-schets{ width:96px; }
+  html.desk .tm-vk{ padding:12px 14px; gap:14px; }
+  html.desk .tm-vb .tv-veld{ max-width:460px; }
+  html.desk .tm-vb .tm-feiten4, html.desk .tm-vb .tm-tabs{ max-width:720px; }
+}
+/* ook in de trainingsweergave en op Trainingen (desktop) geen paginabrede tekeningen meer */
+@media (min-width:900px){
+  .trw-diagram, .trw-filmblok{ max-width:480px !important; margin-left:auto; margin-right:auto; }
+  .dk-oefeningen .trw-diagram{ max-width:340px !important; margin-left:0; }
+}

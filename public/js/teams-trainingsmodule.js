@@ -151,8 +151,10 @@ export function htmlTrainingsmodule(){
   if (!t.cxGeladen) laadContext();
   return `<div id="tmRoot" class="tm">${htmlInhoud()}</div>`;
 }
+/* [20261113b] Indeling: instellingen (links op desktop, vast in beeld), de training als tijdlijn
+   (rechts), bewaarde trainingen onder de instellingen. Op de telefoon onder elkaar zoals altijd. */
 function htmlInhoud(){
-  return htmlFormulier() + htmlResultaat() + htmlBewaard();
+  return `<div class="tm-zij">${htmlFormulier()}</div><div class="tm-hoofd">${htmlResultaat()}</div><div class="tm-bewaard">${htmlBewaard()}</div>`;
 }
 function chip(attr, waarde, tekst, actief){ return `<button class="tm-chip${actief ? ' aan' : ''}" ${attr}="${esc(waarde)}">${esc(tekst)}</button>`; }
 
@@ -179,6 +181,7 @@ function htmlFormulier(){
     <div class="tm-rij"><span class="tm-l">Duur</span><div class="tm-chips">${DUREN.map(d => chip('data-tm-duur', d, d + ' min', kiesDuur(t.duur) === d)).join('')}</div></div>
     <div class="tm-rij"><span class="tm-l">Thema</span><select id="tmThema" class="tm-select">${themas.map(x => `<option${x === t.thema ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></div>
     <div class="tm-rij"><span class="tm-l">Datum</span><input type="date" id="tmDatum" class="tm-select" value="${esc(t.datum)}" aria-label="Datum van de training"></div>
+    <div class="tm-rij"><span class="tm-l">Weer</span><div class="tm-chips">${chip('data-tm-weer', '', 'Gewoon', !t.weer)}${Object.entries(WEER).map(([k, w]) => chip('data-tm-weer', k, w.naam, t.weer === k)).join('')}</div></div>
     ${htmlMateriaal()}
     <details class="tm-meer"${t.meerOpen ? ' open' : ''}><summary>Meer instellen</summary>
       <div class="tm-rij"><span class="tm-l">Niveau van het team</span><div class="tm-chips">${NIVEAU.map((x, i) => chip('data-tm-niv', i + 1, x, t.niv === i + 1)).join('')}</div></div>
@@ -189,7 +192,8 @@ function htmlFormulier(){
     </details>
     <div class="tm-info">Leerlijn${ll.bron === 'seizoensplan' ? ' (jouw seizoensplan)' : ''}: blok ${ll.blok} · <b>${esc(ll.thema)}</b> · week ${ll.weekInBlok} van ${ll.weken} · fase <b>${esc(ll.fase)}</b></div>
     ${t.vervangt ? `<div class="tm-melding" style="margin-top:10px">Uit je seizoensplan: bewaren vervangt de geplande training van ${esc(datumKort(datumUit(t.datum)))} op Trainingen. <button class="tm-chip tm-mini" data-tm-los="1">Maak er een extra training van</button></div>` : ''}
-    <button class="knop vol fluo" data-tm-maak="1" style="margin-top:12px">Maak training</button>
+    <div class="tm-info" style="margin-top:8px">Elke wijziging past de training meteen aan.</div>
+    <button class="knop vol licht" data-tm-maak="1" style="margin-top:10px">↻ Andere vormen kiezen</button>
   </div>`;
 }
 
@@ -223,7 +227,7 @@ function htmlResultaat(){
   if (t.pas) h += `<div class="kaart tm-knoppen">
     <div class="tm-rij"><span class="tm-l">Druk</span><div class="tm-chips">${[[-1, 'Rustiger'], [0, 'Normaal'], [1, 'Hoger']].map(([v, x]) => chip('data-tm-druk', v, x, t.knop.druk === v)).join('')}</div></div>
     <div class="tm-rij"><span class="tm-l">Moeilijkheid</span><div class="tm-chips">${[[-1, 'Lichter'], [0, 'Normaal'], [1, 'Zwaarder']].map(([v, x]) => chip('data-tm-cx', v, x, t.knop.complexiteit === v)).join('')}</div></div>
-    <div class="tm-rij"><span class="tm-l">Plan B</span><div class="tm-chips">${chip('data-tm-half', 1, 'Half veld (veld gedeeld)', t.halfVeld)}${Object.entries(WEER).map(([k, w]) => chip('data-tm-weer', k, w.naam, t.weer === k)).join('')}</div></div>
+    <div class="tm-rij"><span class="tm-l">Plan B</span><div class="tm-chips">${chip('data-tm-half', 1, 'Half veld (veld gedeeld)', t.halfVeld)}</div></div>
     ${aiAan() ? `<div class="tm-rij"><span class="tm-l">AI-uitleg</span><button class="knop klein licht" data-tm-ai="1"${t.aiBezig ? ' disabled' : ''}>${t.aiBezig ? 'Bezig…' : (Object.keys(t.ai).length ? 'Opnieuw afstemmen' : 'Afstemmen op mijn team')}</button></div>`
       : `<div class="tm-info">AI-uitleg staat uit voor deze club; je ziet de standaardtekst uit de bibliotheek.</div>`}
   </div>`;
@@ -240,7 +244,7 @@ function htmlOnderdeel(od, i){
   const naam = od.slot === 'afsluiting' ? `Afsluiting · ${od.minuten} min` : od.slotNaam;
   const knoppen = od.slot === 'afsluiting' ? '' : `<button class="knop klein licht" data-tm-wissel="${i}">↻ Andere vorm</button>`;
   return `<div class="tm-vorm${open ? ' open' : ''}" style="--c:${SLOT_KLEUR[od.slot]}">
-    <button class="tm-vk" data-tm-open-vorm="${i}" aria-expanded="${open}"><span class="tm-min">${od.minuten}′</span>
+    <button class="tm-vk" data-tm-open-vorm="${i}" aria-expanded="${open}"><span class="tm-min">${od.minuten}′</span><span class="tm-schets" aria-hidden="true">${vormSvg(v, kn.veld)}</span>
       <span class="tm-mid"><span class="tm-slot">${esc(naam)}</span><span class="tm-nm">${esc(v.naam)}</span><span class="tm-vsub">${od.groepen}×${od.groepGrootte} · ${kn.veld.b}×${kn.veld.l} m · ${esc(v.doel)}</span></span><span class="tm-pij">⌄</span></button>
     ${open ? `<div class="tm-vb">${vormSvg(v, kn.veld)}${TEKENING_LEGENDA}
       <div class="tm-feiten4"><div><b>Groepen</b>${od.groepen}×${od.groepGrootte}${od.wissel ? '+' + od.wissel : ''}</div><div><b>Veld</b>${kn.veld.b}×${kn.veld.l}</div><div><b>Tijd</b>${od.rondes ? od.rondes + '×' : ''}${od.ronde}′${od.rust ? '/' + od.rust + '′' : ''}</div><div><b>Materiaal</b>${m.pionnen || 0}p ${m.ballen || 0}b${m.doeltjes ? ' ' + m.doeltjes + 'd' : ''}</div></div>
@@ -433,7 +437,7 @@ export function koppelTrainingsmodule(v){
     else if (d.tmVeld !== undefined){ t.cx.veld = d.tmVeld || null; t.meerOpen = true; bewaarContext(); maak(); teken(); }
     else if (d.tmWd !== undefined){ t.cx.wedstrijddag = Number(d.tmWd) || null; t.meerOpen = true; bewaarContext(); maak(); teken(); }
     else if (d.tmHalf !== undefined){ t.halfVeld = !t.halfVeld; maak(); teken(); }
-    else if (d.tmWeer !== undefined){ t.weer = t.weer === d.tmWeer ? null : (WEER[d.tmWeer] ? d.tmWeer : null); maak(); teken(); }
+    else if (d.tmWeer !== undefined){ t.weer = d.tmWeer && WEER[d.tmWeer] ? d.tmWeer : null; maak(); teken(); }
     /* [20261111b] duur, niveau en spelers werken meteen door (eerder pas na "Maak training") */
     else if (d.tmDuur){ t.duur = Number(d.tmDuur); maak(); teken(); }
     else if (d.tmNiv){ t.niv = Number(d.tmNiv); maak(); teken(); }

@@ -362,6 +362,47 @@ export function htmlPresentieTraining(){
    Het kompas + de gedeelde oefenstof-PDF's. De presentie-sectie die hier
    vroeger tussen stond woont nu op zijn eigen tabblad (htmlPresentieTraining
    hierboven, tegel Presentie → Training op de hub). */
+/* [20261113b] De trainingen van het team per week, met datum per training. Gedeeld met het
+   desktopscherm Trainingen (desktop-schermen.js), zodat telefoon en desktop dezelfde trainingen tonen
+   (dezelfde volgorde en datumregel als de lijst hieronder). */
+export function trainingenPerWeek(){
+  const pdfs = (S.trainingen || []).filter(t => (t.teams||[]).includes(S.teamId));
+  const trainingsdagen = Array.isArray(S.team?.trainingsdagen) ? S.team.trainingsdagen : [];
+  const huidigeWeek = isoWeek();
+  const perWeek = new Map();
+  for (const t of pdfs){
+    const ws = /^\d{4}-\d{2}-\d{2}$/.test(t.weekStart || '') ? new Date(t.weekStart + 'T12:00')
+      : /^\d{4}-\d{2}-\d{2}$/.test(t.datum || '') ? new Date(t.datum + 'T12:00') : null;
+    const wn = ws ? isoWeek(ws) : weekNrUit(t.week);
+    const jaar = ws ? new Date(ws.getTime() + (3 - ((ws.getDay() + 6) % 7)) * 86400000).getFullYear()
+      : (wn ? (t.seizoenJaar || jaarVoorWeek(wn, t.gemaakt?.seconds)) : null);
+    const key = wn ? `${jaar}-${String(wn).padStart(2,'0')}` : 'onbekend';
+    if (!perWeek.has(key)) perWeek.set(key, { key, weekNr: wn, jaar, items: [] });
+    perWeek.get(key).items.push(t);
+  }
+  const isoStr = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  for (const g of perWeek.values()){
+    g.items.sort((a,b) =>
+      ((a.seizoensplanId && a.seizoensplanId === b.seizoensplanId) ? (a.trainingNr || 0) - (b.trainingNr || 0) : 0)
+      || ((a.plan?.id && a.plan.id === b.plan?.id) ? (a.trainingNr||0) - (b.trainingNr||0) : 0)
+      || (a.datum && b.datum ? a.datum.localeCompare(b.datum) : 0)
+      || (a.gemaakt?.seconds||0) - (b.gemaakt?.seconds||0));
+    g.isHuidig = g.weekNr === huidigeWeek;
+    g.items = g.items.map((t, i) => {
+      let d = /^\d{4}-\d{2}-\d{2}$/.test(t.datum || '') ? new Date(t.datum + 'T12:00') : null;
+      if (!d && g.weekNr) d = t.trainingsdag ? datumVoorTraining(g.weekNr, g.jaar, [t.trainingsdag], 0) : datumVoorTraining(g.weekNr, g.jaar, trainingsdagen, i);
+      return { t, iso: d ? isoStr(d) : '', chip: d ? dagChipTekst(d) : '' };
+    });
+  }
+  const nuJaar = (() => { const k = new Date(); k.setDate(k.getDate() + 3 - ((k.getDay() + 6) % 7)); return k.getFullYear(); })();
+  const nuKey = `${nuJaar}-${String(huidigeWeek).padStart(2,'0')}`;
+  const alle = [...perWeek.keys()].filter(k => k !== 'onbekend');
+  const komend = alle.filter(k => k >= nuKey).sort().map(k => perWeek.get(k));
+  const eerder = alle.filter(k => k < nuKey).sort((a,b) => b.localeCompare(a)).map(k => perWeek.get(k));
+  if (perWeek.has('onbekend')) eerder.push(perWeek.get('onbekend'));
+  return { komend, eerder, nuKey };
+}
+
 export function htmlTeamTrainingen(){
   const pdfs = S.trainingen.filter(t => (t.teams||[]).includes(S.teamId));
 
