@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0e1116">
 <title>Cluppie: de jeugdopleiding van je club, digitaal op orde</title>
-<meta name="description" content="Cluppie is de app voor jeugdtrainers en jeugdopleidingen: trainingen die passen bij je team, evaluaties, seizoensplan en speelstijl van de club. Meld je club aan en probeer het.">
+<meta name="description" content="Cluppie is de app voor jeugdtrainers en jeugdopleidingen: trainingen die passen bij je team, evaluaties, seizoensplan en speelstijl van de club. We zijn net gestart: early adopters gebruiken Cluppie een half jaar gratis.">
 <link rel="preload" href="fonts/barlow-condensed-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="fonts/fonts.css">
@@ -33,11 +33,12 @@
 <section class="hero">
   <div class="container hero__grid">
     <div class="hero__tekst">
+      <a class="vroeg" href="#meedoen"><span class="vroeg__label">Opstartfase</span> Early adopters gebruiken Cluppie een half jaar gratis</a>
       <h1>De jeugdopleiding, digitaal op orde.</h1>
       <p class="lead">Trainingen die passen bij je team, binnen de speelstijl van je club.</p>
       <div class="acties">
         <a href="index.html?aanmelden" class="btn btn--vol cta-login">Meld je club aan</a>
-        <a href="#meedoen" class="btn btn--stil">Probeer Cluppie</a>
+        <a href="#demo" class="btn btn--stil">Klik door de app</a>
       </div>
       <p class="hero__noot">Voor trainers, coördinatoren en de technische commissie. Heb je al een uitnodiging? <a href="index.html" class="cta-login">Inloggen</a>.</p>
     </div>
@@ -158,6 +159,29 @@
     <li><h3>Jouw eigen coachmodel</h3><p>Ontdek hoe je zelf coacht en probeer elke week één accent. Drie tikken na de training, alleen voor jou zichtbaar. De club ziet niets dat jij niet deelt.</p></li>
     <li><h3>Ook op de laptop</h3><p>Naast de telefoonversie voor langs het veld is er een weergave voor de laptop, met spelerskaarten, een kalender en overzicht per bouw.</p></li>
   </ul>
+</section>
+
+<!-- 5b · De app zelf: de echte app in demomodus, met een verzonnen club -->
+<section class="demo" id="demo">
+  <div class="container demo__grid">
+    <div class="demo__tekst">
+      <h2>Klik zelf door de app</h2>
+      <p class="lead">Dit is de echte Cluppie, met een verzonnen club: cluppie.io. Acht teams, een poule met uitslagen, trainingen en evaluaties.</p>
+      <ul class="demo__rollen">
+        <li><strong>Als trainer</strong>Van O11-2 en O13-1: opstelling, wedstrijdvoorbereiding, evaluatie, de poule.</li>
+        <li><strong>Als bouwcoördinator</strong>Open de onderbouw vanaf het startscherm, en open de onderbouw, met uitslagen, teams en uitleningen.</li>
+        <li><strong>Als clubbeheerder en trainingscoördinator</strong>Het clubdashboard, het seizoensplan en het weekrooster.</li>
+      </ul>
+      <p class="zacht">Je kunt alles proberen. Er wordt niets bewaard: na verversen begint de demo opnieuw.</p>
+      <div class="acties">
+        <a href="index.html?demo" class="btn btn--stil" target="_blank" rel="noopener">Open op volledig scherm</a>
+      </div>
+    </div>
+    <figure class="telefoon" data-lenis-prevent>
+      <iframe class="telefoon__scherm" title="Demo van de Cluppie-app" src="about:blank" data-src="index.html?demo" loading="lazy"></iframe>
+      <figcaption class="telefoon__start" data-keep><button type="button" class="btn btn--vol" data-demo-start>Start de demo</button></figcaption>
+    </figure>
+  </div>
 </section>
 
 <!-- 6 · De cirkel: middencirkel als schema, met een zaterdag ernaast -->
@@ -354,8 +378,8 @@
 <section class="meedoen" id="meedoen">
   <div class="container meedoen__grid">
     <div class="meedoen__tekst">
-      <h2>Probeer Cluppie met jouw club</h2>
-      <p class="lead">We bouwen Cluppie samen met trainers en jeugdopleidingen en horen graag wat beter kan. Meld je aan, probeer het met een of twee teams en vertel ons wat je ervan vindt.</p>
+      <h2>Word early adopter</h2>
+      <p class="lead">Cluppie zit in de opstartfase. Clubs en trainers die nu instappen, gebruiken Cluppie een half jaar gratis. We bouwen Cluppie samen met trainers en jeugdopleidingen en horen graag wat beter kan: probeer het met een of twee teams en vertel ons wat je ervan vindt.</p>
 
       <div class="routes">
         <div class="route reveal">
@@ -398,7 +422,7 @@
 <footer class="voet">
   <div class="container">
     <p class="voet__slot">Ontwikkeling die je kunt zien groeien.</p>
-    <p class="voet__brief">Cluppie staat klaar voor jouw team. Vragen of liever eerst even praten? Mail naar <a href="mailto:paul@cluppie.io">paul@cluppie.io</a>.</p>
+    <p class="voet__brief">Cluppie staat klaar voor jouw team, en de eerste clubs gebruiken het een half jaar gratis. Vragen of liever eerst even praten? Mail naar <a href="mailto:paul@cluppie.io">paul@cluppie.io</a>.</p>
     <div class="voet__rij">
       <div class="acties">
         <a href="index.html?aanmelden" class="btn btn--vol cta-login">Club aanmelden</a>
@@ -467,6 +491,11 @@
     entries.forEach(e=>{ if(e.isIntersecting) zet(e.target.dataset.stap); });
   },{rootMargin:'-45% 0px -45% 0px'});
   document.querySelectorAll('.log [data-stap]').forEach(el=>sio.observe(el));
+
+  /* de demo laadt pas als iemand hem start (scheelt laden voor wie alleen leest) */
+  document.querySelector('[data-demo-start]')?.addEventListener('click', e=>{
+    const f=document.querySelector('.telefoon__scherm'); f.src=f.dataset.src; e.currentTarget.closest('.telefoon__start').hidden=true; f.focus();
+  });
 
   /* voordat we naar index.html gaan: onthouden dat de intro is gezien,
      anders stuurt de gate daar ons meteen weer hierheen terug. */

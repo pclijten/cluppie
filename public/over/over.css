@@ -309,3 +309,23 @@ h3 { font-size: var(--text-title); line-height: 1.05; }
 .cirkel.is-gepind .log li.is-actief { opacity: 1; transform: none; }
 .alles.is-gepind { min-height: 100dvh; padding-top: calc(var(--nav-h) + var(--space-xl)); }
 .alles.is-gepind .paneel { min-height: 22rem; }
+
+/* ---------- opstartfase: early adopters ---------- */
+.vroeg { display: inline-flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-lg); padding: var(--space-2xs) var(--space-md) var(--space-2xs) var(--space-2xs); border-radius: var(--radius-pill); background: var(--color-paper-2); box-shadow: 0 0 0 1px var(--color-rule); color: var(--color-ink); font-size: var(--text-sm); text-decoration: none; transition: background-color var(--dur-short) var(--ease-out); }
+.vroeg:hover { background: var(--color-paper-3); }
+.vroeg:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.vroeg__label { padding: var(--space-2xs) var(--space-sm); border-radius: var(--radius-pill); background: var(--color-accent); color: var(--color-accent-ink); font-weight: 600; }
+
+/* ---------- de app zelf, in een telefoon ---------- */
+.demo { padding-block: var(--section-gap) var(--section-gap-s); background: var(--color-paper-2); }
+.demo__grid { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: var(--space-3xl); align-items: center; }
+.demo__rollen { list-style: none; margin: var(--space-xl) 0; padding: 0; display: grid; gap: var(--space-md); }
+.demo__rollen li { padding-top: var(--space-md); border-top: 1px solid var(--color-rule); color: var(--color-ink-2); }
+.demo__rollen strong { display: block; color: var(--color-ink); font: 800 var(--text-xl)/1.1 var(--font-display); text-transform: uppercase; margin-bottom: var(--space-2xs); }
+.demo .acties { margin-top: var(--space-lg); }
+.telefoon { position: relative; justify-self: center; margin: 0; width: 390px; max-width: 100%; aspect-ratio: 390 / 800; padding: 12px; border-radius: 48px; background: var(--color-ink); box-shadow: 0 0 0 1px var(--color-rule); }
+.telefoon__scherm { display: block; width: 100%; height: 100%; border: 0; border-radius: 36px; background: var(--color-paper); }
+.telefoon__start { position: absolute; inset: 12px; display: grid; place-items: center; border-radius: 36px; background: var(--color-paper-3); }
+.telefoon__start[hidden] { display: none; }
+@media (max-width: 60rem) { .demo__grid { grid-template-columns: minmax(0, 1fr); } .telefoon { width: min(100%, 390px); } }
+.lenis.lenis-smooth .telefoon__scherm { pointer-events: auto; }

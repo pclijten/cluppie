@@ -40,6 +40,13 @@ document.documentElement.classList.add('js');
   s.textContent = JSON.stringify(kaart);
   document.currentScript.after(s);
   document.documentElement.classList.add('demo');
+  /* de demo bewaart zijn eigen voorkeuren (laatste team, positie, thema) apart van de echte app */
+  try {
+    ['getItem', 'setItem', 'removeItem'].forEach(function(m){
+      var o = Storage.prototype[m];
+      Storage.prototype[m] = function(k){ var a = [].slice.call(arguments); a[0] = 'cluppieDemo:' + k; return o.apply(this, a); };
+    });
+  } catch(e){}
 })();
 </script>
 <script>
