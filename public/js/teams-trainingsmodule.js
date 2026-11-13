@@ -23,6 +23,7 @@ import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } fr
 import { aiAan, aiDoel } from './clubconfig.js?v=20261113b';
 import { ico } from './icons.js?v=20261110a';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019f';
+import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261113e';
 import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, kiesDuur, SLOT_NAAM, groepsindeling, opbouwVoor, WEER } from './trainingsplanner.js?v=20261113b';
 import { MATERIAAL, MATERIAAL_NAAM, PRESETS, presetVan, VELDEN, schoonContext, behoefte, haalbaar, valtAf, tipTekst } from './trainingscontext-logica.js?v=20261019a';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
@@ -30,13 +31,13 @@ import { TERUGBLIK_VRAGEN, zetAntwoord, terugblikKlaar, terugblikSamenvatting, s
 import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261113b';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261012e';
 import { positieWeek, seizoensweekOp, weekKalender, standaardVrij, maandagVan } from './seizoensplan-logica.js?v=20261113b';
-import { trainingenRef } from './seizoensplan-trainingen.js?v=20261113b';
-import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261113b';
-import { oefeningVan, geplandeTraining } from './seizoensplan-club.js?v=20261113b';
+import { trainingenRef } from './seizoensplan-trainingen.js?v=20261113e';
+import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261113e';
+import { oefeningVan, geplandeTraining, vormIdsVan } from './seizoensplan-club.js?v=20261113e';
 import { onderdeelAan } from './onderdelen.js?v=20261113b';
 
-const VORMEN = BIBLIOTHEEK.vormen;
-const THEMAS_BESCHIKBAAR = () => new Set(VORMEN.flatMap(v => v.thema));
+/* [20261113d] vormen uit basis + beheerlaag (bibliotheek.js) */
+const THEMAS_BESCHIKBAAR = () => new Set(vormen().flatMap(v => v.thema));
 const vandaagIso = () => new Date().toISOString().slice(0, 10);
 const NIVEAU = ['Basis', 'Midden', 'Hoog'];
 
@@ -120,8 +121,8 @@ function leerlijnNu(){
 function themaOpties(){
   const lv = leeftijdVanCategorie(S.team?.categorie);
   const bes = THEMAS_BESCHIKBAAR();
-  return [...new Set(VORMEN.flatMap(v => v.thema))].filter(t => bes.has(t))
-    .filter(t => VORMEN.some(v => v.thema.includes(t) && lv >= v.leeftijd[0] && lv <= v.leeftijd[1]));
+  return [...new Set(vormen().flatMap(v => v.thema))].filter(t => bes.has(t))
+    .filter(t => vormen().some(v => v.thema.includes(t) && lv >= v.leeftijd[0] && lv <= v.leeftijd[1]));
 }
 
 /* ---------- plan maken ---------- */
@@ -130,7 +131,7 @@ function maak(){
   if (!t.nHand) t.n = verwachtAantal(t.datum).n;
   if (!t.themaHand) t.thema = ll.thema;
   if (!themaOpties().includes(t.thema)) t.thema = themaOpties()[0] || ll.thema;
-  t.plan = maakPlan(VORMEN, { categorie: S.team?.categorie, leeftijd: lv, aantalSpelers: t.n, niveau: t.niv, duur: t.duur, thema: t.thema,
+  t.plan = maakPlan(vormen(), { categorie: S.team?.categorie, leeftijd: lv, aantalSpelers: t.n, niveau: t.niv, duur: t.duur, thema: t.thema,
     blokFase: ll.fase, seed: `${S.teamId}:${t.week}:${t.seed}`, recent: [], context: t.cx, datum: t.datum, halfVeld: t.halfVeld, weer: t.weer });
   t.plan.profiel.week = t.week;
   t.plan.profiel.datum = t.datum;
@@ -147,6 +148,8 @@ export function htmlTrainingsmodule(){
   if (onderdeelAan('seizoensplan') && !(S._sp && S._sp.teamId === S.teamId && S._sp.klaar)){
     laadSeizoensplanVoorTeam().then(() => { const u = staat(); if (!u.themaHand && !u.bewaardId && S._spPlan?.teamId === S.teamId){ maak(); teken(); } }).catch(() => {});
   }
+  /* [20261113d] beheerlaag van de bibliotheek: eenmaal geladen, de training opnieuw samenstellen */
+  if (!bibliotheekGeladen()) laadBibliotheek().then(() => { const u = staat(); if (!u.bewaardId){ maak(); teken(); } }).catch(() => {});
   if (!t.lijst) laadBewaard();
   if (!t.cxGeladen) laadContext();
   return `<div id="tmRoot" class="tm">${htmlInhoud()}</div>`;
@@ -164,7 +167,7 @@ function htmlMateriaal(){
   const lv = leeftijdVanCategorie(S.team?.categorie);
   let info = '';
   if (cx.materiaal){
-    const kand = VORMEN.filter(v => lv >= v.leeftijd[0] && lv <= v.leeftijd[1] && t.n >= (v.spelers?.min || 0) && t.n <= (v.spelers?.max || 99));
+    const kand = vormen().filter(v => lv >= v.leeftijd[0] && lv <= v.leeftijd[1] && t.n >= (v.spelers?.min || 0) && t.n <= (v.spelers?.max || 99));
     const r = valtAf(kand, v => groepsindeling(v, t.n).groepen, cx);
     if (r.af > 0) info = `<div class="tm-info">Met dit materiaal passen ${r.passend} van ${r.totaal} vormen.${r.tips[0] ? ' ' + esc(tipTekst(r.tips[0])) : ''}</div>`;
   }
@@ -333,7 +336,7 @@ async function zetOpTrainingen(p, planId){
      gemarkeerd als aangepast, zodat een nieuwe uitrol van het plan hem laat staan) */
   if (t.vervangt){
     await setDoc(trainingenRef(team, t.vervangt), {
-      oefeningen, titel: `Aangepast · ${titel}`, thema: p.profiel?.thema || '', duur: p.profiel?.duur || null,
+      oefeningen, vormIds: vormIdsVan(oefeningen), titel: `Aangepast · ${titel}`, thema: p.profiel?.thema || '', duur: p.profiel?.duur || null,
       aangepast: true, aangepastDoor: S.user?.uid || null, aangepastMs: Date.now(), trainingsplanId: planId,
       datum: t.datum, trainingsdag: weekdagIso(d), diagramUrls: {},
     }, { merge: true });
@@ -344,7 +347,7 @@ async function zetOpTrainingen(p, planId){
     id, club: team.club, teams: [S.teamId],
     week: `Week ${iso.week}`, seizoenJaar: iso.jaar, trainingsdag: weekdagIso(d), datum: t.datum,
     titel, bron: 'trainingsmodule', trainingsplanId: planId, thema: p.profiel?.thema || '', duur: p.profiel?.duur || null,
-    url: '', diagramUrls: {}, oefeningen, gemaakt: serverTimestamp(),
+    url: '', diagramUrls: {}, oefeningen, vormIds: vormIdsVan(oefeningen), gemaakt: serverTimestamp(),
   }, { merge: true });
 }
 function datumKort(d){ const s = d.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' }); return s.charAt(0).toUpperCase() + s.slice(1).replace('.', ''); }
@@ -357,19 +360,19 @@ function openBewaarde(id){
   let plan;
   if (!nieuweOpbouw){
     /* training uit de oude opbouw (5 onderdelen, 90 min): opnieuw samengesteld met dezelfde instellingen */
-    plan = maakPlan(VORMEN, { categorie: pr.categorie || S.team?.categorie, aantalSpelers: N, niveau: pr.niveau || 2, duur, thema: pr.thema, blokFase: pr.blokFase, seed: id, recent: [], weer: pr.weer || null });
+    plan = maakPlan(vormen(), { categorie: pr.categorie || S.team?.categorie, aantalSpelers: N, niveau: pr.niveau || 2, duur, thema: pr.thema, blokFase: pr.blokFase, seed: id, recent: [], weer: pr.weer || null });
     plan.meldingen.unshift('Deze training is gemaakt met de oude opbouw. Hij is opnieuw samengesteld met maximaal 4 vormen.');
   } else {
     const onderdelen = [];
     for (const o of d.onderdelen){
-      const v = VORMEN.find(x => x.id === o.vormId);
+      const v = vormOpId(o.vormId);
       if (!v){ meld('Een vorm uit deze training bestaat niet meer in de bibliotheek'); continue; }
       onderdelen.push(bouwOnderdeel(v, { slot: o.slot, minuten: o.minuten }, { N, thema: pr.thema, weer: pr.weer || null }));
     }
     const ov = { ...opbouwVoor(duur, pr.weer || null).overgang };
-    const av = d.afsluitingId ? VORMEN.find(x => x.id === d.afsluitingId) : null;
+    const av = d.afsluitingId ? vormOpId(d.afsluitingId) : null;
     const afsluiting = av ? bouwOnderdeel(av, { slot: 'afsluiting', minuten: ov.afsluiting }, { N, thema: pr.thema, weer: pr.weer || null })
-      : maakPlan(VORMEN, { categorie: pr.categorie || S.team?.categorie, aantalSpelers: N, niveau: pr.niveau || 2, duur, thema: pr.thema, blokFase: pr.blokFase, seed: id, recent: [] }).afsluiting;
+      : maakPlan(vormen(), { categorie: pr.categorie || S.team?.categorie, aantalSpelers: N, niveau: pr.niveau || 2, duur, thema: pr.thema, blokFase: pr.blokFase, seed: id, recent: [] }).afsluiting;
     plan = { profiel: { ...pr, duur }, onderdelen, afsluiting, overgang: ov, meldingen: [], ruimteM2: leeftijdVanCategorie(pr.categorie) >= 13 ? 6000 : 3500 };
     plan.controle = valideer(plan);
   }
@@ -452,7 +455,7 @@ export function koppelTrainingsmodule(v){
     else if (d.tmStijl){ t.knop.stijl = d.tmStijl; teken(); }
     else if (d.tmWissel !== undefined){
       const i = Number(d.tmWissel), od = t.plan.onderdelen[i];
-      const lst = rangschik(VORMEN, od.slot, { categorie: S.team?.categorie, aantalSpelers: t.n, niveau: t.niv, thema: t.thema, doelC: t.plan.profiel.doelComplexiteit,
+      const lst = rangschik(vormen(), od.slot, { categorie: S.team?.categorie, aantalSpelers: t.n, niveau: t.niv, thema: t.thema, doelC: t.plan.profiel.doelComplexiteit,
         uitsluiten: t.plan.onderdelen.map(o => o.vormId), seed: t.seed, context: t.cx, datum: t.datum, halfVeld: t.halfVeld, weer: t.weer });
       if (!lst[0]){ meld('Geen andere passende vorm gevonden'); return; }
       stuurSignalen([signaalVormGewisseld(leeftijdVanCategorie(S.team?.categorie), od)]);

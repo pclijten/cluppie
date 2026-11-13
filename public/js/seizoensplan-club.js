@@ -10,7 +10,7 @@
 
    Vaste docId per training (sp_{planId}_{teamId}_{seizoensweek}_{nr}) maakt een herhaalde
    uitrol idempotent: dezelfde documenten worden overschreven, nooit gedupliceerd. */
-import { maakPlan, pasKnoppenToe } from './trainingsplanner.js?v=20261113b';
+import { maakPlan, pasKnoppenToe, bouwOnderdeel, SLOT_NAAM } from './trainingsplanner.js?v=20261113b';
 import { positieWeek, maakSeizoensplan } from './seizoensplan-logica.js?v=20261113b';
 import { leeftijdVanCategorie } from './config.js?v=20261113b';
 import { vormSvg } from './trainingsvorm-svg.js?v=20261012e';
@@ -103,7 +103,37 @@ export function oefeningVan(od){
     ...lijst('Makkelijker', v.makkelijker),
     ...lijst('Moeilijker', v.moeilijker),
   ];
-  return { titel: String(v.naam || od.vormId || 'Oefening'), blokken, svg: tekeningVan(od) };
+  /* [20261113d] bron: genoeg om de oefening opnieuw op te bouwen als de vorm in de bibliotheek wijzigt */
+  const bron = { vormId: od.vormId || v.id || null, slot: od.slot || null, minuten: od.minuten || null,
+    spelers: od.groepen && od.groepGrootte ? od.groepen * od.groepGrootte + (od.wissel || 0) : null };
+  return { titel: String(v.naam || od.vormId || 'Oefening'), blokken, svg: tekeningVan(od), bron };
+}
+
+/* [20261113d] Vorm-id's van een training (voor het doorvoeren van bibliotheekwijzigingen). */
+export function vormIdsVan(oefeningen){
+  return [...new Set((oefeningen || []).map(o => o?.bron?.vormId).filter(Boolean))];
+}
+/* Bron van een oude oefening zonder `bron`: vorm op titel (naam in de basis), minuten en onderdeel uit
+   het blok "Tijd en groepen" ("12 minuten · Kernvorm 1 · 2 groepen"). PURE. */
+export function bronVanOefening(oef, vormen){
+  if (oef?.bron?.vormId) return oef.bron;
+  const v = (vormen || []).find(x => x.naam === oef?.titel);
+  if (!v) return null;
+  const tg = (oef.blokken || []).find(b => b.kop === 'Tijd en groepen')?.tekst || '';
+  const minuten = Number(tg.match(/^(\d+)\s*minuten/)?.[1]) || null;
+  const slotNaam = tg.split('·')[1]?.trim() || '';
+  const slot = Object.entries(SLOT_NAAM).find(([, n]) => n === slotNaam)?.[0] || (v.fase === 'afsluiting' ? 'afsluiting' : null);
+  return { vormId: v.id, slot, minuten, spelers: null };
+}
+/* De oefening opnieuw opbouwen met de (gewijzigde) vorm. PURE. */
+export function herbouwOefening(oef, vorm, { thema = '', vormen = [] } = {}){
+  const b = bronVanOefening(oef, vormen) || {};
+  if (!vorm) return oef;
+  const slot = b.slot || (vorm.fase === 'afsluiting' ? 'afsluiting' : 'kern1');
+  const minuten = b.minuten || vorm.duur?.ronde * (vorm.duur?.rondes?.[0] || 1) || 10;
+  const N = b.spelers || vorm.spelers?.ideaal || 12;
+  const od = bouwOnderdeel(vorm, { slot, minuten }, { N, thema });
+  return oefeningVan(od);
 }
 /* De tekening van de oefening als SVG (zoals in de Training maken-weergave). Geen tekening → geen veld. */
 function tekeningVan(od){
@@ -167,6 +197,7 @@ export function trainingDocs({ plan, team, clubId, planId, planVersie, vormen, a
       url: '', diagramUrls: {},
       oefeningen: [...p.onderdelen.map(oefeningVan), ...(p.afsluiting ? [oefeningVan(p.afsluiting)] : [])],
     });
+    docs[docs.length - 1].vormIds = vormIdsVan(docs[docs.length - 1].oefeningen);
   }
   return { docs, meldingen };
 }

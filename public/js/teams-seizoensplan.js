@@ -22,17 +22,18 @@ import { db, doc, collection, getDoc, getDocs, setDoc, addDoc, query, where, fun
 import { S, esc, meld } from './state.js?v=20261113b';
 import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261113b';
 import { aiAan, aiDoel } from './clubconfig.js?v=20261113b';
-import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261113b';
-import { trainingenVanPlan, planVoorTeam } from './seizoensplan-club.js?v=20261113b';
+import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261113e';
+import { trainingenVanPlan, planVoorTeam } from './seizoensplan-club.js?v=20261113e';
 import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261113b';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019f';
+import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261113e';
 import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261113b';
 import {
   MODELLEN, ACCENTEN, maakSeizoensplan, weekKalender, herreken, standaardVrij, maandagVan, beschikbareThemas, themaVolgorde,
   valideerBlokken, positieOp, positieWeek, teamSignalen, stelBijsturingVoor, pasVoorstelToe,
 } from './seizoensplan-logica.js?v=20261113b';
 
-const VORMEN = BIBLIOTHEEK.vormen;
+/* [20261113d] vormen uit basis + beheerlaag (bibliotheek.js) */
 const KLEUREN = ['var(--accent)', '#4a8fe0', '#e0a526', '#3fb27f', '#a855f7', '#f08a24', '#14b8a6', '#ec4899'];
 const vandaagIso = () => new Date().toISOString().slice(0, 10);
 const dk = iso => iso ? new Date(iso + 'T12:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) : '';
@@ -90,7 +91,7 @@ async function laadNu(s){
         const nieuwste = cq.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.bijgewerktMs || 0) - (a.bijgewerktMs || 0))[0];
         if (nieuwste?.params){
           const team = { id: S.teamId, categorie: S.team?.categorie, bouw: S.team?.bouw, trainingsdagen: S.team?.trainingsdagen };
-          s.clubPlan = { ...planVoorTeam(nieuwste, team, beschikbareThemas(VORMEN)), teamId: S.teamId, naam: nieuwste.naam || 'Seizoensplan', planId: nieuwste.id, bron: 'club' };
+          s.clubPlan = { ...planVoorTeam(nieuwste, team, beschikbareThemas(vormen())), teamId: S.teamId, naam: nieuwste.naam || 'Seizoensplan', planId: nieuwste.id, bron: 'club' };
           s.plan = s.clubPlan; s.tab = 'jaarlijn'; deelS();
         }
       } catch (e){ console.warn('[seizoensplan] clubplan laden mislukt', e.code || e); }
@@ -167,7 +168,7 @@ function htmlJaarlijn(){
   if (!plan && alleenLezen()) return `<div class="kaart"><div class="tm-info">Er is nog geen seizoensplan voor dit team. De club maakt het plan; zodra je coördinator het toewijst, staat het hier en komen de trainingen per week op Trainingen.</div></div>`;
   if (!plan) return `<div class="kaart"><div class="tm-info">Er is nog geen seizoensplan. Maak er eerst een onder “1 Opzet”.</div><button class="knop klein licht" data-sp-tab="opzet" style="margin-top:8px">Naar opzet</button></div>`;
   const nu = huidigeWeekNr(plan), vanaf = nu, tot = Math.min(plan.trainingsweken, nu + 3);
-  const alle = trainingenVanPlan({ plan, team: { id: S.teamId, categorie: S.team?.categorie }, vormen: VORMEN, planId: vanClub() ? plan.planId : `team_${S.teamId}_${seizoenSleutel()}`, aantalSpelers: aanwezigeSpelers() });
+  const alle = trainingenVanPlan({ plan, team: { id: S.teamId, categorie: S.team?.categorie }, vormen: vormen(), planId: vanClub() ? plan.planId : `team_${S.teamId}_${seizoenSleutel()}`, aantalSpelers: aanwezigeSpelers() });
   const eigenaar = vanClub() ? `<span class="tm-badge">Van de club · ${esc(plan.naam || 'seizoensplan')}</span> <span class="tm-info">alleen lezen</span>` : `<span class="tm-badge">Jouw plan</span>`;
   let h = `<div class="kaart"><div class="tm-kop2">Seizoensplan ${esc(catLabel(S.team?.categorie))}</div><div style="margin:4px 0 6px">${eigenaar}</div>
     <div class="tm-info">${esc(MODELLEN[plan.model]?.naam || '')} · ${plan.trainingsweken} trainingsweken · ${plan.blokken.length} blokken · ${plan.params.tpw}× per week${plan.params.accent?.length ? ' · accent ' + esc(plan.params.accent.join(', ')) : ''}</div>
@@ -226,7 +227,7 @@ function htmlBijsturing(){
 /* ---------- opslaan en genereren ---------- */
 function maakVanForm(blokkenUitAI){
   const s = staat(), f = s.form;
-  const lv = leeftijdVanCategorie(S.team?.categorie), bes = beschikbareThemas(VORMEN);
+  const lv = leeftijdVanCategorie(S.team?.categorie), bes = beschikbareThemas(vormen());
   const p = { categorie: S.team?.categorie, leeftijd: lv, bouw: bouwKey(), model: f.model, start: f.start, eind: f.eind, vrij: f.vrij || [], accent: f.accent || [], tpw: f.tpw, duur: f.duur, niveau: f.niveau, beschikbaar: bes };
   const det = maakSeizoensplan(p);
   const params = { categorie: p.categorie, bouw: p.bouw, start: f.start, eind: f.eind, vrij: p.vrij, accent: p.accent, tpw: f.tpw, duur: f.duur, niveau: f.niveau, bijsturen: f.bijsturen };
@@ -248,8 +249,9 @@ async function bewaarPlan(plan){
   } catch (e){ meld('Opslaan mislukt: ' + (e.code || e.message)); return false; }
   /* de seizoenstrainingen naar het tabblad Trainingen; een mislukking hier houdt het plan wel bewaard */
   try {
+    await laadBibliotheek();
     const r = await zetSeizoenTrainingen({ plan, team: { id: S.teamId, categorie: S.team?.categorie, club: S.team?.club || null, trainingsdagen: S.team?.trainingsdagen },
-      planId: `team_${S.teamId}_${seizoenSleutel()}`, planVersie: 1, vormen: VORMEN, aantalSpelers: aanwezigeSpelers() });
+      planId: `team_${S.teamId}_${seizoenSleutel()}`, planVersie: 1, vormen: vormen(), aantalSpelers: aanwezigeSpelers() });
     if (r.meldingen?.length) console.warn('[seizoensplan] trainingen:', r.meldingen.slice(0, 5));
   } catch (e){ meld('Plan bewaard, maar de trainingen staan nog niet op Trainingen: ' + (e.code || e.message)); return false; }
   return true;
@@ -261,7 +263,7 @@ async function maakConcept(metAI){
   if (metAI){
     s.aiBezig = true; teken();
     try {
-      const f = s.form, lv = leeftijdVanCategorie(S.team?.categorie), bes = beschikbareThemas(VORMEN);
+      const f = s.form, lv = leeftijdVanCategorie(S.team?.categorie), bes = beschikbareThemas(vormen());
       const kal = weekKalender(f.start, f.eind, f.vrij || []), weken = kal.filter(w => !w.vrij).length;
       const toegestaan = themaVolgorde({ model: f.model, bouw: bouwKey(), leeftijd: lv, accent: f.accent || [], beschikbaar: bes });
       const alle = new Set(LEERCURVE_THEMAS(lv, bes));
@@ -278,7 +280,7 @@ async function maakConcept(metAI){
   teken();
 }
 function LEERCURVE_THEMAS(lv, bes){
-  return [...bes].filter(t => VORMEN.some(v => v.thema.includes(t) && lv >= v.leeftijd[0] && lv <= v.leeftijd[1]));
+  return [...bes].filter(t => vormen().some(v => v.thema.includes(t) && lv >= v.leeftijd[0] && lv <= v.leeftijd[1]));
 }
 async function beslis(id, besluit){
   const s = staat(), r = voorstellen(); const v = r?.voorstellen.find(x => x.id === id); if (!v) return;

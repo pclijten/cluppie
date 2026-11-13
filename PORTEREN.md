@@ -10,6 +10,12 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
 
 ## Open
+**Voor Paul — Trainingsbibliotheek zelf beheren (release 20261113e, branch `bibliotheek`)**
+- [ ] PR reviewen en mergen. Mockup "Cluppie Bibliotheek beheren" goedgekeurd op 13-11 ("Perfect"), besluiten in `claude/trainingsbibliotheek-beheer-impactanalyse.md`.
+- [ ] **Eerst** `npm run test:rules` (2 nieuwe scenario's onderaan), dan deployen: `firebase deploy --only firestore:rules,firestore:indexes --project cluppie-ad329`. Nieuw: `platform/bibliotheek/vormen` (lezen ingelogd, schrijven platform), en een recursieve regel `/{pad=**}/trainingen/{id}` waarmee de platformbeheerder trainingen leest en alleen `oefeningen`, `vormIds`, `bibliotheekBijgewerktMs` bijwerkt. Index: `vormIds` (array-contains) voor collectie én collectiegroep. Wacht tot de index klaar is (Console → Firestore → Indexen) voordat je doorvoert.
+- [ ] Daarna in Platform › Bibliotheek één keer **Trainingen koppelen** (bestaande trainingen krijgen `vormIds` en per oefening een `bron`; vorm herkend aan de naam).
+- [ ] Wat er is: `bibliotheek.js` (basis + beheerlaag, `vormen()` voor de planner zonder uitgezette vormen, `vormOpId()` voor bewaarde trainingen), `platform-bibliotheek.js` (scherm), oefeningen krijgen `bron {vormId, slot, minuten, spelers}`, trainingsdocumenten `vormIds`. Bewaren voert door in alle trainingen met die vorm, behalve `aangepast: true` en trainingen in het verleden; "Alleen nieuwe trainingen" kan ook. Uitzetten vervangt de vorm in geplande trainingen door een vorm uit dezelfde fase en leeftijd. Excel export/import met controle vooraf. Tekeneditor: fase 2 (nieuwe vormen zonder tekening, dupliceren neemt de tekening mee).
+- [ ] Getest: `npm test` (nieuw `tests/bibliotheek.test.mjs`), ESLint, importcontrole, scherm gerenderd met nep-Firestore (1440 breed, donker). Doorvoeren en koppelen niet tegen echte Firebase getest (collectiegroep-query); eerst één vorm proberen en een training bekijken.
 **Voor Paul — Contactadres terug naar paul@cluppie.io (release 20261113c, branch `mail-paul`)**
 - [ ] PR mergen. Op verzoek van Paul (13-11) is het contactadres overal paul@cluppie.io: app (uploadhulp), over.html, privacy.html, afzender en Reply-To van de mails, ontvanger van clubaanmeldingen. Daarmee vervalt de deploy-opmerking over `MAIL_VAN`/info@ hieronder; de deploy van `verstuurMail` en `meldClubAan` blijft nodig (Reply-To).
 

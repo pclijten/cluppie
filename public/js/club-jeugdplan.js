@@ -14,11 +14,12 @@ import { S, esc, meld } from './state.js?v=20261113b';
 import { db, doc, collection, getDocs, setDoc, updateDoc, deleteField, query, where, writeBatch, serverTimestamp } from './firebase.js?v=20261011g';
 import { bouwNaam, catLabel, SEIZOEN_FALLBACK } from './config.js?v=20261113b';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019f';
+import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261113e';
 import { MODELLEN, ACCENTEN, beschikbareThemas, maandagVan, standaardVrij, weekKalender } from './seizoensplan-logica.js?v=20261113b';
-import { rechtenVoor, magVoorBouw, teamsVoorPlan, planVoorTeam, trainingDocs, uitrolPlan, spelersVoorPlanner, duurVoorLeeftijd, JEUGDBOUWEN } from './seizoensplan-club.js?v=20261113b';
-import { bestaandeTrainingen, voerUit } from './seizoensplan-trainingen.js?v=20261113b';
+import { rechtenVoor, magVoorBouw, teamsVoorPlan, planVoorTeam, trainingDocs, uitrolPlan, spelersVoorPlanner, duurVoorLeeftijd, JEUGDBOUWEN } from './seizoensplan-club.js?v=20261113e';
+import { bestaandeTrainingen, voerUit } from './seizoensplan-trainingen.js?v=20261113e';
 
-const VORMEN = BIBLIOTHEEK.vormen;
+/* [20261113d] vormen uit basis + beheerlaag (bibliotheek.js) */
 const vandaagIso = () => new Date().toISOString().slice(0, 10);
 const vandaagLokaal = () => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`; };
 const dk = iso => iso ? new Date(iso + 'T12:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) : '';
@@ -130,7 +131,7 @@ function htmlDetail(rechten){
   const scope = teamsVoorPlan(p, c.teams);
   const toew = c.toew[p.id];
   const mag = magVoorBouw(rechten, p.bouw);
-  const voorbeeld = scope[0] ? planVoorTeam(p, scope[0], beschikbareThemas(VORMEN)) : null;
+  const voorbeeld = scope[0] ? planVoorTeam(p, scope[0], beschikbareThemas(vormen())) : null;
   const band = voorbeeld ? voorbeeld.blokken.map((b, i) => `<i style="flex:${b.weken};background:var(--c${i % 6})" title="${esc(b.thema)}"></i>`).join('') : '';
   return `<div class="kaart">
       <div class="tm-rij"><button class="knop klein licht" data-cjp="terug">← Plannen</button>${mag ? `<button class="knop klein licht" data-cjp="bewerk">Wijzig plan</button>` : ''}</div>
@@ -209,7 +210,7 @@ function seizoenSleutelTeam(){ return String(S.huidigSeizoen || SEIZOEN_FALLBACK
 async function toewijs(planId, teamIds, { bevestigd = false } = {}){
   const c = C(); const p = c.plannen.find(x => x.id === planId); if (!p) return;
   if (!magVoorBouw(rechtenVoor(S.club, uidNu()), p.bouw)) return meld('Je mag dit plan niet toewijzen');
-  const beschikbaar = beschikbareThemas(VORMEN);
+  const beschikbaar = beschikbareThemas(vormen());
   const teams = teamsVoorPlan(p, c.teams).filter(t => teamIds.includes(t.id));
   if (!teams.length) return meld('Geen teams om toe te wijzen');
   /* 0. eigen plannen van trainers: eerst bevestigen (in het scherm, geen pop-up) */
@@ -225,12 +226,13 @@ async function toewijs(planId, teamIds, { bevestigd = false } = {}){
   const anderePlannen = (c.plannen || []).filter(x => x.id !== p.id);
   const meldingen = [];
   try {
+    await laadBibliotheek();
     let geschreven = 0, verwijderd = 0, behouden = 0;
     for (const t of teams){
       const team = { ...t, club: S.clubId };
       const aantal = spelersVoorPlanner(await spelersVan(t.id));
       const planT = planVoorTeam(p, team, beschikbaar);
-      const { docs, meldingen: m } = trainingDocs({ plan: planT, team, clubId: S.clubId, planId: p.id, planVersie: p.planVersie || 1, vormen: VORMEN, aantalSpelers: aantal });
+      const { docs, meldingen: m } = trainingDocs({ plan: planT, team, clubId: S.clubId, planId: p.id, planVersie: p.planVersie || 1, vormen: vormen(), aantalSpelers: aantal });
       m.slice(0, 3).forEach(x => meldingen.push(`${t.naam}, ${x}`));
       const bestaande = await bestaandeTrainingen(team);
       const r = uitrolPlan({ nieuw: docs, bestaande, planId: p.id, vandaag, vervangt: id => !!id && id !== p.id });

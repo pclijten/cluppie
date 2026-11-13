@@ -80,6 +80,22 @@ service cloud.firestore {
       allow read: if echt();
       allow write: if false;            /* alleen handmatig in de console (zie PORTEREN.md) */
     }
+    /* [20261113d] trainingsbibliotheek: beheerlaag van de platformbeheerder. Iedereen die is ingelogd
+       leest (de planner draait in de browser), alleen de platformbeheerder schrijft. */
+    match /platform/bibliotheek {
+      allow write: if isPlatform();
+    }
+    match /platform/bibliotheek/vormen/{vormId} {
+      allow read: if echt();
+      allow write: if isPlatform();
+    }
+    /* [20261113d] bibliotheekwijziging doorvoeren: de platformbeheerder leest trainingen (club en losse
+       trainers) en werkt alleen de oefeningen bij. Andere velden blijven buiten bereik. */
+    match /{pad=**}/trainingen/{trainingId} {
+      allow read: if isPlatform();
+      allow update: if isPlatform()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['oefeningen', 'vormIds', 'bibliotheekBijgewerktMs']);
+    }
 
     /* ======================= clubs ======================= */
     /* KNVB-speeldagen per district en seizoen (id "2026-27_zuid1"): elke ingelogde gebruiker leest,

@@ -1,11 +1,104 @@
 {
   "indexes": [
-    { "collectionGroup": "gebruik",   "queryScope": "COLLECTION", "fields": [ { "fieldPath": "clubId", "order": "ASCENDING" }, { "fieldPath": "datum", "order": "ASCENDING" } ] },
-    { "collectionGroup": "navpaden",  "queryScope": "COLLECTION", "fields": [ { "fieldPath": "clubId", "order": "ASCENDING" }, { "fieldPath": "datum", "order": "ASCENDING" } ] },
-    { "collectionGroup": "trainingen", "queryScope": "COLLECTION", "fields": [ { "fieldPath": "club", "order": "ASCENDING" }, { "fieldPath": "teams", "arrayConfig": "CONTAINS" } ] },
-    { "collectionGroup": "berichten",  "queryScope": "COLLECTION", "fields": [ { "fieldPath": "club", "order": "ASCENDING" }, { "fieldPath": "teams", "arrayConfig": "CONTAINS" } ] },
-    { "collectionGroup": "videos",     "queryScope": "COLLECTION", "fields": [ { "fieldPath": "club", "order": "ASCENDING" }, { "fieldPath": "teams", "arrayConfig": "CONTAINS" } ] },
-    { "collectionGroup": "documenten", "queryScope": "COLLECTION", "fields": [ { "fieldPath": "club", "order": "ASCENDING" }, { "fieldPath": "teams", "arrayConfig": "CONTAINS" } ] }
+    {
+      "collectionGroup": "gebruik",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "clubId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "datum",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "navpaden",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "clubId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "datum",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "trainingen",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "club",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "teams",
+          "arrayConfig": "CONTAINS"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "berichten",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "club",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "teams",
+          "arrayConfig": "CONTAINS"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "videos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "club",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "teams",
+          "arrayConfig": "CONTAINS"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "documenten",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "club",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "teams",
+          "arrayConfig": "CONTAINS"
+        }
+      ]
+    }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    {
+      "collectionGroup": "trainingen",
+      "fieldPath": "vormIds",
+      "indexes": [
+        {
+          "arrayConfig": "CONTAINS",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "arrayConfig": "CONTAINS",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
+    }
+  ]
 }
