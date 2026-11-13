@@ -2,7 +2,7 @@
 
 Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
 
-## Stand (bijgewerkt 11-11-2026, versie 20261111d)
+## Stand (bijgewerkt 13-11-2026, versie 20261113a)
 - **Firestore-rules:** per club afgeschermd (teams, trainingen, video's, documenten, berichten via clublidmaatschap). Getest in de emulator: `npm run test:rules` (21 scenario's, laatst 20/20 groen op 11-10; de 21e is in 20261011f toegevoegd). Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.
 - **Cloud Functions:** live in `europe-west1` (Node 22, 2nd gen). Iedere nieuwe callable heeft na de eerste deploy de invoker `allUsers` nodig (`gcloud run services add-iam-policy-binding <naam-in-kleine-letters> …`), anders krijgt de app een CORS-/`internal`-fout.
 - **Tests:** `npm test` (17 suites, laatst 13-10 allemaal groen; nieuw: `vaste-afmeldingen`. Eerst één keer `cd functions && npm install`) en `node tests/toegang.test.js` (aansluiten/uitnodigen, 24 scenario's). Pariteit met ASV'33: `node tools/pariteit.mjs ../cluppieasv33` (stand 10-11: ASV'33 t/m PR #42 gepoort; resterende meldingen zijn bewust: overzetten via de server, trainco-beheer via functions, bronvermelding niet overgenomen, `nu-test.js` is een ASV-testpagina).
@@ -10,6 +10,13 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
 
 ## Open
+**Voor Paul — Firestore "INTERNAL ASSERTION FAILED: Unexpected state" (release 20261113a, branch `firestore-herstel`)**
+- [ ] PR reviewen en mergen. Alleen client.
+- [ ] Achtergrond: gemeld op 13-11 bij "Maak mijn team" (snelstart, `setDoc` op regel 193). Dat is een bekende fout in de Firestore-bibliotheek (10.12 t/m 12.x, github firebase-js-sdk #8250): de interne wachtrij liep al eerder vast, daarna mislukt elke actie tot herladen. Bekende oorzaken: iOS/Safari na de achtergrond (IndexedDB, ID b815), slaapstand, dubbele berichten van de server (ID ca9). De eigenlijke eerste fout staat eerder in de console.
+- [ ] Gedaan: (1) de listeners voor trainingen, video's, berichten en documenten starten alleen nog opnieuw als de set teams verandert. Ze werden bij elke teamwijziging afgebroken en opnieuw gestart; sinds 20261111d kwam daar per team zonder club een extra listener bij, precies de gebruikers van snelstart. (2) Nieuw `firestore-herstel.js`: herkent de vastgelopen client en toont één balk met Herlaad (geen automatisch herladen). Ook in de foutmelding van snelstart.
+- [ ] Open: de eerste rode fout in de console (ID b815 of ca9) en welk apparaat/welke browser, om te zien of het iOS/slaapstand was. Een upgrade van de Firebase-bibliotheek lost het volgens de maintainers niet zeker op (nog gemeld op 12.5); daarom niet gedaan.
+- [ ] Getest: `npm test` groen, ESLint no-undef schoon, imports kloppen, herkenning van de fout los gecontroleerd. Niet in een browser gereproduceerd.
+
 **Voor Paul — Trainingen en Seizoen opnieuw ingedeeld (releases 20261111c + 20261111d, branch `leerlijn-week`, PR #57)**
 - [ ] PR reviewen en mergen. Client plus **één rules-wijziging**.
 - [ ] **Eerst** `npm run test:rules` (2 nieuwe scenario's onderaan `tests/rules.test.mjs`; Java is er hier wel, maar de emulator kon niet downloaden), daarna `firebase deploy --only firestore:rules --project cluppie-ad329`. Nieuw in de rules: een bouwcoördinator mag trainingen schrijven voor één team uit zijn eigen bouw (`isTrainingCoordinator`). Zonder deze deploy mislukt toewijzen door een bouwcoördinator (dat was al zo vóór deze release; alleen admin en hoofd jeugd konden het).

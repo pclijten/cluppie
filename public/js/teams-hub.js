@@ -21,8 +21,8 @@ import { ongelezenBerichten } from './berichten.js?v=20261111d';
 import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261111d';
 import { htmlRondeBalk } from './evaluatierondes.js?v=20261111d';
 import { onderdeelAan } from './onderdelen.js?v=20261111d';
-import { eersteStappenPlaats } from './snelstart.js?v=20261111d';
-import { htmlNu } from './nu-scherm.js?v=20261111d';
+import { eersteStappenPlaats } from './snelstart.js?v=20261113a';
+import { htmlNu } from './nu-scherm.js?v=20261113a';
 import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261111d';
 import { isAfgelast, telMee, soortPill, wedstrijdInfo, htmlAfgelastBanner, afgelastMeldingen, deelTekst } from './wedstrijd-status.js?v=20261012h';
 

@@ -6,7 +6,7 @@
    want die werkt direct op het gerenderde DOM-element. */
 import { esc } from './state.js?v=20261111d';
 import { beleidsplanNaam } from './clubconfig.js?v=20261111d';
-import { onboardingHerstartBlok } from './onboarding.js?v=20261111d';
+import { onboardingHerstartBlok } from './onboarding.js?v=20261113a';
 
 export function htmlHandleiding(){
   return `<div class="hl">
