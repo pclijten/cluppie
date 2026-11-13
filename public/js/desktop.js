@@ -13,7 +13,7 @@
    de DOM (MutationObserver op #app) om te weten welk scherm actief is.
    Stijl: blok "DESKTOP-SCHIL" achteraan in styles.css (html.desk).
 ========================================================================== */
-import { S, $, esc, modAan, isBeheerder, isPlatformBeheerder, stopUnsubs, meld } from './state.js?v=20261111d';
+import { S, $, esc, modAan, isBeheerder, isPlatformBeheerder, stopUnsubs, meld, sluitModal } from './state.js?v=20261111d';
 import { ico } from './icons.js?v=20261110a';
 import { logoImg, primaireClubId } from './clubconfig.js?v=20261111d';
 import { BOUWEN, catLabel } from './config.js?v=20261111d';
@@ -363,6 +363,11 @@ function klik(e){
     teamKeuzeOpen = false; plan(); return;
   }
   teamKeuzeOpen = false;
+  /* [20261113b] Schermvullende vensters staan op desktop naast de zijbalk. Klik je in de zijbalk,
+     dan sluit zo'n venster eerst; de wedstrijdopzet rond je eerst af (of kies Overslaan). */
+  if ($('#wizardAchter')?.classList.contains('open')){ meld('Rond eerst de wedstrijdopzet af, of kies Overslaan'); return; }
+  const ma = $('#modalAchter');
+  if (ma?.classList.contains('open') && ['scherm', 'breed'].includes(ma.getAttribute('data-vorm') || 'scherm')) sluitModal();
   voerActieUit(a, { ...b.dataset });
   plan();
 }

@@ -6,6 +6,7 @@
 import { db, doc, getDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261111d';
 import { DISTRICTEN } from './clubconfig.js?v=20261111d';
+import { koppelClubSuggesties } from './clubgids.js?v=20261111d';
 import { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } from './sportlink-clubinfo.js?v=20261113a';
 
 export async function laadMijnAanmelding(el){
@@ -63,6 +64,8 @@ export function modalClubAanmelden(naVersturen){
     <button class="knop vol" id="caVerstuur" style="margin-top:12px">Aanmelding versturen</button>`);
   const $m = id => document.getElementById(id);
   const vul = (id, waarde) => { const el = $m(id); if (el && waarde){ el.value = waarde; el.classList.add('sl-auto'); } };
+  /* [20261113b] bekende KNVB-clubnaam kiezen vult ook de plaats in */
+  koppelClubSuggesties($m('caClub'), c => { if (c.plaats && !$m('caPlaats').value.trim()) vul('caPlaats', c.plaats); });
   $m('caZoek').onclick = async e => {
     const k = e.currentTarget, uit = $m('caVondst');
     k.disabled = true; uit.innerHTML = '<div class="sl-laden"><span class="sl-spin"></span>Club opzoeken in Sportlink…</div>';

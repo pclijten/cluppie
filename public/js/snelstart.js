@@ -10,6 +10,7 @@ import {
   bouwEigenClub, valideerClub, valideerPlaats, standaardTeamNaam, categorieVoor, STANDAARD_CAT,
   eersteStappenStatus, toonEersteStappen, toonClubTip,
 } from './snelstart-logica.js?v=20261020c';
+import { koppelClubSuggesties, normNaam } from './clubgids.js?v=20261111d';
 
 /* ---------- Plaats opzoeken (Open-Meteo, zonder sleutel) ---------- */
 async function zoekPlaats(q){
@@ -66,6 +67,17 @@ function koppelClubPlaats(root, prefix, begin = null){
     return true;
   };
   knop.onclick = zoek;
+  /* [20261113b] Clubnaam uit de KNVB-gids: naam én plaats in één keer, en meteen de plaats opzoeken voor het weer */
+  koppelClubSuggesties(inClub, async c => {
+    if (!c.plaats) { inPlaats.focus(); return; }
+    inPlaats.value = c.plaats;
+    res.innerHTML = '<p class="meta">Plaats opzoeken…</p>';
+    try {
+      const lijst = await zoekPlaats(c.plaats);
+      const p = lijst.find(x => normNaam(x.plaats) === normNaam(c.plaats)) || lijst[0];
+      if (p) kies(p); else kies({ plaats: c.plaats }, true);
+    } catch (e){ kies({ plaats: c.plaats }, true); }
+  });
   inPlaats.onkeydown = e => { if (e.key === 'Enter'){ e.preventDefault(); zoek(); } };
   inPlaats.oninput = () => { if (sel.plaats && inPlaats.value.trim() !== sel.plaats){ sel.plaats = ''; sel.lat = sel.lon = null; sel.zonderWeer = false; toonGekozen(); } };
   return {
@@ -114,7 +126,7 @@ export async function openSnelstart(){
         <li><b>Training in minuten.</b> Kies een thema en je krijgt een volledig draaiboek voor je training.</li>
         <li><b>Alles voor je team.</b> Presentie, wedstrijdverslag en ontwikkeling per speler, op je telefoon.</li>
       </ul>
-      <p class="meta sn-tip">Eerlijk vooraf: zonder club werkt Cluppie niet met Sportlink en heb je geen AI-hulp. Al het andere staat open.</p>
+      <p class="meta sn-tip">Eerlijk vooraf: zonder club werkt Cluppie niet met Sportlink en heb je geen AI-hulp, omdat die via de club lopen (sleutel van de club, kosten en privacyafspraken). Al het andere staat open, en sluit je club zich later aan, dan gaat je team mee.</p>
       <button class="knop vol" id="ssVerder">Laten we beginnen</button>
       <button class="knop licht vol" id="ssRond" style="margin-top:8px">Liever eerst een rondleiding</button>`);
     $('#ssVerder').onclick = tekenStap2;
@@ -179,7 +191,18 @@ export async function openSnelstart(){
       </dl>
       <div class="sn-wel-niet">
         <div><b>Je hebt</b><ul><li>Opstelling en speeltijd</li><li>Presentie en verslagen</li><li>Training maken</li><li>Weer op je teamscherm${st.club.lat === null ? ' (alleen met een gekozen plaats)' : ''}</li></ul></div>
-        <div><b>Nog niet</b><ul><li>Sportlink-koppeling</li><li>AI-hulp</li><li>Clubbrede plannen</li></ul></div>
+        <div><b>Nog niet, want dat loopt via een club</b><ul class="sn-niet">
+          <li><b>Sportlink-koppeling</b><span>Wedstrijden, uitslagen en de poule komen uit Sportlink. Toegang daartoe heeft alleen de club, met een eigen sleutel (Client ID).</span></li>
+          <li><b>AI-hulp</b><span>AI kost geld per vraag en vraagt privacyafspraken. Die maakt Cluppie met de club, niet met losse trainers.</span></li>
+          <li><b>Clubbrede plannen</b><span>Seizoensplannen en afspraken die de club voor alle teams maakt.</span></li></ul></div>
+      </div>
+      <div class="sn-hoe">
+        <b>Zo krijg je het wel</b>
+        <ol>
+          <li><b>Je club gebruikt Cluppie al?</b> Vraag de clubbeheerder om een uitnodiging en open die link. Je team, spelers en wedstrijden gaan mee naar de club.</li>
+          <li><b>Je club nog niet?</b> Laat iemand van de club (bestuur of jeugdcoördinator) de club aanmelden via “Club aanmelden” op het startscherm. Na goedkeuring koppel je je team aan de club; Sportlink en AI krijg je dan via de club.</li>
+        </ol>
+        <p>Tot die tijd werkt alles hierboven bij “Je hebt” gewoon, en verlies je niets.</p>
       </div>
       ${akkoord ? '' : `<label class="ci-schakel" style="margin:12px 0"><input type="checkbox" id="ssAkkoord"><span>Ik gebruik voornamen en geen gezondheidsgegevens van spelers, en ga akkoord met de <a href="privacy.html" target="_blank" rel="noopener">privacyverklaring</a>. Zonder club ben ik zelf verantwoordelijk voor deze gegevens.</span></label>`}
       <button class="knop vol" id="ssMaak" ${akkoord ? '' : 'disabled'}>Maak mijn team</button>

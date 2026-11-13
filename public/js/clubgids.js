@@ -53,6 +53,74 @@ export function zoekTegenstanders(gids, q, { pouleTeams = [], eigenCode = '' } =
   return { poule, clubs };
 }
 
+/* [20261113b] Plaats van een club uit de gids: `plaats`, anders uit het adres ("5421 AA Gemert" → "Gemert"). */
+export function plaatsVan(c){
+  if (!c) return '';
+  if (c.plaats) return c.plaats;
+  return String(c.plaatsAdres || '').replace(/^\s*\d{4}\s?[A-Za-z]{2}\s+/, '').trim();
+}
+
+/* [20261113b] Clubnamen voorstellen terwijl iemand typt (snelstart, club aanmelden).
+   PURE (getest). Rangorde: naam begint ermee, een woord in de naam begint ermee, plaats begint ermee.
+   Een naam die vaker voorkomt (twee clubs "Rood Wit") houdt elk zijn eigen plaats. Max 8. */
+export function zoekClubs(gids, q, max = 8){
+  const z = normNaam(q);
+  if (z.length < 2) return [];
+  const rang = c => {
+    const n = normNaam(c.naam);
+    if (n.startsWith(z)) return 0;
+    if (String(c.naam || '').toLowerCase().split(/[\s/'.-]+/).some(w => normNaam(w).startsWith(z))) return 1;
+    if (n.includes(z)) return 2;
+    if (normNaam(plaatsVan(c)).startsWith(z)) return 3;
+    return 9;
+  };
+  return (gids || [])
+    .filter(c => c && c.naam)
+    .map(c => ({ c, r: rang(c) }))
+    .filter(x => x.r < 9)
+    .sort((a, b) => a.r - b.r || a.c.naam.length - b.c.naam.length || a.c.naam.localeCompare(b.c.naam, 'nl'))
+    .slice(0, max)
+    .map(x => ({ code: x.c.code, naam: x.c.naam, plaats: plaatsVan(x.c), accommodatie: x.c.accommodatie || '' }));
+}
+
+/* [20261113b] Suggestielijst onder een clubnaam-veld. `kies(club)` krijgt { code, naam, plaats, accommodatie }.
+   De gids wordt pas geladen als iemand begint te typen (één keer per sessie). */
+export function koppelClubSuggesties(invoer, kies){
+  if (!invoer || invoer._cgGekoppeld) return;
+  invoer._cgGekoppeld = true;
+  const lijst = document.createElement('div');
+  lijst.className = 'cg-sugg'; lijst.hidden = true; lijst.setAttribute('role', 'listbox');
+  invoer.setAttribute('aria-autocomplete', 'list');
+  invoer.insertAdjacentElement('afterend', lijst);
+  let gids = null, sel = -1, items = [];
+  const esc = t => String(t || '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+  const sluit = () => { lijst.hidden = true; sel = -1; };
+  const teken = () => {
+    if (!items.length){ sluit(); return; }
+    lijst.innerHTML = items.map((c, i) => `<button type="button" role="option" class="cg-item${i === sel ? ' sel' : ''}" data-i="${i}"><b>${esc(c.naam)}</b><small>${esc(c.plaats || c.accommodatie || '')}</small></button>`).join('')
+      + '<p class="cg-noot">Uit de KNVB-gegevens van clubs die met Cluppie werken. Staat je club er niet bij? Typ de naam gewoon in.</p>';
+    lijst.hidden = false;
+  };
+  const kiesI = i => { const c = items[i]; if (!c) return; invoer.value = c.naam; sluit(); kies(c); };
+  invoer.addEventListener('input', async () => {
+    const q = invoer.value;
+    if (normNaam(q).length < 2){ items = []; sluit(); return; }
+    if (!gids) gids = await laadClubgids();
+    if (invoer.value !== q) return;              // intussen verder getypt
+    items = zoekClubs(gids, q); sel = -1; teken();
+  });
+  invoer.addEventListener('keydown', e => {
+    if (lijst.hidden) return;
+    if (e.key === 'ArrowDown'){ sel = Math.min(items.length - 1, sel + 1); teken(); e.preventDefault(); }
+    else if (e.key === 'ArrowUp'){ sel = Math.max(0, sel - 1); teken(); e.preventDefault(); }
+    else if (e.key === 'Enter' && sel >= 0){ kiesI(sel); e.preventDefault(); }
+    else if (e.key === 'Escape'){ sluit(); }
+  });
+  lijst.addEventListener('mousedown', e => e.preventDefault());   // focus blijft in het veld
+  lijst.addEventListener('click', e => { const b = e.target.closest('[data-i]'); if (b) kiesI(Number(b.dataset.i)); });
+  invoer.addEventListener('blur', () => setTimeout(sluit, 150));
+}
+
 /* Plek voor een wedstrijd: uit = sportpark van de tegenstander, thuis = eigen sportpark. */
 export function plekVoor(club){
   if (!club || !club.accommodatie) return null;
