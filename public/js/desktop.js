@@ -190,6 +190,8 @@ function groepen(){
   const g = !(S.teams || []).length ? [] : [
     ['Team', [
       { tab:'hub',        ico:'navigation-dashboard',        naam:'Dashboard' },
+      /* [20261113b] Planning heet Kalender en staat onder Team */
+      { tab:'planning',   ico:'planning-calendar',           naam:'Kalender' },
       { tab:'berichten',  ico:'communication-announcement',  naam:'Berichten',  badge: probeer(ongelezenBerichten, 0) },
       { tab:'documenten', ico:'admin-document',              naam:'Documenten', badge: docsNieuw },
       ...(modAan('lijstjes') ? [{ tab:'lijstjes', ico:'attendance-fill', naam:'Lijstjes' }] : []),
@@ -202,7 +204,6 @@ function groepen(){
     ]],
     ['Training', [
       { tab:'presentietraining', ico:'attendance-present', naam:'Trainingen', badge: stofNieuw },
-      { tab:'planning',          ico:'planning-calendar',  naam:'Planning' },
       ...(onderdeelAan('trainingsmodule') ? [{ tab:'trainingsmodule',   ico:'training-plan',      naam:'Training maken' }] : []),
       ...(onderdeelAan('seizoensplan') ? [{ tab:'seizoensplan',      ico:'planning-month',     naam:'Seizoensplanning' }] : []),
       /* [20260923a] Oefenstof zit op desktop in Trainingen; het tabblad blijft

@@ -586,6 +586,11 @@ export function htmlInstellingen(){
       <button class="knop licht vol" id="wijzigMijnNaam" style="margin-top:10px">✏️ Mijn weergavenaam wijzigen</button>
     </div>
     <div class="kaart">
+      <div class="sectie-kop" style="margin-top:0">Mijn account</div>
+      <div id="iKlikPlek"></div>
+      <button class="knop licht vol" id="iPrivacy">Privacy &amp; mijn gegevens</button>
+    </div>
+    <div class="kaart">
       <div class="sectie-kop u-mt-0">Categorie & speelregels</div>
       <select class="invoer u-mb-xs" id="iCategorie" >
         <option value="">— geen categorie —</option>

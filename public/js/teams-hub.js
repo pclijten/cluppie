@@ -120,7 +120,7 @@ export function htmlHub(updInfo){
       tegel('historie',         'Historie',     'attendance-overview'),
     ]],
     ['Meer', [
-      tegel('planning',         'Planning',     'planning-calendar'),
+      tegel('planning',         'Kalender',     'planning-calendar'),
       tegel('documenten',       'Documenten',   'admin-document', documentenOngelezen || null),
       ...(modAan('lijstjes') ? [tegel('lijstjes', 'Lijstjes', 'attendance-fill', lijstjesOpenTotaal() || null)] : []),
       tegel('instellingen',     'Instellingen', 'navigation-settings'),

@@ -495,7 +495,7 @@ function modalDatum(l){
     leesDatumVelden(o);
     if (verplicht && !o.datum) return meld('Vul een datum in');
     const ok = await schrijf(l.id, { datum:o.datum || deleteField(), tijd:o.tijd || deleteField(), inPlanning:o.inPlanning !== false });
-    if (ok){ sluitModal(); meld(o.datum && o.inPlanning !== false ? 'Opgeslagen: staat in de Planning' : 'Opgeslagen'); }
+    if (ok){ sluitModal(); meld(o.datum && o.inPlanning !== false ? 'Opgeslagen: staat in de Kalender' : 'Opgeslagen'); }
   };
   const wis = $('#ljDWis');
   if (wis) wis.onclick = async () => { if (await schrijf(l.id, { datum:deleteField(), tijd:deleteField() })){ sluitModal(); meld('Datum weggehaald'); } };

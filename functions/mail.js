@@ -19,7 +19,9 @@ const MAX_HTML = 100000;
 const SMTP_HOST = defineString('SMTP_HOST', { description: 'SMTP-server van de mailbox, bijvoorbeeld smtp.strato.com' });
 const SMTP_PORT = defineString('SMTP_PORT', { default: '465', description: '465 (SSL) of 587 (STARTTLS)' });
 const SMTP_GEBRUIKER = defineString('SMTP_GEBRUIKER', { default: 'paul@cluppie.io', description: 'Gebruikersnaam (volledig e-mailadres)' });
-const MAIL_VAN = defineString('MAIL_VAN', { default: 'Cluppie <paul@cluppie.io>', description: 'Afzender die ontvangers zien' });
+const MAIL_VAN = defineString('MAIL_VAN', { default: 'Cluppie <info@cluppie.io>', description: 'Afzender die ontvangers zien' });
+/* [20261113b] Antwoorden gaan altijd naar het algemene adres, ook als de afzender een andere mailbox is. */
+const ANTWOORD_AAN = 'info@cluppie.io';
 const SMTP_WACHTWOORD = defineSecret('SMTP_WACHTWOORD');
 
 const isMail = s => typeof s === 'string' && /^[^@\s<>,;]+@[^@\s<>,;]+\.[^@\s<>,;]+$/.test(s);
@@ -41,7 +43,7 @@ function maakBericht(data, van){
   if (!text.trim()) return { fout: 'Geen tekst.' };
   /* optionele HTML-versie (alleen door Cloud Functions geschreven); de tekst blijft verplicht als terugval */
   const html = typeof m.html === 'string' && m.html.trim() ? m.html.slice(0, MAX_HTML) : '';
-  return { bericht: { from: van, to: uniek, subject, text, ...(html ? { html } : {}) } };
+  return { bericht: { from: van, replyTo: ANTWOORD_AAN, to: uniek, subject, text, ...(html ? { html } : {}) } };
 }
 
 let transporter = null;

@@ -107,7 +107,7 @@ export function htmlHandleiding(){
 
     <section class="hl-sec" data-zoek="seizoensplanning het tabblad planning toont de hele seizoenskalender van je team in één lijst, per maand gegroepeerd. verleden maanden staan ingeklapt; de huidige en komende maanden staan open. echte wedstrijden uit voetbal.nl verschijnen hier automatisch met een-stip. de app haalt ze 's nachts op uit de officiële knvb-kalender, dus zodra de competitie-indeling bekend is staat alles klaar, thuis/uit, datum en tegenstander. op een dag met een echte wedstrijd wordt de algemene wd (wedstrijddag) onderdrukt, zodat je geen dubbele regels ziet. tik op een wedstrijd-regel om die wedstrijd direct te openen en de opstelling klaar te zetten. met de filterknoppen bovenaan ( alles , wedstrijden , speeldagen , beker , vrij ) bekijk je gericht één soort dag. + eigen dag : voeg zelf een toernooi, vriendschappelijke wedstrijd of vrije dag toe. die staat dan met een eigen markering tussen de officiële dagen. tip: verschijnen er nog geen wedstrijden? dan is de knvb-kalender voor jouw team nog niet gepubliceerd. zodra dat gebeurt, vullen ze zichzelf aan, je hoeft niets te doen.">
     <h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="12" cy="14.5" r="1.4" fill="currentColor" stroke="none"/></svg> Seizoensplanning</h3>
-    <p>Het tabblad <b>Planning</b> toont de hele seizoenskalender van je team in één lijst, per maand gegroepeerd. Verleden maanden staan ingeklapt; de huidige en komende maanden staan open.</p>
+    <p>Het tabblad <b>Kalender</b> (heette Planning) toont de hele seizoenskalender van je team in één lijst, per maand gegroepeerd. Verleden maanden staan ingeklapt; de huidige en komende maanden staan open.</p>
     <ul>
       <li><b>Echte wedstrijden uit voetbal.nl</b> verschijnen hier automatisch met een <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.2" y="4.6" width="17.6" height="14.8" rx="2.4"/><path d="M12 4.6v14.8"/><circle cx="12" cy="12" r="2.8"/></svg>-stip. De app haalt ze 's nachts op uit de officiële KNVB-kalender, dus zodra de competitie-indeling bekend is staat alles klaar, thuis/uit, datum en tegenstander.</li>
       <li>Op een dag met een echte wedstrijd wordt de algemene <kbd>WD</kbd> (wedstrijddag) onderdrukt, zodat je geen dubbele regels ziet.</li>
@@ -359,7 +359,7 @@ export function htmlHandleiding(){
     <h3>↩︎ Navigeren &amp; de terugknop</h3>
     <p>De <b>terugknop van je telefoon</b> gaat binnen de app steeds <b>één stap terug</b>:</p>
     <ul>
-      <li>Vanuit een onderdeel onder <b>Meer</b> (Planning, Stand &amp; Poule, Documenten, Stats, Help) terug naar het <b>Meer</b>-menu.</li>
+      <li>Vanuit een onderdeel onder <b>Meer</b> (Kalender, Stand &amp; Poule, Documenten, Stats, Help) terug naar het <b>Meer</b>-menu.</li>
       <li>Een geopend venster of de wedstrijd sluit je er ook mee.</li>
       <li>Pas vanaf een hoofdtabblad ga je terug naar de <b>teamkeuze</b>, je springt dus niet meer in één keer helemaal terug.</li>
     </ul>

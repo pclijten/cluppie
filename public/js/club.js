@@ -552,7 +552,7 @@ function htmlClubFunctiegebruik(gebruik){
 const NAV_LABELS = {
   'teams':'Teams', 'team:hub':'Team, hub', 'team:spelers':'Spelers',
   'team:trainingen':'Trainingen', 'team:presentietraining':'Presentie',
-  'team:planning':'Planning', 'team:poule':'Poule', 'team:stats':'Stats',
+  'team:planning':'Kalender', 'team:poule':'Poule', 'team:stats':'Stats',
   'team:instellingen':'Instellingen', 'spelerprofiel':'Spelerprofiel',
   'wedstrijd:opstelling':'Wedstrijd, opstelling',
   'club:teams':'Club, teams', 'club:content':'Club, content',

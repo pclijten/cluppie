@@ -398,16 +398,16 @@ export const ONBOARDING_STAPPEN = [
 
   /* ══════════════ 8. PLANNING ══════════════ */
   {
-    hfd:'planning', hfdNaam:'Planning', emoji:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="12" cy="14.5" r="1.4" fill="currentColor" stroke="none"/></svg>', rollen:['coach'],
+    hfd:'planning', hfdNaam:'Kalender', emoji:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="12" cy="14.5" r="1.4" fill="currentColor" stroke="none"/></svg>', rollen:['coach'],
     titel:'Seizoensplanning',
-    tekst:'De <b>Planning</b> toont de hele seizoenskalender per maand. Echte wedstrijden verschijnen automatisch met een <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.2" y="4.6" width="17.6" height="14.8" rx="2.4"/><path d="M12 4.6v14.8"/><circle cx="12" cy="12" r="2.8"/></svg>-stip.',
+    tekst:'De <b>Kalender</b> toont de hele seizoenskalender per maand. Echte wedstrijden verschijnen automatisch met een <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.2" y="4.6" width="17.6" height="14.8" rx="2.4"/><path d="M12 4.6v14.8"/><circle cx="12" cy="12" r="2.8"/></svg>-stip.',
     opdracht:'Open “Planning”',
     voor:() => naarTab('meer'),
     doel:() => meerTegel('planning'),
     wacht:(klaar) => bijTabWissel('planning', klaar),
   },
   {
-    hfd:'planning', hfdNaam:'Planning', emoji:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.3 15.3 20 20"/></svg>', rollen:['coach'],
+    hfd:'planning', hfdNaam:'Kalender', emoji:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.3 15.3 20 20"/></svg>', rollen:['coach'],
     titel:'Filteren & eigen dag',
     tekst:'Met de filterchips bekijk je gericht wedstrijden, speeldagen of vrije dagen. Met <b>“+ Eigen dag”</b> voeg je zelf een toernooi of vrije dag toe.',
     voor:() => naarTab('planning'),
@@ -975,7 +975,7 @@ const COACH_FAQ = [
   { v:/uitnodig|code|coach toevoeg/i, a:'Ga naar <b><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3.1"/><path d="M12 3.2 13.6 5.4l2.6-.6 1 2.5 2.6.7-.5 2.6L21 12l-1.7 1.4.5 2.6-2.6.7-1 2.5-2.6-.6L12 20.8l-1.6-2.2-2.6.6-1-2.5-2.6-.7.5-2.6L3 12l1.7-1.4-.5-2.6 2.6-.7 1-2.5 2.6.6z"/></svg> Teaminstellingen</b> en tik bij Coaches op <b>Coach uitnodigen</b>. Je krijgt een persoonlijke link (14 dagen geldig) die je via WhatsApp kunt delen.' },
   { v:/training|pdf|oefen/i, a:'Onder de tab <b>Training</b> staan de PDF-oefeningen; een rood stipje betekent iets nieuws. Video-oefeningen staan onder <b>Video</b>.' },
   { v:/beoordel|profiel|leerpunt/i, a:'Tik onder <b>Spelers</b> op een naam om het profiel te openen. Daar leg je korte beoordelingen (TE·TA·FY·ME·GE) en leerpunten vast.' },
-  { v:/planning|kalender|voetbal\.?nl/i, a:'De <b>Planning</b> (via Meer) toont de seizoenskalender. Competitiewedstrijden komen automatisch uit voetbal.nl; eigen dagen voeg je met “+ Eigen dag” toe.' },
+  { v:/planning|kalender|voetbal\.?nl/i, a:'De <b>Kalender</b> (via Meer, op de computer onder Team) toont de seizoenskalender. Competitiewedstrijden komen automatisch uit voetbal.nl; eigen dagen voeg je met “+ Eigen dag” toe.' },
   { v:/verder|kwijt|vast|hoe nu/i, a:'Geen zorgen: tik op <b>Volgende</b> in de bubbel, of op <b>Overslaan</b>. Je kunt de rondleiding later hervatten via Meer → Handleiding.' },
 ];
 function coachAntwoord(vraag){

@@ -1860,7 +1860,7 @@ function htmlMeer(){
   const laatstGezien = (() => { try { return localStorage.getItem('cluppie_updates_gezien') || ''; } catch(e){ return ''; } })();
   const updatesOngelezen = UPDATES.filter(u => u.datum > laatstGezien).length;
   const tegels = [
-    ['planning',   'Planning',   'Seizoenskalender'],
+    ['planning',   'Kalender',   'Seizoenskalender'],
     ['poule',      'Stand & Poule', 'Poulestand + programma'],
     ['documenten', 'Documenten', 'Beleid & formulieren', documentenOngelezen],
     ['stats', 'Stats', modAan('evaluaties') ? 'Speeltijd & cijfers' : 'Speeltijd'],
@@ -2120,7 +2120,7 @@ export function renderTeam(){
     wedstrijden:'Wedstrijden', spelers:'Spelers', trainingen:'Trainingen',
     presentietraining:'Presentie training', preswedstrijd:'Presentie wedstrijd',
     evaluatie:'Evaluatie', leerlijnoverzicht:'Leerlijn', historie:'Historie',
-    videos:'Video’s', meer:'Meer', poule:'Stand & poule', planning:'Planning',
+    videos:'Video’s', meer:'Meer', poule:'Stand & poule', planning:'Kalender',
     documenten:'Documenten', berichten:'Berichten', stats:'Stats', instellingen:'Instellingen',
     help:'Help', updates:'Updates', lijstjes:'Lijstjes', lijst:lijstTitel(),
     trainingsmodule:'Training maken', seizoensplan:'Seizoensplanning',
@@ -2976,6 +2976,12 @@ function koppelTeamTab(v, tab){
   if (tab === 'instellingen'){
     // [20261012c] vaste teamcode staat niet meer op dit scherm; alleen de persoonlijke uitnodiging
     koppelClubPlaatsInstelling(v);
+    /* [20261113b] Mijn account: opt-out klikgedrag + privacy */
+    import('./privacy.js?v=20261111d').then(m => {
+      const plek = v.querySelector('#iKlikPlek');
+      if (plek){ plek.innerHTML = m.htmlKlikgedragKeuze('iAcc'); m.koppelKlikgedragKeuze(v, 'iAcc'); }
+      const pk = v.querySelector('#iPrivacy'); if (pk) pk.onclick = () => m.openPrivacy();
+    });
     v.querySelector('#deelLink').onclick = () => import('./club.js?v=20261113a').then(m => m.modalUitnodig(S.team));
     const wcKnop = v.querySelector('#wijzigCode'); if (wcKnop) wcKnop.onclick = () => modalWijzigCode();
     v.querySelector('#wijzigMijnNaam').onclick = () => modalMijnNaam();

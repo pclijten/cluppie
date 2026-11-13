@@ -1,10 +1,10 @@
-/* Eén plek voor de hulptekst bij (PDF-)uploads: lukt het blijvend niet, dan mailen naar Paul. */
-export const UPLOAD_CONTACT = 'paul@cluppie.io';
-export const UPLOAD_HULP = `Lukt uploaden steeds niet? Neem dan contact op met Paul: ${UPLOAD_CONTACT}`;
+/* Eén plek voor de hulptekst bij (PDF-)uploads: lukt het blijvend niet, dan mailen naar info@cluppie.io. */
+export const UPLOAD_CONTACT = 'info@cluppie.io';
+export const UPLOAD_HULP = `Lukt uploaden steeds niet? Neem dan contact op met Cluppie: ${UPLOAD_CONTACT}`;
 
 /* Kleine melding onder een uploadknop/-venster. */
 export function uploadHulpHtml(stijl = ''){
-  return `<p class="upload-hulp" style="${stijl}">Lukt uploaden steeds niet? Neem dan contact op met Paul: <a href="mailto:${UPLOAD_CONTACT}">${UPLOAD_CONTACT}</a></p>`;
+  return `<p class="upload-hulp" style="${stijl}">Lukt uploaden steeds niet? Neem dan contact op met Cluppie: <a href="mailto:${UPLOAD_CONTACT}">${UPLOAD_CONTACT}</a></p>`;
 }
 
 /* Tekst voor een foutmelding (toast). */

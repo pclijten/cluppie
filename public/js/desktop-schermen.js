@@ -71,7 +71,7 @@ function datumMooi(iso, opt = { weekday:'long', day:'numeric', month:'short' }){
 }
 function kop(titel, acties = ''){
   return `<div class="dk-kop"><div class="dk-kruim">${esc(S.team?.naam || '')} / <b>${esc(titel)}</b></div>
-    <div class="dk-acties">${acties}<button class="dk-knop dk-stil" data-dk="klassiek" title="Toon het gewone scherm van dit onderdeel, met alle opties">Gewone weergave</button></div></div>`;
+    <div class="dk-acties">${acties}</div></div>`;   /* [20261113b] "Gewone weergave" weg op verzoek: de desktopschermen zijn compleet */
 }
 const knop = (label, dk, extra = '', icoon = '') =>
   `<button class="dk-knop ${extra}" data-dk="${dk}">${icoon ? ico(icoon, 18) : ''}${esc(label)}</button>`;
@@ -902,7 +902,7 @@ function htmlPlanning(){
   const maandNaam = eerste.toLocaleDateString('nl-NL', { month:'long', year:'numeric' });
   const komend = items.filter(it => it.datum >= vandaag).slice(0, 12);
   return `<div class="dk-scherm">
-    ${kop('Planning', knop('Eigen dag', 'eigendag', 'rood', 'action-add'))}
+    ${kop('Kalender', knop('Eigen dag', 'eigendag', 'rood', 'action-add'))}
     <div class="dk-plan">
       <section class="dk-kol dk-plan-hart">
         <div class="dk-plan-kop"><h1 class="dk-groot">${esc(maandNaam)}</h1>
@@ -1158,7 +1158,7 @@ function renderDesk(v, tab){
    desktopscherm: klasse erop voor de CSS, desktop-kop bovenaan, en voor het
    spelerprofiel en de wedstrijd-aanwezigheid een keuzelijst links. We
    verplaatsen alleen bestaande DOM-knopen; hun klik-handlers blijven intact. */
-const NA_TITEL = { spelers:'Speler', preswedstrijd:'Aanwezigheid wedstrijd', poule:'Poule', planning:'Planning', videos:'Video\u2019s',
+const NA_TITEL = { spelers:'Speler', preswedstrijd:'Aanwezigheid wedstrijd', poule:'Poule', planning:'Kalender', videos:'Video\u2019s',
   historie:'Historie', documenten:'Documenten', stats:'Stats', evaluatie:'Evaluatie', berichten:'Berichten', trainingen:'Trainingen',
   instellingen:'Instellingen', help:'Help', updates:'Updates', leerlijnoverzicht:'Leerlijn', lijstjes:'Lijstjes', lijst:'Lijstjes',
   trainingsmodule:'Training maken', seizoensplan:'Seizoensplanning' };
