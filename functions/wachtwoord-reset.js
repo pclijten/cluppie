@@ -1,6 +1,6 @@
 /* Wachtwoord vergeten (20261020d). Vervangt de standaardmail van Firebase (Engels, afzender
    noreply@…firebaseapp.com, belandt in spam) door een opgemaakte Nederlandse mail via `mail/{id}` →
-   verstuurMail (afzender info@cluppie.io, antwoorden naar info@cluppie.io).
+   verstuurMail (afzender paul@cluppie.io).
 
    Callable `wachtwoordReset({ email })` — ook zonder inloggen, want wie zijn wachtwoord kwijt is, is niet ingelogd.
    • Antwoordt ALTIJD { ok: true }, ook bij een onbekend adres: zo is niet te raden wie een account heeft.
