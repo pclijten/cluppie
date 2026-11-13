@@ -4,9 +4,9 @@
    wat hierboven al in dit bestand staat. De zoekfunctionaliteit
    (#helpZoek) wordt door de hub (teams.js/koppelTeamTab) aangesloten,
    want die werkt direct op het gerenderde DOM-element. */
-import { esc } from './state.js?v=20261111d';
-import { beleidsplanNaam } from './clubconfig.js?v=20261111d';
-import { onboardingHerstartBlok } from './onboarding.js?v=20261113a';
+import { esc } from './state.js?v=20261113b';
+import { beleidsplanNaam } from './clubconfig.js?v=20261113b';
+import { onboardingHerstartBlok } from './onboarding.js?v=20261113b';
 
 export function htmlHandleiding(){
   return `<div class="hl">
@@ -107,7 +107,7 @@ export function htmlHandleiding(){
 
     <section class="hl-sec" data-zoek="seizoensplanning het tabblad planning toont de hele seizoenskalender van je team in één lijst, per maand gegroepeerd. verleden maanden staan ingeklapt; de huidige en komende maanden staan open. echte wedstrijden uit voetbal.nl verschijnen hier automatisch met een-stip. de app haalt ze 's nachts op uit de officiële knvb-kalender, dus zodra de competitie-indeling bekend is staat alles klaar, thuis/uit, datum en tegenstander. op een dag met een echte wedstrijd wordt de algemene wd (wedstrijddag) onderdrukt, zodat je geen dubbele regels ziet. tik op een wedstrijd-regel om die wedstrijd direct te openen en de opstelling klaar te zetten. met de filterknoppen bovenaan ( alles , wedstrijden , speeldagen , beker , vrij ) bekijk je gericht één soort dag. + eigen dag : voeg zelf een toernooi, vriendschappelijke wedstrijd of vrije dag toe. die staat dan met een eigen markering tussen de officiële dagen. tip: verschijnen er nog geen wedstrijden? dan is de knvb-kalender voor jouw team nog niet gepubliceerd. zodra dat gebeurt, vullen ze zichzelf aan, je hoeft niets te doen.">
     <h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="12" cy="14.5" r="1.4" fill="currentColor" stroke="none"/></svg> Seizoensplanning</h3>
-    <p>Het tabblad <b>Planning</b> toont de hele seizoenskalender van je team in één lijst, per maand gegroepeerd. Verleden maanden staan ingeklapt; de huidige en komende maanden staan open.</p>
+    <p>Het tabblad <b>Kalender</b> (heette Planning) toont de hele seizoenskalender van je team in één lijst, per maand gegroepeerd. Verleden maanden staan ingeklapt; de huidige en komende maanden staan open.</p>
     <ul>
       <li><b>Echte wedstrijden uit voetbal.nl</b> verschijnen hier automatisch met een <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.2" y="4.6" width="17.6" height="14.8" rx="2.4"/><path d="M12 4.6v14.8"/><circle cx="12" cy="12" r="2.8"/></svg>-stip. De app haalt ze 's nachts op uit de officiële KNVB-kalender, dus zodra de competitie-indeling bekend is staat alles klaar, thuis/uit, datum en tegenstander.</li>
       <li>Op een dag met een echte wedstrijd wordt de algemene <kbd>WD</kbd> (wedstrijddag) onderdrukt, zodat je geen dubbele regels ziet.</li>
@@ -326,13 +326,18 @@ export function htmlHandleiding(){
     </section>
 
 
-    <section class="hl-sec" data-zoek="⇄ spelers uitlenen speelt een speler een keer mee met een ander team binnen de club? open zijn profiel (tab spelers → tik op de speler) en kies ⇄ uitlenen aan ander team . je kiest het ontvangende team en de wedstrijddag. de andere coach ziet de speler automatisch vanaf 3 dagen vóór tot 3 dagen ná die dag, onder het kopje "geleend", daarna verdwijnt hij vanzelf. de ontvangende coach ziet alleen voornaam + voorletter (bijv. "tim b."), de voorkeurspositie, de statistieken en het ontwikkelprofiel. alles read-only. je kunt een uitlening op elk moment intrekken vanaf het spelerprofiel.">
+    <section class="hl-sec" data-zoek="⇄ spelers uitlenen een speler laten meespelen of meetrainen bij een ander team van de club regelt de coördinator van de bouw. twee tabbladen: wedstrijden (één wedstrijd, aangevinkte wedstrijden, een aantal, tot een datum of geen einddatum) en meetrainen (eigen periode, per trainingsdag bij welk team). beide op ja is allebei. twee wedstrijden op één dag: de coördinator kiest allebei of één team. na de einddatum is de uitlening vanzelf voorbij. presentie: op dagen bij het eigen team vult de eigen trainer de presentie in, op dagen bij het andere team staat de speler grijs en telt hij niet mee. een uitgeleende speler staat meteen in de selectie van de wedstrijd. wijzigen, verlengen en beëindigen via bouw uitleningen.">
     <h3>⇄ Spelers uitlenen</h3>
-    <p>Speelt een speler een keer mee met een ander team binnen de club? Open zijn profiel (tab Spelers → tik op de speler) en kies <b>⇄ Uitlenen aan ander team</b>. Je kiest het ontvangende team en de wedstrijddag.</p>
+    <p>Een speler laten meespelen of meetrainen bij een ander team van de club regelt de <b>coördinator van de bouw</b>, via Bouw › Uitleningen of het spelersprofiel.</p>
     <ul>
-      <li>De andere coach ziet de speler automatisch vanaf <b>3 dagen vóór</b> tot <b>3 dagen ná</b> die dag, onder het kopje "Geleend", daarna verdwijnt hij vanzelf.</li>
-      <li>De ontvangende coach ziet alleen <b>voornaam + voorletter</b> (bijv. "Tim B."), de voorkeurspositie, de statistieken en het ontwikkelprofiel. Alles read-only.</li>
-      <li>Je kunt een uitlening op elk moment <b>intrekken</b> vanaf het spelerprofiel.</li>
+      <li>Het formulier heeft twee tabbladen, elk met een eigen <b>Ja/Nee</b> en een eigen periode. Zet je beide op Ja, dan speelt en traint de speler mee.</li>
+      <li><b>Wedstrijden</b>: één wedstrijd, wedstrijden aanvinken, een aantal wedstrijden, tot en met een datum of geen einddatum.</li>
+      <li><b>Meetrainen</b>: vanaf en tot een datum (los van de wedstrijden) en per trainingsdag bij welk team de speler traint.</li>
+      <li>Na de laatste wedstrijd of einddatum is de uitlening vanzelf voorbij, terugzetten is niet nodig.</li>
+      <li>Spelen beide teams op dezelfde dag (bijv. 9:00 en 15:00)? Dan kiest de coördinator: allebei of één van de twee.</li>
+      <li><b>Presentie</b>: op dagen bij het eigen team vult de eigen trainer de presentie gewoon in. Op dagen bij het andere team staat de speler grijs met dat team erbij en telt hij niet mee in de opkomst.</li>
+      <li>Een uitgeleende speler staat meteen in de selectie van de wedstrijd, ook op het startscherm.</li>
+      <li>De ontvangende coach ziet alleen <b>voornaam + voorletter</b>, de voorkeurspositie en de open leerpunten.</li>
     </ul>
     </section>
 
@@ -354,7 +359,7 @@ export function htmlHandleiding(){
     <h3>↩︎ Navigeren &amp; de terugknop</h3>
     <p>De <b>terugknop van je telefoon</b> gaat binnen de app steeds <b>één stap terug</b>:</p>
     <ul>
-      <li>Vanuit een onderdeel onder <b>Meer</b> (Planning, Stand &amp; Poule, Documenten, Stats, Help) terug naar het <b>Meer</b>-menu.</li>
+      <li>Vanuit een onderdeel onder <b>Meer</b> (Kalender, Stand &amp; Poule, Documenten, Stats, Help) terug naar het <b>Meer</b>-menu.</li>
       <li>Een geopend venster of de wedstrijd sluit je er ook mee.</li>
       <li>Pas vanaf een hoofdtabblad ga je terug naar de <b>teamkeuze</b>, je springt dus niet meer in één keer helemaal terug.</li>
     </ul>

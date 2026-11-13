@@ -15,8 +15,8 @@
    Flush-momenten: bij het verbergen/sluiten van de app (visibilitychange →
    hidden, en pagehide) en als veiligheidsnet elke ~2 minuten. */
 
-import { db, doc, setDoc, increment, serverTimestamp } from './firebase.js?v=20261011g';
-import { S } from './state.js?v=20261111d';
+import { db, doc, setDoc, getDoc, increment, serverTimestamp } from './firebase.js?v=20261011g';
+import { S } from './state.js?v=20261113b';
 
 const LS_BUFFER = 'cluppie_gebruik_buffer';   // {datum, tellingen:{ev:n}}
 const FLUSH_INTERVAL_MS = 2 * 60 * 1000;
@@ -33,6 +33,28 @@ const NAVPAD_CAP = 200;                       // max stappen per sessie (buffer 
 
 let flushTimer = null;
 let luistertAl = false;
+
+/* ---------- [20261113b] opt-out klikgedrag (privacyverklaring versie 2026-10) ----------
+   Het navigatiepad per sessie (klikgedrag) is voor UX-verbetering. Een coach kan dit
+   uitzetten via Privacy & mijn gegevens (schild-icoon) of Instellingen › Mijn account.
+   Bewaard op gebruikers/{uid}/meta/privacy.klikgedrag (false = uit) en lokaal gecachet,
+   zodat het meteen werkt, ook vóórdat Firestore geantwoord heeft. */
+const LS_KLIK_UIT = 'cluppie_klikgedrag_uit';
+export function klikgedragAan(){ try { return localStorage.getItem(LS_KLIK_UIT) !== '1'; } catch(e){ return true; } }
+export async function zetKlikgedrag(aan){
+  try { aan ? localStorage.removeItem(LS_KLIK_UIT) : localStorage.setItem(LS_KLIK_UIT, '1'); } catch(e){}
+  if (!aan){ try { sessionStorage.removeItem(LS_NAVPAD); } catch(e){} }
+  if (S.user) await setDoc(doc(db, 'gebruikers', S.user.uid, 'meta', 'privacy'), { klikgedrag: !!aan, gewijzigd: serverTimestamp() }, { merge: true });
+}
+async function syncKlikgedrag(){
+  if (!S.user) return;
+  try {
+    const d = await getDoc(doc(db, 'gebruikers', S.user.uid, 'meta', 'privacy'));
+    const aan = !(d.exists() && d.data().klikgedrag === false);
+    try { aan ? localStorage.removeItem(LS_KLIK_UIT) : localStorage.setItem(LS_KLIK_UIT, '1'); } catch(e){}
+    if (!aan){ try { sessionStorage.removeItem(LS_NAVPAD); } catch(e){} }
+  } catch(e){ /* offline: lokale keuze blijft gelden */ }
+}
 
 function vandaag(){ return new Date().toISOString().slice(0,10); }
 
@@ -96,7 +118,7 @@ function schrijfNavpad(b){
    scherm = fijnmazige naam (bv. 'team:spelers', 'wedstrijd:kwart').
    hoe    = aanleiding ('tab'|'tegel'|'terug'|'open'|'sluit'), default 'tegel'. */
 export function telNav(scherm, hoe = 'tegel'){
-  if (!scherm || !S.user) return;
+  if (!scherm || !S.user || !klikgedragAan()) return;
   try {
     const b = leesNavpad();
     // dubbele opeenvolgende stap naar hetzelfde scherm negeren (rerenders e.d.)
@@ -115,7 +137,7 @@ export function telNav(scherm, hoe = 'tegel'){
    (geen reset): het pad is cumulatief per sessie en de cap houdt hem begrensd. */
 export async function flushNav(){
   const b = leesNavpad();
-  if (!b.stappen.length || !S.user) return;
+  if (!b.stappen.length || !S.user || !klikgedragAan()) return;
   try {
     await setDoc(doc(db, 'navpaden', `${S.user.uid}_${b.sid}`), {
       uid: S.user.uid,
@@ -188,6 +210,7 @@ function zorgVoorFlushLus(){
 export function startTracker(){
   if (luistertAl) return;
   luistertAl = true;
+  syncKlikgedrag();
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden'){ flushGebruik(); flushNav(); }
   });

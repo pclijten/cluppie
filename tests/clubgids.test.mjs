@@ -1,7 +1,7 @@
 // Clubgids in de app (20261012h): tegenstander zoeken en plek bepalen.
 // Draaien: node --import ./tests/hulp/stub-loader.mjs tests/clubgids.test.mjs
 import assert from 'node:assert/strict';
-const { zoekTegenstanders, clubVanTeam, plekVoor, normNaam } = await import('../public/js/clubgids.js');
+const { zoekTegenstanders, clubVanTeam, plekVoor, normNaam, zoekClubs, plaatsVan } = await import('../public/js/clubgids.js');
 
 const gids = [
   { code: 'TMKG482', naam: 'SV de Middenpeel', teams: ['SV de Middenpeel O12-1JM', 'SV de Middenpeel 1'], accommodatie: 'Sportpark De Blaarpeel',
@@ -38,3 +38,15 @@ assert.equal(plekVoor(gids[0]).adresBekend, false);
 assert.equal(plekVoor(null), null); assert.equal(plekVoor({ naam: 'X' }), null);
 assert.equal(normNaam("SSA/SJO VBC'25"), 'ssasjovbc25');
 console.log('clubgids: alle controles geslaagd');
+
+// [20261113b] clubnamen voorstellen in de snelstart en bij club aanmelden
+assert.deepEqual(zoekClubs(gids, 'm'), [], 'minstens 2 tekens');
+let zc = zoekClubs(gids, 'mi');
+assert.equal(zc[0].naam, 'Mifano', 'naam die ermee begint eerst');
+assert.ok(zc.some(c => c.naam === 'SV de Middenpeel'), 'woordbegin telt ook');
+assert.equal(zoekClubs(gids, 'mifano')[0].plaats, 'Mierlo', 'plaats komt mee');
+assert.equal(zoekClubs(gids, 'gemert')[0].plaats, 'Gemert', 'plaats uit het adres als plaats ontbreekt');
+assert.equal(zoekClubs(gids, 'mierlo')[0].naam, 'Mifano', 'zoeken op plaats');
+assert.equal(plaatsVan({ plaatsAdres: '5421 AA Gemert' }), 'Gemert');
+assert.equal(zoekClubs(gids, 'asv 33')[0].naam, "ASV'33", 'leestekens tellen niet');
+console.log('zoekClubs: OK');

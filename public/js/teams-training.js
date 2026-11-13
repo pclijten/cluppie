@@ -8,20 +8,21 @@ import {
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, speler, initialen, openModal, sluitModal, toon, isBeheerder
-} from './state.js?v=20261111d';
-import { telGebruik } from './tracker.js?v=20261111d';
-import { voorbeeldTeamcode } from './clubconfig.js?v=20261111d';
+} from './state.js?v=20261113b';
+import { telGebruik } from './tracker.js?v=20261113b';
+import { voorbeeldTeamcode } from './clubconfig.js?v=20261113b';
 import { ico } from './icons.js?v=20261110a';
 
 import {
   CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, youtubeId, youtubeThumb, youtubeWatch,
   SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo, isoWeek,
   catLabel,
-} from './config.js?v=20261111d';
-import { onderdeelAan } from './onderdelen.js?v=20261111d';
-import { htmlKompas } from './teams-leerlijn.js?v=20261111d';
-import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261113a';
+} from './config.js?v=20261113b';
+import { onderdeelAan } from './onderdelen.js?v=20261113b';
+import { htmlKompas } from './teams-leerlijn.js?v=20261113b';
+import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261113b';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
+import { spelersOpTraining } from './uitleen-regels.js?v=20261113b';
 import {
   MAX_WEKEN, weekdagVan, plusDagen, eersteOpDag, regelDatums, actieveRegels, vastOp, vastePrefill, redenVanRegel
 } from './vaste-afmeldingen.js?v=20261013a';
@@ -245,7 +246,7 @@ export function htmlPresentieTraining(){
   const rijHtml = (p, chip = '') => {
     const afw = (p.afwezig || []);
     const laat = (p.telaat || []);
-    const aanwezig = Math.max(0, S.spelers.length - afw.length);
+    const aanwezig = Math.max(0, (Array.isArray(p.selectie) ? p.selectie.length : S.spelers.length) - afw.length);
     const dat = new Date(p.datum+'T12:00').toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short'});
     const datMooi = dat.charAt(0).toUpperCase()+dat.slice(1);
     const afwNamen = afw.length
@@ -361,6 +362,47 @@ export function htmlPresentieTraining(){
    Het kompas + de gedeelde oefenstof-PDF's. De presentie-sectie die hier
    vroeger tussen stond woont nu op zijn eigen tabblad (htmlPresentieTraining
    hierboven, tegel Presentie → Training op de hub). */
+/* [20261113b] De trainingen van het team per week, met datum per training. Gedeeld met het
+   desktopscherm Trainingen (desktop-schermen.js), zodat telefoon en desktop dezelfde trainingen tonen
+   (dezelfde volgorde en datumregel als de lijst hieronder). */
+export function trainingenPerWeek(){
+  const pdfs = (S.trainingen || []).filter(t => (t.teams||[]).includes(S.teamId));
+  const trainingsdagen = Array.isArray(S.team?.trainingsdagen) ? S.team.trainingsdagen : [];
+  const huidigeWeek = isoWeek();
+  const perWeek = new Map();
+  for (const t of pdfs){
+    const ws = /^\d{4}-\d{2}-\d{2}$/.test(t.weekStart || '') ? new Date(t.weekStart + 'T12:00')
+      : /^\d{4}-\d{2}-\d{2}$/.test(t.datum || '') ? new Date(t.datum + 'T12:00') : null;
+    const wn = ws ? isoWeek(ws) : weekNrUit(t.week);
+    const jaar = ws ? new Date(ws.getTime() + (3 - ((ws.getDay() + 6) % 7)) * 86400000).getFullYear()
+      : (wn ? (t.seizoenJaar || jaarVoorWeek(wn, t.gemaakt?.seconds)) : null);
+    const key = wn ? `${jaar}-${String(wn).padStart(2,'0')}` : 'onbekend';
+    if (!perWeek.has(key)) perWeek.set(key, { key, weekNr: wn, jaar, items: [] });
+    perWeek.get(key).items.push(t);
+  }
+  const isoStr = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  for (const g of perWeek.values()){
+    g.items.sort((a,b) =>
+      ((a.seizoensplanId && a.seizoensplanId === b.seizoensplanId) ? (a.trainingNr || 0) - (b.trainingNr || 0) : 0)
+      || ((a.plan?.id && a.plan.id === b.plan?.id) ? (a.trainingNr||0) - (b.trainingNr||0) : 0)
+      || (a.datum && b.datum ? a.datum.localeCompare(b.datum) : 0)
+      || (a.gemaakt?.seconds||0) - (b.gemaakt?.seconds||0));
+    g.isHuidig = g.weekNr === huidigeWeek;
+    g.items = g.items.map((t, i) => {
+      let d = /^\d{4}-\d{2}-\d{2}$/.test(t.datum || '') ? new Date(t.datum + 'T12:00') : null;
+      if (!d && g.weekNr) d = t.trainingsdag ? datumVoorTraining(g.weekNr, g.jaar, [t.trainingsdag], 0) : datumVoorTraining(g.weekNr, g.jaar, trainingsdagen, i);
+      return { t, iso: d ? isoStr(d) : '', chip: d ? dagChipTekst(d) : '', weekNr: g.weekNr };
+    });
+  }
+  const nuJaar = (() => { const k = new Date(); k.setDate(k.getDate() + 3 - ((k.getDay() + 6) % 7)); return k.getFullYear(); })();
+  const nuKey = `${nuJaar}-${String(huidigeWeek).padStart(2,'0')}`;
+  const alle = [...perWeek.keys()].filter(k => k !== 'onbekend');
+  const komend = alle.filter(k => k >= nuKey).sort().map(k => perWeek.get(k));
+  const eerder = alle.filter(k => k < nuKey).sort((a,b) => b.localeCompare(a)).map(k => perWeek.get(k));
+  if (perWeek.has('onbekend')) eerder.push(perWeek.get('onbekend'));
+  return { komend, eerder, nuKey };
+}
+
 export function htmlTeamTrainingen(){
   const pdfs = S.trainingen.filter(t => (t.teams||[]).includes(S.teamId));
 
@@ -585,6 +627,11 @@ export function htmlInstellingen(){
       <button class="knop licht vol" id="wijzigMijnNaam" style="margin-top:10px">✏️ Mijn weergavenaam wijzigen</button>
     </div>
     <div class="kaart">
+      <div class="sectie-kop" style="margin-top:0">Mijn account</div>
+      <div id="iKlikPlek"></div>
+      <button class="knop licht vol" id="iPrivacy">Privacy &amp; mijn gegevens</button>
+    </div>
+    <div class="kaart">
       <div class="sectie-kop u-mt-0">Categorie & speelregels</div>
       <select class="invoer u-mb-xs" id="iCategorie" >
         <option value="">— geen categorie —</option>
@@ -707,10 +754,11 @@ export function modalPresentie(bestaande = null, opties = {}){
   let redenen = bestaande ? JSON.parse(JSON.stringify(bestaande.afwezigRedenen || {})) : {};
   const kanDatumWijzigen = !bestaande;
   const startAnder = kanDatumWijzigen && !!opties.startAnder;
+  const opDatum = () => spelersOpTraining(S.spelers, datum);
   // [20261012] Nog geen record voor deze datum? Dan staan spelers met een
   // vaste afmelding alvast op afwezig (zie js/vaste-afmeldingen.js).
   const vulVastIn = () => {
-    const pf = vastePrefill(S.team, datum, S.spelers.map(p => p.id));
+    const pf = vastePrefill(S.team, datum, opDatum().lijst.map(p => p.id));
     afwezig = new Set(pf.afwezig); telaat = new Set(); redenen = pf.redenen;
   };
   if (!bestaande && !S.presentie.find(p => p.datum === datum)) vulVastIn();
@@ -720,7 +768,18 @@ export function modalPresentie(bestaande = null, opties = {}){
     return s.charAt(0).toUpperCase()+s.slice(1);
   };
 
-  const rijenHtml = () => S.spelers.map(p => {
+  /* [20261111] Wie hoort bij de training op déze datum? Een ingeleende speler
+     alleen op zijn afgesproken trainingsdag(en); een eigen speler die die dag
+     bij het lenende team traint staat grijs onderaan en telt niet mee. */
+  const eldersHtml = () => opDatum().elders.map(({ p, team }) => `
+    <div class="pres-speler pres-elders">
+      <div class="pres-speler-kop" aria-disabled="true">
+        <span class="pres-shirt">${esc(p.nummer ?? '·')}</span>
+        <span class="pres-naam">${esc(p.naam)}<small>Traint deze dag bij ${esc(team)}</small></span>
+        <span class="pres-status">⇄ ${esc(team)}</span>
+      </div>
+    </div>`).join('');
+  const rijenHtml = () => opDatum().lijst.map(p => {
     const isAfw = afwezig.has(p.id);
     const isLaat = telaat.has(p.id);
     const klasse = isAfw ? 'afwezig' : (isLaat ? 'telaat' : 'aanwezig');
@@ -745,7 +804,7 @@ export function modalPresentie(bestaande = null, opties = {}){
       <div class="pres-telaat-rij"><button type="button" class="pres-reden-chip telaat-chip actief" data-telaat="${p.id}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.2V12l3.4 2.2"/></svg> Te laat: tik om te wissen</button></div>
       ` : ''}
     </div>`;
-  }).join('');
+  }).join('') + eldersHtml();
 
   openModal(`
     <h2>Presentie training</h2>
@@ -824,10 +883,10 @@ export function modalPresentie(bestaande = null, opties = {}){
          "niet afwezig" als aanwezig, en krijgt een speler die later
          instroomt met terugwerkende kracht 100% over trainingen waar hij
          nog niet bij het team was. Zie js/opkomst.js. */
-      selectie: S.spelers.map(p => p.id),
-      aantalAanwezig: S.spelers.length - afwezig.size,
+      selectie: opDatum().lijst.map(p => p.id),
+      aantalAanwezig: opDatum().lijst.length - afwezig.size,
       aantalTeLaat: telaat.size,
-      aantalSpelers: S.spelers.length,
+      aantalSpelers: opDatum().lijst.length,
       door: S.user.displayName || (S.user.email||'').split('@')[0] || '',
       gewijzigd: serverTimestamp(),
     };
@@ -1169,10 +1228,27 @@ export async function stopVasteAfmelding(id){
   } catch(e){ meld('Stoppen mislukt: ' + (e.code || e.message)); }
 }
 
+/* ---------- Planning: formulier als paneel ----------
+   [20261111e] Op desktop/tablet schuift het formulier als paneel van rechts
+   over de planning (zelfde vorm als het uitleenformulier), in plaats van het
+   hele scherm te vervangen door de telefoonweergave. Op de telefoon blijft het
+   een volledig scherm (CSS: .modal-achter[data-vorm="paneel"]). */
+function openPlanPaneel(html){
+  openModal(html);
+  const achter = document.getElementById('modalAchter');
+  achter?.setAttribute('data-vorm', 'paneel');
+  const opEsc = e => { if (e.key === 'Escape' && achter?.classList.contains('open') && achter.dataset.vorm === 'paneel') sluitModal(); };
+  document.addEventListener('keydown', opEsc);
+  const opruimen = new MutationObserver(() => {
+    if (!achter?.classList.contains('open') || achter.dataset.vorm !== 'paneel'){ document.removeEventListener('keydown', opEsc); opruimen.disconnect(); }
+  });
+  if (achter) opruimen.observe(achter, { attributes: true, attributeFilter: ['class', 'data-vorm'] });
+}
+
 /* ---------- Planning: eigen dag toevoegen ---------- */
 export function modalEigenDag(){
   const vandaag = new Date().toISOString().slice(0,10);
-  openModal(`
+  openPlanPaneel(`
     <h2>Eigen dag toevoegen</h2>
     <p class="u-t-md u-zacht u-mb-sm">Voeg een eigen datum toe aan de planning, bijvoorbeeld een toernooi, teamuitje of trainingskamp.</p>
     <div class="veldgroep"><label>Datum</label>
@@ -1180,7 +1256,7 @@ export function modalEigenDag(){
     <div class="veldgroep"><label>Omschrijving</label>
       <input class="invoer" id="mEdLabel" placeholder="Bijv. Teamfoto, toernooi, vrij" autocomplete="off"></div>
     <div class="veldgroep"><label>Notitie (optioneel)</label>
-      <input class="invoer" id="mEdOpm" placeholder="Extra info" autocomplete="off"></div>
+      <textarea class="invoer plan-notitie" id="mEdOpm" rows="6" placeholder="Extra info, bijvoorbeeld adres, tijden, wat mee te nemen"></textarea></div>
     <button class="knop vol" id="mEdOk">Toevoegen</button>`);
   $('#mEdOk').onclick = async () => {
     const datum = $('#mEdDatum').value;
@@ -1205,7 +1281,7 @@ export function modalEigenDag(){
 export function modalPlanDag(it){
   const isEigen = it.bron === 'eigen';
   const typeOpties = [['wd','Wedstrijddag'],['beker','Beker'],['inhaal','Inhaal'],['vrij','Vrij'],['eigen','Eigen dag']];
-  openModal(`
+  openPlanPaneel(`
     <h2>${datumNL(it.datum)}</h2>
     <p class="u-t-sm u-zacht u-mb-sm">${isEigen ? 'Eigen dag bewerken of verwijderen.' : 'KNVB-speeldag aanpassen of verbergen voor dit team. De originele kalender blijft bewaard.'}</p>
     <div class="veldgroep"><label>Type</label>
@@ -1213,7 +1289,7 @@ export function modalPlanDag(it){
     <div class="veldgroep"><label>Omschrijving</label>
       <input class="invoer" id="mPdLabel" value="${esc(it.label||'')}" autocomplete="off"></div>
     <div class="veldgroep"><label>Notitie (optioneel)</label>
-      <input class="invoer" id="mPdOpm" value="${esc(it.opmerking||'')}" autocomplete="off"></div>
+      <textarea class="invoer plan-notitie" id="mPdOpm" rows="6">${esc(it.opmerking||'')}</textarea></div>
     <button class="knop vol" id="mPdOk">Opslaan</button>
     <div class="rij u-mt-xs">
       ${it.aangepast && !isEigen ? `<button class="knop licht u-flex-1" id="mPdReset" >Herstel KNVB</button>` : ''}

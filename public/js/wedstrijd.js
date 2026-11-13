@@ -5,7 +5,7 @@ import {
 import {
   S, $, $$, esc, meld, mmss, uurMin, datumNL, speler, spelerNaam, spelerNr,
   openModal, sluitModal, toon, stopUnsubs, modAan, bewaarPositie, terugLaag, terugLaagWeg, doeTerug
-} from './state.js?v=20261111d';
+} from './state.js?v=20261113b';
 import {
   FORMATIES, LIJN_NAAM, bouwSlots, slotLijn, catInfo, isToernooi,
   parseFormatie, formatieBestaat, formatieNamen, aantalVeldspelers,
@@ -14,17 +14,18 @@ import {
   clubFormatie11, doelSuggesties, isoWeek, SEIZOEN_FALLBACK,
   WISSEL_REDENEN, wisselReden, AFWEZIG_REDENEN, afwezigRedenInfo, slotPositieNaam,
   catLabel,
-} from './config.js?v=20261111d';
-import { kwartGespeeld, effectieveLineup, analyseKwart, analyseWedstrijd, speeltijdReserve, disciplinaireTijd, WISSEL_BEURT, analyseKwartVerwacht, analyseWedstrijdVerwacht } from './analyse.js?v=20261111d';
+} from './config.js?v=20261113b';
+import { kwartGespeeld, effectieveLineup, analyseKwart, analyseWedstrijd, speeltijdReserve, disciplinaireTijd, WISSEL_BEURT, analyseKwartVerwacht, analyseWedstrijdVerwacht } from './analyse.js?v=20261113b';
 import { ico } from './icons.js?v=20261110a';
-import { laadClubgids, zoekTegenstanders, plekVoor, pouleTeamnamen, clubVanTeam } from './clubgids.js?v=20261111d';
-import { aiAan, eigenClubTokens, voorbeeldTegenstander, beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261111d';
+import { laadClubgids, zoekTegenstanders, plekVoor, pouleTeamnamen, clubVanTeam } from './clubgids.js?v=20261113b';
+import { aiAan, eigenClubTokens, voorbeeldTegenstander, beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261113b';
 
-import { telGebruik, telNav } from './tracker.js?v=20261111d';
+import { telGebruik, telNav } from './tracker.js?v=20261113b';
 import { opkomstVoor, teltMee, MIN_OPKOMST_TRAININGEN } from './opkomst.js?v=20260922c';
-import { openInvoegSheet, bewaarWedstrijdAlsSjabloon, zetNaToepassenCallback } from './opstelling-sjabloon.js?v=20261113a';
+import { spelersOpWedstrijd, ontbrekendeLeners, leenErbijNa } from './uitleen-regels.js?v=20261113b';
+import { openInvoegSheet, bewaarWedstrijdAlsSjabloon, zetNaToepassenCallback } from './opstelling-sjabloon.js?v=20261113b';
 import { heeftElftallen, elftalWedstrijd, elftalNaam, hoortBijElftal, spelersVoorElftal, filterOpElftal,
-  elftalFilter, elftalFilterHtml } from './elftallen.js?v=20261111d';
+  elftalFilter, elftalFilterHtml } from './elftallen.js?v=20261113b';
 
 /* ==================== AANMAKEN ==================== */
 function leegKwart(){ return {lineup:{}, events:[], plan:[], correcties:{}, klok:{base:0, running:false, start:0}}; }
@@ -523,7 +524,10 @@ export function modalNieuweWedstrijd(){
       formatie,
       datum: $('#mWDatum').value || vandaag,
       kwartduur: duur,
-      selectie: tweeElftallen ? (() => { const e = spelersVoorElftal(S.spelers, elftal).eigen; return (e.length ? e : S.spelers).map(p => p.id); })() : S.spelers.map(p => p.id),
+      /* [20261111] alleen wie bij een wedstrijd op deze datum hoort (uitleningen) */
+      selectie: (() => { const basis = spelersOpWedstrijd(S.spelers, { id: null, datum: $('#mWDatum').value || vandaag }).lijst;
+        if (!tweeElftallen) return basis.map(p => p.id);
+        const e = spelersVoorElftal(basis, elftal).eigen; return (e.length ? e : basis).map(p => p.id); })(),
       ...(tweeElftallen ? { elftal } : {}),
       goals: [],
       kaarten: [],
@@ -590,8 +594,9 @@ function normaliseerWedstrijd(w){
   if (!Array.isArray(w.kaarten)){ w.kaarten = []; veranderd = true; }
   if (!Array.isArray(w.selectie) || !w.selectie.length){
     // [20260928e] 1e + 2e elftal: standaard alleen de spelers van dit elftal
-    const eigen = heeftElftallen() && w.type !== 'toernooi' ? spelersVoorElftal(S.spelers, elftalWedstrijd(w)).eigen : [];
-    w.selectie = (eigen.length ? eigen : S.spelers).map(p => p.id); veranderd = true;
+    const basis = spelersOpWedstrijd(S.spelers, w).lijst;   // [20261111] uitleningen per wedstrijd
+    const eigen = heeftElftallen() && w.type !== 'toernooi' ? spelersVoorElftal(basis, elftalWedstrijd(w)).eigen : [];
+    w.selectie = (eigen.length ? eigen : basis).map(p => p.id); veranderd = true;
   }
   /* Ingeleende spelers die pas ná het aanmaken van deze wedstrijd binnenkwamen,
      staan niet in w.selectie en verschijnen daardoor als afwezig — terwijl je
@@ -602,9 +607,8 @@ function normaliseerWedstrijd(w){
      wedstrijd nog niet gespeeld is: een afgeronde wedstrijd laten we met rust. */
   else if (!Object.values(w.kwarten || {}).some(kwartGespeeld)){
     const alGehad = Array.isArray(w.leenErbij) ? w.leenErbij : [];
-    const nieuw = S.spelers
-      .filter(p => p._ingeleend && !w.selectie.includes(p.id) && !alGehad.includes(p.id))
-      .map(p => p.id);
+    // [20261111] alleen leners voor wie de uitlening déze wedstrijd dekt
+    const nieuw = ontbrekendeLeners(w, S.spelers);
     if (nieuw.length){
       w.selectie  = [...w.selectie, ...nieuw];
       w.leenErbij = [...alGehad, ...nieuw];
@@ -623,7 +627,7 @@ export function openWedstrijd(wid){
   if (!S.teamId || !wid){
     console.warn('[Cluppie] openWedstrijd afgebroken: ontbrekende teamId of wid', {teamId:S.teamId, wid});
     S.wedstrijdId = null;
-    if (S.teamId) import('./teams.js?v=20261113a').then(m => m.renderTeam?.());
+    if (S.teamId) import('./teams.js?v=20261113b').then(m => m.renderTeam?.());
     return;
   }
   S.wedstrijdId = wid; S.kwart = '1'; S.geselecteerd = null; S._confroOpen = false; S._wizardActief = false;
@@ -669,7 +673,7 @@ export function sluitWedstrijd(naarTab){
   verbergWijzigOpzet();
   if (typeof naarTab === 'string') S.teamTab = naarTab;
   bewaarPositie();
-  import('./teams.js?v=20261113a').then(m => { m.renderTeam(); toon('team'); });
+  import('./teams.js?v=20261113b').then(m => { m.renderTeam(); toon('team'); });
 }
 /* Speeltijd van INGELEENDE spelers in déze wedstrijd wegschrijven op het
    leen-record zelf (clubs/{clubId}/uitleningen/{leenId}), zodat het
@@ -1359,7 +1363,7 @@ export function toonBijwerkScherm(){
 
   /* Selectie-samenvatting (wedstrijdbreed, dus boven de periode-tabs) */
   const selIds = (w.selectie||[]).filter(pid => speler(pid));
-  const afwIds = S.spelers.map(p => p.id).filter(pid => !selIds.includes(pid));
+  const afwIds = spelersOpWedstrijd(S.spelers, w).lijst.map(p => p.id).filter(pid => !selIds.includes(pid));
   const laterIds = (w.telaat||[]).filter(pid => selIds.includes(pid));
   const selChip = (pid, tekst) => `<span class="bw-badge bw-selchip">${esc(spelerNaam(pid))}${tekst ? '<span class="sep" aria-hidden="true"></span>'+tekst : ''}</span>`;
   const afwChips = afwIds.map(pid => {
@@ -2335,15 +2339,25 @@ function verwijderEvent(i){
   huidigKwart().events.splice(i,1);
   bewaarWedstrijd(); renderWedstrijd();
 }
+const hoofdKwart = t => t.charAt(0).toUpperCase() + t.slice(1);
+/* laatst ingevulde kwart vóór nr (0 = geen) */
+function bronKwartNr(w, nr){
+  for (let j = nr - 1; j >= 1; j--){ const kk = w.kwarten?.[j]; if (kk && kwartGespeeld(kk) && Object.keys(effectieveLineup(kk)).length) return j; }
+  return 0;
+}
 function kopieerVorigKwart(){
-  const nr = Number(S.kwart);
-  if (nr === 1) return;
-  const vorig = S.wedstrijd.kwarten[nr-1];
+  const w = S.wedstrijd, nr = Number(S.kwart);
+  const bronNr = bronKwartNr(w, nr);
+  if (!bronNr) return;
+  const vorig = w.kwarten[bronNr];
   const k = huidigKwart();
+  const aantal = Object.keys(effectieveLineup(k)).length;
+  if ((k.events||[]).length || (k.klok?.base||0) > 0 || k.klok?.running) return;
+  if (aantal && !confirm(`${hoofdKwart(periodeOmschrijving(w))} heeft al ${aantal} speler${aantal === 1 ? '' : 's'} op het veld. Vervangen door de eindopstelling van ${periodeOmschrijving(w, String(bronNr))}?`)) return;
   k.lineup = effectieveLineup(vorig);
-  k.formatie = kwartFormatie(S.wedstrijd, vorig);
+  k.formatie = kwartFormatie(w, vorig);
   bewaarWedstrijd(); renderWedstrijd();
-  meld('Eindopstelling ' + periodeOmschrijving(S.wedstrijd, String(nr-1)) + ' overgenomen: pas aan waar nodig');
+  meld('Eindopstelling ' + periodeOmschrijving(w, String(bronNr)) + ' overgenomen: pas aan waar nodig');
 }
 
 /* ==================== STATISTIEK-TAB ==================== */
@@ -2716,7 +2730,7 @@ export function htmlStats(){
 export function koppelStatsBlad(root){
   (root || document).querySelectorAll('[data-statsblad]').forEach(b => b.onclick = () => {
     S.statsBlad = b.dataset.statsblad;
-    import('./teams.js?v=20261113a').then(m => m.renderTeam?.());
+    import('./teams.js?v=20261113b').then(m => m.renderTeam?.());
   });
 }
 
@@ -3292,13 +3306,23 @@ ${confroHtml}
     }).join('')}</div>`}
 
     ${(() => {
-      /* Leeg kwart na een gespeeld kwart: expliciete overneem-keuze in plaats
-         van de vroegere automatische kopie bij het aantikken van de tab —
-         kijken naar een kwart mag nooit stilletjes data wijzigen. */
+      /* [20261112e] Overneem-knop zodra een eerder kwart een opstelling heeft.
+         Bron = het laatst ingevulde kwart ervoor (een overgeslagen leeg kwart
+         telt niet). Leeg kwart: opvallende balk zoals voorheen. Al deels
+         gevuld: rustige knop met bevestiging. Kwart met wissels of gelopen
+         klok: geen knop, gespeelde minuten mogen nooit overschreven worden.
+         Kijken naar een kwart wijzigt nooit stilletjes data. */
       const nr = Number(S.kwart);
-      const vorig = w.kwarten[nr-1];
-      if (nr <= 1 || opVeld.size > 0 || !vorig || !kwartGespeeld(vorig)) return '';
-      return `<div class="kwart-leeg-actie"><span>${esc(periodeOmschrijving(w))} heeft nog geen opstelling.</span><button id="overneemVorigKwart">⧉ Eindopstelling ${esc(periodeLabel(w, String(nr-1)))} overnemen</button></div>`;
+      const bronNr = bronKwartNr(w, nr);
+      if (!bronNr) return '';
+      const label = esc(periodeLabel(w, String(bronNr)));
+      if (opVeld.size === 0)
+        return `<div class="kwart-leeg-actie"><span>${esc(hoofdKwart(periodeOmschrijving(w)))} heeft nog geen opstelling.</span><button id="overneemVorigKwart">⧉ Eindopstelling ${label} overnemen</button></div>`;
+      if ((k.events||[]).length || (k.klok?.base||0) > 0 || k.klok?.running) return '';
+      const bronL = effectieveLineup(w.kwarten[bronNr]);
+      const zelfde = Object.keys(bronL).length === Object.keys(lineup).length && Object.entries(bronL).every(([sl, pid]) => lineup[sl] === pid);
+      if (zelfde) return '';
+      return `<div class="kwart-over-stil"><button id="overneemVorigKwart">⧉ Eindopstelling ${label} overnemen</button></div>`;
     })()}
 
     ${ZL ? '' : `<div class="klok">
@@ -3521,8 +3545,8 @@ ${confroHtml}
   /* Acties die in het oude scherm onderaan staan en in het zijlijnscherm ook in het menu. */
   const acties = {
     verslag: modalVerslag,
-    evaluatie: () => import('./teams.js?v=20261113a').then(m => m.modalTeamEvaluatie(S.wedstrijdId)),
-    tactiek: () => import('./tactiekbord.js?v=20261111d').then(m => m.openTactiekLijst(w)),
+    evaluatie: () => import('./teams.js?v=20261113b').then(m => m.modalTeamEvaluatie(S.wedstrijdId)),
+    tactiek: () => import('./tactiekbord.js?v=20261113b').then(m => m.openTactiekLijst(w)),
     bijwerk: () => { S.bijwerkKwart = S.kwart; toonBijwerkScherm(); },
     sjabloon: () => bewaarWedstrijdAlsSjabloon(w),
     verwijder: async () => {
@@ -3565,7 +3589,7 @@ ${confroHtml}
   const bsj = v.querySelector('#bewaarSjabloon');
   if (bsj) bsj.onclick = () => bewaarWedstrijdAlsSjabloon(w);
   const tbk = v.querySelector('#tactiekbordKnop');
-  if (tbk) tbk.onclick = () => import('./tactiekbord.js?v=20261111d').then(m => m.openTactiekLijst(w));
+  if (tbk) tbk.onclick = () => import('./tactiekbord.js?v=20261113b').then(m => m.openTactiekLijst(w));
   { const db = v.querySelector('#doelBanner') || v.querySelector('#zlDoel'); if (db) db.onclick = () => toonWijzigOpzet('doel'); }
   v.querySelector('#subFormatieKlik').onclick = (e) => { e.stopPropagation(); toonKwartFormatie(); };
   { const kfk = v.querySelector('#kwartFormatieKnop'); if (kfk) kfk.onclick = toonKwartFormatie; }
@@ -3592,7 +3616,7 @@ ${confroHtml}
   { const bwk = v.querySelector('#bijwerkKnop'); if (bwk) bwk.onclick = () => { S.bijwerkKwart = S.kwart; toonBijwerkScherm(); }; }
   const teamEvalKnop = v.querySelector('#teamEvalKnop');
   if (teamEvalKnop) teamEvalKnop.onclick = () => {
-    import('./teams.js?v=20261113a').then(m => m.modalTeamEvaluatie(S.wedstrijdId));
+    import('./teams.js?v=20261113b').then(m => m.modalTeamEvaluatie(S.wedstrijdId));
   };
   v.querySelectorAll('[data-corrigeer-goal]').forEach(b => b.onclick = e => {
     e.stopPropagation(); modalGoalCorrigeren(Number(b.dataset.corrigeerGoal));
@@ -4158,10 +4182,16 @@ function modalSelectie(opties = {}){
      van deze wedstrijd, dan de rest van de selectie. Wie daar niet meedoet is
      "niet mee" (geen afwezigheid), dus zonder redenkeuze. */
   const tweeElftallen = heeftElftallen() && !isToernooi(w);
-  const groepen = tweeElftallen ? spelersVoorElftal(S.spelers, elftalWedstrijd(w)) : { eigen: S.spelers, rest: [] };
+  /* [20261111] Uitleningen: alleen wie bij deze wedstrijd hoort; wie deze dag
+     alleen bij het lenende team speelt staat grijs onderaan. */
+  const opW = spelersOpWedstrijd(S.spelers, w);
+  const groepen = tweeElftallen ? spelersVoorElftal(opW.lijst, elftalWedstrijd(w)) : { eigen: opW.lijst, rest: [] };
   const rijenHtml = () => (tweeElftallen ? `<div class="elf-groep">${elftalNaam(elftalWedstrijd(w))}</div>` : '')
     + groepen.eigen.map(p => rijHtml(p, false)).join('')
-    + (groepen.rest.length ? `<div class="elf-groep">Rest van de selectie</div>` + groepen.rest.map(p => rijHtml(p, true)).join('') : '');
+    + (groepen.rest.length ? `<div class="elf-groep">Rest van de selectie</div>` + groepen.rest.map(p => rijHtml(p, true)).join('') : '')
+    + opW.elders.map(({ p, team }) => `<div class="pres-speler pres-elders"><div class="pres-speler-kop" aria-disabled="true">
+        <span class="pres-shirt">${esc(p.nummer ?? '·')}</span><span class="pres-naam">${esc(p.naam)}<small>Speelt deze dag alleen bij ${esc(team)}</small></span>
+        <span class="pres-status">⇄ ${esc(team)}</span></div></div>`).join('');
   const rijHtml = (p, rest) => {
     const aanwezig = sel.has(p.id);
     const isLaat = aanwezig && telaat.has(p.id);
@@ -4260,6 +4290,7 @@ function modalSelectie(opties = {}){
       return;
     }
     w.selectie = [...sel];
+    w.leenErbij = leenErbijNa(w, S.spelers);   // [20261111] weggehaalde leners blijven weg
     // alleen te-laat-vlaggen bewaren van wie ook echt in de selectie zit
     w.telaat = [...telaat].filter(pid => sel.has(pid));
     // minuut alleen bewaren voor wie ook echt als te laat staat
