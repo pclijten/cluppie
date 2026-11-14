@@ -263,7 +263,11 @@ const zetSeed = (pad, data) => store.set(pad, pasToe(undefined, data));
 const isoDag = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const dag = n => { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + n); return isoDag(d); };
 /* zaterdagen rond vandaag: zaterdag(0) = komende zaterdag (of vandaag als het zaterdag is) */
-const zaterdag = k => { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + ((6 - d.getDay() + 7) % 7) + 7 * k); return isoDag(d); };
+/* de komende speelronde ligt altijd in de toekomst: op zaterdag na 11 uur is dat de zaterdag erna */
+const zaterdag = k => {
+  const d = new Date(); if (d.getDay() === 6 && d.getHours() >= 11) d.setDate(d.getDate() + 1);
+  d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + ((6 - d.getDay() + 7) % 7) + 7 * k); return isoDag(d);
+};
 let zaad = 20261113;
 const rnd = () => { zaad = (zaad * 1664525 + 1013904223) % 4294967296; return zaad / 4294967296; };
 const kies = a => a[Math.floor(rnd() * a.length)];
