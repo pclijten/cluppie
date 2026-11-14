@@ -10,6 +10,9 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
 
 ## Open
+**Voor Paul — Over-pagina: demo weg, zelf proberen, blok "Samen" (PR #64, branch `over-demo-samen`)**
+- [ ] PR mergen. Alleen `over.html` en `over/over.css`, geen deploy nodig.
+- [ ] Demo-venster verwijderd (op de telefoon viel de onderkant van de app buiten beeld). Knoppen worden "Begin met je eigen team" / "Club aanmelden". Nieuw blok "Samen maken we het mooi en makkelijk" (eigen trainingen erin, maatwerk, nog in ontwikkeling). `index.html?demo` bestaat nog maar wordt niet meer gelinkt.
 **Voor Paul — Trainingsbibliotheek zelf beheren (release 20261113e, branch `bibliotheek`)**
 - [ ] PR reviewen en mergen. Mockup "Cluppie Bibliotheek beheren" goedgekeurd op 13-11 ("Perfect"), besluiten in `claude/trainingsbibliotheek-beheer-impactanalyse.md`.
 - [ ] **Eerst** `npm run test:rules` (2 nieuwe scenario's onderaan), dan deployen: `firebase deploy --only firestore:rules,firestore:indexes --project cluppie-ad329`. Nieuw: `platform/bibliotheek/vormen` (lezen ingelogd, schrijven platform), en een recursieve regel `/{pad=**}/trainingen/{id}` waarmee de platformbeheerder trainingen leest en alleen `oefeningen`, `vormIds`, `bibliotheekBijgewerktMs` bijwerkt. Index: `vormIds` (array-contains) voor collectie én collectiegroep. Wacht tot de index klaar is (Console → Firestore → Indexen) voordat je doorvoert.
