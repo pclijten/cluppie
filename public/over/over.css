@@ -329,6 +329,15 @@ h3 { font-size: var(--text-title); line-height: 1.05; }
 .demo__probeer h3 { font-size: clamp(1.75rem, 2.4vw, 2.25rem); }
 .demo__probeer p { margin-top: var(--space-xs); color: var(--color-ink-2); max-width: 60ch; }
 
+.telefoons { margin-top: var(--space-3xl); }
+.telefoons h3 { font-size: clamp(1.75rem, 2.4vw, 2.25rem); margin-bottom: var(--space-lg); }
+.telefoons__rij { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-lg); }
+.telefoons__rij:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 4px; }
+.telefoon { margin: 0; }
+.telefoon__scherm { padding: 6px; border-radius: 28px; background: var(--color-ink); box-shadow: 0 0 0 1px var(--color-rule); }
+.telefoon__scherm img { display: block; width: 100%; height: auto; aspect-ratio: 390 / 844; object-fit: cover; object-position: top; border-radius: 22px; }
+.telefoon figcaption { margin-top: var(--space-sm); font-size: var(--text-sm); color: var(--color-ink-2); }
+.telefoon figcaption strong { display: block; color: var(--color-ink); }
 
 /* ---------- samen: eigen trainingen, maatwerk, nog in ontwikkeling ---------- */
 .samen { padding-block: var(--section-gap-s) var(--section-gap); background: var(--color-paper-2); }
@@ -343,4 +352,6 @@ h3 { font-size: var(--text-title); line-height: 1.05; }
 @media (max-width: 60rem){
   .demo__kop, .samen__kop, .samen__punten { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-xl); }
   .demo__probeer { flex-direction: column; align-items: flex-start; }
+  .telefoons__rij { display: grid; grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: minmax(12rem, 62%); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: var(--space-sm); overscroll-behavior-x: contain; }
+  .telefoons__rij li { scroll-snap-align: start; }
 }
