@@ -28,11 +28,12 @@
 
    Een club-document zonder instellingen.v krijgt de neutrale standaard totdat de
    beheerder de waarden in Instellingen "vastlegt". */
-import { S, clubAfkorting } from './state.js?v=20261115d';
-import * as C from './config.js?v=20261115d';
+import { S, clubAfkorting } from './state.js?v=20261115e';
+import * as C from './config.js?v=20261115e';
 import { db, doc, getDoc } from './firebase.js?v=20261011g';
-import { zetContentClub } from './content.js?v=20261115d';
+import { zetContentClub } from './content.js?v=20261115e';
 import { weerVanTeam } from './snelstart-logica.js?v=20261020c';
+import { schoonProfiel as schoonPdfProfiel } from './pdf-profiel.js?v=20261115e';
 
 /* ---------- Standaardwaarden ---------- */
 export const NEUTRAAL = Object.freeze({
@@ -396,6 +397,13 @@ export function aiAan(){
   if (S.team && S.teamId && !S.team.club) return S._soloAI === true;
   return !!(S._clubPlatform && S._clubPlatform.platformModules && S._clubPlatform.platformModules.ai === true) && cfg().ai.aan !== false;
 }
+/* [20261114a] PDF-trainingen omzetten: met de AI-module, of los aangezet door de eindbaas
+   (platformModules.pdfOmzetten). Losse trainers nooit: uploaden is een clubfunctie. */
+export function pdfOmzettenAan(){
+  if (S.team && S.teamId && !S.team.club && !S.clubId) return false;
+  return aiAan() || !!(S._clubPlatform && S._clubPlatform.platformModules && S._clubPlatform.platformModules.pdfOmzetten === true);
+}
+export function pdfProfielNu(){ return schoonPdfProfiel(S._clubPlatform && S._clubPlatform.platformModules && S._clubPlatform.platformModules.pdfProfiel); }
 /* Voor AI-functies: via de club, of (team zonder club) via het team. */
 export function aiDoel(){ return S.team && S.team.club ? { clubId: S.team.club } : { teamId: S.teamId }; }
 let _soloAIGeladen = 0;

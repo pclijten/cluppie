@@ -159,6 +159,11 @@ const beoordeelClubAanmelding = onCall({ region: REGIO, cors: true }, async (req
     bron: 'aanmelding', gemaakt: FieldValue.serverTimestamp(),
   });
   await ref.update({ status: 'goedgekeurd', clubId: clubRef.id, beoordeeld: FieldValue.serverTimestamp() });
+  /* [20261114a] Begon de aanvrager al als trainer zonder club (snelstart), dan gaan zijn losse teams
+     meteen mee naar de nieuwe club: hij is trainer én clubbeheerder, dus beide akkoorden zijn er.
+     Zelfde overzetting als bij koppelen (zetTeamNaarClub): spelers en wedstrijden blijven bij het team,
+     andere coaches van het team worden clublid. */
+  const meegenomen = await neemLosseTeamsMee(db, { clubId: clubRef.id, clubNaam: a.clubNaam, uid: a.uid, naam });
   if (a.sportlinkClientId && naGoedkeuring){
     try { await naGoedkeuring(clubRef.id); } catch (e){ console.warn('[aanmelding] teamlijst ophalen mislukt', e.message || e); }
   }
@@ -168,6 +173,7 @@ const beoordeelClubAanmelding = onCall({ region: REGIO, cors: true }, async (req
     alineas: [
       `Hoi ${a.contactNaam},`,
       `Goed nieuws: ${a.clubNaam} staat klaar in Cluppie en jij bent clubbeheerder.`,
+      ...(meegenomen.length ? [`Je eigen ${meegenomen.length === 1 ? 'team' : 'teams'} (${meegenomen.join(', ')}) ${meegenomen.length === 1 ? 'staat' : 'staan'} nu ook bij de club, met alle spelers en wedstrijden.`] : []),
       'Log in met hetzelfde account waarmee je je aanmeldde. Op de clubpagina vind je "Aan de slag": zeven korte stappen om de club in te richten. Meestal ben je in een kwartier klaar.',
     ],
     /* zelfde zeven stappen als STAPPEN in public/js/startlijst.js */
@@ -175,8 +181,25 @@ const beoordeelClubAanmelding = onCall({ region: REGIO, cors: true }, async (req
     knop: { tekst: 'Naar Cluppie', url: APP_URL },
     slot: ['Loop je ergens op vast? Antwoord gerust op deze mail.', 'Veel plezier!\nCluppie'],
   }));
-  return { ok: true, clubId: clubRef.id };
+  return { ok: true, clubId: clubRef.id, meegenomen };
 });
+
+/* Losse teams (zonder club) van deze trainer naar de club. Fouten per team blokkeren de goedkeuring niet. */
+async function neemLosseTeamsMee(db, { clubId, clubNaam, uid, naam }){
+  const namen = [];
+  let snap;
+  try { snap = await db.collection('teams').where(`leden.${uid}`, '==', true).get(); }
+  catch (e){ console.warn('[aanmelding] eigen teams opzoeken mislukt', e.message || e); return namen; }
+  const { zetTeamNaarClub } = require('./toegang');
+  for (const d of snap.docs){
+    if (d.data().club) continue;
+    try {
+      await zetTeamNaarClub(db, { clubId, club: { naam: clubNaam }, teamId: d.id, uid, naam });
+      namen.push(d.data().naam || 'team');
+    } catch (e){ console.warn('[aanmelding] team meenemen mislukt', d.id, e.message || e); }
+  }
+  return namen;
+}
 
 /* Nieuwe coach-aanvraag → mail aan de clubbeheerders, hooguit één per club per dag. */
 const meldNieuweAanvraag = onDocumentCreated({ document: 'aanvragen/{id}', region: REGIO }, async (event) => {
@@ -209,4 +232,4 @@ const meldNieuweAanvraag = onDocumentCreated({ document: 'aanvragen/{id}', regio
 let naGoedkeuring = null;
 const zetNaGoedkeuring = fn => { naGoedkeuring = fn; };
 
-module.exports = { meldClubAan, beoordeelClubAanmelding, meldNieuweAanvraag, controleerAanmelding, afkVoorstel, zetNaGoedkeuring };
+module.exports = { meldClubAan, beoordeelClubAanmelding, meldNieuweAanvraag, controleerAanmelding, afkVoorstel, zetNaGoedkeuring, neemLosseTeamsMee };

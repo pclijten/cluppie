@@ -110,6 +110,31 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['oefeningen', 'vormIds', 'bibliotheekBijgewerktMs']);
     }
 
+    /* ======================= privé-rondebeoordelingen ======================= */
+    /* [20261114a] Volledige beoordelingen die bij een evaluatieronde van de club horen (winter, lente),
+       gepoort uit ASV'33 PR #60. Top-level i.p.v. onder teams/{id}, zodat de teamregel er niet bij kan:
+       andere trainers van het team lezen ze NIET. Wie wel leest staat in het document (zichtbaarVoor:
+       schrijver, clubbeheerders, hoofd jeugd, coördinatoren van de bouw), vastgelegd bij opslaan.
+       De app vraagt altijd op met zichtbaarVoor array-contains <eigen uid>. */
+    match /beoordelingenPrive/{beoordelingId} {
+      allow read: if echt() && uid() in resource.data.get('zichtbaarVoor', []);
+      allow create: if echt()
+        && request.resource.data.teamId is string
+        && magSchrijven(request.resource.data.teamId)
+        && request.resource.data.club == teamClub(request.resource.data.teamId)
+        && request.resource.data.door.uid == uid()
+        && request.resource.data.zichtbaarVoor is list
+        && uid() in request.resource.data.zichtbaarVoor;
+      allow update: if echt()
+        && resource.data.door.uid == uid()
+        && request.resource.data.door.uid == uid()
+        && request.resource.data.teamId == resource.data.teamId
+        && request.resource.data.club == resource.data.club
+        && request.resource.data.zichtbaarVoor is list
+        && uid() in request.resource.data.zichtbaarVoor;
+      allow delete: if echt() && resource.data.door.uid == uid();
+    }
+
     /* ======================= clubs ======================= */
     /* KNVB-speeldagen per district en seizoen (id "2026-27_zuid1"): elke ingelogde gebruiker leest,
        alleen de platformbeheerder schrijft. Clubs krijgen hun kalender hier automatisch uit. */

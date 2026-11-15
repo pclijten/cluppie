@@ -23,8 +23,9 @@
 import {
   db, storage, collection, addDoc, serverTimestamp, sRef, uploadBytes, getDownloadURL, deleteObject
 } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261115d';
-import { telGebruik } from './tracker.js?v=20261115d';
+import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261115e';
+import { telGebruik } from './tracker.js?v=20261115e';
+import { pdfProfielNu, pdfOmzettenAan } from './clubconfig.js?v=20261115e';
 
 /* [20261013c] AI-model per upload. Alleen een sleutel; de Cloud Function
    structureerTraining koppelt die aan een model (whitelist). */
@@ -228,7 +229,7 @@ const waarschuw = e => { e.preventDefault(); e.returnValue = ''; };
 const MAX_TEGELIJK = 3;
 let actief = 0;
 let aiBelofte = null;
-const aiModule = () => (aiBelofte ||= import('./training-ai.js?v=20261115d'));
+const aiModule = () => (aiBelofte ||= import('./training-ai.js?v=20261115e'));
 
 function volgende(){
   for (const job of jobs){
@@ -284,14 +285,15 @@ async function verwerkItem(job, it, ai){
   const veiligeNaam = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
   const pdfPath = `clubs/${job.clubId}/trainingen/${mapId}/${veiligeNaam}`;
 
-  const { paginas, diagramBlobs, bytes } = await ai.leesPdf(file);
+  const profiel = pdfProfielNu();   // [20261114a] PDF-profiel van de club
+  const { paginas, diagramBlobs, bytes } = await ai.leesPdf(file, profiel);
   const pdfRef = sRef(storage, pdfPath);
   await uploadBytes(pdfRef, new Blob([bytes], { type:'application/pdf' }), { contentType:'application/pdf' });
   const pdfUrl = await getDownloadURL(pdfRef);
-  const diagramUrls = await ai.uploadDiagrammen(job.clubId, mapId, diagramBlobs);
+  const diagramRuw = await ai.uploadDiagrammen(job.clubId, mapId, diagramBlobs);
 
   let oefeningen = null, doelen = [];
-  for (let poging = 0; poging < 2 && !oefeningen; poging++){
+  for (let poging = 0; poging < 2 && !oefeningen && pdfOmzettenAan(); poging++){   // [20261114a] omzetten uit: meteen naar "alleen PDF"
     try { ({ oefeningen, doelen } = await ai.structureer(paginas, it.aiModel || 'standaard')); }
     catch(e){ console.warn('[wachtrij] AI-poging', poging + 1, 'mislukt', e); }
   }
@@ -301,10 +303,11 @@ async function verwerkItem(job, it, ai){
     return;
   }
   telGebruik('training_upload');
+  const diagramUrls = ai.koppelDiagrammen(diagramRuw, oefeningen, profiel);
   const score = ai.berekenScore(paginas.map(p => p.tekst).join(' '), oefeningen);
   if (!ai.scoreGoed(score)){
     it.status = 'check';
-    it.aiCtx = { mapId, pdfPath, pdfUrl, diagramUrls, oefeningen, doelen, score, paginas };
+    it.aiCtx = { mapId, pdfPath, pdfUrl, diagramRuw, diagramUrls, oefeningen, doelen, score, paginas };
     return;
   }
   const doelLijst = (Array.isArray(doelen) ? doelen : [])
@@ -498,7 +501,7 @@ function bevestigAfwijzen(job, items){
 async function afwijzen(job, it){
   const c = it.aiCtx;
   if (c?.pdfPath){
-    const paden = [c.pdfPath, ...Object.keys(c.diagramUrls || {}).map(n => `clubs/${job.clubId}/trainingen/${c.mapId}/diagram${n}.png`)];
+    const paden = [c.pdfPath, ...Object.keys(c.diagramRuw || c.diagramUrls || {}).filter(n => /^\d+$/.test(n)).map(n => `clubs/${job.clubId}/trainingen/${c.mapId}/diagram${n}.png`)];
     await Promise.all(paden.map(p => deleteObject(sRef(storage, p)).catch(() => {})));
   }
   it.status = 'weg';

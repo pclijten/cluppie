@@ -455,9 +455,35 @@ UITVOER — geef UITSLUITEND geldige JSON terug, geen uitleg eromheen, geen mark
 exports.structureerTraining = onCall(
   { region: REGIO, secrets: [ANTHROPIC_API_KEY], cors: true },
   async (request) => {
-    const { clubId: tClub, rol: tRol } = await vereisAI(request);
+    /* [20261114a] PDF-profiel per club en omzetten zonder AI-module (functions/pdf-profiel.js).
+       - proef: de platformbeheerder test een (nog niet bewaard) profiel in het platformcentrum; telt niet mee.
+       - anders: lid van de club; via de AI-limiet als AI aan staat, anders via de eigen PDF-limiet. */
+    const PDF = require('./pdf-profiel');
+    let profiel;
     /* [20261115d] ook namen van spelers en coaches uit de PDF-tekst halen, niet alleen e-mail en telefoon */
-    const tNamen = await namenVoorScrub(tClub, request.auth.uid, tRol);
+    let tNamen = [];
+    if (request.data?.proef === true){
+      if (!(await require('./platform').isPlatformBeheerder(request))) throw new HttpsError('permission-denied', 'Proberen kan alleen de platformbeheerder.');
+      profiel = PDF.schoonProfiel(request.data?.profiel);
+    } else {
+      const r = await vereisLid(request);
+      tNamen = await namenVoorScrub(r.clubId, request.auth.uid, r.rol);
+      const db = getFirestore();
+      const club = (await db.doc(PADEN.club(r.clubId)).get()).data() || {};
+      const beleid = PDF.pdfBeleid(club, require('./onderdelen').aiVanClub(club));
+      if (!beleid.aan) throw new HttpsError('failed-precondition', 'PDF omzetten staat niet aan voor deze club.');
+      if (beleid.viaAI) await vereisAI(request);
+      else {
+        const ref = db.doc(PADEN.aiGebruik(r.clubId, new Date().toISOString().slice(0, 7)));
+        await db.runTransaction(async tx => {
+          const pdf = (await tx.get(ref)).data()?.pdf || 0;
+          if (pdf >= beleid.limiet) throw new HttpsError('resource-exhausted', 'De maandlimiet voor PDF omzetten van deze club is bereikt.');
+          tx.set(ref, { pdf: pdf + 1, bijgewerkt: FieldValue.serverTimestamp() }, { merge: true });
+        });
+      }
+      profiel = PDF.schoonProfiel(club.platformModules?.pdfProfiel);
+    }
+    const extraPrompt = PDF.profielPrompt({ ...profiel, aanwijzing: scrubPII(profiel.aanwijzing) });
 
     // [20261013c] modelkeuze per upload: alleen sleutels uit de whitelist; het id bepaalt de server.
     const keuze = request.data?.model == null ? 'standaard' : String(request.data.model);
@@ -496,6 +522,7 @@ exports.structureerTraining = onCall(
 
     const system = [
       { type: 'text', text: TRAINING_SYSTEEM, cache_control: { type: 'ephemeral' } },
+      ...(extraPrompt ? [{ type: 'text', text: extraPrompt }] : []),
     ];
 
     const { tekst: rauw, stopReason } = await claude({

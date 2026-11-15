@@ -5,11 +5,12 @@
 // Bewuste verschillen (multi-tenant) staan in NEGEER; de rest is een kandidaat om te porten.
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const asv = process.argv[2];
 if (!asv) { console.error('Gebruik: node tools/pariteit.mjs <pad-naar-cluppieasv33>'); process.exit(1); }
 const A = fs.existsSync(path.join(asv, 'js')) ? path.join(asv, 'js') : asv;
-const B = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'public', 'js');
+const B = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'js');
 const NEGEER_MODULES = new Set(['sw.js', 'updates.js']);
 /* bewust anders in cluppie.io (stand 2026-10-11):
    DOC_CATEGORIEN/CATEGORIE_VOLGORDE → clubinstellingen · EIGEN_CLUB_RE_SL → sportlink-sleutel.js ·

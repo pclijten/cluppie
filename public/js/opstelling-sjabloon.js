@@ -24,12 +24,12 @@ import { db, collection, doc, setDoc, deleteDoc, updateDoc, onSnapshot, serverTi
 import {
   S, esc, meld, speler, spelerNaam, spelerNr,
   bewaakTerug, vangnetStilTerugAlsNodig, terugLaag
-} from './state.js?v=20261115d';
+} from './state.js?v=20261115e';
 import {
   FORMATIES, bouwSlots, LIJN_NAAM, parseFormatie,
   formatieBestaat, formatieNamen
-} from './config.js?v=20261115d';
-import { telGebruik, telNav } from './tracker.js?v=20261115d';
+} from './config.js?v=20261115e';
+import { telGebruik, telNav } from './tracker.js?v=20261115e';
 
 /* ---------- helpers ---------- */
 
@@ -609,7 +609,7 @@ function bevestigToepassen(sj, wid){
     // sluit het sjabloonscherm zodat de coach de bijgewerkte wedstrijd ziet
     sluitOverlay();
     // open de wedstrijd zodat het resultaat direct zichtbaar is
-    import('./wedstrijd.js?v=20261115d').then(m => m.openWedstrijd(wid)).catch(() => {});
+    import('./wedstrijd.js?v=20261115e').then(m => m.openWedstrijd(wid)).catch(() => {});
   }).catch(e => meld('Opslaan mislukt: ' + (e.code || e.message)));
 }
 

@@ -21,13 +21,13 @@
    Rechten staan in firestore.rules (zie TRAININGSCOORDINATOR-RULES.md); dit
    bestand levert alleen de weergave. */
 import { auth, db, signOut, collection, query, where, onSnapshot, getDocs } from './firebase.js?v=20261011g';
-import { S, esc, bewaakTerug, doeTerug } from './state.js?v=20261115d';
-import { BOUWEN, isoWeek, youtubeId, youtubeThumb, youtubeWatch } from './config.js?v=20261115d';
-import { bouwVanTeam, eigenBouwenVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261115d';
-import { oefHtml, diagramVoorOefening, openLightbox } from './training-weergave.js?v=20261115d';
-import { logoImgVoorDoc } from './clubconfig.js?v=20261115d';
+import { S, esc, bewaakTerug, doeTerug } from './state.js?v=20261115e';
+import { BOUWEN, isoWeek, youtubeId, youtubeThumb, youtubeWatch } from './config.js?v=20261115e';
+import { bouwVanTeam, eigenBouwenVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261115e';
+import { oefHtml, diagramVoorOefening, openLightbox } from './training-weergave.js?v=20261115e';
+import { logoImgVoorDoc } from './clubconfig.js?v=20261115e';
 import { ico } from './icons.js?v=20261110a';
-import { momentenVanTeam, DAGEN_LANG, DAGEN_KORT } from './trainingsmomenten.js?v=20261115d';
+import { momentenVanTeam, DAGEN_LANG, DAGEN_KORT } from './trainingsmomenten.js?v=20261115e';
 
 const T = {
   club: null, teams: [], trainingen: [], videos: [], laden: { teams: true, trainingen: true }, fout: '',
@@ -442,7 +442,7 @@ function oefenvormen(tr){
   if (oef.length){
     return oef.map((o, i) => ({ url: diagramVoorOefening(i + 1, tr.diagramUrls || {}), titel: `Oefenvorm ${i + 1}: ${o.titel || 'Oefening ' + (i + 1)}` })).filter(x => x.url);
   }
-  return Object.entries(tr.diagramUrls || {}).filter(([, u]) => u).sort((a, b) => Number(a[0]) - Number(b[0]))
+  return Object.entries(tr.diagramUrls || {}).filter(([k, u]) => u && /^\d+$/.test(k)).sort((a, b) => Number(a[0]) - Number(b[0]))
     .map(([, url], i) => ({ url, titel: `Oefenvorm ${i + 1}` }));
 }
 function htmlDetail(alle){
