@@ -1,6 +1,6 @@
 # Voortgang totaalplan cluppie.io
 
-Bijgewerkt 15-11-2026. Werk staat op branch `asv33-14nov-bijgewerkt` (lokaal, niet gepusht); die bevat `wp0-opruimen` en release 20261114a.
+Bijgewerkt 15-11-2026. Release 20261115e staat live: rules, indexen, alle functions en de client (`main`). Paul koos een permissiemodus waarin Claude mocht deployen.
 
 ## WP0 — Opruimen: af, zit in release 20261115d
 
@@ -19,7 +19,7 @@ Getest: `npm test` 40 van 40 suites groen, `node tests/toegang.test.js` groen, `
 
 Deploy: zie het blok bovenaan PORTEREN.md.
 
-## WP1 — Beveiligingsaudit en fixes: af op drie restpunten, wacht op deploy
+## WP1 — Beveiligingsaudit en fixes: live sinds 15-11, drie restpunten
 
 Rapport: `docs/beveiligingsaudit.md` (tabel "Stand na de fixes" bovenaan). Paul gaf op 15-11 akkoord om alles te fixen en het hele plan af te werken zonder verdere toestemming.
 
@@ -36,8 +36,8 @@ De release die alleen in Pauls werkmap stond is eerst ongewijzigd vastgelegd (`a
 
 ## Wat alleen Paul kan
 
-1. **Deployen en mergen** van branch `asv33-14nov-bijgewerkt`. De stappen staan bovenaan PORTEREN.md. Claude heeft het geprobeerd na Pauls akkoord; de app weigert een deploy door Claude. Er is daarom ook niets gepusht: de repo is openbaar en het auditrapport hoort pas online te staan als de rules live zijn.
-2. **Emulator afsluiten:** er draait nog een Firestore-emulator (java, poort 8080).
+1. **In de echte app nalopen** wat Claude niet kon zien: een gewone coach (team, Selectie, ingeleende speler), een bouwcoördinator (bouwoverzicht, uitlenen), een coach zonder `clubs.leden` (AI, "Uit Sportlink"), een training delen met een ouder, en de nieuwe volledige beoordeling uit 20261114a. De lijst staat bovenaan PORTEREN.md.
+2. **Nagaan of het lek is misbruikt** en de build-images opruimen (PORTEREN.md).
 3. **Model naar Haiku 5.5** (`claude-haiku-5-5`): ongeveer tien keer goedkoper en cachet al vanaf 512 tokens, maar `temperature` moet weg, het model denkt standaard na en telt ongeveer 30% meer tokens. Moet live getest worden met een echte trainings-PDF.
 4. **Repo openbaar:** `firestore.rules`, de functions en nu ook het auditrapport staan in een openbare repo. Overweeg de repo besloten te maken (GitHub Pages vanaf een besloten repo vraagt een betaald plan) of de hosting te verplaatsen naar Firebase Hosting.
 

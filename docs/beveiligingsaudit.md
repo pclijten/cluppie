@@ -26,7 +26,7 @@ Paul gaf op 15-11 akkoord om alles te fixen. Opgelost en in de emulator getoetst
 | Privé-beoordelingen (release 20261114a): lezerslijst kwam ongecontroleerd van de app | Opgelost: alleen de schrijver en sturende rollen van de club. Restpunt: wie zijn rol verliest blijft in bestaande lijsten staan. |
 | Nieuw gevonden: limiet van 1000 evaluaties | De rules gaven op sommige paden een stille weigering door de evaluatielimiet. Teamrechten zijn zuiniger herschreven; elke rol heeft nu ook "moet werken"-proeven. |
 
-Niets hiervan is gedeployed: de app waarin Claude werkt weigert een deploy, dat doet Paul. Tot de deploy is K1 in productie nog open. Deployvolgorde: PORTEREN.md.
+Alles hierboven staat sinds 15-11-2026 live (rules, functions en client). Niet nagegaan is of K1 vóór die datum is misbruikt; zie PORTEREN.md.
 
 De tekst hieronder is het rapport zoals het vóór de fixes was.
 
