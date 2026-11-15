@@ -432,12 +432,20 @@ zetSeed(`clubs/${CLUB}`, { ...store.get(`clubs/${CLUB}`), teams: Object.fromEntr
 async function zetTrainingen(){
   const [{ BIBLIOTHEEK }, { vormSvg }] = await Promise.all([import('./trainingsbibliotheek.js'), import('./trainingsvorm-svg.js')]);
   const vormen = BIBLIOTHEEK.vormen;
-  const lijst = (kop, items) => (Array.isArray(items) && items.length ? [{ kop, type: 'lijst', items: items.map(String) }] : []);
+  /* [20261116i] Zelfde blokken als een echte training (7 vaste velden, zie oefeningVan in seizoensplan-club.js),
+     zodat de demo ook het spelverloop en de uitwerking per oefening laat zien. */
+  const lijst = (veld, kop, items) => (Array.isArray(items) && items.length ? [{ veld, kop, type: 'lijst', items: items.map(String) }] : []);
+  const tekst = (veld, kop, t) => (String(t || '').trim() ? [{ veld, kop, type: 'tekst', tekst: String(t) }] : []);
+  const verloop = v => { const l = v.tekening?.lijnen || []; if (l.length < 4 || !l.every(x => x.tekst)) return []; let fase = ''; return l.filter(x => !x.samen).map(x => { const kop = x.fase && x.fase !== fase ? x.fase + ': ' : ''; fase = x.fase || fase; return kop + x.tekst; }); };
+  const materiaal = v => Object.entries(v.materiaal || {}).filter(([, n]) => n > 0).map(([k, n]) => `${n} ${k}`).concat(v.materiaalExtra || []);
   const oefening = (v, slot, minuten) => ({
     titel: v.naam,
-    blokken: [{ kop: 'Tijd en groepen', type: 'tekst', tekst: `${minuten} minuten · ${slot}` }, ...(v.uitleg ? [{ kop: 'Uitleg', type: 'tekst', tekst: v.uitleg }] : []),
-      ...lijst('Organisatie', v.organisatie), ...lijst('Regels', v.regels), ...lijst('Coachpunten', v.coachpunten), ...lijst('Coachvragen', v.coachvragen),
-      ...lijst('Makkelijker', v.makkelijker), ...lijst('Moeilijker', v.moeilijker)],
+    blokken: [...tekst('doel', 'Doel', v.doel), ...lijst('doel', 'Zo zie je dat het lukt', v.lukt), ...tekst('doel', 'Waarom dit werkt', v.inzicht),
+      { veld: 'tijd', kop: 'Tijdbestek', type: 'tekst', tekst: `${minuten} minuten · ${slot}` }, ...lijst('mat', 'Benodigdheden', materiaal(v)),
+      ...tekst('uitleg', 'Uitleg', v.uitleg), ...lijst('uitleg', 'Organisatie', v.organisatie), ...lijst('uitleg', 'Spelverloop', verloop(v)), ...lijst('uitleg', 'Regels', v.regels), ...lijst('uitleg', 'Veiligheid', v.letOp),
+      ...lijst('diff', 'Makkelijker', v.makkelijker), ...lijst('diff', 'Moeilijker', v.moeilijker), ...lijst('diff', 'Kijk en grijp in', (v.alsDan || []).map(x => `${x.zie} → ${x.doe}`)),
+      ...lijst('coach', 'Coachpunten', v.coachpunten), ...lijst('coach', 'Coachvragen', v.coachvragen), ...tekst('coach', 'Tel mee', v.meet), ...tekst('coach', 'Spelers aan zet', v.regie),
+      ...lijst('spel', 'Spelvormen', (v.varianten || []).map(x => `${x.naam}: ${x.uitleg}`))],
     svg: v.tekening ? vormSvg(v, v.veld) : '', bron: { vormId: v.id, slot, minuten, spelers: null },
   });
   const THEMAS = ['Positiespel opbouw', 'Storen en veroveren', 'Scoren', 'Uitspelen 1:1', 'Teamsport en plezier'];

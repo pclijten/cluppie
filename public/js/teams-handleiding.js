@@ -110,13 +110,25 @@ export function htmlHandleiding(){
     <div class="tip">Leeftijd gaat voor de speelwijze: druk zetten en omschakelen als team komt standaard vanaf O12, vaste posities vanaf O10. Zonder speelwijze werkt alles zoals altijd, op het thema van de week. De speelwijze is een eigen ontwerp op basis van ervaring van trainers, geen gevalideerde test.</div>
     </section>
 
-    <section class="hl-sec" data-zoek="🎬 oefening in 3d spelverloop stappen bij elke vorm kies je boven de tekening tussen tekening en 3d. in 3d zie je het hele spelverloop stap voor stap: vorige, afspelen, volgende, opnieuw, en schuifjes voor hoek en draai. stappen die tegelijk gebeuren (pass en loopactie) spelen samen. bij vormen met een uitgeschreven verloop staat de naam van de fase erbij (opbouw, doorbreken, afronden, omschakelen) en staat het spelverloop ook in het veld uitleg. heeft een vorm maar een of twee pijlen in de tekening, dan laat 3d daarna een voorbeeld van het vervolg zien: druk van de tegenstander, de pass naar de vrije speler, doorlopen en afronden. dat staat erbij als voorbeeld van het vervolg en is geen vaste afspraak van de oefening.">
+    <section class="hl-sec" data-zoek="🎬 oefening in 3d spelverloop stappen bij elke vorm kies je boven de tekening tussen tekening en 3d. in 3d zie je het hele spelverloop stap voor stap: vorige, afspelen, volgende, opnieuw, en schuifjes voor hoek en draai. stappen die tegelijk gebeuren (pass en loopactie) spelen samen. elke oefening heeft een uitgeschreven verloop in fases (opbouw, doorbreken, afronden, omschakelen): de reactie van de tegenstander, de afronding en wat er daarna gebeurt. eigen vorm van de club zonder stappen voorbeeld van het vervolg">
     <h3>🎬 Oefening in 3D: het hele spelverloop</h3>
     <p>Bij elke vorm kies je boven de tekening tussen <b>Tekening</b> en <b>3D</b>. In 3D zie je het spelverloop stap voor stap, met Vorige, Afspelen, Volgende en Opnieuw. Stappen die tegelijk gebeuren (een pass en een loopactie) spelen samen.</p>
     <ul>
-      <li>Bij vormen met een uitgeschreven verloop staat de fase erbij (bijvoorbeeld Opbouw, Doorbreken, Afronden, Omschakelen). Hetzelfde verloop staat in het veld <b>Uitleg</b>.</li>
-      <li>Heeft een vorm maar één of twee pijlen, dan laat 3D daarna een <b>voorbeeld van het vervolg</b> zien: druk van de tegenstander, de pass naar de vrije speler, doorlopen en afronden. Dat is een voorbeeld op basis van de opstelling, geen vaste afspraak van de oefening.</li>
+      <li>Elke oefening uit de bibliotheek heeft een uitgeschreven verloop in fases (bijvoorbeeld Opbouw, Doorbreken, Afronden, Omschakelen). Je ziet ook wat de tegenstander doet en wat er na de afronding gebeurt. Hetzelfde verloop staat in het veld <b>Uitleg</b>.</li>
+      <li>De tekening laat alleen de eerste stappen zien, zodat hij leesbaar blijft. De rest zie je in 3D.</li>
+      <li>Heeft een eigen vorm van je club maar één of twee pijlen, dan laat 3D daarna een <b>voorbeeld van het vervolg</b> zien. Dat is een voorbeeld op basis van de opstelling, geen vaste afspraak van de oefening.</li>
     </ul>
+    </section>
+
+    <section class="hl-sec" data-zoek="🔎 oefenkaart lezen zo zie je dat het lukt waarom dit werkt kijk en grijp in zie je doe dan tel mee richtpunt spelers aan zet regie differentiatie coachmomenten doel succes ingrijpen aanpassen te makkelijk te moeilijk tellen meten kopballen koppen knvb advies">
+    <h3>🔎 Zo lees je een oefening</h3>
+    <p>Elke oefening heeft dezelfde zeven velden. In drie daarvan staat extra hulp voor langs de lijn:</p>
+    <ul>
+      <li><b>Doel</b>: <i>Zo zie je dat het lukt</i> (twee dingen die je kunt zien, zonder te hoeven raden) en <i>Waarom dit werkt</i> (één zin over het idee achter de oefening).</li>
+      <li><b>Differentiatie</b>: <i>Kijk en grijp in</i>. Per oefening twee situaties die vaak voorkomen: wat je ziet, en wat je dan verandert aan het vak, de regels of de telling. Je past de oefening aan in plaats van hem stil te leggen.</li>
+      <li><b>Coachmomenten</b>: <i>Tel mee</i> (één ding om te tellen, met een richtpunt) en <i>Spelers aan zet</i> (één manier om de spelers zelf iets te laten kiezen of bedenken).</li>
+    </ul>
+    <p>De richtpunten zijn een houvast, geen norm. Haalt je groep het makkelijk, maak het dan moeilijker; lukt het bijna nooit, maak het dan makkelijker. Bij oefeningen met koppen staat onder Veiligheid het advies van de KNVB over het aantal kopballen en de hersteltijd.</p>
     </section>
 
     <section class="hl-sec" data-zoek="📆 seizoen jaarlijn blokken bijsturing seizoensplan club eigen plan alleen lezen coördinator opzet opbouwmodel leercurve vrije weken trainingen per week duur accent signalen thema-check evaluatie">

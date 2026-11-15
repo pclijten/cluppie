@@ -72,6 +72,9 @@ Paul gaf op 15-11 akkoord om WP2 t/m WP9 zelfstandig te maken. Eerlijk over wat 
 
 | Wat | Reden | Geraakte gebruikerstypen |
 |---|---|---|
+| Alle 326 oefeningen met de hand uitgewerkt: spelverloop in fases, zo zie je dat het lukt, kijk en grijp in, tel mee, spelers aan zet, waarom dit werkt (20261116i) | Bestaande oefeningen hadden één of twee pijlen en geen hulp om langs de lijn te zien of het lukt en wat je dan aanpast | Alle rollen die trainingen zien of maken |
+| Losse ballen in tekening en 3D (`tekening.ballen`) | Ballenspellen en afwerkrijen waren niet te tonen met één spelbal | Coach, coördinatoren, eindbaas (Platform › Bibliotheek) |
+| Platform › Bibliotheek en Excel: nieuwe velden en principes per oefening bewerkbaar | De koppeling oefening ↔ speelwijze was niet aan te passen zonder code | Eindbaas |
 | Tegoed op → "AI staat uit" in plaats van algemene fout | Na het spendlimiet kreeg de coach een melding die naar een storing wees | Coach, coördinatoren, hoofd jeugd, clubadmin; losse trainer als solo-AI aan staat |
 | Chatbot toont de reden van de server | "Even niet bereikbaar" bij AI uit of limiet bereikt is onjuist | Iedereen met AI |
 | Logregel met cache-tokens | Zonder meting is niet te zeggen of caching werkt | Eindbaas (kosten) |

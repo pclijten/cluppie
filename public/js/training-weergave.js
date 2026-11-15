@@ -165,6 +165,10 @@ function htmlVeldenVan(blokken){
     const eerste = bs[0], kort = eerste.type === 'lijst' ? (eerste.items || []).join(' · ') : (eerste.tekst || '');
     const inhoud = bs.map(b => {
       const kop = b.kop && b.kop !== naam && !(id === 'tijd' && b.kop === 'Tijdbestek') ? `<div class="ok-sub">${esc(SUBKOP[b.kop] || b.kop)}</div>` : '';
+      /* [20261116i] uitwerking per oefening, in dezelfde opmaak als de oefenkaart */
+      if (b.kop === 'Kijk en grijp in' && b.type === 'lijst') return `${kop}<div class="ok-alsdan">${(b.items || []).map(x => { const [zie, ...doe] = String(x).split(' → '); return `<div><span class="zie">${esc(zie)}</span>${doe.length ? `<span class="doe">${esc(doe.join(' → '))}</span>` : ''}</div>`; }).join('')}</div>`;
+      if (b.kop === 'Waarom dit werkt' && b.type !== 'lijst') return `<p class="ok-waarom"><b>Waarom dit werkt:</b> ${esc(b.tekst)}</p>`;
+      if (b.kop === 'Tel mee' && b.type !== 'lijst') return `${kop}<p class="ok-meet">${esc(b.tekst)}</p>`;
       if (b.type === 'lijst') return `${kop}<ul class="ok-ul">${(b.items || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
       return `${kop}${b.kop === 'Uitleg' ? `<div class="ok-zeg">${esc(String(b.tekst).replace(/^Zeg:\s*/i, ''))}</div>` : `<p>${esc(b.tekst)}</p>`}`;
     }).join('');
