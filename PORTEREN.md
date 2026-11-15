@@ -10,6 +10,13 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
 
 ## Open
+**Voor Paul — Oefenkaart met 7 vaste velden + 134 nieuwe vormen (release 20261115a, branch `oefenkaart-7-velden`)**
+- [ ] PR reviewen en mergen. Alleen client: geen rules-, functions- of index-deploy. Mockup "Cluppie oefenkaart: 7 vaste velden" goedgekeurd op 14-11 ("super"); analyse in `claude/trainer360-oefenbasis-impactanalyse.md`.
+- [ ] Wat er is: `oefenkaart.js` (pure functies `zevenVelden`, `htmlZevenVelden`) vervangt de vier tabbladen in Training maken door 7 openklapbare velden (Doel, Tijdbestek, Benodigdheden, Uitleg, Differentiatie, Coachmomenten, Spelvormen; standaard staat Uitleg open). Elke vorm heeft een veld `tijd` (5/10/15/20; voor de oude vormen afgeleid uit de rondes in `tools/trainingsbibliotheek/index.mjs`) en optioneel `materiaalExtra` (bijv. "1 groot doel"). Planner: alle blokken veelvouden van 5 (`OPBOUW` 45 = 10/10/10/10, 60 = 10/15/15/15, 75 = 10/15/15/20), weer schuift in blokken van 5, nieuwe controle `blokken`; vormen die alleen verkleind passen en dan te weinig ruimte per speler hebben, vallen af in de score.
+- [ ] Bibliotheek 169 → 303 vormen (`vormen-m/n/o/p.mjs`, eigen tekst en tekening). Platform › Bibliotheek: Excel heeft nu kolommen `tijdbestek`, `overigMateriaal` en `spelvormen` (één per regel, "naam: uitleg"); de controle bij bewaren eist de 7 velden.
+- [ ] Na het mergen: bestaande overlays in `platform/bibliotheek/vormen` zonder `tijd` krijgen bij bewerken de foutmelding "Tijdbestek is 5, 10, 15 of 20 minuten"; vul dat veld dan in.
+- [ ] Getest: `npm test` (nieuw `tests/zeven-velden.test.mjs`; planner 5520 proefplannen groen), ESLint `no-undef`, de kaart gerenderd met `styles.css` op 414×896 (2×) en 1440 breed, donker, zonder consolefouten. Niet tegen echte Firebase en het hele scherm Training maken niet in een browser doorlopen.
+
 **Voor Paul — Over-pagina: demo weg, zelf proberen, blok "Samen" (PR #64, branch `over-demo-samen`)**
 - [ ] PR mergen. Alleen `over.html` en `over/over.css`, geen deploy nodig.
 - [ ] Demo-venster verwijderd (op de telefoon viel de onderkant van de app buiten beeld). Knoppen worden "Begin met je eigen team" / "Club aanmelden". Nieuw blok "Samen maken we het mooi en makkelijk" (eigen trainingen erin, maatwerk, nog in ontwikkeling). `index.html?demo` bestaat nog maar wordt niet meer gelinkt.

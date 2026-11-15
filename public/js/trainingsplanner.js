@@ -6,7 +6,7 @@
    ========================================================================== */
 
 import { LEERCURVE } from './config.js?v=20261113b';
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019f';
+import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261115a';
 import { haalbaar, MATERIAAL_NAAM, MAX_INTENSITEIT_VOOR_WEDSTRIJD, dagVoorWedstrijd, ruimteM2 } from './trainingscontext-logica.js?v=20261019a';
 export { LEERCURVE };
 
@@ -18,11 +18,14 @@ export { LEERCURVE };
 export const MAX_VORM = 15;          /* minuten per vorm */
 export const MAX_PARTIJ = 20;        /* partijspel, alleen met onderbreking */
 export const MAX_VORMEN = 4;
+export const BLOK = 5;               /* tijdbestek per vorm in stappen van 5 minuten */
+export const TIJDEN = [5, 10, 15, 20];
 export const DUREN = [45, 60, 75];
 export const OPBOUW = {
-  45: { onderdelen: [ s('warming-up', 8),  s('kern1', 10), s('kern2', 10), s('partij', 12) ], overgang: { ontvangst: 1, tussen: 3, afsluiting: 1 } },
-  60: { onderdelen: [ s('warming-up', 10), s('kern1', 14), s('kern2', 14), s('partij', 15) ], overgang: { ontvangst: 2, tussen: 3, afsluiting: 2 } },
-  75: { onderdelen: [ s('warming-up', 12), s('kern1', 15), s('kern2', 15), s('partij', 20) ], overgang: { ontvangst: 3, tussen: 6, afsluiting: 4 } },
+  /* [20261115a] Elk blok duurt een veelvoud van 5 minuten (5, 10, 15 of 20); de rest is ontvangst, wissels en drinken. */
+  45: { onderdelen: [ s('warming-up', 10), s('kern1', 10), s('kern2', 10), s('partij', 10) ], overgang: { ontvangst: 1, tussen: 3, afsluiting: 1 } },
+  60: { onderdelen: [ s('warming-up', 10), s('kern1', 15), s('kern2', 15), s('partij', 15) ], overgang: { ontvangst: 1, tussen: 3, afsluiting: 1 } },
+  75: { onderdelen: [ s('warming-up', 10), s('kern1', 15), s('kern2', 15), s('partij', 20) ], overgang: { ontvangst: 3, tussen: 8, afsluiting: 4 } },
 };
 /* Oude trainingsduren (90 minuten) en losse waarden komen uit bij de dichtstbijzijnde keuze. */
 export const kiesDuur = (d) => { d = Number(d) || 60; return d <= 52 ? 45 : d <= 67 ? 60 : 75; };
@@ -52,12 +55,15 @@ export function opbouwVoor(duur, weer){
     let vrij = 0;
     if (overgang.ontvangst > 1){ vrij += overgang.ontvangst - 1; overgang.ontvangst = 1; }
     const minTussen = 2;
-    if (overgang.tussen > minTussen){ const d = Math.min(2, overgang.tussen - minTussen); vrij += d; overgang.tussen -= d; }
-    for (const [k, max] of [['warming-up', 12], ['partij', MAX_PARTIJ]]){ const o = sl(k); const d = Math.min(vrij, max - o.minuten); o.minuten += d; vrij -= d; }
-    overgang.tussen += vrij;                                   /* wat nergens past, blijft pauze */
+    if (overgang.tussen > minTussen){ vrij += overgang.tussen - minTussen; overgang.tussen = minTussen; }
+    /* alleen in blokken van 5 minuten erbij: eerst de warming-up (max 15), dan het partijspel (max 20) */
+    for (const [k, max] of [['warming-up', 15], ['partij', MAX_PARTIJ]]){ const o = sl(k); while (vrij >= BLOK && o.minuten + BLOK <= max){ o.minuten += BLOK; vrij -= BLOK; } }
+    overgang.afsluiting += vrij;                               /* wat niet in een blok van 5 past: langer uitlopen, warm blijven */
   } else if (weer === 'warm'){
-    const p = sl('partij'); const d = Math.min(2, p.minuten - 10);
-    p.minuten -= d; overgang.tussen += d;
+    /* 5 minuten extra drinkpauze: van het partijspel af, of bij een korte training van de warming-up (bij warmte hoef je minder op te warmen) */
+    const p = sl('partij'), w = sl('warming-up');
+    const van = p.minuten >= 15 ? p : (w.minuten >= 10 ? w : null);
+    if (van){ van.minuten -= BLOK; overgang.tussen += BLOK; }
   }
   return { onderdelen, overgang };
 }
@@ -321,7 +327,13 @@ function score(v, o){
   if (o.weer === 'warm' && v.intensiteit === 3) sc -= 4;
   if (o.ruimte && o.slot !== 'afsluiting'){                                                                /* past de vorm op het veld dat er is? */
     const gr2 = groepsindeling(v, o.aantalSpelers), vd = schaalVeld(v, gr2.groepGrootte);
-    if (vd.b * vd.l * gr2.groepen > o.ruimte) sc -= 6;
+    const nodig = vd.b * vd.l * gr2.groepen;
+    if (nodig > o.ruimte){
+      sc -= 6;
+      /* past het pas na verkleinen, en wordt de ruimte per speler dan te klein, dan valt de vorm in de praktijk af */
+      const perSpeler = (vd.b * vd.l * (o.ruimte / nodig)) / gr2.groepGrootte;
+      if (perSpeler < (RUIMTE_PER_SPELER[v.fase] || [0])[0]) sc -= 30;
+    }
   }
   if (o.slot === 'kern1' && v.fase === 'positiespel') sc += 1;
   if ((o.slot === 'kern1' || o.slot === 'kern2') && v.voetbalecht) sc += 3;   /* ruim de helft van de tijd voetbalecht */
@@ -395,7 +407,9 @@ export function valideer(plan){
   c.push({ id: 'vormduur', ok: lang.length === 0, tekst: lang.length ? `Te lang zonder onderbreking: ${lang.map(o => o.vorm.naam).join(', ')}` : `Elke vorm duurt maximaal ${MAX_VORM} minuten (partijspel ${MAX_PARTIJ} met onderbreking)` });
 
   const wu = ond[0];
-  c.push({ id: 'warmingup', ok: !!wu && wu.vorm.fase === 'warming-up' && wu.minuten <= 12, tekst: 'De warming-up is een korte spelvorm die past bij de leeftijd' });
+  const geenBlok = ond.filter(o => !TIJDEN.includes(o.minuten));
+  c.push({ id: 'blokken', ok: geenBlok.length === 0, tekst: geenBlok.length ? `Geen blok van 5, 10, 15 of 20 minuten: ${geenBlok.map(o => `${o.vorm.naam} (${o.minuten} min)`).join(', ')}` : 'Elk onderdeel duurt 5, 10, 15 of 20 minuten' });
+  c.push({ id: 'warmingup', ok: !!wu && wu.vorm.fase === 'warming-up' && wu.minuten <= 15, tekst: 'De warming-up is een korte spelvorm die past bij de leeftijd' });
 
   const vb = ond.filter(o => o.vorm.voetbalecht).reduce((a, o) => a + o.minuten, 0);
   const vbPct = totaal ? Math.round(100 * vb / totaal) : 0;
