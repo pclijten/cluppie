@@ -56,6 +56,7 @@ const { defineSecret } = require('firebase-functions/params');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const admin = require('firebase-admin');
 const { KENNIS_TEKST } = require('./kennis');
+const { foutVanAntwoord, verbruikRegel } = require('./ai-fout');
 const avg = require('./avg');
 const toegang = require('./toegang');
 const { scrubPII, namenVoorScrub } = avg;
@@ -208,15 +209,14 @@ async function claude({ apiKey, system, messages, maxTokens = 700, temperature =
   if (!res.ok){
     const tekst = await res.text().catch(() => '');
     console.error('[claude] API-fout', res.status, tekst.slice(0, 500));
-    // 429 en 5xx zijn tijdelijk: 'unavailable'. Een 4xx (400/401/403/404) betekent dat
-    // ónze aanvraag of sleutel is afgewezen: dat is geen storing van het model en
-    // hoort niet als 'niet bereikbaar' (503) bij de app terecht te komen.
-    if (res.status === 429 || res.status >= 500){
-      throw new HttpsError('unavailable', 'Het taalmodel is even niet bereikbaar.');
-    }
-    throw new HttpsError('internal', 'Het AI-verzoek is afgewezen door het taalmodel. Dit ligt aan de instelling van de app, niet aan jouw invoer.');
+    // [20261115d] 429 en 5xx zijn tijdelijk ('unavailable'); tegoed of bestedingslimiet op is
+    // 'failed-precondition' (AI staat dan uit, geen storing); elke andere 4xx betekent dat ónze
+    // aanvraag of sleutel is afgewezen en hoort niet als 'niet bereikbaar' (503) bij de app te komen.
+    const fout = foutVanAntwoord(res.status, tekst);
+    throw new HttpsError(fout.code, fout.bericht);
   }
   const data = await res.json();
+  console.log(verbruikRegel(model, data.usage));
   const tekst = (data.content || [])
     .filter(b => b.type === 'text')
     .map(b => b.text)

@@ -163,9 +163,14 @@ async function verstuur(vraag){
     naspel(schoon, hfd);
   } catch (err){
     tik(false);
-    const reden = err?.code === 'unauthenticated'
+    /* [20261115d] de foutcode komt van Firebase als 'functions/…'. Staat AI uit, is de limiet bereikt of
+       is de vraag ongeldig, dan zegt de server waarom; alleen bij een echte storing 'even niet bereikbaar'. */
+    const code = String(err?.code || '').replace('functions/', '');
+    const reden = code === 'unauthenticated'
       ? 'Log opnieuw in om de hulp te gebruiken.'
-      : 'De hulp is even niet bereikbaar. Probeer het zo nog eens.';
+      : ['failed-precondition', 'resource-exhausted', 'permission-denied', 'invalid-argument'].includes(code) && err?.message
+        ? err.message
+        : 'De hulp is even niet bereikbaar. Probeer het zo nog eens.';
     bot(esc(reden));
     console.error('[chatbot] fout:', err?.code, err?.message);
   } finally {

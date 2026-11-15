@@ -3,11 +3,11 @@
 // Draaien: node tests/sleutel.test.mjs
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const { teamSleutel } = await import(path.join(root, 'public/js/sportlink-sleutel.js'));
+const { teamSleutel } = await import(pathToFileURL(path.join(root, 'public/js/sportlink-sleutel.js')).href);
 
 const src = fs.readFileSync(path.join(root, 'functions/index.js'), 'utf8');
 function haalFunctie(naam){
