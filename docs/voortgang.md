@@ -19,10 +19,17 @@ Getest: `npm test` 40 van 40 suites groen, `node tests/toegang.test.js` groen, `
 
 Nodig bij P4: `firebase deploy --only functions:chatHulp,functions:structureerTraining,functions:genereerVerslagAI,functions:samenvatHotspot,functions:vatDoelenSamen,functions:analyseerBeleidsplan,functions:personaliseerTraining,functions:seizoensVoorstel --project cluppie-ad329` (alle functies die `claude()` gebruiken). Geen nieuwe callables, dus geen invoker.
 
+## WP1 — Beveiligingsaudit: rapport af, wacht op P1
+
+`docs/beveiligingsaudit.md`. 47 proeven in de Firestore-emulator met vaste fictieve accounts per gebruikerstype (`tests/audit-rules.test.mjs`, `npm run audit:rules`): 29 in orde, 18 afwijkingen. Eén kritiek (elke coach schrijft het hele teamdocument, met een route naar Sportlink-namen van andere clubs), drie hoog, zeven middel, zeven laag. Er is nog niets aan de rules gewijzigd.
+
+Open in WP1: Storage-rules testen, functions van begin tot eind, rolwissels, release 20261114a. Daarna de fixes, in de volgorde uit het rapport.
+
 ## Beslispunten voor Paul
 
 1. **Release 20261114a staat alleen in je lokale werkmap.** Branch `asv33-14nov`, 103 gewijzigde en 6 nieuwe bestanden, niet gecommit en niet op GitHub. `main` is intussen drie releases verder (20261115a t/m c); 93 bestanden overlappen, waarvan 19 met echte inhoudsverschillen (onder andere `teams-spelers.js`, `platform-centrum.js`, `styles.css`, `club.js`). Ik heb er niets aan veranderd. Voorstel: ik commit het op zijn eigen branch en werk het bij naar `main` in een aparte PR, vóór de fixes van WP1.
-2. **Model naar Haiku 5.5** (`claude-haiku-5-5`): ongeveer tien keer goedkoper ($0,10 / $0,50 per miljoen tokens tegenover $1 / $5) en cachet al vanaf 512 tokens. Het is geen kale id-wissel: `temperature` moet weg (geeft een 400), het model denkt standaard na (kost uitvoertokens, dus `max_tokens` omhoog of `effort` laag) en telt ongeveer 30% meer tokens. Moet live getest worden met een echte trainings-PDF. Voorstel: eigen kleine release na WP1.
+2. **P1: akkoord op de beveiligingsaudit** en de volgorde van de fixes. Aparte keuze bij M4: krijgt de gekoppelde coach bouw echt de rechten van een bouwcoördinator, of gaat die belofte uit de interface?
+3. **Model naar Haiku 5.5** (`claude-haiku-5-5`): ongeveer tien keer goedkoper ($0,10 / $0,50 per miljoen tokens tegenover $1 / $5) en cachet al vanaf 512 tokens. Het is geen kale id-wissel: `temperature` moet weg (geeft een 400), het model denkt standaard na (kost uitvoertokens, dus `max_tokens` omhoog of `effort` laag) en telt ongeveer 30% meer tokens. Moet live getest worden met een echte trainings-PDF. Voorstel: eigen kleine release na WP1.
 
 ## Open punten uit PORTEREN.md, gesorteerd
 
@@ -41,7 +48,9 @@ Nodig bij P4: `firebase deploy --only functions:chatHulp,functions:structureerTr
 | Logregel met cache-tokens | Zonder meting is niet te zeggen of caching werkt | Eindbaas (kosten) |
 | `sleutel.test.mjs` draait op Windows | `npm test` stopte op Pauls pc bij de vijfde suite | Geen (ontwikkeling) |
 
-Alle vier zijn kleine fixes zonder UX- of datamodelwijziging.
+| `tests/audit-rules.test.mjs` en `npm run audit:rules` | Bewijs per gebruikerstype voor de audit, herhaalbaar | Alle |
+
+Alle vijf zijn kleine toevoegingen zonder UX- of datamodelwijziging.
 
 ## Fable-verbruik
 
