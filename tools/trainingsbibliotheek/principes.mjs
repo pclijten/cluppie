@@ -14,7 +14,7 @@ const EXTRA = {
 };
 
 export function principesVan(v){
-  if (Array.isArray(v.principes) && v.principes.length) return [...new Set(v.principes)];
+  if (Array.isArray(v.principes)) return [...new Set(v.principes)];          /* met de hand gezet (ook leeg = basisvorm) */
   if (v.fase === 'afsluiting') return [];
   const t = tekst(v), s = v.soort, uit = new Set(EXTRA[v.id] || []);
   const w = re => re.test(t);

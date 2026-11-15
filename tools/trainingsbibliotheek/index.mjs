@@ -17,6 +17,7 @@ import { DEEL_P } from './vormen-p.mjs';
 import { DEEL_S } from './vormen-s.mjs';
 import { principesVan } from './principes.mjs';
 import { VERRIJKING } from './verrijking.mjs';
+import { werkUit } from './uitwerking/index.mjs';
 
 /* Eerste 48 vormen krijgen soort, uitleg, varianten en let-op-punten uit verrijking.mjs. */
 function verrijk(v){
@@ -53,7 +54,9 @@ export function tijdVan(v){
   return Math.max(lo, Math.min(hi, t));
 }
 /* [20261116h] principes: bij welke principes van de speelwijze hoort de vorm (principes.mjs; leeg = basisvorm). */
-export const VORMEN = [...OUD, ...NIEUW.flat()].map(balBijSpeler).map(v => ({ ...v, tijd: tijdVan(v) })).map(v => ({ ...v, principes: principesVan(v) }));
+/* [20261116i] werkUit: de uitwerking met de hand per oefening (uitwerking/*.mjs): spelverloop, succescriteria,
+   kijk-en-grijp-in, telling, regie, onderbouwing en de principes van de speelwijze. */
+export const VORMEN = [...OUD, ...NIEUW.flat()].map(balBijSpeler).map(werkUit).map(v => ({ ...v, tijd: tijdVan(v) })).map(v => ({ ...v, principes: principesVan(v) }));
 
 /* Themaregels voor de partijspelen (één eenvoudige regel per leercurve-thema). */
 export const THEMAREGELS = {
