@@ -1,5 +1,5 @@
 rules_version = '2';
-/* Cluppie — Storage-regels (ONGETEST). Bestanden staan onder clubs/{clubId}/…;
+/* Cluppie — Storage-regels. Getest in de emulator: npm run test:storage (tests/storage-rules.test.mjs). Bestanden staan onder clubs/{clubId}/…;
    toegang volgt het clublidmaatschap in Firestore. */
 service firebase.storage {
   match /b/{bucket}/o {
@@ -37,7 +37,9 @@ service firebase.storage {
     }
     match /clubs/{clubId}/trainingen/{m}/{f} {
       allow read: if lid(clubId) || trainco(clubId);
-      allow write: if lid(clubId) && request.resource.size < 50 * 1024 * 1024;
+      /* [20261116d] alleen wat de app hier neerzet: de PDF van een training en de plaatjes eruit */
+      allow write: if lid(clubId) && request.resource.size < 50 * 1024 * 1024
+        && request.resource.contentType.matches('application/pdf|image/png|image/jpeg');
       allow delete: if lid(clubId);
     }
     /* alles anders (oude paden zonder club) is dicht */

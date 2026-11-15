@@ -17,7 +17,7 @@ Paul gaf op 15-11 akkoord om alles te fixen. Opgelost en in de emulator getoetst
 | M3 teamlijst van de club | Opgelost: een clublid kan alleen toevoegen. |
 | M4 gekoppelde coach bouw | Opgelost volgens het totaalplan: zelfde rechten als de bouwcoördinator, via `eigenBouwToegang`. |
 | M5 trainingscoördinator en subcollecties | Opgelost: leest de training, niet `hotspotSamenvattingen`. |
-| M6 Storage-rules | **Open.** |
+| M6 Storage-rules | Opgelost (20261116d): getest per gebruikerstype (20 proeven); alleen PDF, PNG en JPEG in de trainingsmap. Restpunt: de ondersteuningsmodus werkt niet voor bestanden. |
 | M7 solo-AI zonder bevestigd adres | Opgelost (bevestigd adres verplicht). Een plafond voor alle losse trainers samen is er nog niet. |
 | L1 coördinator zonder lidmaatschap | Opgelost. |
 | L2 koppelvoorstel | Opgelost met K1. |

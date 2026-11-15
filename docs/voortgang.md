@@ -1,6 +1,6 @@
 # Voortgang totaalplan cluppie.io
 
-Bijgewerkt 16-11-2026. Releases 20261116a, b en c staan live (client). Release 20261115e staat live: rules, indexen, alle functions en de client (`main`). Paul koos een permissiemodus waarin Claude mocht deployen.
+Bijgewerkt 16-11-2026. Releases 20261116a t/m d staan live. Release 20261115e staat live: rules, indexen, alle functions en de client (`main`). Paul koos een permissiemodus waarin Claude mocht deployen.
 
 ## WP0 — Opruimen: af, zit in release 20261115d
 
@@ -26,7 +26,7 @@ Rapport: `docs/beveiligingsaudit.md` (tabel "Stand na de fixes" bovenaan). Paul 
 Gefixt (release 20261115d en 20261115e, branch `asv33-14nov-bijgewerkt`, lokaal): K1, H1, H2, H3, M1 t/m M5, M7, L1, L2, L3 en de lezerslijst van privé-beoordelingen. Getest: rules in de emulator 41 van 41 scenario's (één daarvan draait 88 proeven met vaste fictieve accounts per gebruikerstype, zowel "mag niet" als "moet blijven werken"), `npm test` 41 suites, `tests/toegang.test.js`. Niet in een browser bekeken en niet tegen echte Firebase.
 
 Open in WP1:
-- **M6** Storage-rules: nog geen emulatortest, niets aangescherpt.
+- **M6** Storage-rules: opgelost in 20261116d (getest per gebruikerstype, bestandstypen in de trainingsmap beperkt).
 - **L4 t/m L7**: eindbaas-adres op vier plekken, `sportlinkClubcode`, dossier bij overzetten, App Check.
 - Rolwissels (iemand die een rol verliest) en functions van begin tot eind zijn niet getoetst.
 
@@ -50,7 +50,7 @@ Paul gaf op 15-11 akkoord om WP2 t/m WP9 zelfstandig te maken. Eerlijk over wat 
 | WP2 Applogica | Klaar op branch (20261116a): van plek wisselen tijdens een periode klopt, melding bij klok op 0:00, importcontrole in `npm test`. | `docs/wp2-applogica.md` | Paul: is dit de bedoelde bug? `teams.js` splitsen, kompas-blok, rooktests per rol, de rest van de views doorlichten. |
 | WP3 Multi-tenant | Analyse. Advies: "club-ID-first" niet bouwen; wel team loskoppelen en een overzicht bij de overstap. | `docs/wp3-multitenant-impactanalyse.md` | Besluit van Paul, dan mockup. |
 | WP4 3D | Gebouwd en live (20261116c): tekening- en 3D-editor voor vormen in de bibliotheek (besluit Paul: alleen de bibliotheek). | `docs/wp4-3d-stand.md` | Paul probeert opslaan tegen de echte database; doeltjes, zones en pionnen bewerken; spelvormen 4-3-3 e.d. als vormen in de bibliotheek. |
-| WP5 Design | Twee schermen gemeten in de demo; tikdoelen gefixt en in de browser gecontroleerd (lokaal). | `docs/wp5-design-doorlichting.md` | Andere schermen, donker thema, desktop, andere rollen; `--warn` als tekstkleur; tekst van 9 px. |
+| WP5 Design | Twee schermen gemeten in de demo; tikdoelen gefixt (20261116a) en de oranje tekstkleur in het lichte thema donkerder gemaakt (20261116d). | `docs/wp5-design-doorlichting.md` | Andere schermen, donker thema, desktop, andere rollen (kan nu met de demo per rol); tekst van 9 px. |
 | WP6 Onboarding | Inventaris per rol. Gebouwd en live (20261116b): de rolkaart voor vier rollen, zonder mockup. | `docs/wp6-onboarding-per-rol.md` | Paul bekijkt de rolkaart; welkom voor de uitgenodigde coach; handleiding per rol. |
 | WP7 Juridisch | Vier concepten en een lijst aanvullingen op de privacyverklaring. | `docs/juridisch/` | Jurist. Niets is gepubliceerd. |
 | WP8 Marketing | Positie tegenover Rinus, Spond, TeamSnap en Touchline Studio; twee boodschappen; prijsmodel zonder bedragen; Gebouwd en live: demo per rol (20261116b) en de landingspagina met twee ingangen en een blok over privacy (20261116c). | `docs/wp8-marketing.md` | Paul leest de teksten na; prijsmodel en bedragen; de demo per rol op de landingspagina zetten; verkoopmateriaal. |
@@ -91,6 +91,8 @@ Paul gaf op 15-11 akkoord om WP2 t/m WP9 zelfstandig te maken. Eerlijk over wat 
 | Tekening- en 3D-editor in Platform › Bibliotheek | Gevraagd door Paul (alleen bibliotheek); tekeningen waren niet te bewerken | Eindbaas; indirect iedereen die een training bekijkt |
 | Tekening als tekst opslaan | Firestore weigert lijsten in lijsten; Dupliceren zou daardoor mislukken | Eindbaas |
 | Landingspagina: twee ingangen, wat Cluppie niet doet, privacy voor besturen | Gevraagd door Paul | Losse trainer, clubadmin (bezoekers) |
+| Storage-regels getest; alleen PDF, PNG en JPEG in de trainingsmap | De regels waren nooit getest; elk bestandstype mocht | Coach, clubadmin |
+| `--warn` donkerder in het lichte thema | Oranje tekst haalde het contrast niet | Alle |
 | Werkwijze: scripts schrijven pas weg als alle vervangingen gelukt zijn | Een bewerkingsscript maakte `functions/index.js` leeg; hersteld uit de commit, niets verloren | Geen |
 
 

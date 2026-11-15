@@ -126,7 +126,7 @@
   --grass: #c8211c;
   --grass-2: #a81c17;
   --ok: #178048;
-  --warn: #a35e0c;
+  --warn: #8f5207;   /* [20261116d] was #a35e0c: als tekst op de lichte achtergrond 4,3:1; nu minstens 4,8:1 */
   --uit: #a35e0c;
   --in: #178048;
   --veld: #2e7d46;

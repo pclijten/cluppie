@@ -2,7 +2,8 @@
 
 Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
 
-## Stand (bijgewerkt 16-11-2026, versie 20261116c)
+## Stand (bijgewerkt 16-11-2026, versie 20261116d)
+- **Storage-rules:** getest in de emulator met `npm run test:storage` (20 proeven per gebruikerstype, laatst 20/20 op 16-11; eigen poorten in `firebase.test.json`). Deploy: `firebase deploy --only storage --project cluppie-ad329`.
 - **Firestore-rules:** per club afgeschermd (teams, trainingen, video's, documenten, berichten via clublidmaatschap). Getest in de emulator: `npm run test:rules` (40 scenario's, laatst 40/40 groen op 14-11). Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.
 - **Cloud Functions:** live in `europe-west1` (Node 22, 2nd gen). Iedere nieuwe callable heeft na de eerste deploy de invoker `allUsers` nodig (`gcloud run services add-iam-policy-binding <naam-in-kleine-letters> …`), anders krijgt de app een CORS-/`internal`-fout.
 - **Tests:** `npm test` (17 suites, laatst 13-10 allemaal groen; nieuw: `vaste-afmeldingen`. Eerst één keer `cd functions && npm install`) en `node tests/toegang.test.js` (aansluiten/uitnodigen, 24 scenario's). Pariteit met ASV'33: `node tools/pariteit.mjs ../cluppieasv33` (stand 14-11: ASV'33 t/m PR #60 gepoort; de tool werkt nu ook op Windows; resterende meldingen zijn bewust: overzetten via de server, trainco-beheer via functions, bronvermelding niet overgenomen, `nu-test.js` is een ASV-testpagina).
@@ -10,6 +11,13 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
 
 ## Open
+**Voor Paul — Storage-regels getest en aangescherpt, leesbaarder oranje (release 20261116d, branch `wp-storage-design`)**
+- [ ] **Storage-regels** (`storage.rules`): voor het eerst getest, per gebruikerstype (`tests/storage-rules.test.mjs`, `npm run test:storage`). 19 van de 20 proeven klopten al; één gat gedicht: in de trainingsmap mocht elk bestandstype, nu alleen PDF, PNG en JPEG (wat de app daar neerzet). Bekend en niet veranderd: de ondersteuningsmodus van de eindbaas geeft geen toegang tot bestanden.
+- [ ] **Emulator blijft hangen op deze pc.** Na `npm run test:rules` of `npm run test:storage` blijft het Java-proces van de Firestore-emulator draaien (poort 8080 of 8085) en mislukt de volgende run met "port taken". Sluit het via Taakbeheer (java), of in PowerShell: `Get-NetTCPConnection -LocalPort 8080,8085 -State Listen | % { Stop-Process -Id $_.OwningProcess }`. Er draait er nu nog één op 8085 van mijn laatste testrun.
+- [ ] **Kleur:** `--warn` in het lichte thema is donkerder (#8f5207), zodat oranje tekst zoals "Nog geen afmeldingen" voldoende contrast heeft. Het donkere thema is niet veranderd.
+- [ ] Niet gedaan: de demo per rol op de landingspagina zetten. Je haalde de demo-link daar eerder bewust weg (PR #64); de links werken wel als je ze zelf deelt (`index.html?demo=bouw` enzovoort).
+- [ ] Getest: `npm test` 45 suites groen, Storage 20/20 in de emulator.
+
 **Voor Paul — Tekening- en 3D-editor in de bibliotheek, landingspagina met twee ingangen (release 20261116c, branch `wp4-editor-landing`)**
 - [x] Live sinds 16-11 (alleen client; geen rules- of functions-wijziging: de platformbeheerder mocht `platform/bibliotheek/vormen` al schrijven).
 - [ ] **Editor** (Platform › Bibliotheek › een vorm › tab **Tekening en 3D**, `tekening-editor.js`). Alleen voor vormen in de bibliotheek, zoals je vroeg. De 3D-weergave volgt uit de tekening: elke lijn is één stap. Je kunt spelers neerzetten, verslepen en verwijderen (eigen team, tegenstander, joker, keeper), de bal leggen, lijnen tekenen (pass, loopt, dribbelt, schot; een pass klikt vast op de spelers), de volgorde en soort van de stappen wijzigen en het resultaat in 3D bekijken. Verplaats je een speler, dan gaan zijn lijnen mee. Bewaren werkt zoals bij tekst: opslaan en doorvoeren in de trainingen. Doeltjes, zones en pionnen zijn nog niet te bewerken.
