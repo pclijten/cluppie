@@ -18,7 +18,7 @@
 ## Voorstel in volgorde van opbrengst
 
 1. **Rolkaart bij eerste binnenkomst** voor bouwcoördinator, gekoppelde coach bouw, trainingscoördinator en hoofd jeugd: één kaart met drie regels ("Dit zie je", "Dit kun je", "Dit kun je niet") en een knop naar het belangrijkste scherm. Eén onderdeel, vier teksten. Vlag per gebruiker in `gebruikers/{uid}/meta/onboarding` (bestaat al voor de snelstart).
-2. **Welkom voor de uitgenodigde coach**: dezelfde kaart Eerste stappen, met stappen die passen bij een bestaand team.
+2. **Welkom voor de uitgenodigde coach**: dezelfde kaart Eerste stappen, met stappen die passen bij een bestaand team. *Gebouwd en live in 20261116e, voor accounts jonger dan 30 dagen.*
 3. **Doorverwijzen als de club al meedoet** (losse trainer): een callable die op clubcode of naam en plaats alleen ja of nee teruggeeft, geen clubgegevens.
 
 Teksten voor de rolkaarten (concept):

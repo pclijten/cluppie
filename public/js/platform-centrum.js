@@ -15,7 +15,7 @@
 import { db, collection, getDocs, doc, getDoc, setDoc, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { S, esc, meld, isPlatformBeheerder, terugLaag, terugLaagWeg, bewaakTerug } from './state.js?v=20261116c';
 import { ico } from './icons.js?v=20261110a';
-import { logoImgVoorDoc, DISTRICTEN, CLUPPIE_LOGO } from './clubconfig.js?v=20261116c';
+import { logoImgVoorDoc, DISTRICTEN, CLUPPIE_LOGO } from './clubconfig.js?v=20261116e';
 import { STARTLIJST_STAPPEN } from './startlijst.js?v=20261011d';
 import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261116c';
 import { FASES, FASE_NAAM, STANDAARD, KOPPEL_NAAM, faseVan, volgendeStap, filterClubs, vandaagDoen, trainersMetClub, kpiWaarden, dagenSinds } from './platform-logica.js?v=20261111a';
@@ -445,7 +445,7 @@ async function pdfProef(file){
   const stap = t => { st.proef = { bezig: true, naam: file.name, stap: t }; if (P.lade?.clubId === clubId) teken(); };
   stap('PDF inlezen…');
   try {
-    const ai = await import('./training-ai.js?v=20261116c');
+    const ai = await import('./training-ai.js?v=20261116e');
     const tw = await import('./training-weergave.js?v=20261116c');
     const { paginas, diagramBlobs, aantalPaginas, overgeslagen } = await ai.leesPdf(file, profiel);
     if (!paginas.some(x => x.tekst.trim())) throw new Error('geen leesbare tekst (een scan?)');
@@ -553,8 +553,8 @@ async function klik(e){
   if (a === 'fasewis'){ P.faseFilter = null; return teken(); }
   if (a === 'alletaken'){ P.alleTaken = !P.alleTaken; return teken(); }
   if (a === 'alletrainers'){ P.alleTrainers = !P.alleTrainers; return teken(); }
-  if (a === 'nieuweclub') return import('./club.js?v=20261116c').then(m => m.modalNieuwClub());
-  if (a === 'kalenders') return import('./platform.js?v=20261116c').then(m => m.openKalenders());
+  if (a === 'nieuweclub') return import('./club.js?v=20261116e').then(m => m.modalNieuwClub());
+  if (a === 'kalenders') return import('./platform.js?v=20261116e').then(m => m.openKalenders());
   if (a === 'kopieer') return kopieer(b.dataset.tekst);
   if (a === 'vernieuw') return vernieuw(b);
   if (a === 'goedkeuren' || a === 'afwijzen') return beoordeel(b, a === 'goedkeuren');
@@ -630,10 +630,10 @@ async function vernieuw(b){
 async function meehelpen(b){
   const id = P.lade.clubId;
   b.disabled = true;
-  const ond = await import('./ondersteuning.js?v=20261116c').catch(() => null);
+  const ond = await import('./ondersteuning.js?v=20261116e').catch(() => null);
   if (!ond || !(await ond.startOndersteuning(id))){ b.disabled = false; return; }
   sluitCentrum();
-  import('./club.js?v=20261116c').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
+  import('./club.js?v=20261116e').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
 }
 const soloNu = () => ({ aan: false, limiet: 20, ...(P.platform?.soloAI || {}) });
 /* platform/instellingen schrijven kan alleen via de functie zetPlatformInstellingen (valideert ook) */

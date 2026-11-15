@@ -12,7 +12,7 @@
 import { db, doc, getDoc, collection, writeBatch, serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { S, esc, meld, openModal, sluitModal, teamCode } from './state.js?v=20261116c';
 import { CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, bouwVanCategorie, catLabel } from './config.js?v=20261116c';
-import { clubAfk } from './clubconfig.js?v=20261116c';
+import { clubAfk } from './clubconfig.js?v=20261116e';
 import { eigenClubPatronen, teamSleutel } from './sportlink-sleutel.js?v=20261011d';
 
 const BOUW_NAAM = { onder: 'Onderbouw', midden: 'Middenbouw', boven: 'Bovenbouw' };

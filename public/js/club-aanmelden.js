@@ -5,9 +5,9 @@
 
 import { db, doc, getDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261116c';
-import { DISTRICTEN } from './clubconfig.js?v=20261116c';
+import { DISTRICTEN } from './clubconfig.js?v=20261116e';
 import { koppelClubSuggesties } from './clubgids.js?v=20261116c';
-import { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } from './sportlink-clubinfo.js?v=20261116c';
+import { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } from './sportlink-clubinfo.js?v=20261116e';
 
 export async function laadMijnAanmelding(el){
   if (!el || !S.user) return;

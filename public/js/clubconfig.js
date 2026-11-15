@@ -32,7 +32,7 @@ import { S, clubAfkorting } from './state.js?v=20261116c';
 import * as C from './config.js?v=20261116c';
 import { db, doc, getDoc } from './firebase.js?v=20261011g';
 import { zetContentClub } from './content.js?v=20261116c';
-import { weerVanTeam } from './snelstart-logica.js?v=20261020c';
+import { weerVanTeam } from './snelstart-logica.js?v=20261116e';
 import { schoonProfiel as schoonPdfProfiel } from './pdf-profiel.js?v=20261115e';
 
 /* ---------- Standaardwaarden ---------- */

@@ -99,6 +99,32 @@ export function eersteStappenStatus(team, data = {}){
   return { stappen, gedaan, totaal: stappen.length, compleet: gedaan === stappen.length, volgende: volgende ? volgende.id : null };
 }
 
+/* ---------- [20261116e] Welkom voor een coach die bij een clubteam komt (meestal via een uitnodiging) ----------
+   Het team bestaat al, dus de stappen gaan over gebruiken, niet over inrichten. Alleen voor een nieuw
+   account (standaard 30 dagen), zodat coaches die al langer meedoen de kaart niet ineens krijgen. */
+export const WELKOM_STAPPEN = [
+  { id: 'training',  titel: 'Bekijk de training van deze week',            uitleg: 'Onder Trainingen staan de trainingen voor je team.',        tab: 'trainingen' },
+  { id: 'presentie', titel: 'Vul de aanwezigheid in',                      uitleg: 'Eén tik per speler. Zo klopt de opkomst over het seizoen.', tab: 'presentietraining' },
+  { id: 'wedstrijd', titel: 'Maak de opstelling voor je volgende wedstrijd', uitleg: 'Cluppie houdt de speeltijd per speler voor je bij.',       tab: 'wedstrijden' },
+];
+export function isNieuwAccount(creationTime, nu = Date.now(), dagen = 30){
+  const t = Date.parse(creationTime || '');
+  return Number.isFinite(t) && nu - t >= 0 && nu - t <= dagen * 86400000;
+}
+/* data: { trainingGelezen, presentie, opstelling } (booleans of aantallen) */
+export function welkomCoachStatus(data = {}){
+  const klaar = { training: !!data.trainingGelezen, presentie: Number(data.presentie) > 0 || data.presentie === true, wedstrijd: !!data.opstelling };
+  const stappen = WELKOM_STAPPEN.map(s => ({ ...s, klaar: !!klaar[s.id] }));
+  const gedaan = stappen.filter(s => s.klaar).length, volgende = stappen.find(s => !s.klaar);
+  return { stappen, gedaan, totaal: stappen.length, compleet: gedaan === stappen.length, volgende: volgende ? volgende.id : null };
+}
+/* Alleen bij een clubteam waar je zelf coach van bent, met een nieuw account, niet verborgen, niet af. */
+export function toonWelkomCoach(team, uid, { verborgen = false, nieuw = false, status = null } = {}){
+  if (!team || !team.club || !uid || !(team.leden && team.leden[uid] === true)) return false;
+  if (verborgen || !nieuw) return false;
+  return !(status && status.compleet);
+}
+
 /* Tip voor een bestaand los team (gemaakt vóór Snelstart): club en plaats ontbreken. */
 export function toonClubTip(team, { verborgen = false } = {}){
   return !!team && !team.club && !team.eigenClub && !verborgen;

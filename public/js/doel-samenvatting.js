@@ -12,7 +12,7 @@
    Faalt de AI, dan blijft de eerste doelregel staan: de kaart breekt nooit. */
 import { functions, httpsCallable, db, doc, updateDoc } from './firebase.js?v=20261011g';
 import { S } from './state.js?v=20261116c';
-import { aiAan, aiDoel } from './clubconfig.js?v=20261116c';
+import { aiAan, aiDoel } from './clubconfig.js?v=20261116e';
 
 const MAX_TEKENS = 90;
 const geheugen = new Map();      // id+hash -> tekst (deze sessie)

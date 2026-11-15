@@ -2,7 +2,7 @@
 
 Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
 
-## Stand (bijgewerkt 16-11-2026, versie 20261116d)
+## Stand (bijgewerkt 16-11-2026, versie 20261116e)
 - **Storage-rules:** getest in de emulator met `npm run test:storage` (20 proeven per gebruikerstype, laatst 20/20 op 16-11; eigen poorten in `firebase.test.json`). Deploy: `firebase deploy --only storage --project cluppie-ad329`.
 - **Firestore-rules:** per club afgeschermd (teams, trainingen, video's, documenten, berichten via clublidmaatschap). Getest in de emulator: `npm run test:rules` (40 scenario's, laatst 40/40 groen op 14-11). Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.
 - **Cloud Functions:** live in `europe-west1` (Node 22, 2nd gen). Iedere nieuwe callable heeft na de eerste deploy de invoker `allUsers` nodig (`gcloud run services add-iam-policy-binding <naam-in-kleine-letters> …`), anders krijgt de app een CORS-/`internal`-fout.
@@ -11,6 +11,13 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
 
 ## Open
+**Voor Paul — Welkom voor een coach die bij een clubteam komt (release 20261116e, branch `wp6-welkom`)**
+- [x] Live sinds 16-11 (alleen client).
+- [ ] Een coach met een **nieuw account (jonger dan 30 dagen)** die coach is van een clubteam, ziet op het teamscherm de kaart "Welkom bij {team}" met drie stappen: de training van deze week bekijken, de aanwezigheid invullen, de opstelling voor de volgende wedstrijd maken. Elke stap opent het juiste scherm en krijgt een vinkje zodra het gedaan is. Verbergen kan (`gebruikers/{uid}/meta/onboarding.snelstart.welkomCoachWeg`). Zelfde opmaak als "Eerste stappen" van de trainer zonder club; die kaart is niet veranderd.
+- [ ] Bewuste keuze: bestaande coaches krijgen de kaart niet (alleen nieuwe accounts), zodat niemand hem ineens ziet. Wil je hem voor iedereen, of een andere termijn: `isNieuwAccount` in `snelstart-logica.js`.
+- [ ] Gebouwd zonder mockup; lees de drie teksten na (`WELKOM_STAPPEN`).
+- [ ] Getest: `npm test` 46 suites groen (nieuw `tests/welkom-coach.test.mjs`). In de demo als coach (375×812): kaart verschijnt, stap opent het scherm, Verberg werkt; de trainer zonder club ziet nog steeds Eerste stappen. Niet tegen echte Firebase.
+
 **Voor Paul — Storage-regels getest en aangescherpt, leesbaarder oranje (release 20261116d, branch `wp-storage-design`)**
 - [x] Live sinds 16-11: Storage-regels gedeployed (`firebase deploy --only storage`) en de client op `main`.
 - [ ] **Storage-regels** (`storage.rules`): voor het eerst getest, per gebruikerstype (`tests/storage-rules.test.mjs`, `npm run test:storage`). 19 van de 20 proeven klopten al; één gat gedicht: in de trainingsmap mocht elk bestandstype, nu alleen PDF, PNG en JPEG (wat de app daar neerzet). Bekend en niet veranderd: de ondersteuningsmodus van de eindbaas geeft geen toegang tot bestanden.
