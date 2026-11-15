@@ -14,7 +14,7 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 
 ## Open
 **Voor Paul — Vindbaarheid in zoekmachines en AI-assistenten (branch `vindbaarheid`, alleen client, geen deploy van rules of functions)**
-- [ ] PR mergen. Uitgangspunt: cluppie.io was niet te vinden (geen `robots.txt`, sitemap, canonical of gestructureerde gegevens; de hoofdpagina is de app en het woord "voetbal" stond één keer op `over.html`).
+- [x] Gemerged op 15-11 (PR #69), met akkoord van Paul. Uitgangspunt: cluppie.io was niet te vinden (geen `robots.txt`, sitemap, canonical of gestructureerde gegevens; de hoofdpagina is de app en het woord "voetbal" stond één keer op `over.html`).
 - [ ] **Nieuw:** `public/robots.txt` (alles toegestaan, AI-crawlers bij naam, verwijzing naar de sitemap), `public/sitemap.xml` (over.html, privacy.html), `public/llms.txt` (samenvatting van Cluppie voor AI-assistenten; bijwerken als het aanbod verandert), `public/over/og-cluppie.jpg` (voorbeeld bij delen in WhatsApp/LinkedIn, 1200×630).
 - [ ] **over.html:** titel is nu "Cluppie: app voor jeugdvoetbaltrainers en jeugdopleidingen", nieuwe beschrijving, canonical, Open Graph, favicon en JSON-LD (Organization, WebSite, WebPage, SoftwareApplication; zonder prijs). Eén zichtbare tekstwijziging: de regel onder de knoppen in de hero begint met "De app voor jeugdvoetbal:". Lees na.
 - [ ] **index.html:** beschrijving, canonical naar over.html en een `<noscript>`-blok met uitleg en link (crawlers zonder JavaScript zagen alleen het laadscherm). **privacy.html:** beschrijving en canonical.
