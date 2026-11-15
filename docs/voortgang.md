@@ -1,6 +1,6 @@
 # Voortgang totaalplan cluppie.io
 
-Bijgewerkt 15-11-2026. Release 20261115e staat live: rules, indexen, alle functions en de client (`main`). Paul koos een permissiemodus waarin Claude mocht deployen.
+Bijgewerkt 16-11-2026. Release 20261116a staat klaar op branch `wp2-applogica` (nog niet op `main`). Release 20261115e staat live: rules, indexen, alle functions en de client (`main`). Paul koos een permissiemodus waarin Claude mocht deployen.
 
 ## WP0 — Opruimen: af, zit in release 20261115d
 
@@ -41,18 +41,24 @@ De release die alleen in Pauls werkmap stond is eerst ongewijzigd vastgelegd (`a
 3. **Model naar Haiku 5.5** (`claude-haiku-5-5`): ongeveer tien keer goedkoper en cachet al vanaf 512 tokens, maar `temperature` moet weg, het model denkt standaard na en telt ongeveer 30% meer tokens. Moet live getest worden met een echte trainings-PDF.
 4. **Repo openbaar:** `firestore.rules`, de functions en nu ook het auditrapport staan in een openbare repo. Overweeg de repo besloten te maken (GitHub Pages vanaf een besloten repo vraagt een betaald plan) of de hosting te verplaatsen naar Firebase Hosting.
 
-## Volgende werkpakketten (nog niet begonnen)
+## WP2 t/m WP9: stand op 16-11-2026
 
-| WP | Eerste stappen |
-|---|---|
-| WP2 Applogica | Bekende bug "wissel zonder lopende klok" uitzoeken in `wedstrijd.js`; losse trainer: notities, video's en tactiek bij een training onder `teams/{id}/trainingen` werken niet; kompas-blok op Trainingen kiest een eigen thema naast het seizoensplan; `openPlatformOud()` weg; `teams.js` splitsen (3.200 regels, pure refactor met `node --check` per stap); dubbele versienummers bewaken met een importcontrole in `npm test`. |
-| WP3 Multi-tenant | Impactanalyse: plek van de losse trainer in het model en de overstap naar een club (deels gebouwd in 20261111a en 20261114a), config-laag evaluatiedomeinen, migratieplan met terugrolpad. |
-| WP4 3D | Bestaat deels sinds 20261115b (oefeningen in 3D, stap voor stap). Nog: editor voor coaches, spelvormen 4-3-3 e.d., rechten per rol. |
-| WP5 Design | Tokens en contrast nalopen, tikdoelen, lege toestanden per rol; schermen per rol renderen op 414×896 en 1440. |
-| WP6 Onboarding | Eerste-keer-ervaring per rol; handleiding en kennisbank per rol. |
-| WP7 Juridisch | Concepten: verwerkersovereenkomst, voorwaarden losse trainers, privacyverklaring, verwerkingsregister, datalekprocedure. Controle door een jurist blijft nodig. |
-| WP8 Marketing | Prijsmodel, landingspagina met aparte instap voor trainer en club, demo met fictieve data per rol, concurrentiepositie. |
-| WP9 Uitrol | Pilotplan één club, dan 5, dan 30. |
+Paul gaf op 15-11 akkoord om WP2 t/m WP9 zelfstandig te maken. Eerlijk over wat dat heeft opgeleverd: WP2 en WP5 hebben code gekregen (release 20261116a, nog niet live); WP3, WP4, WP6, WP8 en WP9 zijn analyses en plannen met beslispunten; WP7 is een set concepten voor een jurist. Geen van deze werkpakketten is "af" in de zin van het totaalplan.
+
+| WP | Wat er nu is | Document | Wat nog moet |
+|---|---|---|---|
+| WP2 Applogica | Klaar op branch (20261116a): van plek wisselen tijdens een periode klopt, melding bij klok op 0:00, importcontrole in `npm test`. | `docs/wp2-applogica.md` | Paul: is dit de bedoelde bug? `teams.js` splitsen, kompas-blok, rooktests per rol, de rest van de views doorlichten. |
+| WP3 Multi-tenant | Analyse. Advies: "club-ID-first" niet bouwen; wel team loskoppelen en een overzicht bij de overstap. | `docs/wp3-multitenant-impactanalyse.md` | Besluit van Paul, dan mockup. |
+| WP4 3D | Stand opgenomen (3D bekijken bestaat sinds 20261115b) en impactanalyse voor de editor. | `docs/wp4-3d-stand.md` | Besluit, mockup, bouwen: editor en spelvormen. |
+| WP5 Design | Twee schermen gemeten in de demo; tikdoelen gefixt en in de browser gecontroleerd (lokaal). | `docs/wp5-design-doorlichting.md` | Andere schermen, donker thema, desktop, andere rollen; `--warn` als tekstkleur; tekst van 9 px. |
+| WP6 Onboarding | Inventaris per rol en een voorstel (rolkaart) met teksten. | `docs/wp6-onboarding-per-rol.md` | Besluit, mockup, bouwen; handleiding per rol. |
+| WP7 Juridisch | Vier concepten en een lijst aanvullingen op de privacyverklaring. | `docs/juridisch/` | Jurist. Niets is gepubliceerd. |
+| WP8 Marketing | Positie tegenover Rinus, Spond, TeamSnap en Touchline Studio; twee boodschappen; prijsmodel zonder bedragen; voorstel landingspagina en demo per rol. | `docs/wp8-marketing.md` | Besluiten van Paul (prijs, boodschap); mockup landingspagina; demo per rol bouwen. |
+| WP9 Uitrol | Plan per fase met wat er klaar moet zijn. | `docs/wp9-uitrolplan.md` | Uitvoeren; contact met clubs doet Paul. |
+
+**Eerste stap die het meeste oplevert:** de demo per rol (FC Testdorp, acht rollen). Die is nodig voor de ontwerpmeting per rol (WP5), de rooktests vóór het splitsen van `teams.js` (WP2), de rolkaarten (WP6) en de verkoop (WP8).
+
+**Live zetten van 20261116a:** alleen client. De push naar `main` is door de app geweigerd toen Claude hem probeerde; de branch `wp2-applogica` staat klaar.
 
 ## Open punten uit PORTEREN.md, gesorteerd
 
@@ -77,6 +83,9 @@ De release die alleen in Pauls werkmap stond is eerst ongewijzigd vastgelegd (`a
 | `tools/versie.mjs` draait op Windows | De release-tool stopte op Pauls pc | Geen (ontwikkeling) |
 | Spelerdocumenten en uitleningen alleen voor het eigen team en sturende rollen | Notities en leerpunten waren leesbaar voor elke coach van de club | Coach, alle sturende rollen |
 | Rules zuiniger; "moet werken"-proeven per rol | De evaluatielimiet gaf stille weigeringen | Alle |
+| Van plek wisselen tijdens een periode (`verwisselSlots`) | Invaller kon op twee plekken staan; starter verdween uit de opstelling | Coach, losse trainer |
+| Raakvlak van kleine knoppen minstens 44 px | Gemeten: 28 tot 38 px | Alle |
+| `tools/importcheck.mjs` in `npm test` | Een module werd met twee versienummers geladen | Geen (ontwikkeling) |
 | Werkwijze: scripts schrijven pas weg als alle vervangingen gelukt zijn | Een bewerkingsscript maakte `functions/index.js` leeg; hersteld uit de commit, niets verloren | Geen |
 
 
