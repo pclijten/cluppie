@@ -23,7 +23,7 @@ import { UIT_P } from './p.mjs';
 export const UITWERKING = { ...UIT_A, ...UIT_B, ...UIT_C, ...UIT_D, ...UIT_E, ...UIT_F, ...UIT_G, ...UIT_H, ...UIT_I, ...UIT_J, ...UIT_K, ...UIT_M, ...UIT_N, ...UIT_O, ...UIT_P };
 
 const TEKST = { doel: 'doel', uitleg: 'uitleg', org: 'organisatie', regels: 'regels', punten: 'coachpunten', vragen: 'coachvragen', makk: 'makkelijker', moei: 'moeilijker', letOp: 'letOp', naam: 'naam', lft: 'leeftijd', tijd: 'tijd' };
-export const fouten = [];
+export const fouten = [], letOp = [];
 export function werkUit(v){
   const u = UITWERKING[v.id];
   if (!u) return v;
@@ -46,6 +46,7 @@ export function werkUit(v){
   if (u.v){
     const c = compileer(uit, t, u.v, { tek: u.tek });
     for (const f of c.fouten) fouten.push(`${v.id}: ${f}`);
+    for (const f of c.letOp) letOp.push(`${v.id}: ${f}`);
     t.lijnen = c.lijnen;
   }
   uit.tekening = t;

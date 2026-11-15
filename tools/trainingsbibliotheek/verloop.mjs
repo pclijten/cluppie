@@ -50,7 +50,7 @@ export function compileer(v, t, stappen, { tek } = {}){
     if (T.bal) return balPlek ? [...balPlek] : [50, 50];
     fouten.push(`stap ${i + 1}: onbekend doelpunt`); return [50, 50];
   };
-  const plat = stappen.flat();
+  const plat = stappen.flat(), let_op = [];
   const lijnen = plat.map((x, i) => {
     const van = [...waar(x.a, i)];
     let naar = punt(x.T, van, i).map(rond);
@@ -68,7 +68,21 @@ export function compileer(v, t, stappen, { tek } = {}){
       if (!bl) fouten.push(`stap ${i + 1} (${x.soort}, speler ${x.a}): er ligt geen bal bij deze speler`);
       else { bl[0] = naar[0]; bl[1] = naar[1]; balPlek = bl; }
     }
-    if (x.soort === 'loopweg' || x.soort === 'dribbel') plek.set(x.a, [...naar]);
+    if (x.soort === 'loopweg' || x.soort === 'dribbel'){
+      /* waarschuwing: de speler komt uit op de plek van een ander (behalve bij druk zetten of een losse bal) */
+      /* komt de speler uit op de plek van een ander (behalve bij druk zetten, een losse bal of een pass in de loop),
+         dan schuift het eindpunt tot op anderhalve meter van die speler, aan de kant waar hij vandaan komt */
+      if (!(x.T && (x.T.druk !== undefined || x.T.bal)) && x.T !== 'vorige'){
+        for (let k = 0; k < 2; k++) for (const [n, q] of plek){
+          if (n === x.a || m(q, naar) >= 1.1) continue;
+          let rx = (naar[0] - q[0]) * B / 100, ry = (naar[1] - q[1]) * L / 100, a = Math.hypot(rx, ry);
+          if (a < 0.2){ rx = (van[0] - q[0]) * B / 100; ry = (van[1] - q[1]) * L / 100; a = Math.hypot(rx, ry) || 1; }
+          naar = [q[0] + rx / a * 1.6 * 100 / B, q[1] + ry / a * 1.6 * 100 / L].map(rond);
+        }
+        for (const [n, q] of plek) if (n !== x.a && m(q, naar) < 1.1) let_op.push(`stap ${i + 1}: speler ${x.a} komt uit op speler ${n}`);
+      }
+      plek.set(x.a, [...naar]);
+    }
     vorige = naar;
     const uit = { soort: x.soort, punten: [van.map(rond), naar], tekst: x.tekst };
     if (x.fase) uit.fase = x.fase;
@@ -81,5 +95,5 @@ export function compileer(v, t, stappen, { tek } = {}){
   if (n > 6) n = 6;
   lijnen.forEach((x, i) => { if (i >= n) x.vervolg = true; });
   if (lijnen.filter(x => !x.samen).length < 5) fouten.push(`maar ${lijnen.filter(x => !x.samen).length} stappen (minimaal 5)`);
-  return { lijnen, fouten };
+  return { lijnen, fouten, letOp: let_op };
 }
