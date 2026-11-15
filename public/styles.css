@@ -7810,3 +7810,10 @@ html.desk .dk-ss .sn-kop,html.desk .dk-ss .sn-balk,html.desk .dk-ss .sn-voet,htm
     width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
   }
 }
+
+/* ==================== ROLKAART [20261116b] ==================== */
+.rolkaart h2{ margin: 0 0 var(--space-md); font-size: calc(20px * var(--fs)); color: var(--ink); }
+.rk-rij{ padding: var(--space-sm) 0; border-top: 1px solid var(--line-d); }
+.rk-kop{ font-size: var(--t-sm); font-weight: 700; color: var(--accent); margin-bottom: 2px; }
+.rk-tekst{ color: var(--ink); line-height: 1.45; }
+.rk-knoppen{ margin-top: var(--space-md); justify-content: flex-end; }

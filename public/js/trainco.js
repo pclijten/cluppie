@@ -25,7 +25,7 @@ import { S, esc, bewaakTerug, doeTerug } from './state.js?v=20261115e';
 import { BOUWEN, isoWeek, youtubeId, youtubeThumb, youtubeWatch } from './config.js?v=20261115e';
 import { bouwVanTeam, eigenBouwenVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261115e';
 import { oefHtml, diagramVoorOefening, openLightbox } from './training-weergave.js?v=20261115e';
-import { logoImgVoorDoc } from './clubconfig.js?v=20261115e';
+import { logoImgVoorDoc } from './clubconfig.js?v=20261116b';
 import { ico } from './icons.js?v=20261110a';
 import { momentenVanTeam, DAGEN_LANG, DAGEN_KORT } from './trainingsmomenten.js?v=20261115e';
 

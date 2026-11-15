@@ -10,7 +10,7 @@ import {
   S, $, $$, esc, meld, datumNL, speler, initialen, openModal, sluitModal, toon, isBeheerder
 } from './state.js?v=20261115e';
 import { telGebruik } from './tracker.js?v=20261115e';
-import { voorbeeldTeamcode } from './clubconfig.js?v=20261115e';
+import { voorbeeldTeamcode } from './clubconfig.js?v=20261116b';
 import { ico } from './icons.js?v=20261110a';
 
 import {
@@ -19,8 +19,8 @@ import {
   catLabel,
 } from './config.js?v=20261115e';
 import { onderdeelAan } from './onderdelen.js?v=20261115e';
-import { htmlKompas } from './teams-leerlijn.js?v=20261115e';
-import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261116a';
+import { htmlKompas } from './teams-leerlijn.js?v=20261116b';
+import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261116b';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
 import { spelersOpTraining } from './uitleen-regels.js?v=20261113b';
 import {

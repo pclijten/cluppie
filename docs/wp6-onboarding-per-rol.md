@@ -1,6 +1,6 @@
 # WP6 — Beheer en onboarding per gebruikerstype
 
-16-11-2026. Inventaris van wat er is, per rol, en wat ontbreekt. Er is in dit werkpakket niets gebouwd: elke aanvulling verandert schermen en vraagt dus een mockup.
+16-11-2026. Inventaris van wat er is, per rol, en wat ontbreekt. **Stap 1 hieronder (de rolkaart) is op 16-11 gebouwd en live gezet (release 20261116b), zonder mockup, nadat Paul zei de rest te fixen.** De overige stappen zijn voorstellen.
 
 ## Eerste-keer-ervaring per rol
 

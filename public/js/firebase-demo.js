@@ -455,4 +455,42 @@ async function zetTrainingen(){
 }
 const klaar = zetTrainingen().catch(e => console.warn('[demo] trainingen niet gezet', e));
 
-window.__cluppieDemo = { store, uid: DEMO_UID, club: CLUB };
+/* ==================== DEMO PER ROL [20261116b] ====================
+   index.html?demo            → zoals altijd: de demo-trainer heeft alle rollen tegelijk.
+   index.html?demo=<rol>      → dezelfde club, bekeken als één gebruikerstype:
+     los | coach | eigenbouw | bouw | trainco | hjo | admin
+   Alleen de rollen van de demo-trainer veranderen; de club, teams en spelers blijven gelijk.
+   De demo kent geen toegangsregels: je ziet wat de app deze rol laat zien, niet wat de server toestaat. */
+export const DEMO_ROLLEN = { los: 'Trainer zonder club', coach: 'Coach', eigenbouw: 'Gekoppelde coach bouw', bouw: 'Bouwcoördinator',
+  trainco: 'Trainingscoördinator', hjo: 'Hoofd jeugdopleiding', admin: 'Clubbeheerder' };
+const DEMO_ROL = (() => { try { const r = (new URLSearchParams(location.search).get('demo') || '').toLowerCase(); return DEMO_ROLLEN[r] ? r : ''; } catch (e) { return ''; } })();
+if (DEMO_ROL){
+  const BEHEER = 'demo-beheer', club = { ...store.get(`clubs/${CLUB}`) };
+  const uitTeam = id => { const t = { ...store.get(`teams/${id}`) }; t.leden = { ...t.leden }; t.ledenInfo = { ...t.ledenInfo }; delete t.leden[COACH]; delete t.ledenInfo[COACH]; store.set(`teams/${id}`, t); };
+  Object.assign(club, {
+    admins: { [BEHEER]: true }, adminsInfo: { [BEHEER]: { naam: 'Clubbeheer' } },
+    bouwCoordinatoren: {}, bouwCoordinatorenInfo: {}, trainingscoordinatoren: {}, trainingscoordinatorenInfo: {},
+    hoofdJeugd: {}, hoofdJeugdInfo: {}, leden: { [COACH]: true }, ledenInfo: { [COACH]: INFO },
+  });
+  if (DEMO_ROL === 'bouw'){ club.bouwCoordinatoren = { midden: { [COACH]: true } }; club.bouwCoordinatorenInfo = { midden: { [COACH]: INFO } }; uitTeam('demo-o11-2'); }
+  if (DEMO_ROL === 'eigenbouw'){
+    club.eigenBouwen = [{ id: 'demo-meiden', naam: 'Meiden', kleur: '#8b5cf6', teams: ['demo-mo13-1'], coaches: { [COACH]: true } }];
+    club.eigenBouwCoaches = [COACH]; club.eigenBouwCoachesInfo = { [COACH]: INFO }; club.eigenBouwToegang = { 'demo-mo13-1': { [COACH]: true } };
+    uitTeam('demo-o13-1');
+  }
+  if (DEMO_ROL === 'trainco'){
+    club.trainingscoordinatoren = { [COACH]: true }; club.trainingscoordinatorenInfo = { [COACH]: INFO }; club.leden = {}; club.ledenInfo = {};
+    uitTeam('demo-o11-2'); uitTeam('demo-o13-1');
+  }
+  if (DEMO_ROL === 'hjo'){ club.hoofdJeugd = { [COACH]: true }; club.hoofdJeugdInfo = { [COACH]: INFO }; uitTeam('demo-o11-2'); }
+  if (DEMO_ROL === 'admin'){ club.admins = { [COACH]: true }; club.adminsInfo = { [COACH]: INFO }; uitTeam('demo-o11-2'); uitTeam('demo-o13-1'); }
+  if (DEMO_ROL === 'los'){
+    club.leden = {}; club.ledenInfo = {}; uitTeam('demo-o13-1');
+    const t = { ...store.get('teams/demo-o11-2') }; delete t.club; delete t.clubNaam; delete t.sportlinkNaam;
+    t.naam = 'Buurtteam O11'; t.eigenClub = { naam: 'Buurtclub', plaats: 'Utrecht' };
+    store.set('teams/demo-o11-2', t);
+  }
+  store.set(`clubs/${CLUB}`, club);
+}
+
+window.__cluppieDemo = { store, uid: DEMO_UID, club: CLUB, rol: DEMO_ROL };

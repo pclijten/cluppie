@@ -27,7 +27,7 @@
    getDoc per verhuizing (vers spelerdocument). */
 import { S, esc, meld } from './state.js?v=20261115e';
 import { db, doc, collection, getDoc, writeBatch, serverTimestamp } from './firebase.js?v=20261011g';
-import { bouwLeenSnapshot } from './teams-spelers.js?v=20261116a';
+import { bouwLeenSnapshot } from './teams-spelers.js?v=20261116b';
 import { SKILLS, POSITIE_GROEPEN, TEAM_CATEGORIEEN } from './config.js?v=20261115e';
 import { analyseWedstrijd, speeltijdReserve } from './analyse.js?v=20261116a';
 import { opkomstVoor } from './opkomst.js?v=20260922c';

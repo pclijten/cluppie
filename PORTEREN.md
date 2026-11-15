@@ -2,7 +2,7 @@
 
 Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
 
-## Stand (bijgewerkt 16-11-2026; live is 20261115e, 20261116a staat klaar op branch `wp2-applogica`)
+## Stand (bijgewerkt 16-11-2026, versie 20261116b)
 - **Firestore-rules:** per club afgeschermd (teams, trainingen, video's, documenten, berichten via clublidmaatschap). Getest in de emulator: `npm run test:rules` (40 scenario's, laatst 40/40 groen op 14-11). Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.
 - **Cloud Functions:** live in `europe-west1` (Node 22, 2nd gen). Iedere nieuwe callable heeft na de eerste deploy de invoker `allUsers` nodig (`gcloud run services add-iam-policy-binding <naam-in-kleine-letters> …`), anders krijgt de app een CORS-/`internal`-fout.
 - **Tests:** `npm test` (17 suites, laatst 13-10 allemaal groen; nieuw: `vaste-afmeldingen`. Eerst één keer `cd functions && npm install`) en `node tests/toegang.test.js` (aansluiten/uitnodigen, 24 scenario's). Pariteit met ASV'33: `node tools/pariteit.mjs ../cluppieasv33` (stand 14-11: ASV'33 t/m PR #60 gepoort; de tool werkt nu ook op Windows; resterende meldingen zijn bewust: overzetten via de server, trainco-beheer via functions, bronvermelding niet overgenomen, `nu-test.js` is een ASV-testpagina).
@@ -10,8 +10,15 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
 
 ## Open
+**Voor Paul — Rolkaart en demo per rol (release 20261116b, branch `wp-rest`)**
+- [x] Live sinds 16-11 (alleen client, geen rules- of functions-wijziging).
+- [ ] **Rolkaart** (`rolkaart.js`): wie bouwcoördinator, gekoppelde coach van een eigen bouw, hoofd jeugdopleiding of trainingscoördinator is, ziet één keer een venster "Dit zie je / Dit kun je / Dit kun je niet". Vlag in `gebruikers/{uid}/meta/onboarding.rolkaart.<rol>`. De teksten volgen de rules; verander je de rechten, pas dan `ROLKAARTEN` aan. **Gebouwd zonder mockup, op jouw "fix de rest": bekijk hem en zeg wat anders moet.** Het hoofd jeugd ziet de naam die de club voor die rol heeft ingesteld.
+- [ ] **Demo per rol**: `index.html?demo=los`, `coach`, `eigenbouw`, `bouw`, `trainco`, `hjo` of `admin` toont dezelfde democlub als één gebruikerstype. `index.html?demo` blijft zoals het was (alle rollen tegelijk). De demo kent geen toegangsregels: je ziet wat de app een rol laat zien, niet wat de server toestaat. Bruikbaar voor verkoop, voor uitleg aan een nieuwe coördinator en om schermen per rol te bekijken.
+- [ ] Getest: `npm test` 44 suites groen (nieuw: `tests/rolkaart.test.mjs`). In de browser op 375×812: alle zeven rollen laden zonder fouten; de vier rolkaarten verschijnen, sluiten met Begrepen en komen niet terug; een gewone coach krijgt er geen. Niet tegen echte Firebase.
+- [ ] Niet gedaan uit de audit: `sportlinkClubcode` afschermen (de clubadmin schrijft dat veld zelf bij "Koppeling testen", dus dat zou die knop breken) en de Storage-regels (een emulatortest kan pas als de emulator op poort 8080 gesloten is).
+
 **Voor Paul — Totaalplan WP2 t/m WP9 (release 20261116a, branch `wp2-applogica`)**
-- [ ] **Nog niet live.** Alleen client, geen rules- of functions-wijziging: mergen naar `main` is genoeg (`git push origin wp2-applogica:main`, of een PR). Claude mocht deze push naar `main` niet zelf doen.
+- [x] Live sinds 16-11 (alleen client; door Claude naar `main` gebracht na akkoord van Paul).
 - [ ] Code: van plek wisselen tijdens een periode klopt nu (`verwisselSlots` in `analyse.js`, test `tests/opstelling.test.mjs`); melding bij vervangen met de klok op 0:00; raakvlak van kleine knoppen minstens 44 px op aanraakschermen (blok TIKDOELEN onderaan `styles.css`); `tools/importcheck.mjs` in `npm test`; fout in `over/over-beleving.js` bij het verkleinen van het venster.
 - [ ] **Vraag:** het totaalplan noemt de bug "wissel zonder lopende klok" zonder beschrijving. Zie `docs/wp2-applogica.md`: is wat daar staat de bug die je bedoelt?
 - [ ] Documenten om te lezen en te beslissen, elk met beslispunten onderaan: `docs/wp2-applogica.md`, `docs/wp3-multitenant-impactanalyse.md`, `docs/wp4-3d-stand.md`, `docs/wp5-design-doorlichting.md`, `docs/wp6-onboarding-per-rol.md`, `docs/wp8-marketing.md`, `docs/wp9-uitrolplan.md`.

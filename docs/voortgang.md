@@ -1,6 +1,6 @@
 # Voortgang totaalplan cluppie.io
 
-Bijgewerkt 16-11-2026. Release 20261116a staat klaar op branch `wp2-applogica` (nog niet op `main`). Release 20261115e staat live: rules, indexen, alle functions en de client (`main`). Paul koos een permissiemodus waarin Claude mocht deployen.
+Bijgewerkt 16-11-2026. Releases 20261116a en 20261116b staan live (client). Release 20261115e staat live: rules, indexen, alle functions en de client (`main`). Paul koos een permissiemodus waarin Claude mocht deployen.
 
 ## WP0 — Opruimen: af, zit in release 20261115d
 
@@ -43,7 +43,7 @@ De release die alleen in Pauls werkmap stond is eerst ongewijzigd vastgelegd (`a
 
 ## WP2 t/m WP9: stand op 16-11-2026
 
-Paul gaf op 15-11 akkoord om WP2 t/m WP9 zelfstandig te maken. Eerlijk over wat dat heeft opgeleverd: WP2 en WP5 hebben code gekregen (release 20261116a, nog niet live); WP3, WP4, WP6, WP8 en WP9 zijn analyses en plannen met beslispunten; WP7 is een set concepten voor een jurist. Geen van deze werkpakketten is "af" in de zin van het totaalplan.
+Paul gaf op 15-11 akkoord om WP2 t/m WP9 zelfstandig te maken. Eerlijk over wat dat heeft opgeleverd: WP2, WP5 en WP6 hebben code gekregen (releases 20261116a en b, live); WP3, WP4, WP6, WP8 en WP9 zijn analyses en plannen met beslispunten; WP7 is een set concepten voor een jurist. Geen van deze werkpakketten is "af" in de zin van het totaalplan.
 
 | WP | Wat er nu is | Document | Wat nog moet |
 |---|---|---|---|
@@ -51,14 +51,14 @@ Paul gaf op 15-11 akkoord om WP2 t/m WP9 zelfstandig te maken. Eerlijk over wat 
 | WP3 Multi-tenant | Analyse. Advies: "club-ID-first" niet bouwen; wel team loskoppelen en een overzicht bij de overstap. | `docs/wp3-multitenant-impactanalyse.md` | Besluit van Paul, dan mockup. |
 | WP4 3D | Stand opgenomen (3D bekijken bestaat sinds 20261115b) en impactanalyse voor de editor. | `docs/wp4-3d-stand.md` | Besluit, mockup, bouwen: editor en spelvormen. |
 | WP5 Design | Twee schermen gemeten in de demo; tikdoelen gefixt en in de browser gecontroleerd (lokaal). | `docs/wp5-design-doorlichting.md` | Andere schermen, donker thema, desktop, andere rollen; `--warn` als tekstkleur; tekst van 9 px. |
-| WP6 Onboarding | Inventaris per rol en een voorstel (rolkaart) met teksten. | `docs/wp6-onboarding-per-rol.md` | Besluit, mockup, bouwen; handleiding per rol. |
+| WP6 Onboarding | Inventaris per rol. Gebouwd en live (20261116b): de rolkaart voor vier rollen, zonder mockup. | `docs/wp6-onboarding-per-rol.md` | Paul bekijkt de rolkaart; welkom voor de uitgenodigde coach; handleiding per rol. |
 | WP7 Juridisch | Vier concepten en een lijst aanvullingen op de privacyverklaring. | `docs/juridisch/` | Jurist. Niets is gepubliceerd. |
-| WP8 Marketing | Positie tegenover Rinus, Spond, TeamSnap en Touchline Studio; twee boodschappen; prijsmodel zonder bedragen; voorstel landingspagina en demo per rol. | `docs/wp8-marketing.md` | Besluiten van Paul (prijs, boodschap); mockup landingspagina; demo per rol bouwen. |
+| WP8 Marketing | Positie tegenover Rinus, Spond, TeamSnap en Touchline Studio; twee boodschappen; prijsmodel zonder bedragen; voorstel landingspagina. Gebouwd en live (20261116b): demo per rol (`index.html?demo=<rol>`). | `docs/wp8-marketing.md` | Besluiten van Paul (prijs, boodschap); mockup landingspagina; de demo per rol op de landingspagina zetten. |
 | WP9 Uitrol | Plan per fase met wat er klaar moet zijn. | `docs/wp9-uitrolplan.md` | Uitvoeren; contact met clubs doet Paul. |
 
-**Eerste stap die het meeste oplevert:** de demo per rol (FC Testdorp, acht rollen). Die is nodig voor de ontwerpmeting per rol (WP5), de rooktests vóór het splitsen van `teams.js` (WP2), de rolkaarten (WP6) en de verkoop (WP8).
+**Demo per rol staat er.** Daarmee kunnen nu: de ontwerpmeting per rol (WP5), rooktests vóór het splitsen van `teams.js` (WP2) en de verkoop (WP8). De demo kent geen toegangsregels en geen eindbaas-rol.
 
-**Live zetten van 20261116a:** alleen client. De push naar `main` is door de app geweigerd toen Claude hem probeerde; de branch `wp2-applogica` staat klaar.
+**Wat ik bewust niet heb gebouwd** en waarom: de 3D-editor en spelvormen (WP4), de landingspagina met twee ingangen (WP8), team loskoppelen (WP3) en het splitsen van `teams.js` (WP2). Dat zijn grote of zichtbare veranderingen waar een keuze van Paul in zit (zie de beslispunten in elk document). De juridische teksten (WP7) blijven concepten tot een jurist ze heeft gelezen.
 
 ## Open punten uit PORTEREN.md, gesorteerd
 
@@ -86,6 +86,8 @@ Paul gaf op 15-11 akkoord om WP2 t/m WP9 zelfstandig te maken. Eerlijk over wat 
 | Van plek wisselen tijdens een periode (`verwisselSlots`) | Invaller kon op twee plekken staan; starter verdween uit de opstelling | Coach, losse trainer |
 | Raakvlak van kleine knoppen minstens 44 px | Gemeten: 28 tot 38 px | Alle |
 | `tools/importcheck.mjs` in `npm test` | Een module werd met twee versienummers geladen | Geen (ontwikkeling) |
+| Rolkaart bij eerste binnenkomst | Vier rollen kregen geen enkele uitleg; de gekoppelde coach bouw heeft sinds 15-11 nieuwe rechten | Bouwcoördinator, gekoppelde coach bouw, hoofd jeugd, trainingscoördinator |
+| Demo per rol | Schermen van andere rollen dan de coach waren nergens te bekijken | Alle behalve eindbaas |
 | Werkwijze: scripts schrijven pas weg als alle vervangingen gelukt zijn | Een bewerkingsscript maakte `functions/index.js` leeg; hersteld uit de commit, niets verloren | Geen |
 
 

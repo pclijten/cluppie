@@ -5,7 +5,7 @@
    bewerken, én het uitlenen van een speler aan een ander team binnen de
    club (thematisch dezelfde "speler"-context, vandaar in één bestand). */
 import { teamsOpId } from './teams-ophalen.js?v=20261011g';
-import { beleidsplanNaam, cfg } from './clubconfig.js?v=20261115e';
+import { beleidsplanNaam, cfg } from './clubconfig.js?v=20261116b';
 import {
   db, collection, doc, addDoc, deleteDoc, updateDoc, setDoc,
   getDoc, getDocs, query, where, serverTimestamp, documentId, deleteField,
@@ -27,7 +27,7 @@ import { leenOmschrijving, leenActief } from './uitleen-regels.js?v=20261113b';
 import { ico } from './icons.js?v=20261110a';
 import { rondesVoorTeam, rondeSpelers, datumKort } from './evaluatierondes.js?v=20261115e';
 
-import { toonThemaInfo } from './teams-leerlijn.js?v=20261115e';
+import { toonThemaInfo } from './teams-leerlijn.js?v=20261116b';
 import { telGebruik } from './tracker.js?v=20261115e';
 import { opkomstVoor, teltMee } from './opkomst.js?v=20260922c';
 import { heeftElftallen, filterOpElftal, elftalPillen } from './elftallen.js?v=20261116a';
@@ -40,7 +40,7 @@ import { htmlVolledigFormulier, koppelVolledigFormulier, koppelInfo, htmlSamenva
    import). Dynamic import() binnen de aanroepende functie is het patroon
    dat de rest van de app ook al gebruikt (zie club.js/wedstrijd.js). */
 async function herrenderTeam(){
-  const m = await import('./teams.js?v=20261116a');
+  const m = await import('./teams.js?v=20261116b');
   m.renderTeam();
 }
 
@@ -1491,7 +1491,7 @@ export async function modalUitlenen(spelerId){
      Uitgebreid) en mag alleen door coördinatoren en de clubadmin. */
   const team = { ...S.team, id: S.teamId };
   if (!magUitlenen(team)) return meld('Uitlenen regelt de coördinator van de bouw');
-  const m = await import('./uitleen-form.js?v=20261116a');
+  const m = await import('./uitleen-form.js?v=20261116b');
   m.openUitleenForm({ clubId, vanTeam: team, speler: p });
 }
 
@@ -1499,7 +1499,7 @@ export async function modalUitlenen(spelerId){
 export async function wijzigUitlening(u, clubIdOverride, naOpslaan){
   const clubId = clubIdOverride || S.team?.club;
   if (!clubId || !u) return meld('Uitlening niet gevonden');
-  const m = await import('./uitleen-form.js?v=20261116a');
+  const m = await import('./uitleen-form.js?v=20261116b');
   m.openUitleenForm({ clubId, vanTeam: { id: u.vanTeam, naam: u.vanTeamNaam }, speler: { id: u.spelerId, naam: u.snapshot?.naam || 'Speler' }, bestaand: u, naOpslaan });
 }
 
