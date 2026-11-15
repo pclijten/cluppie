@@ -52,7 +52,13 @@ export function compileer(v, t, stappen, { tek } = {}){
   };
   const plat = stappen.flat();
   const lijnen = plat.map((x, i) => {
-    const van = [...waar(x.a, i)], naar = punt(x.T, van, i).map(rond);
+    const van = [...waar(x.a, i)];
+    let naar = punt(x.T, van, i).map(rond);
+    /* druk zetten op een speler die al vlakbij staat: stap door tot bij de speler, zodat de beweging zichtbaar blijft */
+    if (x.T && x.T.druk !== undefined && m(van, naar) < 1){
+      const q = waar(x.T.druk, i), a = m(q, van);
+      naar = (a > 1.3 ? [q[0] + (van[0] - q[0]) * 0.3 / a, q[1] + (van[1] - q[1]) * 0.3 / a] : [van[0] + 100 / B, van[1] + (q[1] >= van[1] ? 60 : -60) / L]).map(rond);
+    }
     if (!x.tekst) fouten.push(`stap ${i + 1}: geen tekst`);
     else if (!/^[A-ZÉ0-9].{8,}[.!?]$/.test(x.tekst)) fouten.push(`stap ${i + 1}: tekst is geen volledige zin ("${x.tekst}")`);
     if (m(van, naar) < 0.8) fouten.push(`stap ${i + 1}: lijn is te kort`);
