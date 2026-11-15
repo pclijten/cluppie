@@ -19,19 +19,19 @@
 
    Tabblad: 'seizoensplan'. Importeert NIET uit teams.js; teams.js geeft zetTeamTab mee. */
 import { db, doc, collection, getDoc, getDocs, setDoc, addDoc, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261113b';
-import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261113b';
-import { aiAan, aiDoel } from './clubconfig.js?v=20261113b';
-import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261115b';
-import { trainingenVanPlan, planVoorTeam } from './seizoensplan-club.js?v=20261115b';
-import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261113b';
+import { S, esc, meld } from './state.js?v=20261115c';
+import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261115c';
+import { aiAan, aiDoel } from './clubconfig.js?v=20261115c';
+import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261115c';
+import { trainingenVanPlan, planVoorTeam } from './seizoensplan-club.js?v=20261115c';
+import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261115c';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261115b';
 import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261115b';
-import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261115b';
+import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261115c';
 import {
   MODELLEN, ACCENTEN, maakSeizoensplan, weekKalender, herreken, standaardVrij, maandagVan, beschikbareThemas, themaVolgorde,
   valideerBlokken, positieOp, positieWeek, teamSignalen, stelBijsturingVoor, pasVoorstelToe,
-} from './seizoensplan-logica.js?v=20261115b';
+} from './seizoensplan-logica.js?v=20261115c';
 
 /* [20261113d] vormen uit basis + beheerlaag (bibliotheek.js) */
 const KLEUREN = ['var(--accent)', '#4a8fe0', '#e0a526', '#3fb27f', '#a855f7', '#f08a24', '#14b8a6', '#ec4899'];

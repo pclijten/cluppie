@@ -18,25 +18,25 @@
    Tabblad: 'trainingsmodule'. Importeert NIET uit teams.js (geen kringimport); teams.js geeft
    zetTeamTab mee aan koppelTrainingsmodule(). */
 import { db, collection, addDoc, setDoc, getDoc, getDocs, deleteDoc, doc, functions, httpsCallable, serverTimestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261113b';
-import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } from './config.js?v=20261113b';
-import { aiAan, aiDoel } from './clubconfig.js?v=20261113b';
+import { S, esc, meld } from './state.js?v=20261115c';
+import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } from './config.js?v=20261115c';
+import { aiAan, aiDoel } from './clubconfig.js?v=20261115c';
 import { ico } from './icons.js?v=20261110a';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261115b';
 import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261115b';
-import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, kiesDuur, SLOT_NAAM, groepsindeling, opbouwVoor, WEER } from './trainingsplanner.js?v=20261115b';
+import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, kiesDuur, SLOT_NAAM, groepsindeling, opbouwVoor, WEER } from './trainingsplanner.js?v=20261115c';
 import { MATERIAAL, MATERIAAL_NAAM, PRESETS, presetVan, VELDEN, schoonContext, behoefte, haalbaar, valtAf, tipTekst } from './trainingscontext-logica.js?v=20261019a';
 import { htmlZevenVelden, STANDAARD_OPEN } from './oefenkaart.js?v=20261115b';
 import { maak3DBlok } from './scene3d.js?v=20261115b';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
 import { TERUGBLIK_VRAGEN, zetAntwoord, terugblikKlaar, terugblikSamenvatting, signaalVormBewaard, signaalVormGewisseld, signaalTerugblik, signaalMateriaal, signaalGat, gatRedenen } from './leren-logica.js?v=20261019b';
-import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261113b';
+import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261115c';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261012e';
-import { positieWeek, seizoensweekOp, weekKalender, standaardVrij, maandagVan } from './seizoensplan-logica.js?v=20261115b';
-import { trainingenRef } from './seizoensplan-trainingen.js?v=20261115b';
-import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261115b';
-import { oefeningVan, geplandeTraining, vormIdsVan } from './seizoensplan-club.js?v=20261115b';
-import { onderdeelAan } from './onderdelen.js?v=20261113b';
+import { positieWeek, seizoensweekOp, weekKalender, standaardVrij, maandagVan } from './seizoensplan-logica.js?v=20261115c';
+import { trainingenRef } from './seizoensplan-trainingen.js?v=20261115c';
+import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261115c';
+import { oefeningVan, geplandeTraining, vormIdsVan, rondBlok } from './seizoensplan-club.js?v=20261115c';
+import { onderdeelAan } from './onderdelen.js?v=20261115c';
 
 /* [20261113d] vormen uit basis + beheerlaag (bibliotheek.js) */
 const THEMAS_BESCHIKBAAR = () => new Set(vormen().flatMap(v => v.thema));
@@ -245,7 +245,7 @@ function htmlResultaat(){
    en bij opnieuw tekenen teruggezet, zodat de animatie doorloopt als je een veld van de oefenkaart opent. */
 function htmlTekenKeuze(i, v, veld){
   const t = staat(), drie = !!(t.drie || {})[i];
-  const knop = (aan, tekst) => `<button type="button" data-tm-3d="${i}" data-tm-3d-aan="${aan ? 1 : 0}" aria-pressed="${drie === aan}">${tekst}</button>`;
+  const knop = (aan, tekst) => `<button type="button" data-tm-drie="${i}" data-tm-drie-aan="${aan ? 1 : 0}" aria-pressed="${drie === aan}">${tekst}</button>`;
   return `<div class="s3d-keuze" role="group" aria-label="Weergave">${knop(false, 'Tekening')}${knop(true, '3D')}</div>
     ${drie ? `<div class="s3d-plek" data-s3d-plek="${i}:${esc(v.id)}:${veld.b}x${veld.l}"></div>` : vormSvg(v, veld) + TEKENING_LEGENDA}`;
 }
@@ -390,7 +390,8 @@ function openBewaarde(id){
     for (const o of d.onderdelen){
       const v = vormOpId(o.vormId);
       if (!v){ meld('Een vorm uit deze training bestaat niet meer in de bibliotheek'); continue; }
-      onderdelen.push(bouwOnderdeel(v, { slot: o.slot, minuten: o.minuten }, { N, thema: pr.thema, weer: pr.weer || null }));
+      /* [20261115c] oude trainingen (blokken van 12 of 14 minuten) openen in blokken van 5; pas Bewaren slaat dat op */
+      onderdelen.push(bouwOnderdeel(v, { slot: o.slot, minuten: rondBlok(o.minuten, o.slot) }, { N, thema: pr.thema, weer: pr.weer || null }));
     }
     const ov = { ...opbouwVoor(duur, pr.weer || null).overgang };
     const av = d.afsluitingId ? vormOpId(d.afsluitingId) : null;
@@ -471,7 +472,7 @@ export function koppelTrainingsmodule(v){
     else if (d.tmLos){ t.vervangt = null; t.bewaardId = null; meld('Wordt een extra training; de geplande training blijft staan'); teken(); }
     else if (d.tmMaak){ t.seed++; maak(); stuurSignalen(gatRedenen(t.plan).map(r => signaalGat(leeftijdVanCategorie(S.team?.categorie), r))); teken(); const r = root.querySelector('.tm-kop2'); if (r) window.scrollTo({ top: r.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' }); }
     else if (d.tmOpenVorm !== undefined){ const i = Number(d.tmOpenVorm); t.open = t.open === i ? null : i; teken(); }
-    else if (d.tm3d !== undefined){ t.drie = t.drie || {}; t.drie[Number(d.tm3d)] = d.tm3dAan === '1'; teken(); }
+    else if (d.tmDrie !== undefined){ t.drie = t.drie || {}; t.drie[Number(d.tmDrie)] = d.tmDrieAan === '1'; teken(); }
     else if (d.tmOk){ const [i, k] = d.tmOk.split(':'); const cur = t.tab[Number(i)] === undefined ? STANDAARD_OPEN : t.tab[Number(i)]; t.tab[Number(i)] = cur === k ? null : k; teken(); }
     else if (d.tmPas){ t.pas = !t.pas; teken(); }
     else if (d.tmCk){ t.ckOpen = !t.ckOpen; teken(); }

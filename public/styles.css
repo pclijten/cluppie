@@ -6235,6 +6235,15 @@ h3.tm-kop2{font-size:calc(20px * var(--fs))}
 .ok-sv b{display:block}
 @media (max-width:420px){.ok-lbl{min-width:0}.ok-inhoud{padding-left:12px}}
 
+/* [20261115c] Oefenkaart in de trainingsweergave: zelfde velden met <details> */
+.ok-veld>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:12px;cursor:pointer;color:var(--ink)}
+.ok-veld>summary::-webkit-details-marker{display:none}
+.ok-veld>summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.ok-veld[open]>summary .ok-pijl{transform:rotate(90deg)}
+.ok-veld[open]>summary .ok-kort{visibility:hidden}
+.trw-ok{margin-top:10px}
+.trw-oef .s3d-keuze{margin:4px 0 8px}
+.trw-3d{margin-bottom:10px}
 /* [20261115b] Oefenvorm in 3D (scene3d.js, motor over/over-3d.js) */
 .s3d-keuze{display:inline-flex;gap:2px;padding:2px;margin:8px 0 6px;border:1px solid var(--hair);border-radius:999px;background:var(--op-vlak)}
 .s3d-keuze button{all:unset;cursor:pointer;padding:5px 14px;border-radius:999px;font-size:calc(13px * var(--fs));font-weight:600;color:var(--ink-2);min-height:28px;display:inline-flex;align-items:center}

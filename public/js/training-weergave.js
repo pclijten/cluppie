@@ -8,7 +8,7 @@
    Gebruikt dezelfde overlay-aanpak en terug-bewaking als pdf-viewer.js, zodat de
    Android-terugknop / veeg-terug de weergave sluit i.p.v. de app te verlaten. */
 
-import { bewaakTerug, vangnetStilTerugAlsNodig, esc, terugLaag } from './state.js?v=20261113b';
+import { bewaakTerug, vangnetStilTerugAlsNodig, esc, terugLaag } from './state.js?v=20261115c';
 
 let _overlay = null;
 
@@ -45,10 +45,10 @@ export function sluitTrainingWeergave(){
   // ruimt de deel-knop al op zijn eigen manier op).
   const nb = _overlay.querySelector('.trw-notitie-knop:not(.trw-deel-knop)');
   if (nb) nb.remove();
-  import('./training-aantekeningen.js?v=20261113b').then(m => m.resetAantekeningen()).catch(() => {});
-  import('./training-video.js?v=20261113b').then(m => m.resetTrainingVideos()).catch(() => {});
-  import('./training-tactiek.js?v=20261113b').then(m => m.resetTrainingTactiek()).catch(() => {});
-  import('./training-delen.js?v=20261113b').then(m => m.resetTrainingDelen()).catch(() => {});
+  import('./training-aantekeningen.js?v=20261115c').then(m => m.resetAantekeningen()).catch(() => {});
+  import('./training-video.js?v=20261115c').then(m => m.resetTrainingVideos()).catch(() => {});
+  import('./training-tactiek.js?v=20261115c').then(m => m.resetTrainingTactiek()).catch(() => {});
+  import('./training-delen.js?v=20261115c').then(m => m.resetTrainingDelen()).catch(() => {});
   vangnetStilTerugAlsNodig(wasOpen);
 }
 
@@ -135,17 +135,53 @@ export function oefHtml(idx, oef, diagramUrls){
     : url
     ? `<figure class="trw-diagram" data-zoom="${esc(url)}" data-zoomtitel="${esc(oef.titel || 'Oefening ' + idx)}"><img src="${esc(url)}" alt="" loading="lazy"><span class="trw-zoomhint"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.3 15.3 20 20"/></svg> tik om te vergroten</span></figure>`
     : '';
-  const blokken = (oef.blokken || []).map(blokHtml).join('');
+  const zeven = (oef.blokken || []).some(b => b.veld);
+  const blokken = zeven ? htmlVeldenVan(oef.blokken) : (oef.blokken || []).map(blokHtml).join('');
+  /* [20261115c] oefening uit de bibliotheek: keuze tekening of 3D (stappen uit de tekening van de vorm) */
+  const drieD = oef.svg && oef.bron?.vormId ? `<div class="s3d-keuze" role="group" aria-label="Weergave"><button type="button" data-trw-drie="0" aria-pressed="true">Tekening</button><button type="button" data-trw-drie="1" data-vorm="${esc(oef.bron.vormId)}" aria-pressed="false">3D</button></div>` : '';
   return `
     <section class="trw-oef">
       <div class="trw-oef-kop">
         <span class="trw-oef-nr">${idx}</span>
         <h2>${esc(oef.titel || 'Oefening ' + idx)}</h2>
       </div>
-      ${diagram}
-      <div class="hl">${blokken}</div>
+      ${drieD}${diagram}<div class="trw-3d" hidden></div>
+      <div class="${zeven ? 'ok-kaart trw-ok' : 'hl'}">${blokken}</div>
     </section>`;
 }
+
+/* [20261115c] Blokken met `veld` als de 7 vaste velden van de oefenkaart: openklapbaar met <details>,
+   zodat er geen extra klik-afhandeling nodig is. Uitleg staat standaard open. */
+const VELDEN = [['doel', 'Doel'], ['tijd', 'Tijdbestek'], ['mat', 'Benodigdheden'], ['uitleg', 'Uitleg'], ['diff', 'Differentiatie'], ['coach', 'Coachmomenten'], ['spel', 'Spelvormen']];
+const SUBKOP = { Organisatie: 'Opstelling en verloop', Coachpunten: 'Let op', Coachvragen: 'Vraag aan de spelers' };
+function htmlVeldenVan(blokken){
+  return VELDEN.map(([id, naam], i) => {
+    const bs = blokken.filter(b => b.veld === id); if (!bs.length) return '';
+    const eerste = bs[0], kort = eerste.type === 'lijst' ? (eerste.items || []).join(' · ') : (eerste.tekst || '');
+    const inhoud = bs.map(b => {
+      const kop = b.kop && b.kop !== naam && !(id === 'tijd' && b.kop === 'Tijdbestek') ? `<div class="ok-sub">${esc(SUBKOP[b.kop] || b.kop)}</div>` : '';
+      if (b.type === 'lijst') return `${kop}<ul class="ok-ul">${(b.items || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
+      return `${kop}${b.kop === 'Uitleg' ? `<div class="ok-zeg">${esc(String(b.tekst).replace(/^Zeg:\s*/i, ''))}</div>` : `<p>${esc(b.tekst)}</p>`}`;
+    }).join('');
+    return `<details class="ok-veld"${id === 'uitleg' ? ' open' : ''}><summary><span class="ok-nr">${i + 1}</span><span class="ok-lbl">${naam}</span><span class="ok-kort">${esc(kort)}</span><span class="ok-pijl" aria-hidden="true">›</span></summary><div class="ok-inhoud">${inhoud}</div></details>`;
+  }).join('');
+}
+
+/* [20261115c] Klik op Tekening/3D in een oefening: het 3D-blok wordt pas bij de eerste tik gemaakt. */
+if (typeof document !== 'undefined') document.addEventListener('click', async e => {
+  const b = e.target.closest?.('[data-trw-drie]'); if (!b) return;
+  const sec = b.closest('.trw-oef'), plek = sec?.querySelector('.trw-3d'), fig = sec?.querySelector('.trw-diagram'); if (!plek) return;
+  const aan = b.dataset.trwDrie === '1';
+  sec.querySelectorAll('[data-trw-drie]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  plek.hidden = !aan; if (fig) fig.style.display = aan ? 'none' : '';
+  if (aan && !plek.firstChild){
+    const vormId = sec.querySelector('[data-trw-drie="1"]').dataset.vorm;
+    const [{ maak3DBlok }, { vormOpId }] = await Promise.all([import('./scene3d.js?v=20261115b'), import('./bibliotheek.js?v=20261115b')]);
+    const v = vormOpId(vormId);
+    if (!v){ plek.innerHTML = '<p class="s3d-wacht">Deze vorm staat niet meer in de bibliotheek.</p>'; return; }
+    plek.appendChild(maak3DBlok(v, v.veld));
+  }
+});
 
 /* openTrainingWeergave({ training, diagramUrls, oefeningen, onOrigineel })
    - training: het Firestore-doc (voor titel/meta)
@@ -196,7 +232,7 @@ export function openTrainingWeergave({ titel, meta, oefeningen, diagramUrls, onO
   // Aantekeningen-laag (additief): notitie-knop in de balk + tik-op-regel.
   // Alleen als er een trainingId is om notities aan te koppelen.
   if (trainingId){
-    import('./training-aantekeningen.js?v=20261113b').then(mod => {
+    import('./training-aantekeningen.js?v=20261115c').then(mod => {
       const balk = el.querySelector('.trw-balk');
       mod.initAantekeningen({ stage, balk, trainingId });
       mod.bindItemKlik(stage);
@@ -204,20 +240,20 @@ export function openTrainingWeergave({ titel, meta, oefeningen, diagramUrls, onO
 
     // Video-uitleg-laag (additief): 🎬-knop in de balk die de zichtbare oefening
     // volgt + afspeeltegel per oefening; beheerder kan uploaden/vervangen/wissen.
-    import('./training-video.js?v=20261113b').then(mod => {
+    import('./training-video.js?v=20261115c').then(mod => {
       const balk = el.querySelector('.trw-balk');
       mod.initTrainingVideos({ stage, balk, trainingId, videos: oefeningVideos || {}, trainingClub });
     }).catch(() => {});
 
     // Tactiekbord-laag (additief): compact tactiekbord-icoon per oefening, op één
     // lijn met het video-icoon. Koppelt een bord aan de oefening.
-    import('./training-tactiek.js?v=20261113b').then(mod => {
+    import('./training-tactiek.js?v=20261115c').then(mod => {
       mod.initTrainingTactiek({ stage, trainingId, borden: oefeningTactiek || {} });
     }).catch(() => {});
 
     // Deel-knop (additief): 📤-knop rechts in de balk waarmee een coach deze
     // training + de presentie ervan tijdelijk deelt met een meehelpende ouder.
-    import('./training-delen.js?v=20261113b').then(mod => {
+    import('./training-delen.js?v=20261115c').then(mod => {
       const balk = el.querySelector('.trw-balk');
       mod.initTrainingDelen({ balk, trainingId, teamId, teamNaam, clubNaam, titel });
     }).catch(() => {});

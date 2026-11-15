@@ -10,6 +10,13 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
 
 ## Open
+**Voor Paul — Bestaande trainingen naar de nieuwe opbouw (release 20261115c, branch `trainingen-nieuwe-opbouw`)**
+- [ ] PR mergen. Alleen client: geen rules-, functions- of index-deploy (de platformregel `/{pad=**}/trainingen/{id}` laat precies `oefeningen`, `vormIds` en `bibliotheekBijgewerktMs` toe, en meer schrijft dit niet).
+- [ ] **Daarna één keer:** Platform › Bibliotheek → kaart "Eenmalig: trainingen naar de nieuwe opbouw" → Trainingen bekijken → "Alleen geplande" of "Alles bijwerken" (ook door coaches aangepaste trainingen; die houden hun oefeningen). Gegeven trainingen en oefeningen zonder vorm uit de bibliotheek (geüploade PDF's) blijven zoals ze zijn. Doet ook meteen het "Trainingen koppelen". Bij een fout halverwege kun je opnieuw starten.
+- [ ] Wat er is: `oefeningVan` schrijft blokken met `veld` in de volgorde van de 7 velden (kop "Tijdbestek" in plaats van "Tijd en groepen"; `bronVanOefening` herkent beide), `naarNieuweOpbouw` + `rondBlok` in `seizoensplan-club.js`, de trainingsweergave toont blokken met `veld` als openklapbare velden (`<details>`) met keuze Tekening/3D, Training maken rondt bij het openen van een bewaarde training de minuten af op blokken van 5.
+- [ ] **Fout hersteld uit 20261115b:** de knop 3D in Training maken deed niets (`data-tm-3d` geeft in `dataset` geen `tm3d`). Nu `data-tm-drie`.
+- [ ] Getest: `npm test` (nieuw `tests/nieuwe-opbouw.test.mjs`), trainingsweergave gerenderd op 414 breed met 3D (WebGL). De omzetting niet tegen echte Firebase gedraaid: eerst "Trainingen bekijken" en de aantallen controleren.
+
 **Voor Paul — Oefeningen in 3D (release 20261115b, zelfde branch `oefenkaart-7-velden`, tweede commit)**
 - [ ] Mee in dezelfde PR. Alleen client. Mockup "Passen en lopen (3D)" goedgekeurd op 15-11; analyse `claude/trainingen-3d-impactanalyse.md` (bijgewerkt met de gemaakte keuzes).
 - [ ] Wat er is: in Training maken per vorm de keuze Tekening / 3D. `scene3d.js` maakt de stappen uit de bestaande tekening (elke lijn is een stap, met tekst als "Speler 1 speelt de bal naar speler 2"), dus alle 299 vormen met lijnen hebben 3D zonder invoer. Bediening zoals de mockup: Vorige, Afspelen/Pauze, Volgende, Opnieuw, stapnummer, voortgangsbalk, Hoek en Draai. De 3D-motor is die van de over-pagina (`over/over-3d.js`, uitgebreid met `opbouw`, `naarStap`, `speelStap`, `speelVanaf`, `kijk`, `weg`; de over-pagina werkt zoals voorheen) en `vendor/over/three.min.js` + `gsap.min.js`, lokaal, pas geladen bij de eerste tik op 3D. Zonder WebGL een melding en blijft de tekening.
