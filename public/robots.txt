@@ -1,0 +1,26 @@
+# robots.txt van www.cluppie.io
+# Alles mag gelezen worden: de publieke pagina's (over.html, privacy.html) zijn bedoeld om gevonden te worden.
+# De app zelf staat achter een login; daar valt voor een crawler niets te halen.
+
+User-agent: *
+Allow: /
+
+# AI-zoekmachines en assistenten: uitdrukkelijk welkom, zodat ChatGPT, Claude, Perplexity,
+# Gemini en Copilot Cluppie kunnen noemen en ernaar kunnen verwijzen.
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: Amazonbot
+User-agent: DuckAssistBot
+User-agent: MistralAI-User
+User-agent: CCBot
+Allow: /
+
+Sitemap: https://www.cluppie.io/sitemap.xml

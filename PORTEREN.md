@@ -13,6 +13,16 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
 
 ## Open
+**Voor Paul — Vindbaarheid in zoekmachines en AI-assistenten (branch `vindbaarheid`, alleen client, geen deploy van rules of functions)**
+- [ ] PR mergen. Uitgangspunt: cluppie.io was niet te vinden (geen `robots.txt`, sitemap, canonical of gestructureerde gegevens; de hoofdpagina is de app en het woord "voetbal" stond één keer op `over.html`).
+- [ ] **Nieuw:** `public/robots.txt` (alles toegestaan, AI-crawlers bij naam, verwijzing naar de sitemap), `public/sitemap.xml` (over.html, privacy.html), `public/llms.txt` (samenvatting van Cluppie voor AI-assistenten; bijwerken als het aanbod verandert), `public/over/og-cluppie.jpg` (voorbeeld bij delen in WhatsApp/LinkedIn, 1200×630).
+- [ ] **over.html:** titel is nu "Cluppie: app voor jeugdvoetbaltrainers en jeugdopleidingen", nieuwe beschrijving, canonical, Open Graph, favicon en JSON-LD (Organization, WebSite, WebPage, SoftwareApplication; zonder prijs). Eén zichtbare tekstwijziging: de regel onder de knoppen in de hero begint met "De app voor jeugdvoetbal:". Lees na.
+- [ ] **index.html:** beschrijving, canonical naar over.html en een `<noscript>`-blok met uitleg en link (crawlers zonder JavaScript zagen alleen het laadscherm). **privacy.html:** beschrijving en canonical.
+- [ ] **Zelf doen na het mergen** (heeft jouw accounts nodig): (1) Google Search Console: domein `cluppie.io` toevoegen (TXT-record bij Strato), sitemap `https://www.cluppie.io/sitemap.xml` indienen, bij over.html "Indexering aanvragen". (2) Bing Webmaster Tools: importeren uit Search Console; Bing voedt ChatGPT en Copilot. (3) Links naar www.cluppie.io: clubsites van deelnemende clubs, LinkedIn, je mailhandtekening. (4) Controleren dat `http://cluppie.io` en `https://cluppie.io` doorsturen naar `https://www.cluppie.io` (GitHub Pages › Enforce HTTPS).
+- [ ] **Beslispunt:** de hoofdpagina `/` is de app en stuurt met JavaScript door naar over.html. Netter voor zoekmachines is de landingspagina op `/` en de app op `/app/`; dat raakt `start_url`/`scope` van de PWA, de service worker en alle uitnodigingslinks, dus eerst een impactanalyse. Niet gedaan.
+- [ ] Bij een wijziging van over.html of privacy.html: `lastmod` in `sitemap.xml` bijwerken.
+- [ ] Getest: `npm test` groen (nieuw `tests/vindbaarheid.test.mjs`); over.html laadt in Chrome (414×896) met de JSON-LD in de pagina. **Niet bekeken:** index.html zonder JavaScript (het `<noscript>`-blok) en het deelvoorbeeld in WhatsApp/LinkedIn; dat kan pas als het live staat.
+
 **Voor Paul — Updates in een eigen bestand, verkoopmateriaal (release 20261116g, branch `wp-updates-marketing`)**
 - [x] Live sinds 16-11 (alleen client).
 - [ ] **UPDATES verplaatst** naar `public/js/updates.json` (122 releases, ongewijzigd). `teams.js` is 645 regels korter en haalt de lijst bij het starten op. Reden: elke nieuwsregel wijzigde `teams.js` en gaf zo'n vijftig modules een nieuw versienummer. Dit wijkt af van de oude afspraak "UPDATES in teams.js"; op jouw verzoek. `tools/pariteit.mjs` leest de releases van cluppie.io nu uit dat bestand (ASV'33 nog uit `teams.js`).
