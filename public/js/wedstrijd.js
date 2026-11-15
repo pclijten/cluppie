@@ -15,7 +15,7 @@ import {
   WISSEL_REDENEN, wisselReden, AFWEZIG_REDENEN, afwezigRedenInfo, slotPositieNaam,
   catLabel,
 } from './config.js?v=20261115e';
-import { kwartGespeeld, effectieveLineup, analyseKwart, analyseWedstrijd, speeltijdReserve, disciplinaireTijd, WISSEL_BEURT, analyseKwartVerwacht, analyseWedstrijdVerwacht } from './analyse.js?v=20261115e';
+import { kwartGespeeld, effectieveLineup, verwisselSlots, analyseKwart, analyseWedstrijd, speeltijdReserve, disciplinaireTijd, WISSEL_BEURT, analyseKwartVerwacht, analyseWedstrijdVerwacht } from './analyse.js?v=20261115e';
 import { ico } from './icons.js?v=20261110a';
 import { laadClubgids, zoekTegenstanders, plekVoor, pouleTeamnamen, clubVanTeam } from './clubgids.js?v=20261115e';
 import { aiAan, eigenClubTokens, voorbeeldTegenstander, beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261115e';
@@ -2183,13 +2183,7 @@ function plaats(pid, slotId){
   const bezet = l[slotId];
   if (huidigeSlot === slotId) return;
   if (huidigeSlot){
-    delete k.lineup[huidigeSlot];
-    if (k.lineup[slotId] !== undefined || bezet){
-      const ander = k.lineup[slotId];
-      if (ander !== undefined){ k.lineup[huidigeSlot] = ander; }
-      for (const e of k.events){ if (e.slot === slotId) e.slot = huidigeSlot; else if (e.slot === huidigeSlot) e.slot = slotId; }
-    }
-    k.lineup[slotId] = pid;
+    verwisselSlots(k, huidigeSlot, slotId);   /* [20261116a] zie analyse.js */
   } else if (live){
     const sec = Math.round(klokSec(k));
     k.events.push({in: pid, uit: bezet || null, slot: slotId, sec});
@@ -2204,6 +2198,16 @@ function plaats(pid, slotId){
     }
   } else {
     k.lineup[slotId] = pid;
+    /* [20261116a] Klok op 0:00 en een veldspeler vervangen: dat is de opstelling aanpassen, geen wissel, en de
+       vervangen speler krijgt dan geen speeltijd. Eén keer per periode zeggen, voor wie de klok vergat te starten. */
+    if (bezet && bezet !== pid){
+      const sleutel = `${S.wedstrijdId}/${S.kwart}`;
+      S._klokHint = S._klokHint || {};
+      if (!S._klokHint[sleutel]){
+        S._klokHint[sleutel] = true;
+        meld('Klok staat op 0:00: dit past de opstelling aan en telt niet als wissel. Start de klok voor wissels en speeltijd.');
+      }
+    }
   }
   S.geselecteerd = null;
   bewaarWedstrijd(); renderWedstrijd();

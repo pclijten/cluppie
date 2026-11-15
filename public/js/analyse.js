@@ -20,6 +20,19 @@ export function effectieveLineup(k){
   return l;
 }
 
+/* [20261116a] Twee posities verwisselen binnen een periode: de slots worden overal omgewisseld, in de
+   startopstelling én in de wissels. Zo blijft kloppen wie begon en wie er later in kwam. Voorheen werd
+   de speler die van plek wisselde in de startopstelling gezet; kwam hij er via een wissel in, dan verdween
+   de speler die begon uit de opstelling en kon de invaller op twee plekken tegelijk staan. */
+export function verwisselSlots(k, s1, s2){
+  if (!k || s1 === s2) return;
+  k.lineup = k.lineup || {};
+  const a = k.lineup[s1], b = k.lineup[s2];
+  if (b !== undefined) k.lineup[s1] = b; else delete k.lineup[s1];
+  if (a !== undefined) k.lineup[s2] = a; else delete k.lineup[s2];
+  for (const e of (k.events || [])){ if (e.slot === s1) e.slot = s2; else if (e.slot === s2) e.slot = s1; }
+}
+
 function klokSecRaw(k){
   return k.klok.base + (k.klok.running ? (Date.now() - k.klok.start)/1000 : 0);
 }
