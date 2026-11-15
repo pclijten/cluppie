@@ -6194,6 +6194,66 @@ h3.tm-kop2{font-size:calc(20px * var(--fs))}
 .tm-zeg{background:var(--surface-2,var(--op-vlak));border-left:3px solid var(--c);border-radius:0 10px 10px 0;padding:8px 10px;font-size:calc(13.5px * var(--fs));font-style:italic}
 .tm-diff{display:grid;gap:8px}.tm-diff>div{border-radius:10px;padding:8px 10px;border:1px solid var(--hair)}
 .tm-diff .mak{background:color-mix(in srgb,var(--in) 9%,var(--card));border-color:color-mix(in srgb,var(--in) 35%,var(--hair))}
+
+/* [20261115a] Oefenkaart met 7 vaste velden (oefenkaart.js) */
+.ok-feiten{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
+.ok-feiten span{font-size:calc(12px * var(--fs));color:var(--ink-2);background:var(--op-vlak);border-radius:8px;padding:3px 8px}
+.ok-kaart{border:1px solid var(--hair);border-radius:14px;overflow:hidden;background:var(--card)}
+.ok-controle{display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:calc(13px * var(--fs));color:var(--ink-2);border-bottom:1px solid var(--hair)}
+.ok-stip{width:18px;height:18px;flex:none;border-radius:50%;background:var(--ok);color:#06210f;display:grid;place-items:center;font-size:calc(12px * var(--fs));font-weight:700}
+.ok-stip.half{background:var(--warn);color:#2a1d00}
+.ok-veld{border-bottom:1px solid var(--hair)}
+.ok-veld:last-child{border-bottom:0}
+.ok-veld>button{all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:10px;padding:12px;cursor:pointer;color:var(--ink)}
+.ok-veld>button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.ok-nr{width:22px;height:22px;flex:none;border-radius:7px;background:var(--op-vlak-2,var(--op-vlak));display:grid;place-items:center;font-size:calc(12px * var(--fs));font-weight:700;color:var(--ink-2)}
+.ok-lbl{flex:none;min-width:118px;white-space:nowrap;font-weight:600;font-size:calc(14px * var(--fs))}
+.ok-kort{flex:1;min-width:0;font-size:calc(13px * var(--fs));color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ok-pijl{color:var(--ink-2);transition:transform var(--dur-short,.2s)}
+.ok-veld.open .ok-pijl{transform:rotate(90deg)}
+.ok-veld.open .ok-kort{visibility:hidden}
+.ok-inhoud{padding:0 12px 14px 44px;font-size:calc(14px * var(--fs));line-height:1.5}
+.ok-inhoud p{margin:0 0 6px}
+.ok-ul{margin:4px 0 0;padding-left:18px}.ok-ul li{margin:3px 0}
+.ok-sub{font-size:calc(11px * var(--fs));text-transform:uppercase;letter-spacing:.08em;color:var(--ink-2);margin:10px 0 2px;font-weight:700}
+.ok-sub:first-child{margin-top:0}
+.ok-zeg{background:var(--op-vlak);border-left:3px solid var(--accent);border-radius:6px;padding:8px 10px;margin-bottom:8px;font-style:italic}
+.ok-ai{background:color-mix(in srgb,#4a8fe0 10%,var(--card));border:1px solid color-mix(in srgb,#4a8fe0 35%,var(--hair));border-radius:10px;padding:8px 10px;font-size:calc(13px * var(--fs));margin:0 0 8px}
+.ok-themaregel{background:color-mix(in srgb,var(--accent) 10%,var(--card));border:1px solid color-mix(in srgb,var(--accent) 40%,var(--hair));border-radius:10px;padding:8px 10px;font-size:calc(13px * var(--fs));margin:0 0 8px}
+.ok-tijden{display:flex;gap:6px;margin-bottom:6px}
+.ok-tijden span{flex:1;text-align:center;border:1px solid var(--hair);border-radius:10px;padding:6px 0;font-weight:600;color:var(--ink-2);font-size:calc(13px * var(--fs))}
+.ok-tijden span.aan{background:color-mix(in srgb,var(--accent) 22%,var(--card));border-color:color-mix(in srgb,var(--accent) 60%,transparent);color:var(--ink)}
+.ok-mat{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;margin:0 0 6px}
+.ok-mat dt{font-weight:700;text-align:right}.ok-mat dd{margin:0;color:var(--ink-2)}
+.ok-klein{font-size:calc(12px * var(--fs));color:var(--ink-2)}
+.ok-diff{display:grid;gap:8px}
+.ok-diff>div{background:var(--op-vlak);border-radius:10px;padding:8px 10px}
+.ok-diff b{display:block;font-size:calc(12px * var(--fs));text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.ok-diff .mk b{color:var(--ok)}.ok-diff .md b{color:var(--warn)}
+.ok-sv{background:var(--op-vlak);border-radius:10px;padding:8px 10px;margin-top:8px}
+.ok-sv:first-child{margin-top:0}
+.ok-sv b{display:block}
+@media (max-width:420px){.ok-lbl{min-width:0}.ok-inhoud{padding-left:12px}}
+
+/* [20261115b] Oefenvorm in 3D (scene3d.js, motor over/over-3d.js) */
+.s3d-keuze{display:inline-flex;gap:2px;padding:2px;margin:8px 0 6px;border:1px solid var(--hair);border-radius:999px;background:var(--op-vlak)}
+.s3d-keuze button{all:unset;cursor:pointer;padding:5px 14px;border-radius:999px;font-size:calc(13px * var(--fs));font-weight:600;color:var(--ink-2);min-height:28px;display:inline-flex;align-items:center}
+.s3d-keuze button[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 22%,var(--card));color:var(--ink)}
+.s3d-keuze button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.s3d{display:grid;gap:8px}
+.s3d-stage{position:relative;height:340px;border-radius:12px;overflow:hidden;background:radial-gradient(ellipse at center,color-mix(in srgb,var(--veld) 55%,var(--card)) 0%,var(--bg) 75%)}
+.s3d-stage canvas{display:block;width:100%;height:100%}
+.s3d-wacht{position:absolute;inset:0;display:grid;place-items:center;padding:16px;text-align:center;color:var(--ink-2);font-size:calc(13px * var(--fs))}
+.s3d-knoppen{display:flex;flex-wrap:wrap;gap:6px}
+.s3d-knoppen [data-s3d-k="speel"]{background:var(--accent);border-color:var(--accent);color:#fff;min-width:92px}
+.s3d-stap{background:var(--card);border:1px solid var(--hair);border-radius:10px;padding:10px 12px;font-size:calc(14px * var(--fs));line-height:1.45}
+.s3d-voortgang{display:flex;gap:5px}
+.s3d-voortgang span{flex:1;height:6px;border-radius:3px;background:var(--op-vlak-2,var(--hair))}
+.s3d-voortgang span.klaar{background:var(--accent)}
+.s3d-kijk{display:flex;flex-wrap:wrap;gap:14px;font-size:calc(13px * var(--fs));color:var(--ink-2)}
+.s3d-kijk label{display:flex;align-items:center;gap:6px}
+.s3d-kijk input[type=range]{accent-color:var(--accent);width:120px}
+html.desk .s3d-stage{height:380px}
 .tm-diff .moe{background:color-mix(in srgb,var(--accent) 9%,var(--card));border-color:color-mix(in srgb,var(--accent) 35%,var(--hair))}
 .tm-diff h4{margin:0 0 3px;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.08em;font-size:calc(13px * var(--fs))}
 .tm-diff .mak h4{color:var(--in)}.tm-diff .moe h4{color:var(--accent)}
@@ -7443,7 +7503,7 @@ html.desk .dk-ss .sn-kop,html.desk .dk-ss .sn-balk,html.desk .dk-ss .sn-voet,htm
   html.desk .tm-schets{ width:96px; }
   html.desk .tm-vk{ padding:12px 14px; gap:14px; }
   html.desk .tm-vb .tv-veld{ max-width:460px; }
-  html.desk .tm-vb .tm-feiten4, html.desk .tm-vb .tm-tabs{ max-width:720px; }
+  html.desk .tm-vb .tm-feiten4, html.desk .tm-vb .tm-tabs, html.desk .tm-vb .ok-kaart{ max-width:720px; }
 }
 /* ook in de trainingsweergave en op Trainingen (desktop) geen paginabrede tekeningen meer */
 @media (min-width:900px){

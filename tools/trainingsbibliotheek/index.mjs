@@ -10,6 +10,10 @@ import { DEEL_H } from './vormen-h.mjs';
 import { DEEL_I } from './vormen-i.mjs';
 import { DEEL_J } from './vormen-j.mjs';
 import { DEEL_K } from './vormen-k.mjs';
+import { DEEL_M } from './vormen-m.mjs';
+import { DEEL_N } from './vormen-n.mjs';
+import { DEEL_O } from './vormen-o.mjs';
+import { DEEL_P } from './vormen-p.mjs';
 import { VERRIJKING } from './verrijking.mjs';
 
 /* Eerste 48 vormen krijgen soort, uitleg, varianten en let-op-punten uit verrijking.mjs. */
@@ -20,9 +24,33 @@ function verrijk(v){
   if (r.lft) uit.leeftijd = r.lft;
   return uit;
 }
-const NIEUW = [DEEL_D, DEEL_E, DEEL_F, DEEL_G, DEEL_H, DEEL_I, DEEL_J, DEEL_K];
+/* [20261115b] Voor de 3D-weergave moet de bal bij een speler liggen. Ligt hij in een tekening los
+   in het veld (vaak bij spelers uit ploeg()), dan schuiven bal en het beginpunt van de lijnen naar de dichtstbijzijnde eigen speler. */
+const balBijSpeler = (v) => {
+  const t = v.tekening; if (!t?.bal || !(t.spelers || []).length) return v;
+  const d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+  const eigen = t.spelers.filter(s => !s.kant || s.kant === 'eigen');
+  const alle = eigen.length ? eigen : t.spelers;
+  if (t.spelers.some(s => d([s.x, s.y], t.bal) < 7)) return v;
+  const s = alle.reduce((b, x) => (d([x.x, x.y], t.bal) < d([b.x, b.y], t.bal) ? x : b));
+  const oud = t.bal, nieuw = [s.x, s.y];
+  const lijnen = (t.lijnen || []).map(l => ({ ...l, punten: l.punten.map(p => (d(p, oud) < 3 ? nieuw : p)) }));
+  return { ...v, tekening: { ...t, bal: nieuw, lijnen } };
+};
+const NIEUW = [DEEL_D, DEEL_E, DEEL_F, DEEL_G, DEEL_H, DEEL_I, DEEL_J, DEEL_K, DEEL_M, DEEL_N, DEEL_O, DEEL_P];
 const OUD = [...DEEL_A, ...DEEL_B, ...DEEL_C].map(verrijk);
-export const VORMEN = [...OUD, ...NIEUW.flat()];
+/* Tijdbestek: elke vorm heeft een vaste standaardtijd van 5, 10, 15 of 20 minuten (20 alleen met een pauze erin).
+   Staat die niet in de bron, dan volgt hij uit de rondes: het midden van de rondes, afgerond op 5 minuten. */
+export const TIJDEN = [5, 10, 15, 20];
+export function tijdVan(v){
+  if (TIJDEN.includes(v.tijd)) return v.tijd;
+  const { ronde, rondes: [a, b], rust } = v.duur;
+  const r = Math.round((a + b) / 2);
+  let t = Math.round((r * ronde + (r - 1) * rust) / 5) * 5;
+  const [lo, hi] = { 'warming-up': [5, 15], afsluiting: [5, 5], partijspel: [10, 20] }[v.fase] || [10, 15];
+  return Math.max(lo, Math.min(hi, t));
+}
+export const VORMEN = [...OUD, ...NIEUW.flat()].map(balBijSpeler).map(v => ({ ...v, tijd: tijdVan(v) }));
 
 /* Themaregels voor de partijspelen (één eenvoudige regel per leercurve-thema). */
 export const THEMAREGELS = {
@@ -32,7 +60,7 @@ export const THEMAREGELS = {
 };
 
 export const BIBLIOTHEEK = {
-  versie: '2026.10.19-bouwen',
+  versie: '2026.11.14-zeven-velden',
   taal: 'nl',
   licentie: 'Eigen werk (Cluppie). Referentiekader: KNVB-spelregels en -principes. Geen KNVB-tekst of -afbeeldingen overgenomen.',
   themaregels: THEMAREGELS,

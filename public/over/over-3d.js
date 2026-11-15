@@ -7,7 +7,8 @@
 
    Klassiek script (geen module), zodat het ook werkt als je over.html als bestand opent.
    Nodig: window.THREE (vendor/over/three.min.js) en window.gsap.
-   Gebruik: Veld3D.maak(box, vorm, { kantelBijScroll }) → { speel(), stop() } */
+   Gebruik: Veld3D.maak(box, vorm, { kantelBijScroll, opStap }) → { speel(), stop(), aantal, naarStap(k), speelStap(k), speelVanaf(k), kijk(hoek, draai), weg() }
+   [20261115b] Ook in de app (scene3d.js): stap voor stap afspelen en zelf de kijkhoek kiezen. */
 (function(){
   const THREE = window.THREE;
   if (!THREE) return;
@@ -154,10 +155,15 @@
     /* camera: van bovenaanzicht (de tekening) naar een schuine blik langs het veld */
     const boven = { pos: new THREE.Vector3(0, 40, 0.01), kijk: new THREE.Vector3() };
     const schuin = { pos: new THREE.Vector3(S * 0.32, S * 0.78, S * 1.02), kijk: new THREE.Vector3(0, 0, -S * 0.05) };
-    const stand = { intro: 0, kantel: 0 }, kijk = new THREE.Vector3();
+    const stand = { intro: 0, kantel: 0, hoek: null, draai: 0 }, kijk = new THREE.Vector3(), doelPos = new THREE.Vector3();
     const zetCamera = () => {
       const f = stand.intro * (1 - stand.kantel);
-      camera.position.lerpVectors(boven.pos, schuin.pos, f); kijk.lerpVectors(boven.kijk, schuin.kijk, f); camera.lookAt(kijk);
+      doelPos.copy(schuin.pos);
+      if (stand.hoek !== null){   /* eigen kijkhoek: hoogte (graden boven het veld) en draai rond het midden */
+        const r = schuin.pos.length() * 1.08, h = THREE.MathUtils.degToRad(stand.hoek), d = THREE.MathUtils.degToRad(stand.draai);
+        doelPos.set(r * Math.cos(h) * Math.sin(d), r * Math.sin(h), r * Math.cos(h) * Math.cos(d));
+      }
+      camera.position.lerpVectors(boven.pos, doelPos, f); kijk.lerpVectors(boven.kijk, schuin.kijk, f); camera.lookAt(kijk);
     };
     const formaat = () => {
       const r = box.getBoundingClientRect(); if (!r.width || !r.height) return;
@@ -177,7 +183,7 @@
       schuin.pos.copy(richting).multiplyScalar(d);
       zetCamera();
     };
-    formaat(); new ResizeObserver(formaat).observe(box);
+    formaat(); const ro = new ResizeObserver(formaat); ro.observe(box);
 
     /* tijdlijn: opbouw, dan elke lijn op volgorde */
     const vindSpeler = p => spelers.reduce((best, s) => { const d = s.position.distanceTo(p); return d < best.d ? { s, d } : best; }, { s: null, d: 2.2 }).s;
@@ -200,9 +206,11 @@
       .to(ballen.map(b => b.scale), { x: 1, y: 1, z: 1, duration: 0.4, stagger: 0.03, ease: 'back.out(2)' }, 1.2);
     /* de spelers en bal "volgen" tijdens de animatie een virtuele positie per lijn */
     let tijd = 2.2;
+    const stapTijd = [];   /* begin van elke lijn (stap) in de tijdlijn */
     const plek = new Map();   // object → huidige plek in de tijdlijn (bij het bouwen)
     const plekVan = o => plek.get(o) || o.userData.thuis;
     lijnen.forEach(l => {
+      stapTijd.push(tijd);
       const start = l.punten[0], eind = l.punten[l.punten.length - 1];
       const ld = l.soort === 'schot' ? 0.5 : l.soort === 'pass' ? 0.75 : 1.1;
       const perStuk = ld / l.stukken.length;
@@ -234,9 +242,15 @@
           }
         }
       }
-      tijd += ld * 0.85;
+      tijd += ld + (l.soort === 'schot' ? 0.5 : 0.15);   /* [20261115b] geen overlap: elke stap is af voordat de volgende begint */
     });
     void vindSpeler; void vindBal;
+    tl.to({}, { duration: 0.01 }, tijd + 0.39);   /* tijdlijn loopt door tot de laatste stap echt klaar is */
+    const INTRO = 2.2, EIND = tl.duration();
+    stapTijd.push(EIND);
+    /* welke stap is bezig: k = aantal stappen dat al begonnen is */
+    const stapOp = tt => stapTijd.slice(1).filter(x => tt >= x - 0.01).length;   /* aantal afgeronde stappen */
+    if (opts.opStap) tl.eventCallback('onUpdate', () => opts.opStap(stapOp(tl.time()), false));
 
     /* hero: bij wegscrollen kantelt de camera terug naar de tekening */
     if (opts.kantelBijScroll && window.ScrollTrigger){
@@ -250,7 +264,19 @@
     const teken = () => { if (zichtbaar && box.offsetParent !== null) renderer.render(scene, camera); };
     gsap.ticker.add(teken);
     zetBegin();
-    return { speel: () => { formaat(); tl.restart(); }, stop: () => tl.pause() };
+    const klaar = () => opts.opStap && opts.opStap(stapOp(tl.time()), true);
+    return {
+      speel: () => { formaat(); tl.restart(); }, stop: () => tl.pause(),
+      aantal: lijnen.length,
+      /* opbouw tonen en stilstaan voor de eerste stap */
+      opbouw: () => { formaat(); tl.pause(0); tl.tweenFromTo(0, INTRO, { onComplete: klaar }); },
+      /* direct naar de stand na k stappen (zonder animatie) */
+      naarStap: k => { tl.pause(); tl.seek(k <= 0 ? INTRO : stapTijd[Math.min(k, lijnen.length)], false); klaar(); },
+      speelStap: k => { const a = k <= 0 ? INTRO : stapTijd[k], b = stapTijd[k + 1] ?? EIND; tl.tweenFromTo(Math.max(INTRO, a), b, { onComplete: klaar }); },
+      speelVanaf: k => { tl.tweenFromTo(k <= 0 ? INTRO : stapTijd[k], EIND, { onComplete: klaar }); },
+      kijk: (hoek, draai) => { stand.hoek = hoek; stand.draai = draai; zetCamera(); },
+      weg: () => { tl.kill(); gsap.ticker.remove(teken); ro.disconnect(); renderer.dispose(); canvas.remove(); },
+    };
   }
 
   window.Veld3D = { maak };

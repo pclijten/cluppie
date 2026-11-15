@@ -69,6 +69,12 @@ export function vorm(o){
     varianten: o.var.map(([naam, uitleg]) => ({ naam, uitleg })),
     letOp: o.letOp, soort: o.soort, tekening: o.tek,
   };
+  if (o.tijd) v.tijd = o.tijd;
+  if (o.extra){
+    v.materiaalExtra = o.extra;
+    /* staat het grote doel als extra benodigdheid, dan tellen alleen de kleine doeltjes uit de tekening als doeltjes */
+    if (o.extra.some(x => /groot doel|grote doelen/i.test(x))) v.materiaal.doeltjes = (o.tek?.doeltjes || []).filter(d => (d.breed || 0) < 26).length;
+  }
   if (o.themaregel) v.themaregelVorm = true;
   return v;
 }

@@ -9,7 +9,7 @@
 
    Pure functies (voegSamen, valideerVorm, rij/kolommen voor Excel) zijn getest in
    tests/bibliotheek.test.mjs. Impactanalyse: claude/trainingsbibliotheek-beheer-impactanalyse.md. */
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261019f';
+import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261115b';
 
 export const BASIS = BIBLIOTHEEK.vormen;
 export const BASIS_VERSIE = BIBLIOTHEEK.versie;
@@ -62,6 +62,14 @@ export function valideerVorm(v){
   /* partijspel en afsluiting passen bij elk thema; de andere fases hebben minstens één thema nodig */
   if (!Array.isArray(v.thema) || (!v.thema.length && !['partijspel', 'afsluiting'].includes(v.fase))) fouten.push('Minstens één thema');
   if (!String(v.doel || '').trim()) fouten.push('Doel ontbreekt');
+  /* [20261115a] de 7 vaste velden van de oefenkaart */
+  if (v.fase !== 'afsluiting'){
+    if (![5, 10, 15, 20].includes(v.tijd)) fouten.push('Tijdbestek is 5, 10, 15 of 20 minuten');
+    if (!String(v.uitleg || '').trim() && !(v.organisatie || []).length) fouten.push('Uitleg ontbreekt');
+    if (!(v.makkelijker || []).length || !(v.moeilijker || []).length) fouten.push('Differentiatie: makkelijker én moeilijker');
+    if (!(v.coachpunten || []).length) fouten.push('Coachmomenten ontbreken');
+    if ((v.varianten || []).length < 2) fouten.push('Minstens twee spelvormen');
+  }
   return fouten;
 }
 
@@ -70,12 +78,14 @@ export const KOLOMMEN = [
   ['id', 'id'], ['status', 'status'], ['naam', 'naam'], ['fase', 'fase'],
   ['leeftijdVan', v => v.leeftijd?.[0]], ['leeftijdTot', v => v.leeftijd?.[1]],
   ['spelersMin', v => v.spelers?.min], ['spelersIdeaal', v => v.spelers?.ideaal], ['spelersMax', v => v.spelers?.max],
-  ['veldBreed', v => v.veld?.b], ['veldLang', v => v.veld?.l], ['minutenPerRonde', v => v.duur?.ronde],
+  ['veldBreed', v => v.veld?.b], ['veldLang', v => v.veld?.l], ['tijdbestek', 'tijd'], ['minutenPerRonde', v => v.duur?.ronde],
   ['zwaarte', 'intensiteit'], ['niveau', 'complexiteit'], ['voetbalecht', v => v.voetbalecht ? 'ja' : 'nee'],
   ['thema', v => (v.thema || []).join(', ')], ['pionnen', v => v.materiaal?.pionnen || 0], ['ballen', v => v.materiaal?.ballen || 0],
   ['hesjes', v => v.materiaal?.hesjes || 0], ['doeltjes', v => v.materiaal?.doeltjes || 0],
+  ['overigMateriaal', v => (v.materiaalExtra || []).join('\n')],
   ['doel', 'doel'], ['uitleg', 'uitleg'],
   ...['organisatie', 'regels', 'coachpunten', 'coachvragen', 'makkelijker', 'moeilijker', 'letOp'].map(k => [k, v => (v[k] || []).join('\n')]),
+  ['spelvormen', v => (v.varianten || []).map(x => `${x.naam}: ${x.uitleg}`).join('\n')],
 ];
 export const LIJSTVELDEN = ['organisatie', 'regels', 'coachpunten', 'coachvragen', 'makkelijker', 'moeilijker', 'letOp'];
 export function rijVan(v){
@@ -103,6 +113,9 @@ export function vormUitRij(r, oud = {}){
   if (r.doel != null) v.doel = String(r.doel).trim();
   if (r.uitleg != null) v.uitleg = String(r.uitleg).trim();
   for (const k of LIJSTVELDEN) if (r[k] != null) v[k] = lijst(r[k]);
+  if (r.tijdbestek != null && r.tijdbestek !== '') v.tijd = getal(r.tijdbestek);
+  if (r.overigMateriaal != null){ const x = lijst(r.overigMateriaal); if (x.length || v.materiaalExtra) v.materiaalExtra = x; }
+  if (r.spelvormen != null) v.varianten = lijst(r.spelvormen).map(x => { const i = x.indexOf(':'); return i > 0 ? { naam: x.slice(0, i).trim(), uitleg: x.slice(i + 1).trim() } : { naam: x, uitleg: '' }; });
   if (!Array.isArray(v.domeinen)) v.domeinen = [];
   return v;
 }

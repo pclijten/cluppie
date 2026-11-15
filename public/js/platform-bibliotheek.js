@@ -13,9 +13,9 @@
 import { db, doc, getDoc, getDocs, setDoc, deleteDoc, query, where, writeBatch } from './firebase.js?v=20261011g';
 import { S, esc, meld } from './state.js?v=20261113b';
 import { BASIS, BASIS_VERSIE, FASES, alleVormen, vormen, laadBibliotheek, verschilMetBasis, valideerVorm,
-  rijVan, KOLOMMEN, LIJSTVELDEN, vergelijkImport } from './bibliotheek.js?v=20261113e';
-import { herbouwOefening, bronVanOefening, vormIdsVan } from './seizoensplan-club.js?v=20261113e';
-import { maakPlan } from './trainingsplanner.js?v=20261113b';
+  rijVan, KOLOMMEN, LIJSTVELDEN, vergelijkImport } from './bibliotheek.js?v=20261115b';
+import { herbouwOefening, bronVanOefening, vormIdsVan } from './seizoensplan-club.js?v=20261115b';
+import { maakPlan } from './trainingsplanner.js?v=20261115b';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261012e';
 
 const FS_URL = 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
@@ -101,7 +101,7 @@ function zetWaarde(v, k, w){
   d.slice(0, -1).forEach(x => { o[x] = o[x] ?? (/^\d+$/.test(d[d.indexOf(x) + 1]) ? [] : {}); o = o[x]; });
   o[d.at(-1)] = w;
 }
-const GETALLEN = new Set(['leeftijd.0', 'leeftijd.1', 'spelers.min', 'spelers.ideaal', 'spelers.max', 'veld.b', 'veld.l', 'duur.ronde', 'intensiteit', 'complexiteit', 'materiaal.pionnen', 'materiaal.ballen', 'materiaal.hesjes', 'materiaal.doeltjes']);
+const GETALLEN = new Set(['tijd', 'leeftijd.0', 'leeftijd.1', 'spelers.min', 'spelers.ideaal', 'spelers.max', 'veld.b', 'veld.l', 'duur.ronde', 'intensiteit', 'complexiteit', 'materiaal.pionnen', 'materiaal.ballen', 'materiaal.hesjes', 'materiaal.doeltjes']);
 
 function tekenDetail(){
   const el = B.root.querySelector('#pbDetail'), v = huidige();
@@ -113,6 +113,7 @@ function tekenDetail(){
   if (B.tab === 'inst') body = `<div class="pb-drie">${veld('Fase', 'fase', c.fase, 'fase')}${veld('Leeftijd van (O..)', 'leeftijd.0', c.leeftijd?.[0], 'input', ' inputmode="numeric"')}${veld('Leeftijd tot', 'leeftijd.1', c.leeftijd?.[1], 'input', ' inputmode="numeric"')}</div>
     <div class="pb-drie">${veld('Spelers min', 'spelers.min', c.spelers?.min)}${veld('Ideaal', 'spelers.ideaal', c.spelers?.ideaal)}${veld('Max', 'spelers.max', c.spelers?.max)}</div>
     <div class="pb-drie">${veld('Veld breed (m)', 'veld.b', c.veld?.b)}${veld('Veld lang (m)', 'veld.l', c.veld?.l)}${veld('Minuten per ronde', 'duur.ronde', c.duur?.ronde)}</div>
+    <div class="pb-drie">${veld('Tijdbestek (5, 10, 15 of 20)', 'tijd', c.tijd)}${veld('Hesjes', 'materiaal.hesjes', c.materiaal?.hesjes || 0)}<div></div></div>
     <div class="pb-drie">${veld('Zwaarte (1–3)', 'intensiteit', c.intensiteit)}${veld('Niveau (1–3)', 'complexiteit', c.complexiteit)}${veld('Voetbalecht (ja/nee)', 'voetbalecht', c.voetbalecht ? 'ja' : 'nee')}</div>
     ${veld('Thema’s (komma ertussen)', 'thema', (c.thema || []).join(', '))}
     <div class="pb-drie">${veld('Pionnen', 'materiaal.pionnen', c.materiaal?.pionnen || 0)}${veld('Ballen', 'materiaal.ballen', c.materiaal?.ballen || 0)}${veld('Doeltjes', 'materiaal.doeltjes', c.materiaal?.doeltjes || 0)}</div>`;
