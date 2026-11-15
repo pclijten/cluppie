@@ -10,12 +10,12 @@
 
    Vaste docId per training (sp_{planId}_{teamId}_{seizoensweek}_{nr}) maakt een herhaalde
    uitrol idempotent: dezelfde documenten worden overschreven, nooit gedupliceerd. */
-import { maakPlan, pasKnoppenToe, bouwOnderdeel, SLOT_NAAM } from './trainingsplanner.js?v=20261116h';
-import { positieWeek, maakSeizoensplan } from './seizoensplan-logica.js?v=20261116h';
-import { leeftijdVanCategorie } from './config.js?v=20261116h';
-import { speelwijzeVan } from './speelwijze-logica.js?v=20261116h';
-import { vormSvg } from './trainingsvorm-svg.js?v=20261116h';
-import { benodigdheden, tijdUitleg, spelverloopRegels } from './oefenkaart.js?v=20261116h';
+import { maakPlan, pasKnoppenToe, bouwOnderdeel, SLOT_NAAM } from './trainingsplanner.js?v=20261116i';
+import { positieWeek, maakSeizoensplan } from './seizoensplan-logica.js?v=20261116i';
+import { leeftijdVanCategorie } from './config.js?v=20261116i';
+import { speelwijzeVan } from './speelwijze-logica.js?v=20261116i';
+import { vormSvg } from './trainingsvorm-svg.js?v=20261116i';
+import { benodigdheden, tijdUitleg, spelverloopRegels } from './oefenkaart.js?v=20261116i';
 
 
 export const JEUGDBOUWEN = ['onder', 'midden', 'boven'];
@@ -102,6 +102,8 @@ export function oefeningVan(od){
   const mat = benodigdheden(v, od.groepen).map(([n, x]) => `${n === '' ? '' : n + ' '}${x}`);
   const blokken = [
     ...vt('doel', 'Doel', v.doel),
+    ...vl('doel', 'Zo zie je dat het lukt', v.lukt),          /* [20261116i] uitwerking per oefening */
+    ...vt('doel', 'Waarom dit werkt', v.inzicht),
     { veld: 'tijd', kop: 'Tijdbestek', type: 'tekst', tekst: `${od.minuten} minuten · ${od.slotNaam || ''}${od.groepen ? ` · ${od.groepen} groep${od.groepen === 1 ? '' : 'en'}` : ''}`.trim() },
     ...vt('tijd', '', tijdUitleg(od)),
     ...vl('mat', 'Benodigdheden', mat),
@@ -114,8 +116,11 @@ export function oefeningVan(od){
     ...vl('uitleg', 'Veiligheid', v.letOp),
     ...vl('diff', 'Makkelijker', v.makkelijker),
     ...vl('diff', 'Moeilijker', v.moeilijker),
+    ...vl('diff', 'Kijk en grijp in', (v.alsDan || []).map(x => `${x.zie} → ${x.doe}`)),
     ...vl('coach', 'Coachpunten', v.coachpunten),
     ...vl('coach', 'Coachvragen', v.coachvragen),
+    ...vt('coach', 'Tel mee', v.meet),
+    ...vt('coach', 'Spelers aan zet', v.regie),
     ...vl('spel', 'Spelvormen', (v.varianten || []).map(x => `${x.naam}: ${x.uitleg}`)),
   ];
   /* [20261113d] bron: genoeg om de oefening opnieuw op te bouwen als de vorm in de bibliotheek wijzigt */

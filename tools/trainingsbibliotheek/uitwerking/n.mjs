@@ -169,7 +169,7 @@ export const UIT_N = {
   meet: 'Tel het aantal balcontacten in één minuut bij een kind. Richtpunt: meer dan zestig.',
   v: [
     d(1, r(1, 3, 2), 'Iedereen dribbelt vrij rond.', 'Vrij'),
-    met(d(5, r(5, -2, 2), 'Hoofd omhoog.')),
+    met(d(5, r(5, -2, 2), 'Hoofd omhoog en kijk om je heen.')),
     d(2, r(2, 1, 2), 'Stop: de zool op de bal.', 'Stop'),
     d(3, r(3, -2, 2), 'Draai: omdraaien met de bal en de andere kant op.', 'Draai'),
     d(4, r(4, 2, -2), 'Zitten: even op de bal en meteen weer door.', 'Zitten'),

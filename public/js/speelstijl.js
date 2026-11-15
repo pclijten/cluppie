@@ -11,13 +11,13 @@
      clubs/{id}/speelstijl/huidig                         vastgelegde uitkomst (speelstijl-logica huidigDoc)
      clubs/{id}/speelstijlRondes/{rondeId}                { naam, modus:'kort'|'volledig', status:'open'|'dicht', door, gemaaktMs }
      clubs/{id}/speelstijlRondes/{rondeId}/antwoorden/{uid} { rol, antwoorden, bijgewerktMs } */
-import { S, esc, meld } from './state.js?v=20261116h';
+import { S, esc, meld } from './state.js?v=20261116i';
 import { db, doc, collection, getDocs, setDoc } from './firebase.js?v=20261011g';
-import { rechtenVoor } from './seizoensplan-club.js?v=20261116h';
+import { rechtenVoor } from './seizoensplan-club.js?v=20261116i';
 import * as L from './speelstijl-logica.js?v=20261019e';
-import { speelwijzeVan, perMoment, huidigUitStijl, vormenPerPrincipe } from './speelwijze-logica.js?v=20261116h';
-import { htmlWiel, htmlPrincipe, htmlLater, htmlSchuiven } from './speelwijze-html.js?v=20261116h';
-import { vormen, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261116h';
+import { speelwijzeVan, perMoment, huidigUitStijl, vormenPerPrincipe } from './speelwijze-logica.js?v=20261116i';
+import { htmlWiel, htmlPrincipe, htmlLater, htmlSchuiven } from './speelwijze-html.js?v=20261116i';
+import { vormen, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261116i';
 
 const uidNu = () => S.user?.uid || '';
 const isPlanner = () => rechtenVoor(S.club, uidNu()).alles;

@@ -191,7 +191,7 @@ export const UIT_P1 = {
   meet: 'Tel het aantal doelpunten tegen direct na je eigen aanval. Richtpunt: hooguit één per ronde.',
   v: [
     d(1, r(1, 0, -3), 'Speler A valt aan.', 'A valt aan'),
-    met(l(2, r(2, 0, 1.5), 'B verdedigt.')),
+    met(l(2, r(2, 0, 1.5), 'Speler B verdedigt.')),
     d(1, r(1, 3, -2), 'Actie naar rechts.'),
     s(1, [44, 0], 'Schot op het doeltje.'),
     l(2, [60, 6], 'B haalt meteen een nieuwe bal naast zijn doeltje.', 'B valt aan'),
@@ -208,7 +208,7 @@ export const UIT_P1 = {
   v: [
     d(2, r(2, 0, -8), 'Golf drie: de middelste aanvaller dribbelt op de verdedigers af.', '3 tegen 2'),
     met(l(1, [30, 44], 'Links loopt breed mee.')),
-    met(l(3, [70, 44], 'Rechts ook.')),
+    met(l(3, [70, 44], 'Rechts doet hetzelfde.')),
     l(4, dr(2, 2.5), 'Een verdediger stapt uit.'),
     pin(2, 3, [70, 28], 'De bal gaat in de loop naar rechts.', 'De rechter aanvaller snijdt naar binnen.'),
     l(5, dr(3, 0.6), 'De tweede verdediger is op tijd en pakt de bal af.', 'Balverlies'),
@@ -225,7 +225,7 @@ export const UIT_P1 = {
   v: [
     d(2, r(2, 0, -10), 'De middelste aanvaller dribbelt op de verdedigers af.', 'Aanval'),
     met(l(1, [28, 40], 'Links loopt breed mee.')),
-    met(l(3, [72, 40], 'Rechts ook.')),
+    met(l(3, [72, 40], 'Rechts doet hetzelfde.')),
     l(4, dr(2, 3), 'Een verdediger stapt uit.'),
     pin(2, 1, [30, 22], 'De bal gaat in de loop naar links.', 'De linker aanvaller snijdt naar binnen.'),
     s(1, r(6, -1, 0.5), 'Het schot wordt gepakt door de keeper.'),
@@ -319,8 +319,8 @@ export const UIT_P1 = {
     p(1, 2, 'De bal gaat breed.'),
     s(2, g(0, 6), 'Afronden op het grote doel.'),
     d(5, r(5, 0, -10), 'Golf twee: drie nieuwe aanvallers starten meteen.', '3 tegen 2'),
-    met(l(4, [28, 60], 'Links breed.')),
-    met(l(6, [72, 60], 'Rechts breed.')),
+    met(l(4, [28, 60], 'De linker speler loopt breed.')),
+    met(l(6, [72, 60], 'De rechter speler loopt breed.')),
     l(1, dr(5, 3), 'Een speler van golf één verdedigt nu mee.', 'Omschakelen'),
     p(5, 6, 'De bal gaat naar de vrije man.'),
     d(6, r(6, -3, -8), 'Die gaat op het doel af.'),

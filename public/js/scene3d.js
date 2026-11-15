@@ -313,7 +313,7 @@ export function laad3D(){
   if (!laden) laden = (async () => {
     if (!window.THREE) await script('vendor/over/three.min.js');
     if (!window.gsap) await script('vendor/over/gsap.min.js');
-    await script('over/over-3d.js?v=20261116h');   /* versie mee, anders kan de cache een oude motor zonder stappen geven */
+    await script('over/over-3d.js?v=20261116i');   /* versie mee, anders kan de cache een oude motor zonder stappen geven */
     if (!window.Veld3D) throw new Error('3D niet beschikbaar');
     return window.Veld3D;
   })().catch(e => { laden = null; throw e; });

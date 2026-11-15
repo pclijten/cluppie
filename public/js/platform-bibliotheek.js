@@ -12,13 +12,13 @@
    op vormIds; oude trainingen eerst één keer koppelen (knop bovenaan). Rules: zie firestore.rules [20261113d].
    Wordt getekend in het platformcentrum (platform-centrum.js) in <div id="pbRoot">. */
 import { db, doc, getDoc, getDocs, setDoc, deleteDoc, query, where, writeBatch } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261116h';
+import { S, esc, meld } from './state.js?v=20261116i';
 import { BASIS, BASIS_VERSIE, FASES, alleVormen, vormen, laadBibliotheek, verschilMetBasis, valideerVorm,
-  rijVan, KOLOMMEN, LIJSTVELDEN, vergelijkImport, veldenNaarOpslag } from './bibliotheek.js?v=20261116h';
-import { herbouwOefening, bronVanOefening, vormIdsVan, naarNieuweOpbouw } from './seizoensplan-club.js?v=20261116h';
-import { maakPlan } from './trainingsplanner.js?v=20261116h';
-import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261116h';
-import { koppelEditor, controleerTekening } from './tekening-editor.js?v=20261116h';
+  rijVan, KOLOMMEN, LIJSTVELDEN, vergelijkImport, veldenNaarOpslag, alsDanTekst, alsDanUitTekst } from './bibliotheek.js?v=20261116i';
+import { herbouwOefening, bronVanOefening, vormIdsVan, naarNieuweOpbouw } from './seizoensplan-club.js?v=20261116i';
+import { maakPlan } from './trainingsplanner.js?v=20261116i';
+import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261116i';
+import { koppelEditor, controleerTekening } from './tekening-editor.js?v=20261116i';
 
 const FS_URL = 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 const B = { root: null, zoek: '', fase: '', leeftijd: 0, filter: 'alle', sel: null, tab: 'tekst', concept: null, toonMeer: false,
@@ -87,7 +87,11 @@ function concept(){
 }
 function veld(label, sleutel, waarde, soort = 'input', extra = ''){
   const v = huidige(), b = v?._basis;
-  const basisW = b ? waardeVan(b, sleutel) : null;
+  let basisW = b ? waardeVan(b, sleutel) : null;
+  /* [20261116i] velden die als tekst worden bewerkt maar anders zijn opgeslagen: vergelijk in dezelfde vorm */
+  if (b && sleutel === 'alsDan') basisW = alsDanTekst(basisW);
+  if (b && sleutel === 'principes') basisW = (basisW || []).join(', ');
+  if (b && ['meet', 'regie', 'inzicht'].includes(sleutel)) basisW = basisW || '';
   const gew = b && JSON.stringify(basisW) !== JSON.stringify(waarde);
   const toon = Array.isArray(waarde) ? waarde.join('\n') : (waarde ?? '');
   const inv = soort === 'area' ? `<textarea class="invoer" rows="3" data-pbv="${sleutel}">${esc(toon)}</textarea>`
@@ -111,7 +115,10 @@ function tekenDetail(){
   const c = concept(), fouten = [...valideerVorm(c), ...controleerTekening(c.tekening)], gewijzigd = JSON.stringify(verschilMetBasis(c, v)) !== '{}';
   let body = '';
   if (B.tab === 'tekst') body = veld('Naam', 'naam', c.naam) + veld('Doel (één zin)', 'doel', c.doel, 'area') + veld('Wat zeg je tegen de spelers', 'uitleg', c.uitleg || '', 'area')
-    + LIJSTVELDEN.map(k => veld({ organisatie: 'Zo zet je het uit (één regel per stap)', regels: 'Regels', coachpunten: 'Coachpunten', coachvragen: 'Coachvragen', makkelijker: 'Makkelijker', moeilijker: 'Moeilijker', letOp: 'Let op' }[k], k, c[k] || [], 'area')).join('');
+    + LIJSTVELDEN.map(k => veld({ organisatie: 'Zo zet je het uit (één regel per stap)', regels: 'Regels', coachpunten: 'Coachpunten', coachvragen: 'Coachvragen', makkelijker: 'Makkelijker', moeilijker: 'Moeilijker', letOp: 'Let op', lukt: 'Zo zie je dat het lukt (één regel per punt)' }[k], k, c[k] || [], 'area')).join('')
+    + veld('Kijk en grijp in (per regel: wat je ziet → wat je doet)', 'alsDan', alsDanTekst(c.alsDan), 'area') + veld('Tel mee', 'meet', c.meet || '', 'area')
+    + veld('Spelers aan zet', 'regie', c.regie || '', 'area') + veld('Waarom dit werkt', 'inzicht', c.inzicht || '', 'area')
+    + veld('Principes van de speelwijze (codes, komma ertussen: bijvoorbeeld d2A, w2B)', 'principes', (c.principes || []).join(', '));
   if (B.tab === 'inst') body = `<div class="pb-drie">${veld('Fase', 'fase', c.fase, 'fase')}${veld('Leeftijd van (O..)', 'leeftijd.0', c.leeftijd?.[0], 'input', ' inputmode="numeric"')}${veld('Leeftijd tot', 'leeftijd.1', c.leeftijd?.[1], 'input', ' inputmode="numeric"')}</div>
     <div class="pb-drie">${veld('Spelers min', 'spelers.min', c.spelers?.min)}${veld('Ideaal', 'spelers.ideaal', c.spelers?.ideaal)}${veld('Max', 'spelers.max', c.spelers?.max)}</div>
     <div class="pb-drie">${veld('Veld breed (m)', 'veld.b', c.veld?.b)}${veld('Veld lang (m)', 'veld.l', c.veld?.l)}${veld('Minuten per ronde', 'duur.ronde', c.duur?.ronde)}</div>
@@ -492,6 +499,8 @@ function invoer(e){
   const k = e.target.dataset.pbv; if (!k) return;
   const c = concept(), w = e.target.value;
   if (LIJSTVELDEN.includes(k)) c[k] = w.split('\n').map(s => s.trim()).filter(Boolean);
+  else if (k === 'alsDan') c.alsDan = alsDanUitTekst(w);
+  else if (k === 'principes') c.principes = w.split(',').map(s => s.trim()).filter(Boolean);
   else if (k === 'thema') c.thema = w.split(',').map(s => s.trim()).filter(Boolean);
   else if (k === 'voetbalecht') c.voetbalecht = /^(ja|j|true|1)$/i.test(w.trim());
   else if (GETALLEN.has(k)) zetWaarde(c, k, w.trim() === '' ? null : Number(w.replace(',', '.')));

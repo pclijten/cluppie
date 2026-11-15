@@ -104,7 +104,7 @@ export const UIT_A = {
     l(7, dr(4, 2.5), 'De jagers moeten omdraaien en opnieuw beginnen.'),
     p(4, 5, 'Eén keer raken en door naar de vrije man.'),
   ] },
-'pos-3v3j': { pr: ['d2A'], inz: 'overtal', regie: 'coach',
+'pos-3v3j': { pr: ['d2A', 'w2A'], inz: 'overtal', regie: 'coach',
   makk: ['Vier passes voor een punt in plaats van zes.', 'Een derde joker in het midden.'],
   lukt: ['Het team met de bal staat breed en diep, niet op een kluitje.', 'De joker wordt aangespeeld en de bal komt daarna in het midden terug.'],
   alsDan: [['De bal blijft bij de jokers aan de zijkant.', 'Een punt telt alleen als alle drie de veldspelers de bal hebben gehad.'], ['Het team zonder bal jaagt met drie op de bal.', 'Vraag: wie blijft er in het midden staan? Balwinst in het midden telt als een punt.']],

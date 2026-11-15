@@ -158,7 +158,7 @@ export const UIT_O = {
   v: [
     d(1, [44, 80], 'De speler dribbelt de slalom in.', 'Slalom'),
     d(1, [46, 68], 'Om de tweede pion.'),
-    d(1, [44, 56], 'En de derde.'),
+    d(1, [44, 56], 'En om de derde pion.'),
     d(1, [50, 46], 'De bal een meter voorleggen, schuin voor de schietvoet.', 'Voorleggen'),
     met(l(2, r(2, -1, 1), 'De keeper stelt zich op.')),
     s(1, g(0, -9), 'Opkijken en schieten in de hoek.', 'Afronden'),
@@ -328,7 +328,7 @@ export const UIT_O = {
   v: [
     d(2, r(2, 0, -10), 'De middelste aanvaller dribbelt op snelheid naar voren.', 'Tempo'),
     met(l(1, [28, 50], 'Links loopt breed mee.')),
-    met(l(3, [72, 50], 'Rechts ook.')),
+    met(l(3, [72, 50], 'Rechts doet hetzelfde.')),
     l(6, [50, 70], 'Na vijf tellen start de derde verdediger.', 'Hij komt eraan'),
     l(5, dr(2, 2.5), 'Een verdediger stapt uit op de bal.'),
     pin(2, 3, [72, 30], 'De bal gaat in de loop naar rechts.', 'De rechter aanvaller snijdt naar binnen.'),

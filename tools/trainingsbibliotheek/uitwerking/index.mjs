@@ -20,7 +20,8 @@ import { UIT_M } from './m.mjs';
 import { UIT_N } from './n.mjs';
 import { UIT_O } from './o.mjs';
 import { UIT_P } from './p.mjs';
-export const UITWERKING = { ...UIT_A, ...UIT_B, ...UIT_C, ...UIT_D, ...UIT_E, ...UIT_F, ...UIT_G, ...UIT_H, ...UIT_I, ...UIT_J, ...UIT_K, ...UIT_M, ...UIT_N, ...UIT_O, ...UIT_P };
+import { UIT_S } from './s.mjs';
+export const UITWERKING = { ...UIT_A, ...UIT_B, ...UIT_C, ...UIT_D, ...UIT_E, ...UIT_F, ...UIT_G, ...UIT_H, ...UIT_I, ...UIT_J, ...UIT_K, ...UIT_M, ...UIT_N, ...UIT_O, ...UIT_P, ...UIT_S };
 
 const TEKST = { doel: 'doel', uitleg: 'uitleg', org: 'organisatie', regels: 'regels', punten: 'coachpunten', vragen: 'coachvragen', makk: 'makkelijker', moei: 'moeilijker', letOp: 'letOp', naam: 'naam', lft: 'leeftijd', tijd: 'tijd' };
 export const fouten = [], letOp = [];
@@ -62,6 +63,6 @@ export function werkUit(v){
   if (u.meet) uit.meet = u.meet;
   if (u.regie){ uit.regie = REGIE[u.regie] || u.regie; if (!REGIE[u.regie] && u.regie.length < 25) fouten.push(`${v.id}: onbekende regie "${u.regie}"`); }
   if (u.inz){ if (INZICHT[u.inz]) uit.inzicht = INZICHT[u.inz]; else fouten.push(`${v.id}: onbekend inzicht "${u.inz}"`); }
-  for (const k of ['v', 'pr', 'lukt', 'alsDan', 'meet', 'regie', 'inz']) if (u[k] === undefined && !(k === 'v' && u.geenV)) fouten.push(`${v.id}: ${k} ontbreekt`);
+  for (const k of ['v', 'pr', 'lukt', 'alsDan', 'meet', 'regie', 'inz']) if (u[k] === undefined && !(k === 'v' && (u.geenV || u.eigenV))) fouten.push(`${v.id}: ${k} ontbreekt`);
   return uit;
 }

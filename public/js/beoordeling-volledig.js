@@ -14,8 +14,8 @@
 
    Deze module is een blad: ze importeert alleen icons.js en config.js, zodat
    een wijziging hier geen grote versie-cascade geeft. */
-import { ico } from './icons.js?v=20261116h';
-import { SKILLS, leeftijdVanCategorie } from './config.js?v=20261116h';
+import { ico } from './icons.js?v=20261116i';
+import { SKILLS, leeftijdVanCategorie } from './config.js?v=20261116i';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const domIco = id => SKILLS.find(s => s.id === id)?.ico || 'stats-bars';

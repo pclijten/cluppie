@@ -204,7 +204,7 @@ vorm({
   n: [4, 8, 12], veld: [20, 25], duur: [4, 3, 3, 1], thema: ['tv', 'po'], dom: 'TE', c: 2, i: 2, ve: false, mat: [6, 2, 0, 0], soort: 'passen',
   doel: 'In één opstelling drie passvormen spelen: rechtdoor, met kaats en met een derde man.',
   uitleg: 'Zeg: "Dezelfde pionnen, drie opdrachten van vier minuten. Eerst gewoon spelen en volgen, dan met een kaats, dan zoek je de derde man."',
-  org: ['Zet drie pionnen in een lijn (A, B, C, 10 meter ertussen) en één pion schuin naast B (D).', 'Vorm 1: A–B–C, iedereen volgt zijn pass.', 'Vorm 2: A speelt naar B, B kaatst, A speelt naar C.', 'Vorm 3: A speelt naar B, B legt af op D, D speelt diep naar C.'],
+  org: ['Zet drie pionnen in een lijn (A, B, C, 10 meter ertussen) en één pion schuin naast B (D).', 'Vorm 1: van A naar B naar C, iedereen volgt zijn pass.', 'Vorm 2: A speelt naar B, B kaatst, A speelt naar C.', 'Vorm 3: A speelt naar B, B legt af op D, D speelt diep naar C.'],
   regels: ['Elke vorm vier minuten.', 'Na je actie schuif je door.'],
   punten: ['Kaats en afleg in één keer.', 'Kijk vóór de bal waar de derde man staat.', 'Na de pass doorlopen.'],
   vragen: ['Welke vorm ging het soepelst en waarom?', 'Wanneer weet je dat de derde man vrij is?'],
