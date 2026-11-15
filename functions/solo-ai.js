@@ -20,6 +20,8 @@ function soloBeleid(platform){
    Geeft { clubId: null, teamId, rol: 'coach', solo: true } terug, zoals vereisAI. */
 async function vereisSoloAI({ db, request, HttpsError, FieldValue, nu = new Date() }){
   if (!request.auth) throw new HttpsError('unauthenticated', 'Log eerst in.');
+  /* [20261115d] alleen met een bevestigd e-mailadres: anders is de limiet per trainer met wegwerpaccounts te omzeilen */
+  if (request.auth.token?.email_verified !== true) throw new HttpsError('failed-precondition', 'Bevestig eerst je e-mailadres; daarna kun je AI gebruiken.');
   const uid = request.auth.uid;
   const teamId = String(request.data?.teamId || '').trim();
   if (!teamId) throw new HttpsError('invalid-argument', 'teamId ontbreekt.');

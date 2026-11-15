@@ -124,9 +124,18 @@ test('clubbeheerder maakt team aan zonder zelf lid te worden; coach niet', async
 });
 
 /* ---------- uitleningen ---------- */
-test('uitlening: lid van de club wel, ander niet', async () => {
-  await assertSucceeds(setDoc(doc(als('coachA'), 'clubs/A/uitleningen/u1'), { speler: 's1', van: 't1', naar: 't2' }));
-  await assertFails(setDoc(doc(als('coachB'), 'clubs/A/uitleningen/u2'), { speler: 's1' }));
+test('uitlening: aanmaken door clubadmin of bouwcoördinator, niet door een coach of een andere club', async () => {
+  const data = { spelerId: 's1', vanTeam: 't1', naarTeam: 't2' };
+  await assertSucceeds(setDoc(doc(als('adminA'), 'clubs/A/uitleningen/u1'), data));
+  await assertSucceeds(setDoc(doc(als('coordA'), 'clubs/A/uitleningen/u2'), data));        /* t1 zit in zijn bouw */
+  await assertFails(setDoc(doc(als('coachA'), 'clubs/A/uitleningen/u3'), data));           /* [20261115d] coach leent niet zelf uit */
+  await assertFails(setDoc(doc(als('coachB'), 'clubs/A/uitleningen/u4'), data));
+  await assertFails(setDoc(doc(als('adminA'), 'clubs/A/uitleningen/u5'), { spelerId: 's1', vanTeam: 't1', naarTeam: 'tB' }));   /* team van een andere club */
+  /* de coach van een betrokken team werkt de uitlening bij en zet terug; een andere coach niet */
+  await assertSucceeds(updateDoc(doc(als('coach2'), 'clubs/A/uitleningen/u1'), { 'overlay.nummer': 9 }));
+  await assertFails(updateDoc(doc(als('coach2'), 'clubs/A/uitleningen/u1'), { naarTeam: 't1' }));
+  await assertFails(deleteDoc(doc(als('coachB'), 'clubs/A/uitleningen/u1')));
+  await assertSucceeds(deleteDoc(doc(als('coachA'), 'clubs/A/uitleningen/u1')));
 });
 
 /* ---------- Sportlink-geheim ---------- */
@@ -136,11 +145,14 @@ test('Sportlink-teamlijst: alleen clubadmin', async () => {
 });
 
 /* ---------- deel-link (anoniem) ---------- */
-test('deel-link: geldige link geeft toegang tot training en spelers, niet tot beoordelingen', async () => {
+test('deel-link: geldige link geeft toegang tot de training en de link zelf, niet tot spelers, team of beoordelingen', async () => {
   const db = anoniem('ouder1');
   await assertSucceeds(setDoc(doc(db, 'trainingToegang/ouder1'), { deelId: 'd1', teamId: 't1', trainingId: 'tr1', vervaltOp: morgen }));
   await assertSucceeds(getDoc(doc(db, 'trainingen/tr1')));
-  await assertSucceeds(getDoc(doc(db, 'teams/t1/spelers/s1')));
+  await assertSucceeds(getDoc(doc(db, 'trainingDeel/d1')));
+  /* [20261115d] naam en nummer staan op de link; spelerdocumenten (met notitie en leerpunten) en het teamdocument niet meer */
+  await assertFails(getDoc(doc(db, 'teams/t1/spelers/s1')));
+  await assertFails(getDoc(doc(db, 'teams/t1')));
   await assertFails(getDoc(doc(db, 'teams/t1/beoordelingen/b1')));
 });
 test('deel-link: verlopen link of zelf verlengde vervaldatum geweigerd', async () => {

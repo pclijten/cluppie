@@ -113,9 +113,16 @@ async function clubRol(db, clubId, uid){
   if (c.admins?.[uid]) return 'club_admin';
   if (Object.values(c.bouwCoordinatoren || {}).some(m => m && m[uid])) return 'coordinator';
   if (c.leden?.[uid]) return 'coach';
+  /* [20261115d] alleen teams die de club zelf kent (clubs/{id}.teams). Het veld `club` op een teamdocument
+     is niet genoeg: dat stond een tijd open voor de coach van het team zelf (zie docs/beveiligingsaudit.md, K1). */
   const t = await db.collection(PADEN.teamsCol())
-    .where('club', '==', clubId).where(`leden.${uid}`, '==', true).limit(1).get();
-  return t.empty ? null : 'coach';
+    .where('club', '==', clubId).where(`leden.${uid}`, '==', true).limit(20).get();
+  return t.docs.some(d => teamHoortBijClub(c, d.id)) ? 'coach' : null;
+}
+function teamHoortBijClub(club, teamId){
+  const lijst = club && club.teams;
+  if (Array.isArray(lijst)) return lijst.includes(teamId);
+  return !!(lijst && lijst[teamId]);
 }
 
 /* Gooit tenzij de aanroeper ingelogd is én (minstens) lid van de club.
@@ -344,8 +351,8 @@ exports.genereerVerslagAI = onCall(
 
     // Bouw een compacte, neutrale feitenlijst voor het model.
     const feiten = {
-      team: String(d.team || 'ons team').slice(0, 60),
-      tegenstander: String(d.tegenstander || 'de tegenstander').slice(0, 60),
+      team: scrubPII(String(d.team || 'ons team').slice(0, 60), vNamen),
+      tegenstander: scrubPII(String(d.tegenstander || 'de tegenstander').slice(0, 60), vNamen),
       thuisOfUit: d.thuis ? 'thuis' : 'uit',
       soort: d.toernooi ? 'toernooiwedstrijd' : 'wedstrijd',
       doelpuntenVoor: Number(d.doelBin) || 0,
@@ -448,7 +455,9 @@ UITVOER — geef UITSLUITEND geldige JSON terug, geen uitleg eromheen, geen mark
 exports.structureerTraining = onCall(
   { region: REGIO, secrets: [ANTHROPIC_API_KEY], cors: true },
   async (request) => {
-    await vereisAI(request);
+    const { clubId: tClub, rol: tRol } = await vereisAI(request);
+    /* [20261115d] ook namen van spelers en coaches uit de PDF-tekst halen, niet alleen e-mail en telefoon */
+    const tNamen = await namenVoorScrub(tClub, request.auth.uid, tRol);
 
     // [20261013c] modelkeuze per upload: alleen sleutels uit de whitelist; het id bepaalt de server.
     const keuze = request.data?.model == null ? 'standaard' : String(request.data.model);
@@ -483,7 +492,7 @@ exports.structureerTraining = onCall(
 
     const vraag = `Hier is de ruwe tekst per pagina van de trainings-PDF. Zet om naar de ` +
       `JSON-structuur zoals beschreven. Neem de tekst LETTERLIJK over.\n\n` +
-      schoon.map(p => `--- PAGINA ${p.pagina} ---\n${scrubPII(p.tekst)}`).join('\n\n');
+      schoon.map(p => `--- PAGINA ${p.pagina} ---\n${scrubPII(p.tekst, tNamen)}`).join('\n\n');
 
     const system = [
       { type: 'text', text: TRAINING_SYSTEEM, cache_control: { type: 'ephemeral' } },
@@ -1347,7 +1356,10 @@ exports.sportlinkTeamSpelers = onCall({ region: REGIO, cors: true, timeoutSecond
   const teamcode = String(team.sportlinkTeamcode || status.teamcode || '').trim();
   if (!clientId || !teamcode) return { gekoppeld: false, zichtbaar: [], afgeschermd: 0, totaal: 0 };
   const lijst = (await db.doc(PADEN.teamlijst(clubId)).get()).data()?.teams || [];
-  const lokaleteamcode = lijst.find(t => t.teamcode === teamcode)?.lokaleteamcode || '-1';
+  /* [20261115d] alleen een teamcode uit de teamlijst van deze club, en alleen voor een team dat de club kent */
+  const inLijst = lijst.find(t => String(t.teamcode) === teamcode);
+  if (!inLijst || !teamHoortBijClub(club, teamId)) return { gekoppeld: false, zichtbaar: [], afgeschermd: 0, totaal: 0 };
+  const lokaleteamcode = inLijst.lokaleteamcode || '-1';
 
   let regels;
   try { regels = await sportlinkCall(clientId, 'team-indeling', { teamcode, lokaleteamcode }); }

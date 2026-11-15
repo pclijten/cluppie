@@ -17,9 +17,9 @@ import {
   storage, sRef, uploadBytes, getDownloadURL,
   functions, httpsCallable
 } from './firebase.js?v=20261011g';
-import { laadPdfJs } from './pdf-viewer.js?v=20261115c';
-import { aiAan } from './clubconfig.js?v=20261115c';
-import { S } from './state.js?v=20261115c';
+import { laadPdfJs } from './pdf-viewer.js?v=20261115d';
+import { aiAan } from './clubconfig.js?v=20261115d';
+import { S } from './state.js?v=20261115d';
 
 /* ---------- PDF → tekst per pagina + diagram-PNG's ---------- */
 

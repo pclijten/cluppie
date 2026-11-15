@@ -57,22 +57,35 @@ service cloud.firestore {
     /* volledige coach = teamlid dat geen 'assistent' is (ontbrekende rol = coach, oude data) */
     function isVolCoach(t) { return isTeamLid(t) && team(t).get('rollen', {}).get(uid(), 'coach') != 'assistent'; }
     function teamClub(t) { return team(t).get('club', null); }
-    /* schrijfrechten per team: teamlid, clubadmin of coördinator van de bouw van het team */
-    function magSchrijven(t) {
-      return isVolCoach(t)
-        || (teamBestaat(t) && teamClub(t) != null && (isClubAdmin(teamClub(t))
-            || isCoordinatorVanBouw(teamClub(t), team(t).get('bouw', '_'))));
+    /* [20261115d] gekoppelde coach van een eigen bouw: zelfde rechten als de bouwcoördinator, voor precies de
+       teams van die bouw. Bron: clubs/{id}.eigenBouwToegang.{teamId}.{uid} (alleen de clubadmin schrijft het clubdocument). */
+    function isEigenBouwCoach(c, t) {
+      return echt() && clubBestaat(c) && club(c).get('eigenBouwToegang', {}).get(t, {}).get(uid(), false) == true;
     }
+    /* sturende rol voor dit team: clubadmin, coördinator van de bouw of gekoppelde coach van een eigen bouw */
+    function magBouwSturen(t) {
+      return teamBestaat(t) && teamClub(t) != null && (isClubAdmin(teamClub(t))
+        || isCoordinatorVanBouw(teamClub(t), team(t).get('bouw', '_'))
+        || isEigenBouwCoach(teamClub(t), t));
+    }
+    /* schrijfrechten per team: teamlid of een sturende rol */
+    function magSchrijven(t) { return isVolCoach(t) || magBouwSturen(t); }
     /* leesrechten: schrijvers + clublid (coördinatoren zien andere teams read-only) */
     function magLezen(t) {
       return magSchrijven(t) || (teamBestaat(t) && teamClub(t) != null && isClubLid(teamClub(t)));
     }
-    /* anonieme deel-link: toegangsbewijs voor precies dit team */
-    function heeftDeelToegang(t) {
-      let d = /databases/$(database)/documents/trainingToegang/$(uid());
-      return anoniem() && exists(d)
-        && get(d).data.teamId == t
-        && get(d).data.vervaltOp > request.time;
+    /* [20261115d] Wat een coach op zijn eigen teamdocument NIET mag: club, werkwijze, rollen, de bouw los van de
+       categorie en de Sportlink-koppeling wijzigen, iemand aan leden toevoegen (alleen verwijderen; toevoegen loopt via de
+       Cloud Functions met log) of het koppelvoorstel naar een andere club laten wijzen. */
+    function coachWijzigtTeamVeilig() {
+      let k = request.resource.data.diff(resource.data).affectedKeys();
+      let l = request.resource.data.get('leden', {}).diff(resource.data.get('leden', {}));
+      return !k.hasAny(['club', 'werkwijzeVrij', 'rollen', 'bouwHandmatig', 'sportlinkTeamcode', 'sportlinkNaam'])
+        /* de bouw volgt de categorie (teaminstellingen), behalve als de club het team met de hand heeft ingedeeld */
+        && (!k.hasAny(['bouw']) || (k.hasAny(['categorie']) && resource.data.get('bouwHandmatig', false) != true
+            && request.resource.data.get('bouw', null) in [null, 'onder', 'midden', 'boven']))
+        && l.addedKeys().size() == 0 && l.changedKeys().size() == 0
+        && request.resource.data.get('koppelVoorstel', {}).get('clubId', null) == resource.data.get('koppelVoorstel', {}).get('clubId', null);
     }
 
     /* ======================= platform ======================= */
@@ -118,7 +131,11 @@ service cloud.firestore {
         || (echt() && (resource.data.get('leden', {}).get(uid(), false) == true
                        || resource.data.get('admins', {}).get(uid(), false) == true
                        || uid() in resource.data.get('eigenBouwCoaches', [])
-                       || resource.data.get('trainingscoordinatoren', {}).get(uid(), false) == true));
+                       || resource.data.get('trainingscoordinatoren', {}).get(uid(), false) == true
+                       /* [20261115d] bouwcoördinator die (nog) geen clublid is */
+                       || resource.data.get('bouwCoordinatoren', {}).get('onder', {}).get(uid(), false) == true
+                       || resource.data.get('bouwCoordinatoren', {}).get('midden', {}).get(uid(), false) == true
+                       || resource.data.get('bouwCoordinatoren', {}).get('boven', {}).get(uid(), false) == true));
       /* aanmaken: alleen platformbeheerder (zoals de client-gating), maker is zelf admin en lid */
       allow create: if isPlatform()
         && request.resource.data.admins.get(uid(), false) == true
@@ -128,14 +145,28 @@ service cloud.firestore {
         /* clubadmin mag alles behalve de schakelaars van de eindbaas (platformModules) */
         || (isClubAdmin(clubId)
             && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['platformModules']))
-        /* teamaanmaker registreert een nieuw team bij de club */
-        || (echt() && isClubLid(clubId) && wijzigt(['teams']));
+        /* teamaanmaker registreert een nieuw team bij de club: alleen toevoegen, niets weghalen [20261115d] */
+        || (echt() && isClubLid(clubId) && wijzigt(['teams'])
+            && request.resource.data.get('teams', {}).diff(resource.data.get('teams', {})).removedKeys().size() == 0
+            && request.resource.data.get('teams', {}).diff(resource.data.get('teams', {})).changedKeys().size() == 0);
       allow delete: if isClubAdmin(clubId) || isPlatform();
 
-      /* uitleningen: club-breed voor leden; schrijven door clubadmin, coördinator of teamlid */
+      /* uitleningen [20261115d]: lezen club-breed voor leden. Aanmaken alleen door een sturende rol (clubadmin,
+         coördinator of gekoppelde coach van de bouw) van één van beide teams, en beide teams horen bij deze club.
+         Bijwerken en terugzetten: ook de coaches van de twee betrokken teams; de teams en de speler liggen vast. */
       match /uitleningen/{id} {
         allow read: if isClubLid(clubId) || isClubAdmin(clubId);
-        allow create, update, delete: if isClubLid(clubId) || isClubAdmin(clubId);
+        allow create: if echt()
+          && request.resource.data.vanTeam is string && request.resource.data.naarTeam is string
+          && teamBestaat(request.resource.data.vanTeam) && teamClub(request.resource.data.vanTeam) == clubId
+          && teamBestaat(request.resource.data.naarTeam) && teamClub(request.resource.data.naarTeam) == clubId
+          && (magBouwSturen(request.resource.data.vanTeam) || magBouwSturen(request.resource.data.naarTeam));
+        allow update: if echt()
+          && (magSchrijven(resource.data.vanTeam) || magSchrijven(resource.data.naarTeam))
+          && request.resource.data.vanTeam == resource.data.vanTeam
+          && request.resource.data.naarTeam == resource.data.naarTeam
+          && request.resource.data.spelerId == resource.data.spelerId;
+        allow delete: if echt() && (isClubAdmin(clubId) || magSchrijven(resource.data.vanTeam) || magSchrijven(resource.data.naarTeam));
       }
       match /kalender/{id} {
         allow read: if isClubLid(clubId);
@@ -214,8 +245,8 @@ service cloud.firestore {
                   || isPlatform()      /* [20261020a] teamlijst per club voor het platformoverzicht; spelers e.d. alleen in de ondersteuningsmodus */
                   || (echt() && (resource.data.get('leden', {}).get(uid(), false) == true
                                  || (resource.data.get('club', null) != null && isClubLid(resource.data.club))
-                                 || (resource.data.get('club', null) != null && isTraincoVanClub(resource.data.club))))
-                  || heeftDeelToegang(teamId);
+                                 || (resource.data.get('club', null) != null && isTraincoVanClub(resource.data.club))));
+      /* [20261115d] de anonieme deel-link leest het teamdocument niet meer (namen van coaches, vaste afmeldingen) */
       allow create: if echt() && (
         (request.resource.data.leden.get(uid(), false) == true
           && (request.resource.data.get('club', null) == null
@@ -224,15 +255,20 @@ service cloud.firestore {
         || (request.resource.data.get('club', null) != null && isClubAdmin(request.resource.data.club)));
       /* leden en clubkoppeling: een coach mag die niet zelf wijzigen (anders kan hij iemand toevoegen of het team
          naar een andere club verplaatsen). Clubbeheer en de coördinator van de bouw mogen wel. */
-      allow update: if (isVolCoach(teamId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['leden', 'club', 'werkwijzeVrij']))
-        || (teamBestaat(teamId) && teamClub(teamId) != null && (isClubAdmin(teamClub(teamId))
-            || isCoordinatorVanBouw(teamClub(teamId), team(teamId).get('bouw', '_'))));
-      allow delete: if isVolCoach(teamId)
+      allow update: if (isVolCoach(teamId) && coachWijzigtTeamVeilig())
+        /* sturende rol: alles, maar het team gaat niet naar een andere club (loskoppelen mag alleen de clubadmin) */
+        || (magBouwSturen(teamId)
+            && (request.resource.data.get('club', null) == resource.data.get('club', null)
+                || (request.resource.data.get('club', null) == null && isClubAdmin(teamClub(teamId)))));
+      /* [20261115d] een clubteam verwijdert alleen de clubadmin; een trainer zonder club zijn eigen team */
+      allow delete: if (isVolCoach(teamId) && resource.data.get('club', null) == null)
         || (resource.data.get('club', null) != null && isClubAdmin(resource.data.club));
 
       /* wildcard: dekt spelers, wedstrijden, presentie, beoordelingen, teamevaluaties,
          planning, poule, sjablonen, lijsten, trainingAantekeningen, … ook nieuwe. */
-      match /{sub=**} {
+      /* [20261115d] LET OP: minstens één padsegment ({sub}/{rest=**}). Een kale {sub=**} past in rules-versie 2
+         ook op het teamdocument zelf en zette daarmee de beperkingen van allow update hierboven buiten werking. */
+      match /{sub}/{rest=**} {
         allow read, write: if magSchrijven(teamId);      /* teamleden, clubadmin, coördinator van de bouw */
       }
       /* assistent (en iedere coach): rooster en poule zijn niet gevoelig, alleen lezen */
@@ -242,7 +278,7 @@ service cloud.firestore {
       /* spelerslijst (naam, nummer, positie): ook leesbaar voor clubleden (uitleen-flow) en
          via een anonieme deel-link; beoordelingen/presentie/evaluaties blijven teamgebonden. */
       match /spelers/{id} {
-        allow read: if magLezen(teamId) || heeftDeelToegang(teamId);
+        allow read: if magLezen(teamId);   /* [20261115d] niet meer via de deel-link: naam en nummer staan op de link zelf */
       }
       /* presentie: geen deel-link; alleen via de wildcard hierboven (teamleden, clubbeheer, coördinator) */
       /* poule/* wordt door Cloud Functions geschreven (Admin SDK); coaches lezen via de wildcard */
@@ -259,7 +295,11 @@ service cloud.firestore {
     function trainingClub(id) { return get(/databases/$(database)/documents/trainingen/$(id)).data.get('club', null); }
     /* trainingen schrijven: hoofd jeugdopleiding / clubadmin, of de coach van een training voor precies één team.
        Een training voor meerdere teams wijzigt alleen het hoofd jeugdopleiding of de clubadmin. */
-    function isTrainingCoach(d) { return echt() && d.get('teams', []).size() == 1 && isVolCoach(d.get('teams', [])[0]); }
+    /* [20261115d] en de training hoort bij de club van dat team (anders kon een coach een training in een andere club plaatsen) */
+    function isTrainingCoach(d) {
+      return echt() && d.get('teams', []).size() == 1 && isVolCoach(d.get('teams', [])[0])
+        && teamClub(d.get('teams', [])[0]) == d.get('club', null);
+    }
     /* [20261111d] de bouwcoördinator wijst het seizoensplan van zijn bouw toe: hij mag trainingen voor precies
        één team uit zijn eigen bouw schrijven (zelfde club) */
     function isTrainingCoordinator(d) {
@@ -278,8 +318,11 @@ service cloud.firestore {
       allow create: if echt() && magTrainingSchrijven(request.resource.data);
       allow update: if echt() && magTrainingSchrijven(resource.data) && magTrainingSchrijven(request.resource.data);
       allow delete: if echt() && magTrainingSchrijven(resource.data);
-      match /{sub=**} {
-        allow read: if echt() && trainingClub(id) != null && (isClubLid(trainingClub(id)) || isTraincoVanClub(trainingClub(id)));
+      /* [20261115d] subcollecties: clubleden lezen alles; de trainingscoördinator leest de inhoud van de training,
+         maar niet de samenvattingen van wat coaches erbij noteren (hotspotSamenvattingen) */
+      match /{col}/{rest=**} {
+        allow read: if echt() && trainingClub(id) != null
+          && (isClubLid(trainingClub(id)) || (col != 'hotspotSamenvattingen' && isTraincoVanClub(trainingClub(id))));
         allow write: if trainingSchrijver(id);
       }
     }

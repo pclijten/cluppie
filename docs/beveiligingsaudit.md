@@ -2,6 +2,32 @@
 
 15-11-2026, op `main` (commit 1d44083, release 20261115c). Poort P1: er is nog niets aan de rules gewijzigd.
 
+## Stand na de fixes (release 20261115d, 15-11-2026)
+
+Paul gaf op 15-11 akkoord om alles te fixen. Opgelost en in de emulator getoetst (39 scenario's, waarvan één met 74 proeven per gebruikerstype, geen afwijkingen):
+
+| Bevinding | Stand |
+|---|---|
+| K1 teamdocument schrijfbaar voor elke coach | Opgelost in rules (wildcard eist een subcollectie; coach mag `club`, `werkwijzeVrij`, `rollen`, `bouwHandmatig`, Sportlink-velden niet wijzigen, niemand aan `leden` toevoegen, koppelvoorstel niet omleiden). Server: `clubRol` en `sportlinkTeamSpelers` vertrouwen het `club`-veld niet meer. |
+| H1 ouder leest notities en leerpunten | Opgelost: de deel-link draagt zelf naam en rugnummer; de deel-link geeft geen toegang meer tot spelers of het teamdocument. |
+| H2 elke clubcoach leest notities en leerpunten | **Open.** Datamodel; impactanalyse volgt. Geldt ook voor de `snapshot` op uitleningen. |
+| H3 training in een andere club | Opgelost in rules. |
+| M1 uitleningen | Opgelost: aanmaken alleen door een sturende rol, bijwerken en terugzetten ook door de coaches van de twee teams. Lezen is nog clubbreed (zie H2). |
+| M2 team verwijderen, rollen, bouw | Opgelost. De bouw mag nog wel de categorie volgen, tenzij de club het team met de hand heeft ingedeeld. |
+| M3 teamlijst van de club | Opgelost: een clublid kan alleen toevoegen. |
+| M4 gekoppelde coach bouw | Opgelost volgens het totaalplan: zelfde rechten als de bouwcoördinator, via `eigenBouwToegang`. |
+| M5 trainingscoördinator en subcollecties | Opgelost: leest de training, niet `hotspotSamenvattingen`. |
+| M6 Storage-rules | **Open.** |
+| M7 solo-AI zonder bevestigd adres | Opgelost (bevestigd adres verplicht). Een plafond voor alle losse trainers samen is er nog niet. |
+| L1 coördinator zonder lidmaatschap | Opgelost. |
+| L2 koppelvoorstel | Opgelost met K1. |
+| L3 namen in AI-invoer | Opgelost. |
+| L4, L5, L6, L7 | **Open.** |
+
+Niets hiervan is gedeployed. Tot de deploy is K1 in productie nog open. Deployvolgorde: PORTEREN.md.
+
+De tekst hieronder is het rapport zoals het vóór de fixes was.
+
 ## Hoe getoetst
 
 - **Firestore-rules in de emulator:** 47 proeven met vaste fictieve accounts per gebruikerstype (club "FC Testdorp", tweede club "SV Elders", los team "Buurtteam O10", spelers "Speler 1"). Elke proef draait op een verse database. Bestand: `tests/audit-rules.test.mjs`, draaien met `npm run audit:rules`. Uitkomst: 29 in orde, 18 afwijkingen.

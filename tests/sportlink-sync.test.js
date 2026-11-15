@@ -76,7 +76,7 @@ const doc = p => store.get(p);
 function zetKlaar(){
   store.clear(); aanroepen.length = 0; params.length = 0; standaardSL();
   SL._prog = SL.programma; SL.programma = perTeam(SL._prog); SL.uitslagen = perTeam(SL.uitslagen);
-  store.set('clubs/c1', { naam: 'VV Voorbeeld', admins: { adm: true }, sportlinkClientId: 'k7Rq2pX9aW' });
+  store.set('clubs/c1', { naam: 'VV Voorbeeld', admins: { adm: true }, sportlinkClientId: 'k7Rq2pX9aW', teams: { t11: true, t13: true } });
   store.set('teams/t11', { club: 'c1', naam: 'O11-1', leden: {} });
   store.set('teams/t13', { club: 'c1', naam: 'O13-1', leden: {} });
   // al bestaande wedstrijd die niet meer in Sportlink staat, en een met opstelling + eigen verzameltijd
@@ -197,6 +197,16 @@ function zetKlaar(){
   try { await F.sportlinkTeamSpelers(req('andereCoach', { clubId: 'c1', teamId: 't11' })); ok(false, 'coach van ander team geweigerd'); }
   catch (e){ ok(e.code === 'permission-denied', 'spelers: coach van een ander team geweigerd'); }
   ok((await F.sportlinkTeamSpelers(req('adm', { clubId: 'c1', teamId: 't11' }))).gekoppeld, 'spelers: clubbeheerder mag');
+  /* [20261115d] audit K1: een eigen team met het club-veld van deze club en een geleende teamcode geeft geen toegang */
+  const code11 = String(doc('teams/t11').sportlinkTeamcode || doc('clubs/c1/geheim/t11')?.teamcode || '');
+  store.set('teams/nep', { club: 'c1', naam: 'Nep', leden: { indringer: true }, sportlinkTeamcode: code11 });
+  try { await F.sportlinkTeamSpelers(req('indringer', { clubId: 'c1', teamId: 'nep' })); ok(false, 'team buiten de teamlijst van de club geweigerd'); }
+  catch (e){ ok(e.code === 'permission-denied', 'spelers: team dat de club niet kent telt niet als lidmaatschap'); }
+  store.set('teams/nep2', { club: 'c1', naam: 'Nep 2', leden: {}, sportlinkTeamcode: code11 });
+  ok((await F.sportlinkTeamSpelers(req('adm', { clubId: 'c1', teamId: 'nep2' }))).gekoppeld === false, 'spelers: team buiten de teamlijst → gekoppeld:false');
+  store.set('teams/t13', { ...doc('teams/t13'), sportlinkTeamcode: '999999' });
+  ok((await F.sportlinkTeamSpelers(req('adm', { clubId: 'c1', teamId: 't13' }))).gekoppeld === false, 'spelers: teamcode die niet in de teamlijst van de club staat → gekoppeld:false');
+  store.set('teams/t13', { club: 'c1', naam: 'O13-1', leden: {} });
   store.delete('clubs/c1/geheim/t13');
   ok((await F.sportlinkTeamSpelers(req('adm', { clubId: 'c1', teamId: 't13' }))).gekoppeld === false, 'spelers: niet gekoppeld team → gekoppeld:false');
 

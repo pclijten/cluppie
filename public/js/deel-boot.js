@@ -13,9 +13,9 @@
    trainingToegang-sessie dan ook niet meer toe. */
 import { auth, db, signInAnonymously, doc, getDoc, setDoc,
          collection, getDocs, query, where } from './firebase.js?v=20261011g';
-import { esc } from './state.js?v=20261115c';
-import { afwezigRedenInfo } from './config.js?v=20261115c';
-import { oefHtml } from './training-weergave.js?v=20261115c';
+import { esc } from './state.js?v=20261115d';
+import { afwezigRedenInfo } from './config.js?v=20261115d';
+import { oefHtml } from './training-weergave.js?v=20261115d';
 
 function schermHtml(inhoud){
   return `<div style="max-width:var(--app-w,540px);margin:0 auto;min-height:100%;padding:20px 16px calc(40px + env(safe-area-inset-bottom));box-sizing:border-box">${inhoud}</div>`;
@@ -80,16 +80,14 @@ export async function bootDeelPagina(deelId){
     return;
   }
 
-  // 4) Trainingsinhoud + spelerslijst ophalen.
+  // 4) Trainingsinhoud ophalen. [20261115d] De spelerslijst (alleen naam en nummer) staat op de deel-link
+  // zelf; de pagina leest geen spelerdocumenten meer (daar staan notities en leerpunten van de coach op).
   let training, spelers;
   try {
-    const [tsnap, ssnap] = await Promise.all([
-      getDoc(doc(db,'trainingen',deel.trainingId)),
-      getDocs(collection(db,'teams',deel.teamId,'spelers')),
-    ]);
+    const tsnap = await getDoc(doc(db,'trainingen',deel.trainingId));
     if (!tsnap.exists()){ el.innerHTML = foutHtml('Deze training is niet meer beschikbaar.'); return; }
     training = tsnap.data();
-    spelers = ssnap.docs.map(d => ({id:d.id, ...d.data()})).filter(p => !p.gast && !p._ingeleend && !p.gearchiveerd)
+    spelers = (Array.isArray(deel.spelers) ? deel.spelers : []).filter(p => p && p.id)
       .sort((a,b) => (a.naam||'').localeCompare(b.naam||''));
   } catch(e){
     el.innerHTML = foutHtml('Ophalen mislukt: ' + (e.code||e.message));

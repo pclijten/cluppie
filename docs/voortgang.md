@@ -2,7 +2,7 @@
 
 Bijgewerkt 15-11-2026. Werk staat op branch `wp0-opruimen` (lokaal, vanaf `main` 1d44083, niet gepusht).
 
-## WP0 — Opruimen: af, wacht op P4 (push/deploy)
+## WP0 — Opruimen: af, zit in release 20261115d
 
 | Onderdeel uit het plan | Stand |
 |---|---|
@@ -15,21 +15,28 @@ Bijgewerkt 15-11-2026. Werk staat op branch `wp0-opruimen` (lokaal, vanaf `main`
 
 Gewijzigde bestanden: `functions/ai-fout.js` (nieuw), `functions/index.js`, `public/js/chatbot.js`, `tests/ai-fout.test.js` (nieuw, in `npm test`), `tests/sleutel.test.mjs` (Windows-pad; zelfde wijziging als in de lokale 14-nov-werkmap), `package.json`.
 
-Getest: `npm test` 40 van 40 suites groen, `node tests/toegang.test.js` groen, `node --check` op de gewijzigde bestanden. Niet gedaan: versie-bump (`tools/versie.mjs`) en UPDATES-regel; die horen bij het releasemoment (P4), samen met de fixes uit WP1.
+Getest: `npm test` 40 van 40 suites groen, `node tests/toegang.test.js` groen, `node --check` op de gewijzigde bestanden. Versie-bump en UPDATES-regel zijn samen met de fixes van WP1 gedaan (20261115d).
 
-Nodig bij P4: `firebase deploy --only functions:chatHulp,functions:structureerTraining,functions:genereerVerslagAI,functions:samenvatHotspot,functions:vatDoelenSamen,functions:analyseerBeleidsplan,functions:personaliseerTraining,functions:seizoensVoorstel --project cluppie-ad329` (alle functies die `claude()` gebruiken). Geen nieuwe callables, dus geen invoker.
+Deploy: zie het blok bovenaan PORTEREN.md.
 
-## WP1 — Beveiligingsaudit: rapport af, wacht op P1
+## WP1 — Beveiligingsaudit en fixes: grotendeels af, wacht op deploy
 
-`docs/beveiligingsaudit.md`. 47 proeven in de Firestore-emulator met vaste fictieve accounts per gebruikerstype (`tests/audit-rules.test.mjs`, `npm run audit:rules`): 29 in orde, 18 afwijkingen. Eén kritiek (elke coach schrijft het hele teamdocument, met een route naar Sportlink-namen van andere clubs), drie hoog, zeven middel, zeven laag. Er is nog niets aan de rules gewijzigd.
+Rapport: `docs/beveiligingsaudit.md` (met een tabel "Stand na de fixes" bovenaan). Paul gaf op 15-11 akkoord om alles te fixen zonder verdere toestemming.
 
-Open in WP1: Storage-rules testen, functions van begin tot eind, rolwissels, release 20261114a. Daarna de fixes, in de volgorde uit het rapport.
+Gefixt in release 20261115d (lokaal, branch `wp0-opruimen`): K1, H1, H3, M1 t/m M5, M7, L1, L2, L3. Getest: rules in de emulator 39 van 39 scenario's (één daarvan draait 74 proeven met vaste fictieve accounts per gebruikerstype, zowel "mag niet" als "moet blijven werken"), `npm test` 40 suites, `tests/toegang.test.js`. Versie-bump en UPDATES-regel gedaan. Niet in een browser bekeken en niet tegen echte Firebase.
 
-## Beslispunten voor Paul
+Open in WP1:
+- **H2** notities en leerpunten leesbaar voor elke coach van de club (ook via de snapshot op uitleningen). Vraagt een datamodelwijziging met migratie; impactanalyse is de volgende stap.
+- **M6** Storage-rules testen en aanscherpen.
+- **L4 t/m L7** (eindbaas-adres op vier plekken, `sportlinkClubcode`, dossier bij overzetten, App Check).
+- Rolwissels en functions van begin tot eind zijn niet getoetst.
 
-1. **Release 20261114a staat alleen in je lokale werkmap.** Branch `asv33-14nov`, 103 gewijzigde en 6 nieuwe bestanden, niet gecommit en niet op GitHub. `main` is intussen drie releases verder (20261115a t/m c); 93 bestanden overlappen, waarvan 19 met echte inhoudsverschillen (onder andere `teams-spelers.js`, `platform-centrum.js`, `styles.css`, `club.js`). Ik heb er niets aan veranderd. Voorstel: ik commit het op zijn eigen branch en werk het bij naar `main` in een aparte PR, vóór de fixes van WP1.
-2. **P1: akkoord op de beveiligingsaudit** en de volgorde van de fixes. Aparte keuze bij M4: krijgt de gekoppelde coach bouw echt de rechten van een bouwcoördinator, of gaat die belofte uit de interface?
-3. **Model naar Haiku 5.5** (`claude-haiku-5-5`): ongeveer tien keer goedkoper ($0,10 / $0,50 per miljoen tokens tegenover $1 / $5) en cachet al vanaf 512 tokens. Het is geen kale id-wissel: `temperature` moet weg (geeft een 400), het model denkt standaard na (kost uitvoertokens, dus `max_tokens` omhoog of `effort` laag) en telt ongeveer 30% meer tokens. Moet live getest worden met een echte trainings-PDF. Voorstel: eigen kleine release na WP1.
+## Wat alleen Paul kan
+
+1. **Deployen en mergen** van release 20261115d. De volgorde staat bovenaan PORTEREN.md. Tot dan staat K1 in productie open. Ik heb niets gepusht of gedeployed: dat raakt de live app en vraagt jouw Firebase- en GitHub-rechten.
+2. **Emulator afsluiten:** er draait nog een Firestore-emulator van mijn eerste testronde (java, poort 8080). Ik mocht hem niet stoppen. Sluit hem via Taakbeheer, anders start `npm run test:rules` niet (rechtstreeks draaien kan wel: `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 node --test tests/rules.test.mjs tests/audit-rules.test.mjs`).
+3. **Release 20261114a** is lokaal vastgelegd op `asv33-14nov` (commit 9b9d260), nog niet bijgewerkt naar `main`. Dat doe ik als volgende stap, in een eigen branch.
+4. **Model naar Haiku 5.5** (`claude-haiku-5-5`): ongeveer tien keer goedkoper en cachet al vanaf 512 tokens, maar `temperature` moet weg, het model denkt standaard na en telt ongeveer 30% meer tokens. Moet live getest worden met een echte trainings-PDF; eigen kleine release.
 
 ## Open punten uit PORTEREN.md, gesorteerd
 
@@ -49,8 +56,11 @@ Open in WP1: Storage-rules testen, functions van begin tot eind, rolwissels, rel
 | `sleutel.test.mjs` draait op Windows | `npm test` stopte op Pauls pc bij de vijfde suite | Geen (ontwikkeling) |
 
 | `tests/audit-rules.test.mjs` en `npm run audit:rules` | Bewijs per gebruikerstype voor de audit, herhaalbaar | Alle |
+| Gekoppelde coach bouw krijgt de rechten van een bouwcoördinator | De interface beloofde het, de rules gaven het niet; het totaalplan noemt het als bedoeling | Gekoppelde coach bouw |
+| Ouder-link draagt naam en rugnummer zelf | De link gaf toegang tot volledige spelerdocumenten | Coach, losse trainer (ouders) |
+| `tools/versie.mjs` draait op Windows | De release-tool stopte op Pauls pc | Geen (ontwikkeling) |
+| Werkwijze: scripts schrijven pas weg als alle vervangingen gelukt zijn | Een bewerkingsscript maakte `functions/index.js` leeg; hersteld uit de commit, niets verloren | Geen |
 
-Alle vijf zijn kleine toevoegingen zonder UX- of datamodelwijziging.
 
 ## Fable-verbruik
 

@@ -11,7 +11,7 @@
    deel-boot.js voor de kant van de ouder, en firestore.rules voor hoe die
    toegang precies is afgebakend (trainingDeel + trainingToegang). */
 import { db, collection, addDoc, serverTimestamp, Timestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261115c';
+import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261115d';
 import { ico } from './icons.js?v=20261110a';
 
 let _ctx = null;
@@ -118,6 +118,11 @@ function openDeelModal(){
         vervaltOp: Timestamp.fromDate(vervaltDatum),
         gemaaktDoor: S.user?.uid || null,
         gemaakt: serverTimestamp(),
+        /* [20261115d] alleen naam en nummer gaan mee op de link. De deel-pagina leest de spelerdocumenten
+           niet meer zelf: daar staan ook notities en leerpunten van de coach op. */
+        spelers: (S.teamId === gegevens.teamId ? (S.spelers || []) : [])
+          .filter(p => p && !p.gast && !p._ingeleend && !p.gearchiveerd)
+          .map(p => ({ id: p.id, naam: String(p.naam || ''), nummer: p.nummer ?? null })).slice(0, 60),
       });
       const url = deelLinkUrl(ref.id);
       $('mDeelDuur').style.display = 'none';

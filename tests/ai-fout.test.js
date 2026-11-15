@@ -29,3 +29,14 @@ ok(verbruikRegel('m', { input_tokens: 12, cache_creation_input_tokens: 4500, cac
   === '[claude] verbruik model=m invoer=12 cacheSchrijven=4500 cacheLezen=0 uitvoer=80', 'regel');
 ok(verbruikRegel('m', null).endsWith('invoer=0 cacheSchrijven=0 cacheLezen=0 uitvoer=0'), 'zonder usage');
 console.log(`ai-fout: ${n} controles geslaagd`);
+
+// AI voor losse trainers: alleen met een bevestigd e-mailadres (audit M7)
+(async () => {
+  const { vereisSoloAI } = require('../functions/solo-ai');
+  class HttpsError extends Error { constructor(code, m){ super(m); this.code = code; } }
+  let code = null;
+  try { await vereisSoloAI({ db: null, HttpsError, FieldValue: {}, request: { auth: { uid: 'los', token: { email_verified: false } }, data: { teamId: 't' } } }); }
+  catch (e){ code = e.code; }
+  assert.strictEqual(code, 'failed-precondition', 'solo-AI zonder bevestigd adres geweigerd');
+  console.log('ai-fout: solo-AI vraagt een bevestigd e-mailadres');
+})().catch(e => { console.error(e); process.exit(1); });

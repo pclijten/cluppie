@@ -1,11 +1,12 @@
-// Beveiligingsaudit (WP1): legt vast wat de Firestore-rules NU toelaten, per gebruikerstype.
-// Dit bestand keurt niets goed of af: elke proef meldt TOEGESTAAN of GEWEIGERD, met wat veilig zou zijn.
-// Draaien:  npm run audit:rules   (Java nodig; start de emulator)
+// Beveiligingsaudit (WP1): toetst de Firestore-rules per gebruikerstype.
+// Elke proef meldt TOEGESTAAN of GEWEIGERD naast wat veilig is; een afwijking laat de test falen.
+// Draaien:  npm run test:rules  of  npm run audit:rules   (Java nodig; start de emulator)
 // Vaste fictieve testaccounts (zie docs/rollenkaart.md), nooit echte gegevens.
 import { test, before, after } from 'node:test';
+import assert from 'node:assert';
 import fs from 'node:fs';
 import { initializeTestEnvironment } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, updateDoc, getDocs, collection, Timestamp, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, getDocs, collection, Timestamp, deleteDoc, deleteField } from 'firebase/firestore';
 
 let env;
 const uitkomsten = [];
@@ -55,17 +56,19 @@ async function vulDatabase(){
     await setDoc(doc(db, 'clubs/sv-elders'), { naam: 'SV Elders', admins: { ander: true }, leden: { ander: true }, teams: { e11: true } });
     await setDoc(doc(db, 'teams/o11'), { club: 'test-fc', naam: 'O11-1', bouw: 'midden', leden: { coach: true, coach2: true }, rollen: { coach: 'coach', coach2: 'coach' } });
     await setDoc(doc(db, 'teams/o13'), { club: 'test-fc', naam: 'O13-1', bouw: 'boven', leden: { andereCoach: true } });
-    await setDoc(doc(db, 'teams/mo11'), { club: 'test-fc', naam: 'MO11-1', bouw: 'midden', leden: { andereCoach: true } });
+    await setDoc(doc(db, 'teams/mo11'), { club: 'test-fc', naam: 'MO11-1', bouw: 'midden', bouwHandmatig: true, leden: { andereCoach: true } });
     await setDoc(doc(db, 'teams/e11'), { club: 'sv-elders', naam: 'O11-1', bouw: 'midden', leden: { ander: true } });
     await setDoc(doc(db, 'teams/los'), { naam: 'Buurtteam O10', leden: { los: true }, eigenClub: { naam: 'Buurt', plaats: 'Testdorp' } });
     for (const t of ['o11', 'o13', 'mo11', 'e11', 'los'])
       await setDoc(doc(db, `teams/${t}/spelers/s1`), { naam: 'Speler 1', nummer: 7, notitie: 'fictieve notitie van de coach', leerpunten: [{ id: 'l1', tekst: 'fictief leerpunt' }] });
     await setDoc(doc(db, 'teams/o13/beoordelingen/b1'), { score: 3 });
     await setDoc(doc(db, 'trainingen/tr1'), { club: 'test-fc', titel: 'Passen', teams: ['o11'] });
-    await setDoc(doc(db, 'trainingen/tr1/notities/n1'), { tekst: 'fictieve aantekening', door: 'coach' });
+    await setDoc(doc(db, 'trainingen/tr1/hotspotSamenvattingen/h1'), { tekst: 'fictieve samenvatting van aantekeningen' });
     await setDoc(doc(db, 'trainingDeel/d1'), { teamId: 'o11', trainingId: 'tr1', vervaltOp: morgen, gemaaktDoor: 'coach' });
     await setDoc(doc(db, 'trainingToegang/ouder'), { deelId: 'd1', teamId: 'o11', trainingId: 'tr1', vervaltOp: morgen });
-    await setDoc(doc(db, 'clubs/test-fc/uitleningen/u1'), { spelerId: 's1', vanTeam: 'o13', naarTeam: 'o11' });
+    await setDoc(doc(db, 'clubs/test-fc/uitleningen/u1'), { spelerId: 's1', vanTeam: 'o13', naarTeam: 'o11', overlay: {} });
+    await setDoc(doc(db, 'clubs/test-fc/uitleningen/u3'), { spelerId: 's1', vanTeam: 'o13', naarTeam: 'mo11', overlay: {} });
+    await setDoc(doc(db, 'teams/los2'), { naam: 'Buurtteam O12', leden: { los: true }, koppelVoorstel: { clubId: 'test-fc', clubNaam: 'FC Testdorp', status: 'voorgesteld' } });
   });
 }
 
@@ -85,12 +88,12 @@ test('proeven per gebruikerstype', async () => {
     () => setDoc(doc(als('coach'), 'trainingen/inbraak'), { club: 'sv-elders', titel: 'Ongewenst', teams: ['o11'] }));
   await proef(8, 'coach', 'zet een medecoach op assistent via teams.rollen (buiten wijzigRol en het log om)', 'weigeren',
     () => updateDoc(doc(als('coach'), 'teams/o11'), { 'rollen.coach2': 'assistent' }));
-  await proef(9, 'coach', 'verplaatst het eigen team naar een andere bouw', 'weigeren', () => updateDoc(doc(als('coach'), 'teams/o11'), { bouw: 'boven' }));
+  await proef(9, 'coach', 'verplaatst het eigen team naar een andere bouw zonder de categorie te wijzigen', 'weigeren', () => updateDoc(doc(als('coach'), 'teams/o11'), { bouw: 'boven' }));
   await proef(10, 'coach', 'voegt zichzelf toe aan een ander team', 'weigeren', () => updateDoc(doc(als('coach'), 'teams/o13'), { 'leden.coach': true }));
   await proef(11, 'coach', 'maakt de teamlijst van de club leeg (clubs.teams)', 'weigeren', () => updateDoc(doc(als('coach'), 'clubs/test-fc'), { teams: {} }));
   await proef(12, 'coach', 'maakt een uitlening aan (interface: alleen admin en coördinator)', 'weigeren',
     () => setDoc(doc(als('coach'), 'clubs/test-fc/uitleningen/u2'), { spelerId: 's1', vanTeam: 'o13', naarTeam: 'o11' }));
-  await proef(13, 'coach', 'verwijdert een uitlening van een ander team', 'weigeren', () => deleteDoc(doc(als('coach'), 'clubs/test-fc/uitleningen/u1')));
+  await proef(13, 'coach', 'verwijdert een uitlening tussen twee andere teams', 'weigeren', () => deleteDoc(doc(als('coach'), 'clubs/test-fc/uitleningen/u3')));
   await proef(14, 'coach', 'schrijft een speler in het eigen team', 'toestaan', () => updateDoc(doc(als('coach'), 'teams/o11/spelers/s1'), { nummer: 8 }));
 
   /* --- gekoppelde coach bouw (eigen bouw Meiden met team MO11-1) --- */
@@ -106,7 +109,7 @@ test('proeven per gebruikerstype', async () => {
 
   /* --- trainingscoördinator --- */
   await proef(21, 'trainingscoördinator', 'leest een clubtraining', 'toestaan', () => getDoc(doc(als('trainco'), 'trainingen/tr1')));
-  await proef(22, 'trainingscoördinator', 'leest aantekeningen van coaches bij een training (subcollectie)', 'weigeren', () => getDoc(doc(als('trainco'), 'trainingen/tr1/notities/n1')));
+  await proef(22, 'trainingscoördinator', 'leest de samenvattingen van aantekeningen van coaches bij een training', 'weigeren', () => getDoc(doc(als('trainco'), 'trainingen/tr1/hotspotSamenvattingen/h1')));
   await proef(23, 'trainingscoördinator', 'leest spelers', 'weigeren', () => getDoc(doc(als('trainco'), 'teams/o11/spelers/s1')));
   await proef(24, 'trainingscoördinator', 'wijzigt een training', 'weigeren', () => updateDoc(doc(als('trainco'), 'trainingen/tr1'), { titel: 'x' }));
 
@@ -142,6 +145,37 @@ test('proeven per gebruikerstype', async () => {
   await proef(45, 'ouder (deel-link)', 'leest het teamdocument (namen van coaches, vaste afmeldingen)', 'weigeren', () => getDoc(doc(anoniem('ouder'), 'teams/o11')));
   await proef(46, 'coach', 'leest het Sportlink-geheim van de club', 'weigeren', () => getDoc(doc(als('coach'), 'clubs/test-fc/geheim/_sportlink')));
   await proef(47, 'clubadmin', 'leest het toegangslog van een andere club', 'weigeren', () => getDocs(collection(als('admin'), 'toegangslog')));
+
+  /* --- wat moet blijven werken na de aanscherping [20261115d] --- */
+  await proef(48, 'coach', 'haalt een medecoach uit het eigen team', 'toestaan', () => updateDoc(doc(als('coach'), 'teams/o11'), { 'leden.coach2': deleteField(), 'ledenInfo.coach2': deleteField() }));
+  await proef(49, 'coach', 'verlaat het eigen team', 'toestaan', () => updateDoc(doc(als('coach'), 'teams/o11'), { 'leden.coach': deleteField() }));
+  await proef(50, 'coach', 'wijzigt naam en trainingsmomenten van het eigen team', 'toestaan', () => updateDoc(doc(als('coach'), 'teams/o11'), { naam: 'O11-1 nieuw', trainingsmomenten: [{ dag: 2, begin: '18:00', eind: '19:00' }] }));
+  await proef(73, 'coach', 'wijzigt de categorie van het eigen team; de bouw volgt', 'toestaan', () => updateDoc(doc(als('coach'), 'teams/o11'), { categorie: 'JO13', format: '11v11', bouw: 'boven' }));
+  await proef(74, 'coach', 'wijzigt de categorie van een team dat de club met de hand heeft ingedeeld, mét bouw', 'weigeren', () => updateDoc(doc(als('andereCoach'), 'teams/mo11'), { categorie: 'JO13', bouw: 'boven' }));
+  await proef(51, 'coach', 'werkt een uitlening naar het eigen team bij (nummer, positie)', 'toestaan', () => updateDoc(doc(als('coach'), 'clubs/test-fc/uitleningen/u1'), { 'overlay.nummer': 12 }));
+  await proef(52, 'coach', 'zet een ingeleende speler terug (uitlening naar het eigen team verwijderen)', 'toestaan', () => deleteDoc(doc(als('coach'), 'clubs/test-fc/uitleningen/u1')));
+  await proef(53, 'coach', 'maakt een training voor het eigen team in de eigen club', 'toestaan', () => setDoc(doc(als('coach'), 'trainingen/eigen'), { club: 'test-fc', titel: 'Eigen', teams: ['o11'] }));
+  await proef(54, 'coach', 'registreert een nieuw team in de teamlijst van de club (alleen toevoegen)', 'toestaan', () => updateDoc(doc(als('coach'), 'clubs/test-fc'), { 'teams.nieuw': true }));
+  await proef(55, 'gekoppelde coach bouw', 'leent een speler uit vanuit een team van de eigen bouw', 'toestaan', () => setDoc(doc(als('meiden'), 'clubs/test-fc/uitleningen/u4'), { spelerId: 's1', vanTeam: 'mo11', naarTeam: 'o13', overlay: {} }));
+  await proef(56, 'gekoppelde coach bouw', 'leest beoordelingen van een team buiten de eigen bouw', 'weigeren', () => getDoc(doc(als('meiden'), 'teams/o13/beoordelingen/b1')));
+  await proef(57, 'bouwcoördinator', 'leent een speler uit vanuit de eigen bouw', 'toestaan', () => setDoc(doc(als('bouw'), 'clubs/test-fc/uitleningen/u5'), { spelerId: 's1', vanTeam: 'o11', naarTeam: 'o13', overlay: {} }));
+  await proef(58, 'bouwcoördinator', 'leent een speler uit tussen twee teams buiten de eigen bouw', 'weigeren', () => setDoc(doc(als('bouw'), 'clubs/test-fc/uitleningen/u6'), { spelerId: 's1', vanTeam: 'o13', naarTeam: 'o13', overlay: {} }));
+  await proef(59, 'bouwcoördinator', 'zet een team van de eigen bouw in een andere bouw en voegt een coach toe', 'toestaan', () => updateDoc(doc(als('bouw'), 'teams/o11'), { bouw: 'boven', 'leden.nieuweCoach': true }));
+  await proef(60, 'bouwcoördinator', 'wijst een training toe aan één team van de eigen bouw', 'toestaan', () => setDoc(doc(als('bouw'), 'trainingen/toew'), { club: 'test-fc', titel: 'Plan', teams: ['o11'] }));
+  await proef(61, 'bouwcoördinator', 'verplaatst een team van de eigen bouw naar een andere club', 'weigeren', () => updateDoc(doc(als('bouw'), 'teams/o11'), { club: 'sv-elders' }));
+  await proef(62, 'clubadmin', 'leent een speler uit tussen twee teams van de club', 'toestaan', () => setDoc(doc(als('admin'), 'clubs/test-fc/uitleningen/u7'), { spelerId: 's1', vanTeam: 'o13', naarTeam: 'o11', overlay: {} }));
+  await proef(63, 'clubadmin', 'leent uit naar een team van een andere club', 'weigeren', () => setDoc(doc(als('admin'), 'clubs/test-fc/uitleningen/u8'), { spelerId: 's1', vanTeam: 'o13', naarTeam: 'e11', overlay: {} }));
+  await proef(64, 'clubadmin', 'koppelt een team los van de club en verwijdert een clubteam', 'toestaan', async () => { await updateDoc(doc(als('admin'), 'teams/o13'), { club: deleteField() }); await deleteDoc(doc(als('admin'), 'teams/o11')); });
+  await proef(65, 'clubadmin', 'verplaatst een eigen team naar een andere club', 'weigeren', () => updateDoc(doc(als('admin'), 'teams/o11'), { club: 'sv-elders' }));
+  await proef(66, 'losse trainer', 'verwijdert het eigen team', 'toestaan', () => deleteDoc(doc(als('los'), 'teams/los')));
+  await proef(67, 'losse trainer', 'reageert op een koppelvoorstel van de eindbaas (alleen de status)', 'toestaan', () => updateDoc(doc(als('los'), 'teams/los2'), { 'koppelVoorstel.status': 'later' }));
+  await proef(68, 'losse trainer', 'laat een bestaand koppelvoorstel naar een andere club wijzen', 'weigeren', () => updateDoc(doc(als('los'), 'teams/los2'), { 'koppelVoorstel.clubId': 'sv-elders' }));
+  await proef(69, 'losse trainer', 'zet een Sportlink-teamcode op het eigen team', 'weigeren', () => updateDoc(doc(als('los'), 'teams/los'), { sportlinkTeamcode: '123456' }));
+  await proef(70, 'ouder (deel-link)', 'leest de gedeelde training en de deel-link (met naam en nummer van de spelers)', 'toestaan', async () => { await getDoc(doc(anoniem('ouder'), 'trainingen/tr1')); await getDoc(doc(anoniem('ouder'), 'trainingDeel/d1')); });
+  await proef(71, 'coach', 'maakt een deel-link voor het eigen team', 'toestaan', () => setDoc(doc(als('coach'), 'trainingDeel/d2'), { teamId: 'o11', trainingId: 'tr1', vervaltOp: morgen, gemaaktDoor: 'coach', spelers: [{ id: 's1', naam: 'Speler 1', nummer: 7 }] }));
+  await proef(72, 'trainingscoördinator', 'leest het clubdocument en de teams van de club', 'toestaan', async () => { await getDoc(doc(als('trainco'), 'clubs/test-fc')); await getDoc(doc(als('trainco'), 'teams/o11')); });
   /* als laatste: verwijderen maakt het team onbruikbaar voor de andere proeven */
   await proef(7, 'coach', 'verwijdert het eigen clubteam', 'weigeren', () => deleteDoc(doc(als('coach'), 'teams/o11')));
+  const fout = uitkomsten.filter(u => !u.klopt).map(u => `${u.nr} ${u.rol}: ${u.wat} -> ${u.uit}`);
+  assert.deepStrictEqual(fout, [], 'afwijkingen van wat veilig is');
 });
