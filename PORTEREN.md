@@ -12,6 +12,7 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 
 ## Open
 **Voor Paul — Storage-regels getest en aangescherpt, leesbaarder oranje (release 20261116d, branch `wp-storage-design`)**
+- [x] Live sinds 16-11: Storage-regels gedeployed (`firebase deploy --only storage`) en de client op `main`.
 - [ ] **Storage-regels** (`storage.rules`): voor het eerst getest, per gebruikerstype (`tests/storage-rules.test.mjs`, `npm run test:storage`). 19 van de 20 proeven klopten al; één gat gedicht: in de trainingsmap mocht elk bestandstype, nu alleen PDF, PNG en JPEG (wat de app daar neerzet). Bekend en niet veranderd: de ondersteuningsmodus van de eindbaas geeft geen toegang tot bestanden.
 - [ ] **Emulator blijft hangen op deze pc.** Na `npm run test:rules` of `npm run test:storage` blijft het Java-proces van de Firestore-emulator draaien (poort 8080 of 8085) en mislukt de volgende run met "port taken". Sluit het via Taakbeheer (java), of in PowerShell: `Get-NetTCPConnection -LocalPort 8080,8085 -State Listen | % { Stop-Process -Id $_.OwningProcess }`. Er draait er nu nog één op 8085 van mijn laatste testrun.
 - [ ] **Kleur:** `--warn` in het lichte thema is donkerder (#8f5207), zodat oranje tekst zoals "Nog geen afmeldingen" voldoende contrast heeft. Het donkere thema is niet veranderd.
