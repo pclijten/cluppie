@@ -1,6 +1,6 @@
 # Voortgang totaalplan cluppie.io
 
-Bijgewerkt 16-11-2026. Releases 20261116a t/m f staan live. Release 20261115e staat live: rules, indexen, alle functions en de client (`main`). Paul koos een permissiemodus waarin Claude mocht deployen.
+Bijgewerkt 16-11-2026. Releases 20261116a t/m g staan live. Release 20261115e staat live: rules, indexen, alle functions en de client (`main`). Paul koos een permissiemodus waarin Claude mocht deployen.
 
 ## WP0 — Opruimen: af, zit in release 20261115d
 
@@ -47,13 +47,13 @@ Paul gaf op 15-11 akkoord om WP2 t/m WP9 zelfstandig te maken. Eerlijk over wat 
 
 | WP | Wat er nu is | Document | Wat nog moet |
 |---|---|---|---|
-| WP2 Applogica | Rooktest per rol in een echte browser (20261116f, `npm run test:rook`: 109 schermen, zeven rollen, geen fouten). Verder live sinds 20261116a: van plek wisselen tijdens een periode klopt, melding bij klok op 0:00, importcontrole in `npm test`. | `docs/wp2-applogica.md` | Paul: is dit de bedoelde bug? `teams.js` splitsen (kan nu met de rooktest als vangnet), kompas-blok, de rest van de views doorlichten. |
+| WP2 Applogica | Rooktest per rol in een echte browser (20261116f, `npm run test:rook`: 109 schermen, zeven rollen, geen fouten). Verder live sinds 20261116a: van plek wisselen tijdens een periode klopt, melding bij klok op 0:00, importcontrole in `npm test`. | `docs/wp2-applogica.md` | Paul: is dit de bedoelde bug? kompas-blok, de rest van de views doorlichten. `teams.js` splitsen is op advies niet gedaan; alleen de UPDATES-lijst is eruit gehaald (20261116g). |
 | WP3 Multi-tenant | Analyse. Advies: "club-ID-first" niet bouwen; wel team loskoppelen en een overzicht bij de overstap. | `docs/wp3-multitenant-impactanalyse.md` | Besluit van Paul, dan mockup. |
 | WP4 3D | Gebouwd en live (20261116c): tekening- en 3D-editor voor vormen in de bibliotheek (besluit Paul: alleen de bibliotheek). | `docs/wp4-3d-stand.md` | Paul probeert opslaan tegen de echte database; doeltjes, zones en pionnen bewerken; spelvormen 4-3-3 e.d. als vormen in de bibliotheek. |
 | WP5 Design | Twee schermen gemeten in de demo; gemeten met de rooktest voor zeven rollen, telefoon en laptop, licht en (kort) donker. Gefixt: tikdoelen (20261116a en f), oranje tekst (d), clubkleur als tekst en Training maken in het lichte thema (f). | `docs/wp5-design-doorlichting.md` | Niveaukleuren als kleine tekst, tekst van 9 px, schakelknoppen van 33 px, het donkere thema volledig doorlopen. |
 | WP6 Onboarding | Inventaris per rol. Gebouwd en live: de rolkaart voor vier rollen (20261116b) en het welkom voor een nieuwe coach bij een clubteam (20261116e), beide zonder mockup; handleiding en kennisbank hebben een stuk "Rollen in de club" (20261116f). | `docs/wp6-onboarding-per-rol.md` | Paul bekijkt de kaarten; doorverwijzen als de club al meedoet (losse trainer). |
 | WP7 Juridisch | Vier concepten en een lijst aanvullingen op de privacyverklaring. | `docs/juridisch/` | Jurist. Niets is gepubliceerd. |
-| WP8 Marketing | Positie tegenover Rinus, Spond, TeamSnap en Touchline Studio; twee boodschappen; prijsmodel zonder bedragen; Gebouwd en live: demo per rol (20261116b) en de landingspagina met twee ingangen en een blok over privacy (20261116c). | `docs/wp8-marketing.md` | Paul leest de teksten na; prijsmodel en bedragen; de demo per rol op de landingspagina zetten; verkoopmateriaal. |
+| WP8 Marketing | Positie tegenover Rinus, Spond, TeamSnap en Touchline Studio; twee boodschappen; prijsmodel zonder bedragen; Gebouwd en live: demo per rol (20261116b) en de landingspagina met twee ingangen en een blok over privacy (20261116c). Verkoopmateriaal in `marketing/` (20261116g): één A4 voor besturen (pdf), verkoopteksten en een stappenkaart. | `docs/wp8-marketing.md`, `marketing/` | Paul leest de teksten na en vult in wat tussen haken staat; prijsmodel en bedragen. Niets is verstuurd. |
 | WP9 Uitrol | Plan per fase met wat er klaar moet zijn. | `docs/wp9-uitrolplan.md` | Uitvoeren; contact met clubs doet Paul. |
 
 **Demo per rol staat er.** Daarmee kunnen nu: de ontwerpmeting per rol (WP5), rooktests vóór het splitsen van `teams.js` (WP2) en de verkoop (WP8). De demo kent geen toegangsregels en geen eindbaas-rol.
@@ -98,6 +98,8 @@ Paul gaf op 15-11 akkoord om WP2 t/m WP9 zelfstandig te maken. Eerlijk over wat 
 | Clubkleur als tekst (`--accent-tekst`) | Felle of lichte clubkleuren haalden als tekst het contrast niet | Alle |
 | Training maken leesbaar in het lichte thema | Tijden en labels 1,9 tot 3,3:1 | Coach, losse trainer, coördinatoren |
 | Rollen in de handleiding en kennisbank | De handleiding beschreef alleen de coach | Alle clubrollen |
+| UPDATES in `js/updates.json` | Elke nieuwsregel gaf zo'n vijftig modules een nieuw versienummer | Alle (minder opnieuw laden) |
+| Verkoopmateriaal en "ruim 300 oefenvormen" | Gevraagd door Paul; het oude getal klopte niet meer | Losse trainer, clubadmin (bezoekers) |
 | Werkwijze: scripts schrijven pas weg als alle vervangingen gelukt zijn | Een bewerkingsscript maakte `functions/index.js` leeg; hersteld uit de commit, niets verloren | Geen |
 
 

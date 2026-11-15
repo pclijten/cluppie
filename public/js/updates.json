@@ -1,0 +1,645 @@
+[
+  { "datum": "2026-11-16", "titel": "Beter leesbaar en makkelijker te tikken", "punten": [
+    "Kopjes en links in de clubkleur zijn in het lichte thema beter leesbaar, ook bij een felle of lichte clubkleur.",
+    "In Training maken zijn de tijden en labels per onderdeel in het lichte thema nu goed te lezen.",
+    "Meer kleine knoppen zijn op je telefoon makkelijker te raken.",
+    "In de handleiding staat een nieuw stuk Rollen in de club: wat een coach, coördinator, hoofd jeugdopleiding en clubbeheerder ziet en kan."
+  ]},
+  { "datum": "2026-11-16", "titel": "Welkom voor nieuwe coaches", "punten": [
+    "Kom je nieuw bij een team van je club, dan staat er op je teamscherm een korte kaart met drie dingen om mee te beginnen: de training bekijken, de aanwezigheid invullen en de opstelling maken."
+  ]},
+  { "datum": "2026-11-16", "titel": "Uitleg bij je rol", "punten": [
+    "Ben je bouwcoördinator, gekoppeld aan een bouw, hoofd jeugdopleiding of trainingscoördinator? Dan zie je één keer een korte kaart: wat je ziet, wat je kunt en wat niet."
+  ]},
+  { "datum": "2026-11-16", "titel": "Wisselen van plek en makkelijker tikken", "punten": [
+    "Zet je tijdens een periode een speler op een andere plek, dan blijft de opstelling kloppen. Eerder kon een invaller daarna op twee plekken staan.",
+    "Vervang je een veldspeler terwijl de klok nog op 0:00 staat, dan zegt Cluppie dat dit de opstelling aanpast en niet als wissel telt.",
+    "Kleine knoppen zoals terug, privacy en uitloggen zijn op je telefoon makkelijker te raken."
+  ]},
+  { "datum": "2026-11-15", "titel": "Veiliger delen en strakkere rechten", "punten": [
+    "Deel je een training met een ouder, dan gaan alleen naam en rugnummer van de spelers mee. Links die je eerder deelde tonen de spelerslijst niet meer; maak een nieuwe link als dat nodig is.",
+    "Een coach toevoegen aan je team gaat alleen nog via een uitnodiging. Een coach verwijderen of zelf het team verlaten kan nog steeds bij Instellingen.",
+    "Een coach die aan een eigen bouw is gekoppeld kan nu echt hetzelfde als een bouwcoördinator voor de teams in die bouw.",
+    "Staat AI uit of is de limiet bereikt, dan zegt de hulp dat, in plaats van dat hij niet bereikbaar is."
+  ]},
+  { "datum": "2026-11-15", "titel": "Geplande trainingen in de nieuwe opbouw", "punten": [
+    "Ook de trainingen bij Trainingen tonen nu de oefenkaart met zeven onderdelen, en bij elke oefening uit de bibliotheek kun je kiezen voor 3D.",
+    "Open je een eerder bewaarde training in Training maken, dan staan de blokken meteen op 5, 10, 15 of 20 minuten.",
+    "De knop 3D in Training maken werkt nu ook echt."
+  ]},
+  { "datum": "2026-11-15", "titel": "Oefeningen bekijken in 3D", "punten": [
+    "Bij elke oefening in Training maken kun je kiezen tussen Tekening en 3D.",
+    "In 3D zie je de oefening stap voor stap: wie loopt, wie passt en waar de bal heen gaat. Met Vorige, Afspelen en Volgende bepaal je zelf het tempo.",
+    "Met de schuifjes Hoek en Draai bekijk je het veld van een andere kant."
+  ]},
+  { "datum": "2026-11-15", "titel": "Oefeningen: vaste opbouw en 134 nieuwe vormen", "punten": [
+    "Elke oefening heeft nu dezelfde zeven onderdelen: doel, tijdbestek, benodigdheden, uitleg, differentiatie, coachmomenten en spelvormen. Tik op een onderdeel om het te openen.",
+    "Een oefening duurt 5, 10, 15 of 20 minuten, en ook de blokken in Training maken zijn nu veelvouden van 5 minuten.",
+    "De bibliotheek is uitgebreid met 134 vormen: passvormen, dribbel- en reactiespellen, afronden, omschakelen, positiespel en partijvormen met een eigen regel."
+  ]},
+  { "datum": "2026-11-14", "titel": "Begonnen zonder club? Je team gaat mee", "punten": [
+    "Meld je zelf je club aan, dan staat je eigen team na goedkeuring meteen bij de club, met alle spelers en wedstrijden. Club en plaats uit je team staan al ingevuld in het aanmeldformulier.",
+    "Kom je via een uitnodiging bij een club, dan vraagt Cluppie op je teamscherm of je je eigen team ook bij de club wilt onderbrengen. Jij kiest, de clubbeheerder keurt goed."
+  ]},
+  { "datum": "2026-11-14", "titel": "Nieuwe volledige beoordeling", "punten": [
+    "De volledige beoordeling is vernieuwd: je scoort nu losse criteria per domein (bijvoorbeeld Passen of Positiegevoel) in plaats van één score per domein. Criteria die pas vanaf een bepaalde leeftijd gelden, zie je alleen als je team oud genoeg is.",
+    "Onder elke knoppenbalk zie je meteen wat het gekozen niveau betekent. Via de i-knopjes lees je per criterium en per domein waar je op let.",
+    "Bovenaan staat een samenvatting van de speler: opkomst, speeltijd, posities, de vorige scores en open leerpunten.",
+    "Nieuw: Zo beoordelen we, met de achtergrond bij de niveaus (Bloom, Krathwohl en Dave). Je ziet het de eerste keer vanzelf en vindt het daarna bovenaan het scherm.",
+    "Beoordelingen voor een evaluatieronde van de club (winter en lente) zijn voortaan privé: alleen jij, de coördinatoren, het hoofd jeugd en de clubbeheerder zien ze. Iedere trainer beoordeelt de spelers zelf. Losse beoordelingen blijven zichtbaar voor alle trainers van het team.",
+    "Snel beoordelen toont nu ook wat het gekozen niveau betekent. Op de computer openen beide beoordelingen als paneel aan de rechterkant."
+  ]},
+  { "datum": "2026-11-13", "titel": "Trainingsvormen worden centraal bijgehouden", "punten": [
+    "De vormen in Training maken en het seizoensplan worden nu centraal door Cluppie bijgehouden. Een verbeterde uitleg of opzet komt vanzelf in je geplande trainingen.",
+    "Heb je een training zelf aangepast, dan blijft die zoals jij hem maakte. Trainingen die al geweest zijn veranderen niet."
+  ]},
+  { "datum": "2026-11-13", "titel": "Trainingen en Training maken overzichtelijker", "punten": [
+    "Op de computer toont Trainingen nu dezelfde trainingen als op je telefoon: deze week, volgende week en eerdere weken. Kies een training en je ziet de oefeningen en de presentie van die dag.",
+    "Training maken op de computer: de instellingen staan links in een vast paneel, de training rechts als tijdlijn met een kleine tekening per vorm. Klap een vorm open voor de grote tekening en de uitleg.",
+    "Het weer (koud, regen, warm) kies je nu gewoon bij de instellingen. Elke wijziging past de training meteen aan; met Andere vormen kiezen krijg je een nieuwe variant.",
+    "De tekeningen zijn kleiner en passen beter op het scherm.",
+    "Planning heet nu Kalender en staat op de computer onder Team. De knop Gewone weergave is weg."
+  ]},
+  { "datum": "2026-11-13", "titel": "Zelf beginnen als trainer: makkelijker", "punten": [
+    "Op de computer blijft de zijbalk zichtbaar als je een team aanmaakt of een formulier invult.",
+    "Typ de naam van je club en kies hem uit de lijst: de plaats wordt meteen ingevuld.",
+    "Bij Nog niet staat nu waarom Sportlink en AI via een club lopen en hoe je ze wel krijgt.",
+    "Klikgedrag delen kun je uitzetten in Instellingen › Mijn account of via het schild-icoon. Contact: paul@cluppie.io."
+  ]},
+  { "datum": "2026-11-13", "titel": "Startscherm past precies op je telefoon", "punten": [
+    "Het startscherm van je team past nu op één scherm: je hoeft niet meer te scrollen om te zien wat er komt.",
+    "Bovenaan staat wat er nu of als eerste gebeurt. Onder Daarna zie je zoveel komende trainingen en wedstrijden als er passen; via Agenda › zie je de rest.",
+    "De knop Alles staat altijd onderaan. Tik erop en alle tegels schuiven van onderen omhoog. Tik ernaast of druk op terug om ze weer te sluiten."
+  ]},
+  { "datum": "2026-11-12", "titel": "Opstelling: vorig kwart overnemen kan nu altijd", "punten": [
+    "De knop \"Eindopstelling overnemen\" verschijnt nu zodra een eerder kwart een opstelling heeft, ook als je een kwart hebt overgeslagen. Hij pakt dan het laatst ingevulde kwart.",
+    "Staan er al spelers in het kwart, dan blijft er een rustige knop staan. De app vraagt eerst of je ze wilt vervangen.",
+    "Is een kwart al gespeeld (wissels of de klok heeft gelopen), dan verschijnt de knop niet, zodat gespeelde minuten nooit verloren gaan."
+  ]},
+  { "datum": "2026-11-12", "titel": "Wedstrijdvoorbereiding: mooier bericht voor de groepsapp", "punten": [
+    "Delen in de groepsapp geeft nu een overzichtelijk bericht: wedstrijd in vet bovenaan, daaronder datum, aanvang, plek en veld, elk op een eigen regel.",
+    "Het weer staat in een eigen blokje, met gevoelstemperatuur, of het droog blijft en alle tips (regenjas, handschoenen, water).",
+    "De route-link staat onderaan, zodat hij de rest van het bericht niet meer onderbreekt."
+  ]},
+  { "datum": "2026-11-11", "titel": "Lijstjes: kolommen wijzigen en verschuiven", "punten": [
+    "In Kolommen beheren tik je op een kolom om de naam, de opties (bij Keuze) of het type te wijzigen.",
+    "Hernoem je een optie (bijvoorbeeld S naar Small), dan schuift wat al is ingevuld gewoon mee.",
+    "Het type kan alleen veranderen zolang er nog niets in de kolom is ingevuld, zodat er nooit ongemerkt gegevens verdwijnen.",
+    "Met de pijltjes zet je de kolommen in een andere volgorde. De opmerking blijft altijd achteraan."
+  ]},
+  { "datum": "2026-11-11", "titel": "Planning: eigen dag op de computer en ruimere notitie", "punten": [
+    "Op de computer opent \"Eigen dag\" (en het aanpassen van een dag) als paneel rechts naast de planning, in plaats van de telefoonweergave. Klik ernaast of druk op Esc om te sluiten.",
+    "Het notitieveld is een stuk groter (en groter te slepen), zodat ook langere teksten (adres, tijden, wat mee te nemen) goed passen. Een nieuwe regel kan gewoon met Enter."
+  ]},
+  { "datum": "2026-11-11", "titel": "Uitlenen: Wedstrijden en Meetrainen elk een eigen tabblad", "punten": [
+    "Het uitleenformulier heeft nu twee tabbladen: Wedstrijden en Meetrainen. Elk tabblad heeft een eigen Ja/Nee en een eigen periode; op het tabblad zie je meteen wat er is ingesteld.",
+    "De keuze \"Allebei\" is weg: zet je beide tabbladen op Ja, dan speelt én traint de speler mee. Meetrainen kan nu ook langer of korter duren dan de wedstrijden.",
+    "Eén wedstrijd is de eerste keuze in het tabblad Wedstrijden.",
+    "Opgelost: bij Wijzigen sprong \"Wedstrijden aanvinken\" terug naar \"Tot en met datum\", en bij Meetrainen verscheen de lijst met wedstrijden."
+  ]},
+  { "datum": "2026-11-11", "titel": "Uitlenen: eerst de teams van je eigen bouw", "punten": [
+    "Bij \"Naar team\" staan eerst de teams van de eigen bouw, daarna de andere bouwen (de bouw erboven eerst).",
+    "Hogere teams staan bovenaan met een ↑, het dichtstbijzijnde hogere team eerst. Zo vind je het team waar je meestal naartoe uitleent het snelst."
+  ]},
+  { "datum": "2026-11-11", "titel": "Uitlenen op desktop in een zijpaneel", "punten": [
+    "Op een groter scherm opent het uitleenformulier nu als paneel aan de rechterkant. Het overzicht erachter blijft zichtbaar; klik ernaast of druk op Esc om te sluiten.",
+    "De knoppen Annuleren en Vastleggen blijven onderaan in beeld, ook als je scrollt (ook op de telefoon)."
+  ]},
+  { "datum": "2026-11-11", "titel": "Uitlenen: voor één wedstrijd of een hele periode", "punten": [
+    "De coördinator kiest bij uitlenen nu tussen Eén wedstrijd en Uitgebreid. Uitgebreid: wedstrijden, meetrainen of allebei, tot een datum, voor een aantal wedstrijden of voor aangevinkte wedstrijden, en per trainingsdag bij welk team.",
+    "Na de einddatum is een uitlening vanzelf voorbij. Je hoeft een speler niet meer terug te zetten.",
+    "Traint een uitgeleende speler op een dag bij zijn eigen team, dan vult de eigen trainer gewoon de presentie in. Op dagen bij het andere team staat hij grijs en telt hij niet mee.",
+    "Een uitgeleende speler stond soms eerst als afwezig bij een wedstrijd. Hij staat nu meteen in de selectie, ook op het startscherm.",
+    "Uitlenen kan alleen nog door de coördinator van de bouw of de clubadmin. In Bouw › Uitleningen zie je per uitlening wat er is afgesproken en kun je wijzigen, verlengen of beëindigen."
+  ]},
+  { "datum": "2026-11-13", "titel": "Minder vastlopers", "punten": [
+    "De app start de verbindingen voor trainingen, video's, berichten en documenten alleen nog opnieuw als je teams echt veranderen. Dat maakt een bekende storing in de database minder waarschijnlijk.",
+    "Loopt de verbinding met de database toch vast, dan zie je onderin een balk met een knop Herlaad. Je gegevens blijven bewaard."
+  ]},
+  { "datum": "2026-11-11", "titel": "Trainingen en Seizoen opnieuw ingedeeld", "punten": [
+    "Oefenstof heet nu Trainingen. Bovenaan staan deze week en volgende week; eerdere weken staan samen onder Eerder.",
+    "Trainingen uit een seizoensplan verschijnen op de maandag van de week ervoor, niet meer het hele seizoen tegelijk. Het hele seizoen zie je onder Seizoen.",
+    "Een team heeft één seizoensplan. Wijst je club een plan toe, dan zie je dat onder Seizoen (alleen lezen) en vervangt het je eigen plan. Trainingen die al zichtbaar waren of die je had aangepast blijven staan.",
+    "Training maken opent op je eerstvolgende geplande training. Bewaren vervangt die training op Trainingen; wil je een extra training, dan kan dat ook. Op Trainingen staat bij komende trainingen een knop Aanpassen.",
+    "Het seizoensplan van de club rekent per team met de eigen trainingsdagen, het aantal spelers en de duur bij de leeftijd.",
+    "Zonder club werkt Trainingen nu ook: je trainingen en seizoensplan staan bij je eigen team.",
+    "De presentietegels heten Aanwezig training en Aanwezig wedstrijd."
+  ]},
+  { "datum": "2026-11-11", "titel": "Training maken volgt je seizoensplan", "punten": [
+    "Training maken koos het thema van de leerlijn op basis van het weeknummer van het jaar in plaats van de week in je seizoen. Daardoor stond er vaak een ander thema dan in je seizoensplan. Dat is hersteld: het thema hoort nu bij de datum van de training.",
+    "Je seizoensplan wordt ook gebruikt als je het tabblad Seizoen nog niet had geopend.",
+    "Open je een training vanuit Seizoen, dan krijgt die de datum van die week.",
+    "Op Oefenstof staat training 1 van een week nu altijd boven training 2."
+  ]},
+  { "datum": "2026-11-11", "titel": "Training maken luistert beter", "punten": [
+    "Kies je bij Aanpassen het weer (Koud, Regen of Warm), dan verandert de training echt: bij kou en regen kortere uitleg en pauzes, meer beweging en meer tijd voor warming-up en partijspel; bij warmte geen zware vormen en langere drinkpauzes.",
+    "Half veld en kwart veld maken de vakken kleiner, zodat alles past op het stuk veld dat je hebt.",
+    "Duur, niveau en aantal spelers passen de training meteen aan; je hoeft niet meer opnieuw op Maak training te tikken."
+  ]},
+  { "datum": "2026-11-11", "titel": "Makkelijker zelf beginnen", "punten": [
+    "Heb je nog geen team, dan kies je op het startscherm meteen hoe je begint: zelf een team trainen, of aansluiten met een uitnodiging of code. Je club hoeft niet mee te doen.",
+    "Op de computer staat het teammenu pas in de zijbalk als je een team hebt, zodat je niet in lege schermen terechtkomt.",
+    "Train je zonder club en gebruikt je club Cluppie al? Dan kan Cluppie je voorstellen je team bij de club onder te brengen. Je spelers, wedstrijden en trainingen gaan mee; de clubbeheerder keurt het goed."
+  ]},
+  { "datum": "2026-11-09", "titel": "Speeltijd in Stats klopt weer", "punten": [
+    "Werd de app gesloten terwijl de wedstrijdklok nog liep, dan bleef die klok op de achtergrond doortellen. Spelers die op dat moment in het veld stonden kregen zo veel te veel speeltijd, en wie op de bank zat te veel reservetijd. Een lopende klok telt nu nooit verder dan de ingestelde periodeduur, ook in oude wedstrijden.",
+    "Op de telefoon passen alle kolommen van de spelerstabel in Stats weer op het scherm, ook C (aanvoerder) en K (keeper)."
+  ]},
+  { "datum": "2026-11-09", "titel": "Trainingscoördinator op je startscherm", "punten": [
+    "Ben je ook trainingscoördinator? Dan staat die rol nu op je startscherm, onder Mijn teams, bij Coördinator. Eén tik en je zit in het overzicht."
+  ]},
+  { "datum": "2026-11-07", "titel": "Terugknop op Android werkt overal", "punten": [
+    "De terugknop (of veegbeweging) van je Android-telefoon gaat nu altijd één scherm terug, in plaats van de app soms helemaal te sluiten.",
+    "Dit geldt ook voor de bouw-omgeving, de rondleiding, het Leerplein, het tactiekbord, de trainingsschermen, de wedstrijdwizard en alle keuzelijsten en pop-ups: eerst sluit de bovenste laag, dan ga je een stap terug.",
+    "Op het startscherm tik je twee keer terug om de app te verlaten; de eerste keer zie je een korte melding."
+  ]},
+  { "datum": "2026-11-07", "titel": "Scouting voor het eerste elftal", "punten": [
+    "Alleen voor de staf van het eerste elftal: in de wedstrijdvoorbereiding staat een nieuw tabblad Scouting.",
+    "Elke donderdagavond leest Cluppie de wedstrijdverslagen en het clubnieuws van de volgende tegenstander en maakt een rapport per spelfase: in balbezit, tegen balbezit, omschakelen en standaardsituaties, plus sterke en zwakke punten, patronen en sleutelspelers.",
+    "Daarbij staan de harde cijfers uit Sportlink: thuis en uit, tegen de top en de onderste helft, reeksen, en hoe zij en jullie speelden tegen dezelfde tegenstanders. Bovenaan staat een wedstrijdplan met concrete adviezen.",
+    "Elke bewering verwijst naar een bron die je kunt openen. Met Opnieuw zoek je zelf, hooguit eens per zes uur."
+  ]},
+  { "datum": "2026-11-06", "titel": "Wedstrijdvoorbereiding: alles over je tegenstander op één plek", "punten": [
+    "Op de wedstrijdkaarten bovenaan je startscherm staan nu twee knoppen naast elkaar: Voorbereiding en Opstelling.",
+    "Onder Voorbereiding zie je bij Tegenstander de stand in de poule, de laatste vijf uitslagen, hoeveel ze gemiddeld scoren en tegen krijgen, en hoe jullie vorige ontmoeting afliep.",
+    "Bij Praktisch staat het weer rond de aanvang met een kort kledingadvies, de plek met route, veld en kleedkamer. Met Deel in de groepsapp stuur je dat zonder spelersnamen door naar de ouders.",
+    "Bij Plan zie je wie er meespeelt, zet je tot vijf aandachtspunten klaar en schrijf je na afloop een korte notitie. Die notitie zie je de volgende keer tegen dezelfde tegenstander terug."
+  ]},
+  { "datum": "2026-11-06", "titel": "Nu-scherm: bovenaan zie je wat je nu nodig hebt", "punten": [
+    "Bovenaan het startscherm staat nu een Nu-kaart. Op een trainingsdag zie je de training van vandaag (blok, week en doel), de avond voor een wedstrijd de opstelling, op wedstrijddag de wedstrijd, en daarna wat er als eerstvolgende komt.",
+    "Op de kaart vul je meteen de presentie in en zie je wie er is en wie zich heeft afgemeld, met reden. Bij een wedstrijd zie je ook wie er in de selectie staan.",
+    "Met \"Naar oefenstof\" open je direct de training van die dag. De doelen van de training klap je open; daarboven staat één korte regel die ze samenvat.",
+    "De kaart opent het juiste scherm voor je. De app gebruikt hiervoor geen GPS."
+  ]},
+  { "datum": "2026-11-06", "titel": "Rustiger startscherm", "punten": [
+    "Het startscherm toont nu alleen de begroeting, je teamkeuze, de Nu-kaart en wat er daarna komt.",
+    "Alle tegels staan achter één knop \"Alles\". Het getal op de knop telt wat er nieuw of open is (oefenstof, documenten, evaluatie, berichten, lijstjes). Of de tegels open of dicht staan, onthoudt je toestel."
+  ]},
+  { "datum": "2026-11-06", "titel": "Wedstrijd: duidelijkere knoppen en een nieuw zijlijnscherm om te proberen", "punten": [
+    "Doelpunt maken is duidelijker: de knoppen voor Doelpunt en Tegendoelpunt zijn groot, ook de knoppen van de klok zijn beter te zien en je kiest je aanvoerder nu op een duidelijke plek.",
+    "Wisselen werkt in beide volgordes: tik eerst de veldspeler en dan de bankspeler, of andersom.",
+    "Nieuw om te proberen: \"Probeer het nieuwe wedstrijdscherm\". Daarin staan klok, kwarten en stand in één blok, met het doel van de wedstrijd als rustige strook onder het veld. Je wisselt stap voor stap met uitleg, en zelden gebruikte acties zitten in het Menu.",
+    "In het nieuwe scherm zie je een tijdlijn per kwart met de stand. Je kunt iets wijzigen of weghalen, en een vergissing maak je binnen 8 seconden ongedaan. Na afloop vind je verslag, evaluatie, tactiekbord en een beoordeling van het scherm (1 tot 5 met opmerkingen).",
+    "Het oude wedstrijdscherm blijft gewoon standaard. Via het Menu ga je altijd terug."
+  ]},
+  { "datum": "2026-11-06", "titel": "Wedstrijdplek: route, veld en kleedkamer", "punten": [
+    "Bij een uitwedstrijd zie je op het startscherm het sportpark, met een Route-knop naar Google Maps.",
+    "Veld en kleedkamer staan er als label bij, thuis en uit, zodra ze bekend zijn. Die komen uit Sportlink; vul je ze zelf in, dan gaat jouw invoer voor.",
+    "Bij \"Wijzig opzet\" kun je locatie, adres voor de route, veld en kleedkamer zelf invullen of aanpassen."
+  ]},
+  { "datum": "2026-11-03", "titel": "Trainingscoördinator: meer overzicht en makkelijker te beheren", "punten": [
+    "De coördinator ziet nu twee schermen: Trainingen (per week, per trainingsnummer, met de teamsoorten duidelijk erbij) en het Weekrooster. Filteren kan per teamsoort, zoals O7, O8 of MO10.",
+    "De schermen hebben dezelfde stijl en lettertypen als de rest van de app, werken in licht en donker, en de terugknop van je telefoon gaat één stap terug.",
+    "In de trainingen staan de diagrammen eerst, daarna de uitleg.",
+    "Is je trainer ook coördinator? Dan opent hij het coördinatorscherm vanuit zijn eigen coach-app en wisselt hij gemakkelijk heen en weer.",
+    "Clubbeheerders zien aanmeldingen van trainers voor deze rol nu bij Coaches en kunnen coaches en openstaande aanmeldingen verwijderen, steeds na een bevestiging."
+  ]},
+  { "datum": "2026-11-03", "titel": "Trainingstijden per team en een trainingscoördinator", "punten": [
+    "Bij elk team stel je nu de trainingsdagen in met een begin- en eindtijd, bijvoorbeeld dinsdag 18:30–19:30. Teams zonder tijd krijgen in het clubbeheer de melding ‘trainingstijd ontbreekt’.",
+    "Nieuw: de rol trainingscoördinator. Een beheerder nodigt iemand uit via Club > Coaches en accepteert de aanmelding. Een coördinator ziet alle teams met trainingen, de trainingstijden, het aantal spelers, de training en de diagrammen, maar geen spelersnamen.",
+    "Coaches en aanmeldingen verwijder je nu in Club > Coaches met een knop Verwijderen, na een bevestiging."
+  ]},
+  { "datum": "2026-10-23", "titel": "Plaatjes staan weer bij de juiste oefening", "punten": [
+    "Bij een training uit een PDF staan de plaatjes nu bij de juiste oefening. Dat ging mis als de PDF met een lege pagina of een klein icoontje begon.",
+    "Trainingen die tegelijk worden geüpload krijgen elk hun eigen plaatjes. Voorheen konden ze elkaars plaatjes overschrijven.",
+    "Beheerders zien op het tabblad Trainingen een kaart ‘Plaatjes herstellen’ als een eerdere upload getroffen is. Eén knop maakt de plaatjes opnieuw uit de eigen PDF van elke training."
+  ]},
+  { "datum": "2026-10-20", "titel": "Makkelijker beginnen als trainer", "punten": [
+    "Begin je zelf, zonder club? Dan krijg je nu een korte uitleg en vul je de club en de plaats in. Categorie, teamnaam en speelduur staan alvast goed ingesteld.",
+    "Op je teamscherm staat een kaart met je eerste stappen: spelers toevoegen, een wedstrijd maken, een training maken en een collega uitnodigen. Heb je ze gedaan, dan verdwijnt de kaart. Je kunt ‘m ook zelf verbergen.",
+    "Met je plaats zie je het weer op je teamscherm. Bestaand team zonder club? Je kunt club en plaats invullen via de kaart op het teamscherm of onder Instellingen."
+  ]},
+  { "datum": "2026-10-20", "titel": "Een heel trainingsblok uploaden en inplannen", "punten": [
+    "Clubbeheer → Trainingen: sleep een zip met een blok (of meerdere PDF's met namen als \"Blok 2 - Week 1 - Training 1\" of \"Week 2 - Bal = Vriend - Training 1\") op het uploadvlak. Blok, week en training worden uit de bestandsnamen herkend; overzichtsbladen worden overgeslagen.",
+    "Kies één keer de trainingsgroep of teams, de week waarin het blok begint, eventuele vrije weken en vanaf wanneer coaches de trainingen zien. In de weergave Plannen laat je een week vervallen; alle latere trainingen schuiven dan een week op.",
+    "Ook bij één losse training kies je nu vanaf welke datum het team hem ziet. Leeg laten betekent meteen zichtbaar."
+  ]},
+  { "datum": "2026-10-20", "titel": "Trainingen uploaden op de achtergrond", "punten": [
+    "Na het uploaden sluit het venster meteen en wordt alles op de achtergrond omgezet, drie trainingen tegelijk. Je kunt gewoon verder klikken en meerdere uploads klaarzetten.",
+    "Bovenaan Clubbeheer → Trainingen zie je de voortgang per upload. Wat de AI-controle goedkeurt wordt automatisch gedeeld; alleen afwijkers wachten op jouw blik en zijn ook weg te gooien.",
+    "Weggeklikt of ververst? Een blok dat je nog instelt staat er als concept, en een onderbroken upload ga je verder met \"Verder gaan\". Het Overzicht per groep scrolt nu opzij langs alle weken."
+  ]},
+  { "datum": "2026-10-19", "titel": "Zelf beginnen als trainer, zonder club", "punten": [
+    "Op het lege startscherm staat nu “Begin met mijn eigen team”. Na een korte bevestiging over de privacy maak je je team aan en staan alle onderdelen open.",
+    "Zonder club heb je geen Sportlink en geen AI-hulp. Sluit je club zich later aan, dan kan de clubbeheerder je team koppelen."
+  ]},
+  { "datum": "2026-10-19", "titel": "Werkwijze per club: Trainers vrij of Club stuurt", "punten": [
+    "De clubbeheerder kiest onder Instellingen → AI & modules hoe de club werkt. Bij Club stuurt maken hoofd jeugd en coördinatoren de trainingen en het seizoensplan; trainers krijgen ze onder Oefenstof.",
+    "Per team kun je een uitzondering zetten: “mag zelf plannen”. Bestaande clubs blijven op Trainers vrij staan.",
+    "Bij het aanmelden van een club vragen we nu hoe de jeugdopleiding werkt."
+  ]},
+  { "datum": "2026-10-19", "titel": "Hulp bij uploaden van PDF’s", "punten": [
+    "Bij het uploaden van PDF’s staat nu een korte melding: lukt uploaden steeds niet, neem dan contact op met Paul.",
+    "Ook de foutmeldingen bij een mislukte upload verwijzen daarnaar."
+  ]},
+  { "datum": "2026-10-19", "titel": "Speelstijl invullen is rustiger", "punten": [
+    "Je krijgt nu één vraag per scherm, met grote keuzes en een voortgangsbalk. Na een keuze ga je meteen naar de volgende vraag.",
+    "Je kunt terug, een vraag overslaan en later verdergaan waar je bleef. Je antwoorden worden direct bewaard."
+  ]},
+  { "datum": "2026-10-19", "titel": "Trainingsbibliotheek: 13 nieuwe vormen", "punten": [
+    "Omschakelen vanaf O14: direct diep spelen na balwinst, counter 3 tegen 2, terugvallen in een blok en de eerste reactie na balverlies.",
+    "Dieptespel voor O8 tot en met O10: over de lijn spelen, de lijn oversteken en de brug bouwen.",
+    "Teamsport en plezier en technische vaardigheden rond O12 tot en met O14: afspraken maken, rollen wisselen, aanname met richting, 1 tegen 1 duel en passen in een rondo."
+  ]},
+  { "datum": "2026-10-19", "titel": "Club: speelstijl vastleggen", "punten": [
+    "Onder Club vind je Speelstijl (voor clubadmin, hoofd jeugd en bouwcoördinatoren). Met een korte (8 vragen) of volledige (26 vragen) lijst leggen jullie samen vast hoe de club wil voetballen.",
+    "Tot 5 mensen vullen in. Je ziet waar jullie het eens zijn, waar jullie van mening verschillen en een gespreksvraag erbij.",
+    "De clubadmin of hoofd jeugd legt de uitkomst vast. De trainingsplanner gebruikt de stijl nog niet; dat komt later."
+  ]},
+  { "datum": "2026-10-19", "titel": "Meer vormen voor weinig materiaal, keeperwerk en regen of koud", "punten": [
+    "Tien nieuwe vormen die weinig ballen en materiaal nodig hebben, vooral voor O6 tot en met O11: tikspelen zonder bal, één bal per tweetal en kleine spelletjes op poortjes van pionnen.",
+    "Vijf keepervormen waarbij iedereen een keer keeper wordt: schot en redding, uitrollen en uitgooien, uitkomen, voorzet vangen en positie kiezen.",
+    "Bij Training maken kies je onder Aanpassen Plan B: Regen of koud. De planner kiest dan vormen waarin iedereen in beweging blijft en geeft tips voor de pauzes."
+  ]},
+  { "datum": "2026-10-19", "titel": "Training maken: terugblik na de training", "punten": [
+    "Na het bewaren van een training zie je drie korte vragen: voelde het natuurlijk, hadden de spelers energie, volgende week weer zo? Drie tikken, alleen voor jou.",
+    "Bij Bewaarde trainingen zie je een samenvatting van je laatste trainingen, zodat je ziet wat bij jouw team werkt.",
+    "Clubbeheerders vinden onder Instellingen het onderdeel Help de app verbeteren. Dat staat uit en wordt pas beschikbaar als Cluppie het voor de club aanzet."
+  ]},
+  { "datum": "2026-10-19", "titel": "Training maken past bij jouw materiaal en aantal spelers", "punten": [
+    "Kies bij Training maken wat voor materiaal je hebt: Zo weinig mogelijk, Normaal of Ruim. Je hoeft niets in te vullen; zonder keuze werkt alles zoals eerst.",
+    "Onder Meer instellen vul je eigen aantallen in en kies je veld (kwart, half, heel) en je wedstrijddag. De dag voor de wedstrijd wordt de training lichter.",
+    "Spelers vandaag komt uit de presentie (of de vaste afmeldingen) van die datum. Klopt het niet, bijvoorbeeld omdat er iemand bij komt, dan pas je het aantal zelf aan en kun je terug naar presentie.",
+    "Plan B: met Half veld maakt de planner een training voor de helft van de ruimte.",
+    "Past er te weinig materiaal, dan zie je welke kleine aanvulling het meeste oplevert en wat je kunt vervangen, bijvoorbeeld een poortje van twee pionnen in plaats van een doeltje."
+  ]},
+  { "datum": "2026-10-17", "titel": "Seizoensplan jeugd: één plan voor het hele seizoen", "punten": [
+    "De hoofd jeugdopleiding (of de clubadmin) maakt een seizoensplan voor de hele club. Een bouwcoördinator maakt er een voor zijn eigen bouw.",
+    "Toewijzen zet de trainingen van het hele seizoen op het tabblad Oefenstof van de teams.",
+    "Staan er al handmatige trainingen in dezelfde week? Dan kies je of ze naast de seizoenstrainingen blijven of dat die weken worden overgeslagen.",
+    "Verandert het plan later, dan kun je de teams bijwerken met de nieuwe versie."
+  ]},
+  { "datum": "2026-10-14", "titel": "Training maken: overzichtelijker, maximaal 4 vormen en veel meer oefenstof", "punten": [
+    "Een training heeft nu maximaal 4 vormen: een warming-up spelvorm die past bij de leeftijd, twee kernvormen en een partijspel. Een vorm duurt maximaal 15 minuten; een partijspel mag 20 minuten als er een rustmoment in zit.",
+    "Kies 45, 60 of 75 minuten (90 minuten is vervallen). Ontvangst, ombouwen en afsluiting staan los in het draaiboek.",
+    "Bovenaan zie je in één oogopslag de tijdsverdeling; tik op een vorm om de tekening en de tabbladen Uitvoering, Coach, Differentiatie en Spelvormen te openen.",
+    "Elke vorm heeft nu aanwijzingen voor de coach, een makkelijkere en een moeilijkere versie en extra spelvormen.",
+    "De bibliotheek is flink uitgebreid: 141 vormen voor alle leeftijden van de mini’s (O6) tot en met de bovenbouw (O19), inclusief omschakelen.",
+    "Bewaarde trainingen van vroeger (90 minuten) worden bij openen opnieuw samengesteld volgens de nieuwe opbouw."
+  ]},
+  { "datum": "2026-10-12", "titel": "Vaste afmelding: speler in één keer afmelden voor meerdere weken", "punten": [
+    "Kan een speler een tijd lang op een vaste trainingsdag niet (bijvoorbeeld elke maandag, 10 weken)? Tik op het presentie-tabblad op “Vaste afmelding”, kies speler, trainingsdag, startdatum, aantal weken en eventueel een reden.",
+    "Op die datums staat hij alvast op afwezig zodra je de presentie opent, met een-label. Is hij er toch, tik dan op zijn naam.",
+    "De afwezigheid telt pas mee in de opkomst als je de presentie die dag echt invult. Gaat een training niet door, dan telt hij dus ook niet als gemist.",
+    "Onder de knoppen zie je de lopende vaste afmeldingen. Met “Stoppen” haal je er een weg."
+  ]},
+  { "datum": "2026-10-12", "titel": "Training maken en seizoensplanning", "punten": [
+    "Nieuw bij Oefenstof: Training maken. Kies het aantal spelers, de duur en het niveau; Cluppie stelt een complete training samen met tekening, uitleg, coachpunten en een themaregel voor het partijspel.",
+    "Elke training past bij de leerlijn van je team (Ontdek, Verdiep, Pas toe, Wedstrijd). Met Wissel vorm vervang je één onderdeel, met de knoppen Druk, Moeilijkheid en Coachstijl stem je het af.",
+    "Seizoensplanning: kies een opbouw en een paar gegevens, en je krijgt een concept-jaarlijn in blokken van 4 tot 6 weken. De eerste weken zijn uitgewerkt; de rest vul je elke week aan.",
+    "Na de wedstrijdevaluaties doet Cluppie voorstellen om de lijn bij te sturen, steeds met de reden erbij. Jij beslist of je het toepast."
+  ]},
+  { "datum": "2026-10-12", "titel": "Collega-coach uitnodigen", "punten": [
+    "De vaste teamcode staat niet meer bij Instellingen. Een collega nodig je uit met \"Coach uitnodigen\" bij Coaches: die krijgt een persoonlijke link die 14 dagen geldig is."
+  ]},
+  { "datum": "2026-10-12", "titel": "Meer uit Sportlink", "punten": [
+    "Afgelast door de KNVB? Dan zie je dat meteen: de wedstrijd staat doorgestreept en er verschijnt een melding op je teampagina. In het weekend kijkt Cluppie elk half uur.",
+    "Bij Presentie wedstrijd staat nu de wedstrijdinfo: verzamelen, vertrek, aftrap, sportpark, veld en kleedkamer. Bij uitwedstrijden ook het adres en een routeknop.",
+    "Verzamel- of vertrektijd zelf invullen kan ook; jouw tijd gaat voor die uit Sportlink. Deel het geheel met één tik in de oudergroep (zonder spelernamen).",
+    "Bekerwedstrijden en oefenwedstrijden hebben een eigen label, en onder Stand & poule staat nu ook de bekerstand.",
+    "Staat een wedstrijd niet meer in Sportlink? Dan zie je \"Niet in Sportlink\". Hij wordt niet verwijderd; dat beslis je zelf.",
+    "Club aanmelden: vul de Sportlink Client ID in en naam, plaats, logo en kleur worden voor je ingevuld."
+  ]},
+  { "datum": "2026-10-11", "titel": "Overzetten zonder halve stappen", "punten": [
+    "Een speler definitief overzetten en de seizoensovergang gebeuren nu in één keer op de server: valt je verbinding weg, dan staat een speler nooit half over.",
+    "Seizoensovergang onderbroken? Start hem opnieuw; spelers die al over zijn worden overgeslagen."
+  ]},
+  { "datum": "2026-10-11", "titel": "O17 in plaats van JO17", "punten": [
+    "Jongensteams heten nu zoals bij de KNVB: O17-1 in plaats van JO17-1. Meidenteams houden de M (MO20-1).",
+    "Teams uit Sportlink: naam en categorie worden automatisch ingevuld, ook als de clubnaam in Sportlink anders geschreven is.",
+    "Het clubscherm bleef zwart als er een team was verwijderd; dat is opgelost en het verwijderde team verdwijnt vanzelf uit de lijst."
+  ]},
+  { "datum": "2026-10-11", "titel": "Club in een kwartier klaar", "punten": [
+    "Clubbeheerders zien op de clubpagina \"Aan de slag\": zeven korte stappen van logo tot verwerkersovereenkomst, elke stap opent meteen het juiste scherm.",
+    "Teams uit Sportlink: maak in één keer alle teams aan, direct gekoppeld en in de juiste bouw.",
+    "Bij Sportlink staat nu uitgelegd waar je de Client ID vindt, met een berichtje dat je zo kunt doorsturen.",
+    "Heeft je club nog geen Cluppie? Meld hem aan vanaf het startscherm.",
+    "Sportlink: een futsalteam wordt niet meer verward met het veldteam met hetzelfde nummer."
+  ]},
+  { "datum": "2026-10-11", "titel": "Nieuw seizoen in één keer", "punten": [
+    "Club → Instellingen → Seizoensovergang schuift alle jeugdspelers door naar hun team van volgend seizoen, met hun hele geschiedenis. Per speler aan te passen; coaches kunnen meegaan."
+  ]},
+  { "datum": "2026-10-11", "titel": "Weekbrief voor coördinatoren", "punten": [
+    "Eén scherm per bouw: trainingen zonder aanwezigheid, teams die lang niet beoordeeld zijn, scheve speeltijd, lage opkomst en hoeveel leerthema's er in gebruik zijn. Delen kan zonder namen."
+  ]},
+  { "datum": "2026-10-11", "titel": "Clubkleur, sjablonen en vergelijken", "punten": [
+    "Bij het kiezen van een clubkleur zie je direct hoe knoppen eruitzien in donker en licht, en krijg je een leesbaar alternatief als het nodig is.",
+    "Instellingen: de belangrijkste tabbladen staan vooraan, de rest onder Geavanceerd.",
+    "Deel jullie opzet als sjabloon met andere clubs, of begin met een sjabloon van een andere club.",
+    "Inzicht → Vergelijk: zie anoniem hoe jullie club ervoor staat naast andere clubs (zelf aanzetten).",
+    "Inzicht-cijfers worden nu elke nacht bijgewerkt; Synchroniseer werkt weer."
+  ]},
+  { "datum": "2026-10-11", "titel": "Privacy-akkoord zichtbaar", "punten": [
+    "Clubbeheerders zien in Instellingen → Toegang & privacy bij elke coach of die de privacyregels heeft bevestigd, en wanneer."
+  ]},
+  { "datum": "2026-10-11", "titel": "Alle coaches gelijk", "punten": [
+    "Nieuwe coaches komen binnen als volwaardig coach; de rol assistent wordt niet meer aangeboden. Bestaande assistenten kun je in Club → Instellingen → Toegang met één tik coach maken."
+  ]},
+  { "datum": "2026-10-10", "titel": "Beleidsplan importeren", "punten": [
+    "Clubbeheerders kunnen onder Club → Content het eigen beleidsplan (PDF of tekst) importeren. Cluppie stelt leerlijn-teksten, tips en gouden regels voor; jij controleert ze en publiceert.",
+    "Op desktop kon het clubscherm soms onder het teamscherm blijven staan. Dat is opgelost."
+  ]},
+  { "datum": "2026-10-10", "titel": "Alle KNVB-districten", "punten": [
+    "Bij een nieuwe club en onder Instellingen → Competitie kies je nu je KNVB-district: Noord, Oost, West I, West II, Zuid I of Zuid II.",
+    "De speeldagen van je district worden automatisch klaargezet, ook in volgende seizoenen. Je hoeft niets meer te importeren."
+  ]},
+  { "datum": "2026-10-10", "titel": "Nieuw Cluppie-logo", "punten": [
+    "Cluppie heeft een eigen logo: een open C met de bal in de opening. Je ziet het als app-icoon, in het browsertabblad, op het laad- en inlogscherm en op de uitlegpagina.",
+    "Er staat geen ander clublogo meer in de app: elke club ziet alleen het eigen logo dat in Club → Instellingen is gekozen."
+  ]},
+  { "datum": "2026-10-10", "titel": "Speler definitief overzetten zonder zijn geschiedenis kwijt te raken", "punten": [
+    "Zet je een uitgeleende speler definitief over, dan krijg je nu een overzichtelijk scherm waarin je kiest wat er meegaat: wedstrijden, beoordelingen, trainingsaanwezigheid per datum, leerpunten en de notitie. Standaard gaat alles mee.",
+    "De spelerskaart heeft een schakelaar “Bij dit team / Heel seizoen / Carrière”. Standaard zie je alleen wat hij bij jullie team heeft gedaan, dus de cijfers van het team worden niet vervuild. Kies je Heel seizoen of Carrière, dan tellen ook de wedstrijden en trainingen bij zijn vorige team mee.",
+    "Onder het profiel staat een compact blok “Vorig team” met een samenvatting. Met “Alles tonen” zie je alle wedstrijden, beoordelingen, trainingen en leerpunten uit dat team. Dit overzicht is bevroren op de dag van overzetten.",
+    "Er gaat niets verloren: de speler blijft bij het oude team bewaard (alleen verborgen in de spelerslijst)."
+  ]},
+  { "datum": "2026-10-10", "titel": "Verwachte speeltijd bij geplande wissels", "punten": [
+    "Heb je wissels vooraf gepland, dan zie je onder Speeltijd deze wedstrijd nu ook hoeveel minuten iemand naar verwachting speelt. Die tijden staan schuin met een ~ ervoor.",
+    "Bij elke geplande wissel staat een label: uit 6:00 bij wie eruit gaat en in 6:00 bij de invaller. Allebei hebben dezelfde kleur. Een tweede wissel in dezelfde periode krijgt een andere kleur.",
+    "De verwachting telt niet mee in de statistieken, spelersprofielen of het verslag. Die rekenen alleen met wissels die je echt hebt doorgevoerd.",
+    "Met de schakelaar Verwachte speeltijd tonen zet je het weer uit.",
+    "Bij \"wie aan de beurt is\" krijgt alleen de speler die eruit gaat een label en een ★. De invaller telt pas mee zodra de wissel is doorgevoerd."
+  ]},
+  { "datum": "2026-10-05", "titel": "Achteraf aanpassen wie er begon", "punten": [
+    "Per ongeluk een verkeerde starter ingevoerd, of na afloop gemerkt dat iemand anders begon? Open bij de wedstrijd “Achteraf bijwerken” en kies de periode. Bovenaan staat nu de Startopstelling: tik op een plek en kies wie er op die plek begon.",
+    "Kies je een speler die al op een andere startplek staat, dan wisselen die twee van plek. Wissels blijven staan en de speeltijd wordt vanzelf opnieuw berekend.",
+    "De melding “10 van 11 spelers op het veld” verschijnt niet meer nadat de periode is afgelopen. Na een rode kaart zie je een rustige mededeling in plaats van een waarschuwing."
+  ]},
+  { "datum": "2026-10-02", "titel": "Presentie: eerstvolgende training klopt", "punten": [
+    "De kaart bovenaan het presentie-tabblad volgt nu de trainingsdagen van je team. Een afmelding voor over een week komt niet meer als \"eerstvolgende training\" bovenaan te staan.",
+    "Staat er nog niets ingevuld voor de eerstvolgende training, dan zie je die toch als kaart met \"over 3 dagen\" erbij. Tik erop om de presentie in te vullen.",
+    "Is er voor een latere training al iemand afgemeld, dan zie je naast Andere datum invullen een knop met het aantal. Daarachter staat per datum wie er afwezig is."
+  ]},
+  { "datum": "2026-09-30", "titel": "Clubinstellingen voor elke club", "punten": [
+    "Elke club stelt nu zelf in de browser in: naam, afkorting, logo, kleur, plaats en district, speeltijden, bouwgrenzen en de lijsten met thema's, tags en redenen.",
+    "Nieuwe clubs maak je met een stappenplan (Club, Uiterlijk, Koppeling, Start), eventueel met een kopie van de instellingen van een bestaande club.",
+    "Bestaande instellingen blijven ongewijzigd werken."
+  ]},
+  { "datum": "2026-09-29", "titel": "Evaluatierondes", "punten": [
+    "Zet de club een evaluatieronde klaar voor je team, zoals de Najaarsevaluatie, dan zie je die bovenaan je teampagina met hoeveel spelers al klaar zijn.",
+    "Tik op Beginnen of Verder en je beoordeelt de spelers één voor één. Wie al klaar is, wordt overgeslagen.",
+    "In de volledige beoordeling kies je bij Hoort bij de ronde of een losse meting. Dat vervangt het vinkje \"officiële halfjaarevaluatie\"."
+  ]},
+  { "datum": "2026-09-28", "titel": "Speeltijd en evaluatie-radar", "punten": [
+    "Speeltijd tot nu toe op het dashboard toont nu alle spelers. Het blok blijft even groot; scroll erin om de rest te zien.",
+    "Op het Selectie-dashboard kies je bij Evaluatie tussen Wedstrijden en Spelers. Wedstrijden toont de radar van je wedstrijdevaluaties: de laatste wedstrijd in rood, het seizoensgemiddelde in blauw.",
+    "Het aantal open evaluaties op de teamkaart telt overgeslagen wedstrijden niet meer mee, net als in het menu."
+  ]},
+  { "datum": "2026-09-28", "titel": "Selectie-dashboard voor 1e en 2e", "punten": [
+    "Een eigen bouw kan nu een selectie zijn, bijvoorbeeld de bouw Selectie met het eerste en tweede elftal. Zet dit aan in Club → Instellingen → Eigen bouwen.",
+    "Op het dashboard van zo'n bouw staat onder elk team de evaluatie-radar: de laatste evaluatie in rood, het seizoensgemiddelde in blauw, met per domein het cijfer.",
+    "Nieuwe tegel Selectie maken: alle spelers van beide teams in één lijst, met positie, wedstrijden, speeltijd, goals, assists, opkomst en score. Het pijltje bij de score laat zien of een speler stijgt, gelijk blijft of daalt.",
+    "Per speler kies je 1e, 2e of Beide. Bij 1e of 2e verhuist de speler direct naar dat team, bij Beide staat hij via een uitlening in beide teams. Opstellingen, goals en beoordelingen blijven aan hem gekoppeld.",
+    "Een jeugdspeler die je inleent, staat er vanzelf tussen."
+  ]},
+  { "datum": "2026-09-28", "titel": "Assists en een 1e + 2e elftal", "punten": [
+    "Bij een doelpunt kies je na de scorer wie de assist gaf. Geen assist? Eén tik op \"Geen assist\". Achteraf aanpassen kan via het logboek, net als de scorer.",
+    "Assists staan in de Stats, in het spelersprofiel en in het wedstrijdverslag.",
+    "Speelt jullie selectie met een 1e en 2e elftal? Dan staat bovenaan de team-home een selectie-dashboard met wedstrijden, goals, assists en minuten per speler. Kies 1e, 2e of Totaal.",
+    "Via \"Spelers toewijzen\" zet je per speler 1e, 2e of Beide. Bij een nieuwe wedstrijd kies je het elftal; die spelers staan dan vooraf in de selectie en de rest zet je er met één tik bij. Een uitlening is daarvoor niet nodig."
+  ]},
+  { "datum": "2026-09-24", "titel": "Lijstjes: compacter en met eigen namen", "punten": [
+    "Op de telefoon staan naam en antwoord nu op één regel, zodat je veel meer spelers tegelijk ziet. De kolomnaam staat één keer bovenaan.",
+    "Een opmerking vul je in via het potloodje rechts op de regel. Een ingevulde opmerking zie je klein onder de naam.",
+    "Nieuw: bij het maken van een lijst kies je \"Selectie\" of \"Eigen namen\". Met eigen namen zet je bijvoorbeeld ouders of vrijwilligers in de eerste kolom, zoals voor een kantinedienst of rijschema.",
+    "Namen aanvullen doe je onderaan de lijst, hernoemen of weghalen via ⋯ → Namen beheren.",
+    "Het tandwiel rechtsboven is weg. De instellingen van je team vind je via de tegel Instellingen onder Meer."
+  ]},
+  { "datum": "2026-09-24", "titel": "Nieuw: Lijstjes", "punten": [
+    "Onder Meer vind je nu Lijstjes: handig voor alles wat je voor het team bijhoudt, zoals wie er meegaat naar een toernooi, welke kledingmaat iedereen heeft of welke ouder rijdt.",
+    "Kies een sjabloon (Aanwezigheid, Kledingmaten, Ouderhulp) of begin leeg. Je selectie staat er meteen in; nieuwe spelers komen er vanzelf bij.",
+    "Kledingmaten: 116 t/m 164 en S t/m XL staan klaar. Tik op een maat om zelf een maat toe te voegen, bijvoorbeeld 176 of XXL. Bovenaan zie je per maat hoeveel je nodig hebt.",
+    "Ouderhulp: de rijen zijn je wedstrijden. Bij thuiswedstrijden zijn geen rijders nodig.",
+    "Geef een lijst een datum, dan verschijnt hij ook in de Planning.",
+    "Elke lijst kun je delen via WhatsApp. Je kiest zelf welke kolommen in het bericht komen, en er staan alleen voornamen in.",
+    "Zet geen medische gegevens (allergieën, medicijnen, blessures) in een lijst."
+  ]},
+  { "datum": "2026-09-23", "titel": "Bouw-omgeving op de telefoon vernieuwd", "punten": [
+    "Het bouw-dashboard op de telefoon heeft nu dezelfde opbouw als op de laptop: onderin Dashboard, Teams en Uitleningen.",
+    "Per team kies je bovenin Selectie, Evaluatie spelers, Evaluatie wedstrijden of Stats. Bij je eigen team open je met één tik de gewone, bewerkbare schermen.",
+    "Rechtsboven wissel je snel van bouw, ook naar een eigen bouw zoals de Meidenbouw."
+  ]},
+  { "datum": "2026-09-23", "titel": "Bouwen: coaches koppelen, staf en uitleningen", "punten": [
+    "Aan een eigen bouw (zoals de Meidenbouw) kun je coaches koppelen. Zij krijgen dezelfde rechten als een bouwcoördinator.",
+    "Bouwcoördinatoren die geen clubbeheerder zijn kregen soms \"geen toegang\" op het bouw-dashboard. Opgelost.",
+    "Op de laptop zie je bij Selectie de staf van het team, en bij uitleningen of een speler binnen de bouw, naar een andere bouw of uit een andere bouw komt."
+  ]},
+  { "datum": "2026-09-23", "titel": "Eigen bouwen, zoals een Meidenbouw", "punten": [
+    "Clubbeheerders kunnen in Club → Instellingen eigen bouwen maken, bijvoorbeeld een Meidenbouw, en daar teams aan koppelen. Een team mag in meerdere bouwen zitten.",
+    "Eigen bouwen staan op de laptop in het menu onder Club, beheer, met hetzelfde dashboard, dezelfde uitleningen en dezelfde teamschermen.",
+    "Oefenstof en coördinatoren blijven bij de standaardbouw (onder-, midden- of bovenbouw)."
+  ]},
+  { "datum": "2026-09-23", "titel": "Desktop: speler bewerken en de bouw-omgeving", "punten": [
+    "Klik je in Selectie op een speler, dan bewerk je direct zijn gegevens, voorkeurspositie en notitie, en kun je hem uitlenen aan een ander team.",
+    "Onder Club, beheer klapt elke bouw uit: een dashboard met alle teams (uitslagen, komende wedstrijden, opkomst, uitleningen), een overzicht van de uitleningen en per team Selectie, Evaluatie spelers, Evaluatie wedstrijden en Stats.",
+    "Bij teams waar je geen coach van bent kijk je mee: alleen lezen."
+  ]},
+  { "datum": "2026-09-23", "titel": "Desktop: planning als kalender en bouw-dashboards in het menu", "punten": [
+    "Planning toont op de laptop een maandkalender met wedstrijden, trainingen en speeldagen. Klik op een dag om hem te openen of aan te passen.",
+    "Clubbeheerders vinden in het menu links onder Club, beheer de dashboards van de onder-, midden- en bovenbouw en de plek om coördinatoren toe te wijzen."
+  ]},
+  { "datum": "2026-09-23", "titel": "Desktopweergave uitgebreid", "punten": [
+    "Speeltijd op het dashboard nu in procenten: groen gespeeld, geel reserve. Opkomst bij training toont de datum.",
+    "Spelerskaarten tonen ook wedstrijden, speeltijd, reserve en goals. Een klik op een kaart opent het volledige profiel; de nieuwe knop Evaluatie toont per speler radar, stats en alle evaluaties.",
+    "Trainingen: deze week links, de training van vandaag met aanwezigheid en oefeningen in het midden, volgende week en voorgaande trainingen rechts.",
+    "Evaluatie van wedstrijden direct naast de radar invullen. Documenten, aanwezigheid, poule, planning, video’s, historie en stats in de nieuwe stijl.",
+    "Het wedstrijdscherm past op de laptop op één scherm.",
+    "Op je telefoon verandert er niets."
+  ]},
+  { "datum": "2026-09-22", "titel": "Cluppie op de laptop: nieuwe desktopweergave", "punten": [
+    "Op een groot scherm staat het menu nu links, met een zoekveld (Ctrl K) om direct naar een speler, wedstrijd of onderdeel te springen. De zijbalk klapt in tot een smalle balk met icoontjes.",
+    "Nieuw dashboard met de volgende wedstrijd, speeltijd, opkomst bij training, de oefenstof van deze week en wat er nog te doen staat.",
+    "Spelers als kaarten met een cijfer per domein, en per speler een paspoort met radar, leerpunten en laatste momenten. De cijfers zijn alleen voor coaches zichtbaar.",
+    "Wedstrijden, trainingen en de leerlijn krijgen op de laptop een overzicht met lijst links en details rechts. Via \"Gewone weergave\" kom je altijd bij het vertrouwde scherm met alle opties.",
+    "Op je telefoon verandert er niets."
+  ]},
+  { "datum": "2026-09-22", "titel": "Bouwcoördinatoren: eigen dashboard per bouw", "punten": [
+    "Nieuwe rol voor wie meerdere teams binnen een bouw (onder/midden/boven) overziet. Een clubadmin wijst coördinatoren aan onder Instellingen.",
+    "Een coördinator krijgt op het startscherm een eigen dashboard voor zijn bouw: een teamkaart per team met poulestand, vorm, presentie bij training én wedstrijden, en evaluatie-voortgang.",
+    "Vanuit hetzelfde dashboard: spelers over de hele bouw (positie, opkomst, cijfer), uitleningen tussen teams (incl. zelf een speler uitlenen), en alle evaluaties per team.",
+    "Welke onderdelen op elke teamkaart staan, stel je zelf in via het tandwiel rechtsboven op het dashboard."
+  ]},
+  { "datum": "2026-09-22", "titel": "Training delen met een ouder", "punten": [
+    "Helpt er een ouder mee bij de training? Deel de training via het knopje rechtsboven in de oefenstof-weergave.",
+    "Kies hoelang de link geldig is; de ouder kan, zonder eigen account, de training bekijken én zien wie er is (presentie, alleen-lezen). Verder krijgt hij nergens toegang toe."
+  ]},
+  { "datum": "2026-09-21", "titel": "Presentie: twee kleine, merkbare verbeteringen", "punten": [
+    "De eerstvolgende training staat nu altijd apart bovenaan het presentie-tabblad, los van de geschiedenis, voorheen kon een vooraf ingevulde afmelding voor een latere datum boven de training van vanavond staan.",
+    "Bij het afmelden van een speler kun je nu bij élke reden een toelichting typen, niet meer alleen bij \"Anders\"."
+  ]},
+  { "datum": "2026-09-08", "titel": "Trainingsopkomst klopt nu ook voor spelers die later instroomden", "punten": [
+    "Een speler die halverwege het seizoen bij het team komt, een gast, een inleen of een nieuwe aanwinst, kreeg tot nu toe 100% opkomst over alle trainingen van vóór zijn komst. Hij was er simpelweg niet om afwezig gezet te worden. Vanaf nu legt de app bij elke presentie vast wie er die dag in de selectie zat, en telt zijn percentage alleen over de trainingen waar hij bij hoorde.",
+    "Onder zijn naam staat een chip die vertelt hoeveel trainingen buiten zijn telling vielen, zodat een stand van 1 / 1 niet als registratiefout leest.",
+    "Het aandacht-blad signaleert lage opkomst pas vanaf drie meetellende trainingen. Eén gemiste training van iemand die net binnen is, is geen patroon.",
+    "Ook het opkomstcijfer op het clubdashboard, het spelersprofiel en de Excel-export rekenen op deze manier, die liepen anders uit elkaar."
+  ]},
+  { "datum": "2026-09-07", "titel": "Stats overzichtelijker + geleende spelers meteen op de bank", "punten": [
+    "De tabbladen Speel en Wed zijn samengevoegd tot één blad Spelers: speeltijd, wedstrijden, reserve, doelpunten, aanvoerder, keeper en kaarten staan nu naast elkaar in dezelfde tabel.",
+    "Kolommen waarin het hele team op nul staat worden weggelaten, heeft niemand een kaart gekregen, dan zie je die kolommen ook niet. Een 0 in een kolom die verder wel gevuld is, staat gedempt.",
+    "De tabel staat nu op naam gesorteerd, zodat je een speler altijd op dezelfde plek terugvindt. Spelers onder de 50% speeltijd krijgen een lichte tint.",
+    "Gebruik je beoordelingen, dan staat achter elke naam een klein lijntje met zijn ontwikkeling: elke snelle beoordeling en het gemiddelde van elke volledige beoordeling, oudste links.",
+    "Een speler die je van een ander team leent staat nu meteen in de selectie van nog niet gespeelde wedstrijden, in plaats van bij afwezig. Haal je hem er zelf uit, dan blijft dat zo."
+  ]},
+  { "datum": "2026-09-07", "titel": "Speeltijd: alle kwarten in één tabel", "punten": [
+    "Onder “Speeltijd deze wedstrijd” zie je nu alle kwarten (of helften) naast elkaar in plaats van alleen het kwart waar je op staat. Zo zie je in één oogopslag hoe de speeltijd over de wedstrijd verdeeld is.",
+    "Het kwart waar je nu in zit is rood gemarkeerd. De spelernaam en de totaalkolom blijven staan als je de tabel opzij schuift, handig bij een toernooi met veel periodes.",
+    "Elke cel is aan te tikken om die periode voor die speler te corrigeren; voorheen kon dat alleen bij het actieve kwart.",
+    "De aparte keeperkolom is vervangen door een oranje K achter de speeltijd, zodat je meteen ziet in wélke periodes iemand op doel stond."
+  ]},
+  { "datum": "2026-09-05", "titel": "Speelminuten: twee telfouten hersteld", "punten": [
+    "Werd een speler gewisseld terwijl hij niet in de startopstelling van die periode stond, bijvoorbeeld omdat je de opstelling pas na het starten van de klok neerzette, of omdat je de wissel achteraf toevoegde, dan viel zijn gespeelde tijd in die periode volledig weg. Die tijd telt nu gewoon mee.",
+    "Zette je de klok halverwege een periode op pauze en startte je hem niet meer, dan gold die klokstand als de lengte van de hele periode. Iedereen verloor daardoor minuten en een invaller kwam op 0:00 uit. De ingestelde periodeduur is nu de ondergrens; de klok kan een periode alleen nog verlengen bij blessuretijd.",
+    "Beide correcties werken met terugwerkende kracht op al gespeelde wedstrijden. Speelminuten en eerlijkheidspercentages kunnen daardoor iets afwijken van wat je eerder zag, die nieuwe waarden zijn de juiste."
+  ]},
+  { "datum": "2026-09-02", "titel": "Spelers uitlenen tussen teams: vernieuwd", "punten": [
+    "Leen je een speler uit aan een ander team, dan doet die daar nu volwaardig mee: de ontvangende coach kan hem opstellen, presentie bijhouden en beoordelen, precies als bij een eigen speler. Open een speler en tik onderaan op “⇄ Uitlenen aan ander team”.",
+    "Bij jou wordt een uitgeleende speler grijs weergegeven onder “Uitgeleend” en verdwijnt hij uit je opstellingen, presenties en evaluaties, tot hij terugkomt. Je eigen speler blijft altijd van jou: met “Terughalen” zet je hem meteen terug in je selectie.",
+    "De ontvangende coach mag het rugnummer en de voorkeurspositie van een ingeleende speler bij zich aanpassen (via “Nummer/positie bij jou”). Dat geldt alleen in zijn eigen team; jouw origineel blijft ongemoeid.",
+    "Nog niet bekend wie je precies inleent, maar wil je alvast opstellen? Maak een gastspeler aan (“+ Gastspeler aanmaken”). Zodra bekend is wie het wordt, koppel je de gast aan de echte uitleen, je bestaande opstellingen en presenties blijven behouden.",
+    "Terugzetten kan door beide coaches. De clubadmin kan een uitleen bovendien definitief maken (de speler verhuist dan echt naar het nieuwe team) of terugzetten naar het oorspronkelijke team."
+  ]},
+  { "datum": "2026-09-02", "titel": "Positie in de spelerslijst", "punten": [
+    "In de spelerslijst zie je nu onder elke naam de meest gespeelde positie staan, zodat je in één oogopslag ziet wie waar speelt.",
+    "Heeft een speler nog geen wedstrijdhistorie, dan tonen we zijn ingestelde voorkeurspositie. Zodra hij wedstrijden speelt, past de positie zich vanzelf aan op waar hij het vaakst stond."
+  ]},
+  { "datum": "2026-08-28", "titel": "Tactiekbord: teken je plan op het veld", "punten": [
+    "Open bij een wedstrijd het nieuwe Tactiekbord (onderaan het wedstrijdscherm). Het veld verschijnt schermvullend met de spelers uit de opstelling van de gekozen periode.",
+    "Teken loopwegen (gestreepte pijl), passes (doorgetrokken pijl) of vrij met het potlood, en versleep spelers, tegenstanders en een bal precies waar je ze wilt hebben.",
+    "Zet “Volg-loopweg” aan en sleep een speler: de loopweg tekent zich vanzelf mee, handig om te laten zien waar iemand naartoe loopt.",
+    "Je kunt meerdere tactiekborden per wedstrijd bewaren (bijvoorbeeld “K1 omschakeling” of “corner voor”), en een bord als afbeelding delen met je mede-coaches."
+  ]},
+  { "datum": "2026-08-26", "titel": "Wijzig opzet slaat nu alles automatisch op", "punten": [
+    "In het scherm “Wijzig opzet” hoef je niet meer op Opslaan te tikken: elke keuze wordt meteen bewaard. Kies je een aanvoerder, aantal spelers, formatie of een doel-suggestie, dan staat het direct vast.",
+    "Tekstvelden (tegenstander, datum, minuten, wedstrijddoel en notitie) worden opgeslagen zodra je uit het veld tikt. Bij elk opgeslagen veld verschijnt kort een groen “Opgeslagen”-vinkje, en onderaan zie je wat er als laatste is bewaard.",
+    "De Opslaan-knop is vervangen door “Klaar”. Sluiten met het kruisje kan ook gewoon, je wijzigingen staan dan al veilig."
+  ]},
+  { "datum": "2026-08-26", "titel": "Standaardopstellingen (sjablonen)", "punten": [
+    "Je kunt nu een vaste opstelling voor alle kwarten bewaren als sjabloon en die in één keer op een andere wedstrijd leggen, inclusief dezelfde spelers. Handig als je week na week met (grotendeels) dezelfde opstelling begint.",
+    "Onder het tabblad Wedstrijden staat een nieuwe knop “Opstelling-sjablonen”. Daar maak je een sjabloon van de grond af op: kies aantal spelers en formatie, en tik per kwart de spelers op hun plek. Met “⧉ Naar K2/K3/K4” kopieer je een kwart razendsnel naar het volgende.",
+    "Al een mooie opstelling gemaakt in een wedstrijd? Onderaan het wedstrijdscherm bewaar je die met één tik als sjabloon via “Opslaan als sjabloon”.",
+    "Bij een nog lege wedstrijd verschijnt bovenaan de knop “Opstelling invoegen”: kies een sjabloon óf een vorige wedstrijd en alle kwarten worden in één keer gevuld. Spelers die niet in je selectie zitten worden netjes overgeslagen, je hoort achteraf hoeveel.",
+    "Ook via “Wijzig opzet” (onder Speelwijze & formatie) kun je een standaardopstelling invoegen, óók als de wedstrijd al een opstelling heeft. Je krijgt eerst een bevestiging voordat de bestaande opstellingen worden vervangen.",
+    "Sjablonen zijn per team: elk team beheert z’n eigen standaardopstellingen."
+  ]},
+  { "datum": "2026-08-25", "titel": "Zie meteen wat er nieuw is", "punten": [
+    "Zodra er updates zijn die je nog niet hebt bekeken, verschijnt er bovenaan je startscherm, net onder de teamnaam, een duidelijke melding met een NIEUW-label, het aantal nieuwe updates en de titel van de nieuwste. Eén tik erop opent dit updates-overzicht.",
+    "Wil je de melding even wegklikken? Tik op het kruisje rechtsboven in het balkje; hij blijft dan weg tot je de app opnieuw opent. De updates gelden pas als gelezen zodra je dit overzicht echt hebt geopend.",
+    "Ook de regel “Wat is er nieuw?” onderaan het startscherm laat nu met een stipje en een teller zien hoeveel updates er nog voor je klaarstaan. Heb je alles bekeken, dan wordt het weer een rustige, gewone link."
+  ]},
+  { "datum": "2026-08-25", "titel": "Spelersscherm: eigen iconen", "punten": [
+    "Het spelersscherm sluit nu aan op de frissere look van de rest van de app: de knoppen Snel beoordelen, Volledige beoordeling en Speler bewerken hebben eigen iconen gekregen in plaats van emoji.",
+    "De notitie-knop bij een speler is een strak icoonknopje geworden (een potlood als er al een notitie staat, een plusje om er een toe te voegen). De werking blijft precies hetzelfde."
+  ]},
+  { "datum": "2026-08-24", "titel": "Coach-notitie per speler", "punten": [
+    "Bij elke speler kun je nu een vrije notitie kwijt, bijzonderheden, afspraken of aandachtspunten. Bijvoorbeeld: ‘is de eerste van de maand afwezig voor werk’ of ‘vindt het fijn om extra complimenten te krijgen’.",
+    "Je vindt het veld bovenaan het spelersprofiel onder “Notitie”. Tik op Toevoegen of Bewerken om ’m te vullen of aan te passen.",
+    "Zodra een speler een notitie heeft, verschijnt er een amberkleurig uitroepteken achter de naam in de spelerslijst, zo zie je in één oogopslag bij wie iets staat.",
+    "De notitie is coach-only: spelers en ouders zien ’m niet. Zet er geen gevoelige (medische) gegevens in."
+  ]},
+  { "datum": "2026-08-23", "titel": "Eigen aantekeningen bij de oefenstof", "punten": [
+    "Je kunt nu je eigen aantekeningen bij een training maken zonder dat het origineel verandert. Open een AI-training en tik rechtsboven op het potlood ✎ om de notitie-laag aan te zetten.",
+    "Tik daarna op een regel om ’m te markeren als aandachtspunt (amber), er een opmerking bij te typen, of een YouTube-filmpje te koppelen. Een genummerd bolletje achter de regel brengt je naar je opmerking en weer terug.",
+    "Alles wat je toevoegt is zichtbaar voor alle trainers van jouw team, handig om ervaringen te delen. Je eigen opmerkingen en filmpjes kun je altijd weer weghalen; het origineel blijft sowieso bewaard.",
+    "Voor de clubadmin: bij elke AI-training staat nu een notitie-knop die laat zien waar coaches op reageren, met de drukste plekken bovenaan, zodat je de oefenstof gericht kunt verbeteren."
+  ]},
+  { "datum": "2026-08-22", "titel": "Stats: eerlijke speeltijd in één blik", "punten": [
+    "Bovenaan de Stats-tab staat nu een eerlijkheidsmeter: één rapportcijfer (0–100) dat laat zien hoe gelijk de speeltijd over je selectie verdeeld is. Hoe dichter iedereen bij elkaar zit, hoe hoger, met de speler die het minst aan bod komt er meteen bij.",
+    "Nieuw blad ‘Aandacht’, helemaal vooraan: de app haalt automatisch de spelers naar boven die een gesprek verdienen, op basis van weinig speeltijd, lage trainingsopkomst of een disciplinaire reservebeurt. Puur ter signalering, geen oordeel. Tik op een speler voor het volledige profiel.",
+    "Daaronder een korte kern-strip met het aantal wedstrijden, doelpunten en de gemiddelde opkomst van het team.",
+    "De bestaande bladen (Speelminuten, Wedstrijd, Training) blijven precies zoals je ze kent."
+  ]},
+  { "datum": "2026-08-19", "titel": "Eigen speelwijzen & inzoombare tekeningen", "punten": [
+    "Je kunt nu je eigen speelwijze samenstellen: typ een linie-indeling (bijvoorbeeld 4-2-1-3) en de app plaatst de spelers automatisch netjes op het veld en bewaart ’m bij je team. Daarna kies je ’m gewoon naast de vaste formaties.",
+    "Twee formaties toegevoegd: 3-1-3 voor 8-tegen-8 en 4-2-1-3 voor 11-tegen-11.",
+    "Veldtekeningen bij de oefenstof kun je nu schermvullend openen en met twee vingers (of dubbeltik) inzoomen, handig voor de details langs het veld. De telefoon-terugknop sluit de tekening weer."
+  ]},
+  { "datum": "2026-08-18", "titel": "Nieuw startscherm: alles op één plek", "punten": [
+    "Na het inloggen land je nu direct op het startscherm van je team, met overzichtelijke tegels per onderwerp: Oefenstof, Presentie, Wedstrijden, Spelers en Meer. De balk onderin is verdwenen.",
+    "Heb je meerdere teams? Tik op de teamnaam bovenaan om te wisselen.",
+    "Presentie voor wedstrijden heeft een eigen scherm: de eerstvolgende wedstrijd staat klaar, je vinkt per speler aan wie meespeelt (met reden bij afwezigheid), en via de kiezer pak je elke andere wedstrijd erbij.",
+    "Nieuw onder Spelers: Leerlijn toont alle leerpunten van het hele team in één overzicht, en via Historie open je per speler de ontwikkeling over de tijd.",
+    "De tegel Evaluatie verzamelt de gespeelde wedstrijden die je nog moet evalueren, met een teller zodat je niets vergeet.",
+    "Berichten van je clubadmin vind je voortaan onder Meer → Berichten, met een rood bolletje als er iets nieuws is."
+  ]},
+  { "datum": "2026-08-17", "titel": "Speelwijze per kwart of helft", "punten": [
+    "Je kunt nu per kwart (of helft) een eigen speelwijze kiezen, bijvoorbeeld 1e kwart 1-3-3 en 2e kwart 2-3-2, zonder dat de andere periodes meeveranderen.",
+    "Linksboven in het veld zie je welk kwart en welke speelwijze je bekijkt. Tik rechtsboven in het veld op de knop ‘Speelwijze’ (of op de onderstreepte formatie onder de titel) om ’m aan te passen.",
+    "Wijzig je de speelwijze, dan blijven de opgestelde spelers zoveel mogelijk op hun plek: verdedigers bij de verdediging, middenvelders op het middenveld, aanvallers voorin.",
+    "De startformatie die je bij ‘Wijzig opzet’ kiest, geldt als beginwaarde voor nog lege kwarten."
+  ]},
+  { "datum": "2026-08-17", "titel": "Poule-programma per speelronde", "punten": [
+    "Het tabblad Stand & Poule heeft nu naast de Stand een tweede tabje: Programma.",
+    "Daar zie je alle wedstrijden binnen je poule, ook die van de andere teams, en ook de nog te spelen wedstrijden.",
+    "Blader met de pijltjes ‹ / › per speelronde. Gespeelde wedstrijden tonen de uitslag, komende de aftraptijd. Je eigen team staat gemarkeerd."
+  ]},
+  { "datum": "2026-08-17", "titel": "Kies je eigen weergave: licht/ donker of groot of klein lettertype", "punten": [
+    "De app heeft er een licht thema bij. Handig als je op een fel verlicht veld of in de zon op je scherm kijkt.",
+    "Heb je iets minder goede ogen? Dan pas je het lettertype aan.",
+    "Coaches stellen dit zelf in via Meer → Instellingen → Weergave. Je keuze wordt op je eigen toestel onthouden.",
+    "Clubbeheerders kiezen onder Club → instellingen of coaches zelf mogen kiezen, of stellen één vaste weergave in voor de hele club.",
+    "Het scorebord, de klok en de bank blijven altijd donker, witte cijfers op een donkere achtergrond lezen langs de lijn nu eenmaal het beste."
+  ]},
+  { "datum": "2026-08-16", "titel": "Frisse, moderne look", "punten": [
+    "De hele app heeft een strakkere, rustigere uitstraling gekregen.",
+    "Nieuw clubtintje op het startscherm: het clublogo en de clubkleuren.",
+    "Overal nieuwe, eigen iconen in plaats van emoji."
+  ]},
+  { "datum": "2026-08-15", "titel": "Sneller en stabieler", "punten": [
+    "Een storing opgelost waardoor een wedstrijd soms niet opende.",
+    "Kleine verbeteringen aan de spelers- en trainingsschermen."
+  ]},
+  { "datum": "2026-08-14", "titel": "AI-wedstrijdverslag & wisselreden", "punten": [
+    "Na afloop maakt de app automatisch een leesbaar wedstrijdverslag op basis van wat je hebt gelogd. Spelersnamen gaan nooit naar de AI, dat gebeurt volledig privacyproof (AVG).",
+    "Bij een wissel kun je nu een reden aangeven (Blessure, Tactisch, Gedrag, Trainingsopkomst), zichtbaar en aanpasbaar in het logboek.",
+    "Speeltijd wordt in de teamstatistieken getoond als percentage gespeeld en reserve, zodat je in één oogopslag ziet of iedereen eerlijk aan bod komt."
+  ]},
+  { "datum": "2026-08-12", "titel": "Overzichtelijker wedstrijdscherm", "punten": [
+    "Het scorebord is opgeschoond: doelknoppen en stand op één rij, teamnamen leesbaar eronder.",
+    "Bij geplande wissels kun je kiezen voor \"volgende in rotatie\", zodat de speler met de minste speeltijd vooraan staat.",
+    "De app start nu met een net laadscherm in plaats van een zwart scherm."
+  ]},
+  { "datum": "2026-08-05", "titel": "Stand & Poule", "punten": [
+    "Nieuw tabblad onder Meer: de actuele poulestand én de uitslagen van álle teams in je poule.",
+    "Wordt automatisch bijgewerkt via de nachtelijke sync. Je eigen team staat gemarkeerd."
+  ]},
+  { "datum": "2026-08-02", "titel": "Video's uploaden & slimmere oefenstof", "punten": [
+    "Naast YouTube-links kun je nu ook eigen videoclips (MP4) rechtstreeks in de app zetten.",
+    "Upload je een oefenstof-PDF, dan haalt de app de veldtekeningen eruit en zet de oefeningen om in een prettig scrollbaar schema voor langs het veld."
+  ]},
+  { "datum": "2026-08-01", "titel": "Hulpchat: je vraagbaak in de app", "punten": [
+    "Een ingebouwde assistent die je vragen over de app beantwoordt.",
+    "Weet je even niet waar iets staat of hoe iets werkt? Tik op Hulpchat en je krijgt meteen uitleg."
+  ]},
+  { "datum": "2026-07-27", "titel": "Rondleiding voor nieuwe coaches", "punten": [
+    "Een interactieve rondleiding die je stap voor stap door alle schermen leidt, van je team openen tot een wedstrijd draaien.",
+    "Later opnieuw te starten via Help."
+  ]},
+  { "datum": "2026-07-15", "titel": "Teamevaluatie & dashboard", "punten": [
+    "Beoordeel je team na een wedstrijd op meerdere categorieën.",
+    "Een dashboard laat de groeicurve, aandachtspunten en een trainingsadvies zien.",
+    "Op het startscherm verschijnt een herinnering voor wedstrijden die nog geëvalueerd moeten worden."
+  ]},
+  { "datum": "2026-07-06", "titel": "Wedstrijd-opzet in stappen", "punten": [
+    "Bij een nieuwe wedstrijd loop je vier korte stappen door: aanvoerder, aantal spelers, speelwijze en wedstrijddoel.",
+    "Geen tijd? Overslaan kan altijd, en later aanpassen via \"Wijzig opzet\"."
+  ]},
+  { "datum": "2026-07-04", "titel": "Seizoenen & kompas", "punten": [
+    "Alle wedstrijden, trainingen en beoordelingen worden nu per seizoen bewaard, zodat de historie netjes gescheiden blijft.",
+    "Bovenaan de Training-tab verschijnt wekelijks een kompas-tip uit het jeugdbeleidsplan.",
+    "Bij de leercurve-thema's en wedstrijddoelen kun je doortikken naar achtergrond en concrete oefentips."
+  ]},
+  { "datum": "2026-06-28", "titel": "Seizoensplanning", "punten": [
+    "Het tabblad Planning toont de hele seizoenskalender per maand: officiële KNVB-speeldagen, je eigen wedstrijden en zelf toegevoegde dagen (toernooi, vriendschappelijk, vrij).",
+    "Met filters per soort dag.",
+    "Op het veld werk je nu met tikken in plaats van slepen, zodat je makkelijk kunt scrollen tijdens de wedstrijd."
+  ]},
+  { "datum": "2026-06-20", "titel": "Cluppie op je beginscherm", "punten": [
+    "De app heet voortaan Cluppie en kun je op je telefoon-beginscherm zetten, open hem met één tik, ook zonder browser.",
+    "Wedstrijden worden automatisch ingeladen vanuit de KNVB-kalender (thuis/uit, datum, tegenstander)."
+  ]},
+  { "datum": "2026-06-12", "titel": "De eerste versie", "punten": [
+    "Zet je spelers op het veld, start de wedstrijdklok per kwart of helft, en wissel tijdens het spel, elke wissel wordt automatisch met tijdstip gelogd.",
+    "Registreer doelpunten en kaarten volgens de KNVB-regels; de bank staat op volgorde van minste speeltijd, zodat je ziet wie aan de beurt is.",
+    "Houd spelers en trainingsopkomst bij, bekijk oefenstof en video's, en nodig als beheerder coaches uit via een persoonlijke link."
+  ]}
+]

@@ -33,7 +33,7 @@ for (const f of fs.readdirSync(A).filter(f => f.endsWith('.js'))){
   const mis = [...namen(fs.readFileSync(path.join(A, f), 'utf8'))].filter(x => !namen(fs.readFileSync(pb, 'utf8')).has(x) && !NEGEER_NAMEN.has(x));
   if (mis.length){ console.log(`${f}: ${mis.join(', ')}`); n += mis.length; }
 }
-const ta = titels(fs.readFileSync(path.join(A, 'teams.js'), 'utf8')), tb = titels(fs.readFileSync(path.join(B, 'teams.js'), 'utf8'));
+const ta = titels(fs.readFileSync(path.join(A, 'teams.js'), 'utf8')), tb = new Set([...titels(fs.readFileSync(path.join(B, 'teams.js'), 'utf8')), ...(fs.existsSync(path.join(B, 'updates.json')) ? JSON.parse(fs.readFileSync(path.join(B, 'updates.json'), 'utf8')).map(u => norm(u.titel)) : [])]);   /* [20261116g] cluppie.io: js/updates.json */
 for (const t of ta) if (!tb.has(t)){ console.log(`RELEASE niet in de wijzigingenlijst: "${t}"`); n++; }
 console.log(n ? `\n${n} verschil(len) om na te lopen.` : 'Gelijk: alles uit ASV\'33 zit in cluppie.io.');
 process.exit(n ? 2 : 0);

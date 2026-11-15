@@ -2,16 +2,27 @@
 
 Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
 
-## Stand (bijgewerkt 16-11-2026, versie 20261116f)
+## Stand (bijgewerkt 16-11-2026, versie 20261116g)
 - **Rooktest per rol:** `npm run test:rook` (`tools/rooktest.mjs`) opent de demo als elk van de zeven rollen in Chrome, op 414×896 en 1440×900, klikt op de telefoon elke tegel van het teamscherm open en meldt fouten, lege schermen, horizontaal schuiven, tikdoelen onder 44 px en contrast onder de norm. Laatst 16-11: 109 schermen, geen fouten. Nodig: `puppeteer-core` (`npm i -g puppeteer-core` of `PUPPETEER_PAD`) en Chrome. Met `--donker` voor het donkere thema.
 - **Storage-rules:** getest in de emulator met `npm run test:storage` (20 proeven per gebruikerstype, laatst 20/20 op 16-11; eigen poorten in `firebase.test.json`). Deploy: `firebase deploy --only storage --project cluppie-ad329`.
 - **Firestore-rules:** per club afgeschermd (teams, trainingen, video's, documenten, berichten via clublidmaatschap). Getest in de emulator: `npm run test:rules` (40 scenario's, laatst 40/40 groen op 14-11). Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.
 - **Cloud Functions:** live in `europe-west1` (Node 22, 2nd gen). Iedere nieuwe callable heeft na de eerste deploy de invoker `allUsers` nodig (`gcloud run services add-iam-policy-binding <naam-in-kleine-letters> …`), anders krijgt de app een CORS-/`internal`-fout.
 - **Tests:** `npm test` (17 suites, laatst 13-10 allemaal groen; nieuw: `vaste-afmeldingen`. Eerst één keer `cd functions && npm install`) en `node tests/toegang.test.js` (aansluiten/uitnodigen, 24 scenario's). Pariteit met ASV'33: `node tools/pariteit.mjs ../cluppieasv33` (stand 14-11: ASV'33 t/m PR #60 gepoort; de tool werkt nu ook op Windows; resterende meldingen zijn bewust: overzetten via de server, trainco-beheer via functions, bronvermelding niet overgenomen, `nu-test.js` is een ASV-testpagina).
+- **Wat is er nieuw (UPDATES):** de lijst staat sinds 20261116g in `public/js/updates.json`, niet meer in `teams.js`. Een release toevoegen = bovenaan dat bestand een blok `{ "datum", "titel", "punten" }`. Dat bestand heeft geen versienummer en dwingt dus geen andere modules opnieuw te laden; `tests/updates.test.mjs` bewaakt dat het geldig blijft.
 - **Versies:** elke release `node tools/versie.mjs JJJJMMDDx origin/main` (zet `?v=` in gewijzigde modules en hun importeurs + `CACHE_VERSIE` in `sw.js`).
 - **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
 
 ## Open
+**Voor Paul — Updates in een eigen bestand, verkoopmateriaal (release 20261116g, branch `wp-updates-marketing`)**
+- [x] Live sinds 16-11 (alleen client).
+- [ ] **UPDATES verplaatst** naar `public/js/updates.json` (122 releases, ongewijzigd). `teams.js` is 645 regels korter en haalt de lijst bij het starten op. Reden: elke nieuwsregel wijzigde `teams.js` en gaf zo'n vijftig modules een nieuw versienummer. Dit wijkt af van de oude afspraak "UPDATES in teams.js"; op jouw verzoek. `tools/pariteit.mjs` leest de releases van cluppie.io nu uit dat bestand (ASV'33 nog uit `teams.js`).
+- [ ] **Getallen bijgewerkt:** de landingspagina en de wintercampagne zeiden "bijna 170 oefenvormen"; de bibliotheek heeft er sinds 15-11 303, alle met tekening, coachpunten en een makkelijkere en moeilijkere versie. Nu "ruim 300". In `marketing/campagne-winterstop-2026.md` gaat het om post 3 (24 nov), die nog niet verstuurd is.
+- [ ] **Verkoopmateriaal in `marketing/`** (die map staat niet in git, dus alleen op deze pc):
+  - `cluppie-voor-besturen.pdf` en `.html`: één A4 voor bestuur, TC en hoofd jeugd. Geen prijzen.
+  - `verkoopteksten.md`: bericht dat een trainer naar zijn jeugdcoördinator stuurt, eerste mail aan een club, opvolging, mail na een gesprek, antwoorden op bestuursvragen, en de demolinks per rol. **Niets is verstuurd.** Op drie plekken staat tussen haken wat jij moet invullen (iets over jezelf, de bedragen, het antwoord over toestemming van ouders).
+  - `stappenkaart-clubbeheerder.md`: de zeven stappen van "Aan de slag".
+- [ ] Getest: `npm test` 48 suites groen (nieuw `tests/updates.test.mjs`); in de browser: de melding "Wat is er nieuw?" en de tab Updates tonen de 122 releases; rooktest zonder fouten.
+
 **Voor Paul — Rooktest per rol, leesbaarheid, rollen in de handleiding (release 20261116f, branch `wp-rook-handleiding`)**
 - [x] Live sinds 16-11: client op `main`, en `chatHulp` gedeployed (de kennisbank heeft een nieuw stuk over rollen).
 - [ ] **Rooktest** (`tools/rooktest.mjs`, zie Stand). Dit is het vangnet dat ontbrak voor grote verbouwingen zoals `teams.js` splitsen. Hij test wat de app een rol laat zien in de demo, niet de toegangsregels.

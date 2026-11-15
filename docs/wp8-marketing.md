@@ -62,7 +62,9 @@ Nu: `index.html?demo` toont één coach met één team (O11-2). De link staat ni
 
 Voorstel: de demo uitbreiden met de vaste fictieve club uit de rules-tests (FC Testdorp: O9-1, O11-1, O13-1, MO11-1, spelers "Speler 1" enzovoort) en een keuze "Bekijk als…" met de acht rollen. Dat dient drie doelen: verkoop (een bestuurder ziet het clubscherm), onboarding (een nieuwe coördinator ziet wat hij krijgt) en testen (de ontwerpmeting uit WP5 en rooktests per rol).
 
-## Verkoopmateriaal (nog te maken)
+## Verkoopmateriaal
+
+**Gemaakt op 16-11 en te vinden in `marketing/`** (niet in git): `cluppie-voor-besturen.pdf`, `verkoopteksten.md` en `stappenkaart-clubbeheerder.md`. De oorspronkelijke lijst:
 
 - Eén pagina voor besturen (pdf): probleem, wat Cluppie doet, privacy, wat het vraagt van de club, prijs.
 - Een stappenkaart voor de clubadmin: de zeven stappen van "Aan de slag".
