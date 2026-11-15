@@ -365,3 +365,23 @@ h3 { font-size: var(--text-title); line-height: 1.05; }
 .thema-keuze button:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 .thema-keuze button:disabled { opacity: 0.55; cursor: not-allowed; }
 @media (prefers-reduced-motion: reduce) { .thema-keuze button { transition: none; } }
+
+/* ---------- twee ingangen en het eerlijke blok [20261116c] ---------- */
+.kies { padding-block: var(--section-gap-s); background: var(--color-paper-2); }
+.kies h2 { margin-bottom: var(--space-2xl); }
+.kies__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap-columns); }
+.kies__kaart { display: flex; flex-direction: column; gap: var(--space-md); padding: var(--space-xl); border-top: 3px solid var(--color-accent); background: var(--color-paper); border-radius: 0 0 var(--radius-lg, 16px) var(--radius-lg, 16px); }
+.kies__voor { font-weight: 600; color: var(--color-ink-2); margin: 0; }
+.kies__kaart h3 { font-size: clamp(1.75rem, 2.6vw, 2.5rem); }
+.kies__kaart .lead { margin-top: 0; }
+.kies__lijst { margin: 0; padding-left: 1.2em; color: var(--color-ink-2); display: grid; gap: var(--space-xs); }
+.kies__kaart .acties { margin-top: auto; padding-top: var(--space-sm); }
+.eerlijk { padding-block: var(--section-gap-s); }
+.eerlijk__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3xl); align-items: start; }
+.eerlijk h2 { font-size: clamp(2rem, 3vw, 3rem); }
+.eerlijk__meer { margin-top: var(--space-lg); }
+.eerlijk__meer a { display: inline-block; padding-block: var(--space-sm); color: var(--color-ink); font-weight: 600; }
+@media (max-width: 60rem){
+  .kies__grid, .eerlijk__grid { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-xl); }
+  .kies__kaart { padding: var(--space-lg); }
+}

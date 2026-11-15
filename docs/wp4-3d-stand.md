@@ -1,6 +1,6 @@
 # WP4 — 3D-trainingen en spelvormen: stand en vervolg
 
-16-11-2026. Analyse; er is in dit werkpakket niets gebouwd.
+16-11-2026. **Bijgewerkt:** Paul besloot op 16-11 dat de editor alleen voor vormen in de bibliotheek is. Die editor is gebouwd en live (release 20261116c, `tekening-editor.js`, Platform › Bibliotheek › tab Tekening en 3D). Hij bewerkt de tekening van de vorm; de 3D-stappen volgen daaruit. Er is dus geen `scene`-veld per training en er zijn geen rechten per rol nodig: alleen de platformbeheerder bewerkt. De analyse hieronder (editor per training, rechten per rol) is daarmee vervallen en blijft staan als achtergrond.
 
 ## Wat er al is (releases 20261115b en 20261115c)
 

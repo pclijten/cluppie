@@ -1,7 +1,8 @@
 /* ==================== PLATFORM › BIBLIOTHEEK (alleen platformbeheerder) ====================
    [20261113d] Beheer van de trainingsvormen (goedgekeurde mockup "Cluppie Bibliotheek beheren",
    besluiten in claude/trainingsbibliotheek-beheer-impactanalyse.md):
-     • zoeken, filteren, tekst en instellingen bewerken; tekening blijft die van de basis (tekeneditor: fase 2);
+     • zoeken, filteren, tekst en instellingen bewerken;
+     • [20261116c] tekening en 3D bewerken (tab Tekening en 3D, tekening-editor.js): de 3D-stappen volgen uit de lijnen;
      • dupliceren als eigen vorm, uitzetten (met vervanger in geplande trainingen), terug naar de basis;
      • test in de planner, gebruik in trainingen;
      • Excel exporteren en importeren met controle vooraf;
@@ -11,12 +12,13 @@
    op vormIds; oude trainingen eerst één keer koppelen (knop bovenaan). Rules: zie firestore.rules [20261113d].
    Wordt getekend in het platformcentrum (platform-centrum.js) in <div id="pbRoot">. */
 import { db, doc, getDoc, getDocs, setDoc, deleteDoc, query, where, writeBatch } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261115e';
+import { S, esc, meld } from './state.js?v=20261116c';
 import { BASIS, BASIS_VERSIE, FASES, alleVormen, vormen, laadBibliotheek, verschilMetBasis, valideerVorm,
-  rijVan, KOLOMMEN, LIJSTVELDEN, vergelijkImport } from './bibliotheek.js?v=20261115b';
-import { herbouwOefening, bronVanOefening, vormIdsVan, naarNieuweOpbouw } from './seizoensplan-club.js?v=20261115e';
-import { maakPlan } from './trainingsplanner.js?v=20261115e';
+  rijVan, KOLOMMEN, LIJSTVELDEN, vergelijkImport, veldenNaarOpslag } from './bibliotheek.js?v=20261116c';
+import { herbouwOefening, bronVanOefening, vormIdsVan, naarNieuweOpbouw } from './seizoensplan-club.js?v=20261116c';
+import { maakPlan } from './trainingsplanner.js?v=20261116c';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261012e';
+import { koppelEditor, controleerTekening } from './tekening-editor.js?v=20261116c';
 
 const FS_URL = 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 const B = { root: null, zoek: '', fase: '', leeftijd: 0, filter: 'alle', sel: null, tab: 'tekst', concept: null, toonMeer: false,
@@ -106,7 +108,7 @@ const GETALLEN = new Set(['tijd', 'leeftijd.0', 'leeftijd.1', 'spelers.min', 'sp
 function tekenDetail(){
   const el = B.root.querySelector('#pbDetail'), v = huidige();
   if (!v){ el.innerHTML = '<p class="tc-leeg">Kies een vorm.</p>'; return; }
-  const c = concept(), fouten = valideerVorm(c), gewijzigd = JSON.stringify(verschilMetBasis(c, v)) !== '{}';
+  const c = concept(), fouten = [...valideerVorm(c), ...controleerTekening(c.tekening)], gewijzigd = JSON.stringify(verschilMetBasis(c, v)) !== '{}';
   let body = '';
   if (B.tab === 'tekst') body = veld('Naam', 'naam', c.naam) + veld('Doel (één zin)', 'doel', c.doel, 'area') + veld('Wat zeg je tegen de spelers', 'uitleg', c.uitleg || '', 'area')
     + LIJSTVELDEN.map(k => veld({ organisatie: 'Zo zet je het uit (één regel per stap)', regels: 'Regels', coachpunten: 'Coachpunten', coachvragen: 'Coachvragen', makkelijker: 'Makkelijker', moeilijker: 'Moeilijker', letOp: 'Let op' }[k], k, c[k] || [], 'area')).join('');
@@ -117,19 +119,29 @@ function tekenDetail(){
     <div class="pb-drie">${veld('Zwaarte (1–3)', 'intensiteit', c.intensiteit)}${veld('Niveau (1–3)', 'complexiteit', c.complexiteit)}${veld('Voetbalecht (ja/nee)', 'voetbalecht', c.voetbalecht ? 'ja' : 'nee')}</div>
     ${veld('Thema’s (komma ertussen)', 'thema', (c.thema || []).join(', '))}
     <div class="pb-drie">${veld('Pionnen', 'materiaal.pionnen', c.materiaal?.pionnen || 0)}${veld('Ballen', 'materiaal.ballen', c.materiaal?.ballen || 0)}${veld('Doeltjes', 'materiaal.doeltjes', c.materiaal?.doeltjes || 0)}</div>`;
+  if (B.tab === 'teken') body = '<div id="pbTeken"></div>';
   if (B.tab === 'test') body = B.test?.id === c.id ? B.test.html : `<div class="pb-kaart"><p>Laat de planner per leeftijd 40 trainingen maken met deze vorm erbij, en zie hoe vaak hij gekozen wordt.</p><button class="knop klein" data-pb="test">Start de test</button></div>`;
   if (B.tab === 'gebruik') body = B.gebruik[c.id] ? htmlGebruik(B.gebruik[c.id]) : `<div class="pb-kaart"><p>Tel de trainingen waarin deze vorm staat.</p><button class="knop klein" data-pb="gebruik">Tellen</button></div>`;
   el.innerHTML = `<h2 class="pb-h2">${esc(c.naam || 'Nieuwe vorm')}</h2>
     <div class="pb-sub">${esc(c.fase)} · ${lt(c)} · <span class="pb-st ${v._status}">${v._status}</span> · id ${esc(c.id)}</div>
-    ${c.tekening ? `<div class="pb-veld">${vormSvg(c, c.veld)}</div>${TEKENING_LEGENDA}` : '<div class="pb-kaart">Deze vorm heeft nog geen tekening. Dupliceer een vorm met een passende tekening om er een te krijgen; tekeningen bewerken komt in fase 2.</div>'}
+    ${B.tab === 'teken' ? '' : c.tekening ? `<div class="pb-veld">${vormSvg(c, c.veld)}</div>${TEKENING_LEGENDA}` : '<div class="pb-kaart">Deze vorm heeft nog geen tekening. Maak er een in de tab Tekening en 3D.</div>'}
     <div class="pb-checks">${fouten.length ? fouten.map(f => `<span class="pb-ck fout">${esc(f)}</span>`).join('') : '<span class="pb-ck">Alle controles gehaald</span>'}</div>
-    <div class="tm-tabs pb-tabs">${[['tekst', 'Tekst'], ['inst', 'Instellingen'], ['test', 'Test in planner'], ['gebruik', 'Gebruik']].map(([k, n]) => `<button class="${B.tab === k ? 'aan' : ''}" data-pb="tab" data-k="${k}">${n}</button>`).join('')}</div>
+    <div class="tm-tabs pb-tabs">${[['tekst', 'Tekst'], ['inst', 'Instellingen'], ['teken', 'Tekening en 3D'], ['test', 'Test in planner'], ['gebruik', 'Gebruik']].map(([k, n]) => `<button class="${B.tab === k ? 'aan' : ''}" data-pb="tab" data-k="${k}">${n}</button>`).join('')}</div>
     <div class="pb-body">${body}</div>
     <div class="pb-voet"><button class="knop" data-pb="bewaar"${!gewijzigd || fouten.length || B.bezig ? ' disabled' : ''}>Bewaar</button>
       <button class="knop licht" data-pb="dupliceer">Dupliceer als nieuwe vorm</button>
       <button class="knop licht" data-pb="uit">${v._status === 'uit' ? 'Zet weer aan' : 'Zet uit'}</button>
       ${v._status === 'aangepast' ? '<button class="knop licht" data-pb="herstel">Alles terug naar basis</button>' : ''}
       ${gewijzigd ? '<button class="knop licht" data-pb="annuleer">Wijzigingen weggooien</button>' : ''}</div>`;
+  /* [20261116c] tekening en 3D: de editor wijzigt alleen c.tekening en tekent zichzelf opnieuw */
+  if (B.editor){ B.editor.weg(); B.editor = null; }
+  const houder = el.querySelector('#pbTeken');
+  if (houder) B.editor = koppelEditor(houder, c, { opWijzig: () => {
+    werkKnoppenBij();
+    const voet = el.querySelector('.pb-voet');
+    if (voet && !voet.querySelector('[data-pb="annuleer"]') && JSON.stringify(verschilMetBasis(c, v)) !== '{}')
+      voet.insertAdjacentHTML('beforeend', '<button class="knop licht" data-pb="annuleer">Wijzigingen weggooien</button>');
+  } });
 }
 function htmlGebruik(g){
   return `<div class="pb-kaart"><table class="pb-tabel">
@@ -186,13 +198,13 @@ async function voerDoor(vormId, nieuw, { uitzetten = false } = {}){
 
 /* ---------- opslaan ---------- */
 async function schrijfOverlay(v, { status } = {}){
-  const basis = v._basis, velden = verschilMetBasis(v, basis);
+  const basis = v._basis, velden = veldenNaarOpslag(verschilMetBasis(v, basis));
   await setDoc(vormRef(v.id), { velden, status: status || (v._status === 'uit' ? 'uit' : 'aan'), eigen: !basis,
     gewijzigdDoor: S.user?.uid || null, gewijzigdMs: Date.now() });
 }
 async function bewaarDialoog(){
   const c = concept(); if (!c) return;
-  if (valideerVorm(c).length) return meld('Los eerst de controles op');
+  if (valideerVorm(c).length || controleerTekening(c.tekening).length) return meld('Los eerst de controles op');
   dlg('<p class="tc-leeg">Trainingen tellen…</p>');
   let r;
   try { r = await trainingenMet(c.id); } catch (e){ return dlg(`<h3>Tellen lukt niet</h3><p>${esc(e.code || e.message)}. Zijn de nieuwste firestore.rules en indexen gedeployed?</p><div class="pb-knoppen"><button class="knop licht" data-pb="sluit">Sluiten</button><button class="knop" data-pb="alleennieuw">Alleen opslaan</button></div>`); }
@@ -234,7 +246,7 @@ async function uitDialoog(){
 async function zetUit(){
   const v = huidige(); B.bezig = true; dlg('<p class="tc-leeg">Bezig…</p>');
   try {
-    await setDoc(vormRef(v.id), { velden: verschilMetBasis(v, v._basis), status: 'uit', eigen: !v._basis, gewijzigdMs: Date.now(), gewijzigdDoor: S.user?.uid || null }, { merge: true });
+    await setDoc(vormRef(v.id), { velden: veldenNaarOpslag(verschilMetBasis(v, v._basis)), status: 'uit', eigen: !v._basis, gewijzigdMs: Date.now(), gewijzigdDoor: S.user?.uid || null }, { merge: true });
     await laadBibliotheek(true);
     const n = await voerDoor(v.id, v, { uitzetten: true });
     sluitDlg(); meld(`Uitgezet. ${n} training${n === 1 ? '' : 'en'} kregen een vervanger.`);
@@ -253,7 +265,7 @@ async function dupliceer(bron){
   const id = 'eigen_' + String(v.naam || 'vorm').toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30) + '_' + Date.now().toString(36);
   const nieuw = { ...kloon(v), id, naam: (v.naam || 'Vorm') + ' (kopie)' };
   for (const k of Object.keys(nieuw)) if (k.startsWith('_') || k === 'id' || nieuw[k] === undefined) delete nieuw[k];
-  try { await setDoc(vormRef(id), { velden: nieuw, status: 'aan', eigen: true, gewijzigdDoor: S.user?.uid || null, gewijzigdMs: Date.now() }); }
+  try { await setDoc(vormRef(id), { velden: veldenNaarOpslag(nieuw), status: 'aan', eigen: true, gewijzigdDoor: S.user?.uid || null, gewijzigdMs: Date.now() }); }
   catch (e){ return meld('Dupliceren mislukt: ' + (e.code || e.message)); }
   await laadBibliotheek(true);
   B.sel = id; B.concept = null; B.tab = 'tekst'; tekenLijst(); tekenDetail();
@@ -430,7 +442,7 @@ async function importOpslaan(){
     for (const x of lijst){
       const oud = per.get(x.id);
       const vorm = { ...x.vorm, id: x.id };
-      await setDoc(vormRef(x.id), { velden: verschilMetBasis(vorm, oud?._basis || null), status: x.status, eigen: !oud?._basis, gewijzigdDoor: S.user?.uid || null, gewijzigdMs: Date.now() });
+      await setDoc(vormRef(x.id), { velden: veldenNaarOpslag(verschilMetBasis(vorm, oud?._basis || null)), status: x.status, eigen: !oud?._basis, gewijzigdDoor: S.user?.uid || null, gewijzigdMs: Date.now() });
     }
     await laadBibliotheek(true);
     for (const x of lijst) if (x.soort !== 'nieuw'){
@@ -489,7 +501,7 @@ function invoer(e){
 /* Bewaar-knop en controles bijwerken zonder het formulier opnieuw te tekenen (focus en klik blijven werken). */
 function werkKnoppenBij(){
   const c = concept(), v = huidige(); if (!c || !v) return;
-  const fouten = valideerVorm(c), gewijzigd = JSON.stringify(verschilMetBasis(c, v)) !== '{}';
+  const fouten = [...valideerVorm(c), ...controleerTekening(c.tekening)], gewijzigd = JSON.stringify(verschilMetBasis(c, v)) !== '{}';
   const k = B.root.querySelector('[data-pb="bewaar"]'); if (k) k.disabled = !gewijzigd || !!fouten.length || B.bezig;
   const ck = B.root.querySelector('.pb-checks');
   if (ck) ck.innerHTML = fouten.length ? fouten.map(f => `<span class="pb-ck fout">${esc(f)}</span>`).join('') : '<span class="pb-ck">Alle controles gehaald</span>';

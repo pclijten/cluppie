@@ -16,6 +16,22 @@ export const BASIS_VERSIE = BIBLIOTHEEK.versie;
 export const FASES = ['warming-up', 'positiespel', 'spelvorm', 'partijspel', 'afsluiting'];
 const kloon = x => JSON.parse(JSON.stringify(x));
 
+/* ---------- PURE: opslagvorm [20261116c] ----------
+   Firestore kent geen lijsten in lijsten, en de lijnen van een tekening zijn dat wel (punten: [[x,y],[x,y]]).
+   De tekening gaat daarom als tekst de database in (velden.tekeningJson) en komt bij het laden terug als object. */
+export function veldenNaarOpslag(velden){
+  const v = { ...(velden || {}) };
+  if (v.tekening !== undefined && v.tekening !== null){ v.tekeningJson = JSON.stringify(v.tekening); }
+  delete v.tekening;
+  return v;
+}
+export function veldenUitOpslag(velden){
+  const v = { ...(velden || {}) };
+  if (typeof v.tekeningJson === 'string'){ try { v.tekening = JSON.parse(v.tekeningJson); } catch (e){ /* onleesbaar: tekening van de basis blijft */ } }
+  delete v.tekeningJson;
+  return v;
+}
+
 /* ---------- PURE: samenvoegen ----------
    Geeft alle vormen met `_status` ('basis' | 'aangepast' | 'eigen' | 'uit') en `_basis` (de basisvorm of null). */
 export function voegSamen(basis, overlays){
@@ -25,13 +41,14 @@ export function voegSamen(basis, overlays){
     const o = per.get(v.id);
     if (!o){ uit.push({ ...v, _status: 'basis', _basis: v }); continue; }
     per.delete(v.id);
-    const samen = { ...v, ...kloon(o.velden || {}), id: v.id };
-    const aangepast = Object.keys(o.velden || {}).length > 0;
+    const velden = veldenUitOpslag(kloon(o.velden || {}));
+    const samen = { ...v, ...velden, id: v.id };
+    const aangepast = Object.keys(velden).length > 0;
     uit.push({ ...samen, _status: o.status === 'uit' ? 'uit' : aangepast ? 'aangepast' : 'basis', _basis: v });
   }
   for (const [id, o] of per){
     if (!o || !o.velden || !o.velden.naam) continue;
-    uit.push({ ...kloon(o.velden), id, _status: o.status === 'uit' ? 'uit' : 'eigen', _basis: null });
+    uit.push({ ...veldenUitOpslag(kloon(o.velden)), id, _status: o.status === 'uit' ? 'uit' : 'eigen', _basis: null });
   }
   return uit;
 }

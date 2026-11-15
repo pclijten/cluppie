@@ -19,19 +19,19 @@
 
    Tabblad: 'seizoensplan'. Importeert NIET uit teams.js; teams.js geeft zetTeamTab mee. */
 import { db, doc, collection, getDoc, getDocs, setDoc, addDoc, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261115e';
-import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261115e';
-import { aiAan, aiDoel } from './clubconfig.js?v=20261116b';
-import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261115e';
-import { trainingenVanPlan, planVoorTeam } from './seizoensplan-club.js?v=20261115e';
-import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261115e';
+import { S, esc, meld } from './state.js?v=20261116c';
+import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261116c';
+import { aiAan, aiDoel } from './clubconfig.js?v=20261116c';
+import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261116c';
+import { trainingenVanPlan, planVoorTeam } from './seizoensplan-club.js?v=20261116c';
+import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261116c';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261115b';
-import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261115b';
-import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261115e';
+import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261116c';
+import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261116c';
 import {
   MODELLEN, ACCENTEN, maakSeizoensplan, weekKalender, herreken, standaardVrij, maandagVan, beschikbareThemas, themaVolgorde,
   valideerBlokken, positieOp, positieWeek, teamSignalen, stelBijsturingVoor, pasVoorstelToe,
-} from './seizoensplan-logica.js?v=20261115e';
+} from './seizoensplan-logica.js?v=20261116c';
 
 /* [20261113d] vormen uit basis + beheerlaag (bibliotheek.js) */
 const KLEUREN = ['var(--accent)', '#4a8fe0', '#e0a526', '#3fb27f', '#a855f7', '#f08a24', '#14b8a6', '#ec4899'];

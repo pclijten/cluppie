@@ -11,20 +11,20 @@
    alleen HTML + de opslaghulpjes voor de wedstrijd-presentie. Het importeert
    bewust NIET terug uit teams.js (geen circulaire import). */
 import { db, doc, updateDoc, deleteField } from './firebase.js?v=20261011g';
-import { S, esc, meld, datumNL, modAan, openModal } from './state.js?v=20261115e';
-import { AFWEZIG_REDENEN, afwezigRedenInfo, catLabel } from './config.js?v=20261115e';
+import { S, esc, meld, datumNL, modAan, openModal } from './state.js?v=20261116c';
+import { AFWEZIG_REDENEN, afwezigRedenInfo, catLabel } from './config.js?v=20261116c';
 import { ico } from './icons.js?v=20261110a';
-import { logoImg, primaireClubId } from './clubconfig.js?v=20261116b';
-import { analyseWedstrijd, WISSEL_BEURT } from './analyse.js?v=20261116a';
-import { telGebruik } from './tracker.js?v=20261115e';
-import { ongelezenBerichten } from './berichten.js?v=20261115e';
-import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261115e';
-import { htmlRondeBalk } from './evaluatierondes.js?v=20261115e';
-import { onderdeelAan } from './onderdelen.js?v=20261115e';
-import { eersteStappenPlaats } from './snelstart.js?v=20261116b';
-import { htmlNu } from './nu-scherm.js?v=20261116b';
+import { logoImg, primaireClubId } from './clubconfig.js?v=20261116c';
+import { analyseWedstrijd, WISSEL_BEURT } from './analyse.js?v=20261116c';
+import { telGebruik } from './tracker.js?v=20261116c';
+import { ongelezenBerichten } from './berichten.js?v=20261116c';
+import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261116c';
+import { htmlRondeBalk } from './evaluatierondes.js?v=20261116c';
+import { onderdeelAan } from './onderdelen.js?v=20261116c';
+import { eersteStappenPlaats } from './snelstart.js?v=20261116c';
+import { htmlNu } from './nu-scherm.js?v=20261116c';
 import { spelersOpWedstrijd, effectieveSelectie, leenErbijNa } from './uitleen-regels.js?v=20261113b';
-import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261116a';
+import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261116c';
 import { isAfgelast, telMee, soortPill, wedstrijdInfo, htmlAfgelastBanner, afgelastMeldingen, deelTekst } from './wedstrijd-status.js?v=20261012h';
 
 

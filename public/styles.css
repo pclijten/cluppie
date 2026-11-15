@@ -7817,3 +7817,28 @@ html.desk .dk-ss .sn-kop,html.desk .dk-ss .sn-balk,html.desk .dk-ss .sn-voet,htm
 .rk-kop{ font-size: var(--t-sm); font-weight: 700; color: var(--accent); margin-bottom: 2px; }
 .rk-tekst{ color: var(--ink); line-height: 1.45; }
 .rk-knoppen{ margin-top: var(--space-md); justify-content: flex-end; }
+
+/* ==================== TEKENING- EN 3D-EDITOR [20261116c] (Platform › Bibliotheek) ==================== */
+.te-balk{ display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.te-sel{ width: auto; min-width: 130px; padding-top: 6px; padding-bottom: 6px; }
+.te-hulp{ margin: 8px 0; font-size: var(--t-sm); color: var(--zacht, var(--ink)); opacity: .85; }
+.te-svg{ touch-action: none; user-select: none; -webkit-user-select: none; cursor: crosshair; }
+.te-speler{ cursor: grab; }
+.te-speler.te-gekozen .tv-speler{ stroke: var(--accent); stroke-width: 3; }
+.te-stapnr circle{ fill: var(--surface); stroke: var(--ink); stroke-width: 1; }
+.te-stapnr text{ font-size: 10px; font-weight: 700; fill: var(--ink); }
+.te-stapnr{ cursor: pointer; }
+.te-stapnr.te-gekozen circle{ fill: var(--accent); stroke: var(--accent); }
+.te-stapnr.te-gekozen text{ fill: var(--accent-ink, #fff); }
+.tv-lijn.te-gekozen{ stroke-width: 3.5; }
+.te-van{ fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 3 2; }
+.te-keuze{ display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; }
+.te-kop{ margin: var(--space-md) 0 6px; font-weight: 700; color: var(--ink); }
+.te-kop small{ font-weight: 400; opacity: .75; }
+.te-stappen{ margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+.te-stappen li{ padding: 6px 8px; border: 1px solid var(--line-d); border-radius: 10px; background: var(--surface); }
+.te-stappen li.te-gekozen{ border-color: var(--accent); }
+.te-tekst{ display: block; color: var(--ink); margin-bottom: 6px; }
+.te-acties{ display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.te-voet{ display: flex; flex-wrap: wrap; gap: 8px; margin-top: var(--space-md); }
+.te-3d{ margin-top: var(--space-sm); }

@@ -1,6 +1,6 @@
 # WP8 — Marketing en verkoop
 
-16-11-2026. Voorstellen. Er is niets gepubliceerd of verstuurd; de landingspagina is niet gewijzigd (behalve een foutje in de console, zie WP2).
+16-11-2026. Voorstellen. **Bijgewerkt:** het voorstel voor de landingspagina (twee ingangen, wat Cluppie niet doet, privacy voor besturen) is op verzoek van Paul gebouwd en live gezet in release 20261116c. Prijzen staan er niet op. Verder is er niets gepubliceerd of verstuurd.
 
 ## Positie ten opzichte van anderen
 
