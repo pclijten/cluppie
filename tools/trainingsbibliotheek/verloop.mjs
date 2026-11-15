@@ -34,7 +34,10 @@ export function compileer(v, t, stappen, { tek } = {}){
   const m = (a, b) => Math.hypot((a[0] - b[0]) * B / 100, (a[1] - b[1]) * L / 100);
   const plek = new Map();
   for (const sp of (t.spelers || [])){ if (plek.has(sp.nr)) fouten.push(`nummer ${sp.nr} staat twee keer in de tekening`); plek.set(sp.nr, [sp.x, sp.y]); }
-  let balPlek = t.bal ? [...t.bal] : null, vorige = null;
+  /* alle ballen: de spelbal, losse ballen en bij "iedereen een bal" een bal bij elke eigen speler (zoals de 3D-motor) */
+  const ballen = [...(t.bal ? [[...t.bal]] : []), ...(t.ballen || []).map(q => [...q]), ...(t.iedereenBal ? (t.spelers || []).filter(sp => !sp.kant || sp.kant === 'eigen').map(sp => [sp.x, sp.y]) : [])];
+  const balBij = (q) => ballen.reduce((best, bl) => { const a = m(bl, q); return a < 4.5 && (!best || a < best.a) ? { bl, a } : best; }, null)?.bl;
+  let balPlek = ballen[0] || null, vorige = null;
   const waar = (n, i) => { const q = plek.get(n); if (!q){ fouten.push(`stap ${i + 1}: speler ${n} bestaat niet`); return [50, 50]; } return q; };
   const punt = (T, van, i) => {
     if (T === 'vorige') return vorige ? [...vorige] : [50, 50];
@@ -54,10 +57,10 @@ export function compileer(v, t, stappen, { tek } = {}){
     else if (!/^[A-ZÉ0-9].{8,}[.!?]$/.test(x.tekst)) fouten.push(`stap ${i + 1}: tekst is geen volledige zin ("${x.tekst}")`);
     if (m(van, naar) < 0.8) fouten.push(`stap ${i + 1}: lijn is te kort`);
     if (x.samen && i === 0) fouten.push('stap 1 kan niet tegelijk met een vorige');
-    const metBal = x.soort === 'pass' || x.soort === 'schot' || (x.soort === 'dribbel' && !t.iedereenBal);
-    if (metBal){
-      if (!balPlek || m(balPlek, van) >= 4.5) fouten.push(`stap ${i + 1} (${x.soort}, speler ${x.a}): de bal ligt niet bij deze speler`);
-      balPlek = [...naar];
+    if (x.soort !== 'loopweg'){
+      const bl = balBij(van);
+      if (!bl) fouten.push(`stap ${i + 1} (${x.soort}, speler ${x.a}): er ligt geen bal bij deze speler`);
+      else { bl[0] = naar[0]; bl[1] = naar[1]; balPlek = bl; }
     }
     if (x.soort === 'loopweg' || x.soort === 'dribbel') plek.set(x.a, [...naar]);
     vorige = naar;

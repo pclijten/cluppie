@@ -8,7 +8,19 @@ import { INZICHT, REGIE } from '../inzichten.mjs';
 import { UIT_A } from './a.mjs';
 import { UIT_B } from './b.mjs';
 import { UIT_C } from './c.mjs';
-export const UITWERKING = { ...UIT_A, ...UIT_B, ...UIT_C };
+import { UIT_D } from './d.mjs';
+import { UIT_E } from './e.mjs';
+import { UIT_F } from './f.mjs';
+import { UIT_G } from './g.mjs';
+import { UIT_H } from './h.mjs';
+import { UIT_I } from './i.mjs';
+import { UIT_J } from './j.mjs';
+import { UIT_K } from './k.mjs';
+import { UIT_M } from './m.mjs';
+import { UIT_N } from './n.mjs';
+import { UIT_O } from './o.mjs';
+import { UIT_P } from './p.mjs';
+export const UITWERKING = { ...UIT_A, ...UIT_B, ...UIT_C, ...UIT_D, ...UIT_E, ...UIT_F, ...UIT_G, ...UIT_H, ...UIT_I, ...UIT_J, ...UIT_K, ...UIT_M, ...UIT_N, ...UIT_O, ...UIT_P };
 
 const TEKST = { doel: 'doel', uitleg: 'uitleg', org: 'organisatie', regels: 'regels', punten: 'coachpunten', vragen: 'coachvragen', makk: 'makkelijker', moei: 'moeilijker', letOp: 'letOp', naam: 'naam', lft: 'leeftijd', tijd: 'tijd' };
 export const fouten = [];
@@ -26,6 +38,7 @@ export function werkUit(v){
   if (u.zones) t.zones = u.zones;
   if (u.pionnen) t.pionnen = u.pionnen;
   if (u.iedereenBal !== undefined) t.iedereenBal = u.iedereenBal;
+  if (u.ballen) t.ballen = u.ballen;
   if (u.bal !== undefined){
     if (typeof u.bal === 'number'){ const sp = t.spelers.find(x => x.nr === u.bal); if (sp) t.bal = [sp.x, sp.y]; else fouten.push(`${v.id}: bal bij onbekende speler ${u.bal}`); }
     else if (u.bal === null) delete t.bal; else t.bal = u.bal;

@@ -40,6 +40,7 @@ export function vormSvg(vorm, veld, opts = {}){
     s += `<g><circle cx="${X(p.x)}" cy="${Y(p.y)}" r="9.5" class="tv-speler ${klas(p.kant)}"/><text x="${X(p.x)}" y="${Y(p.y)}" class="tv-nr ${klas(p.kant)}" text-anchor="middle" dominant-baseline="central">${p.kant === 'keeper' ? 'K' : esc(p.nr)}</text></g>`;
   }
   if (t.bal) s += `<circle cx="${X(t.bal[0])}" cy="${Y(t.bal[1])}" r="4.5" class="tv-bal"/>`;
+  for (const b of (t.ballen || [])) s += `<circle cx="${X(b[0])}" cy="${Y(b[1])}" r="3.6" class="tv-bal"/>`;   /* [20261116i] losse ballen */
   return s + '</svg>';
 }
 

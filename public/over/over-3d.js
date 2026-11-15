@@ -134,6 +134,8 @@
     let spelbal = null;
     if (t.bal){ const p = pos(t.bal[0], t.bal[1]); const op = spelers.find(s => s.userData.thuis.distanceTo(p) < 1.2); spelbal = maakBal(p.x + (op ? 0.55 : 0), p.z + (op ? -0.35 : 0)); }
     if (t.iedereenBal) spelers.forEach((s, i) => { if (soortVan((t.spelers[i] || {}).kant) === 'eigen') maakBal(s.userData.thuis.x + 0.5, s.userData.thuis.z - 0.3); });
+    /* [20261116i] extra ballen die los in het veld liggen (ballenspel, afwerken met een rij ballen) */
+    (t.ballen || []).forEach(b => { const p = pos(b[0], b[1]); maakBal(p.x, p.z); });
 
     /* lijnen: een plat lint per stuk, dat vanaf het begin uitgroeit */
     const lijnen = (t.lijnen || []).map(l => {
