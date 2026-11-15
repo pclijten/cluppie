@@ -1,12 +1,12 @@
 import './datum-invoer.js?v=20261021a';
 import { auth, onAuthStateChanged } from './firebase.js?v=20261011g';
-import { S, $, initModalSluiten, meld, initTerugknop, initGlobaleFoutafhandeling } from './state.js?v=20261113b';
+import { S, $, initModalSluiten, meld, initTerugknop, initGlobaleFoutafhandeling } from './state.js?v=20261115c';
 import {
   initAuthUI, checkUitnodiging, handelPendingJoin, verwerkDeeplink, registreerLogin
-} from './auth.js?v=20261115b';
-import { startTeams, openTeam, renderTeam, verlaatTeamView, teamTabTerug } from './teams.js?v=20261115b';
-import { sluitWedstrijd } from './wedstrijd.js?v=20261115b';
-import { initChatbot } from './chatbot.js?v=20261115b';
+} from './auth.js?v=20261115c';
+import { startTeams, openTeam, renderTeam, verlaatTeamView, teamTabTerug } from './teams.js?v=20261115c';
+import { sluitWedstrijd } from './wedstrijd.js?v=20261115c';
+import { initChatbot } from './chatbot.js?v=20261115c';
 
 /* [20260921] Training gedeeld met een ouder (?deel=<id>): volledig losse,
    sterk vereenvoudigde flow — geen normale login, geen navigatie, alleen de
@@ -16,14 +16,14 @@ import { initChatbot } from './chatbot.js?v=20261115b';
 const _deelId = new URLSearchParams(location.search).get('deel');
 if (_deelId){
   document.getElementById('opstart')?.remove();
-  import('./deel-boot.js?v=20261113b').then(m => m.bootDeelPagina(_deelId));
+  import('./deel-boot.js?v=20261115c').then(m => m.bootDeelPagina(_deelId));
 } else {
 
 /* club.js is alleen nodig voor club-admins die het clubdashboard openen —
    dynamisch laden scheelt elke jeugdcoach het downloaden/parsen van het
    hele adminscherm. Eén keer geladen blijft de module door de browser
    gecached, dus latere aanroepen zijn instant. */
-const openClubLazy = id => import('./club.js?v=20261115b').then(m => m.openClub(id));
+const openClubLazy = id => import('./club.js?v=20261115c').then(m => m.openClub(id));
 
 /* knoppen en modal-gedrag één keer registreren */
 initModalSluiten();
@@ -53,8 +53,8 @@ function verbergOpstart(){
 S._navRerender       = renderTeam;
 S._navTeamTabTerug   = teamTabTerug;
 S._navVerlaatTeam    = verlaatTeamView;
-S._navVerlaatClub    = () => import('./club.js?v=20261115b').then(m => m.verlaatClubView());
-S._navClubTerug      = () => import('./club.js?v=20261115b').then(m => m.clubTerugEen());
+S._navVerlaatClub    = () => import('./club.js?v=20261115c').then(m => m.verlaatClubView());
+S._navClubTerug      = () => import('./club.js?v=20261115c').then(m => m.clubTerugEen());
 S._navTerugWedstrijd = sluitWedstrijd;
 initTerugknop();
 
@@ -65,7 +65,7 @@ initTerugknop();
 const _deskMq = window.matchMedia('(min-width:1100px) and (min-height:520px)');
 function _laadDesktop(){
   if (!_deskMq.matches) return;
-  import('./desktop.js?v=20261115b')
+  import('./desktop.js?v=20261115c')
     .then(m => m.initDesktop(_deskMq))
     .catch(e => console.warn('[Cluppie] desktop-schil niet geladen', e));
 }
@@ -84,7 +84,7 @@ onAuthStateChanged(auth, async user => {
     /* [20261113d] beheerlaag van de trainingsbibliotheek (klein, één keer per sessie) */
     import('./bibliotheek.js?v=20261115b').then(m => m.laadBibliotheek()).catch(() => {});
     if (new URLSearchParams(location.search).get('trainco')){
-      import('./trainco.js?v=20261113b').then(m => m.bootVoorbeeld(user)).catch(() => {});
+      import('./trainco.js?v=20261115c').then(m => m.bootVoorbeeld(user)).catch(() => {});
     }
 
     /* Hulp-chatbot: paneel klaarzetten. Openen gebeurt via de "Hulpchat"-tegel
@@ -96,7 +96,7 @@ onAuthStateChanged(auth, async user => {
 
     /* AVG-onboarding: eerst kennisname van de privacyregels, en e-mailverificatie voor wachtwoord-accounts */
     try {
-      const tg = await import('./toegang.js?v=20261115b');
+      const tg = await import('./toegang.js?v=20261115c');
       await tg.zorgKennisname();
       if (tg.eerstVerifierenNodig()) tg.toonVerificatieHint();
     } catch(e){ console.warn('[Cluppie] onboarding-controle overgeslagen', e); }

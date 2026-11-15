@@ -11,11 +11,11 @@
    op vormIds; oude trainingen eerst één keer koppelen (knop bovenaan). Rules: zie firestore.rules [20261113d].
    Wordt getekend in het platformcentrum (platform-centrum.js) in <div id="pbRoot">. */
 import { db, doc, getDoc, getDocs, setDoc, deleteDoc, query, where, writeBatch } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261113b';
+import { S, esc, meld } from './state.js?v=20261115c';
 import { BASIS, BASIS_VERSIE, FASES, alleVormen, vormen, laadBibliotheek, verschilMetBasis, valideerVorm,
   rijVan, KOLOMMEN, LIJSTVELDEN, vergelijkImport } from './bibliotheek.js?v=20261115b';
-import { herbouwOefening, bronVanOefening, vormIdsVan } from './seizoensplan-club.js?v=20261115b';
-import { maakPlan } from './trainingsplanner.js?v=20261115b';
+import { herbouwOefening, bronVanOefening, vormIdsVan, naarNieuweOpbouw } from './seizoensplan-club.js?v=20261115c';
+import { maakPlan } from './trainingsplanner.js?v=20261115c';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261012e';
 
 const FS_URL = 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
@@ -32,7 +32,7 @@ export async function toonBibliotheek(root){
   root.innerHTML = '<div class="tc-leeg">Bibliotheek laden…</div>';
   await laadBibliotheek(true);
   if (B.koppeling === null){
-    try { const d = await getDoc(doc(db, 'platform', 'bibliotheek')); B.koppeling = d.exists() ? (d.data().koppelingMs || 0) : 0; }
+    try { const d = await getDoc(doc(db, 'platform', 'bibliotheek')); B.koppeling = d.exists() ? (d.data().koppelingMs || 0) : 0; B.opbouw = d.exists() ? (d.data().opbouwMs || 0) : 0; }
     catch (e){ B.koppeling = 0; }
   }
   if (!B.sel || !alleVormen().some(v => v.id === B.sel)) B.sel = alleVormen()[0]?.id || null;
@@ -40,7 +40,7 @@ export async function toonBibliotheek(root){
   root.innerHTML = `<div class="pb">
     <div class="pc-kop"><div><h1 class="tc-h1">Bibliotheek</h1><p class="tc-meta">Basis ${esc(BASIS_VERSIE)} · ${BASIS.length} vormen in de app. Wat je hier aanpast gebruiken Training maken en de seizoensplanning.</p></div>
       <div class="pc-knoppen"><button class="knop licht klein" data-pb="export">Exporteer naar Excel</button><label class="knop licht klein pb-imp">Importeer Excel<input type="file" accept=".xlsx" data-pb="import" hidden></label><button class="knop klein" data-pb="nieuw">+ Nieuwe vorm</button></div></div>
-    <div id="pbKoppel"></div>
+    <div id="pbKoppel"></div><div id="pbOpbouw"></div>
     <div class="pb-twee"><section class="pb-lijst"><div class="pb-filters">
         <input class="invoer" id="pbZoek" placeholder="Zoek op naam, thema of doel" value="${esc(B.zoek)}" aria-label="Zoeken">
         <select class="invoer" id="pbFase" aria-label="Fase"><option value="">Alle fases</option>${FASES.map(f => `<option${B.fase === f ? ' selected' : ''}>${f}</option>`).join('')}</select>
@@ -51,7 +51,7 @@ export async function toonBibliotheek(root){
   root.addEventListener('click', klik);
   root.addEventListener('input', invoer);
   root.addEventListener('change', wijzig);
-  tekenKoppel(); tekenLijst(); tekenDetail();
+  tekenKoppel(); tekenOpbouw(); tekenLijst(); tekenDetail();
 }
 
 /* ---------- lijst ---------- */
@@ -317,6 +317,64 @@ async function koppel(knop){
   } catch (e){ knop.disabled = false; knop.textContent = 'Trainingen koppelen'; meld('Koppelen mislukt: ' + (e.code || e.message)); }
 }
 
+/* ---------- [20261115c] eenmalig: bestaande trainingen naar de nieuwe opbouw ----------
+   Toekomstige trainingen (nog niet gegeven) krijgen de oefenkaart met 7 velden en blokken van 5, 10, 15 of 20 minuten.
+   Zelfde vormen; alleen de tekst, opmaak en minuten worden bijgewerkt. Gegeven trainingen blijven zoals ze waren.
+   Door een coach aangepaste trainingen alleen als dat gekozen wordt. Rules: de platformbeheerder mag alleen
+   oefeningen, vormIds en bibliotheekBijgewerktMs bijwerken (/{pad=**}/trainingen/{id}). */
+function tekenOpbouw(){
+  const el = B.root.querySelector('#pbOpbouw'); if (!el) return;
+  el.innerHTML = B.opbouw ? '' : `<div class="pb-kaart pb-koppel"><b>Eenmalig: trainingen naar de nieuwe opbouw</b>
+    <p>Geplande trainingen krijgen de oefenkaart met 7 velden en blokken van 5, 10, 15 of 20 minuten. Dezelfde oefeningen, alleen bijgewerkt. Gegeven trainingen blijven zoals ze waren.</p>
+    <button class="knop klein" data-pb="opbouwtel">Trainingen bekijken</button></div>`;
+}
+async function opbouwKandidaten(){
+  const fs = await import(FS_URL);
+  const snap = await getDocs(fs.collectionGroup(db, 'trainingen'));
+  const vandaag = vandaagIso(), uit = { gewoon: [], aangepast: [], gegeven: 0, zonder: 0, totaal: snap.size };
+  for (const d of snap.docs){
+    const t = d.data();
+    if (!Array.isArray(t.oefeningen) || !t.oefeningen.length){ uit.zonder++; continue; }
+    const eind = t.datum || (t.weekStart ? plus(t.weekStart, 6) : '');
+    if (eind && eind < vandaag){ uit.gegeven++; continue; }
+    if (!t.oefeningen.some(o => bronVanOefening(o, alleVormen()))){ uit.zonder++; continue; }
+    (t.aangepast === true ? uit.aangepast : uit.gewoon).push({ ref: d.ref, data: t });
+  }
+  return uit;
+}
+async function opbouwTel(){
+  dlg('<p class="tc-leeg">Trainingen tellen…</p>');
+  let r;
+  try { r = await opbouwKandidaten(); } catch (e){ return dlg(`<h3>Tellen lukt niet</h3><p>${esc(e.code || e.message)}</p><div class="pb-knoppen"><button class="knop" data-pb="sluit">Sluiten</button></div>`); }
+  B.opbouwLijst = r;
+  dlg(`<h3>Trainingen naar de nieuwe opbouw?</h3><p>Dezelfde oefeningen, met de oefenkaart van 7 velden en blokken van 5, 10, 15 of 20 minuten.</p>
+    <div class="pb-cijfers"><div><b>${r.gewoon.length}</b><small>geplande trainingen</small></div><div><b>${r.aangepast.length}</b><small>door coaches aangepast</small></div><div><b>${r.gegeven}</b><small>al gegeven (blijven)</small></div></div>
+    <ul class="pb-ul"><li>Trainingen zonder vormen uit de bibliotheek (bijv. een geüploade PDF) blijven zoals ze zijn: ${r.zonder}.</li><li>Een door een coach aangepaste training houdt zijn oefeningen; alleen opmaak en minuten veranderen.</li></ul>
+    <div class="pb-knoppen"><button class="knop licht" data-pb="sluit">Annuleren</button><button class="knop licht" data-pb="opbouwgewoon">Alleen geplande (${r.gewoon.length})</button><button class="knop" data-pb="opbouwalles">Alles bijwerken (${r.gewoon.length + r.aangepast.length})</button></div>`);
+}
+async function opbouwVoerUit(metAangepast){
+  const r = B.opbouwLijst; if (!r) return;
+  const lijst = metAangepast ? [...r.gewoon, ...r.aangepast] : r.gewoon;
+  B.bezig = true; dlg(`<p class="tc-leeg">Bezig met ${lijst.length} trainingen…</p>`);
+  let n = 0;
+  try {
+    const vs = alleVormen();
+    for (let i = 0; i < lijst.length; i += 400){
+      const batch = writeBatch(db);
+      for (const { ref, data } of lijst.slice(i, i + 400)){
+        const oef = data.oefeningen.map(o => naarNieuweOpbouw(o, vs, data.thema || ''));
+        batch.update(ref, { oefeningen: oef, vormIds: vormIdsVan(oef), bibliotheekBijgewerktMs: Date.now() }); n++;
+      }
+      await batch.commit();
+    }
+    await setDoc(doc(db, 'platform', 'bibliotheek'), { opbouwMs: Date.now(), koppelingMs: B.koppeling || Date.now() }, { merge: true });
+    B.opbouw = Date.now(); B.koppeling = B.koppeling || Date.now(); B.opbouwLijst = null;
+    sluitDlg(); tekenOpbouw(); tekenKoppel();
+    meld(`${n} training${n === 1 ? '' : 'en'} bijgewerkt naar de nieuwe opbouw.`);
+  } catch (e){ dlg(`<h3>Bijwerken gestopt</h3><p>${n} trainingen zijn al bijgewerkt. Fout: ${esc(e.code || e.message)}. Je kunt het opnieuw starten; bijgewerkte trainingen blijven goed.</p><div class="pb-knoppen"><button class="knop" data-pb="sluit">Sluiten</button></div>`); }
+  B.bezig = false;
+}
+
 /* ---------- Excel ---------- */
 let excelLaden = null;
 function laadExcel(){
@@ -411,6 +469,9 @@ async function klik(e){
   else if (a === 'test') test();
   else if (a === 'gebruik'){ b.disabled = true; try { B.gebruik[B.sel] = await trainingenMet(B.sel); } catch (err){ meld('Tellen mislukt: ' + (err.code || err.message)); } tekenDetail(); }
   else if (a === 'koppel') koppel(b);
+  else if (a === 'opbouwtel') opbouwTel();
+  else if (a === 'opbouwgewoon') opbouwVoerUit(false);
+  else if (a === 'opbouwalles') opbouwVoerUit(true);
   else if (a === 'export') exporteer(b);
   else if (a === 'importok') importOpslaan();
 }

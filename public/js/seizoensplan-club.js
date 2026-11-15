@@ -10,10 +10,11 @@
 
    Vaste docId per training (sp_{planId}_{teamId}_{seizoensweek}_{nr}) maakt een herhaalde
    uitrol idempotent: dezelfde documenten worden overschreven, nooit gedupliceerd. */
-import { maakPlan, pasKnoppenToe, bouwOnderdeel, SLOT_NAAM } from './trainingsplanner.js?v=20261115b';
-import { positieWeek, maakSeizoensplan } from './seizoensplan-logica.js?v=20261115b';
-import { leeftijdVanCategorie } from './config.js?v=20261113b';
+import { maakPlan, pasKnoppenToe, bouwOnderdeel, SLOT_NAAM } from './trainingsplanner.js?v=20261115c';
+import { positieWeek, maakSeizoensplan } from './seizoensplan-logica.js?v=20261115c';
+import { leeftijdVanCategorie } from './config.js?v=20261115c';
 import { vormSvg } from './trainingsvorm-svg.js?v=20261012e';
+import { benodigdheden, tijdUitleg } from './oefenkaart.js?v=20261115a';
 
 
 export const JEUGDBOUWEN = ['onder', 'midden', 'boven'];
@@ -92,16 +93,26 @@ export function teamsVoorPlan(plan, teams){
 export function oefeningVan(od){
   const v = od.vorm || {};
   const lijst = (kop, items) => (Array.isArray(items) && items.length ? [{ kop, type: 'lijst', items: items.map(String) }] : []);
+  /* [20261115c] Blokken in de volgorde van de oefenkaart (7 vaste velden). Elk blok heeft `veld`, zodat de
+     weergave ze per veld kan groeperen; de koppen blijven herkenbaar voor oudere weergaves en de AI. */
+  const vt = (veld, kop, tekst) => (String(tekst || '').trim() ? [{ veld, kop, type: 'tekst', tekst: String(tekst) }] : []);
+  const vl = (veld, kop, items) => lijst(kop, items).map(b => ({ ...b, veld }));
+  const mat = benodigdheden(v, od.groepen).map(([n, x]) => `${n === '' ? '' : n + ' '}${x}`);
   const blokken = [
-    { kop: 'Tijd en groepen', type: 'tekst', tekst: `${od.minuten} minuten · ${od.slotNaam || ''}${od.groepen ? ` · ${od.groepen} groep${od.groepen === 1 ? '' : 'en'}` : ''}`.trim() },
-    ...(v.uitleg ? [{ kop: 'Uitleg', type: 'tekst', tekst: String(v.uitleg) }] : []),
-    ...lijst('Organisatie', v.organisatie),
-    ...lijst('Regels', v.regels),
-    ...(od.themaregel ? [{ kop: 'Themaregel', type: 'tekst', tekst: String(od.themaregel) }] : []),
-    ...lijst('Coachpunten', v.coachpunten),
-    ...lijst('Coachvragen', v.coachvragen),
-    ...lijst('Makkelijker', v.makkelijker),
-    ...lijst('Moeilijker', v.moeilijker),
+    ...vt('doel', 'Doel', v.doel),
+    { veld: 'tijd', kop: 'Tijdbestek', type: 'tekst', tekst: `${od.minuten} minuten · ${od.slotNaam || ''}${od.groepen ? ` · ${od.groepen} groep${od.groepen === 1 ? '' : 'en'}` : ''}`.trim() },
+    ...vt('tijd', '', tijdUitleg(od)),
+    ...vl('mat', 'Benodigdheden', mat),
+    ...vt('uitleg', 'Uitleg', v.uitleg),
+    ...vl('uitleg', 'Organisatie', v.organisatie),
+    ...vl('uitleg', 'Regels', v.regels),
+    ...vt('uitleg', 'Themaregel', od.themaregel),
+    ...vl('uitleg', 'Veiligheid', v.letOp),
+    ...vl('diff', 'Makkelijker', v.makkelijker),
+    ...vl('diff', 'Moeilijker', v.moeilijker),
+    ...vl('coach', 'Coachpunten', v.coachpunten),
+    ...vl('coach', 'Coachvragen', v.coachvragen),
+    ...vl('spel', 'Spelvormen', (v.varianten || []).map(x => `${x.naam}: ${x.uitleg}`)),
   ];
   /* [20261113d] bron: genoeg om de oefening opnieuw op te bouwen als de vorm in de bibliotheek wijzigt */
   const bron = { vormId: od.vormId || v.id || null, slot: od.slot || null, minuten: od.minuten || null,
@@ -119,11 +130,26 @@ export function bronVanOefening(oef, vormen){
   if (oef?.bron?.vormId) return oef.bron;
   const v = (vormen || []).find(x => x.naam === oef?.titel);
   if (!v) return null;
-  const tg = (oef.blokken || []).find(b => b.kop === 'Tijd en groepen')?.tekst || '';
+  const tg = (oef.blokken || []).find(b => b.kop === 'Tijd en groepen' || b.kop === 'Tijdbestek')?.tekst || '';
   const minuten = Number(tg.match(/^(\d+)\s*minuten/)?.[1]) || null;
   const slotNaam = tg.split('·')[1]?.trim() || '';
   const slot = Object.entries(SLOT_NAAM).find(([, n]) => n === slotNaam)?.[0] || (v.fase === 'afsluiting' ? 'afsluiting' : null);
   return { vormId: v.id, slot, minuten, spelers: null };
+}
+/* [20261115c] Minuten van een onderdeel naar een blok van 5, 10, 15 of 20 (de afsluiting blijft zoals hij is). PURE. */
+export function rondBlok(minuten, slot){
+  if (!minuten || slot === 'afsluiting') return minuten;
+  return Math.max(5, Math.min(20, Math.round(minuten / 5) * 5));
+}
+/* [20261115c] Oefening naar de nieuwe opbouw: zelfde vorm, minuten in blokken van 5, tekst en opmaak uit de
+   huidige bibliotheek (7 velden). Zonder herkenbare vorm (bijv. een geüploade PDF) blijft de oefening zoals hij is. PURE. */
+export function naarNieuweOpbouw(oef, vormen, thema = ''){
+  const br = bronVanOefening(oef, vormen);
+  const v = br?.vormId ? (vormen || []).find(x => x.id === br.vormId) : null;
+  if (!v) return oef;
+  const slot = br.slot || (v.fase === 'afsluiting' ? 'afsluiting' : 'kern1');
+  const minuten = br.minuten ? rondBlok(br.minuten, slot) : (v.tijd || 10);
+  return herbouwOefening({ ...oef, bron: { ...br, slot, minuten } }, v, { thema, vormen });
 }
 /* De oefening opnieuw opbouwen met de (gewijzigde) vorm. PURE. */
 export function herbouwOefening(oef, vorm, { thema = '', vormen = [] } = {}){
