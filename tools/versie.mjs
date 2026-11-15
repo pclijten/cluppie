@@ -6,11 +6,12 @@
 //   node tools/versie.mjs 20261011d [origin/main]
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 
 const [versie, basis = 'origin/main'] = process.argv.slice(2);
 if (!/^\d{8}[a-z]$/.test(versie || '')) { console.error('Gebruik: node tools/versie.mjs JJJJMMDDx [basis]'); process.exit(1); }
-const root = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'public');
+const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const jsDir = path.join(root, 'js');
 const bestanden = [...fs.readdirSync(jsDir).filter(f => f.endsWith('.js')).map(f => path.join(jsDir, f)), path.join(root, 'index.html')];
 

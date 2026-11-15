@@ -6,6 +6,7 @@ class HttpsError extends Error { constructor(c, m){ super(m); this.code = c; } }
 Module._load = function(r, ...a){
   if (r === 'firebase-functions/v2/https') return { onCall: (o, f) => f, HttpsError };
   if (r === 'firebase-functions/v2/scheduler') return { onSchedule: () => {} };
+  if (r === 'firebase-functions/v2/firestore') return { onDocumentCreated: (o, f) => f };
   if (r === 'firebase-admin/firestore') return { getFirestore: () => fake.db, FieldValue: fake.FieldValue, Timestamp: fake.Timestamp };
   if (r === 'firebase-admin/auth') return { getAuth: () => ({}) };
   if (r === 'firebase-admin') return { firestore: { Timestamp: fake.Timestamp }, auth: () => ({}) };
@@ -87,6 +88,30 @@ const throws = async (f, code, m) => { try { await f(); ok(false, m + ' (geen fo
   fout({ standaard: { maxVideoMB: 900 } }, 'te grote video geweigerd');
   fout({ uitrol: { proefDagen: 0, slapendDagen: 21 } }, 'proef 0 dagen geweigerd');
   fout({}, 'leeg geweigerd');
+
+  /* 6. [20261114a] club aangemeld door een trainer zonder club: na goedkeuring gaan zijn losse teams mee */
+  const A = require('../functions/aanmelding.js');
+  store.set('clubs/nieuw', { naam: 'VV Nieuw', admins: { piet: true }, adminsInfo: { piet: { naam: 'Piet' } }, leden: { piet: true }, ledenInfo: {}, teams: {} });
+  store.set('teams/losP', { naam: 'O9-1', leden: { piet: true, maat: true }, ledenInfo: { piet: { naam: 'Piet' }, maat: { naam: 'Maat' } }, eigenClub: { naam: 'VV Nieuw', plaats: 'X' } });
+  store.set('teams/losP/spelers/s1', { naam: 'Daan' });
+  store.set('teams/anderP', { naam: 'O13-2', club: 'c1', leden: { piet: true } });
+  store.set('teams/vreemd', { naam: 'O7-1', leden: { iemand: true } });
+  const mee = await A.neemLosseTeamsMee(db, { clubId: 'nieuw', clubNaam: 'VV Nieuw', uid: 'piet', naam: 'Piet' });
+  ok(mee.length === 1 && mee[0] === 'O9-1', 'alleen het losse team van de aanvrager gaat mee');
+  ok(store.get('teams/losP').club === 'nieuw' && store.get('teams/losP').clubNaam === 'VV Nieuw', 'team staat bij de nieuwe club');
+  ok(store.get('clubs/nieuw').teams.losP === true && store.get('clubs/nieuw').leden.maat === true, 'club kent het team en de mede-coach');
+  ok(store.has('teams/losP/spelers/s1'), 'spelers blijven bij het team');
+  ok(store.get('teams/anderP').club === 'c1' && !store.get('teams/vreemd').club, 'teams van een andere club of een ander blijven ongemoeid');
+
+  /* 7. [20261114a] via een uitnodiging bij een club: losse teams krijgen vanzelf een koppelvoorstel */
+  store.set('teams/losK', { naam: 'O10-1', leden: { kim: true } });
+  store.set('teams/losK2', { naam: 'O12-1', leden: { kim: true }, koppelVoorstel: { clubId: 'x', status: 'geweigerd' } });
+  store.set('teams/clubK', { naam: 'O13-1', club: 'c1', leden: { kim: true } });
+  await T.stelLosseTeamsVoor(db, { uid: 'kim', clubId: 'c1', clubNaam: 'SV Brakel' });
+  const kv = store.get('teams/losK').koppelVoorstel;
+  ok(kv && kv.clubId === 'c1' && kv.status === 'open' && kv.clubNaam === 'SV Brakel', 'los team krijgt een open koppelvoorstel');
+  ok(store.get('teams/losK2').koppelVoorstel.status === 'geweigerd', 'een eerder geweigerd voorstel blijft staan');
+  ok(!store.get('teams/clubK').koppelVoorstel, 'clubteam krijgt geen voorstel');
 
   console.log(process.exitCode ? 'koppelen: FOUTEN' : 'koppelen: alle controles geslaagd');
 })();

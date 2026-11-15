@@ -13,13 +13,14 @@
    Pure logica (fases, Vandaag doen, filters) staat in platform-logica.js.
 ==================================================================== */
 import { db, collection, getDocs, doc, getDoc, setDoc, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, isPlatformBeheerder, terugLaag, terugLaagWeg, bewaakTerug } from './state.js?v=20261113b';
+import { S, esc, meld, isPlatformBeheerder, terugLaag, terugLaagWeg, bewaakTerug } from './state.js?v=20261114a';
 import { ico } from './icons.js?v=20261110a';
-import { logoImgVoorDoc, DISTRICTEN, CLUPPIE_LOGO } from './clubconfig.js?v=20261113b';
+import { logoImgVoorDoc, DISTRICTEN, CLUPPIE_LOGO } from './clubconfig.js?v=20261114a';
 import { STARTLIJST_STAPPEN } from './startlijst.js?v=20261011d';
-import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261113b';
+import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261114a';
 import { FASES, FASE_NAAM, STANDAARD, KOPPEL_NAAM, faseVan, volgendeStap, filterClubs, vandaagDoen, trainersMetClub, kpiWaarden, dagenSinds } from './platform-logica.js?v=20261111a';
-import { modulesVoorNieuweClub } from './onderdelen.js?v=20261113b';
+import { modulesVoorNieuweClub } from './onderdelen.js?v=20261114a';
+import { KEUZES as PDF_KEUZES, schoonProfiel, isStandaard, PDF_LIMIET_STANDAARD, AANWIJZING_MAX } from './pdf-profiel.js?v=20261114a';
 
 const STAP_NAAM = Object.fromEntries(STARTLIJST_STAPPEN.map(s => [s.id, s.titel]));
 const MENU = [
@@ -30,7 +31,7 @@ const MENU = [
   ['bibliotheek', 'Bibliotheek', 'training-plan'],   /* [20261113d] trainingsvormen beheren */
   ['instellingen', 'Instellingen', 'navigation-settings'],
 ];
-const LADE_TABS = [['overzicht', 'Overzicht'], ['onderdelen', 'Onderdelen en limieten'], ['teams', 'Teams'], ['meehelpen', 'Meehelpen']];
+const LADE_TABS = [['overzicht', 'Overzicht'], ['onderdelen', 'Onderdelen en limieten'], ['pdf', 'PDF-trainingen'], ['teams', 'Teams'], ['meehelpen', 'Meehelpen']];
 
 const P = {
   el: null, scherm: 'overzicht', filter: 'alle', zoek: '', faseFilter: null,
@@ -38,6 +39,7 @@ const P = {
   o: null, aanmeldingen: [], docs: {}, clubs: [], trainers: [],
   teams: {}, log: {}, platform: {}, laden: true, fout: '', alleTaken: false, alleTrainers: false,
   bevestig: null,          // aanmeldingId dat op een tweede tik wacht (afwijzen)
+  pdf: {},                 // [20261114a] clubId → { concept, bestand, proef } (PDF-profiel instellen en proberen)
 };
 
 /* ---------- datahulp ---------- */
@@ -330,6 +332,7 @@ function htmlLade(){
   const tab = P.lade.tab;
   let body = '';
   if (tab === 'onderdelen') body = ladeOnderdelen(c);
+  else if (tab === 'pdf') body = ladePdf(c);
   else if (tab === 'teams') body = ladeTeams(k);
   else if (tab === 'meehelpen') body = ladeMeehelpen(k, c);
   else body = ladeOverzicht(k, c);
@@ -368,6 +371,99 @@ function ladeOnderdelen(c){
     ${sw('leren', 'Leren van gebruik', 'Cluppie leert van hoe trainers deze club de app gebruiken.', pm.leren === true)}
     ${getal('maxVideoMB', 'Video max (MB)', 'Tussen 5 en 300', Number(pm.maxVideoMB) > 0 ? pm.maxVideoMB : 100, 'min="5" max="300"')}`;
 }
+/* ---------- [20261114a] PDF-trainingen: profiel per club (alleen de eindbaas) ----------
+   Hoe de oefenstof-PDF's van deze club eruitzien (pdf-profiel.js), plus omzetten zonder
+   AI-module met een eigen maandlimiet. "Proberen" leest een voorbeeld-PDF in deze browser
+   en zet hem om met het nog niet bewaarde profiel; er wordt niets opgeslagen of geteld. */
+function pdfStaat(c){
+  if (!P.pdf[c.id]) P.pdf[c.id] = { concept: schoonProfiel(c.platformModules?.pdfProfiel), bestand: null, proef: null };
+  return P.pdf[c.id];
+}
+const pdfGewijzigd = (st, c) => JSON.stringify(schoonProfiel(st.concept)) !== JSON.stringify(schoonProfiel(c.platformModules?.pdfProfiel));
+const meervoud = (n, een, veel) => `${n} ${n === 1 ? een : veel}`;
+function ladePdf(c){
+  const pm = c.platformModules || {}, st = pdfStaat(c), p = st.concept, gewijzigd = pdfGewijzigd(st, c);
+  const keuze = (veld, titel) => `<fieldset class="pc-pdf-veld"><legend>${esc(titel)}</legend>${PDF_KEUZES[veld].map(([w, n, u]) =>
+    `<label class="pc-pdf-keuze"><input type="radio" name="pdf_${veld}" value="${w}" data-pdfveld="${veld}" ${p[veld] === w ? 'checked' : ''}><span><b>${esc(n)}</b><small>${esc(u)}</small></span></label>`).join('')}</fieldset>`;
+  const omzetten = pm.ai === true
+    ? '<div class="pc-signaal info">AI staat aan voor deze club: omzetten telt mee in de AI-limiet.</div>'
+    : `<div class="pc-schakel"><div><b>PDF omzetten zonder AI-module</b><small>Ongeveer een cent per PDF. Staat het uit, dan zien trainers alleen de PDF.</small></div>
+        <button type="button" class="pc-sw" role="switch" aria-checked="${pm.pdfOmzetten === true}" aria-label="PDF omzetten" data-pc="schakel" data-sl="pdfOmzetten"></button></div>
+      ${pm.pdfOmzetten === true ? `<div class="pc-schakel"><div><b>PDF's per maand</b><small>Leeg = ${PDF_LIMIET_STANDAARD}</small></div>
+        <input class="invoer pc-getal" type="number" inputmode="numeric" data-pcnum="pdfLimiet" value="${pm.pdfLimiet == null ? '' : esc(pm.pdfLimiet)}" min="0" max="10000" placeholder="${PDF_LIMIET_STANDAARD}" aria-label="PDF's per maand"></div>` : ''}`;
+  const r = st.proef;
+  const proef = !r ? ''
+    : r.bezig ? `<div class="pc-pdf-res"><p class="tc-meta">${esc(r.naam || '')}: ${esc(r.stap || 'bezig…')}</p></div>`
+    : r.fout ? `<div class="pc-signaal rood">Proberen mislukt: ${esc(r.fout)}</div>`
+    : `<div class="pc-pdf-res">
+        <div class="pc-chips">${chip(meervoud(r.aantalPaginas, 'pagina', "pagina's"))}${r.overgeslagen ? chip(`${r.overgeslagen} overgeslagen`) : ''}${chip(meervoud(r.plaatjes, 'plaatje', 'plaatjes'))}${chip(meervoud(r.aantal, 'oefening', 'oefeningen'))}</div>
+        <div class="pc-signaal ${r.goed ? 'info' : ''}"><b>${r.goed ? 'Goed genoeg om vanzelf te delen' : 'Zou wachten op een blik'}</b> · ${r.score.dekkingPct}% van de tekst behouden, ${meervoud(r.score.verzonnenAantal, 'woord', 'woorden')} toegevoegd${r.score.verzonnenVoorbeelden?.length ? ` (${esc(r.score.verzonnenVoorbeelden.slice(0, 5).join(', '))})` : ''}.</div>
+        <div class="trw-inline pc-pdf-oef">${r.html}</div></div>`;
+  return `<p class="tc-meta">Hoe de oefenstof van deze club eruitziet. Bewaren geldt voor alle volgende uploads van de club; bestaande trainingen veranderen niet.</p>
+    ${omzetten}
+    ${keuze('indeling', 'Indeling')}
+    ${keuze('plaatjes', 'Veldtekeningen')}
+    ${keuze('naam', 'Bestandsnamen')}
+    <fieldset class="pc-pdf-veld"><legend>Overslaan</legend>
+      <label class="ci-schakel"><input type="checkbox" data-pdfveld="overslaanEerste" ${p.overslaanEerste ? 'checked' : ''}><span>Eerste pagina overslaan (voorblad)</span></label>
+      <label class="pc-pdf-label" for="pcPdfWoorden">Pagina's overslaan waarvan de kop een van deze woorden bevat</label>
+      <input class="invoer" id="pcPdfWoorden" data-pdfveld="overslaanWoorden" value="${esc(p.overslaanWoorden.join(', '))}" placeholder="Bijv. Legenda, Inhoud" maxlength="200"></fieldset>
+    <fieldset class="pc-pdf-veld"><legend>Aanwijzing voor de AI (optioneel)</legend>
+      <textarea class="invoer" rows="3" data-pdfveld="aanwijzing" maxlength="${AANWIJZING_MAX}" placeholder="Bijv. De kop Organisatie hoort bij Benodigdheden. Onderaan elke pagina staat een voettekst die niet bij de oefening hoort.">${esc(p.aanwijzing)}</textarea>
+      <small class="tc-meta">Alleen over de opmaak. De tekst blijft letterlijk en de woordcontrole blijft gelden.</small></fieldset>
+    <div class="rij pc-pdf-knoppen"><button class="knop vol" data-pc="pdfbewaar" ${gewijzigd ? '' : 'disabled'}>${gewijzigd ? 'Bewaren' : 'Bewaard'}</button>
+      ${isStandaard(p) ? '' : '<button class="knop licht" data-pc="pdfstandaard">Standaard</button>'}</div>
+    <section class="pc-pdf-proef"><h3 class="tc-h2">Proberen met een voorbeeld-PDF</h3>
+      <p class="tc-meta">Met de keuzes hierboven, ook als ze nog niet bewaard zijn. Er wordt niets opgeslagen.</p>
+      <input type="file" id="pcPdfBestand" accept="application/pdf,.pdf" hidden>
+      <div class="rij"><button class="knop fluo" data-pc="pdfkies" ${r?.bezig ? 'disabled' : ''}>Kies een PDF</button>
+        ${st.bestand && !r?.bezig ? `<button class="knop licht" data-pc="pdfopnieuw">Opnieuw met ${esc(st.bestand.name)}</button>` : ''}</div>
+      ${proef}</section>`;
+}
+function pdfVeld(el){
+  const clubId = P.lade?.clubId; if (!clubId) return;
+  const c = P.docs[clubId], st = pdfStaat(c), v = el.dataset.pdfveld;
+  if (el.type === 'checkbox') st.concept[v] = el.checked;
+  else if (el.type === 'radio'){ if (el.checked) st.concept[v] = el.value; }
+  else st.concept[v] = v === 'overslaanWoorden' ? el.value.split(',').map(x => x.trim()).filter(Boolean) : el.value;
+  const k = P.el.querySelector('[data-pc="pdfbewaar"]');
+  if (k){ const gew = pdfGewijzigd(st, c); k.disabled = !gew; k.textContent = gew ? 'Bewaren' : 'Bewaard'; }
+}
+async function pdfBewaar(b){
+  const clubId = P.lade.clubId, c = P.docs[clubId], st = pdfStaat(c), schoon = schoonProfiel(st.concept);
+  b.disabled = true;
+  try {
+    await zetModule(clubId, 'pdfProfiel', schoon);
+    st.concept = schoon; meld('PDF-profiel bewaard voor ' + (c.naam || 'deze club'));
+  } catch (x){ meld('Bewaren mislukt: ' + (x.message || x.code)); }
+  teken();
+}
+async function pdfProef(file){
+  const clubId = P.lade?.clubId; if (!clubId || !file) return;
+  const st = pdfStaat(P.docs[clubId]), profiel = schoonProfiel(st.concept);
+  st.bestand = file;
+  const stap = t => { st.proef = { bezig: true, naam: file.name, stap: t }; if (P.lade?.clubId === clubId) teken(); };
+  stap('PDF inlezen…');
+  try {
+    const ai = await import('./training-ai.js?v=20261114a');
+    const tw = await import('./training-weergave.js?v=20261114a');
+    const { paginas, diagramBlobs, aantalPaginas, overgeslagen } = await ai.leesPdf(file, profiel);
+    if (!paginas.some(x => x.tekst.trim())) throw new Error('geen leesbare tekst (een scan?)');
+    stap('Omzetten met de AI…');
+    const ruw = {}; for (const d of diagramBlobs) if (d.blob) ruw[d.volgnr] = URL.createObjectURL(d.blob);
+    const { oefeningen } = await ai.structureer(paginas, 'standaard', { proef: true, profiel, clubId });
+    const urls = ai.koppelDiagrammen(ruw, oefeningen, profiel);
+    const score = ai.berekenScore(paginas.map(x => x.tekst).join(' '), oefeningen);
+    st.proef = { naam: file.name, aantalPaginas, overgeslagen: overgeslagen || 0, plaatjes: diagramBlobs.length, aantal: oefeningen.length,
+      score, goed: ai.scoreGoed(score), html: oefeningen.map((o, i) => tw.oefHtml(i + 1, o, urls)).join('') };
+  } catch (x){
+    st.proef = { fout: x.code === 'functions/permission-denied' ? 'alleen de platformbeheerder kan proberen'
+      : x.code === 'functions/not-found' ? 'de functie structureerTraining is nog niet opnieuw gedeployed'
+      : (x.message || x.code || 'onbekende fout') };
+  }
+  if (P.lade?.clubId === clubId) teken();
+}
+
 function ladeTeams(k){
   const t = P.teams[k.id];
   if (t === undefined){ laadTeams(k.id); return '<p class="tc-leeg-klein">Teams laden…</p>'; }
@@ -438,7 +534,7 @@ function teken(){
   if (fokus != null){ const z = document.getElementById('pcZoek'); if (z){ z.focus(); try { z.setSelectionRange(fokus, fokus); } catch (e) {} } }
   if (P.lade) P.el.querySelector('.pc-lade [aria-selected="true"]')?.focus({ preventScroll: true });
   const pb = P.el.querySelector('#pbRoot');
-  if (pb) import('./platform-bibliotheek.js?v=20261113e').then(m => m.toonBibliotheek(pb)).catch(e => { pb.innerHTML = '<div class="kaart leeg">Bibliotheek laden mislukt.</div>'; console.error(e); });
+  if (pb) import('./platform-bibliotheek.js?v=20261114a').then(m => m.toonBibliotheek(pb)).catch(e => { pb.innerHTML = '<div class="kaart leeg">Bibliotheek laden mislukt.</div>'; console.error(e); });
   bewaakTerug();
 }
 
@@ -457,23 +553,30 @@ async function klik(e){
   if (a === 'fasewis'){ P.faseFilter = null; return teken(); }
   if (a === 'alletaken'){ P.alleTaken = !P.alleTaken; return teken(); }
   if (a === 'alletrainers'){ P.alleTrainers = !P.alleTrainers; return teken(); }
-  if (a === 'nieuweclub') return import('./club.js?v=20261113e').then(m => m.modalNieuwClub());
-  if (a === 'kalenders') return import('./platform.js?v=20261113e').then(m => m.openKalenders());
+  if (a === 'nieuweclub') return import('./club.js?v=20261114a').then(m => m.modalNieuwClub());
+  if (a === 'kalenders') return import('./platform.js?v=20261114a').then(m => m.openKalenders());
   if (a === 'kopieer') return kopieer(b.dataset.tekst);
   if (a === 'vernieuw') return vernieuw(b);
   if (a === 'goedkeuren' || a === 'afwijzen') return beoordeel(b, a === 'goedkeuren');
   if (a === 'schakel') return schakel(b);
+  if (a === 'pdfbewaar') return pdfBewaar(b);
+  if (a === 'pdfstandaard'){ pdfStaat(P.docs[P.lade.clubId]).concept = schoonProfiel(null); return teken(); }
+  if (a === 'pdfkies') return P.el.querySelector('#pcPdfBestand')?.click();
+  if (a === 'pdfopnieuw') return pdfProef(pdfStaat(P.docs[P.lade.clubId]).bestand);
   if (a === 'meehelpen') return meehelpen(b);
   if (a === 'koppel') return koppel(b);
   if (a === 'soloai') return bewaarPlatform({ soloAI: { ...soloNu(), aan: b.getAttribute('aria-checked') !== 'true' } }, b);
   if (a === 'standaard') return bewaarPlatform({ standaard: { ...modulesVoorNieuweClub(P.platform?.standaard), [b.dataset.sl]: b.getAttribute('aria-checked') !== 'true' } }, b);
 }
 function invoer(e){
+  if (e.target.dataset?.pdfveld) return pdfVeld(e.target);
   if (e.target.id === 'pcZoek'){ P.zoek = e.target.value; teken(); }
 }
 async function wijzig(e){
   /* [20261111b] platforminstellingen (Trainers, Instellingen) */
   const id = e.target.id, val = e.target.value.trim();
+  if (e.target.dataset?.pdfveld) return pdfVeld(e.target);
+  if (id === 'pcPdfBestand'){ const f = e.target.files?.[0]; e.target.value = ''; return pdfProef(f); }
   if (id === 'pcSoloLimiet') return bewaarPlatform({ soloAI: { ...soloNu(), limiet: val } }, e.target);
   if (id === 'pcStAiLimiet' || id === 'pcStVideo')
     return bewaarPlatform({ standaard: { ...modulesVoorNieuweClub(P.platform?.standaard), [id === 'pcStVideo' ? 'maxVideoMB' : 'aiLimiet']: val === '' ? null : val } }, e.target);
@@ -483,9 +586,10 @@ async function wijzig(e){
   const sl = inp.dataset.pcnum, raw = inp.value.trim(), clubId = P.lade.clubId;
   let w;
   if (sl === 'aiLimiet'){ w = raw === '' ? null : Math.round(Number(raw)); if (w !== null && !(w >= 0 && w <= 100000)) return meld('Vul een aantal tussen 0 en 100.000 in, of laat het leeg'); }
+  else if (sl === 'pdfLimiet'){ w = raw === '' ? null : Math.round(Number(raw)); if (w !== null && !(w >= 0 && w <= 10000)) return meld('Vul een aantal tussen 0 en 10.000 in, of laat het leeg'); }
   else { w = Math.round(Number(raw)); if (!(w >= 5 && w <= 300)) return meld('Kies een videogrootte tussen 5 en 300 MB'); }
   inp.disabled = true;
-  try { await zetModule(clubId, sl, w); meld(sl === 'aiLimiet' ? 'AI-limiet opgeslagen' : 'Videogrootte opgeslagen'); }
+  try { await zetModule(clubId, sl, w); meld(sl === 'aiLimiet' ? 'AI-limiet opgeslagen' : sl === 'pdfLimiet' ? 'PDF-limiet opgeslagen' : 'Videogrootte opgeslagen'); }
   catch (x){ meld('Opslaan mislukt: ' + (x.code === 'permission-denied' ? 'rules nog niet gedeployed?' : (x.message || x.code))); }
   inp.disabled = false;
 }
@@ -526,10 +630,10 @@ async function vernieuw(b){
 async function meehelpen(b){
   const id = P.lade.clubId;
   b.disabled = true;
-  const ond = await import('./ondersteuning.js?v=20261113e').catch(() => null);
+  const ond = await import('./ondersteuning.js?v=20261114a').catch(() => null);
   if (!ond || !(await ond.startOndersteuning(id))){ b.disabled = false; return; }
   sluitCentrum();
-  import('./club.js?v=20261113e').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
+  import('./club.js?v=20261114a').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
 }
 const soloNu = () => ({ aan: false, limiet: 20, ...(P.platform?.soloAI || {}) });
 /* platform/instellingen schrijven kan alleen via de functie zetPlatformInstellingen (valideert ook) */

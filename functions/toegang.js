@@ -254,11 +254,13 @@ exports.sluitAan = onCall({ region: REGIO, cors: true }, async (request) => {
       uitnodigingId: uitnodigingRef?.id || null, gemaakt: FieldValue.serverTimestamp(),
     });
     await log(db, doel.clubId, 'aanvraag', { uid, naam, teamId: doel.teamId, details: via });
+    await stelLosseTeamsVoor(db, { uid, clubId: doel.clubId, clubNaam });
     return { status: 'aanvraag', teamId: doel.teamId, club: doel.clubId, clubNaam, naam: teamNaam };
   }
 
   await pasLidmaatschapToe(db, { clubId: doel.clubId, teamId: doel.teamId, uid, naam, rol: inst.standaardRol });
   await log(db, doel.clubId, 'aangesloten', { uid, naam, teamId: doel.teamId, details: `${via}, rol ${inst.standaardRol}` });
+  await stelLosseTeamsVoor(db, { uid, clubId: doel.clubId, clubNaam });
   return { status: 'lid', teamId: doel.teamId, club: doel.clubId, clubNaam, naam: teamNaam, rol: inst.standaardRol };
 });
 
@@ -419,6 +421,22 @@ async function zetTeamNaarClub(db, { clubId, club, teamId, uid, naam, aanvraagRe
     if (aanvraagRef) tx.delete(aanvraagRef);
   });
 }
+
+/* [20261114a] Trainer die zonder club begon en nu via een uitnodiging bij een club komt: zijn losse
+   teams krijgen vanzelf een koppelvoorstel (stap 1 hierboven, zonder de eindbaas). De trainer ziet de
+   kaart op zijn team en kiest zelf "Vraag aan" of "Liever niet"; de clubbeheerder keurt goed. Een
+   bestaand voorstel (ook een geweigerd) laten we staan. Fouten blokkeren het aansluiten niet. */
+async function stelLosseTeamsVoor(db, { uid, clubId, clubNaam }){
+  try {
+    const snap = await db.collection('teams').where(`leden.${uid}`, '==', true).get();
+    for (const d of snap.docs){
+      const t = d.data();
+      if (t.club || t.koppelVoorstel) continue;
+      await d.ref.update({ koppelVoorstel: { clubId, clubNaam: clubNaam || '', status: 'open', via: 'uitnodiging', tijd: FieldValue.serverTimestamp() } });
+    }
+  } catch (e){ logger.warn('[sluitAan] koppelvoorstel voor losse teams mislukt', e.message || e); }
+}
+exports.stelLosseTeamsVoor = stelLosseTeamsVoor;
 
 exports.stelKoppelingVoor = onCall({ region: REGIO, cors: true }, async (request) => {
   const db = getFirestore();

@@ -17,9 +17,11 @@ import {
   storage, sRef, uploadBytes, getDownloadURL,
   functions, httpsCallable
 } from './firebase.js?v=20261011g';
-import { laadPdfJs } from './pdf-viewer.js?v=20261113b';
-import { aiAan } from './clubconfig.js?v=20261113b';
-import { S } from './state.js?v=20261113b';
+import { laadPdfJs } from './pdf-viewer.js?v=20261114a';
+import { pdfOmzettenAan } from './clubconfig.js?v=20261114a';
+import { schoonProfiel, overTeSlaan, koppelDiagrammen } from './pdf-profiel.js?v=20261114a';
+export { koppelDiagrammen };
+import { S } from './state.js?v=20261114a';
 
 /* ---------- PDF → tekst per pagina + diagram-PNG's ---------- */
 
@@ -226,15 +228,49 @@ export function regelsUitTekstItems(items){
     .trim();
 }
 
-export async function leesPdf(file){
+/* Hele pagina als PNG (PDF-profiel 'plaatjes: pagina': getekende velden zijn geen afbeelding). */
+async function paginaAlsBlob(page){
+  const vp = page.getViewport({ scale: 1 });
+  const vp2 = page.getViewport({ scale: 1000 / vp.width });
+  const c = document.createElement('canvas');
+  c.width = Math.ceil(vp2.width); c.height = Math.ceil(vp2.height);
+  const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+  await page.render({ canvasContext: ctx, viewport: vp2 }).promise;
+  return new Promise(res => c.toBlob(res, 'image/png', 0.92));
+}
+
+/* [20261114a] profiel = PDF-profiel van de club (pdf-profiel.js); zonder profiel het oude gedrag.
+   Overgeslagen pagina's (voorblad, legenda) gaan niet naar de AI en leveren geen plaatje.
+   Bij plaatjes 'pagina' is de sleutel van een plaatje het paginanummer; koppelDiagrammen
+   (pdf-profiel.js) zet ze na het omzetten bij de juiste oefening. */
+export async function leesPdf(file, profiel = null){
   await laadPdfJs();
+  const prof = schoonProfiel(profiel);
   const bytes = new Uint8Array(await file.arrayBuffer());
   const pdfDoc = await window.pdfjsLib.getDocument({ data: bytes.slice() }).promise;
 
-  const paginas = [];
+  let paginas = [];
   const diagramBlobs = [];
   const perPagina = [];   // { n, page, vp, kandidaten } — voor de diagram-pass hieronder
   let globaalMaxOpp = 0;
+
+  if (prof.plaatjes !== 'afbeeldingen'){
+    const allePaginas = [];
+    for (let n = 1; n <= pdfDoc.numPages; n++){
+      const page = await pdfDoc.getPage(n);
+      allePaginas.push({ pagina: n, tekst: regelsUitTekstItems((await page.getTextContent()).items), page });
+    }
+    const weg = overTeSlaan(allePaginas, prof);
+    for (const p of allePaginas){
+      if (weg.has(p.pagina)) continue;
+      paginas.push({ pagina: p.pagina, tekst: p.tekst });
+      if (prof.plaatjes === 'pagina'){
+        const blob = await paginaAlsBlob(p.page).catch(e => { console.warn('[training-ai] pagina renderen faalde', e); return null; });
+        if (blob) diagramBlobs.push({ volgnr: p.pagina, pagina: p.pagina, blob });
+      }
+    }
+    return { paginas, diagramBlobs, bytes, aantalPaginas: pdfDoc.numPages, overgeslagen: weg.size };
+  }
 
   // PASS 1: tekst + alle afbeeldingen per pagina verzamelen.
   for (let n = 1; n <= pdfDoc.numPages; n++){
@@ -264,7 +300,10 @@ export async function leesPdf(file){
   // ook als een eerdere pagina meerdere velden had of helemaal geen (zoals een
   // lege kaftpagina met alleen een avatar). De pagina bewaren we mee.
   let volgnr = 0;   // doorlopende teller over alle pagina's heen
+  const weg = overTeSlaan(paginas, prof);
+  if (weg.size) paginas = paginas.filter(p => !weg.has(p.pagina));
   for (const { n, page, vp, kandidaten } of perPagina){
+    if (weg.has(n)) continue;
     const velden = kiesVelden(kandidaten, globaalMaxOpp);
     const blobs = await veldDiagramBlobs(page, vp, velden);
     for (const blob of blobs){
@@ -273,7 +312,7 @@ export async function leesPdf(file){
     }
   }
 
-  return { paginas, diagramBlobs, bytes, aantalPaginas: pdfDoc.numPages };
+  return { paginas, diagramBlobs, bytes, aantalPaginas: pdfDoc.numPages, overgeslagen: weg.size };
 }
 
 /* Uploadt de diagram-PNG's naar Storage onder een vaste map per training.
@@ -298,10 +337,13 @@ export async function uploadDiagrammen(clubId, mapId, diagramBlobs){
    AI_MODELLEN in upload-wachtrij.js). Welk model daarbij hoort bepaalt de
    Cloud Function (whitelist), zodat de client nooit zelf een willekeurig
    (duur) model kan kiezen. */
-export async function structureer(paginas, model = 'standaard'){
-  if (!aiAan()) throw new Error('AI-functies zijn uitgeschakeld voor deze club');
+/* [20261114a] opties.proef + opties.profiel + opties.clubId: de platformbeheerder probeert een
+   (nog niet bewaard) PDF-profiel uit in het platformcentrum; telt niet mee in een limiet. */
+export async function structureer(paginas, model = 'standaard', opties = {}){
+  if (!opties.proef && !pdfOmzettenAan()) throw new Error('PDF omzetten staat niet aan voor deze club');
   const fn = httpsCallable(functions, 'structureerTraining');
-  const res = await fn({ clubId: S.clubId || S.team?.club || null, paginas, ...(model && model !== 'standaard' ? { model } : {}) });
+  const res = await fn({ clubId: opties.clubId || S.clubId || S.team?.club || null, paginas, ...(model && model !== 'standaard' ? { model } : {}),
+    ...(opties.proef ? { proef: true, profiel: schoonProfiel(opties.profiel) } : {}) });
   const oefeningen = res?.data?.oefeningen;
   if (!Array.isArray(oefeningen) || !oefeningen.length){
     throw new Error('AI leverde geen oefeningen op');

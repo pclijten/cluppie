@@ -4,10 +4,10 @@
    Server: functions/aanmelding.js (meldClubAan). Link om te delen: https://www.cluppie.io/?aanmelden */
 
 import { db, doc, getDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261113b';
-import { DISTRICTEN } from './clubconfig.js?v=20261113b';
-import { koppelClubSuggesties } from './clubgids.js?v=20261113b';
-import { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } from './sportlink-clubinfo.js?v=20261113e';
+import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261114a';
+import { DISTRICTEN } from './clubconfig.js?v=20261114a';
+import { koppelClubSuggesties } from './clubgids.js?v=20261114a';
+import { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } from './sportlink-clubinfo.js?v=20261114a';
 
 export async function laadMijnAanmelding(el){
   if (!el || !S.user) return;
@@ -24,7 +24,7 @@ export async function laadMijnAanmelding(el){
   }
   el.innerHTML = `<div class="kaart ca-uitnodiging">
     <b>Heeft jouw club nog geen Cluppie?</b>
-    <p class="cb-uitleg" style="margin:4px 0 10px">Meld je club aan. Na goedkeuring ben jij clubbeheerder en zet je in een kwartier alle teams klaar, rechtstreeks uit Sportlink.</p>
+    <p class="cb-uitleg" style="margin:4px 0 10px">Meld je club aan. Na goedkeuring ben jij clubbeheerder en zet je in een kwartier alle teams klaar, rechtstreeks uit Sportlink.${(S.teams || []).some(t => !t.club) ? ' Je eigen team gaat vanzelf mee.' : ''}</p>
     <button class="knop vol" id="caOpen">Club aanmelden</button></div>`;
   el.querySelector('#caOpen').onclick = () => modalClubAanmelden(() => laadMijnAanmelding(el));
 }
@@ -66,6 +66,10 @@ export function modalClubAanmelden(naVersturen){
   const vul = (id, waarde) => { const el = $m(id); if (el && waarde){ el.value = waarde; el.classList.add('sl-auto'); } };
   /* [20261113b] bekende KNVB-clubnaam kiezen vult ook de plaats in */
   koppelClubSuggesties($m('caClub'), c => { if (c.plaats && !$m('caPlaats').value.trim()) vul('caPlaats', c.plaats); });
+  /* [20261114a] trainer die al zonder club begon: club en plaats uit de snelstart alvast invullen.
+     Na goedkeuring gaan zijn losse teams vanzelf mee (functions/aanmelding.js, neemLosseTeamsMee). */
+  const eigen = (S.teams || []).find(t => !t.club && t.eigenClub && t.eigenClub.naam)?.eigenClub;
+  if (eigen){ vul('caClub', eigen.naam); vul('caPlaats', eigen.plaats || ''); }
   $m('caZoek').onclick = async e => {
     const k = e.currentTarget, uit = $m('caVondst');
     k.disabled = true; uit.innerHTML = '<div class="sl-laden"><span class="sl-spin"></span>Club opzoeken in Sportlink…</div>';

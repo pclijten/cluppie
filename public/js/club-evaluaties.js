@@ -5,8 +5,9 @@
    Losse module (i.p.v. in club.js) omdat de Excel-export een eigen lui geladen
    library (ExcelJS via CDN) nodig heeft die de rest van de app nooit gebruikt. */
 import { db, collection, getDocs, query, where } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal } from './state.js?v=20261113b';
-import { TEAM_CATEGORIEEN, SKILLS } from './config.js?v=20261113b';
+import { priveBeoordelingenVan } from './beoordelingen-prive.js?v=20261114a';
+import { S, esc, meld, openModal } from './state.js?v=20261114a';
+import { TEAM_CATEGORIEEN, SKILLS } from './config.js?v=20261114a';
 
 /* korte kolomkoppen voor de heatmap — TEAM_CATEGORIEEN.naam is te lang voor
    een tabelkop; alleen hier lokaal gebruikt, config.js blijft de brontekst. */
@@ -39,10 +40,11 @@ export async function clubEvaluatiesOphalen(teams){
   // in welk seizoen die geschreven is (dat is nu eenmaal het actuele profiel).
   const seizoenFilter = S.huidigSeizoen ? [where('seizoen','==',S.huidigSeizoen)] : [];
   return Promise.all(teams.map(async t => {
-    const [evalSnap, beoordSnap, spelersSnap] = await Promise.all([
+    const [evalSnap, beoordSnap, spelersSnap, priveLijst] = await Promise.all([
       getDocs(query(collection(db,'teams',t.id,'teamevaluaties'), ...seizoenFilter)),
       getDocs(collection(db,'teams',t.id,'beoordelingen')),
       getDocs(collection(db,'teams',t.id,'spelers')),
+      priveBeoordelingenVan(t.id),   // [20261113v] privé-rondebeoordelingen
     ]);
     const evals = evalSnap.docs.map(d => ({id:d.id, ...d.data()}))
       .sort((a,b) => (a.gemaaktMs||0) - (b.gemaaktMs||0)); // oud → nieuw
@@ -50,7 +52,7 @@ export async function clubEvaluatiesOphalen(teams){
     const spelersNaam = {};
     spelersSnap.docs.forEach(d => { spelersNaam[d.id] = d.data().naam || '?'; });
 
-    const volledig = beoordSnap.docs.map(d => ({id:d.id, ...d.data()})).filter(b => b.soort === 'volledig');
+    const volledig = [...beoordSnap.docs.map(d => ({id:d.id, ...d.data()})), ...priveLijst].filter(b => b.soort === 'volledig');
     const laatstePerSpeler = {};
     for (const b of volledig){
       const huidig = laatstePerSpeler[b.spelerId];

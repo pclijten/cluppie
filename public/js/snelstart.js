@@ -4,13 +4,14 @@
    Gegevens: teams/{id}.eigenClub en gebruikers/{uid}/meta/onboarding.snelstart (alleen UI-vlaggen). */
 import { isFirestoreVastgelopen, toonHerlaadBalk } from './firestore-herstel.js?v=20261113a';
 import { db, collection, doc, addDoc, updateDoc, setDoc, getDoc, getDocs, serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, $, $$, esc, meld, teamCode, openModal, sluitModal } from './state.js?v=20261113b';
-import { CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, bouwVanCategorie, catLabel } from './config.js?v=20261113b';
+import { S, $, $$, esc, meld, teamCode, openModal, sluitModal } from './state.js?v=20261114a';
+import { CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, bouwVanCategorie, catLabel } from './config.js?v=20261114a';
 import {
   bouwEigenClub, valideerClub, valideerPlaats, standaardTeamNaam, categorieVoor, STANDAARD_CAT,
   eersteStappenStatus, toonEersteStappen, toonClubTip,
 } from './snelstart-logica.js?v=20261020c';
-import { koppelClubSuggesties, normNaam } from './clubgids.js?v=20261113b';
+import { koppelClubSuggesties, normNaam } from './clubgids.js?v=20261114a';
+import { laadSoloAI } from './clubconfig.js?v=20261114a';
 
 /* ---------- Plaats opzoeken (Open-Meteo, zonder sleutel) ---------- */
 async function zoekPlaats(q){
@@ -114,7 +115,10 @@ async function zetVlag(sleutel, waarde){
 export async function openSnelstart(){
   let akkoord = false;
   try { akkoord = (await getDoc(doc(db, 'gebruikers', S.user.uid, 'meta', 'eigenTeam'))).data()?.akkoord === true; } catch (e) {}
-  const st = { stap: 1, geslacht: 'j', cat: STANDAARD_CAT.j, nr: '1', naamAangepast: false, naam: '', club: null };
+  /* [20261114a] AI voor losse trainers kan de platformbeheerder aanzetten; de uitleg volgt die schakelaar */
+  await laadSoloAI();
+  const soloAI = S._soloAI === true;
+  const st ={ stap: 1, geslacht: 'j', cat: STANDAARD_CAT.j, nr: '1', naamAangepast: false, naam: '', club: null };
   let cp = null;
 
   const stapKop = (n, titel) => `<div class="sn-stappen" aria-label="Stap ${n} van 3">${[1, 2, 3].map(i => `<span class="${i <= n ? 'aan' : ''}"></span>`).join('')}</div><h2>${titel}</h2>`;
@@ -126,11 +130,13 @@ export async function openSnelstart(){
         <li><b>Training in minuten.</b> Kies een thema en je krijgt een volledig draaiboek voor je training.</li>
         <li><b>Alles voor je team.</b> Presentie, wedstrijdverslag en ontwikkeling per speler, op je telefoon.</li>
       </ul>
-      <p class="meta sn-tip">Eerlijk vooraf: zonder club werkt Cluppie niet met Sportlink en heb je geen AI-hulp, omdat die via de club lopen (sleutel van de club, kosten en privacyafspraken). Al het andere staat open, en sluit je club zich later aan, dan gaat je team mee.</p>
+      <p class="meta sn-tip">${soloAI
+        ? 'Eerlijk vooraf: zonder club werkt Cluppie niet met Sportlink en zijn er geen clubbrede plannen, omdat die via de club lopen. AI-hulp bij Training maken en de seizoensplanning heb je wel, met een maximum per maand. Sluit je club zich later aan, dan gaat je team mee.'
+        : 'Eerlijk vooraf: zonder club werkt Cluppie niet met Sportlink en heb je geen AI-hulp, omdat die via de club lopen (sleutel van de club, kosten en privacyafspraken). Al het andere staat open, en sluit je club zich later aan, dan gaat je team mee.'}</p>
       <button class="knop vol" id="ssVerder">Laten we beginnen</button>
       <button class="knop licht vol" id="ssRond" style="margin-top:8px">Liever eerst een rondleiding</button>`);
     $('#ssVerder').onclick = tekenStap2;
-    $('#ssRond').onclick = () => { sluitModal(); import('./onboarding.js?v=20261113e').then(m => m.startOnboarding(true)); };
+    $('#ssRond').onclick = () => { sluitModal(); import('./onboarding.js?v=20261114a').then(m => m.startOnboarding(true)); };
   };
 
   const tekenStap2 = () => {
@@ -190,17 +196,17 @@ export async function openSnelstart(){
         <div><dt>Wedstrijd</dt><dd>${esc(c.format)} tegen ${esc(c.format)}, ${c.periodes === 2 ? '2 helften' : '4 kwarten'} van ${String(c.duur).replace('.', ',')} min</dd></div>
       </dl>
       <div class="sn-wel-niet">
-        <div><b>Je hebt</b><ul><li>Opstelling en speeltijd</li><li>Presentie en verslagen</li><li>Training maken</li><li>Weer op je teamscherm${st.club.lat === null ? ' (alleen met een gekozen plaats)' : ''}</li></ul></div>
+        <div><b>Je hebt</b><ul><li>Opstelling en speeltijd</li><li>Presentie en verslagen</li><li>Training maken</li>${soloAI ? '<li>AI-hulp bij Training maken (maximum per maand)</li>' : ''}<li>Weer op je teamscherm${st.club.lat === null ? ' (alleen met een gekozen plaats)' : ''}</li></ul></div>
         <div><b>Nog niet, want dat loopt via een club</b><ul class="sn-niet">
           <li><b>Sportlink-koppeling</b><span>Wedstrijden, uitslagen en de poule komen uit Sportlink. Toegang daartoe heeft alleen de club, met een eigen sleutel (Client ID).</span></li>
-          <li><b>AI-hulp</b><span>AI kost geld per vraag en vraagt privacyafspraken. Die maakt Cluppie met de club, niet met losse trainers.</span></li>
+          ${soloAI ? '' : '<li><b>AI-hulp</b><span>AI kost geld per vraag en vraagt privacyafspraken. Die maakt Cluppie met de club, niet met losse trainers.</span></li>'}
           <li><b>Clubbrede plannen</b><span>Seizoensplannen en afspraken die de club voor alle teams maakt.</span></li></ul></div>
       </div>
       <div class="sn-hoe">
         <b>Zo krijg je het wel</b>
         <ol>
-          <li><b>Je club gebruikt Cluppie al?</b> Vraag de clubbeheerder om een uitnodiging en open die link. Je team, spelers en wedstrijden gaan mee naar de club.</li>
-          <li><b>Je club nog niet?</b> Laat iemand van de club (bestuur of jeugdcoördinator) de club aanmelden via “Club aanmelden” op het startscherm. Na goedkeuring koppel je je team aan de club; Sportlink en AI krijg je dan via de club.</li>
+          <li><b>Je club gebruikt Cluppie al?</b> Vraag de clubbeheerder om een uitnodiging en open die link. Daarna vraagt Cluppie op je teamscherm of je dit team met spelers en wedstrijden bij de club wilt onderbrengen.</li>
+          <li><b>Je club nog niet?</b> Meld de club aan via “Club aanmelden” op het startscherm, of laat iemand van het bestuur of de jeugdcoördinator dat doen. Meld jij hem aan, dan gaat je team na goedkeuring vanzelf mee en ben jij clubbeheerder. Meldt iemand anders hem aan, dan krijg je op je teamscherm een voorstel om je team bij de club onder te brengen.</li>
         </ol>
         <p>Tot die tijd werkt alles hierboven bij “Je hebt” gewoon, en verlies je niets.</p>
       </div>
@@ -224,7 +230,7 @@ export async function openSnelstart(){
           eigenClub: st.club, gemaakt: serverTimestamp(),
         });
         sluitModal();
-        import('./teams.js?v=20261113e').then(m => m.openTeam(ref.id));
+        import('./teams.js?v=20261114a').then(m => m.openTeam(ref.id));
       } catch (e){
         console.error(e); knop.disabled = false;
         if (isFirestoreVastgelopen(e)){ toonHerlaadBalk(); meld('De verbinding is vastgelopen. Herlaad de app en maak je team opnieuw aan.'); }
@@ -250,7 +256,7 @@ export function modalClubPlaats(){
       await updateDoc(doc(db, 'teams', t.id), { eigenClub });
       t.eigenClub = eigenClub;
       sluitModal(); meld('Opgeslagen');
-      import('./teams.js?v=20261113e').then(m => m.renderTeam && m.renderTeam());
+      import('./teams.js?v=20261114a').then(m => m.renderTeam && m.renderTeam());
     } catch (err){ console.error(err); meld('Opslaan mislukt, probeer het nog eens'); }
   };
 }
@@ -301,7 +307,7 @@ export async function koppelEersteStappen(v, { zetTeamTab } = {}){
   el.innerHTML = html;
   koppelKnoppen(el, team, teamId, () => koppelEersteStappen(v, { zetTeamTab }));
   el.querySelectorAll('[data-ss-tab]').forEach(b => b.onclick = () => zetTeamTab && zetTeamTab(b.dataset.ssTab));
-  const r = el.querySelector('#ssRondleiding'); if (r) r.onclick = () => import('./onboarding.js?v=20261113e').then(m => m.startOnboarding(true));
+  const r = el.querySelector('#ssRondleiding'); if (r) r.onclick = () => import('./onboarding.js?v=20261114a').then(m => m.startOnboarding(true));
   const w = el.querySelector('#ssVerberg'); if (w) w.onclick = async () => { el.innerHTML = ''; await zetVlag('eersteStappenWeg', true); };
   const cv = el.querySelector('#ssClubVul'); if (cv) cv.onclick = modalClubPlaats;
   const cw = el.querySelector('#ssClubWeg'); if (cw) cw.onclick = async () => { el.innerHTML = ''; await zetVlag('clubTipWeg', true); };

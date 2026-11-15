@@ -27,10 +27,10 @@
    club.js levert via `ctx` wat hier nodig is maar daar woont (groepen,
    bouwen, het preview-scherm, renderClub), zodat er geen kringimport ontstaat. */
 import { db, doc, writeBatch } from './firebase.js?v=20261011g';
-import { S, $, esc, meld, openModal, sluitModal } from './state.js?v=20261113b';
+import { S, $, esc, meld, openModal, sluitModal } from './state.js?v=20261114a';
 import {
   voegToeAanWachtrij, voegConceptToe, bewaarConcept, conceptNaarRij, verwijderJob, bestandenVanJob, htmlModelKeuze
-} from './upload-wachtrij.js?v=20261113b';
+} from './upload-wachtrij.js?v=20261114a';
 
 /* ---------- Datums (lokaal; 12:00 als anker tegen zomertijd-randgevallen) ---------- */
 const pad2 = n => String(n).padStart(2, '0');
@@ -106,15 +106,18 @@ export const isZip = f => /\.zip$/i.test(f?.name || '') || /zip/i.test(f?.type |
 /* Deze flow bij een zip, of bij PDF's met blok-namen die over minstens twee
    weken gaan (een echt blok). Het wekelijkse setje voor meerdere groepen (alles
    dezelfde week) en één losse PDF gaan zoals altijd via de gewone upload. */
-export function isBlokUpload(files){
+/* [20261114a] profiel = PDF-profiel van de club; bij naam 'geen' wordt niets uit de bestandsnaam gehaald
+   (alleen "Overzicht"-bladen blijven herkend en overgeslagen). */
+export function isBlokUpload(files, profiel = null){
   if (files.some(isZip)) return true;
-  const weken = new Set(files.filter(isPdf).map(f => herkenNaam(f.name)).filter(h => h && !h.overzicht).map(h => h.week));
+  const weken = new Set(files.filter(isPdf).map(f => herkenNaam(f.name, profiel)).filter(h => h && !h.overzicht).map(h => h.week));
   return weken.size >= 2;
 }
-export function herkenNaam(naam){
+export function herkenNaam(naam, profiel = null){
   const kaal = String(naam || '').replace(/^.*[\\/]/, '');
   if (!/\.pdf$/i.test(kaal)) return null;
   if (/overzicht/i.test(kaal)) return { overzicht:true };
+  if (profiel && profiel.naam === 'geen') return null;
   const m = kaal.match(BLOK_RE);
   if (!m) return null;
   const voor = kaal.slice(0, m.index).replace(/[\s\-–_]+$/, '').trim();   // bv. "JO 8&9" of "JO7"
@@ -156,11 +159,11 @@ async function bestandenUitInvoer(files){
   return uit;
 }
 
-function analyseer(invoer){
+function analyseer(invoer, profiel = null){
   const items = [], onbekend = [];
   let overzichtAantal = 0, thema = '';
   for (const x of invoer){
-    const h = herkenNaam(x.file.name);
+    const h = herkenNaam(x.file.name, profiel);
     if (!h){ onbekend.push(x); continue; }
     if (h.overzicht){ overzichtAantal++; continue; }
     items.push({ ...x, ...h, naam: x.file.name });
@@ -215,7 +218,7 @@ export async function startBlokUpload(files, ctx){
     sluitModal();
     return meld('De zip kon niet worden gelezen. Pak hem uit en kies de PDF’s zelf.');
   }
-  const a = analyseer(invoer);
+  const a = analyseer(invoer, ctx.profiel);
   if (!a.items.length){
     // niets herkend: gewoon de bestaande flow met de (niet-overzicht) PDF's
     sluitModal();

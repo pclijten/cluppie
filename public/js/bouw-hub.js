@@ -21,20 +21,21 @@
    wordt ÉÉN keer per team opgehaald bij het openen en daarna door alle
    schermen hergebruikt (huidigeContext.data) — geen dubbele reads. */
 import { teamsOpId } from './teams-ophalen.js?v=20261011g';
-import { pasClubConfigToe } from './clubconfig.js?v=20261113b';
-import { S, esc, meld, openModal, sluitModal, isBeheerder, terugLaag } from './state.js?v=20261113b';
+import { pasClubConfigToe } from './clubconfig.js?v=20261114a';
+import { S, esc, meld, openModal, sluitModal, isBeheerder, terugLaag } from './state.js?v=20261114a';
 import {
   db, collection, doc, getDoc, getDocs, addDoc, query, where, documentId, serverTimestamp
 } from './firebase.js?v=20261011g';
-import { BOUWEN, bouwNaam, SKILLS, SEIZOEN_FALLBACK, TEAM_CATEGORIEEN, niveauKleur, catLabel } from './config.js?v=20261113b';
+import { BOUWEN, bouwNaam, SKILLS, SEIZOEN_FALLBACK, TEAM_CATEGORIEEN, niveauKleur, catLabel } from './config.js?v=20261114a';
+import { priveBeoordelingenVan } from './beoordelingen-prive.js?v=20261114a';
 import { ico } from './icons.js?v=20261110a';
-import { trekUitleningIn, definitiefOverzetten, wijzigUitlening } from './teams-spelers.js?v=20261113e';
-import { openUitleenForm } from './uitleen-form.js?v=20261113e';
+import { trekUitleningIn, definitiefOverzetten, wijzigUitlening } from './teams-spelers.js?v=20261114a';
+import { openUitleenForm } from './uitleen-form.js?v=20261114a';
 import { vandaagLokaal, plusDagen, leenActief, leenStatus, leenSoortLabel, leenOmschrijving } from './uitleen-regels.js?v=20261113b';
-import { telGebruik } from './tracker.js?v=20261113b';
-import { analyseWedstrijd } from './analyse.js?v=20261113b';
+import { telGebruik } from './tracker.js?v=20261114a';
+import { analyseWedstrijd } from './analyse.js?v=20261114a';
 import { opkomstVoor, MIN_OPKOMST_TRAININGEN } from './opkomst.js?v=20260922c';
-import { rondesVan, rondeStatusTeam } from './evaluatierondes.js?v=20261113b';
+import { rondesVan, rondeStatusTeam } from './evaluatierondes.js?v=20261114a';
 
 /* [20260929a] Voortgang van de "verplichte" evaluatie per team: de lopende
    evaluatieronde van de club als die er is, anders (zoals voorheen) de
@@ -177,7 +178,7 @@ async function haalTeamData(team, seizoen){
       throw e;
     }
   };
-  const [ssnap, wsnap, psnap, poulesnap, uitslagensnap, bsnap, tesnap, progsnap] = await Promise.all([
+  const [ssnap, wsnap, psnap, poulesnap, uitslagensnap, bsnap, tesnap, progsnap, priveLijst] = await Promise.all([
     veilig('spelers', getDocs(collection(db,'teams',team.id,'spelers'))),
     veilig('wedstrijden', getDocs(query(collection(db,'teams',team.id,'wedstrijden'), where('seizoen','==',seizoen)))),
     veilig('presentie', getDocs(query(collection(db,'teams',team.id,'presentie'), where('seizoen','==',seizoen)))),
@@ -188,6 +189,8 @@ async function haalTeamData(team, seizoen){
     // [20260923h] Ook het programma-doc: de sync zet gespeelde uitslagen daar
     // (met uitslag-veld) — het losse uitslagen-doc is alleen nog fallback.
     getDoc(doc(db,'teams',team.id,'poule','programma')).catch(e => { console.warn(`[Cluppie] bouw-hub: poule/programma niet gelezen voor ${team.naam}`, e.code); return null; }),
+    // [20261113v] privé-rondebeoordelingen (coördinator ziet ze allemaal)
+    priveBeoordelingenVan(team.id),
   ]);
   const spelers = ssnap.docs.map(d => ({id:d.id, ...d.data()})).filter(p => !p.gast && !p._ingeleend && !p.gearchiveerd);
   const wedstrijden = wsnap.docs.map(d => ({id:d.id, ...d.data()})).filter(w => w.datum).sort((a,b) => a.datum.localeCompare(b.datum));
@@ -200,7 +203,8 @@ async function haalTeamData(team, seizoen){
   // 5-domeinen-structuur) — die moeten wél zichtbaar zijn in het
   // evaluatie-overzicht, ook al passen ze niet in de radar (die heeft de
   // domeinscores nodig en werkt dus verderop alsnog alleen met 'volledig').
-  const beoordelingen = bsnap.docs.map(d => ({id:d.id, ...d.data()})).filter(b => b.spelerId && (b.scores || b.niveau != null));
+  const beoordelingen = [...bsnap.docs.map(d => ({id:d.id, ...d.data()})), ...priveLijst.filter(b => !seizoen || b.seizoen === seizoen)]
+    .filter(b => b.spelerId && (b.scores || b.niveau != null));
   const teamevaluaties = tesnap.docs.map(d => ({id:d.id, ...d.data()})).filter(e => e.scores);
   return { spelers, wedstrijden, presentie, stand, uitslagen, programma, beoordelingen, teamevaluaties };
 }
@@ -210,7 +214,7 @@ export async function openBouwHub(clubId, bouw, isHerbezoek){
      lijn met de desktop. Lukt het laden daarvan niet, dan valt hij terug op
      het oude overlay-dashboard hieronder. */
   if (!isHerbezoek && !window.matchMedia('(min-width:1100px) and (min-height:520px)').matches){
-    try { const m = await import('./mobiel-bouw.js?v=20261113e'); await m.openMobielBouw(clubId, bouw); return; }
+    try { const m = await import('./mobiel-bouw.js?v=20261114a'); await m.openMobielBouw(clubId, bouw); return; }
     catch(e){ console.warn('[Cluppie] mobiele bouw-omgeving niet geladen, terug naar het oude dashboard', e); }
   }
   const el = bouwLaag();
@@ -880,7 +884,7 @@ function renderTeamsScherm(){
   inhoud.querySelectorAll('[data-bh-open-team]').forEach(b => {
     b.onclick = async () => {
       sluitBouwHub(); toonTerugPil();
-      const m = await import('./teams.js?v=20261113e');
+      const m = await import('./teams.js?v=20261114a');
       m.openTeam(b.dataset.bhOpenTeam);
     };
   });

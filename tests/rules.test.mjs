@@ -318,3 +318,27 @@ test('bibliotheek doorvoeren: platform werkt alleen oefeningen bij', async () =>
   await assertFails(updateDoc(doc(als('baas', PLATFORM), 'trainingen/bv1'), { titel: 'anders' }));
   await assertFails(updateDoc(doc(als('stranger'), 'trainingen/bv1'), { oefeningen: [] }));
 });
+
+/* [20261114a] privé-rondebeoordelingen (ASV'33 PR #60): alleen wie in zichtbaarVoor staat leest */
+test('privé-rondebeoordeling: schrijver en lezers lezen, andere trainer van het team niet', async () => {
+  await env.withSecurityRulesDisabled(c => updateDoc(doc(c.firestore(), 'teams/t1'), { 'leden.coachA2': true }));
+  const data = { teamId: 't1', club: 'A', spelerId: 's1', soort: 'volledig', prive: true, ronde: 'r1',
+    door: { uid: 'coachA' }, zichtbaarVoor: ['coachA', 'adminA', 'coordA'] };
+  await assertSucceeds(setDoc(doc(als('coachA'), 'beoordelingenPrive/p1'), data));
+  await assertSucceeds(getDoc(doc(als('coordA'), 'beoordelingenPrive/p1')));
+  await assertSucceeds(getDocs(query(collection(als('adminA'), 'beoordelingenPrive'), where('teamId', '==', 't1'), where('zichtbaarVoor', 'array-contains', 'adminA'))));
+  await assertFails(getDoc(doc(als('coachA2'), 'beoordelingenPrive/p1')));
+  await assertFails(getDocs(query(collection(als('coachA2'), 'beoordelingenPrive'), where('teamId', '==', 't1'))));
+  /* alleen de schrijver past aan of verwijdert; team en club blijven gelijk */
+  await assertFails(updateDoc(doc(als('adminA'), 'beoordelingenPrive/p1'), { notitie: 'x' }));
+  await assertFails(updateDoc(doc(als('coachA'), 'beoordelingenPrive/p1'), { teamId: 't2' }));
+  await assertSucceeds(updateDoc(doc(als('coachA'), 'beoordelingenPrive/p1'), { notitie: 'x' }));
+  await assertSucceeds(deleteDoc(doc(als('coachA'), 'beoordelingenPrive/p1')));
+});
+test('privé-rondebeoordeling aanmaken: niet voor een ander team, een andere club of op andermans naam', async () => {
+  const data = (extra = {}) => ({ teamId: 't1', club: 'A', door: { uid: 'coachA' }, zichtbaarVoor: ['coachA'], ...extra });
+  await assertFails(setDoc(doc(als('coachB'), 'beoordelingenPrive/q1'), data({ door: { uid: 'coachB' }, zichtbaarVoor: ['coachB'] })));
+  await assertFails(setDoc(doc(als('coachA'), 'beoordelingenPrive/q2'), data({ club: 'B' })));
+  await assertFails(setDoc(doc(als('coachA'), 'beoordelingenPrive/q3'), data({ door: { uid: 'adminA' } })));
+  await assertFails(setDoc(doc(als('coachA'), 'beoordelingenPrive/q4'), data({ zichtbaarVoor: ['adminA'] })));
+});
