@@ -32,6 +32,12 @@ export function werkUit(v){
   if (u.var) uit.varianten = u.var.map(([naam, uitleg]) => ({ naam, uitleg }));
   if (u.veld) uit.veld = { b: u.veld[0], l: u.veld[1] };
   if (u.n) uit.spelers = { min: u.n[0], ideaal: u.n[1], max: u.n[2] };
+  /* de maat in de eerste regel van de opstelling volgt altijd het veld van de vorm (waar de planner mee rekent) */
+  const kop = (uit.organisatie || [])[0] || '', mm = kop.match(/(\d+(?:,\d)?) bij (\d+(?:,\d)?) meter/);
+  if (mm && /^(Veld|Vak|Zet een (veld|vak)|Klein veld|Speel)/.test(kop) && !/per (twee|tweetal|vier|drie|groepje|duo)|Zet per|vierkant|driehoek|middenstrook|eindzone van/.test(kop)){
+    const a = +mm[1].replace(',', '.'), b = +mm[2].replace(',', '.'), B = uit.veld.b, L = uit.veld.l, nl = (x) => String(x).replace('.', ',');
+    if (!((a === B && b === L) || (a === L && b === B))) uit.organisatie = [kop.replace(mm[0], `${nl(B)} bij ${nl(L)} meter`), ...uit.organisatie.slice(1)];
+  }
   const t = { ...v.tekening };
   if (u.sp) t.spelers = u.sp;
   if (u.doeltjes) t.doeltjes = u.doeltjes;
