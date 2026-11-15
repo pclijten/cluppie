@@ -355,3 +355,13 @@ h3 { font-size: var(--text-title); line-height: 1.05; }
   .telefoons__rij { display: grid; grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: minmax(12rem, 62%); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: var(--space-sm); overscroll-behavior-x: contain; }
   .telefoons__rij li { scroll-snap-align: start; }
 }
+
+/* schermen in licht of donker (keuze van de bezoeker) */
+.thema-keuze { display: inline-flex; margin-top: var(--space-lg); padding: var(--space-3xs); border-radius: var(--radius-pill); background: var(--color-paper); box-shadow: 0 0 0 1px var(--color-rule); }
+.thema-keuze button { min-height: 44px; padding: 0 var(--space-lg); border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--color-ink-2); font-weight: 600; cursor: pointer; transition: background-color var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out); }
+.thema-keuze button:hover { color: var(--color-ink); }
+.thema-keuze button[aria-pressed="true"] { background: var(--color-ink); color: var(--color-paper); }
+.thema-keuze button:active { transform: translateY(1px); }
+.thema-keuze button:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.thema-keuze button:disabled { opacity: 0.55; cursor: not-allowed; }
+@media (prefers-reduced-motion: reduce) { .thema-keuze button { transition: none; } }

@@ -166,7 +166,13 @@
   <div class="container">
     <div class="demo__kop">
       <h2>Zo ziet Cluppie eruit</h2>
-      <p class="lead">Op de telefoon langs het veld, en op de laptop thuis of in de bestuurskamer. Hieronder de laptopweergave en de telefoon, met een verzonnen club: cluppie.io.</p>
+      <div>
+        <p class="lead">Op de telefoon langs het veld, en op de laptop thuis of in de bestuurskamer. Hieronder de laptopweergave en de telefoon, met een verzonnen club: cluppie.io.</p>
+        <div class="thema-keuze" role="group" aria-label="Schermen tonen in licht of donker">
+          <button type="button" data-schermthema="licht" aria-pressed="true">Licht</button>
+          <button type="button" data-schermthema="donker" aria-pressed="false">Donker</button>
+        </div>
+      </div>
     </div>
     <div class="wissel" data-wissel>
       <div class="tabs tabs--rij" role="tablist" aria-label="Schermen per rol">
@@ -212,8 +218,8 @@
       <ul class="telefoons__rij" tabindex="0" aria-label="Schermen van Cluppie op de telefoon, schuif opzij voor meer">
       <li>
         <figure class="telefoon">
-          <div class="telefoon__scherm"><img src="over/app/telefoon-vandaag.jpg" width="780" height="1688" alt="Cluppie op de telefoon, scherm vandaag: Het startscherm: de volgende wedstrijd en wat er deze week nog komt." loading="lazy"></div>
-          <figcaption><strong>Vandaag</strong> Het startscherm: de volgende wedstrijd en wat er deze week nog komt.</figcaption>
+          <div class="telefoon__scherm"><img src="over/app/telefoon-vandaag.jpg" width="780" height="1688" alt="Cluppie op de telefoon, scherm vandaag: Het startscherm: wat er vandaag en deze week op het programma staat." loading="lazy"></div>
+          <figcaption><strong>Vandaag</strong> Het startscherm: wat er vandaag en deze week op het programma staat.</figcaption>
         </figure>
       </li>
       <li>
@@ -589,6 +595,25 @@
     entries.forEach(e=>{ if(e.isIntersecting) zet(e.target.dataset.stap); });
   },{rootMargin:'-45% 0px -45% 0px'});
   document.querySelectorAll('.log [data-stap]').forEach(el=>sio.observe(el));
+
+  /* schermen in licht of donker: de keuze van de bezoeker, anders zijn systeeminstelling.
+     Zonder script staan de lichte versies er gewoon. Elk scherm heeft een -donker.jpg naast zich. */
+  (()=>{
+    const knoppen=[...document.querySelectorAll('[data-schermthema]')]; if(!knoppen.length) return;
+    const beelden=[...document.querySelectorAll('#demo img[src*="over/app/"]')];
+    const zet=(thema, bewaar)=>{
+      beelden.forEach(img=>{
+        const licht=img.getAttribute('src').replace(/-donker\.jpg$/,'.jpg');
+        const doel=thema==='donker' ? licht.replace(/\.jpg$/,'-donker.jpg') : licht;
+        if(img.getAttribute('src')!==doel) img.setAttribute('src', doel);
+      });
+      knoppen.forEach(k=>k.setAttribute('aria-pressed', k.dataset.schermthema===thema));
+      if(bewaar){ try{ localStorage.setItem('cluppieOverSchermthema', thema); }catch(e){} }
+    };
+    let begin=null; try{ begin=localStorage.getItem('cluppieOverSchermthema'); }catch(e){}
+    zet(begin || (matchMedia('(prefers-color-scheme: light)').matches ? 'licht' : 'donker'), false);
+    knoppen.forEach(k=>k.addEventListener('click',()=>zet(k.dataset.schermthema, true)));
+  })();
 
   /* voordat we naar index.html gaan: onthouden dat de intro is gezien,
      anders stuurt de gate daar ons meteen weer hierheen terug. */
