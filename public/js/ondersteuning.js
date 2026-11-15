@@ -64,8 +64,8 @@ export async function stopOndersteuning(terugNaarPlatform){
   meld('Ondersteuning gestopt');
   if (terugNaarPlatform){
     try {
-      const c = await import('./club.js?v=20261115a'); c.verlaatClubView();
-      const p = await import('./platform.js?v=20261115a'); p.openPlatform();
+      const c = await import('./club.js?v=20261115b'); c.verlaatClubView();
+      const p = await import('./platform.js?v=20261115b'); p.openPlatform();
     } catch (e){}
   }
 }

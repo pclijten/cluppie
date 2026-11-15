@@ -13,9 +13,9 @@
 import { db, doc, getDoc, getDocs, setDoc, deleteDoc, query, where, writeBatch } from './firebase.js?v=20261011g';
 import { S, esc, meld } from './state.js?v=20261113b';
 import { BASIS, BASIS_VERSIE, FASES, alleVormen, vormen, laadBibliotheek, verschilMetBasis, valideerVorm,
-  rijVan, KOLOMMEN, LIJSTVELDEN, vergelijkImport } from './bibliotheek.js?v=20261115a';
-import { herbouwOefening, bronVanOefening, vormIdsVan } from './seizoensplan-club.js?v=20261115a';
-import { maakPlan } from './trainingsplanner.js?v=20261115a';
+  rijVan, KOLOMMEN, LIJSTVELDEN, vergelijkImport } from './bibliotheek.js?v=20261115b';
+import { herbouwOefening, bronVanOefening, vormIdsVan } from './seizoensplan-club.js?v=20261115b';
+import { maakPlan } from './trainingsplanner.js?v=20261115b';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261012e';
 
 const FS_URL = 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';

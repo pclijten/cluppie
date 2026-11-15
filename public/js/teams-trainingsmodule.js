@@ -22,19 +22,20 @@ import { S, esc, meld } from './state.js?v=20261113b';
 import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } from './config.js?v=20261113b';
 import { aiAan, aiDoel } from './clubconfig.js?v=20261113b';
 import { ico } from './icons.js?v=20261110a';
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261115a';
-import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261115a';
-import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, kiesDuur, SLOT_NAAM, groepsindeling, opbouwVoor, WEER } from './trainingsplanner.js?v=20261115a';
+import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261115b';
+import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261115b';
+import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, kiesDuur, SLOT_NAAM, groepsindeling, opbouwVoor, WEER } from './trainingsplanner.js?v=20261115b';
 import { MATERIAAL, MATERIAAL_NAAM, PRESETS, presetVan, VELDEN, schoonContext, behoefte, haalbaar, valtAf, tipTekst } from './trainingscontext-logica.js?v=20261019a';
-import { htmlZevenVelden, STANDAARD_OPEN } from './oefenkaart.js?v=20261115a';
+import { htmlZevenVelden, STANDAARD_OPEN } from './oefenkaart.js?v=20261115b';
+import { maak3DBlok } from './scene3d.js?v=20261115b';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
 import { TERUGBLIK_VRAGEN, zetAntwoord, terugblikKlaar, terugblikSamenvatting, signaalVormBewaard, signaalVormGewisseld, signaalTerugblik, signaalMateriaal, signaalGat, gatRedenen } from './leren-logica.js?v=20261019b';
 import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261113b';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261012e';
-import { positieWeek, seizoensweekOp, weekKalender, standaardVrij, maandagVan } from './seizoensplan-logica.js?v=20261115a';
-import { trainingenRef } from './seizoensplan-trainingen.js?v=20261115a';
-import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261115a';
-import { oefeningVan, geplandeTraining, vormIdsVan } from './seizoensplan-club.js?v=20261115a';
+import { positieWeek, seizoensweekOp, weekKalender, standaardVrij, maandagVan } from './seizoensplan-logica.js?v=20261115b';
+import { trainingenRef } from './seizoensplan-trainingen.js?v=20261115b';
+import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261115b';
+import { oefeningVan, geplandeTraining, vormIdsVan } from './seizoensplan-club.js?v=20261115b';
 import { onderdeelAan } from './onderdelen.js?v=20261113b';
 
 /* [20261113d] vormen uit basis + beheerlaag (bibliotheek.js) */
@@ -240,6 +241,30 @@ function htmlResultaat(){
   return h;
 }
 
+/* [20261115b] Tekening of 3D. Het 3D-blok zelf (scene3d.js) wordt na het tekenen op de plek gezet (plaats3D),
+   en bij opnieuw tekenen teruggezet, zodat de animatie doorloopt als je een veld van de oefenkaart opent. */
+function htmlTekenKeuze(i, v, veld){
+  const t = staat(), drie = !!(t.drie || {})[i];
+  const knop = (aan, tekst) => `<button type="button" data-tm-3d="${i}" data-tm-3d-aan="${aan ? 1 : 0}" aria-pressed="${drie === aan}">${tekst}</button>`;
+  return `<div class="s3d-keuze" role="group" aria-label="Weergave">${knop(false, 'Tekening')}${knop(true, '3D')}</div>
+    ${drie ? `<div class="s3d-plek" data-s3d-plek="${i}:${esc(v.id)}:${veld.b}x${veld.l}"></div>` : vormSvg(v, veld) + TEKENING_LEGENDA}`;
+}
+const blokken3D = new Map();
+function plaats3D(root){
+  const t = staat(), nu = new Set();
+  root.querySelectorAll('[data-s3d-plek]').forEach(plek => {
+    const sleutel = plek.dataset.s3dPlek; nu.add(sleutel);
+    let blok = blokken3D.get(sleutel);
+    if (!blok){
+      const i = Number(sleutel.split(':')[0]), od = t.plan?.onderdelen?.[i] || (t.plan?.afsluiting && i === t.plan.onderdelen.length ? t.plan.afsluiting : null);
+      if (!od) return;
+      blok = maak3DBlok(od.vorm, pasKnoppenToe(od, t.knop).veld); blokken3D.set(sleutel, blok);
+    }
+    plek.replaceWith(blok);
+  });
+  for (const [k, b] of blokken3D) if (!nu.has(k)){ b.weg?.(); blokken3D.delete(k); }
+}
+
 /* [20261115a] Open vorm: tekening, groepen en veld, en de 7 vaste velden (oefenkaart.js) in plaats van vier tabbladen. */
 function htmlOnderdeel(od, i){
   const t = staat(), v = od.vorm, kn = pasKnoppenToe(od, t.knop), ai = t.ai[od.slot];
@@ -252,7 +277,7 @@ function htmlOnderdeel(od, i){
   return `<div class="tm-vorm${open ? ' open' : ''}" style="--c:${SLOT_KLEUR[od.slot]}">
     <button class="tm-vk" data-tm-open-vorm="${i}" aria-expanded="${open}"><span class="tm-min">${od.minuten}′</span><span class="tm-schets" aria-hidden="true">${vormSvg(v, kn.veld)}</span>
       <span class="tm-mid"><span class="tm-slot">${esc(naam)}</span><span class="tm-nm">${esc(v.naam)}</span><span class="tm-vsub">${od.groepen}×${od.groepGrootte} · ${kn.veld.b}×${kn.veld.l} m · ${esc(v.doel)}</span></span><span class="tm-pij">⌄</span></button>
-    ${open ? `<div class="tm-vb"><div class="tm-vb-teken">${vormSvg(v, kn.veld)}${TEKENING_LEGENDA}</div><div class="tm-vb-tekst">
+    ${open ? `<div class="tm-vb"><div class="tm-vb-teken">${htmlTekenKeuze(i, v, kn.veld)}</div><div class="tm-vb-tekst">
       <div class="ok-feiten"><span>${od.minuten} min</span><span>${od.groepen}×${od.groepGrootte}${od.wissel ? '+' + od.wissel : ''} spelers</span><span>${kn.veld.b}×${kn.veld.l} m</span><span>niveau ${v.complexiteit}/3</span></div>
       <div class="ok-kaart">${velden}</div>
       <div class="tm-rij" style="margin-top:12px">${knoppen}<span class="tm-info">${esc((v.domeinen || []).join(' · '))}</span></div>
@@ -414,6 +439,7 @@ function teken(){
   const root = document.getElementById('tmRoot'); if (!root) return;
   const y = window.scrollY;
   root.innerHTML = htmlInhoud();
+  plaats3D(root);
   window.scrollTo({ top: y });
 }
 export function koppelTrainingsmodule(v){
@@ -445,6 +471,7 @@ export function koppelTrainingsmodule(v){
     else if (d.tmLos){ t.vervangt = null; t.bewaardId = null; meld('Wordt een extra training; de geplande training blijft staan'); teken(); }
     else if (d.tmMaak){ t.seed++; maak(); stuurSignalen(gatRedenen(t.plan).map(r => signaalGat(leeftijdVanCategorie(S.team?.categorie), r))); teken(); const r = root.querySelector('.tm-kop2'); if (r) window.scrollTo({ top: r.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' }); }
     else if (d.tmOpenVorm !== undefined){ const i = Number(d.tmOpenVorm); t.open = t.open === i ? null : i; teken(); }
+    else if (d.tm3d !== undefined){ t.drie = t.drie || {}; t.drie[Number(d.tm3d)] = d.tm3dAan === '1'; teken(); }
     else if (d.tmOk){ const [i, k] = d.tmOk.split(':'); const cur = t.tab[Number(i)] === undefined ? STANDAARD_OPEN : t.tab[Number(i)]; t.tab[Number(i)] = cur === k ? null : k; teken(); }
     else if (d.tmPas){ t.pas = !t.pas; teken(); }
     else if (d.tmCk){ t.ckOpen = !t.ckOpen; teken(); }
