@@ -1,0 +1,42 @@
+# Cluppie
+
+> Cluppie is een Nederlandstalige webapp (PWA) voor jeugdvoetbal bij amateurclubs: voor jeugdtrainers, coördinatoren, het hoofd jeugdopleiding en de technische commissie. Trainers maken opstellingen, bewaken eerlijke speeltijd, evalueren wedstrijden en maken trainingen die passen bij hun team; de club legt speelstijl, leerlijn en seizoensplan vast voor de hele jeugdopleiding. Website: https://www.cluppie.io
+
+Cluppie zit in de opstartfase (najaar 2026). Clubs en trainers die nu instappen, gebruiken Cluppie een half jaar gratis. Het wordt gebouwd samen met de trainers en jeugdopleidingen die het gebruiken; maatwerk per club is mogelijk. Contact: paul@cluppie.io
+
+## Voor wie
+
+- Jeugdtrainer of coach: opstelling, wissels, speeltijd, evaluatie en trainingen op de telefoon langs het veld. Een trainer kan ook zonder club beginnen met zijn eigen team; sluit de club later aan, dan gaat het team mee.
+- Bouwcoördinator, trainingscoördinator, hoofd jeugdopleiding: overzicht over alle teams van een bouw of de club, één seizoensplan, zicht op wat er getraind wordt en hoe teams en spelers zich ontwikkelen.
+- Technische commissie en bestuur: zien hoe het jeugdbeleidsplan in de praktijk landt, seizoen na seizoen. Kennis over een team blijft bewaard als een trainer stopt.
+
+## Wat Cluppie doet
+
+- Wedstrijddag: opstelling per kwart of helft, wissels slepen, klok en periodes volgens de KNVB-categorie, speeltijd per speler, doelpunten en kaarten, toernooimodus, formaten van 4 tegen 4 tot 11 tegen 11.
+- Evalueren: teamevaluatie in acht korte vragen na de wedstrijd, spelersbeoordeling op vijf domeinen (technisch, tactisch, fysiek, mentaal, gedrag), leerpunten per speler, groeicurves per team, automatisch een passend trainingsthema.
+- Trainen: een training maken uit ruim 300 eigen oefenvormen voor O6 tot en met O19, elk met tekening, coachpunten en een makkelijkere en moeilijkere versie. De planner houdt rekening met aantal spelers, materiaal, een half veld en het weer. Eigen trainingsschema's van de club kunnen als PDF worden ingeladen.
+- Plannen: seizoensplan per bouw of voor de hele club, met één tik klaargezet bij de teams. De club kiest de werkwijze: "Club stuurt" (coördinatoren maken trainingen en plan) of "Trainers vrij".
+- Speelstijl en coachmodel: de club legt met een korte vragenlijst vast hoe ze wil voetballen; de trainer bouwt daarbinnen zijn eigen manier van coachen op.
+- Club beheren: teams en wedstrijden rechtstreeks uit Sportlink, coaches uitnodigen met een persoonlijke link, spelers uitlenen tussen teams, documenten en berichten delen, clubbreed evaluatieoverzicht met Excel-export, eigen logo en kleuren.
+- Techniek: werkt in de browser op telefoon en laptop, toe te voegen aan het beginscherm, werkt offline door langs de lijn. Inloggen met Google of e-mail; geen installatie uit een appwinkel nodig.
+
+## Wat Cluppie niet doet
+
+- Geen betalingen (contributie, boetes, teampot).
+- Geen ouder-app: ouders krijgen geen account. Een coach kan wel een training delen via een link die vanzelf verloopt.
+- Geen ledenadministratie: die blijft in Sportlink.
+
+## Privacy
+
+- Gegevens staan in de EU en zijn per club afgeschermd.
+- Standaard alleen voornamen; achternamen blijven binnen het eigen team.
+- Beoordelingen en leerpunten zijn alleen zichtbaar voor coaches, niet voor spelers of ouders.
+- Geen spelersnamen in AI-functies; Cluppie werkt ook zonder AI.
+- Een club sluit een verwerkersovereenkomst met Cluppie.
+
+## Pagina's
+
+- [Over Cluppie](https://www.cluppie.io/over.html): uitleg, schermafbeeldingen, alle functies en aanmelden
+- [Privacyverklaring](https://www.cluppie.io/privacy.html): welke gegevens Cluppie verwerkt en wie wat ziet
+- [Inloggen of beginnen met je eigen team](https://www.cluppie.io/index.html)
+- [Club aanmelden](https://www.cluppie.io/index.html?aanmelden)
