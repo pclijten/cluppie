@@ -2,17 +2,17 @@
 
 15-11-2026, op `main` (commit 1d44083, release 20261115c). Poort P1: er is nog niets aan de rules gewijzigd.
 
-## Stand na de fixes (release 20261115d, 15-11-2026)
+## Stand na de fixes (releases 20261115d en 20261115e, 15-11-2026)
 
-Paul gaf op 15-11 akkoord om alles te fixen. Opgelost en in de emulator getoetst (39 scenario's, waarvan één met 74 proeven per gebruikerstype, geen afwijkingen):
+Paul gaf op 15-11 akkoord om alles te fixen. Opgelost en in de emulator getoetst (41 scenario's, waarvan één met 88 proeven per gebruikerstype, geen afwijkingen):
 
 | Bevinding | Stand |
 |---|---|
 | K1 teamdocument schrijfbaar voor elke coach | Opgelost in rules (wildcard eist een subcollectie; coach mag `club`, `werkwijzeVrij`, `rollen`, `bouwHandmatig`, Sportlink-velden niet wijzigen, niemand aan `leden` toevoegen, koppelvoorstel niet omleiden). Server: `clubRol` en `sportlinkTeamSpelers` vertrouwen het `club`-veld niet meer. |
 | H1 ouder leest notities en leerpunten | Opgelost: de deel-link draagt zelf naam en rugnummer; de deel-link geeft geen toegang meer tot spelers of het teamdocument. |
-| H2 elke clubcoach leest notities en leerpunten | **Open.** Datamodel; impactanalyse volgt. Geldt ook voor de `snapshot` op uitleningen. |
+| H2 elke clubcoach leest notities en leerpunten | Opgelost zonder datamodelwijziging: spelerdocumenten van een ander team en uitleningen van andere teams lezen alleen nog sturende rollen (clubadmin, hoofd jeugd, bouwcoördinatoren, gekoppelde coaches van een eigen bouw). Zij hebben dat nodig voor uitlenen, bouwoverzicht en evaluatierondes. Restpunt: binnen die groep staan notities en leerpunten nog op hetzelfde document als naam en nummer. |
 | H3 training in een andere club | Opgelost in rules. |
-| M1 uitleningen | Opgelost: aanmaken alleen door een sturende rol, bijwerken en terugzetten ook door de coaches van de twee teams. Lezen is nog clubbreed (zie H2). |
+| M1 uitleningen | Opgelost: aanmaken alleen door een sturende rol, bijwerken en terugzetten ook door de coaches van de twee teams. Lezen: de twee teams en sturende rollen. |
 | M2 team verwijderen, rollen, bouw | Opgelost. De bouw mag nog wel de categorie volgen, tenzij de club het team met de hand heeft ingedeeld. |
 | M3 teamlijst van de club | Opgelost: een clublid kan alleen toevoegen. |
 | M4 gekoppelde coach bouw | Opgelost volgens het totaalplan: zelfde rechten als de bouwcoördinator, via `eigenBouwToegang`. |
@@ -23,8 +23,10 @@ Paul gaf op 15-11 akkoord om alles te fixen. Opgelost en in de emulator getoetst
 | L2 koppelvoorstel | Opgelost met K1. |
 | L3 namen in AI-invoer | Opgelost. |
 | L4, L5, L6, L7 | **Open.** |
+| Privé-beoordelingen (release 20261114a): lezerslijst kwam ongecontroleerd van de app | Opgelost: alleen de schrijver en sturende rollen van de club. Restpunt: wie zijn rol verliest blijft in bestaande lijsten staan. |
+| Nieuw gevonden: limiet van 1000 evaluaties | De rules gaven op sommige paden een stille weigering door de evaluatielimiet. Teamrechten zijn zuiniger herschreven; elke rol heeft nu ook "moet werken"-proeven. |
 
-Niets hiervan is gedeployed. Tot de deploy is K1 in productie nog open. Deployvolgorde: PORTEREN.md.
+Niets hiervan is gedeployed: de app waarin Claude werkt weigert een deploy, dat doet Paul. Tot de deploy is K1 in productie nog open. Deployvolgorde: PORTEREN.md.
 
 De tekst hieronder is het rapport zoals het vóór de fixes was.
 

@@ -112,8 +112,13 @@ test('beoordelingen: teamlid en coördinator van de bouw wel, andere coach van c
   await assertFails(getDoc(doc(als('coach2'), 'teams/t1/beoordelingen/b1')));
   await assertFails(getDoc(doc(als('adminB'), 'teams/t1/beoordelingen/b1')));
 });
-test('spelerslijst: leesbaar voor clubleden (uitleen), niet voor andere club', async () => {
+test('spelerslijst: eigen team en sturende rollen van de club, geen andere coach en geen andere club', async () => {
   await assertSucceeds(getDoc(doc(als('coachA'), 'teams/t1/spelers/s1')));
+  await assertSucceeds(getDocs(collection(als('coachA'), 'teams/t1/spelers')));
+  await assertSucceeds(getDoc(doc(als('adminA'), 'teams/t1/spelers/s1')));
+  await assertSucceeds(getDoc(doc(als('coordA'), 'teams/t1/spelers/s1')));
+  /* [20261115e] een coach van een ander team van dezelfde club leest geen spelerdocumenten meer (notitie, leerpunten) */
+  await assertFails(getDoc(doc(als('coach2'), 'teams/t1/spelers/s1')));
   await assertFails(getDoc(doc(als('coachB'), 'teams/t1/spelers/s1')));
 });
 
