@@ -100,6 +100,9 @@ Paul gaf op 15-11 akkoord om WP2 t/m WP9 zelfstandig te maken. Eerlijk over wat 
 | Rollen in de handleiding en kennisbank | De handleiding beschreef alleen de coach | Alle clubrollen |
 | UPDATES in `js/updates.json` | Elke nieuwsregel gaf zo'n vijftig modules een nieuw versienummer | Alle (minder opnieuw laden) |
 | Verkoopmateriaal en "ruim 300 oefenvormen" | Gevraagd door Paul; het oude getal klopte niet meer | Losse trainer, clubadmin (bezoekers) |
+| Speelwijze als rode draad door Seizoen, Training maken, Trainingen en de wedstrijdevaluatie (20261116h) | Gevraagd door Paul; de speelstijl werd vastgelegd maar stuurde niets en was voor coaches en losse trainers niet beschikbaar | Alle (losse trainer en coach het meest) |
+| 23 speelwijze-vormen met volledig spelverloop; 3D met tegelijke stappen, fases en een voorbeeld van het vervolg | Gevraagd door Paul; 211 van de 303 vormen hadden één of twee stappen in 3D | Iedereen die een training bekijkt |
+| Nieuw seizoensplan bij een verlopen seizoenstekst (`seizoenStartJaar`) | Een trainer zonder club kreeg een plan van nul trainingsweken | Losse trainer; clubs vóór de seizoensovergang |
 | Werkwijze: scripts schrijven pas weg als alle vervangingen gelukt zijn | Een bewerkingsscript maakte `functions/index.js` leeg; hersteld uit de commit, niets verloren | Geen |
 
 

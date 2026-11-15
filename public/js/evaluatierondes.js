@@ -17,10 +17,10 @@
    Dit bestand importeert niets uit club.js of teams*.js (geen kringimport):
    club.js geeft een klein api-object mee voor hertekenen en berichten. */
 import { db, collection, doc, getDocs, query, where, updateDoc, addDoc, serverTimestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261116c';
-import { SEIZOEN_FALLBACK } from './config.js?v=20261116c';
-import { priveBeoordelingenVan } from './beoordelingen-prive.js?v=20261116c';
-import { ico } from './icons.js?v=20261110a';
+import { S, esc, meld } from './state.js?v=20261116h';
+import { SEIZOEN_FALLBACK } from './config.js?v=20261116h';
+import { priveBeoordelingenVan } from './beoordelingen-prive.js?v=20261116h';
+import { ico } from './icons.js?v=20261116h';
 
 /* ---------- pure hulpjes (ook gebruikt door team-hub, bouw-hub, desktop) ---------- */
 export function rondesVan(club){ return Array.isArray(club?.evaluatieRondes) ? club.evaluatieRondes.filter(r => r && r.id) : []; }

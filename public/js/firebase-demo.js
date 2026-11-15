@@ -287,6 +287,17 @@ zetSeed(`clubs/${CLUB}`, {
   instellingen: { identiteit: { kleur: '#E20613' }, privacy: { contactEmail: 'privacy@cluppie.io', verwerkersovereenkomst: { geaccepteerd: true, datum: TS } } },
 });
 
+/* [20261116h] de speelwijze van de democlub (positiespel), zodat Speelwijze, Seizoen en Training maken de rode draad tonen */
+zetSeed(`clubs/${CLUB}/speelstijl/huidig`, {
+  versie: 1, modus: 'volledig', invullers: 3,
+  standen: { d1: { stand: 2, status: 'duidelijk' }, d2: { stand: 1.7, status: 'duidelijk' }, d3: { stand: 1, status: 'neigt' }, d4: { stand: 2, status: 'duidelijk' },
+    d5: { stand: -1, status: 'neigt' }, d6: { stand: 1.3, status: 'neigt' }, d7: { stand: 2, status: 'duidelijk' }, d8: { stand: 1, status: 'neigt' } },
+  gewichten: { d1: 2, d2: 2, d3: 1, d4: 2, d5: 1, d6: 1, d7: 1, d8: 1 }, fasen: { l1: 10, l2: 12, l3: 8, l4: 12, l5: 12 },
+  willenNiet: ['lang', 'schel', 'beste'], verschil: ['d6'], herkenning: { sleutel: 'pos', pct: 86 },
+  zin: 'Rustig opbouwen vanaf de keeper, direct terugpakken, geduldig rondspelen en zone: een ruimte bewaken.', doel: ['ontw', 'plezier'], opleiding: 'deels',
+  vastgelegdDoor: COACH, vastgelegdMs: Date.now() - 20 * 864e5,
+});
+
 const COLLEGA = ['Anouk', 'Jeroen', 'Fatima', 'Kees', 'Sanne', 'Ahmed', 'Petra', 'Martijn'];
 const TEAMS = [
   { id: 'demo-o9-1',   naam: 'O9-1',   cat: 'JO9',  bouw: 'onder',  format: '6' },

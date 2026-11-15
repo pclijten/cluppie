@@ -5,7 +5,7 @@
 
    Vlag per rol in gebruikers/{uid}/meta/onboarding.rolkaart.<rol> (merge), alleen voor de weergave.
    Bewust een eigen module zonder wijziging in state.js; runtime-toestand staat op S._rolkaart. */
-import { S, esc, openModal, sluitModal } from './state.js?v=20261116c';
+import { S, esc, openModal, sluitModal } from './state.js?v=20261116h';
 import { db, doc, getDoc, setDoc } from './firebase.js?v=20261011g';
 
 export const ROLKAARTEN = {
@@ -23,8 +23,8 @@ export const ROLKAARTEN = {
   },
   hjo: {
     titel: 'Je bent {rolnaam}',
-    ziet: 'Alle bouwen, het seizoensplan en de speelstijl van de club, en de spelerslijsten.',
-    kan: 'Het plan en de speelstijl van de club vastleggen. Trainingen voor meerdere teams maken. Evaluatierondes volgen.',
+    ziet: 'Alle bouwen, het seizoensplan en de speelwijze van de club, en de spelerslijsten.',
+    kan: 'Het plan en de speelwijze van de club vastleggen. Trainingen voor meerdere teams maken. Evaluatierondes volgen.',
     kanNiet: 'Clubinstellingen wijzigen: dat doet de clubbeheerder.',
   },
   trainco: {

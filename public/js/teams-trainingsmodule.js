@@ -18,25 +18,29 @@
    Tabblad: 'trainingsmodule'. Importeert NIET uit teams.js (geen kringimport); teams.js geeft
    zetTeamTab mee aan koppelTrainingsmodule(). */
 import { db, collection, addDoc, setDoc, getDoc, getDocs, deleteDoc, doc, functions, httpsCallable, serverTimestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261116c';
-import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } from './config.js?v=20261116c';
-import { aiAan, aiDoel } from './clubconfig.js?v=20261116f';
-import { ico } from './icons.js?v=20261110a';
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261115b';
-import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261116c';
-import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, kiesDuur, SLOT_NAAM, groepsindeling, opbouwVoor, WEER } from './trainingsplanner.js?v=20261116c';
+import { S, esc, meld } from './state.js?v=20261116h';
+import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } from './config.js?v=20261116h';
+import { aiAan, aiDoel } from './clubconfig.js?v=20261116h';
+import { ico } from './icons.js?v=20261116h';
+import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261116h';
+import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261116h';
+import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, kiesDuur, SLOT_NAAM, groepsindeling, opbouwVoor, WEER } from './trainingsplanner.js?v=20261116h';
 import { MATERIAAL, MATERIAAL_NAAM, PRESETS, presetVan, VELDEN, schoonContext, behoefte, haalbaar, valtAf, tipTekst } from './trainingscontext-logica.js?v=20261019a';
-import { htmlZevenVelden, STANDAARD_OPEN } from './oefenkaart.js?v=20261115b';
-import { maak3DBlok } from './scene3d.js?v=20261115b';
+import { htmlZevenVelden, STANDAARD_OPEN } from './oefenkaart.js?v=20261116h';
+import { maak3DBlok } from './scene3d.js?v=20261116h';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
 import { TERUGBLIK_VRAGEN, zetAntwoord, terugblikKlaar, terugblikSamenvatting, signaalVormBewaard, signaalVormGewisseld, signaalTerugblik, signaalMateriaal, signaalGat, gatRedenen } from './leren-logica.js?v=20261019b';
-import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261116f';
-import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261012e';
-import { positieWeek, seizoensweekOp, weekKalender, standaardVrij, maandagVan } from './seizoensplan-logica.js?v=20261116c';
-import { trainingenRef } from './seizoensplan-trainingen.js?v=20261116c';
-import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261116f';
-import { oefeningVan, geplandeTraining, vormIdsVan, rondBlok } from './seizoensplan-club.js?v=20261116c';
-import { onderdeelAan } from './onderdelen.js?v=20261116c';
+import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261116h';
+import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261116h';
+import { positieWeek, seizoensweekOp, weekKalender, standaardVrij, maandagVan, seizoenStartJaar } from './seizoensplan-logica.js?v=20261116h';
+import { trainingenRef } from './seizoensplan-trainingen.js?v=20261116h';
+import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261116h';
+import { oefeningVan, geplandeTraining, vormIdsVan, rondBlok } from './seizoensplan-club.js?v=20261116h';
+import { onderdeelAan } from './onderdelen.js?v=20261116h';
+/* [20261116h] de speelwijze als rode draad: leerdoel, coachwoorden, vormen die het principe trainen en de regel in het partijspel */
+import { speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad } from './speelwijze.js?v=20261116h';
+import { rodeDraad, principe as principeOpId, principeVoorThema, principeVanVorm, LESOPBOUW } from './speelwijze-logica.js?v=20261116h';
+import { htmlDraadKaart, htmlPrincipeChip } from './speelwijze-html.js?v=20261116h';
 
 /* [20261113d] vormen uit basis + beheerlaag (bibliotheek.js) */
 const THEMAS_BESCHIKBAAR = () => new Set(vormen().flatMap(v => v.thema));
@@ -113,7 +117,7 @@ function leerlijnNu(){
     const p = positieWeek(plan, seizoensweekOp(plan.kal, t.datum));
     return { blok: p.blok.nr, thema: p.blok.thema, fase: p.fase, weekInBlok: p.weekInBlok, weken: p.blok.weken, bron: 'seizoensplan' };
   }
-  const y = Number(String(S.huidigSeizoen || SEIZOEN_FALLBACK).match(/(\d{4})/)?.[1]) || new Date().getFullYear();
+  const y = seizoenStartJaar(S.huidigSeizoen || SEIZOEN_FALLBACK, vandaagIso());
   const start = maandagVan(`${y}-08-24`), eind = `${y + 1}-06-06`;
   const kal = weekKalender(start, eind, standaardVrij(start, eind));
   const lijn = jaarlijn({ bouw: bouwKey(), leeftijd: lv, weken: kal.filter(w => !w.vrij).length, beschikbaar: THEMAS_BESCHIKBAAR() });
@@ -134,7 +138,8 @@ function maak(){
   if (!t.themaHand) t.thema = ll.thema;
   if (!themaOpties().includes(t.thema)) t.thema = themaOpties()[0] || ll.thema;
   t.plan = maakPlan(vormen(), { categorie: S.team?.categorie, leeftijd: lv, aantalSpelers: t.n, niveau: t.niv, duur: t.duur, thema: t.thema,
-    blokFase: ll.fase, seed: `${S.teamId}:${t.week}:${t.seed}`, recent: [], context: t.cx, datum: t.datum, halfVeld: t.halfVeld, weer: t.weer });
+    blokFase: ll.fase, seed: `${S.teamId}:${t.week}:${t.seed}`, recent: [], context: t.cx, datum: t.datum, halfVeld: t.halfVeld, weer: t.weer,
+    ...(speelwijzeNu() ? { speelwijze: speelwijzeNu() } : {}) });
   t.plan.profiel.week = t.week;
   t.plan.profiel.datum = t.datum;
   t.bewaardId = null; t.ai = {}; t.open = null; t.tab = {};
@@ -152,6 +157,8 @@ export function htmlTrainingsmodule(){
   }
   /* [20261113d] beheerlaag van de bibliotheek: eenmaal geladen, de training opnieuw samenstellen */
   if (!bibliotheekGeladen()) laadBibliotheek().then(() => { const u = staat(); if (!u.bewaardId){ maak(); teken(); } }).catch(() => {});
+  /* [20261116h] de speelwijze: eenmaal geladen, de training opnieuw samenstellen (bewaarde trainingen krijgen alleen de labels) */
+  if (!speelwijzeGeladen()) laadSpeelwijze().then(() => { const u = staat(); if (!speelwijzeNu()) return; if (u.bewaardId) markeerSpeelwijze(u.plan); else maak(); teken(); }).catch(() => {});
   if (!t.lijst) laadBewaard();
   if (!t.cxGeladen) laadContext();
   return `<div id="tmRoot" class="tm">${htmlInhoud()}</div>`;
@@ -203,7 +210,7 @@ function htmlFormulier(){
 }
 
 const SLOT_KLEUR = { ontvangst: '#5b6573', 'warming-up': '#4a8fe0', kern1: '#35c47a', kern2: '#f5b13d', partij: '#e2342f', afsluiting: '#8a6fe0' };
-const CHECK_NAAM = { weer: 'Weer', duur: 'Duur', opbouw: 'Opbouw', vormduur: 'Vormduur', warmingup: 'Warming-up', voetbalecht: 'Voetbalecht', thema: 'Thema', wachtrij: 'Geen wachtrij', ruimte: 'Ruimte', veld: 'Veld', intensiteit: 'Belasting', rust: 'Drinkpauze', groepen: 'Groepen', coach: 'Coachinfo', variatie: 'Variatie', materiaal: 'Materiaal' };
+const CHECK_NAAM = { speelwijze: 'Speelwijze', weer: 'Weer', duur: 'Duur', opbouw: 'Opbouw', vormduur: 'Vormduur', warmingup: 'Warming-up', voetbalecht: 'Voetbalecht', thema: 'Thema', wachtrij: 'Geen wachtrij', ruimte: 'Ruimte', veld: 'Veld', intensiteit: 'Belasting', rust: 'Drinkpauze', groepen: 'Groepen', coach: 'Coachinfo', variatie: 'Variatie', materiaal: 'Materiaal' };
 
 function htmlResultaat(){
   const t = staat(), p = t.plan;
@@ -221,6 +228,7 @@ function htmlResultaat(){
       <button class="tm-chip tm-mini" data-tm-ck="1">${t.ckOpen || fouten.length ? 'verberg' : 'details'}</button></div>
     ${(t.ckOpen || fouten.length) ? `<div class="tm-checks">${p.controle.checks.filter(c => c.id !== 'avg').map(c => `<span class="tm-ck ${c.ok ? 'ok' : 'fout'}" title="${esc(c.tekst)}">${esc(CHECK_NAAM[c.id] || c.id)}${c.id === 'voetbalecht' ? ' ' + p.controle.voetbalechtPct + '%' : c.id === 'thema' ? ' ' + p.controle.themaPct + '%' : ''}</span>`).join('')}</div>${fouten.map(f => `<div class="tm-info">${esc(f.tekst)}</div>`).join('')}` : ''}
   </div>`;
+  h += htmlDraadNu();
   p.meldingen.forEach(m => { h += `<div class="tm-melding">${esc(m)}</div>`; });
   h += `<div class="tm-pauze">Ontvangst · ${ov.ontvangst}′ — spelers verzamelen, uitleg warming-up</div>`;
   p.onderdelen.forEach((od, i) => {
@@ -239,6 +247,31 @@ function htmlResultaat(){
   h += htmlTerugblik();
   h += `<div class="tm-info" style="margin:10px 2px">Na de training: kwam het thema terug in het partijspel? Een bewaarde training bevat alleen de gekozen vormen, geen namen of spelersgegevens.</div>`;
   return h;
+}
+
+/* [20261116h] De rode draad van deze training: speelwijze → blok in het seizoen → leerdoel van vandaag → wedstrijd. */
+function draadVanPlan(){
+  const t = staat(), p = t.plan, ll = leerlijnNu(), zelfde = ll.thema === p.profiel.thema;
+  return rodeDraad(speelwijzeNu(), { thema: p.profiel.thema, fase: p.profiel.blokFase, leeftijd: leeftijdVanCategorie(S.team?.categorie),
+    ...(zelfde ? { blok: ll.blok, weekInBlok: ll.weekInBlok, weken: ll.weken, bronPlan: ll.bron } : {}) });
+}
+function htmlDraadNu(){
+  if (!speelwijzeGeladen()) return '';
+  const t = staat(), sw = speelwijzeNu();
+  return htmlDraadKaart(draadVanPlan(), 'training', { datum: datumKort(datumUit(t.datum)),
+    geenTekst: sw ? 'Bij dit thema hoort geen principe van de speelwijze: het is basis (techniek en plezier).' : 'Nog geen speelwijze vastgelegd: de training volgt alleen het thema. Leg hem vast onder Speelwijze en elke training krijgt een leerdoel, coachwoorden en een regel voor het partijspel.' });
+}
+/* Een bewaarde of handmatig gewijzigde training: de labels van de speelwijze opnieuw zetten (de vormen blijven). */
+function markeerSpeelwijze(plan){
+  const sw = speelwijzeNu(); if (!sw || !plan) return;
+  const hoofd = principeVoorThema(sw, plan.profiel.thema);
+  if (hoofd) plan.profiel.principe = hoofd.id; else delete plan.profiel.principe;
+  for (const od of plan.onderdelen){
+    const pr = principeVanVorm(od.vorm, sw, hoofd?.id);
+    if (pr) od.principe = pr.id; else delete od.principe;
+    if (hoofd && od.vorm.fase === 'partijspel') od.speelwijzeRegel = hoofd.regel; else delete od.speelwijzeRegel;
+  }
+  plan.controle = valideer(plan);
 }
 
 /* [20261115b] Tekening of 3D. Het 3D-blok zelf (scene3d.js) wordt na het tekenen op de plek gezet (plaats3D),
@@ -271,12 +304,14 @@ function htmlOnderdeel(od, i){
   const open = t.open === i, veldOpen = t.tab[i] === undefined ? STANDAARD_OPEN : t.tab[i];
   const naam = od.slot === 'afsluiting' ? `Afsluiting · ${od.minuten} min` : od.slotNaam;
   const knoppen = od.slot === 'afsluiting' ? '' : `<button class="knop klein licht" data-tm-wissel="${i}">↻ Andere vorm</button>`;
+  const pr = od.principe ? principeOpId(od.principe) : null, stap = LESOPBOUW[od.slot];
   const velden = open ? htmlZevenVelden(v, { minuten: od.minuten, rondes: od.rondes, ronde: od.ronde, rust: od.rust, groepen: od.groepen,
-    aanpassingen: kn.aanpassingen, themaregel: od.themaregel, ai, stijl: t.knop.stijl, extraMateriaal: htmlMateriaalRegel(od) },
+    aanpassingen: kn.aanpassingen, themaregel: od.themaregel, ai, stijl: t.knop.stijl, extraMateriaal: htmlMateriaalRegel(od),
+    principe: pr, speelwijzeRegel: od.speelwijzeRegel, stap, woorden: od.slot === 'afsluiting' ? [] : draadVanPlan().woorden },
     { open: veldOpen, attr: 'data-tm-ok', sleutel: i + ':' }) : '';
   return `<div class="tm-vorm${open ? ' open' : ''}" style="--c:${SLOT_KLEUR[od.slot]}">
     <button class="tm-vk" data-tm-open-vorm="${i}" aria-expanded="${open}"><span class="tm-min">${od.minuten}′</span><span class="tm-schets" aria-hidden="true">${vormSvg(v, kn.veld)}</span>
-      <span class="tm-mid"><span class="tm-slot">${esc(naam)}</span><span class="tm-nm">${esc(v.naam)}</span><span class="tm-vsub">${od.groepen}×${od.groepGrootte} · ${kn.veld.b}×${kn.veld.l} m · ${esc(v.doel)}</span></span><span class="tm-pij">⌄</span></button>
+      <span class="tm-mid"><span class="tm-slot">${esc(naam)}${stap ? ` · <em>${esc(stap.stap)}</em>` : ''}</span><span class="tm-nm">${esc(v.naam)}</span><span class="tm-vsub">${od.groepen}×${od.groepGrootte} · ${kn.veld.b}×${kn.veld.l} m · ${esc(v.doel)}</span>${pr ? htmlPrincipeChip(pr) : ''}</span><span class="tm-pij">⌄</span></button>
     ${open ? `<div class="tm-vb"><div class="tm-vb-teken">${htmlTekenKeuze(i, v, kn.veld)}</div><div class="tm-vb-tekst">
       <div class="ok-feiten"><span>${od.minuten} min</span><span>${od.groepen}×${od.groepGrootte}${od.wissel ? '+' + od.wissel : ''} spelers</span><span>${kn.veld.b}×${kn.veld.l} m</span><span>niveau ${v.complexiteit}/3</span></div>
       <div class="ok-kaart">${velden}</div>
@@ -361,6 +396,7 @@ async function zetOpTrainingen(p, planId){
     await setDoc(trainingenRef(team, t.vervangt), {
       oefeningen, vormIds: vormIdsVan(oefeningen), titel: `Aangepast · ${titel}`, thema: p.profiel?.thema || '', duur: p.profiel?.duur || null,
       aangepast: true, aangepastDoor: S.user?.uid || null, aangepastMs: Date.now(), trainingsplanId: planId,
+      ...(p.profiel?.principe ? { principe: p.profiel.principe } : {}), ...(p.profiel?.blokFase ? { fase: p.profiel.blokFase } : {}),
       datum: t.datum, trainingsdag: weekdagIso(d), diagramUrls: {},
     }, { merge: true });
     return;
@@ -370,6 +406,7 @@ async function zetOpTrainingen(p, planId){
     id, club: team.club, teams: [S.teamId],
     week: `Week ${iso.week}`, seizoenJaar: iso.jaar, trainingsdag: weekdagIso(d), datum: t.datum,
     titel, bron: 'trainingsmodule', trainingsplanId: planId, thema: p.profiel?.thema || '', duur: p.profiel?.duur || null,
+    ...(p.profiel?.principe ? { principe: p.profiel.principe } : {}), ...(p.profiel?.blokFase ? { fase: p.profiel.blokFase } : {}),
     url: '', diagramUrls: {}, oefeningen, vormIds: vormIdsVan(oefeningen), gemaakt: serverTimestamp(),
   }, { merge: true });
 }
@@ -400,6 +437,7 @@ function openBewaarde(id){
     plan = { profiel: { ...pr, duur }, onderdelen, afsluiting, overgang: ov, meldingen: [], ruimteM2: leeftijdVanCategorie(pr.categorie) >= 13 ? 6000 : 3500 };
     plan.controle = valideer(plan);
   }
+  markeerSpeelwijze(plan);
   Object.assign(t, { vervangt: d.vervangt || null, n: N, nHand: true, duur, niv: pr.niveau || t.niv, week: pr.week || t.week, datum: pr.datum || t.datum, thema: pr.thema, themaHand: true, knop: d.knop || t.knop, weer: pr.weer || null, plan, bewaardId: id, tb: d.terugblik || {}, ai: {}, open: null, tab: {} });
   plan.profiel.week = pr.week;
   if (terugblikKlaar(t.tb)) t.tbVerzonden[id] = true;
@@ -410,7 +448,9 @@ function openBewaarde(id){
 function deelTekst(){
   const t = staat(), p = t.plan;
   const regels = [`*Training ${catLabel(S.team?.categorie)} — ${p.profiel.thema}*`, `${p.profiel.duur} min · ${p.profiel.aantalSpelers} spelers`, ''];
-  p.onderdelen.forEach(o => { regels.push(`${o.minuten}′ ${o.vorm.naam} (${o.slotNaam.toLowerCase()})`); if (o.themaregel) regels.push(`   Themaregel: ${o.themaregel}`); });
+  const draad = draadVanPlan();
+  if (draad.principe) regels.push(`Speelwijze: ${draad.principe.titel}`, `Leerdoel: ${draad.leerdoel}`, `Coachwoorden: ${draad.woorden.join(' · ')}`, '');
+  p.onderdelen.forEach(o => { regels.push(`${o.minuten}′ ${o.vorm.naam} (${o.slotNaam.toLowerCase()})`); if (o.themaregel) regels.push(`   Themaregel: ${o.themaregel}`); if (o.speelwijzeRegel) regels.push(`   Regel van de speelwijze: ${o.speelwijzeRegel}`); });
   if (p.afsluiting) regels.push(`${p.afsluiting.minuten}′ ${p.afsluiting.vorm.naam} (afsluiting)`);
   regels.push('', '_Gemaakt met Cluppie_');
   return regels.join('\n');
@@ -443,12 +483,13 @@ function teken(){
   plaats3D(root);
   window.scrollTo({ top: y });
 }
-export function koppelTrainingsmodule(v){
+export function koppelTrainingsmodule(v, { zetTeamTab = null } = {}){
   const root = v.querySelector('#tmRoot'); if (!root) return;
   const t = staat();
   root.addEventListener('click', async e => {
     const b = e.target.closest('button'); if (!b) return;
     const d = b.dataset;
+    if (d.draad){ if (zetTeamTab && d.draad !== 'training') gaNaarDraad(d.draad, zetTeamTab); return; }
     if (d.tmN){ t.n = Math.max(6, Math.min(24, t.n + Number(d.tmN))); t.nHand = true; maak(); teken(); }
     else if (d.tmTerugpres !== undefined){ t.nHand = false; t.n = verwachtAantal(t.datum).n; maak(); teken(); }
     else if (d.tmPreset !== undefined){
@@ -482,11 +523,12 @@ export function koppelTrainingsmodule(v){
     else if (d.tmWissel !== undefined){
       const i = Number(d.tmWissel), od = t.plan.onderdelen[i];
       const lst = rangschik(vormen(), od.slot, { categorie: S.team?.categorie, aantalSpelers: t.n, niveau: t.niv, thema: t.thema, doelC: t.plan.profiel.doelComplexiteit,
-        uitsluiten: t.plan.onderdelen.map(o => o.vormId), seed: t.seed, context: t.cx, datum: t.datum, halfVeld: t.halfVeld, weer: t.weer });
+        uitsluiten: t.plan.onderdelen.map(o => o.vormId), seed: t.seed, context: t.cx, datum: t.datum, halfVeld: t.halfVeld, weer: t.weer,
+        ...(speelwijzeNu() ? { speelwijze: speelwijzeNu() } : {}) });
       if (!lst[0]){ meld('Geen andere passende vorm gevonden'); return; }
       stuurSignalen([signaalVormGewisseld(leeftijdVanCategorie(S.team?.categorie), od)]);
       t.plan.onderdelen[i] = bouwOnderdeel(lst[0], { slot: od.slot, minuten: od.minuten }, { N: t.n, thema: t.thema, weer: t.weer, ruimte: t.plan.ruimteM2 });
-      t.plan.controle = valideer(t.plan); t.bewaardId = null; delete t.ai[od.slot]; teken();
+      t.plan.controle = valideer(t.plan); markeerSpeelwijze(t.plan); t.bewaardId = null; delete t.ai[od.slot]; teken();
     }
     else if (d.tmTb){
       const [sl, w] = d.tmTb.split(':'); if (!t.bewaardId) return;

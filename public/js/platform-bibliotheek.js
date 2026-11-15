@@ -12,13 +12,13 @@
    op vormIds; oude trainingen eerst één keer koppelen (knop bovenaan). Rules: zie firestore.rules [20261113d].
    Wordt getekend in het platformcentrum (platform-centrum.js) in <div id="pbRoot">. */
 import { db, doc, getDoc, getDocs, setDoc, deleteDoc, query, where, writeBatch } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261116c';
+import { S, esc, meld } from './state.js?v=20261116h';
 import { BASIS, BASIS_VERSIE, FASES, alleVormen, vormen, laadBibliotheek, verschilMetBasis, valideerVorm,
-  rijVan, KOLOMMEN, LIJSTVELDEN, vergelijkImport, veldenNaarOpslag } from './bibliotheek.js?v=20261116c';
-import { herbouwOefening, bronVanOefening, vormIdsVan, naarNieuweOpbouw } from './seizoensplan-club.js?v=20261116c';
-import { maakPlan } from './trainingsplanner.js?v=20261116c';
-import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261012e';
-import { koppelEditor, controleerTekening } from './tekening-editor.js?v=20261116c';
+  rijVan, KOLOMMEN, LIJSTVELDEN, vergelijkImport, veldenNaarOpslag } from './bibliotheek.js?v=20261116h';
+import { herbouwOefening, bronVanOefening, vormIdsVan, naarNieuweOpbouw } from './seizoensplan-club.js?v=20261116h';
+import { maakPlan } from './trainingsplanner.js?v=20261116h';
+import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261116h';
+import { koppelEditor, controleerTekening } from './tekening-editor.js?v=20261116h';
 
 const FS_URL = 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 const B = { root: null, zoek: '', fase: '', leeftijd: 0, filter: 'alle', sel: null, tab: 'tekst', concept: null, toonMeer: false,

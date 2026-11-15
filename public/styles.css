@@ -6116,7 +6116,7 @@ h3.tm-kop2{font-size:calc(20px * var(--fs))}
 .tm-model.aan{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--card))}
 .tm-model b{display:block;font-family:'Barlow Condensed',sans-serif;font-size:calc(17px * var(--fs));text-transform:uppercase}
 .tm-model span{display:block;font-size:calc(12.5px * var(--fs));color:var(--ink-2)}
-.tm-model em{display:block;font-style:normal;font-size:calc(11px * var(--fs));color:var(--keeper);margin-top:2px}
+.tm-model em{display:block;font-style:normal;font-size:calc(11px * var(--fs));color:var(--warn);margin-top:2px}
 .tm-band{display:flex;height:22px;border-radius:6px;overflow:hidden;gap:2px;margin:8px 0}
 .tm-band i{display:block;height:100%}
 .tm-blok{border-left:3px solid var(--c);padding:6px 0 6px 10px;margin-bottom:12px}
@@ -7855,3 +7855,152 @@ html.desk .dk-ss .sn-kop,html.desk .dk-ss .sn-balk,html.desk .dk-ss .sn-voet,htm
    het donkere thema gekozen is. Op een lichte achtergrond was dat 1,9 tot 3,3:1; half gemengd met zwart is het leesbaar. */
 :root:not([data-thema="donker"]) .tm-vk .tm-min,
 :root:not([data-thema="donker"]) .tm-slot{ color: color-mix(in srgb, var(--c) 50%, #000); }
+
+/* ==================== SPEELWIJZE: DE RODE DRAAD [20261116h] ====================
+   Eén beeldtaal op elk scherm waar de speelwijze terugkomt (Speelwijze, Seizoen, Training maken, Trainingen):
+   de draad met vier haltes, het wiel met de vier momenten, het principe en de schuiven van de acht keuzes.
+   --mk is de kleur van het moment (speelwijze-logica MOMENTEN). Kleur is nooit de enige aanwijzing: er staat tekst bij,
+   en tekst zelf blijft --ink of --ink-2 zodat het contrast in licht en donker klopt. */
+.sw-lead{ font-size: calc(16px * var(--fs)); line-height: 1.4; color: var(--ink); margin: 6px 0 8px; font-weight: 500; }
+.sw-lead.klein{ font-size: calc(14px * var(--fs)); margin: 6px 0 10px; }
+.sw-etiket{ display: block; font-family: var(--font-display); font-weight: 700; font-size: calc(12px * var(--fs)); text-transform: uppercase; letter-spacing: .08em; color: var(--ink-2); margin: 12px 0 3px; }
+.sw-badge{ display: inline-block; font-size: calc(10.5px * var(--fs)); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; border: 1px solid var(--hair); border-radius: 6px; padding: 1px 6px; color: var(--ink-2); white-space: nowrap; }
+.sw-badge.zwaar{ border-color: var(--mk, var(--accent)); color: var(--ink); background: color-mix(in srgb, var(--mk, var(--accent)) 16%, transparent); }
+.sw-badge.nu{ border-color: var(--ok); color: var(--ink); background: color-mix(in srgb, var(--ok) 16%, transparent); }
+
+/* de draad: vier haltes op één lijn */
+.sw-draad{ display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; position: relative; margin: 0 -4px; }
+.sw-draad::before{ content: ''; position: absolute; left: 12.5%; right: 12.5%; top: 21px; height: 3px; border-radius: 2px; background: color-mix(in srgb, var(--accent) 55%, var(--hair)); }
+.sw-halte{ all: unset; box-sizing: border-box; position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding: 8px 3px 6px; min-height: 76px; border-radius: 10px; min-width: 0; }
+button.sw-halte{ cursor: pointer; }
+button.sw-halte:focus-visible{ outline: 2px solid var(--focus, var(--accent)); outline-offset: 1px; }
+button.sw-halte:hover{ background: var(--op-vlak); }
+.sw-stip{ width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: calc(14px * var(--fs)); background: var(--card); color: var(--ink-2); border: 2px solid color-mix(in srgb, var(--accent) 55%, var(--hair)); position: relative; z-index: 1; }
+.sw-halte.nu .sw-stip{ background: var(--accent-vlak, var(--accent)); border-color: var(--accent-vlak, var(--accent)); color: var(--accent-ink, #fff); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
+.sw-halte.leeg .sw-stip{ border-style: dashed; }
+.sw-hn{ font-family: var(--font-display); font-weight: 700; font-size: calc(12.5px * var(--fs)); text-transform: uppercase; letter-spacing: .07em; color: var(--ink-2); margin-top: 3px; }
+.sw-halte.nu .sw-hn{ color: var(--ink); }
+.sw-ht{ font-size: calc(11.5px * var(--fs)); line-height: 1.25; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.sw-halte.leeg .sw-ht{ color: var(--ink-2); }
+.sw-dk{ border-top: 3px solid var(--mk, var(--hair)); }
+.sw-moment{ display: flex; align-items: center; gap: 7px; font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: calc(13px * var(--fs)); color: var(--ink-2); margin-top: 10px; }
+.sw-moment i, .sw-momentkop i, .sw-chip i{ width: 10px; height: 10px; border-radius: 3px; background: var(--mk, var(--accent)); flex: 0 0 auto; }
+.sw-leerdoel{ font-size: calc(15px * var(--fs)); line-height: 1.4; color: var(--ink); margin-top: 4px; }
+.sw-leerdoel .sw-etiket{ margin-top: 6px; }
+.sw-meer{ margin-top: 10px; border-top: 1px solid var(--hair); padding-top: 4px; }
+.sw-meer summary{ cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; font-size: calc(13.5px * var(--fs)); color: var(--ink); list-style: none; gap: 8px; }
+.sw-meer summary::-webkit-details-marker{ display: none; }
+.sw-meer summary::after{ content: '+'; margin-left: auto; font-size: 20px; color: var(--ink-2); }
+.sw-meer[open] summary::after{ content: '−'; }
+.sw-zie{ margin: 0; padding-left: 18px; font-size: calc(14px * var(--fs)); line-height: 1.45; color: var(--ink); }
+.sw-zie li{ margin: 2px 0; }
+.sw-woorden, .ok-woorden{ display: flex; flex-wrap: wrap; gap: 6px; }
+.sw-woorden span, .ok-woorden span{ border: 1.5px solid color-mix(in srgb, var(--mk, var(--accent)) 60%, var(--hair)); background: color-mix(in srgb, var(--mk, var(--accent)) 12%, var(--card)); border-radius: 99px; padding: 5px 12px; font-weight: 700; font-size: calc(13px * var(--fs)); color: var(--ink); }
+.sw-regel{ margin: 0; font-size: calc(14px * var(--fs)); line-height: 1.45; color: var(--ink); }
+
+/* het wiel: vier momenten van het spel */
+.sw-wiel{ max-width: 320px; margin: 4px auto 6px; }
+.sw-wiel svg{ display: block; width: 100%; height: auto; overflow: visible; }
+.sw-kw{ cursor: pointer; outline: none; }
+.sw-kw path{ fill: color-mix(in srgb, var(--mk) 20%, var(--card)); stroke: color-mix(in srgb, var(--mk) 70%, var(--hair)); stroke-width: 1.5; transition: fill var(--dur-short) var(--ease-out); }
+.sw-kw:hover path{ fill: color-mix(in srgb, var(--mk) 30%, var(--card)); }
+.sw-kw.aan path{ fill: color-mix(in srgb, var(--mk) 42%, var(--card)); stroke: var(--mk); stroke-width: 3; }
+.sw-kw.leeg path{ stroke-dasharray: 5 4; fill: color-mix(in srgb, var(--mk) 8%, var(--card)); }
+.sw-kw:focus-visible path{ stroke: var(--ink); stroke-width: 3; }
+.sw-kw-n{ font-family: var(--font-display); font-weight: 700; font-size: 14.5px; text-transform: uppercase; letter-spacing: .03em; fill: var(--ink); pointer-events: none; }
+.sw-kw-t{ font-family: var(--font-body); font-size: 10.5px; font-weight: 600; fill: var(--ink); opacity: .8; pointer-events: none; }
+.sw-pijl{ fill: none; stroke: var(--ink-2); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.sw-kern{ fill: var(--surface-2, var(--op-vlak)); stroke: var(--hair); }
+.sw-kern-k{ font-family: var(--font-display); font-weight: 700; font-size: 19px; text-transform: uppercase; letter-spacing: .04em; fill: var(--ink); }
+.sw-kern-s{ font-family: var(--font-body); font-size: 10.5px; font-weight: 600; fill: var(--ink-2); }
+.sw-momentkop{ display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin: 10px 0 8px; }
+.sw-momentkop i{ align-self: center; }
+.sw-momentkop b{ font-family: var(--font-display); text-transform: uppercase; letter-spacing: .04em; font-size: calc(19px * var(--fs)); color: var(--ink); }
+.sw-momentkop span{ font-size: calc(12.5px * var(--fs)); color: var(--ink-2); }
+
+/* het principe */
+.sw-pr{ border: 1px solid var(--hair); border-left: 4px solid var(--mk); border-radius: 12px; margin-bottom: 8px; background: var(--card); overflow: hidden; }
+.sw-pr.open{ border-color: color-mix(in srgb, var(--mk) 55%, var(--hair)); border-left-color: var(--mk); }
+.sw-pr-kop{ all: unset; box-sizing: border-box; display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; width: 100%; padding: 12px 12px; min-height: 52px; cursor: pointer; }
+.sw-pr-kop:focus-visible{ outline: 2px solid var(--focus, var(--accent)); outline-offset: -2px; }
+.sw-pr-t{ font-family: var(--font-display); font-weight: 700; font-size: calc(18px * var(--fs)); text-transform: uppercase; letter-spacing: .02em; line-height: 1.15; color: var(--ink); }
+.sw-pr-b{ grid-column: 1; display: flex; flex-wrap: wrap; gap: 4px; }
+.sw-pr-b:empty{ display: none; }
+.sw-pr-pijl{ grid-column: 2; grid-row: 1 / span 2; font-size: 22px; color: var(--ink-2); transition: transform var(--dur-short) var(--ease-out); }
+.sw-pr.open .sw-pr-pijl{ transform: rotate(90deg); }
+.sw-pr-in{ padding: 0 12px 14px; border-top: 1px solid var(--hair); }
+.sw-opleeftijd{ margin: 0; font-size: calc(15px * var(--fs)); line-height: 1.45; color: var(--ink); }
+.sw-bouwen{ margin: 10px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; font-size: calc(13.5px * var(--fs)); line-height: 1.4; }
+.sw-bouwen dt{ font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-2); font-size: calc(12.5px * var(--fs)); padding-top: 1px; }
+.sw-bouwen dd{ margin: 0; color: var(--ink); }
+.sw-terugrij{ display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 6px; }
+.sw-terug{ all: unset; box-sizing: border-box; display: flex; flex-direction: column; gap: 1px; padding: 8px 10px; min-height: 52px; border-radius: 10px; background: var(--surface-2, var(--op-vlak)); border: 1px solid var(--hair); }
+button.sw-terug{ cursor: pointer; }
+button.sw-terug:focus-visible{ outline: 2px solid var(--focus, var(--accent)); }
+.sw-terug b{ font-family: var(--font-display); font-size: calc(17px * var(--fs)); text-transform: uppercase; color: var(--ink); line-height: 1.1; }
+.sw-terug span{ font-size: calc(11.5px * var(--fs)); color: var(--ink-2); line-height: 1.25; }
+.sw-later{ border: 1px dashed var(--hair); border-radius: 10px; padding: 9px 12px; margin-bottom: 8px; font-size: calc(13px * var(--fs)); color: var(--ink-2); }
+.sw-3d{ margin-top: 10px; }
+.sw-3dblok{ margin-top: 10px; }
+.sw-3dnaam{ font-weight: 700; font-size: calc(14px * var(--fs)); color: var(--ink); margin-bottom: 6px; }
+.sw-uitklap{ all: unset; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 44px; cursor: pointer; font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; font-size: calc(13px * var(--fs)); color: var(--ink-2); }
+.sw-uitklap span{ font-size: 20px; }
+.sw-uitklap:focus-visible{ outline: 2px solid var(--focus, var(--accent)); }
+
+/* uitleg in drie stappen, en de vijf stijlen om mee te beginnen */
+.sw-stappen{ list-style: none; margin: 8px 0 0; padding: 0; counter-reset: sw; display: grid; gap: 8px; }
+.sw-stappen li{ counter-increment: sw; display: grid; grid-template-columns: 30px 1fr; gap: 0 10px; align-items: start; }
+.sw-stappen li::before{ content: counter(sw); grid-row: 1 / span 2; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; background: var(--surface-2, var(--op-vlak)); border: 2px solid color-mix(in srgb, var(--accent) 55%, var(--hair)); color: var(--ink); }
+.sw-stappen b{ font-family: var(--font-display); text-transform: uppercase; letter-spacing: .05em; font-size: calc(15px * var(--fs)); color: var(--ink); }
+.sw-stappen span{ font-size: calc(13px * var(--fs)); line-height: 1.4; color: var(--ink-2); }
+.sw-stijlen{ display: grid; gap: 8px; }
+.sw-stijl{ all: unset; box-sizing: border-box; display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; min-height: 56px; border-radius: 14px; border: 1.5px solid var(--hair); background: var(--surface-2, var(--op-vlak)); cursor: pointer; }
+.sw-stijl:hover{ border-color: var(--hover-rand, var(--accent)); }
+.sw-stijl:focus-visible{ outline: 2px solid var(--focus, var(--accent)); }
+.sw-stijl b{ font-family: var(--font-display); text-transform: uppercase; letter-spacing: .03em; font-size: calc(17px * var(--fs)); color: var(--ink); }
+.sw-stijl span{ font-size: calc(13px * var(--fs)); line-height: 1.4; color: var(--ink-2); }
+
+/* de acht keuzes als schuiven */
+.sw-schuiven{ display: grid; gap: 14px; margin-top: 8px; }
+.sw-schuif-kop{ display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 6px; }
+.sw-schuif-kop b{ font-family: var(--font-display); text-transform: uppercase; letter-spacing: .05em; font-size: calc(14px * var(--fs)); color: var(--ink); }
+.sw-baan{ position: relative; height: 8px; border-radius: 99px; background: var(--op-vlak-2, var(--hair)); margin: 0 9px; }
+.sw-baan::before{ content: ''; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; background: var(--hair); }
+.sw-baan i{ position: absolute; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; background: var(--accent-vlak, var(--accent)); border: 3px solid var(--card); box-shadow: 0 0 0 1px var(--hair); }
+.sw-schuif.open .sw-baan i{ background: var(--card); border: 2px dashed var(--ink-2); box-shadow: none; }
+.sw-kanten{ display: flex; justify-content: space-between; gap: 12px; margin-top: 7px; font-size: calc(12px * var(--fs)); line-height: 1.3; color: var(--ink-2); }
+.sw-kanten span{ flex: 1; }
+.sw-kanten span:last-child{ text-align: right; }
+.sw-kanten span.aan{ color: var(--ink); font-weight: 700; }
+
+/* de speelwijze in het seizoen */
+.sw-dekband{ display: flex; height: 14px; border-radius: 7px; overflow: hidden; gap: 2px; margin: 8px 0; }
+.sw-dekband i{ display: block; height: 100%; min-width: 4px; }
+.sw-dekleg{ list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 4px; font-size: calc(13px * var(--fs)); color: var(--ink); }
+.sw-dekleg li{ display: flex; align-items: center; gap: 8px; }
+.sw-dekleg li i{ width: 10px; height: 10px; border-radius: 3px; flex: 0 0 auto; }
+.sw-dekleg b{ margin-left: auto; white-space: nowrap; font-weight: 700; }
+.sw-chip{ display: inline-flex; align-items: center; gap: 6px; max-width: 100%; border: 1px solid color-mix(in srgb, var(--mk, var(--accent)) 55%, var(--hair)); background: color-mix(in srgb, var(--mk, var(--accent)) 10%, var(--card)); border-radius: 8px; padding: 3px 8px; font-size: calc(12px * var(--fs)); font-weight: 600; color: var(--ink); line-height: 1.3; text-transform: none; letter-spacing: 0; font-family: var(--font-body); }
+.sw-chip.basis{ border-style: dashed; border-color: var(--hair); background: transparent; color: var(--ink-2); }
+.sw-blokchip{ margin: 5px 0 3px; display: flex; flex-wrap: wrap; gap: 5px; }
+.tm-mid .sw-chip{ align-self: flex-start; margin-top: 4px; }
+.sw-weekdoel{ font-size: calc(13.5px * var(--fs)); line-height: 1.4; color: var(--ink); margin: 2px 0 6px; }
+.sw-weekdoel .sw-etiket{ margin: 4px 0 1px; }
+.tm-slot em{ font-style: normal; color: var(--ink-2); }
+.trw-draad{ margin: 0 0 12px; }
+.dk-draad{ margin-bottom: 14px; }
+
+/* oefenkaart en 3D: spelverloop, speelwijze en fases */
+.ok-verloop{ border-left: 3px solid var(--hair); padding-left: 10px; }
+.ok-fase{ font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: calc(12.5px * var(--fs)); color: var(--ink); margin: 8px 0 2px; }
+.ok-fase:first-child{ margin-top: 2px; }
+.ok-speelwijze{ border: 1px solid var(--hair); border-radius: 10px; padding: 7px 10px; margin: 0 0 8px; font-size: calc(13px * var(--fs)); color: var(--ink); }
+.ok-themaregel.sw{ background: var(--surface-2, var(--op-vlak)); border-color: var(--hair); }
+.s3d-fase{ display: inline-block; margin-right: 8px; padding: 1px 7px; border-radius: 6px; border: 1px solid var(--hair); font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: calc(11.5px * var(--fs)); color: var(--ink); }
+.s3d-fase.auto{ border-style: dashed; color: var(--ink-2); }
+.s3d-voortgang span.auto{ background: repeating-linear-gradient(90deg, var(--op-vlak-2, var(--hair)) 0 4px, transparent 4px 7px); }
+.s3d-voortgang span.auto.klaar{ background: repeating-linear-gradient(90deg, var(--accent) 0 4px, transparent 4px 7px); }
+/* desktop: het scherm Speelwijze is één kolom (de twee kolommen van .tm zijn voor Training maken) */
+@media (min-width: 900px){ html.desk .tm.sw{ display: block; max-width: 760px; } }
+html.desk .tm .sw-dk{ grid-column: 1 / -1; }
+@media (prefers-reduced-motion: reduce){ .sw-kw path, .sw-pr-pijl{ transition: none; } }

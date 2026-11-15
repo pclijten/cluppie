@@ -12,7 +12,7 @@
 
    De functies bovenaan zijn puur (tests/tekening-editor.test.mjs). Opslaan doet platform-bibliotheek.js:
    de tekening is een gewoon veld van de vorm en gaat mee in de overlay (platform/bibliotheek/vormen/{id}). */
-import { stappenVan, maak3DBlok } from './scene3d.js?v=20261115b';
+import { stappenVan, maak3DBlok } from './scene3d.js?v=20261116h';
 
 export const SOORTEN = { pass: 'Pass', loopweg: 'Loopt', dribbel: 'Dribbelt', schot: 'Schot' };
 export const KANTEN = { eigen: 'Eigen team', tegen: 'Tegenstander', joker: 'Joker', keeper: 'Keeper' };
@@ -67,6 +67,12 @@ export function verschuifLijn(t, i, richting){
   if (!t.lijnen[i] || j < 0 || j >= t.lijnen.length) return i;
   [t.lijnen[i], t.lijnen[j]] = [t.lijnen[j], t.lijnen[i]];
   return j;
+}
+/* [20261116h] Een stap alleen in 3D tonen (niet in de tekening) of tegelijk met de stap ervoor laten spelen. */
+export function wisselVlag(t, i, vlag){
+  zeker(t); const l = t.lijnen[i]; if (!l || !['vervolg', 'samen'].includes(vlag)) return;
+  if (vlag === 'samen' && i === 0) return;                /* de eerste stap heeft geen stap ervoor */
+  if (l[vlag]) delete l[vlag]; else l[vlag] = true;
 }
 export function zetSoort(t, i, soort){ zeker(t); if (t.lijnen[i] && SOORTEN[soort]) t.lijnen[i].soort = soort; }
 export function zetBal(t, x, y){ t.bal = [rond(x), rond(y)]; }
@@ -141,9 +147,12 @@ export function htmlEditor(vorm, st){
         <select class="invoer te-sel" data-te="spelerkant" aria-label="Soort speler">${Object.entries(KANTEN).map(([k, n]) => `<option value="${k}"${(sp.kant || 'eigen') === k ? ' selected' : ''}>${n}</option>`).join('')}</select>
         <button type="button" class="knop licht klein" data-te="spelerweg">Verwijder speler</button></div>` : ''}
     <div class="te-kop">Stappen in 3D <small>(elke lijn is één stap, in deze volgorde)</small></div>
+    <p class="te-hulp">Teken het hele spelverloop: ook de reactie van de tegenstander en de afronding. Met “alleen 3D” blijft de tekening rustig; met “tegelijk” speelt een stap samen met de vorige. Bij minder dan 5 stappen vult 3D zelf een voorbeeld van het vervolg aan.</p>
     ${stappen.length ? `<ol class="te-stappen">${stappen.map((s, i) => `<li class="${st.lijn === i ? 'te-gekozen' : ''}" data-te-rij="${i}">
         <span class="te-tekst">${esc(s.tekst)}</span>
         <span class="te-acties"><select class="invoer te-sel" data-te="lijnsoort" data-i="${i}" aria-label="Soort lijn van stap ${i + 1}">${Object.entries(SOORTEN).map(([k, n]) => `<option value="${k}"${t.lijnen[i].soort === k ? ' selected' : ''}>${n}</option>`).join('')}</select>
+          <button type="button" class="tm-chip tm-mini${t.lijnen[i].vervolg ? ' aan' : ''}" data-te="vervolg" data-i="${i}" aria-pressed="${!!t.lijnen[i].vervolg}" title="Deze stap staat niet in de tekening, alleen in 3D">alleen 3D</button>
+          ${i ? `<button type="button" class="tm-chip tm-mini${t.lijnen[i].samen ? ' aan' : ''}" data-te="samen" data-i="${i}" aria-pressed="${!!t.lijnen[i].samen}" title="Speelt tegelijk met de stap ervoor">tegelijk</button>` : ''}
           <button type="button" class="knop licht klein" data-te="op" data-i="${i}" aria-label="Stap ${i + 1} eerder"${i === 0 ? ' disabled' : ''}>↑</button>
           <button type="button" class="knop licht klein" data-te="neer" data-i="${i}" aria-label="Stap ${i + 1} later"${i === stappen.length - 1 ? ' disabled' : ''}>↓</button>
           <button type="button" class="knop licht klein" data-te="lijnweg" data-i="${i}" aria-label="Stap ${i + 1} verwijderen">✕</button></span></li>`).join('')}</ol>`
@@ -207,6 +216,7 @@ export function koppelEditor(houder, vorm, { opWijzig = () => {} } = {}){
       if (a === 'modus'){ st.modus = b.dataset.k; st.van = null; return teken(false); }
       if (a === 'spelerweg'){ verwijderSpeler(t(), st.speler); st.speler = -1; return teken(true); }
       if (a === 'lijnweg'){ verwijderLijn(t(), i); st.lijn = -1; return teken(true); }
+      if (a === 'vervolg' || a === 'samen'){ wisselVlag(t(), i, a); return teken(true); }
       if (a === 'op'){ st.lijn = verschuifLijn(t(), i, -1); return teken(true); }
       if (a === 'neer'){ st.lijn = verschuifLijn(t(), i, 1); return teken(true); }
       if (a === 'balweg'){ balWeg(t()); return teken(true); }

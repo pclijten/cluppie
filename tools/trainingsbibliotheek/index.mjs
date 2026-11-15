@@ -14,6 +14,8 @@ import { DEEL_M } from './vormen-m.mjs';
 import { DEEL_N } from './vormen-n.mjs';
 import { DEEL_O } from './vormen-o.mjs';
 import { DEEL_P } from './vormen-p.mjs';
+import { DEEL_S } from './vormen-s.mjs';
+import { principesVan } from './principes.mjs';
 import { VERRIJKING } from './verrijking.mjs';
 
 /* Eerste 48 vormen krijgen soort, uitleg, varianten en let-op-punten uit verrijking.mjs. */
@@ -37,7 +39,7 @@ const balBijSpeler = (v) => {
   const lijnen = (t.lijnen || []).map(l => ({ ...l, punten: l.punten.map(p => (d(p, oud) < 3 ? nieuw : p)) }));
   return { ...v, tekening: { ...t, bal: nieuw, lijnen } };
 };
-const NIEUW = [DEEL_D, DEEL_E, DEEL_F, DEEL_G, DEEL_H, DEEL_I, DEEL_J, DEEL_K, DEEL_M, DEEL_N, DEEL_O, DEEL_P];
+const NIEUW = [DEEL_D, DEEL_E, DEEL_F, DEEL_G, DEEL_H, DEEL_I, DEEL_J, DEEL_K, DEEL_M, DEEL_N, DEEL_O, DEEL_P, DEEL_S];
 const OUD = [...DEEL_A, ...DEEL_B, ...DEEL_C].map(verrijk);
 /* Tijdbestek: elke vorm heeft een vaste standaardtijd van 5, 10, 15 of 20 minuten (20 alleen met een pauze erin).
    Staat die niet in de bron, dan volgt hij uit de rondes: het midden van de rondes, afgerond op 5 minuten. */
@@ -50,7 +52,8 @@ export function tijdVan(v){
   const [lo, hi] = { 'warming-up': [5, 15], afsluiting: [5, 5], partijspel: [10, 20] }[v.fase] || [10, 15];
   return Math.max(lo, Math.min(hi, t));
 }
-export const VORMEN = [...OUD, ...NIEUW.flat()].map(balBijSpeler).map(v => ({ ...v, tijd: tijdVan(v) }));
+/* [20261116h] principes: bij welke principes van de speelwijze hoort de vorm (principes.mjs; leeg = basisvorm). */
+export const VORMEN = [...OUD, ...NIEUW.flat()].map(balBijSpeler).map(v => ({ ...v, tijd: tijdVan(v) })).map(v => ({ ...v, principes: principesVan(v) }));
 
 /* Themaregels voor de partijspelen (één eenvoudige regel per leercurve-thema). */
 export const THEMAREGELS = {
@@ -60,7 +63,7 @@ export const THEMAREGELS = {
 };
 
 export const BIBLIOTHEEK = {
-  versie: '2026.11.14-zeven-velden',
+  versie: '2026.11.16-speelwijze',
   taal: 'nl',
   licentie: 'Eigen werk (Cluppie). Referentiekader: KNVB-spelregels en -principes. Geen KNVB-tekst of -afbeeldingen overgenomen.',
   themaregels: THEMAREGELS,

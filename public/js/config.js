@@ -1,4 +1,4 @@
-import { S } from './state.js?v=20261116c';
+import { S } from './state.js?v=20261116h';
 
 /* ==================== CLUB-CONFIGURATIE (actieve laag) ====================
    [20260929c] Alles in dit bestand is de STANDAARD. Per club kan een beheerder

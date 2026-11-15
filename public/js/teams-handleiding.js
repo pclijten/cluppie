@@ -4,10 +4,10 @@
    wat hierboven al in dit bestand staat. De zoekfunctionaliteit
    (#helpZoek) wordt door de hub (teams.js/koppelTeamTab) aangesloten,
    want die werkt direct op het gerenderde DOM-element. */
-import { esc } from './state.js?v=20261116c';
-import { beleidsplanNaam } from './clubconfig.js?v=20261116f';
-import { ROLKAARTEN } from './rolkaart.js?v=20261116c';
-import { onboardingHerstartBlok } from './onboarding.js?v=20261116g';
+import { esc } from './state.js?v=20261116h';
+import { beleidsplanNaam } from './clubconfig.js?v=20261116h';
+import { ROLKAARTEN } from './rolkaart.js?v=20261116h';
+import { onboardingHerstartBlok } from './onboarding.js?v=20261116h';
 
 export function htmlHandleiding(){
   return `<div class="hl">
@@ -95,6 +95,28 @@ export function htmlHandleiding(){
       <li>Een aangepaste training blijft staan, ook als het seizoensplan later verandert.</li>
     </ul>
     <div class="tip">Training maken werkt <b>zonder AI</b> en bewaart geen spelersnamen. Veldmaten en ruimte per speler zijn richtwaarden, geen KNVB-normen: laat het weten als iets in de praktijk anders werkt.</div>
+    </section>
+
+    <section class="hl-sec" data-zoek="🧭 speelwijze rode draad hoe willen wij voetballen onder trainingen staat de tegel speelwijze. de speelwijze is de rode draad van het seizoen: de vier momenten van het spel (wij hebben de bal, wij verliezen de bal, zij hebben de bal, wij winnen de bal) met per moment de principes voor de leeftijd van je team. per principe zie je wat je ziet als het lukt, drie coachwoorden, een regel voor het partijspel, de vraag voor na de wedstrijd en een oefening in 3d. de club legt de speelwijze vast onder club › speelwijze (clubbeheerder of hoofd jeugdopleiding, met een stijl als startpunt of een vragenlijst). een trainer zonder club, of een team van een club die nog niets heeft vastgelegd, kiest zelf een stijl of beantwoordt 8 vragen. de speelwijze komt terug in seizoen (thema's die erbij horen komen een keer extra, bij elk blok staat het principe), in training maken (leerdoel, vormen die het principe trainen, coachwoorden, regel in het partijspel), op trainingen en in de wedstrijdevaluatie (de vraag van het principe). leeftijd gaat voor: druk zetten en omschakelen als team komt standaard vanaf o12, vaste posities vanaf o10. zonder speelwijze werkt alles zoals altijd op het thema.">
+    <h3>🧭 Speelwijze: de rode draad</h3>
+    <p>Onder <b>Trainingen</b> staat de tegel <b>Speelwijze</b>. Daar staat hoe jullie willen voetballen, in de vier momenten van het spel: wij hebben de bal, wij verliezen de bal, zij hebben de bal en wij winnen de bal. Per moment zie je de principes voor de leeftijd van je team.</p>
+    <ul>
+      <li><b>Een principe</b> heeft: wat je ziet als het lukt, drie coachwoorden, een regel voor het partijspel, een vraag voor na de wedstrijd en een oefening die je in 3D kunt bekijken.</li>
+      <li><b>Wie legt hem vast?</b> De club, onder Club › Speelwijze (clubbeheerder of hoofd jeugdopleiding). Train je zonder club, of heeft je club nog niets vastgelegd, dan kies je zelf een stijl of beantwoord je acht korte vragen.</li>
+      <li><b>Seizoen</b>: thema’s die bij de speelwijze horen komen een keer extra, en bij elk blok staat het principe dat je traint. Onder “De speelwijze in dit seizoen” zie je hoeveel weken elk moment krijgt.</li>
+      <li><b>Training maken</b>: bovenaan staat de rode draad (Speelwijze → Seizoen → Training → Wedstrijd) met het leerdoel van vandaag. Vormen die het principe trainen krijgen voorrang en het partijspel krijgt de regel van het principe.</li>
+      <li><b>Wedstrijd</b>: in de evaluatie staat de vraag van het principe van die weken. Je antwoord stuurt het seizoensplan bij.</li>
+    </ul>
+    <div class="tip">Leeftijd gaat voor de speelwijze: druk zetten en omschakelen als team komt standaard vanaf O12, vaste posities vanaf O10. Zonder speelwijze werkt alles zoals altijd, op het thema van de week. De speelwijze is een eigen ontwerp op basis van ervaring van trainers, geen gevalideerde test.</div>
+    </section>
+
+    <section class="hl-sec" data-zoek="🎬 oefening in 3d spelverloop stappen bij elke vorm kies je boven de tekening tussen tekening en 3d. in 3d zie je het hele spelverloop stap voor stap: vorige, afspelen, volgende, opnieuw, en schuifjes voor hoek en draai. stappen die tegelijk gebeuren (pass en loopactie) spelen samen. bij vormen met een uitgeschreven verloop staat de naam van de fase erbij (opbouw, doorbreken, afronden, omschakelen) en staat het spelverloop ook in het veld uitleg. heeft een vorm maar een of twee pijlen in de tekening, dan laat 3d daarna een voorbeeld van het vervolg zien: druk van de tegenstander, de pass naar de vrije speler, doorlopen en afronden. dat staat erbij als voorbeeld van het vervolg en is geen vaste afspraak van de oefening.">
+    <h3>🎬 Oefening in 3D: het hele spelverloop</h3>
+    <p>Bij elke vorm kies je boven de tekening tussen <b>Tekening</b> en <b>3D</b>. In 3D zie je het spelverloop stap voor stap, met Vorige, Afspelen, Volgende en Opnieuw. Stappen die tegelijk gebeuren (een pass en een loopactie) spelen samen.</p>
+    <ul>
+      <li>Bij vormen met een uitgeschreven verloop staat de fase erbij (bijvoorbeeld Opbouw, Doorbreken, Afronden, Omschakelen). Hetzelfde verloop staat in het veld <b>Uitleg</b>.</li>
+      <li>Heeft een vorm maar één of twee pijlen, dan laat 3D daarna een <b>voorbeeld van het vervolg</b> zien: druk van de tegenstander, de pass naar de vrije speler, doorlopen en afronden. Dat is een voorbeeld op basis van de opstelling, geen vaste afspraak van de oefening.</li>
+    </ul>
     </section>
 
     <section class="hl-sec" data-zoek="📆 seizoen jaarlijn blokken bijsturing seizoensplan club eigen plan alleen lezen coördinator opzet opbouwmodel leercurve vrije weken trainingen per week duur accent signalen thema-check evaluatie">

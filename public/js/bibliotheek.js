@@ -9,7 +9,7 @@
 
    Pure functies (voegSamen, valideerVorm, rij/kolommen voor Excel) zijn getest in
    tests/bibliotheek.test.mjs. Impactanalyse: claude/trainingsbibliotheek-beheer-impactanalyse.md. */
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261115b';
+import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261116h';
 
 export const BASIS = BIBLIOTHEEK.vormen;
 export const BASIS_VERSIE = BIBLIOTHEEK.versie;
