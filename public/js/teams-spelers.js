@@ -20,7 +20,7 @@ import {
   POSITIE_GROEPEN, SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo,
   wisselReden, isToernooi
 } from './config.js?v=20261115e';
-import { analyseWedstrijd, speeltijdReserve, disciplinaireTijd, telaatTijd, persoonlijkeNoemer } from './analyse.js?v=20261115e';
+import { analyseWedstrijd, speeltijdReserve, disciplinaireTijd, telaatTijd, persoonlijkeNoemer } from './analyse.js?v=20261116a';
 import { isBouwCoordinator } from './coordinatoren.js?v=20261115e';
 import { magUitlenen } from './uitleen-rechten.js?v=20261115e';
 import { leenOmschrijving, leenActief } from './uitleen-regels.js?v=20261113b';
@@ -30,7 +30,7 @@ import { rondesVoorTeam, rondeSpelers, datumKort } from './evaluatierondes.js?v=
 import { toonThemaInfo } from './teams-leerlijn.js?v=20261115e';
 import { telGebruik } from './tracker.js?v=20261115e';
 import { opkomstVoor, teltMee } from './opkomst.js?v=20260922c';
-import { heeftElftallen, filterOpElftal, elftalPillen } from './elftallen.js?v=20261115e';
+import { heeftElftallen, filterOpElftal, elftalPillen } from './elftallen.js?v=20261116a';
 import { bouwVanTeam, eigenBouwenVanTeam } from './bouw-indeling.js?v=20261115e';
 import { htmlVolledigFormulier, koppelVolledigFormulier, koppelInfo, htmlSamenvatting, htmlNaslagLink, htmlSnelAnker,
   domeinScores, leeftijdTeam, naslagEersteKeer } from './beoordeling-volledig.js?v=20261115e';
@@ -40,7 +40,7 @@ import { htmlVolledigFormulier, koppelVolledigFormulier, koppelInfo, htmlSamenva
    import). Dynamic import() binnen de aanroepende functie is het patroon
    dat de rest van de app ook al gebruikt (zie club.js/wedstrijd.js). */
 async function herrenderTeam(){
-  const m = await import('./teams.js?v=20261115e');
+  const m = await import('./teams.js?v=20261116a');
   m.renderTeam();
 }
 
@@ -1491,7 +1491,7 @@ export async function modalUitlenen(spelerId){
      Uitgebreid) en mag alleen door coördinatoren en de clubadmin. */
   const team = { ...S.team, id: S.teamId };
   if (!magUitlenen(team)) return meld('Uitlenen regelt de coördinator van de bouw');
-  const m = await import('./uitleen-form.js?v=20261115e');
+  const m = await import('./uitleen-form.js?v=20261116a');
   m.openUitleenForm({ clubId, vanTeam: team, speler: p });
 }
 
@@ -1499,7 +1499,7 @@ export async function modalUitlenen(spelerId){
 export async function wijzigUitlening(u, clubIdOverride, naOpslaan){
   const clubId = clubIdOverride || S.team?.club;
   if (!clubId || !u) return meld('Uitlening niet gevonden');
-  const m = await import('./uitleen-form.js?v=20261115e');
+  const m = await import('./uitleen-form.js?v=20261116a');
   m.openUitleenForm({ clubId, vanTeam: { id: u.vanTeam, naam: u.vanTeamNaam }, speler: { id: u.spelerId, naam: u.snapshot?.naam || 'Speler' }, bestaand: u, naOpslaan });
 }
 

@@ -13,7 +13,7 @@ import {
 import { NIVEAUS, niveauKleur, TEAM_CATEGORIEEN, TEAM_TAGS, teamCategorie, SEIZOEN_FALLBACK } from './config.js?v=20261115e';
 import { ico } from './icons.js?v=20261110a';
 
-import { htmlStats } from './wedstrijd.js?v=20261115e';
+import { htmlStats } from './wedstrijd.js?v=20261116a';
 import { telGebruik } from './tracker.js?v=20261115e';
 import { themaOpDatum } from './seizoensplan-logica.js?v=20261115e';
 import { onderdeelAan } from './onderdelen.js?v=20261115e';

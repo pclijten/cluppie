@@ -2,7 +2,7 @@
 
 Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
 
-## Stand (bijgewerkt 15-11-2026, versie 20261115e)
+## Stand (bijgewerkt 16-11-2026; live is 20261115e, 20261116a staat klaar op branch `wp2-applogica`)
 - **Firestore-rules:** per club afgeschermd (teams, trainingen, video's, documenten, berichten via clublidmaatschap). Getest in de emulator: `npm run test:rules` (40 scenario's, laatst 40/40 groen op 14-11). Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.
 - **Cloud Functions:** live in `europe-west1` (Node 22, 2nd gen). Iedere nieuwe callable heeft na de eerste deploy de invoker `allUsers` nodig (`gcloud run services add-iam-policy-binding <naam-in-kleine-letters> …`), anders krijgt de app een CORS-/`internal`-fout.
 - **Tests:** `npm test` (17 suites, laatst 13-10 allemaal groen; nieuw: `vaste-afmeldingen`. Eerst één keer `cd functions && npm install`) en `node tests/toegang.test.js` (aansluiten/uitnodigen, 24 scenario's). Pariteit met ASV'33: `node tools/pariteit.mjs ../cluppieasv33` (stand 14-11: ASV'33 t/m PR #60 gepoort; de tool werkt nu ook op Windows; resterende meldingen zijn bewust: overzetten via de server, trainco-beheer via functions, bronvermelding niet overgenomen, `nu-test.js` is een ASV-testpagina).
@@ -10,6 +10,14 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
 
 ## Open
+**Voor Paul — Totaalplan WP2 t/m WP9 (release 20261116a, branch `wp2-applogica`)**
+- [ ] **Nog niet live.** Alleen client, geen rules- of functions-wijziging: mergen naar `main` is genoeg (`git push origin wp2-applogica:main`, of een PR). Claude mocht deze push naar `main` niet zelf doen.
+- [ ] Code: van plek wisselen tijdens een periode klopt nu (`verwisselSlots` in `analyse.js`, test `tests/opstelling.test.mjs`); melding bij vervangen met de klok op 0:00; raakvlak van kleine knoppen minstens 44 px op aanraakschermen (blok TIKDOELEN onderaan `styles.css`); `tools/importcheck.mjs` in `npm test`; fout in `over/over-beleving.js` bij het verkleinen van het venster.
+- [ ] **Vraag:** het totaalplan noemt de bug "wissel zonder lopende klok" zonder beschrijving. Zie `docs/wp2-applogica.md`: is wat daar staat de bug die je bedoelt?
+- [ ] Documenten om te lezen en te beslissen, elk met beslispunten onderaan: `docs/wp2-applogica.md`, `docs/wp3-multitenant-impactanalyse.md`, `docs/wp4-3d-stand.md`, `docs/wp5-design-doorlichting.md`, `docs/wp6-onboarding-per-rol.md`, `docs/wp8-marketing.md`, `docs/wp9-uitrolplan.md`.
+- [ ] `docs/juridisch/`: concepten voor verwerkersovereenkomst, voorwaarden losse trainers, verwerkingsregister en datalekprocedure. **Geschreven door een AI, niet getoetst: eerst naar een jurist.** Niets ervan is gepubliceerd.
+- [ ] Getest: `npm test` 43 suites groen. Tikdoelen in de browser gemeten (lokale demo, 375×812). Het wisselen van plek is alleen met de test gecontroleerd, niet doorgeklikt in een wedstrijd.
+
 **Voor Paul — Beveiligingsfixes en release 20261114a samen (release 20261115e, branch `asv33-14nov-bijgewerkt`, totaalplan WP0 + WP1)**
 - [x] **Live sinds 15-11-2026** (door Claude, na akkoord van Paul): rules en indexen gedeployed, alle 45 functions gedeployed (geen nieuwe callables, invokers intact: de functies antwoorden met hun eigen meldingen), branch naar `main` gebracht (fast-forward, zonder PR).
 - [x] Bevat `wp0-opruimen` (20261115d, de beveiligingsfixes) en de release 20261114a die alleen in de lokale werkmap stond (ASV'33 PR #60: privé-rondebeoordelingen, nieuwe volledige beoordeling, pdf-profiel per club, eigen team mee naar de club). De deploy-stappen in de blokken 20261114a hieronder zijn hiermee gedaan, op de console-acties na.

@@ -22,7 +22,7 @@ import { functions, httpsCallable } from './firebase.js?v=20261011g';
 import { S, esc, terugLaag, terugLaagWeg } from './state.js?v=20261115e';
 import { telGebruik } from './tracker.js?v=20261115e';
 import { aiAan } from './clubconfig.js?v=20261115e';
-import { startOnboarding, startOnboardingHoofdstuk, heeftOnboardingHoofdstuk } from './onboarding.js?v=20261115e';
+import { startOnboarding, startOnboardingHoofdstuk, heeftOnboardingHoofdstuk } from './onboarding.js?v=20261116a';
 
 /* Sessiegeschiedenis — leeft alleen zolang de app open is. */
 let berichten = [];   // [{role:'user'|'assistant', content:'...'}]

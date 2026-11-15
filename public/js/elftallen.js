@@ -15,7 +15,7 @@
    state.js niet geraakt wordt. */
 import { S, $, $$, esc, meld, openModal, sluitModal } from './state.js?v=20261115e';
 import { db, doc, updateDoc } from './firebase.js?v=20261011g';
-import { analyseWedstrijd } from './analyse.js?v=20261115e';
+import { analyseWedstrijd } from './analyse.js?v=20261116a';
 
 /* ---------- basis ---------- */
 export function heeftElftallen(team = S.team){ return !!(team && team.tweedeElftal); }

@@ -7798,3 +7798,15 @@ html.desk .dk-ss .sn-kop,html.desk .dk-ss .sn-balk,html.desk .dk-ss .sn-voet,htm
 .pc-pdf-proef .rij{gap:8px;flex-wrap:wrap}
 .pc-pdf-res{display:grid;gap:8px}
 .pc-pdf-oef{border:1px solid var(--line-d);border-radius:12px;padding:var(--space-sm);max-height:60vh;overflow:auto;background:var(--surface)}
+
+/* ==================== TIKDOELEN [20261116a] ====================
+   Kleine icoonknoppen (terug, privacy, uitloggen, bladeren, openen) waren 28 tot 38 px. Op een aanraakscherm
+   krijgt elk een onzichtbaar raakvlak van minstens 44 px, zonder dat de opmaak verandert. :where() houdt de
+   specificiteit op nul, zodat bestaande regels voor position en ::after altijd voorgaan. */
+@media (pointer: coarse){
+  :where(.terug, .uitlog-knop, .hub-teamnaam, .kompas-nav button, .acties button){ position: relative; }
+  :where(.terug, .uitlog-knop, .hub-teamnaam, .kompas-nav button, .acties button)::after{
+    content: ''; position: absolute; left: 50%; top: 50%;
+    width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
+  }
+}

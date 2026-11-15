@@ -95,7 +95,7 @@ if (gsap && ScrollTrigger && !rustig) {
       x: () => -afstand(), ease: 'none',
       scrollTrigger: { trigger: sectie, start: 'top top', end: () => '+=' + afstand(), pin: true, scrub: 0.6, invalidateOnRefresh: true },
     });
-    return () => { sectie.classList.remove('is-gepind'); tw.scrollTrigger.kill(); tw.kill(); gsap.set(rail, { clearProps: 'x' }); };
+    return () => { sectie.classList.remove('is-gepind'); if (tw.scrollTrigger) tw.scrollTrigger.kill(); tw.kill(); gsap.set(rail, { clearProps: 'x' }); };
   });
 
   /* ---------- de cirkel: een Zdog-bal rolt mee met het zaterdag-verhaal ---------- */
