@@ -303,12 +303,32 @@ function inkOp(hex){
     .reduce((s, c, i) => s + c * [0.2126, 0.7152, 0.0722][i], 0);
   return (1.05 / (l + 0.05)) >= ((l + 0.05) / 0.0559) ? '#fdfdfe' : '#0b0d10';
 }
+/* [20261116f] De clubkleur als TEKST (kopjes, links) haalt lang niet altijd genoeg contrast: fel rood
+   4,2:1 op de lichte achtergrond, geel 1,4:1. tekstKleur() schuift de kleur richting zwart (lichte
+   achtergrond) of wit (donkere) tot het contrast minstens `doel` is. Puur, getest in tests/accent-tekst.test.mjs. */
+const LICHT_BG = '#e9edf2', DONKER_BG = '#181d24';
+function lumHex(hex){
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(c => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; })
+    .reduce((s, c, i) => s + c * [0.2126, 0.7152, 0.0722][i], 0);
+}
+export function contrastHex(a, b){ const [x, y] = [lumHex(a), lumHex(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); }
+export function tekstKleur(hex, bg, doel = 4.5){
+  if (!/^#[0-9a-f]{6}$/i.test(hex || '') || !/^#[0-9a-f]{6}$/i.test(bg || '')) return hex;
+  const naar = lumHex(bg) > 0.4 ? 0 : 255, n = parseInt(hex.slice(1), 16), rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  for (let p = 0; p <= 100; p += 5){
+    const k = '#' + rgb.map(c => Math.round(c + (naar - c) * p / 100).toString(16).padStart(2, '0')).join('');
+    if (contrastHex(k, bg) >= doel) return k;
+  }
+  return naar ? '#ffffff' : '#000000';
+}
 function zetKleur(hex){
   const st = document.documentElement.style;
-  const props = ['--accent', '--grass', '--grass-2', '--accent-vlak', '--accent-ink'];
+  const props = ['--accent', '--grass', '--grass-2', '--accent-vlak', '--accent-ink', '--accent-tekst-licht', '--accent-tekst-donker'];
   if (hex === '#e2342f'){ props.forEach(p => st.removeProperty(p)); return; }
   st.setProperty('--accent', hex); st.setProperty('--grass', hex); st.setProperty('--grass-2', donker(hex));
   st.setProperty('--accent-vlak', hex); st.setProperty('--accent-ink', inkOp(hex));
+  st.setProperty('--accent-tekst-licht', tekstKleur(hex, LICHT_BG)); st.setProperty('--accent-tekst-donker', tekstKleur(hex, DONKER_BG));
 }
 
 /* ---------- Loginscherm-branding (vóór het inloggen is de club nog onbekend) ---------- */

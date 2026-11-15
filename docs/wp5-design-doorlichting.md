@@ -1,6 +1,8 @@
 # WP5 — Design: doorlichting
 
-16-11-2026. Gemeten in de demo (`index.html?demo`) op 375×812 met aanraakbediening, licht thema. De demo kent één rol: de coach.
+16-11-2026. **Bijgewerkt:** sinds release 20261116f meet `npm run test:rook` dit automatisch voor zeven rollen op telefoon en laptop (109 schermen). De eerste meting hieronder was met de hand, alleen voor de coach. De actuele lijst met wat nog open staat, staat bovenaan PORTEREN.md.
+
+Eerste meting: in de demo (`index.html?demo`) op 375×812 met aanraakbediening, licht thema.
 
 ## Hoe gemeten
 

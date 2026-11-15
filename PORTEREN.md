@@ -2,7 +2,8 @@
 
 Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
 
-## Stand (bijgewerkt 16-11-2026, versie 20261116e)
+## Stand (bijgewerkt 16-11-2026, versie 20261116f)
+- **Rooktest per rol:** `npm run test:rook` (`tools/rooktest.mjs`) opent de demo als elk van de zeven rollen in Chrome, op 414×896 en 1440×900, klikt op de telefoon elke tegel van het teamscherm open en meldt fouten, lege schermen, horizontaal schuiven, tikdoelen onder 44 px en contrast onder de norm. Laatst 16-11: 109 schermen, geen fouten. Nodig: `puppeteer-core` (`npm i -g puppeteer-core` of `PUPPETEER_PAD`) en Chrome. Met `--donker` voor het donkere thema.
 - **Storage-rules:** getest in de emulator met `npm run test:storage` (20 proeven per gebruikerstype, laatst 20/20 op 16-11; eigen poorten in `firebase.test.json`). Deploy: `firebase deploy --only storage --project cluppie-ad329`.
 - **Firestore-rules:** per club afgeschermd (teams, trainingen, video's, documenten, berichten via clublidmaatschap). Getest in de emulator: `npm run test:rules` (40 scenario's, laatst 40/40 groen op 14-11). Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.
 - **Cloud Functions:** live in `europe-west1` (Node 22, 2nd gen). Iedere nieuwe callable heeft na de eerste deploy de invoker `allUsers` nodig (`gcloud run services add-iam-policy-binding <naam-in-kleine-letters> …`), anders krijgt de app een CORS-/`internal`-fout.
@@ -11,6 +12,16 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
 
 ## Open
+**Voor Paul — Rooktest per rol, leesbaarheid, rollen in de handleiding (release 20261116f, branch `wp-rook-handleiding`)**
+- [x] Live sinds 16-11: client op `main`, en `chatHulp` gedeployed (de kennisbank heeft een nieuw stuk over rollen).
+- [ ] **Rooktest** (`tools/rooktest.mjs`, zie Stand). Dit is het vangnet dat ontbrak voor grote verbouwingen zoals `teams.js` splitsen. Hij test wat de app een rol laat zien in de demo, niet de toegangsregels.
+- [ ] **Clubkleur als tekst**: `zetKleur` in `clubconfig.js` zet nu ook `--accent-tekst-licht` en `--accent-tekst-donker` (de clubkleur, zo nodig donkerder of lichter tot 4,5:1). Kopjes in de handleiding, de link Agenda en de rolkaart gebruiken `--accent-tekst`. Vlakken en knoppen zijn niet veranderd. Bekijk een club met een gele of lichte kleur.
+- [ ] **Training maken, licht thema**: tijden en labels per fase waren 1,9 tot 3,3:1 (de fasekleuren zijn voor het donkere thema gekozen); nu half gemengd met zwart.
+- [ ] **Tikdoelen**: ook subtabs, plan-chips, de link Agenda, "coach verwijderen" en kleine knoppen hebben een raakvlak van 44 px.
+- [ ] **Handleiding en kennisbank**: nieuw stuk "Rollen in de club". De teksten komen uit `ROLKAARTEN` (`rolkaart.js`), dus één bron.
+- [ ] Wat de rooktest nog meldt en ik niet heb aangepast (lichte thema): niveaukleuren als kleine tekst (groene percentages 3,4:1, "disc." 3,3:1), domeinlabel van 9 px, badge "INH" 2,7:1; tikdoelen: schakelknoppen van 33 px hoog, spelersnamen in Stats (28 px), maandkoppen in de Kalender. In het donkere thema: het label "nieuw" in de zijbalk (3,4:1).
+- [ ] Getest: `npm test` 47 suites groen (nieuw `tests/accent-tekst.test.mjs`); rooktest licht (109 schermen) en donker (kort) zonder fouten.
+
 **Voor Paul — Welkom voor een coach die bij een clubteam komt (release 20261116e, branch `wp6-welkom`)**
 - [x] Live sinds 16-11 (alleen client).
 - [ ] Een coach met een **nieuw account (jonger dan 30 dagen)** die coach is van een clubteam, ziet op het teamscherm de kaart "Welkom bij {team}" met drie stappen: de training van deze week bekijken, de aanwezigheid invullen, de opstelling voor de volgende wedstrijd maken. Elke stap opent het juiste scherm en krijgt een vinkje zodra het gedaan is. Verbergen kan (`gebruikers/{uid}/meta/onboarding.snelstart.welkomCoachWeg`). Zelfde opmaak als "Eerste stappen" van de trainer zonder club; die kaart is niet veranderd.

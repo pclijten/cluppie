@@ -5,8 +5,9 @@
    (#helpZoek) wordt door de hub (teams.js/koppelTeamTab) aangesloten,
    want die werkt direct op het gerenderde DOM-element. */
 import { esc } from './state.js?v=20261116c';
-import { beleidsplanNaam } from './clubconfig.js?v=20261116e';
-import { onboardingHerstartBlok } from './onboarding.js?v=20261116e';
+import { beleidsplanNaam } from './clubconfig.js?v=20261116f';
+import { ROLKAARTEN } from './rolkaart.js?v=20261116c';
+import { onboardingHerstartBlok } from './onboarding.js?v=20261116f';
 
 export function htmlHandleiding(){
   return `<div class="hl">
@@ -58,6 +59,18 @@ export function htmlHandleiding(){
       <li>Log in (Google of e-mail), en je zit meteen in het juiste team.</li>
       <li>Geen link gekregen, of is hij verlopen? Vraag je coach of de clubbeheerder om een nieuwe. Een link is 14 dagen geldig.</li>
     </ul>
+    </section>
+
+    <section class="hl-sec" data-zoek="rollen in de club coach bouwcoördinator gekoppelde coach bouw hoofd jeugdopleiding trainingscoördinator clubbeheerder wat zie ik wat kan ik rechten">
+    <h3>Rollen in de club</h3>
+    <p>Wat je ziet en kunt, hangt af van je rol. De clubbeheerder wijst rollen toe; je kunt er meer dan één hebben.</p>
+    <ul>
+      <li><b>Coach.</b> Je ziet en beheert je eigen team: spelers, wedstrijden, aanwezigheid, beoordelingen en trainingen. Spelers van andere teams zie je niet.</li>
+      ${[['bouw', 'Bouwcoördinator'], ['eigenbouw', 'Coach gekoppeld aan een bouw'], ['hjo', 'Hoofd jeugdopleiding'], ['trainco', 'Trainingscoördinator']].map(([k, naam]) =>
+        `<li><b>${naam}.</b> ${esc(ROLKAARTEN[k].ziet)} ${esc(ROLKAARTEN[k].kan)} Niet: ${esc(ROLKAARTEN[k].kanNiet.charAt(0).toLowerCase() + ROLKAARTEN[k].kanNiet.slice(1))}</li>`).join('\n      ')}
+      <li><b>Clubbeheerder.</b> Richt de club in: teams, bouwen, coaches en rollen, Sportlink, instellingen en privacy. Ziet alle teams.</li>
+    </ul>
+    <p>Krijg je een nieuwe rol, dan zie je één keer een korte kaart met wat er voor jou verandert.</p>
     </section>
 
     <section class="hl-sec" data-zoek="zet de app op je beginscherm voor een echt app-gevoel: open het menu van je browser en kies "toevoegen aan beginscherm" . dan staat cluppie als icoontje tussen je apps en open je hem met één tik, geen browser meer nodig.">

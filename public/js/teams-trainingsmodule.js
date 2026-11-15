@@ -20,7 +20,7 @@
 import { db, collection, addDoc, setDoc, getDoc, getDocs, deleteDoc, doc, functions, httpsCallable, serverTimestamp } from './firebase.js?v=20261011g';
 import { S, esc, meld } from './state.js?v=20261116c';
 import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } from './config.js?v=20261116c';
-import { aiAan, aiDoel } from './clubconfig.js?v=20261116e';
+import { aiAan, aiDoel } from './clubconfig.js?v=20261116f';
 import { ico } from './icons.js?v=20261110a';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261115b';
 import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261116c';
@@ -30,11 +30,11 @@ import { htmlZevenVelden, STANDAARD_OPEN } from './oefenkaart.js?v=20261115b';
 import { maak3DBlok } from './scene3d.js?v=20261115b';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
 import { TERUGBLIK_VRAGEN, zetAntwoord, terugblikKlaar, terugblikSamenvatting, signaalVormBewaard, signaalVormGewisseld, signaalTerugblik, signaalMateriaal, signaalGat, gatRedenen } from './leren-logica.js?v=20261019b';
-import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261116e';
+import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261116f';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261012e';
 import { positieWeek, seizoensweekOp, weekKalender, standaardVrij, maandagVan } from './seizoensplan-logica.js?v=20261116c';
 import { trainingenRef } from './seizoensplan-trainingen.js?v=20261116c';
-import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261116e';
+import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261116f';
 import { oefeningVan, geplandeTraining, vormIdsVan, rondBlok } from './seizoensplan-club.js?v=20261116c';
 import { onderdeelAan } from './onderdelen.js?v=20261116c';
 
