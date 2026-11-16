@@ -369,6 +369,8 @@ async function zaaiKamer(extra = {}){
     await setDoc(doc(db, 'teamkamer/t1/agenda/w_1'), { soort: 'wedstrijd', datum: '2099-01-01', afwezig: ['s2'] });
     await setDoc(doc(db, 'teamkamer/t1/gezin/s1'), { voornaam: 'Speler', nr: 7 });
     await setDoc(doc(db, 'teamkamer/t1/gezin/s2'), { voornaam: 'Ander', nr: 9 });
+    await setDoc(doc(db, 'teamkamer/t1/gezin/s1/ouder/stats'), { wedstrijden: { gespeeld: 8, totaal: 9 } });
+    await setDoc(doc(db, 'teamkamer/t1/gezin/s2/ouder/stats'), { wedstrijden: { gespeeld: 2, totaal: 9 } });
     await setDoc(doc(db, 'teamkamer/t1/berichten/b1'), { tekst: 'Donderdag veld 3', ms: 1 });
     await setDoc(doc(db, 'teamkamer/t1/kamerleden/ouder1'), { teamId: 't1', uid: 'ouder1', rol: 'ouder', spelerIds: ['s1'], vervaltOp: volgendJaar });
     await setDoc(doc(db, 'teamkamer/t1/kamerleden/kind1'), { teamId: 't1', uid: 'kind1', rol: 'speler', spelerIds: ['s1'], door: 'ouder1', vervaltOp: volgendJaar });
@@ -397,6 +399,15 @@ test('teamkamer: ouder en speler lezen de kopie van hun eigen team', async () =>
     await assertSucceeds(getDoc(doc(db, 'teamkamer/t1/gezin/s1')));
   }
   await assertSucceeds(getDoc(doc(als('ouder1'), 'teamkamer/t1/kamerleden/ouder1')));
+});
+/* [20261116r] NOG NIET GEDRAAID: de emulator is in de werkomgeving van Claude niet te downloaden */
+test('teamkamer: cijfers van het eigen kind leest alleen de ouder, niet de speler zelf of een ander gezin', async () => {
+  await zaaiKamer();
+  await assertSucceeds(getDoc(doc(als('ouder1'), 'teamkamer/t1/gezin/s1/ouder/stats')));
+  await assertFails(getDoc(doc(anoniem('kind1'), 'teamkamer/t1/gezin/s1/ouder/stats')));
+  await assertFails(getDoc(doc(als('ouder1'), 'teamkamer/t1/gezin/s2/ouder/stats')));
+  await assertFails(getDoc(doc(als('verlopen'), 'teamkamer/t1/gezin/s1/ouder/stats')));
+  await assertFails(setDoc(doc(als('ouder1'), 'teamkamer/t1/gezin/s1/ouder/stats'), { wedstrijden: { gespeeld: 9, totaal: 9 } }));
 });
 test('teamkamer: ouder en speler lezen NIETS van de coach, de club of een ander team', async () => {
   await zaaiKamer();

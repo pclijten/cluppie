@@ -79,7 +79,7 @@ ok(L.projectWedstrijd({ ...w, status: 'afgelast' }, { uitslag: true }, '2026-11-
 
 /* eindbaas: elke mogelijkheid apart, standaard alles uit */
 const uit = L.opties({ club: 'c1' }, { platformModules: { teamkamer: true } }, null);
-ok(L.OPTIES.length === 13 && L.OPTIES.every(k => uit[k] === false), 'eindbaas: zonder keuze staat elke mogelijkheid uit');
+ok(L.OPTIES.length === 15 && L.OPTIES.every(k => uit[k] === false), 'eindbaas: zonder keuze staat elke mogelijkheid uit');
 ok(L.opties({ club: 'c1' }, { platformModules: { teamkamerOpties: { polls: true, onzin: true, live: 'ja' } } }, null).polls === true && L.opties({ club: 'c1' }, { platformModules: { teamkamerOpties: { live: 'ja' } } }, null).live === false, 'alleen echte true telt, onbekende sleutels vallen weg');
 ok(L.opties({}, null, { teamkamerLosOpties: { polls: true } }).polls === true && L.opties({}, { platformModules: { teamkamerOpties: { polls: true } } }, null).polls === false, 'trainer zonder club: eigen schakelaars');
 const coachAllesAan = { ...team, teamkamer: { aan: true, uitslag: true, live: true, thuis: { vormId: 'x', naam: 'X' }, lijn: ['Eigen regel'] } };
@@ -303,7 +303,7 @@ ok(!/<textarea|contenteditable/.test(app), 'ouders en spelers kunnen nergens vri
 const logica = fs.readFileSync(new URL('../functions/teamkamer-logica.js', import.meta.url), 'utf8');
 ok(!/afwezigRedenen\[|\.reden\b|\.notitie\b|leerpunten|beoordeling/.test(logica.replace(/\/\*[\s\S]*?\*\//g, '')), 'de kopie neemt geen reden, notitie, leerpunt of beoordeling over');
 const index = fs.readFileSync(new URL('../functions/index.js', import.meta.url), 'utf8');
-ok(index.includes("require('./teamkamer').functies") && Object.keys(F).length === 20, 'functies geëxporteerd');
+ok(index.includes("require('./teamkamer').functies") && Object.keys(F).length === 21, 'functies geëxporteerd');
 
 /* [20261116n] thuis oefenen: video's. Alleen een YouTube-id of een video uit de opslag van Cluppie komt in de kopie. */
 const opslag = 'https://firebasestorage.googleapis.com/v0/b/voorbeeld.appspot.com/o/clubs%2Fc1%2Fvideos%2Fclip.mp4?alt=media&token=x';
@@ -348,5 +348,49 @@ ok(VM.terugUrl('kamer', 'ab-c 12') === 'https://www.cluppie.io/kamer.html?k=ABC1
 ok(app.includes("roep('verificatieMail', { naar: 'kamer', code })") && app.includes('pollMetEigen') && app.includes("data-doe=\"gelezen\""), 'de pagina gebruikt het: mail terug naar de teamkamer, stem meteen geteld, Gelezen');
 const stijl = fs.readFileSync(new URL('../public/kamer.css', import.meta.url), 'utf8');
 ok(/html\.tk-pagina body, \.tkb\{overflow-wrap:break-word\}/.test(stijl) && stijl.includes('.tk-adres{overflow-wrap:anywhere}'), 'lange woorden breken af (het scherm viel opzij bij een lang e-mailadres)');
+
+/* ==================== 6. ronde 2b [20261116r]: trainingen, cijfers, niet geselecteerd, afgelast, opstelling altijd ==================== */
+const magQ = { ...L.ALLES_AAN };
+ok(L.inst({ teamkamer: { aan: true } }, magQ).trainingen === false && L.inst({ teamkamer: { aan: true } }, magQ).stats === null && L.inst({ teamkamer: { aan: true } }, magQ).opstellingAltijd === false, 'trainingen, cijfers en opstelling altijd staan uit tot de trainer ze aanzet');
+ok(L.inst({ teamkamer: { trainingen: true, opstellingAltijd: true, stats: { aan: true, wedstrijden: true } } }, { ...magQ, trainingen: false, stats: false, opstelling: false }).trainingen === false
+  && L.inst({ teamkamer: { trainingen: true, stats: { aan: true, wedstrijden: true } } }, { ...magQ, stats: false }).stats === null, 'de eindbaas gaat voor: uit bij de eindbaas is uit');
+const keuze = L.statsKeuze({ aan: true, wedstrijden: true, doelpunten: true }, magQ);
+ok(keuze.speeltijd === false && keuze.kaarten === false && L.statsKeuze({ aan: true }, magQ) === null && L.statsKeuze({ aan: false, wedstrijden: true }, magQ) === null, 'cijfers: speeltijd en kaarten alleen als de trainer ze aanvinkt');
+const ruw = { gespeeld: 8, totaal: 9, pct: 62, laatste: [{ datum: '2026-11-14', min: 45, van: 60, naam: 'Pim' }, { datum: 'x' }], doelpunten: 3, assists: 2, geel: 1, rood: 0, trErbij: 14, trTotaal: 16, notitie: 'geheim', niveau: 4 };
+assert.deepEqual(L.schoonStats(ruw, keuze), { wedstrijden: { gespeeld: 8, totaal: 9 }, doelpunten: 3, assists: 2 }, 'cijfers: alleen wat is aangezet'); n++;
+const alles = L.schoonStats(ruw, { wedstrijden: true, speeltijd: true, doelpunten: true, opkomst: true, kaarten: true });
+ok(JSON.stringify(alles.speeltijd.laatste) === '[{"datum":"2026-11-14","min":45,"van":60}]' && alles.trainingen.erbij === 14 && alles.kaarten.geel === 1 && !/geheim|niveau|Pim/.test(JSON.stringify(alles)), 'cijfers: vaste velden, geen tekst of beoordeling');
+ok(L.schoonStats(ruw, null) === null && L.schoonStats({ gespeeld: -3, totaal: 'veel' }, { wedstrijden: true }).wedstrijden.gespeeld === 0, 'cijfers: zonder keuze niets, onzin wordt nul');
+const st = L.schoonTraining({ titel: 'Opbouw', thema: 'Opbouwen', notitie: 'let op Pim', vormen: [{ naam: 'Rondo', slot: 'Kern', min: 15, vormId: 'ro-4v2', doel: 'Vrijlopen', coachpunten: ['x'] }, { naam: '', vormId: 'x' }, { naam: 'Kwaad', vormId: '../x' }] });
+assert.deepEqual(st, { titel: 'Opbouw', thema: 'Opbouwen', vormen: [{ naam: 'Rondo', slot: 'Kern', min: 15, vormId: 'ro-4v2', doel: 'Vrijlopen' }, { naam: 'Kwaad', slot: '', min: 0, vormId: '', doel: '' }] }, 'training voor ouders: vaste velden, geen notities of coachpunten'); n++;
+ok(L.schoonTraining({}) === null && L.schoonTraining(null) === null, 'lege training: niets');
+const teamQ = { ...team, trainingsmomenten: [{ dag: 2, start: '18:00', eind: '19:00' }], afgelast: { datum: '2026-11-17', reden: 'Sem is ziek' } };
+const trQ = L.projectTrainingen(teamQ, {}, VANDAAG, 28, { '2026-11-24': { thema: 'Scoren', vormen: [] } });
+ok(trQ['t_2026-11-17'].afgelast === true && trQ['t_2026-11-24'].afgelast === false && trQ['t_2026-11-24'].training.thema === 'Scoren' && !JSON.stringify(trQ).includes('ziek'), 'afgelaste training in de agenda, zonder de reden; training met inhoud');
+ok(L.projectTrainingen(teamQ, {}, VANDAAG)['t_2026-11-24'].training === undefined && L.teamSleutel(teamQ) !== L.teamSleutel({ ...teamQ, afgelast: null }), 'zonder aanlevering geen inhoud; aflasten werkt de kopie bij');
+ok(L.nietMee({ selectie: ['p1'], afwezigRedenen: { p2: {} } }, ['p1', 'p2', 'p3']).join() === 'p3' && L.nietMee({ selectie: [] }, ['p1']).length === 0 && L.nietMee({ selectie: ['p1'], status: 'afgelast' }, ['p2']).length === 0, 'niet geselecteerd: wie niet in de selectie staat en zich niet afmeldde; zonder selectie niemand');
+ok(L.selectieSleutel({ selectie: ['a', 'b'] }) === L.selectieSleutel({ selectie: ['b', 'a'] }) && L.selectieSleutel({ selectie: ['a'] }) !== L.selectieSleutel({ selectie: ['b'] }), 'selectie gewisseld: de gezinnen worden bijgewerkt');
+const morgen = L.plusDagen(VANDAAG, 1), wAltijd = { ...wo, deelOpstelling: false };
+ok(L.projectWedstrijd({ ...wAltijd, datum: morgen }, { opstelling: true, opstellingAltijd: true }, VANDAAG).opstelling && !L.projectWedstrijd({ ...wAltijd, datum: L.plusDagen(VANDAAG, 3) }, { opstelling: true, opstellingAltijd: true }, VANDAAG).opstelling
+  && !L.projectWedstrijd({ ...wAltijd, datum: morgen }, { opstelling: true }, VANDAAG).opstelling, 'opstelling altijd delen: vanaf de dag voor de wedstrijd, alleen als de trainer het aanzet');
+ok(K.eigenStatus({ id: 'w_1', afwezig: [] }, 'p1', ['w_1']) === 'Niet in de selectie' && K.eigenStatus({ id: 'w_1', afwezig: ['p1'] }, 'p1', ['w_1']) === 'Afwezig' && K.eigenStatus({ id: 'w_2', afwezig: [] }, 'p1', ['w_1']) === 'Erbij', 'status van het eigen kind');
+ok(K.statsTegels(alles).map(t => t[0]).join('|') === '8 van 9|62%|14 van 16|3|2|1' && K.statsTegels(null).length === 0, 'tegels voor de ouder');
+const tvo = K.trainingVoorOuders({ titel: 'T', thema: 'Scoren', oefeningen: [{ titel: 'Rondo', bron: { vormId: 'ro-4v2', slot: 'Kern', minuten: 15 }, blokken: [{ veld: 'coach', type: 'tekst', tekst: 'geheim' }, { veld: 'doel', type: 'tekst', tekst: 'Vrijlopen' }] }] });
+assert.deepEqual(L.schoonTraining(tvo), { titel: 'T', thema: 'Scoren', vormen: [{ naam: 'Rondo', slot: 'Kern', min: 15, vormId: 'ro-4v2', doel: 'Vrijlopen' }] }, 'app en server sluiten aan'); n++;
+const svo = K.statsVoorOuders([{ id: 'p1' }], [{ datum: '2026-11-14', selectie: ['p1'], goals: [{ type: 'voor', pid: 'p1' }, { type: 'voor', pid: 'p2', assist: 'p1' }, { type: 'tegen', pid: 'p1' }], kaarten: [{ type: 'geel', pid: 'p1' }, { type: 'geel', pid: 'p1', auto: true }] }], [],
+  { analyse: () => ({ kwarten: 2, matchduur: 3600, tijd: { p1: 2700 } }), reserve: () => ({ p1: { speeltijd: 2700, speelbaar: 3600 } }), opkomst: () => ({ aanwezig: 3, totaal: 4 }) });
+assert.deepEqual(svo.p1, { gespeeld: 1, totaal: 1, pct: 75, laatste: [{ datum: '2026-11-14', min: 45, van: 60 }], doelpunten: 1, assists: 1, geel: 1, rood: 0, trErbij: 3, trTotaal: 4 }, 'cijfers uit de berekening van de app'); n++;
+assert.deepEqual(K.STATS_SOORTEN.map(x => x[0]), L.STATS_SOORTEN, 'browser en server kennen dezelfde cijfers'); n++;
+ok(/match \/ouder\/\{docId\} \{\s+allow read: if \(kamerEigenSpeler\(teamId, spelerId\) && kamerAan\(teamId\) && kamerLid\(teamId\)\.get\('rol', ''\) == 'ouder'\) \|\| magSchrijven\(teamId\);\s+allow write: if false;/.test(blok), 'cijfers leest alleen een ouder van dit kind (en de trainer), niet de speler zelf');
+/* de hele route tegen de nep-database: aanlevering van de trainer komt gefilterd bij het gezin */
+store.get('teams/t1').teamkamer = { ...store.get('teams/t1').teamkamer, trainingen: true, stats: { aan: true, wedstrijden: true } };
+store.get('clubs/c1').platformModules.teamkamerOpties = { ...L.ALLES_AAN };
+store.set('teams/t1/kamerBeheer/stats', { tm: '2026-11-15', spelers: { p1: ruw } });
+await T.bouwKamer(fake.db, 't1');
+assert.deepEqual(store.get('teamkamer/t1/gezin/p1/ouder/stats'), { wedstrijden: { gespeeld: 8, totaal: 9 }, tm: '2026-11-15' }, 'cijfers in het document voor ouders'); n++;
+ok(Array.isArray(store.get('teamkamer/t1/gezin/p1').nietMee) && store.get('teamkamer/t1').stats === true && store.get('teamkamer/t1').trainingen === true, 'kopie kent de keuzes van de trainer');
+store.get('teams/t1').teamkamer.stats = { aan: false };
+await T.bouwKamer(fake.db, 't1');
+ok(!store.get('teamkamer/t1/gezin/p1/ouder/stats'), 'cijfers uitgezet: het document is weg');
 
 console.log(`teamkamer: ${n} controles geslaagd`);

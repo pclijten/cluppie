@@ -529,10 +529,10 @@ if (DEMO_ROL){
     const voor = x => String(x.naam).split(' ')[0], ids = spelers.map(x => x.id), kindVan = ids[6] || ids[0];
     const zaterdag = opDag(6), komend = [...store.entries()].filter(([pad, d]) => pad.startsWith(`teams/${T}/wedstrijden/`) && d.datum >= iso(new Date())).sort((a, b) => a[1].datum.localeCompare(b[1].datum))[0];
     const wid = komend ? komend[0].split('/').pop() : 'demo-w', wd = komend ? komend[1] : { datum: zaterdag, aftrap: '09:30', tegenstander: 'VV Voorbeeld O11-1', thuis: false, info: { accommodatie: 'Sportpark Voorbeeld' } };
-    const MAG = Object.fromEntries(['namen', 'spelers', 'polls', 'beurten', 'berichten', 'afmelden', 'uitslag', 'live', 'opstelling', 'thuis', 'lijn', 'agenda', 'weer'].map(k => [k, !/[?&]kaal=1/.test(location.search)]));   /* in de demo staat alles aan; met &kaal=1 alles uit (alleen de hoofdschakelaar) */
+    const MAG = Object.fromEntries(['namen', 'spelers', 'polls', 'beurten', 'berichten', 'afmelden', 'uitslag', 'live', 'opstelling', 'thuis', 'lijn', 'agenda', 'weer', 'trainingen', 'stats'].map(k => [k, !/[?&]kaal=1/.test(location.search)]));   /* in de demo staat alles aan; met &kaal=1 alles uit (alleen de hoofdschakelaar) */
     store.set(`clubs/${CLUB}`, { ...club, platformModules: { ...(club.platformModules || {}), teamkamer: true, teamkamerOpties: MAG } });
-    store.set(`teams/${T}`, { ...team, teamkamer: { aan: true, live: true } });
-    zetSeed(`teamkamer/${T}`, { aan: true, mag: MAG, teamNaam: team.naam, clubNaam: CLUBNAAM, club: CLUB, namen: true, uitslag: false, live: true, aantal: spelers.length, plek: null,
+    store.set(`teams/${T}`, { ...team, teamkamer: { aan: true, live: true, trainingen: true, stats: { aan: true, wedstrijden: true, doelpunten: true, opkomst: true, speeltijd: true, kaarten: false } } });
+    zetSeed(`teamkamer/${T}`, { aan: true, mag: MAG, teamNaam: team.naam, clubNaam: CLUBNAAM, club: CLUB, namen: true, uitslag: false, live: true, trainingen: MAG.trainingen, opstellingAltijd: false, stats: MAG.stats, aantal: spelers.length, plek: null,
       lijn: ['We moedigen het hele team aan, niet alleen ons eigen kind.', 'De trainer coacht, wij juichen.', 'De scheidsrechter doet zijn best. Dat laten we zo.'],
       thuis: { vormId: 'wu-m-verkeerslicht', naam: 'Verkeerslicht' }, beurtenGem: { rijden: 1.2, wassen: 0.8, fruit: 0, vlaggen: 0 },
       spelers: Object.fromEntries(spelers.map((x, n) => [x.id, n === 9 || !MAG.namen ? { v: true } : { n: voor(x), nr: x.nummer ?? null }])),
@@ -542,7 +542,16 @@ if (DEMO_ROL){
       /* [20261116p] de trainer deelt de opstelling: plekken van de eerste periode, zoals de server ze in de kopie zet */
       ...(MAG.opstelling ? { opstelling: (() => { const mee = ids.filter((x, n) => n < 11), plekNamen = ['K', 'V1', 'V2', 'V3', 'M1', 'M2', 'M3', 'A1'];
         const basis = mee.slice(0, plekNamen.length); return { basis, wissels: mee.slice(plekNamen.length), plekken: Object.fromEntries(plekNamen.map((k, n) => [k, basis[n]]).filter(x => x[1])), formatie: '3-3-1', format: '8' }; })() } : {}) });
-    [opDag(2), opDag(4), opDag(2, 8)].forEach((datum, n) => zetSeed(`teamkamer/${T}/agenda/t_${datum}`, { soort: 'training', datum, tijd: '18:00', eind: '19:00', afgelast: false, afwezig: n === 0 ? ids.slice(5, 6) : [], erbij: null }));
+    /* [20261116r] de eerstvolgende training met inhoud, de derde afgelast; cijfers van het eigen kind */
+    const demoTraining = { titel: 'Opbouwen van achteruit, 75 min', thema: 'Opbouwen van achteruit', vormen: [
+      { naam: 'Verkeerslicht', slot: 'Warming-up', min: 15, vormId: 'wu-m-verkeerslicht', doel: 'Dribbelen met het hoofd omhoog en snel reageren op een teken.' },
+      { naam: 'Passen in de driehoek', slot: 'Oefening 1', min: 20, vormId: 'wu-f-pass-driehoek', doel: 'Strak inspelen en meteen vrijlopen voor de volgende pass.' },
+      { naam: 'Krokodillenrivier', slot: 'Oefening 2', min: 20, vormId: 'dr-n-mijnenveld', doel: 'De bal dicht bij de voet houden in een drukke ruimte.' },
+      { naam: 'Partijspel 6 tegen 6', slot: 'Partij', min: 20, vormId: '', doel: '' }] };
+    [opDag(2), opDag(4), opDag(2, 8)].forEach((datum, n) => zetSeed(`teamkamer/${T}/agenda/t_${datum}`, { soort: 'training', datum, tijd: '18:00', eind: '19:00', afgelast: n === 2, afwezig: n === 0 ? ids.slice(5, 6) : [], erbij: null,
+      ...(MAG.trainingen && n < 2 ? { training: n === 0 ? demoTraining : { titel: '', thema: 'Opbouwen van achteruit', vormen: [] } } : {}) }));
+    if (MAG.stats) zetSeed(`teamkamer/${T}/gezin/${kindVan}/ouder/stats`, { tm: iso(over(-1)), wedstrijden: { gespeeld: 8, totaal: 9 }, speeltijd: { pct: 62, laatste: [{ datum: iso(over(-2)), min: 45, van: 60 }, { datum: iso(over(-9)), min: 30, van: 60 }] },
+      doelpunten: 3, assists: 2, trainingen: { erbij: 14, totaal: 16 } });
     spelers.forEach((x, n) => zetSeed(`teamkamer/${T}/gezin/${x.id}`, { voornaam: voor(x), nr: x.nummer ?? null, ...(n % 3 === 0 ? { beurten: { rijden: 1 + (n % 2), wassen: 1 } } : {}) }));
     const rolKamer = /[?&]demo=speler/.test(location.search) ? 'speler' : 'ouder';
     zetSeed(`teamkamer/${T}/kamerleden/${DEMO_UID}`, { teamId: T, club: CLUB, uid: DEMO_UID, email: 'ouder1@voorbeeld.nl', rol: rolKamer, spelerIds: [kindVan], sinds: TS, vervaltOp: tot });

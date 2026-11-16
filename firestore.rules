@@ -557,6 +557,11 @@ service cloud.firestore {
       match /gezin/{spelerId} {
         allow read: if (kamerEigenSpeler(teamId, spelerId) && kamerAan(teamId)) || magSchrijven(teamId);
         allow write: if false;
+        /* [20261116r] cijfers van het eigen kind: alleen de ouders, niet de speler zelf (die komt binnen met een code) */
+        match /ouder/{docId} {
+          allow read: if (kamerEigenSpeler(teamId, spelerId) && kamerAan(teamId) && kamerLid(teamId).get('rol', '') == 'ouder') || magSchrijven(teamId);
+          allow write: if false;
+        }
       }
       match /kamerleden/{lidUid} {
         allow read: if (ingelogd() && lidUid == uid()) || magSchrijven(teamId);

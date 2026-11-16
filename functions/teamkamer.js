@@ -95,15 +95,29 @@ async function bouwKamer(db, teamId, opties = {}){
   const verborgen = (await tRef.collection('kamerBeheer').doc('verborgen').get()).data() || {};
   const hoofd = { ...L.kamerDoc(team, club, spelers, verborgen, platform), bijgewerkt: FieldValue.serverTimestamp() };
   const acties = [(b) => b.set(kRef, hoofd, { mergeFields: Object.keys(hoofd) })];
-  for (const p of spelers.filter(L.spelerActief))
-    acties.push((b) => b.set(kRef.collection('gezin').doc(p.id), { voornaam: L.voornaam(p.naam), nr: hoofd.spelers[p.id]?.nr ?? (Number.isFinite(Number(p.nummer)) && p.nummer != null && p.nummer !== '' ? Number(p.nummer) : null) }, { merge: true }));
+  /* [20261116r] wat de app van de trainer aanlevert: trainingen per datum en cijfers per speler (zie kamer-beheer.js, syncTeamkamer) */
+  const beheer = tRef.collection('kamerBeheer');
+  const plannen = i.trainingen ? ((await beheer.doc('trainingen').get()).data() || {}).items || {} : null;
+  const cijfers = i.stats ? ((await beheer.doc('stats').get()).data() || {}) : null;
+  const actief = spelers.filter(L.spelerActief), actiefIds = actief.map(p => p.id);
+  const ws = await tRef.collection('wedstrijden').where('datum', '>=', L.plusDagen(vandaag, -14)).get();
+  for (const p of actief){
+    /* niet geselecteerd: alleen komende wedstrijden, en alleen in het document van het eigen gezin */
+    const niet = ws.docs.filter(d => String(d.data().datum || '').slice(0, 10) >= vandaag && L.nietMee(d.data(), [p.id]).length).map(d => 'w_' + d.id).sort();
+    acties.push((b) => b.set(kRef.collection('gezin').doc(p.id), { voornaam: L.voornaam(p.naam), nietMee: niet,
+      nr: hoofd.spelers[p.id]?.nr ?? (Number.isFinite(Number(p.nummer)) && p.nummer != null && p.nummer !== '' ? Number(p.nummer) : null) }, { merge: true }));
+    /* cijfers: eigen document dat alleen ouders lezen (rules), niet de speler zelf */
+    const sRef = kRef.collection('gezin').doc(p.id).collection('ouder').doc('stats');
+    const st = cijfers ? L.schoonStats((cijfers.spelers || {})[p.id], i.stats) : null;
+    if (st) acties.push((b) => b.set(sRef, { ...st, tm: typeof cijfers.tm === 'string' ? cijfers.tm.slice(0, 10) : vandaag }));
+    else acties.push((b) => b.delete(sRef));
+  }
   let agenda = 0;
   if (opties.agenda !== false){
-    const ws = await tRef.collection('wedstrijden').where('datum', '>=', L.plusDagen(vandaag, -14)).get();
     const pres = await tRef.collection('presentie').where('datum', '>=', vandaag).get();
     const presentie = {};
     pres.docs.forEach(d => { const x = d.data(); if (typeof x.datum === 'string') presentie[x.datum.slice(0, 10)] = Array.isArray(x.afwezig) ? x.afwezig.filter(y => typeof y === 'string') : []; });
-    const nieuw = L.projectTrainingen(team, presentie, vandaag);
+    const nieuw = L.projectTrainingen(team, presentie, vandaag, 28, plannen);
     ws.docs.forEach(d => { const p = L.projectWedstrijd(d.data(), i, vandaag); if (p) nieuw['w_' + d.id] = p; });
     const oud = await kRef.collection('agenda').get();
     oud.docs.filter(d => !nieuw[d.id]).forEach(d => acties.push((b) => b.delete(d.ref)));
@@ -137,7 +151,7 @@ const kamerSpeler = onDocumentWritten({ document: 'teams/{teamId}/spelers/{spele
   }
   await bouwKamer(db, teamId, { agenda: false });
 });
-const ALLES = { uitslag: true, live: true, opstelling: true };
+const ALLES = { uitslag: true, live: true, opstelling: true, opstellingAltijd: true };
 /* [eindbaas] de eindbaas zet een mogelijkheid aan of uit, of de club verandert van naam of plaats: alle teamkamers van die club opnieuw */
 const clubSleutel = (c) => JSON.stringify(c ? [c.platformModules?.teamkamer === true, c.platformModules?.teamkamerOpties || null, c.naam || '', c.instellingen?.locatie || null] : 'geen');
 const kamerClub = onDocumentWritten({ document: 'clubs/{clubId}', region: REGIO }, async (event) => {
@@ -158,11 +172,19 @@ const kamerPlatform = onDocumentWritten({ document: 'platform/{docId}', region: 
 const kamerWedstrijd = onDocumentWritten({ document: 'teams/{teamId}/wedstrijden/{wedstrijdId}', region: REGIO }, async (event) => {
   const vandaag = L.vandaagNL(), voor = event.data.before.data(), na = event.data.after.data();
   /* de live wedstrijd schrijft vaak (klok, wissels): zolang niets voor ouders verandert, lezen we niets */
-  if (JSON.stringify(L.projectWedstrijd(voor, ALLES, vandaag)) === JSON.stringify(L.projectWedstrijd(na, ALLES, vandaag))) return;
+  const selectieAnders = L.selectieSleutel(voor) !== L.selectieSleutel(na);
+  if (!selectieAnders && JSON.stringify(L.projectWedstrijd(voor, ALLES, vandaag)) === JSON.stringify(L.projectWedstrijd(na, ALLES, vandaag))) return;
   const db = getFirestore(), { teamId, wedstrijdId } = event.params;
   const k = await kamerAan(db, teamId);
   if (!k) return;
-  const doc = L.projectWedstrijd(na, { uitslag: k.uitslag === true, live: k.live === true, opstelling: k.mag?.opstelling === true }, vandaag);
+  /* [20261116r] niet geselecteerd: per gezin bijwerken als de selectie van deze wedstrijd verandert */
+  if (selectieAnders){
+    const ids = Object.keys(k.spelers || {}), komend = na && String(na.datum || '').slice(0, 10) >= vandaag;
+    const niet = new Set(komend ? L.nietMee(na, ids) : []), sleutel = 'w_' + wedstrijdId;
+    await schrijfInDelen(db, ids.map(id => (b) => b.set(db.doc(`teamkamer/${teamId}/gezin/${id}`),
+      { nietMee: niet.has(id) ? FieldValue.arrayUnion(sleutel) : FieldValue.arrayRemove(sleutel) }, { merge: true })));
+  }
+  const doc = L.projectWedstrijd(na, { uitslag: k.uitslag === true, live: k.live === true, opstelling: k.mag?.opstelling === true, opstellingAltijd: k.opstellingAltijd === true }, vandaag);
   const ref = db.doc(`teamkamer/${teamId}/agenda/w_${wedstrijdId}`);
   if (doc) await ref.set(doc); else await ref.delete();
 });
@@ -176,7 +198,15 @@ const kamerPresentie = onDocumentWritten({ document: 'teams/{teamId}/presentie/{
   if (!(await kamerAan(db, teamId))) return;
   if (!na || (voor && voor.datum !== na.datum)) { await bouwKamer(db, teamId); return; }
   await db.doc(`teamkamer/${teamId}/agenda/t_${datum}`).set(
-    { soort: 'training', datum, afgelast: false, erbij: null, afwezig: (Array.isArray(na.afwezig) ? [...new Set(na.afwezig.filter(x => typeof x === 'string'))] : []).sort() }, { merge: true });
+    { soort: 'training', datum, erbij: null, afwezig: (Array.isArray(na.afwezig) ? [...new Set(na.afwezig.filter(x => typeof x === 'string'))] : []).sort() }, { merge: true });
+});
+
+/* [20261116r] de app van de trainer leverde trainingen of cijfers aan: kopie opnieuw (alleen toegestane velden komen erin) */
+const kamerAanlevering = onDocumentWritten({ document: 'teams/{teamId}/kamerBeheer/{docId}', region: REGIO }, async (event) => {
+  if (!['trainingen', 'stats'].includes(event.params.docId)) return;
+  const db = getFirestore();
+  if (!(await kamerAan(db, event.params.teamId))) return;
+  await bouwKamer(db, event.params.teamId, { agenda: event.params.docId === 'trainingen' });
 });
 
 /* ---------- polls: tellen en beurten ---------- */
@@ -470,7 +500,7 @@ async function exportUid(db, uid){
 }
 
 module.exports = {
-  functies: { kamerTeam, kamerClub, kamerPlatform, kamerSpeler, kamerWedstrijd, kamerPresentie, kamerStem, kamerPoll, kamerLinkInfo, maakKamerLink, vraagKamerToegang,
+  functies: { kamerAanlevering, kamerTeam, kamerClub, kamerPlatform, kamerSpeler, kamerWedstrijd, kamerPresentie, kamerStem, kamerPoll, kamerLinkInfo, maakKamerLink, vraagKamerToegang,
     beoordeelKamerAanvraag, trekKamerToegangIn, maakKindCode, wisselKindCode, stopKindToegang, kamerVerberg, kamerVerleng, kamerVervers, kamerNacht },
   bouwKamer, telPoll, nacht, magBeheren, verwijderUid, exportUid,
 };

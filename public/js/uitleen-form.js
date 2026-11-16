@@ -16,7 +16,7 @@ import {
   db, collection, doc, getDoc, getDocs, addDoc, updateDoc, query, where, documentId, serverTimestamp
 } from './firebase.js?v=20261011g';
 import { momentenVanTeam, tijdTekst } from './trainingsmomenten.js?v=20261116n';
-import { bouwLeenSnapshot } from './teams-spelers.js?v=20261116q';
+import { bouwLeenSnapshot } from './teams-spelers.js?v=20261116r';
 import { telGebruik } from './tracker.js?v=20261116n';
 import {
   vandaagLokaal, plusDagen, DAG_NAMEN, leenDatum, leenDelen, leenGrenzen, wedDeelTekst, trainDeelTekst
