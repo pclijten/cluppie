@@ -8,7 +8,7 @@
    Gebruikt dezelfde overlay-aanpak en terug-bewaking als pdf-viewer.js, zodat de
    Android-terugknop / veeg-terug de weergave sluit i.p.v. de app te verlaten. */
 
-import { bewaakTerug, vangnetStilTerugAlsNodig, esc, terugLaag } from './state.js?v=20261116k';
+import { bewaakTerug, vangnetStilTerugAlsNodig, esc, terugLaag } from './state.js?v=20261116l';
 import { principe as principeOpId } from './speelwijze-logica.js?v=20261116j';
 import { htmlPrincipeChip } from './speelwijze-html.js?v=20261116j';
 import { maak3DBlok, heeftWebGL } from './scene3d.js?v=20261116k';
@@ -41,6 +41,8 @@ export function sluitTrainingWeergave(){
   const wasOpen = _overlay.classList.contains('open');
   _overlay.classList.remove('open');
   _overlay.querySelector('.trw-stage').innerHTML = '';
+  _overlay._beurt = (_overlay._beurt || 0) + 1;                 /* een open-aanroep die nog laadt, vervalt */
+  if (_stopVandaag){ _stopVandaag(); _stopVandaag = null; }
   // notitie-knop uit de balk verwijderen zodat een volgende training schoon start
   // ("not(.trw-deel-knop)": de deel-knop hergebruikt dezelfde stijl-klasse,
   // dus zonder deze uitzondering kon deze regel per ongeluk de deel-knop
@@ -48,10 +50,10 @@ export function sluitTrainingWeergave(){
   // ruimt de deel-knop al op zijn eigen manier op).
   const nb = _overlay.querySelector('.trw-notitie-knop:not(.trw-deel-knop)');
   if (nb) nb.remove();
-  import('./training-aantekeningen.js?v=20261116k').then(m => m.resetAantekeningen()).catch(() => {});
-  import('./training-video.js?v=20261116k').then(m => m.resetTrainingVideos()).catch(() => {});
-  import('./training-tactiek.js?v=20261116k').then(m => m.resetTrainingTactiek()).catch(() => {});
-  import('./training-delen.js?v=20261116k').then(m => m.resetTrainingDelen()).catch(() => {});
+  import('./training-aantekeningen.js?v=20261116l').then(m => m.resetAantekeningen()).catch(() => {});
+  import('./training-video.js?v=20261116l').then(m => m.resetTrainingVideos()).catch(() => {});
+  import('./training-tactiek.js?v=20261116l').then(m => m.resetTrainingTactiek()).catch(() => {});
+  import('./training-delen.js?v=20261116l').then(m => m.resetTrainingDelen()).catch(() => {});
   vangnetStilTerugAlsNodig(wasOpen);
 }
 
@@ -156,6 +158,7 @@ export function oefHtml(idx, oef, diagramUrls){
         <h2>${esc(oef.titel || 'Oefening ' + idx)}</h2>
       </div>
       ${oef.principe && principeOpId(oef.principe) ? `<div class="sw-blokchip">${htmlPrincipeChip(principeOpId(oef.principe))}</div>` : ''}
+      ${oef.vandaag ? `<div class="tv-was"><b>${esc(oef.vandaag.label)}</b><span>${esc(oef.vandaag.was || '')}</span></div>` : ''}
       ${diagram}
       <div class="${zeven ? 'ok-kaart trw-ok' : 'hl'}">${blokken}</div>
     </section>`;
@@ -245,76 +248,92 @@ if (typeof document !== 'undefined'){ if (document.body) start3D(); else documen
    - training: het Firestore-doc (voor titel/meta)
    - diagramUrls: { pagina: url }
    - oefeningen: de AI-structuur
-   - onOrigineel: callback die de PDF-viewer opent */
-export function openTrainingWeergave({ titel, meta, oefeningen, diagramUrls, onOrigineel, trainingId, oefeningVideos, oefeningTactiek, trainingClub, teamId, teamNaam, clubNaam, draadHtml = '' }){
+   - onOrigineel: callback die de PDF-viewer opent
+   - vandaag: [20261116l] het trainingsdocument, als de balk "Vandaag" (spelers en weer) erbij hoort. De module
+     training-vandaag.js wordt dan pas geladen (zo blijft de deelpagina voor ouders licht), levert de balk en de
+     oefeningen zoals ze vandaag zijn, en laat de weergave zichzelf opnieuw tekenen na een tik in de balk. */
+let _stopVandaag = null;
+export async function openTrainingWeergave({ titel, meta, oefeningen, diagramUrls, onOrigineel, trainingId, oefeningVideos, oefeningTactiek, trainingClub, teamId, teamNaam, clubNaam, draadHtml = '', vandaag = null }){
   const el = bouwOverlay();
   el.querySelector('.trw-titel').textContent = titel || 'Training';
   el.querySelector('.trw-meta').textContent = meta || '';
-  const stage = el.querySelector('.trw-stage');
+  const stage = el.querySelector('.trw-stage'), balk = el.querySelector('.trw-balk');
+  if (_stopVandaag){ _stopVandaag(); _stopVandaag = null; }
+  const beurt = (el._beurt = (el._beurt || 0) + 1);            /* een nieuwere aanroep (of sluiten) wint van een oudere */
 
-  const navChips = oefeningen.map((o, i) =>
-    `<a class="trw-chip" data-naar="${i}">${i + 1}. ${esc((o.titel || 'Oefening ' + (i+1)).slice(0, 22))}</a>`
-  ).join('');
+  let TV = null;
+  if (vandaag && teamId){
+    try { TV = await import('./training-vandaag.js?v=20261116l'); } catch (e){ TV = null; }
+    if (el._beurt !== beurt) return;
+  }
 
   const origKnop = onOrigineel
     ? `<button class="trw-orig"><span class="trw-pdftag">PDF</span> Origineel bekijken</button>`
     : '';
 
-  stage.innerHTML = `
+  /* De lagen bovenop de oefeningen (aantekeningen, video, tactiekbord, delen). Bij opnieuw tekenen eerst opruimen,
+     precies zoals bij sluiten, en dan opnieuw koppelen aan de nieuwe oefeningen. */
+  const lagen = async (opnieuw) => {
+    const [aant, vid, tac, del] = await Promise.all([
+      import('./training-aantekeningen.js?v=20261116l').catch(() => null),
+      import('./training-video.js?v=20261116l').catch(() => null),
+      import('./training-tactiek.js?v=20261116l').catch(() => null),
+      import('./training-delen.js?v=20261116l').catch(() => null),
+    ]);
+    if (el._beurt !== beurt || !el.classList.contains('open')) return;
+    const veilig = f => { try { f(); } catch (e){ console.warn('[training] laag koppelen mislukt', e); } };
+    if (opnieuw){
+      balk.querySelector('.trw-notitie-knop:not(.trw-deel-knop)')?.remove();
+      veilig(() => aant?.resetAantekeningen()); veilig(() => vid?.resetTrainingVideos()); veilig(() => tac?.resetTrainingTactiek()); veilig(() => del?.resetTrainingDelen());
+    }
+    // Aantekeningen: notitie-knop in de balk + tik-op-regel.
+    veilig(() => { if (aant){ aant.initAantekeningen({ stage, balk, trainingId }); if (!opnieuw) aant.bindItemKlik(stage); } });   /* de tik-afhandeling hangt aan het blijvende scherm: één keer per openen */
+    // Video-uitleg: knop in de balk die de zichtbare oefening volgt + afspeeltegel per oefening.
+    veilig(() => vid?.initTrainingVideos({ stage, balk, trainingId, videos: oefeningVideos || {}, trainingClub }));
+    // Tactiekbord: compact icoon per oefening, op één lijn met het video-icoon.
+    veilig(() => tac?.initTrainingTactiek({ stage, trainingId, borden: oefeningTactiek || {} }));
+    // Deel-knop: de training + de presentie tijdelijk delen met een meehelpende ouder.
+    veilig(() => del?.initTrainingDelen({ balk, trainingId, teamId, teamNaam, clubNaam, titel }));
+  };
+
+  const teken = (eerste) => {
+    const tv = TV ? TV.vandaagVan(vandaag, teamId) : null;
+    const lijst = tv ? tv.oefeningen : oefeningen;
+    const y = stage.scrollTop;
+    const navChips = lijst.map((o, i) =>
+      `<a class="trw-chip" data-naar="${i}">${i + 1}. ${esc((o.titel || 'Oefening ' + (i+1)).slice(0, 22))}</a>`
+    ).join('');
+    stage.innerHTML = `
     ${origKnop}
+    ${tv?.html || ''}
     ${draadHtml ? `<div class="trw-draad tm">${draadHtml}</div>` : ''}
     <nav class="trw-nav">${navChips}</nav>
-    ${oefeningen.map((o, i) => oefHtml(i + 1, o, diagramUrls)).join('')}`;
+    ${lijst.map((o, i) => oefHtml(i + 1, o, diagramUrls)).join('')}`;
 
-  // origineel-knop → PDF-viewer
-  const ob = stage.querySelector('.trw-orig');
-  if (ob && onOrigineel) ob.onclick = () => onOrigineel();
+    // origineel-knop → PDF-viewer
+    const ob = stage.querySelector('.trw-orig');
+    if (ob && onOrigineel) ob.onclick = () => onOrigineel();
 
-  // snelnavigatie: scroll naar oefening
-  const secties = [...stage.querySelectorAll('.trw-oef')];
-  stage.querySelectorAll('.trw-chip').forEach(chip => {
-    chip.onclick = () => {
-      const i = Number(chip.dataset.naar);
-      if (secties[i]) secties[i].scrollIntoView({ behavior: 'smooth', block: 'start' });
-    };
-  });
+    // snelnavigatie: scroll naar oefening
+    const secties = [...stage.querySelectorAll('.trw-oef')];
+    stage.querySelectorAll('.trw-chip').forEach(chip => {
+      chip.onclick = () => {
+        const i = Number(chip.dataset.naar);
+        if (secties[i]) secties[i].scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+    });
 
-  // diagram → schermvullende lightbox met zoom
-  stage.querySelectorAll('.trw-diagram[data-zoom]').forEach(fig => {
-    fig.onclick = () => openLightbox(fig.dataset.zoom, fig.dataset.zoomtitel);
-  });
+    // diagram → schermvullende lightbox met zoom
+    stage.querySelectorAll('.trw-diagram[data-zoom]').forEach(fig => {
+      fig.onclick = () => openLightbox(fig.dataset.zoom, fig.dataset.zoomtitel);
+    });
 
-  stage.scrollTop = 0;
+    stage.scrollTop = eerste ? 0 : y;
+    if (trainingId) lagen(!eerste);
+  };
+
+  teken(true);
   el.classList.add('open');
   bewaakTerug();
-
-  // Aantekeningen-laag (additief): notitie-knop in de balk + tik-op-regel.
-  // Alleen als er een trainingId is om notities aan te koppelen.
-  if (trainingId){
-    import('./training-aantekeningen.js?v=20261116k').then(mod => {
-      const balk = el.querySelector('.trw-balk');
-      mod.initAantekeningen({ stage, balk, trainingId });
-      mod.bindItemKlik(stage);
-    }).catch(() => {});
-
-    // Video-uitleg-laag (additief): 🎬-knop in de balk die de zichtbare oefening
-    // volgt + afspeeltegel per oefening; beheerder kan uploaden/vervangen/wissen.
-    import('./training-video.js?v=20261116k').then(mod => {
-      const balk = el.querySelector('.trw-balk');
-      mod.initTrainingVideos({ stage, balk, trainingId, videos: oefeningVideos || {}, trainingClub });
-    }).catch(() => {});
-
-    // Tactiekbord-laag (additief): compact tactiekbord-icoon per oefening, op één
-    // lijn met het video-icoon. Koppelt een bord aan de oefening.
-    import('./training-tactiek.js?v=20261116k').then(mod => {
-      mod.initTrainingTactiek({ stage, trainingId, borden: oefeningTactiek || {} });
-    }).catch(() => {});
-
-    // Deel-knop (additief): 📤-knop rechts in de balk waarmee een coach deze
-    // training + de presentie ervan tijdelijk deelt met een meehelpende ouder.
-    import('./training-delen.js?v=20261116k').then(mod => {
-      const balk = el.querySelector('.trw-balk');
-      mod.initTrainingDelen({ balk, trainingId, teamId, teamNaam, clubNaam, titel });
-    }).catch(() => {});
-  }
+  if (TV) _stopVandaag = TV.opWijziging(() => { if (el._beurt === beurt && el.classList.contains('open')) teken(false); });
 }

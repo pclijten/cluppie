@@ -8,19 +8,19 @@ import {
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, speler, initialen, openModal, sluitModal, toon, isBeheerder
-} from './state.js?v=20261116k';
-import { telGebruik } from './tracker.js?v=20261116k';
-import { voorbeeldTeamcode } from './clubconfig.js?v=20261116k';
+} from './state.js?v=20261116l';
+import { telGebruik } from './tracker.js?v=20261116l';
+import { voorbeeldTeamcode } from './clubconfig.js?v=20261116l';
 import { ico } from './icons.js?v=20261116j';
 
 import {
   CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, youtubeId, youtubeThumb, youtubeWatch,
   SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo, isoWeek,
   catLabel,
-} from './config.js?v=20261116k';
-import { onderdeelAan } from './onderdelen.js?v=20261116k';
-import { htmlKompas } from './teams-leerlijn.js?v=20261116k';
-import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261116k';
+} from './config.js?v=20261116l';
+import { onderdeelAan } from './onderdelen.js?v=20261116l';
+import { htmlKompas } from './teams-leerlijn.js?v=20261116l';
+import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261116l';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
 import { spelersOpTraining } from './uitleen-regels.js?v=20261113b';
 import {
@@ -424,7 +424,7 @@ export function htmlTeamTrainingen(){
   const magAanpassen = onderdeelAan('trainingsmodule');
   const pdfRijHtml = (t, dagChip, datumIso) => {
     const aanpas = magAanpassen && (t.teams || []).length === 1 && Array.isArray(t.oefeningen) && t.oefeningen.length && datumIso && datumIso >= vandaagStr
-      ? `<button class="knop klein licht" data-tr-aanpassen="${esc(t.id)}" data-datum="${esc(datumIso)}" title="Pas aan in Training maken">Aanpassen</button>` : '';
+      ? `<button class="knop klein licht" data-tr-aanpassen="${esc(t.id)}" data-datum="${esc(datumIso)}" title="Maak in Training maken een andere training voor deze dag">Andere training maken</button>` : '';
     const ongelezen = !S.trainingenGelezen[t.id];
     const heeftAi = Array.isArray(t.oefeningen) && t.oefeningen.length;
     const chip = dagChip

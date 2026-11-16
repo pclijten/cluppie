@@ -1,4 +1,12 @@
 [
+  { "datum": "2026-11-16", "titel": "Vandaag: pas elke training aan op het aantal spelers en het weer", "punten": [
+    "Bovenaan elke training staat de balk Vandaag. Kies hoeveel spelers er zijn en wat voor weer het is: Gewoon, Koud, Regen of Warm. De training past zich meteen aan, met dezelfde oefeningen.",
+    "Groepen, wissels, veldmaat en materiaal schuiven mee. Bij kou en regen worden de ontvangst en de drinkpauzes korter, bij warmte juist langer.",
+    "Kan een oefening niet met dit aantal spelers, dan komt er een andere die bij het thema past. Erbij staat wat het was en waarom.",
+    "Voorstellen met één tik: het aantal uit de presentie of de vaste afmeldingen, en het weerbericht op het trainingsmoment. Er verandert nooit iets vanzelf.",
+    "Terug naar het plan zet alles weer zoals het gepland was. Het plan zelf, ook dat van de club, wordt nooit overschreven.",
+    "De knop Aanpassen bij een training heet nu Andere training maken."
+  ] },
   { "datum": "2026-11-16", "titel": "Altijd 3D, en het menu blijft in beeld op de computer", "punten": [
     "Elke oefening uit de bibliotheek staat nu meteen in 3D, bij Trainingen en bij Training maken. Kiezen tussen Tekening en 3D hoeft niet meer.",
     "De schuifjes Hoek en Draai zijn weg: het veld staat altijd in dezelfde kijkhoek.",
