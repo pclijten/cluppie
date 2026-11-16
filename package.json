@@ -9,7 +9,7 @@
     "deploy:hosting": "firebase deploy --only hosting",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes",
     "deploy:functions": "echo 'Gebruik: firebase deploy --only functions:<naam>,…' && exit 1",
-    "test:rules": "firebase emulators:exec --only firestore --project cluppie-rules-test \"node --test tests/rules.test.mjs tests/audit-rules.test.mjs\"",
+    "test:rules": "firebase emulators:exec --only firestore --project cluppie-rules-test \"node --test --test-concurrency=1 tests/rules.test.mjs tests/audit-rules.test.mjs\"",
     "test:storage": "firebase emulators:exec --config firebase.test.json --only firestore,storage --project cluppie-rules-test \"node --test tests/storage-rules.test.mjs\"",
     "test:rook": "node tools/rooktest.mjs",
     "audit:rules": "firebase emulators:exec --only firestore --project cluppie-rules-test \"node --test tests/audit-rules.test.mjs\"",
