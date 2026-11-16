@@ -7,7 +7,7 @@
 import { esc } from './state.js?v=20261116n';
 import { beleidsplanNaam } from './clubconfig.js?v=20261116n';
 import { ROLKAARTEN } from './rolkaart.js?v=20261116n';
-import { onboardingHerstartBlok } from './onboarding.js?v=20261116p';
+import { onboardingHerstartBlok } from './onboarding.js?v=20261116q';
 
 export function htmlHandleiding(){
   return `<div class="hl">

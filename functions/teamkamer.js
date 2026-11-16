@@ -311,12 +311,7 @@ const beoordeelKamerAanvraag = onCall({ region: REGIO, cors: true }, async (requ
   /* mail zonder namen van spelers */
   if (a.email){
     try {
-      const { maakMail } = require('./mail-sjabloon');
-      const inhoud = maakMail({ titel: 'Je kunt de teamkamer in',
-        alineas: [`De trainer van ${x.team.naam || 'het team'} heeft je aanvraag goedgekeurd. Je ziet nu de agenda, wie erbij is, mededelingen en polls.`,
-          'Afmelden blijft via de groepsapp gaan. In de teamkamer staat een knop die het bericht voor je klaarzet.'],
-        knop: { tekst: 'Open de teamkamer', url: APP_URL } });
-      await db.collection('mail').add({ to: a.email, message: { subject: 'Cluppie: je kunt de teamkamer in', text: inhoud.text, html: inhoud.html }, gemaakt: FieldValue.serverTimestamp() });
+      await require('./mail-teksten').verstuur(db, 'teamkamer', a.email, { team: x.team.naam || 'het team' }, { vast: { knopUrl: APP_URL } });
     } catch (e){ logger.warn('[teamkamer] mail mislukt', e.message || e); }
   }
   return { ok: true };
