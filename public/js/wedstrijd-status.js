@@ -104,7 +104,7 @@ export function htmlAfgelastBanner(wedstrijden, teamNaam, vandaag){
   const titel = w.thuis ? `${teamNaam} – ${w.tegenstander || ''}` : `${w.tegenstander || ''} – ${teamNaam}`;
   const wanneer = w.datum === vandaag ? 'van vandaag' : `van ${datumKort(w.datum)}`;
   return `<div class="ws-banner" role="status">
-    <span class="ws-banner-ic" aria-hidden="true">⛔</span>
+    <span class="ws-banner-ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/></svg></span>
     <div class="ws-banner-t"><b>Wedstrijd ${esc(wanneer)} is afgelast${lijst.length > 1 ? ` (+${lijst.length - 1})` : ''}</b>
       <span>${esc(titel.trim())}${w.aftrap ? ' · ' + esc(w.aftrap) : ''}</span></div>
     <button class="knop licht klein" data-ws-gezien="${esc(lijst.map(x => x.id).join(','))}">Gezien</button></div>`;

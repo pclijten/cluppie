@@ -104,6 +104,8 @@ const PATHS = {
   // — admin —
   'admin-admin': '<path d="M12 3 20 6.5V11c0 4.5-3.1 8.7-8 10-4.9-1.3-8-5.5-8-10V6.5z"/><circle cx="12" cy="10.4" r="2.1"/><path d="M8.8 16.2a3.6 3.6 0 0 1 6.4 0"/>',
   'admin-archive': '<rect x="3.4" y="4.6" width="17.2" height="4.4" rx="1.8"/><path d="M5.2 9v10.4h13.6V9"/><path d="M10 13h4"/>',
+  'admin-club': '<path d="M3.5 9.5 12 4.5l8.5 5"/><path d="M5.5 10v8"/><path d="M10 10v8"/><path d="M14 10v8"/><path d="M18.5 10v8"/><path d="M3.5 19.5h17"/>',
+  'action-blocked': '<circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/>',
   'admin-delete': '<path d="M5.4 7.4h13.2"/><path d="M7.4 7.4 8.3 20h7.4l.9-12.6"/><path d="M9.6 4.4h4.8l.6 3H9z"/><path d="M10.6 11v5.4M13.4 11v5.4"/>',
   'admin-document': '<path d="M6 3h9l4 4v14H6z"/><path d="M9 11h8M9 15h8M9 7h3"/>',
   'admin-download': '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',

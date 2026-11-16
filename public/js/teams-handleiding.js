@@ -4,10 +4,10 @@
    wat hierboven al in dit bestand staat. De zoekfunctionaliteit
    (#helpZoek) wordt door de hub (teams.js/koppelTeamTab) aangesloten,
    want die werkt direct op het gerenderde DOM-element. */
-import { esc } from './state.js?v=20261116n';
-import { beleidsplanNaam } from './clubconfig.js?v=20261116n';
-import { ROLKAARTEN } from './rolkaart.js?v=20261116n';
-import { onboardingHerstartBlok } from './onboarding.js?v=20261116r';
+import { esc } from './state.js?v=20261116t';
+import { beleidsplanNaam } from './clubconfig.js?v=20261116t';
+import { ROLKAARTEN } from './rolkaart.js?v=20261116t';
+import { onboardingHerstartBlok } from './onboarding.js?v=20261116t';
 
 export function htmlHandleiding(){
   return `<div class="hl">
@@ -40,8 +40,8 @@ export function htmlHandleiding(){
     <div class="tip"><b>Wachtwoord vergeten?</b> Tik op "Wachtwoord vergeten?" onder de inlogknop, je krijgt dan een mailtje om een nieuw wachtwoord in te stellen.</div>
     </section>
 
-    <section class="hl-sec" data-zoek="🌱 zelf beginnen als trainer zonder club begin met mijn eigen team club plaats weer eerste stappen">
-    <h3>🌱 Zelf beginnen als trainer</h3>
+    <section class="hl-sec" data-zoek="zelf beginnen als trainer zonder club begin met mijn eigen team club plaats weer eerste stappen">
+    <h3>Zelf beginnen als trainer</h3>
     <p>Train je een team en heeft je club Cluppie nog niet? Tik op <b>Begin met mijn eigen team</b>. Je doorloopt drie korte stappen:</p>
     <ul>
       <li><b>Uitleg.</b> Wat Cluppie voor je doet, en eerlijk wat je zonder club niet hebt (Sportlink en AI-hulp).</li>
@@ -85,8 +85,8 @@ export function htmlHandleiding(){
     <div class="tip">Trainingen uit een seizoensplan verschijnen op de <b>maandag van de week ervoor</b>. Het hele seizoen zie je onder <b>Seizoen</b>. Een <b>rood stipje</b> op de tegel laat zien dat er iets nieuws is.</div>
     </section>
 
-    <section class="hl-sec" data-zoek="📝 training maken onder trainingen staat de tegel training maken. aanpassen geplande training vervangen seizoensplan spelers presentie weer koud regen warm veld materiaal duur 45 60 75 niveau thema maak training wissel vorm bewaar extra training whatsapp">
-    <h3>📝 Training maken</h3>
+    <section class="hl-sec" data-zoek="training maken onder trainingen staat de tegel training maken. aanpassen geplande training vervangen seizoensplan spelers presentie weer koud regen warm veld materiaal duur 45 60 75 niveau thema maak training wissel vorm bewaar extra training whatsapp">
+    <h3>Training maken</h3>
     <p>Onder <b>Trainingen</b> staat de tegel <b>Training maken</b>. Heeft je team een seizoensplan, dan opent hij op de eerstvolgende geplande training, met het thema en de fase van die week. Op Trainingen kun je ook bij een training op <b>Aanpassen</b> tikken.</p>
     <ul>
       <li>Het aantal spelers komt uit de presentie. Duur (45, 60 of 75 minuten), weer, veld en materiaal stel je zelf in; de training past zich meteen aan.</li>
@@ -97,8 +97,8 @@ export function htmlHandleiding(){
     <div class="tip">Training maken werkt <b>zonder AI</b> en bewaart geen spelersnamen. Veldmaten en ruimte per speler zijn richtwaarden, geen KNVB-normen: laat het weten als iets in de praktijk anders werkt.</div>
     </section>
 
-    <section class="hl-sec" data-zoek="🧭 speelwijze rode draad hoe willen wij voetballen onder trainingen staat de tegel speelwijze. de speelwijze is de rode draad van het seizoen: de vier momenten van het spel (wij hebben de bal, wij verliezen de bal, zij hebben de bal, wij winnen de bal) met per moment de principes voor de leeftijd van je team. per principe zie je wat je ziet als het lukt, drie coachwoorden, een regel voor het partijspel, de vraag voor na de wedstrijd en een oefening in 3d. de club legt de speelwijze vast onder club › speelwijze (clubbeheerder of hoofd jeugdopleiding, met een stijl als startpunt of een vragenlijst). een trainer zonder club, of een team van een club die nog niets heeft vastgelegd, kiest zelf een stijl of beantwoordt 8 vragen. de speelwijze komt terug in seizoen (thema's die erbij horen komen een keer extra, bij elk blok staat het principe), in training maken (leerdoel, vormen die het principe trainen, coachwoorden, regel in het partijspel), op trainingen en in de wedstrijdevaluatie (de vraag van het principe). leeftijd gaat voor: druk zetten en omschakelen als team komt standaard vanaf o12, vaste posities vanaf o10. zonder speelwijze werkt alles zoals altijd op het thema.">
-    <h3>🧭 Speelwijze: de rode draad</h3>
+    <section class="hl-sec" data-zoek="speelwijze rode draad hoe willen wij voetballen onder trainingen staat de tegel speelwijze. de speelwijze is de rode draad van het seizoen: de vier momenten van het spel (wij hebben de bal, wij verliezen de bal, zij hebben de bal, wij winnen de bal) met per moment de principes voor de leeftijd van je team. per principe zie je wat je ziet als het lukt, drie coachwoorden, een regel voor het partijspel, de vraag voor na de wedstrijd en een oefening in 3d. de club legt de speelwijze vast onder club › speelwijze (clubbeheerder of hoofd jeugdopleiding, met een stijl als startpunt of een vragenlijst). een trainer zonder club, of een team van een club die nog niets heeft vastgelegd, kiest zelf een stijl of beantwoordt 8 vragen. de speelwijze komt terug in seizoen (thema's die erbij horen komen een keer extra, bij elk blok staat het principe), in training maken (leerdoel, vormen die het principe trainen, coachwoorden, regel in het partijspel), op trainingen en in de wedstrijdevaluatie (de vraag van het principe). leeftijd gaat voor: druk zetten en omschakelen als team komt standaard vanaf o12, vaste posities vanaf o10. zonder speelwijze werkt alles zoals altijd op het thema.">
+    <h3>Speelwijze: de rode draad</h3>
     <p>Onder <b>Trainingen</b> staat de tegel <b>Speelwijze</b>. Daar staat hoe jullie willen voetballen, in de vier momenten van het spel: wij hebben de bal, wij verliezen de bal, zij hebben de bal en wij winnen de bal. Per moment zie je de principes voor de leeftijd van je team.</p>
     <ul>
       <li><b>Een principe</b> heeft: wat je ziet als het lukt, drie coachwoorden, een regel voor het partijspel, een vraag voor na de wedstrijd en een oefening die je in 3D kunt bekijken.</li>
@@ -110,8 +110,8 @@ export function htmlHandleiding(){
     <div class="tip">Leeftijd gaat voor de speelwijze: druk zetten en omschakelen als team komt standaard vanaf O12, vaste posities vanaf O10. Zonder speelwijze werkt alles zoals altijd, op het thema van de week. De speelwijze is een eigen ontwerp op basis van ervaring van trainers, geen gevalideerde test.</div>
     </section>
 
-    <section class="hl-sec" data-zoek="🎬 oefening in 3d spelverloop stappen elke oefening uit de bibliotheek staat in 3d, je hoeft niets te kiezen. je ziet het hele spelverloop stap voor stap: vorige, afspelen, volgende, opnieuw. de tekening zie je nog in de kleine schets, bij afdrukken en op een apparaat zonder 3d. stappen die tegelijk gebeuren (pass en loopactie) spelen samen. elke oefening heeft een uitgeschreven verloop in fases (opbouw, doorbreken, afronden, omschakelen): de reactie van de tegenstander, de afronding en wat er daarna gebeurt. eigen vorm van de club zonder stappen voorbeeld van het vervolg">
-    <h3>🎬 Oefening in 3D: het hele spelverloop</h3>
+    <section class="hl-sec" data-zoek="oefening in 3d spelverloop stappen elke oefening uit de bibliotheek staat in 3d, je hoeft niets te kiezen. je ziet het hele spelverloop stap voor stap: vorige, afspelen, volgende, opnieuw. de tekening zie je nog in de kleine schets, bij afdrukken en op een apparaat zonder 3d. stappen die tegelijk gebeuren (pass en loopactie) spelen samen. elke oefening heeft een uitgeschreven verloop in fases (opbouw, doorbreken, afronden, omschakelen): de reactie van de tegenstander, de afronding en wat er daarna gebeurt. eigen vorm van de club zonder stappen voorbeeld van het vervolg">
+    <h3>Oefening in 3D: het hele spelverloop</h3>
     <p>Elke oefening uit de bibliotheek staat in <b>3D</b>: je hoeft niets te kiezen. Je ziet het spelverloop stap voor stap, met Vorige, Afspelen, Volgende en Opnieuw. Stappen die tegelijk gebeuren (een pass en een loopactie) spelen samen.</p>
     <ul>
       <li>Elke oefening uit de bibliotheek heeft een uitgeschreven verloop in fases (bijvoorbeeld Opbouw, Doorbreken, Afronden, Omschakelen). Je ziet ook wat de tegenstander doet en wat er na de afronding gebeurt. Hetzelfde verloop staat in het veld <b>Uitleg</b>.</li>
@@ -120,8 +120,8 @@ export function htmlHandleiding(){
     </ul>
     </section>
 
-    <section class="hl-sec" data-zoek="🏠 teamkamer ouders spelers kinderen meekijken toegang teamlink aanvraag goedkeuren code poll polls wie rijdt wie wast fruit vlaggen stemmen mededeling afmelden whatsapp beurten thuis oefenen live stand opstelling delen privacy verbergen">
-    <h3>🏠 Teamkamer: ouders en spelers kijken mee</h3>
+    <section class="hl-sec" data-zoek="teamkamer ouders spelers kinderen meekijken toegang teamlink aanvraag goedkeuren code poll polls wie rijdt wie wast fruit vlaggen stemmen mededeling afmelden whatsapp beurten thuis oefenen live stand opstelling delen privacy verbergen">
+    <h3>Teamkamer: ouders en spelers kijken mee</h3>
     <p>In de <b>Teamkamer</b> zien ouders en spelers de agenda, wie erbij is, je mededelingen en polls. Ze zien geen beoordelingen, leerpunten, notities of de reden van een afmelding. Afmelden blijft via de groepsapp gaan: jij zet het in Cluppie.</p>
     <ul>
       <li><b>Zelf aan en uit (Teamkamer, Instellingen):</b> Trainingen (ouders zien de komende trainingen met thema, oefeningen en 3D, zonder jouw aantekeningen), Opstelling altijd delen (vanaf de dag voor de wedstrijd) en Cijfers van het eigen kind. Bij cijfers vink je aan wat mee mag: wedstrijden, speeltijd, doelpunten en assists, opkomst, kaarten. Een ouder ziet alleen het eigen kind, nooit een ranglijst; het kind zelf ziet het niet. Alles staat uit tot jij het aanzet. De cijfers en trainingen lopen bij als een trainer het team opent.</li>
@@ -138,8 +138,8 @@ export function htmlHandleiding(){
     </ul>
     <p>Ouders en spelers openen <b>www.cluppie.io/kamer.html</b>. Dat is een eigen pagina, los van deze app.</p>
     </section>
-    <section class="hl-sec" data-zoek="🌦 vandaag spelers en weer training aanpassen aantal spelers minder spelers afmeldingen regen koud warm weerbericht presentie neem over terug naar het plan vervangen groepen veld aangepast voor vandaag andere training maken">
-    <h3>🌦 Vandaag: de training aanpassen aan spelers en weer</h3>
+    <section class="hl-sec" data-zoek="vandaag spelers en weer training aanpassen aantal spelers minder spelers afmeldingen regen koud warm weerbericht presentie neem over terug naar het plan vervangen groepen veld aangepast voor vandaag andere training maken">
+    <h3>Vandaag: de training aanpassen aan spelers en weer</h3>
     <p>Bovenaan elke training staat de balk <b>Vandaag</b>. Kies hoeveel <b>spelers</b> er zijn (− en +) en wat voor <b>weer</b> het is (Gewoon, Koud, Regen of Warm). De training past zich meteen aan, met dezelfde oefeningen.</p>
     <ul>
       <li><b>Voorstellen:</b> staat de presentie van die dag erin, of heeft iemand een vaste afmelding, dan zie je "11 van 14 aanwezig" met de knop <b>Neem over</b>. Binnen een week voor de training staat er ook het weerbericht op het trainingsmoment. Er verandert nooit iets vanzelf: jij tikt.</li>
@@ -152,8 +152,8 @@ export function htmlHandleiding(){
     <div class="tip">Een training uit een eigen PDF past Cluppie niet zelf aan: je krijgt dan tips voor dit aantal en dit weer. Wil je een heel andere training voor die dag, gebruik dan <b>Andere training maken</b> (als Training maken voor jou aan staat).</div>
     </section>
 
-    <section class="hl-sec" data-zoek="🔎 oefenkaart lezen zo zie je dat het lukt waarom dit werkt kijk en grijp in zie je doe dan tel mee richtpunt spelers aan zet regie differentiatie coachmomenten doel succes ingrijpen aanpassen te makkelijk te moeilijk tellen meten kopballen koppen knvb advies">
-    <h3>🔎 Zo lees je een oefening</h3>
+    <section class="hl-sec" data-zoek="oefenkaart lezen zo zie je dat het lukt waarom dit werkt kijk en grijp in zie je doe dan tel mee richtpunt spelers aan zet regie differentiatie coachmomenten doel succes ingrijpen aanpassen te makkelijk te moeilijk tellen meten kopballen koppen knvb advies">
+    <h3>Zo lees je een oefening</h3>
     <p>Elke oefening heeft dezelfde zeven velden. In drie daarvan staat extra hulp voor langs de lijn:</p>
     <ul>
       <li><b>Doel</b>: <i>Zo zie je dat het lukt</i> (twee dingen die je kunt zien, zonder te hoeven raden) en <i>Waarom dit werkt</i> (één zin over het idee achter de oefening).</li>
@@ -163,8 +163,8 @@ export function htmlHandleiding(){
     <p>De richtpunten zijn een houvast, geen norm. Haalt je groep het makkelijk, maak het dan moeilijker; lukt het bijna nooit, maak het dan makkelijker. Bij oefeningen met koppen staat onder Veiligheid het advies van de KNVB over het aantal kopballen en de hersteltijd.</p>
     </section>
 
-    <section class="hl-sec" data-zoek="📖 voetbaltaal woordenlijst begrippen betekenis wat betekent aannemen afronden back blok compact dekken derde man diep spelen druk zetten joker kaatsen kantelen kappen knijpen linie nummer 10 omschakelen opendraaien overlap overtal positiespel restverdediging rondo rugdekking schijnbeweging spits steekpass tegendruk tweede bal uitstappen vleugelspeler zestien aanname kaatser diepte ondertal linies vaktaal jargon">
-    <h3>📖 Voetbaltaal in het kort</h3>
+    <section class="hl-sec" data-zoek="voetbaltaal woordenlijst begrippen betekenis wat betekent aannemen afronden back blok compact dekken derde man diep spelen druk zetten joker kaatsen kantelen kappen knijpen linie nummer 10 omschakelen opendraaien overlap overtal positiespel restverdediging rondo rugdekking schijnbeweging spits steekpass tegendruk tweede bal uitstappen vleugelspeler zestien aanname kaatser diepte ondertal linies vaktaal jargon">
+    <h3>Voetbaltaal in het kort</h3>
     <p>De oefeningen zijn in gewone taal geschreven. Een paar voetbalwoorden blijven staan, omdat je ze op elk veld hoort. Dit is wat ze betekenen:</p>
     <ul>
       <li><b>Aannemen</b>: de bal met je eerste aanraking onder controle brengen. Dat heet ook de aanname.</li>
@@ -203,8 +203,8 @@ export function htmlHandleiding(){
     <p>Tegen de jongste spelers gebruik je deze woorden nog niet. In het veld <b>Uitleg</b> staat steeds een zin die je zo kunt zeggen.</p>
     </section>
 
-    <section class="hl-sec" data-zoek="📆 seizoen jaarlijn blokken bijsturing seizoensplan club eigen plan alleen lezen coördinator opzet opbouwmodel leercurve vrije weken trainingen per week duur accent signalen thema-check evaluatie">
-    <h3>📆 Seizoen: jaarlijn en bijsturing</h3>
+    <section class="hl-sec" data-zoek="seizoen jaarlijn blokken bijsturing seizoensplan club eigen plan alleen lezen coördinator opzet opbouwmodel leercurve vrije weken trainingen per week duur accent signalen thema-check evaluatie">
+    <h3>Seizoen: jaarlijn en bijsturing</h3>
     <p>Onder <b>Trainingen</b> staat ook de tegel <b>Seizoen</b>. Een team heeft één seizoensplan: van de club of je eigen plan.</p>
     <ul>
       <li><b>Van de club</b>: je coördinator of hoofd jeugd heeft het plan aan je team toegewezen. Je ziet de blokken en de komende weken, maar wijzigt niets. Signalen uit je evaluaties bespreek je met je coördinator.</li>
@@ -214,11 +214,11 @@ export function htmlHandleiding(){
     <div class="tip">De trainingen van het plan komen per week op Trainingen, op de maandag van de week ervoor. Heeft je team een seizoensplan, dan vraagt de evaluatie na een wedstrijd ook of het thema van die week terugkwam. Dat is het beste signaal om bij te sturen.</div>
     </section>
 
-    <section class="hl-sec" data-zoek="🔁 vaste afmelding kan een speler een tijd lang op een vaste trainingsdag niet, bijvoorbeeld elke maandag gedurende 10 weken? tik op het tabblad presentie → training op vaste afmelding en kies speler, trainingsdag, startdatum, aantal weken en eventueel een reden. op die datums staat hij alvast op afwezig zodra je de presentie opent, met een 🔁-label. is hij er toch, tik dan op zijn naam. de afwezigheid telt pas mee in de opkomst als je de presentie die dag echt invult; gaat een training niet door, dan telt hij dus ook niet als gemist. onder de knoppen staan de lopende vaste afmeldingen. met stoppen haal je er een weg; toekomstige afmeldingen die uit die regel kwamen verdwijnen dan ook.">
-    <h3>🔁 Vaste afmelding</h3>
+    <section class="hl-sec" data-zoek="vaste afmelding kan een speler een tijd lang op een vaste trainingsdag niet, bijvoorbeeld elke maandag gedurende 10 weken? tik op het tabblad presentie → training op vaste afmelding en kies speler, trainingsdag, startdatum, aantal weken en eventueel een reden. op die datums staat hij alvast op afwezig zodra je de presentie opent, met het label vast. is hij er toch, tik dan op zijn naam. de afwezigheid telt pas mee in de opkomst als je de presentie die dag echt invult; gaat een training niet door, dan telt hij dus ook niet als gemist. onder de knoppen staan de lopende vaste afmeldingen. met stoppen haal je er een weg; toekomstige afmeldingen die uit die regel kwamen verdwijnen dan ook.">
+    <h3>Vaste afmelding</h3>
     <p>Kan een speler een tijd lang op een vaste trainingsdag niet, bijvoorbeeld elke maandag gedurende 10 weken? Tik op het tabblad <b>Presentie → Training</b> op <b>Vaste afmelding</b> en kies speler, trainingsdag, startdatum, aantal weken en eventueel een reden.</p>
     <ul>
-      <li>Op die datums staat hij alvast op afwezig zodra je de presentie opent, met een <b>🔁</b>-label. Is hij er toch, tik dan op zijn naam.</li>
+      <li>Op die datums staat hij alvast op afwezig zodra je de presentie opent, met het label <b>vast</b>. Is hij er toch, tik dan op zijn naam.</li>
       <li>De afwezigheid telt pas mee in de opkomst als je de presentie die dag echt invult. Gaat een training niet door, dan telt hij dus ook niet als gemist.</li>
       <li>Onder de knoppen staan de lopende vaste afmeldingen. Met <b>Stoppen</b> haal je er een weg; toekomstige afmeldingen die uit die regel kwamen verdwijnen dan ook.</li>
     </ul>

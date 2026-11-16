@@ -9,18 +9,19 @@
    luistert een snapshot) niets kwijtmaakt. Bij een club die nog geen
    instellingen.v heeft (legacy) worden bij de eerste wijziging eerst alle
    huidige waarden vastgelegd, zodat er niets verspringt. */
+import { ico } from './icons.js?v=20261116t';
 import {
   db, doc, collection, addDoc, updateDoc, setDoc, deleteDoc, getDoc, getDocs, query, where, writeBatch, serverTimestamp
 } from './firebase.js?v=20261011g';
-import { S, $, esc, meld, openModal, sluitModal, nieuweCode, isPlatformBeheerder } from './state.js?v=20261116n';
-import { ACTIEF, SEIZOEN_FALLBACK, parseFormatie, aantalVeldspelers, SKILLS, LEERCURVE, catLabel } from './config.js?v=20261116n';
+import { S, $, esc, meld, openModal, sluitModal, nieuweCode, isPlatformBeheerder } from './state.js?v=20261116t';
+import { ACTIEF, SEIZOEN_FALLBACK, parseFormatie, aantalVeldspelers, SKILLS, LEERCURVE, catLabel } from './config.js?v=20261116t';
 import {
   effectief, isLegacy, mergeLijst, LIJST_DEFS, ORIGINEEL, NEUTRAAL, CLUPPIE_LOGO, ICOONNAMEN,
   valideerKalender, herlaadKalender, pasClubConfigToe, clubAfk, DISTRICTEN
-} from './clubconfig.js?v=20261116n';
-import { MODULE_DEFS } from './club-beheer.js?v=20261116n';
-import { lerenBeschikbaar } from './leren-signalen.js?v=20261116n';
-import { doorPlatformUit, werkwijzeVan, modulesVoorNieuweClub } from './onderdelen.js?v=20261116n';
+} from './clubconfig.js?v=20261116t';
+import { MODULE_DEFS } from './club-beheer.js?v=20261116t';
+import { lerenBeschikbaar } from './leren-signalen.js?v=20261116t';
+import { doorPlatformUit, werkwijzeVan, modulesVoorNieuweClub } from './onderdelen.js?v=20261116t';
 
 /* ---------- Tabs ---------- */
 export const INSTEL_TABS = [
@@ -250,7 +251,7 @@ function lijstKaart(sleutel){
       ${def.uitzetten ? `<label class="ci-aan" title="${vast ? 'Blijft altijd aan' : 'Aan/uit'}"><input type="checkbox" data-ci="aan" data-i="${i}" ${r.uit ? '' : 'checked'} ${vast ? 'disabled' : ''}></label>` : ''}
       <div class="ci-velden">${kop}${naamVeld}${def.velden.map(v => veldHtml(def, v, r, i)).join('')}</div>
       <div class="ci-acties">
-        ${r.extra ? `<button type="button" class="ci-x" data-ci="weg" data-i="${i}" title="Verwijderen" aria-label="Verwijderen">🗑</button>`
+        ${r.extra ? `<button type="button" class="ci-x" data-ci="weg" data-i="${i}" title="Verwijderen" aria-label="Verwijderen">${ico('admin-delete', 18)}</button>`
           : isGewijzigd(def, r) ? `<button type="button" class="ci-x" data-ci="reset" data-i="${i}" title="Terug naar standaard" aria-label="Terug naar standaard">↺</button>` : ''}
       </div></div>`;
   }).join('');
@@ -373,7 +374,7 @@ function catKaart(){
         <label class="ci-veld smal"><span class="ci-l">Min. per periode</span><input class="invoer" type="number" step="0.5" min="5" max="60" value="${esc(r.f.duur)}" data-cc="f" data-k="duur" data-i="${i}"></label>
         <label class="ci-veld breed"><span class="ci-l">Omschrijving</span><input class="invoer" maxlength="80" value="${esc(r.f.knvb)}" data-cc="f" data-k="knvb" data-i="${i}"></label>
       </div>
-      <div class="ci-acties">${r.extra ? `<button type="button" class="ci-x" data-cc="weg" data-i="${i}" aria-label="Verwijderen">🗑</button>` : gewijzigd ? `<button type="button" class="ci-x" data-cc="reset" data-i="${i}" aria-label="Terug naar standaard">↺</button>` : ''}</div>
+      <div class="ci-acties">${r.extra ? `<button type="button" class="ci-x" data-cc="weg" data-i="${i}" aria-label="Verwijderen">${ico('admin-delete', 18)}</button>` : gewijzigd ? `<button type="button" class="ci-x" data-cc="reset" data-i="${i}" aria-label="Terug naar standaard">↺</button>` : ''}</div>
     </div>`;
   }).join('');
   return `<div class="cb-kaart" data-catkaart>
@@ -519,7 +520,7 @@ export function koppelInstelNieuw(v, herteken){
   else if (sub === 'pedagogiek') koppelPedagogiek(v, herteken);
   else if (sub === 'regels') koppelRegels(v, herteken);
   else if (sub === 'ai') koppelAI(v, herteken);
-  else if (sub === 'toegang') import('./toegang.js?v=20261116r').then(m => m.koppelToegang(v, herteken));
+  else if (sub === 'toegang') import('./toegang.js?v=20261116t').then(m => m.koppelToegang(v, herteken));
 }
 
 /* ---------- Identiteit ---------- */
@@ -882,7 +883,7 @@ export function modalNieuweClub(naCreatie){
     logo: '', kleur: '#e2342f', clientId: '', seizoen: seizoenVoorDatum(), ai: false, kopie: '', pvNaam: '', pvMail: '', vo: false,
     clubcode: '', slVondst: '',   // [20261012a] gevonden via Sportlink
   };
-  openModal(`<h2>🏛 Nieuwe club</h2><div id="wzBody"></div>`);
+  openModal(`<h2>${ico('admin-club', 20)} Nieuwe club</h2><div id="wzBody"></div>`);
   const body = () => $('#modalInhoud .modal-body') || $('#wzBody');
   const stappen = ['Club', 'Uiterlijk', 'Koppeling', 'Start'];
   const kop = () => `<div class="segment" style="margin-bottom:14px;pointer-events:none">${stappen.map((s, i) => `<button class="${W.stap === i + 1 ? 'actief' : ''}">${i + 1}. ${s}</button>`).join('')}</div>`;
@@ -912,7 +913,7 @@ export function modalNieuweClub(naCreatie){
         W.naam = b.querySelector('#wzNaam').value; W.district = b.querySelector('#wzDistrict').value;
         k.disabled = true; uit.innerHTML = '<div class="sl-laden"><span class="sl-spin"></span>Club opzoeken in Sportlink…</div>';
         try {
-          const { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261116r');
+          const { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261116t');
           const info = await zoekClubInSportlink(id);
           if (info.gevonden){
             const [logo, kleur] = await Promise.all([verkleinSportlinkLogo(info.logo), leesbareKleur(info.kleur)]);
@@ -921,7 +922,7 @@ export function modalNieuweClub(naCreatie){
             W.slVondst = htmlClubVondst(info, { logo, kleur });
           } else { W.clubcode = ''; W.slVondst = htmlClubVondst(info); }
         } catch (x){
-          const { htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261116r');
+          const { htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261116t');
           W.slVondst = htmlClubVondst(null, { fout: x });
         }
         k.disabled = false; teken();

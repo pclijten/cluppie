@@ -3,13 +3,14 @@
    Stappen: bron → (AI-analyse óf handmatig splitsen) → controleren/aanpassen → opslaan als CONCEPT
    in clubs/{id}/content. Niets wordt aan coaches getoond tot de beheerder het publiceert (tabblad Content).
    Het plan van een andere club mag alleen worden gebruikt met toestemming van die club. */
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261116n';
-import { LEERCURVE } from './config.js?v=20261116n';
+import { ico } from './icons.js?v=20261116t';
+import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261116t';
+import { LEERCURVE } from './config.js?v=20261116t';
 import { functions, httpsCallable } from './firebase.js?v=20261011g';
 import { uploadHulpHtml, UPLOAD_HULP } from './upload-hulp.js?v=20261113c';
-import { aiAan, kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261116n';
-import { opslaanContent } from './content.js?v=20261116n';
-import { huidigeContentLijst } from './club-content.js?v=20261116n';
+import { aiAan, kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261116t';
+import { opslaanContent } from './content.js?v=20261116t';
+import { huidigeContentLijst } from './club-content.js?v=20261116t';
 
 const MAX_STUK = 12000;
 const slug = t => String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60);
@@ -42,8 +43,8 @@ export function splitsOpKoppen(tekst){
 }
 
 async function pdfNaarTekst(file){
-  const { laadPdfJs } = await import('./pdf-viewer.js?v=20261116n');
-  const { regelsUitTekstItems } = await import('./training-ai.js?v=20261116n');
+  const { laadPdfJs } = await import('./pdf-viewer.js?v=20261116t');
+  const { regelsUitTekstItems } = await import('./training-ai.js?v=20261116t');
   await laadPdfJs();
   const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
   const paginas = [];
@@ -58,7 +59,7 @@ export function openBeleidsplanImport(){
   const st = { tekst: '', items: [], bezig: false };
   const naam = beleidsplanNaam();
   const stap1 = () => {
-    openModal(`<h2>📄 ${esc(naam)} importeren</h2>
+    openModal(`<h2>${ico('admin-document', 20)} ${esc(naam)} importeren</h2>
       <p class="cb-uitleg" style="margin:0 0 10px">Kies het ${esc(naam)} van <b>${esc(S.club?.naam || 'je club')}</b> (PDF) of plak de tekst. Cluppie stelt daaruit teksten voor: leerlijn-thema’s, ${esc(kompasNaam())}-tips en gouden regels. Alles komt als <b>concept</b> te staan; coaches zien niets totdat jij publiceert.</p>
       <p class="cb-uitleg" style="margin:0 0 10px">Gebruik alleen een plan van je eigen club, of van een andere club met haar toestemming.</p>
       <input type="file" id="bpBestand" accept="application/pdf,.pdf,.txt,text/plain" style="display:none">
@@ -134,7 +135,7 @@ export function openBeleidsplanImport(){
           <input class="invoer bpTitel" value="${esc(it.titel || '')}" style="${it.categorie === 'leercurve' ? 'display:none' : ''}" maxlength="300">
           <textarea class="invoer bpAch" rows="3" style="margin-top:6px" placeholder="Achtergrond">${esc(it.achtergrond || '')}</textarea>
           <textarea class="invoer bpTips" rows="3" style="margin-top:6px" placeholder="Tips, één per regel">${esc((it.tips || []).join('\n'))}</textarea>
-          ${it.categorie === 'leercurve' && heeft('leercurve', it.thema || it.titel) ? '<p class="cb-uitleg" style="margin:4px 0 0;color:var(--accent)">Vervangt de bestaande eigen tekst voor dit thema.</p>' : ''}
+          ${it.categorie === 'leercurve' && heeft('leercurve', it.thema || it.titel) ? '<p class="cb-uitleg" style="margin:4px 0 0;color:var(--accent-tekst)">Vervangt de bestaande eigen tekst voor dit thema.</p>' : ''}
         </div>`).join('')}</div>
       <div class="rij"><button class="knop licht vol" id="bpTerug">Terug</button><button class="knop vol" id="bpOpslaan">Opslaan als concept</button></div>`);
     document.querySelectorAll('[data-bp]').forEach(k => {

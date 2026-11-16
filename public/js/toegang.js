@@ -7,14 +7,15 @@
    - kennisname van de privacyregels + e-mailverificatie bij eerste gebruik
    Serverkant: functions/toegang.js. Data: uitnodigingen, aanvragen, toegangslog.
 ==================================================================== */
+import { ico } from './icons.js?v=20261116t';
 import {
   auth, db, functions, httpsCallable,
   collection, doc, getDoc, getDocs, query, where
 } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261116n';
+import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261116t';
 import { stuurVerificatieMail } from './verificatie.js?v=20261020e';
-import { bewaar } from './club-instellingen.js?v=20261116r';
-import { effectief } from './clubconfig.js?v=20261116n';
+import { bewaar } from './club-instellingen.js?v=20261116t';
+import { effectief } from './clubconfig.js?v=20261116t';
 
 export const PRIVACY_VERSIE = '2026-10';
 const roep = (naam, data) => httpsCallable(functions, naam)(data || {}).then(r => r.data);
@@ -139,7 +140,7 @@ export function modalUitnodigNieuw(team){
         <div class="uitnodig-link">${esc(link)}</div>
         <div class="rij" style="margin:12px 0">
           <button class="knop vol" id="uitnKopieer">Link kopiëren</button>
-          <button class="knop fluo vol" id="uitnWa">📲 WhatsApp</button>
+          <button class="knop fluo vol" id="uitnWa">${ico('action-whatsapp', 16)} WhatsApp</button>
         </div>`;
       kn.style.display = 'none';
       document.getElementById('uitnKopieer').onclick = async () => {
@@ -232,9 +233,9 @@ export async function koppelToegang(v, herteken){
   const akkoordTekst = uid => {
     if (!kennis) return '';
     const k = kennis.per[uid];
-    if (!k) return ' · <b style="color:var(--accent)">privacyregels nog niet bevestigd</b>';
+    if (!k) return ' · <b style="color:var(--accent-tekst)">privacyregels nog niet bevestigd</b>';
     const dat = k.tijd ? datumKort(k.tijd) : '';
-    return k.versie === kennis.huidigeVersie ? ` · privacy akkoord ${dat}` : ` · <b style="color:var(--accent)">akkoord op oudere versie</b> ${dat}`;
+    return k.versie === kennis.huidigeVersie ? ` · privacy akkoord ${dat}` : ` · <b style="color:var(--accent-tekst)">akkoord op oudere versie</b> ${dat}`;
   };
   const grens = new Date(Date.now() - 270 * 86400000).toISOString().slice(0, 10);
   const html4 = kaart(`Coaches (${leden.size})`, `
@@ -244,7 +245,7 @@ export async function koppelToegang(v, herteken){
       const inactief = gebruikDocs && !isAdmin && (!last || last < grens);
       return `<div style="${rijStijl};flex-wrap:wrap">
         <div style="flex:1;min-width:150px"><b>${esc(l.naam)}</b>${isAdmin ? ' <span class="cb-uitleg">· beheerder</span>' : ''}
-          <div class="cb-uitleg" style="margin:0">${l.teams.map(t => `${esc(t.naam)}${t.rol === 'assistent' ? ' (assistent)' : ''}`).join(', ') || 'geen team'}${gebruikDocs ? ' · laatst actief ' + (last ? datumKort(last) : 'niet in 9 mnd') : ''}${inactief ? ' <b style="color:var(--accent)">· inactief</b>' : ''}${akkoordTekst(l.uid)}</div></div>
+          <div class="cb-uitleg" style="margin:0">${l.teams.map(t => `${esc(t.naam)}${t.rol === 'assistent' ? ' (assistent)' : ''}`).join(', ') || 'geen team'}${gebruikDocs ? ' · laatst actief ' + (last ? datumKort(last) : 'niet in 9 mnd') : ''}${inactief ? ' <b style="color:var(--accent-tekst)">· inactief</b>' : ''}${akkoordTekst(l.uid)}</div></div>
         ${l.teams.some(t => t.rol === 'assistent') ? `<button class="knop klein" data-lid-rol="${esc(l.uid)}" data-rol="coach">Maak coach</button>` : ''}
         ${!isAdmin ? `<button class="knop licht klein" data-lid-weg="${esc(l.uid)}" data-lid-naam="${esc(l.naam)}">Uitschrijven</button>` : ''}
       </div>`;
@@ -306,7 +307,7 @@ export async function koppelToegang(v, herteken){
     klaar(() => roep('verwijderLid', { clubId, uid: b.dataset.lidWeg }), b, 'Uitgeschreven');
   });
 
-  q('#pvVoLees')?.addEventListener('click', () => import('./club.js?v=20261116r').then(m => m.modalVerwerkersovereenkomst()));
+  q('#pvVoLees')?.addEventListener('click', () => import('./club.js?v=20261116t').then(m => m.modalVerwerkersovereenkomst()));
   q('#pvOpslaan').onclick = (e) => klaar(async () => {
     const wijz = [
       ['privacy.contactNaam', q('#pvNaam').value.trim()], ['privacy.contactEmail', q('#pvMail').value.trim()],

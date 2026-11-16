@@ -3,21 +3,21 @@
    wedstrijd (8 categorieën + tags + toelichtingen) en het bijbehorende
    dashboard/geschiedenis, plus de "Stats"-tab die dit combineert met de
    spelersstatistieken uit wedstrijd.js. */
-import { beleidsplanNaam } from './clubconfig.js?v=20261116n';
+import { beleidsplanNaam } from './clubconfig.js?v=20261116t';
 import {
   db, collection, doc, addDoc, deleteDoc, updateDoc, deleteField
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, openModal, sluitModal, toon, modAan
-} from './state.js?v=20261116n';
-import { NIVEAUS, niveauKleur, TEAM_CATEGORIEEN, TEAM_TAGS, teamCategorie, SEIZOEN_FALLBACK } from './config.js?v=20261116n';
-import { ico } from './icons.js?v=20261116j';
+} from './state.js?v=20261116t';
+import { NIVEAUS, niveauKleur, TEAM_CATEGORIEEN, TEAM_TAGS, teamCategorie, SEIZOEN_FALLBACK } from './config.js?v=20261116t';
+import { ico } from './icons.js?v=20261116t';
 
-import { htmlStats } from './wedstrijd.js?v=20261116r';
-import { telGebruik } from './tracker.js?v=20261116n';
-import { themaOpDatum } from './seizoensplan-logica.js?v=20261116n';
-import { wedstrijdvraagNu } from './speelwijze.js?v=20261116n';
-import { onderdeelAan } from './onderdelen.js?v=20261116n';
+import { htmlStats } from './wedstrijd.js?v=20261116t';
+import { telGebruik } from './tracker.js?v=20261116t';
+import { themaOpDatum } from './seizoensplan-logica.js?v=20261116t';
+import { wedstrijdvraagNu } from './speelwijze.js?v=20261116t';
+import { onderdeelAan } from './onderdelen.js?v=20261116t';
 
 /* Kleine lokale kopie van de deelnemer-helper (ook aanwezig in teams-spelers.js)
    — bewust hier gedupliceerd i.p.v. een cross-module import voor één regel. */
@@ -274,7 +274,7 @@ export function htmlTeamEvaluatieDashboard(){
     <div class="kaart">
       <div class="sectie-kop u-mt-0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg> Groeicurve</div>
       <div style="margin:var(--space-2xs) 0 var(--space-3xs)">
-        <span class="u-fw-7 u-t-5xl" style="font-family:'Barlow Condensed'">${gemLaatste.toFixed(1).replace('.',',')}</span><span class="u-t-sm u-zacht"> / 5</span>
+        <span class="u-fw-7 u-t-5xl" style="font-family:var(--font-display)">${gemLaatste.toFixed(1).replace('.',',')}</span><span class="u-t-sm u-zacht"> / 5</span>
         <div class="u-t-xs u-zacht u-mb-xs">Laatste wedstrijd (${esc(laatste.tegenstander)}, ${datumNL(laatste.datum)})${verschil!=null?`<span class="sep" aria-hidden="true"></span><span style="color:${verschil>=0?'var(--ok)':'var(--warn)'};font-weight:700">${verschil>=0?'↑':'↓'} ${Math.abs(verschil).toFixed(1).replace('.',',')} t.o.v. vorige</span>`:''}</div>
       </div>
       ${punten.length > 1 ? `
@@ -295,7 +295,7 @@ export function htmlTeamEvaluatieDashboard(){
           <span style="width:80px;height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden;flex-shrink:0">
             <span style="display:block;height:100%;border-radius:4px;width:${c.nu?Math.round((c.nu/5)*100):0}%;background:${c.kleur}"></span>
           </span>
-          <span class="u-fw-7 u-t-base" style="width:34px;text-align:right;font-family:'Barlow Condensed'">${c.nu?c.nu.toFixed(1).replace('.',','):'—'}</span>
+          <span class="u-fw-7 u-t-base" style="width:34px;text-align:right;font-family:var(--font-display)">${c.nu?c.nu.toFixed(1).replace('.',','):'—'}</span>
           <span style="width:16px;text-align:center;font-size:calc(12px * var(--fs));color:${c.trend==='↘'?'var(--warn)':'var(--ink-2)'}">${c.trend}</span>
         </div>`).join('')}
     </div>
@@ -318,13 +318,13 @@ export function htmlTeamEvaluatieDashboard(){
     </div>
 
     ${adviesCat ? `
-    <div class="kaart" ${adviesCat.leercurve?`data-thema-info="${esc(adviesCat.leercurve)}" style="background:linear-gradient(150deg,var(--accent),var(--grass-2));border:none;cursor:pointer"`:`style="background:linear-gradient(150deg,var(--accent),var(--grass-2));border:none"`}>
-      <div style="color:rgba(255,255,255,.85);font-size:calc(11px * var(--fs));font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">💡 Voorgesteld trainingsthema</div>
-      <div style="color:#fff;font-family:'Barlow Condensed';font-weight:700;font-size:calc(19px * var(--fs));text-transform:uppercase;margin-bottom:4px">${esc(adviesCat.leercurve || adviesCat.naam)}${adviesCat.leercurve?' <span style="font-size:calc(14px * var(--fs));opacity:.85">›</span>':''}</div>
-      <div style="color:rgba(255,255,255,.9);font-size:calc(12.5px * var(--fs));line-height:1.5">${adviesCat.leercurve
+    <div class="kaart" ${adviesCat.leercurve?`data-thema-info="${esc(adviesCat.leercurve)}" style="background:var(--accent-vlak);border:none;cursor:pointer"`:`style="background:var(--accent-vlak);border:none"`}>
+      <div style="color:var(--accent-ink);font-size:var(--t-xs);font-weight:600;margin-bottom:var(--space-2xs)">Voorgesteld trainingsthema</div>
+      <div style="color:var(--accent-ink);font-family:var(--font-display);font-weight:700;font-size:calc(19px * var(--fs));text-transform:uppercase;margin-bottom:4px">${esc(adviesCat.leercurve || adviesCat.naam)}${adviesCat.leercurve?' <span style="font-size:calc(14px * var(--fs));opacity:.85">›</span>':''}</div>
+      <div style="color:var(--accent-ink);font-size:var(--t-sm);line-height:1.5">${adviesCat.leercurve
         ? `Leercurve-thema uit het ${esc(beleidsplanNaam())} — sluit direct aan op "${esc(adviesCat.naam)}", het onderdeel dat nu aandacht vraagt.`
         : `"${esc(adviesCat.naam)}" vraagt nu de meeste aandacht — geen apart leercurve-thema, wel een mooi gespreksonderwerp voor de volgende training.`}</div>
-      ${adviesCat.leercurve?`<div style="color:rgba(255,255,255,.75);font-size:calc(11px * var(--fs));margin-top:8px;font-weight:600">Tik voor achtergrond en oefentips →</div>`:''}
+      ${adviesCat.leercurve?`<div style="color:var(--accent-ink);font-size:var(--t-xs);margin-top:var(--space-xs);font-weight:600;text-decoration:underline">Tik voor achtergrond en oefentips</div>`:''}
     </div>` : ''}`;
 }
 

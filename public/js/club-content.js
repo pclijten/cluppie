@@ -7,17 +7,18 @@
    De platformbeheerder kan daarnaast de standaard zelf bewerken (schakelaar).
    Zichtbaar voor elke clubbeheerder (isBeheerder(), zie club.js). De echte
    afdwinging van wie waar mag schrijven staat in de Firestore-regels. */
-import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261116n';
+import { ico } from './icons.js?v=20261116t';
+import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261116t';
 import {
   startContentAdminListener, opslaanContent, verwijderContent, seedContentNaarFirestore, kopieerStandaardNaarClub
-} from './content.js?v=20261116n';
-import { kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261116n';
+} from './content.js?v=20261116t';
+import { kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261116t';
 
 const scope = () => (S._contentScope === 'globaal' && isPlatformBeheerder()) ? 'globaal' : 'club';
 const categorieLabel = () => ({
-  leercurve: '📘 Leerlijn-thema',
-  kompas: `🧭 ${kompasNaam()}-tip`,
-  'gouden-regel': '⭐ Gouden regel',
+  leercurve: 'Leerlijn-thema',
+  kompas: `${kompasNaam()}-tip`,
+  'gouden-regel': 'Gouden regel',
 });
 
 let _huidigeLijst = [];
@@ -42,10 +43,10 @@ export function htmlClubContent(lijst){
         voor coaches totdat je hem op <b>gepubliceerd</b> zet.
       </p>
       <button class="knop licht vol" id="btnContentNieuw">+ Nieuwe tekst</button>
-      ${sc === 'club' ? `<button class="knop licht vol" id="btnBeleidsplan" style="margin-top:8px">📄 ${esc(beleidsplanNaam())} importeren</button>` : ''}
+      ${sc === 'club' ? `<button class="knop licht vol" id="btnBeleidsplan" style="margin-top:8px">${ico('admin-document', 16)} ${esc(beleidsplanNaam())} importeren</button>` : ''}
       ${lijst.length === 0 ? (sc === 'club'
-        ? `<button class="knop licht vol" id="btnContentKopie" style="margin-top:8px">📥 Begin met een kopie van de standaard</button>`
-        : `<button class="knop licht vol" id="btnContentSeed" style="margin-top:8px">📥 Seed content vanuit jeugdbeleidsplan</button>`) : ''}
+        ? `<button class="knop licht vol" id="btnContentKopie" style="margin-top:8px">${ico('admin-download', 16)} Begin met een kopie van de standaard</button>`
+        : `<button class="knop licht vol" id="btnContentSeed" style="margin-top:8px">${ico('admin-download', 16)} Seed content vanuit jeugdbeleidsplan</button>`) : ''}
     </div>
     ${groepen.map(cat => {
       const items = lijst.filter(c => c.categorie === cat).sort((a,b) => (a.volgorde||0)-(b.volgorde||0));
@@ -139,7 +140,7 @@ export function koppelClubContent(v, herteken){
     catch(e){ meld('Kopiëren mislukt: ' + (e.code || e.message)); }
   });
   v.querySelector('#btnContentNieuw')?.addEventListener('click', () => modalContentBewerk(null));
-  v.querySelector('#btnBeleidsplan')?.addEventListener('click', () => import('./club-beleidsplan.js?v=20261116n').then(m => m.openBeleidsplanImport()));
+  v.querySelector('#btnBeleidsplan')?.addEventListener('click', () => import('./club-beleidsplan.js?v=20261116t').then(m => m.openBeleidsplanImport()));
   v.querySelector('#btnContentSeed')?.addEventListener('click', async () => {
     meld('Bezig met seeden…');
     try {

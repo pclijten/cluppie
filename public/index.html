@@ -99,8 +99,11 @@ document.documentElement.classList.add('js');
 <link rel="preload" href="fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="fonts/fonts.css">
 <style>
-/* Opstart-laadscherm — inline zodat het ook toont als styles.css traag laadt */
-#opstart{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:repeating-linear-gradient(0deg,var(--accent,#e2342f) 0 12.5%,color-mix(in srgb,var(--accent,#e2342f) 82%,#000) 12.5% 25%);transition:opacity .35s ease}
+/* Opstart-laadscherm: inline zodat het ook toont als styles.css traag laadt. De tokens hieronder zijn de vaste
+   Cluppie-kleuren van dit scherm (neutraal, geen clubkleur); de ruimtematen zijn dezelfde als in styles.css. */
+:root{--op-rood:#cc2620;--op-rood-2:#a81c17;--op-wit:#fdfdfe;--op-tekst:rgba(253,253,254,.88);--op-schaduw:rgba(11,13,16,.3);--op-bg:#0e1116;--op-link:#ff8f8b;
+  --op-font:"Barlow Condensed","Arial Narrow",sans-serif;--op-tekstfont:"Inter",ui-sans-serif,system-ui,sans-serif;--space-xs:8px;--space-md:16px;--space-lg:24px}
+#opstart{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:var(--space-lg);background:repeating-linear-gradient(0deg,var(--op-rood) 0 12.5%,var(--op-rood-2) 12.5% 25%);font-family:var(--op-tekstfont);transition:opacity .35s ease}
 #opstart.weg{opacity:0;pointer-events:none}
 .opstart-logo{width:84px;height:84px;border-radius:22.5%;background:transparent;padding:0;box-shadow:0 0 0 3px var(--op-wit),0 6px 20px var(--op-schaduw);object-fit:contain;animation:opstartPuls 1.6s ease-in-out infinite}
 @keyframes opstartPuls{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
@@ -113,17 +116,19 @@ document.documentElement.classList.add('js');
 .opstart-geduld{margin-top:var(--space-lg);max-width:280px;font-size:13px;line-height:1.5;text-align:center;color:var(--op-tekst);background:var(--op-schaduw);padding:var(--space-xs) var(--space-md);border-radius:12px;transition:opacity .4s ease,transform .4s ease}
 .js .opstart-geduld{opacity:0;transform:translateY(6px)}
 .js .opstart-geduld.zichtbaar{opacity:1;transform:translateY(0)}
+.geen-js{position:relative;z-index:10000;max-width:640px;margin:0 auto;padding:var(--space-lg);font-family:var(--op-tekstfont);font-size:16px;line-height:1.6;color:var(--op-wit);background:var(--op-bg)}
+.geen-js a{color:var(--op-link)}
 @media (prefers-reduced-motion: reduce){.opstart-logo,.opstart-dots span{animation:none}#opstart,.opstart-geduld{transition:none}}
 </style>
-<link rel="stylesheet" href="styles.css?v=20261116q">
-<link rel="stylesheet" href="kamer.css?v=20261116r">
+<link rel="stylesheet" href="styles.css?v=20261116s">
+<link rel="stylesheet" href="kamer.css?v=20261116s">
 </head>
 <body>
 <noscript>
-  <div style="max-width:640px;margin:0 auto;padding:24px;font:16px/1.6 system-ui,sans-serif;color:#e8eaee;background:#0e1116;position:relative;z-index:10000">
+  <div class="geen-js">
     <h1>Cluppie: app voor jeugdvoetbaltrainers en jeugdopleidingen</h1>
     <p>Cluppie is de app voor jeugdvoetbal bij amateurclubs. Trainers maken opstellingen, bewaken eerlijke speeltijd, evalueren wedstrijden en maken trainingen uit ruim 300 oefenvormen. De club legt speelstijl, leerlijn en seizoensplan vast voor de hele jeugdopleiding.</p>
-    <p><a href="over.html" style="color:#ff6b66">Lees wat Cluppie is en doet</a> · <a href="privacy.html" style="color:#ff6b66">Privacy</a></p>
+    <p><a href="over.html">Lees wat Cluppie is en doet</a> · <a href="privacy.html">Privacy</a></p>
     <p>Om in te loggen heb je JavaScript nodig.</p>
   </div>
 </noscript>
@@ -149,7 +154,7 @@ document.documentElement.classList.add('js');
       <button class="knop fluo vol" id="wwLoginOk" type="submit">Inloggen</button>
       <p class="login-klein">Nog geen account? Vul je e-mail en een wachtwoord in, dan wordt het account automatisch aangemaakt. <button type="button" id="wwVergeten" class="login-link">Wachtwoord vergeten?</button></p>
     </form>
-    <p style="margin-top:14px;font-size:11.5px"><a href="privacy.html" target="_blank" rel="noopener" style="color:rgba(255,255,255,.55)">Privacyverklaring</a></p>
+    <p class="login-voet"><a href="privacy.html" target="_blank" rel="noopener">Privacyverklaring</a></p>
   </div>
 </div>
 
@@ -195,6 +200,6 @@ document.documentElement.classList.add('js');
 <div class="wo-achter" id="woAchter"><div class="wo-paneel" id="woPaneel"></div></div>
 <div class="melding" id="melding"></div>
 
-<script type="module" src="js/main.js?v=20261116r"></script>
+<script type="module" src="js/main.js?v=20261116t"></script>
 </body>
 </html>

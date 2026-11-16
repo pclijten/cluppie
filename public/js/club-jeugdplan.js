@@ -10,14 +10,14 @@
      clubs/{id}/seizoensplannen/{planId}/toewijzingen/{teamId}  { planVersie, aantal, overgeslagen, status, door, toegewezenMs }
      trainingen/{id}  — gegenereerd door toewijzen (bron 'seizoensplan', seizoensplanId, teams:[teamId])
    Alle writes merge:true. Rechten zelf staan in de rules; dit scherm toont alleen wat mag. */
-import { S, esc, meld } from './state.js?v=20261116n';
+import { S, esc, meld } from './state.js?v=20261116t';
 import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteField, query, where, writeBatch, serverTimestamp } from './firebase.js?v=20261011g';
-import { bouwNaam, catLabel, SEIZOEN_FALLBACK, leeftijdVanCategorie, LEERCURVE } from './config.js?v=20261116n';
+import { bouwNaam, catLabel, SEIZOEN_FALLBACK, leeftijdVanCategorie, LEERCURVE } from './config.js?v=20261116t';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261116j';
 import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261116j';
-import { MODELLEN, ACCENTEN, beschikbareThemas, maandagVan, standaardVrij, weekKalender, seizoenStartJaar } from './seizoensplan-logica.js?v=20261116n';
-import { rechtenVoor, magVoorBouw, teamsVoorPlan, planVoorTeam, trainingDocs, uitrolPlan, spelersVoorPlanner, duurVoorLeeftijd, JEUGDBOUWEN } from './seizoensplan-club.js?v=20261116n';
-import { bestaandeTrainingen, voerUit } from './seizoensplan-trainingen.js?v=20261116n';
+import { MODELLEN, ACCENTEN, beschikbareThemas, maandagVan, standaardVrij, weekKalender, seizoenStartJaar } from './seizoensplan-logica.js?v=20261116t';
+import { rechtenVoor, magVoorBouw, teamsVoorPlan, planVoorTeam, trainingDocs, uitrolPlan, spelersVoorPlanner, duurVoorLeeftijd, JEUGDBOUWEN } from './seizoensplan-club.js?v=20261116t';
+import { bestaandeTrainingen, voerUit } from './seizoensplan-trainingen.js?v=20261116t';
 /* [20261116h] de speelwijze van de club weegt mee in het plan (momentopname in params.speelstijl) */
 import { speelwijzeVan, stijlVoorPlan, dekking, principeVoorThema } from './speelwijze-logica.js?v=20261116j';
 import { htmlDekking, htmlPrincipeChip } from './speelwijze-html.js?v=20261116j';
@@ -157,7 +157,7 @@ function htmlDetail(rechten){
         const rij = toew[t.id];
         const achter = rij && (rij.planVersie || 0) < (p.planVersie || 1);
         const volgtAnder = !rij && (c.plannen || []).some(x => x.id !== p.id && x.toegewezen?.[t.id]);
-        const status = !rij ? `<span class="tm-badge">${volgtAnder ? 'volgt ander plan' : 'nog niet toegewezen'}</span>` : achter ? `<span class="tm-badge" style="color:var(--accent)">bijwerken (v${rij.planVersie})</span>` : `<span class="tm-badge">volgt dit plan</span>`;
+        const status = !rij ? `<span class="tm-badge">${volgtAnder ? 'volgt ander plan' : 'nog niet toegewezen'}</span>` : achter ? `<span class="tm-badge" style="color:var(--accent-tekst)">bijwerken (v${rij.planVersie})</span>` : `<span class="tm-badge">volgt dit plan</span>`;
         const dagen = Array.isArray(t.trainingsdagen) && t.trainingsdagen.length ? `${t.trainingsdagen.length}× per week` : 'geen trainingsdagen';
         return `<div class="tm-rij" style="padding:8px 0;border-bottom:1px solid var(--hair)"><div><b>${esc(t.naam)}</b><div class="tm-info">${esc(catLabel(t.categorie))} · ${esc(bouwNaam(bouwVanTeamUi(t)))} · ${esc(dagen)} · ${p.params?.duur === 'leeftijd' || !p.params?.duur ? duurVoorLeeftijd(Number(String(t.categorie).match(/O(\d+)/)?.[1]) || 99) : p.params.duur}′</div></div>
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;min-width:0">${status}${mag ? `<button class="knop klein ${!rij || achter ? 'fluo' : 'licht'}" data-cjp="toewijs" data-team="${esc(t.id)}">${!rij ? 'Toewijzen' : achter ? 'Bijwerken' : 'Opnieuw'}</button>` : ''}</div></div>`;

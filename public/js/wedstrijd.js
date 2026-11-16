@@ -5,7 +5,7 @@ import {
 import {
   S, $, $$, esc, meld, mmss, uurMin, datumNL, speler, spelerNaam, spelerNr,
   openModal, sluitModal, toon, stopUnsubs, modAan, bewaarPositie, terugLaag, terugLaagWeg, doeTerug
-} from './state.js?v=20261116n';
+} from './state.js?v=20261116t';
 import {
   FORMATIES, LIJN_NAAM, bouwSlots, slotLijn, catInfo, isToernooi,
   parseFormatie, formatieBestaat, formatieNamen, aantalVeldspelers,
@@ -14,18 +14,18 @@ import {
   clubFormatie11, doelSuggesties, isoWeek, SEIZOEN_FALLBACK,
   WISSEL_REDENEN, wisselReden, AFWEZIG_REDENEN, afwezigRedenInfo, slotPositieNaam,
   catLabel,
-} from './config.js?v=20261116n';
-import { kwartGespeeld, effectieveLineup, verwisselSlots, analyseKwart, analyseWedstrijd, speeltijdReserve, disciplinaireTijd, WISSEL_BEURT, analyseKwartVerwacht, analyseWedstrijdVerwacht } from './analyse.js?v=20261116n';
-import { ico } from './icons.js?v=20261116j';
-import { laadClubgids, zoekTegenstanders, plekVoor, pouleTeamnamen, clubVanTeam } from './clubgids.js?v=20261116n';
-import { aiAan, eigenClubTokens, voorbeeldTegenstander, beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261116n';
+} from './config.js?v=20261116t';
+import { kwartGespeeld, effectieveLineup, verwisselSlots, analyseKwart, analyseWedstrijd, speeltijdReserve, disciplinaireTijd, WISSEL_BEURT, analyseKwartVerwacht, analyseWedstrijdVerwacht } from './analyse.js?v=20261116t';
+import { ico } from './icons.js?v=20261116t';
+import { laadClubgids, zoekTegenstanders, plekVoor, pouleTeamnamen, clubVanTeam } from './clubgids.js?v=20261116t';
+import { aiAan, eigenClubTokens, voorbeeldTegenstander, beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261116t';
 
-import { telGebruik, telNav } from './tracker.js?v=20261116n';
+import { telGebruik, telNav } from './tracker.js?v=20261116t';
 import { opkomstVoor, teltMee, MIN_OPKOMST_TRAININGEN } from './opkomst.js?v=20260922c';
 import { spelersOpWedstrijd, ontbrekendeLeners, leenErbijNa } from './uitleen-regels.js?v=20261113b';
-import { openInvoegSheet, bewaarWedstrijdAlsSjabloon, zetNaToepassenCallback } from './opstelling-sjabloon.js?v=20261116r';
+import { openInvoegSheet, bewaarWedstrijdAlsSjabloon, zetNaToepassenCallback } from './opstelling-sjabloon.js?v=20261116t';
 import { heeftElftallen, elftalWedstrijd, elftalNaam, hoortBijElftal, spelersVoorElftal, filterOpElftal,
-  elftalFilter, elftalFilterHtml } from './elftallen.js?v=20261116n';
+  elftalFilter, elftalFilterHtml } from './elftallen.js?v=20261116t';
 
 /* ==================== AANMAKEN ==================== */
 function leegKwart(){ return {lineup:{}, events:[], plan:[], correcties:{}, klok:{base:0, running:false, start:0}}; }
@@ -385,7 +385,7 @@ export function modalNieuweWedstrijd(){
         ${!plekHand && type !== 'toernooi' ? `<p class="mw-hint">${thuis ? 'Eigen sportpark nog niet bekend; dat vult de Sportlink-sync.' : 'Kies een tegenstander uit de lijst, dan zetten we de plek klaar.'}</p>` : ''}`;
       return;
     }
-    el.innerHTML = `<div class="mw-plek"><span aria-hidden="true">${thuis ? '🏠' : '📍'}</span>
+    el.innerHTML = `<div class="mw-plek"><span aria-hidden="true">${ico(thuis ? 'navigation-home' : 'match-location', 14)}</span>
       <div><b>${esc(p.accommodatie)}</b><span>${p.adresBekend ? esc([p.adres, p.plaatsAdres].filter(Boolean).join(', ')) : thuis ? 'Eigen sportpark' : 'Adres nog onbekend, route via zoeken'}</span></div>
       <button type="button" class="mw-wijzig" id="mWPlekWijzig">Wijzigen</button></div>`;
     $('#mWPlekWijzig').onclick = () => { plekHand = true; tekenPlek(); $('#mWPlekTekst')?.focus(); };
@@ -627,7 +627,7 @@ export function openWedstrijd(wid){
   if (!S.teamId || !wid){
     console.warn('[Cluppie] openWedstrijd afgebroken: ontbrekende teamId of wid', {teamId:S.teamId, wid});
     S.wedstrijdId = null;
-    if (S.teamId) import('./teams.js?v=20261116r').then(m => m.renderTeam?.());
+    if (S.teamId) import('./teams.js?v=20261116t').then(m => m.renderTeam?.());
     return;
   }
   S.wedstrijdId = wid; S.kwart = '1'; S.geselecteerd = null; S._confroOpen = false; S._wizardActief = false;
@@ -673,7 +673,7 @@ export function sluitWedstrijd(naarTab){
   verbergWijzigOpzet();
   if (typeof naarTab === 'string') S.teamTab = naarTab;
   bewaarPositie();
-  import('./teams.js?v=20261116r').then(m => { m.renderTeam(); toon('team'); });
+  import('./teams.js?v=20261116t').then(m => { m.renderTeam(); toon('team'); });
 }
 /* Speeltijd van INGELEENDE spelers in déze wedstrijd wegschrijven op het
    leen-record zelf (clubs/{clubId}/uitleningen/{leenId}), zodat het
@@ -1039,9 +1039,9 @@ function modalKlokInstellen(){
     <p class="u-t-sm u-zacht u-mb-md u-lh-ruim">${esc(periodeOmschrijving(w))}<span class="sep" aria-hidden="true"></span>handig als je de klok te laat startte. De speeltijd loopt vanaf deze tijd verder.</p>
     <div class="veldgroep"><label>Klok zetten op</label>
       <div style="display:flex;align-items:center;gap:var(--space-sm)">
-        <input class="invoer" id="mKiMin" inputmode="numeric" style="max-width:88px;text-align:center;font-family:'Barlow Condensed';font-weight:700;font-size:var(--t-3xl)" value="${Math.floor(nu/60)}">
+        <input class="invoer" id="mKiMin" inputmode="numeric" style="max-width:88px;text-align:center;font-family:var(--font-display);font-weight:700;font-size:var(--t-3xl)" value="${Math.floor(nu/60)}">
         <span class="u-t-sm u-zacht">min</span>
-        <input class="invoer" id="mKiSec" inputmode="numeric" style="max-width:88px;text-align:center;font-family:'Barlow Condensed';font-weight:700;font-size:var(--t-3xl)" value="${String(nu%60).padStart(2,'0')}">
+        <input class="invoer" id="mKiSec" inputmode="numeric" style="max-width:88px;text-align:center;font-family:var(--font-display);font-weight:700;font-size:var(--t-3xl)" value="${String(nu%60).padStart(2,'0')}">
         <span class="u-t-sm u-zacht">sec</span>
       </div>
       <p class="u-t-xs u-zacht u-mt-xs u-lh-ruim">Nu op <b>${mmss(nu)}</b><span class="sep" aria-hidden="true"></span>periode duurt ${String(w.kwartduur).replace('.',',')} min (blessuretijd mag hoger).</p></div>
@@ -1126,7 +1126,7 @@ function modalPlanWissel(){
       <select class="invoer" id="mPlanUit">${veldSpelers.map(optie).join('')}</select></div>
     <div class="veldgroep"><label>Na hoeveel minuten</label>
       <input class="invoer" id="mPlanMin" inputmode="decimal" value="${Math.round(S.wedstrijd.kwartduur/2)}"></div>
-    <label class="u-t-xs u-fw-7 u-zacht" style="text-transform:uppercase;letter-spacing:.5px;display:block;margin:var(--space-sm) 0 var(--space-xs)">Reden (optioneel)</label>
+    <label class="u-t-xs u-fw-7 u-zacht" style="display:block;margin:var(--space-sm) 0 var(--space-xs)">Reden (optioneel)</label>
     <div class="reden-rij" id="mPlanRedenen">${WISSEL_REDENEN.map(r =>
       `<button class="reden" data-reden="${r.id}"><span class="ic">${r.ico?ico(r.ico,18):r.emoji}</span> ${r.label}</button>`).join('')}</div>
     <button class="knop vol u-mt-md" id="mPlanOk" >Wissel inplannen</button>
@@ -1254,9 +1254,9 @@ function gebeurtenisTijd(sec, w){
 /* Twee gekoppelde min/sec-invoervelden als HTML-fragment. */
 function minSecInvoerHtml(minId, secId, sec){
   return `<div style="display:flex;align-items:center;gap:var(--space-sm)">
-    <input class="invoer" id="${minId}" inputmode="numeric" style="max-width:80px;text-align:center;font-family:'Barlow Condensed';font-weight:700;font-size:var(--t-2xl)" value="${Math.floor((sec||0)/60)}">
+    <input class="invoer" id="${minId}" inputmode="numeric" style="max-width:80px;text-align:center;font-family:var(--font-display);font-weight:700;font-size:var(--t-2xl)" value="${Math.floor((sec||0)/60)}">
     <span class="u-t-sm u-zacht">min</span>
-    <input class="invoer" id="${secId}" inputmode="numeric" style="max-width:80px;text-align:center;font-family:'Barlow Condensed';font-weight:700;font-size:var(--t-2xl)" value="${String((sec||0)%60).padStart(2,'0')}">
+    <input class="invoer" id="${secId}" inputmode="numeric" style="max-width:80px;text-align:center;font-family:var(--font-display);font-weight:700;font-size:var(--t-2xl)" value="${String((sec||0)%60).padStart(2,'0')}">
     <span class="u-t-sm u-zacht">sec</span>
   </div>`;
 }
@@ -2411,6 +2411,8 @@ export function htmlStats(){
   const rijen = [...S.spelers].sort((a,b) =>
     (a.naam||'').localeCompare(b.naam||'', 'nl', {sensitivity:'base'}));
   const heeftData = Object.keys(tot.tijd).length > 0;
+  /* dezelfde schaalkleur als tekst: in het lichte thema donkerder, zodat cijfers leesbaar blijven (tokens --n1-tekst … --n5-tekst) */
+  const tekstVan = k => k.replace(/--n(\d)\)/, '--n$1-tekst)');
   const pctKleur = p => p==null ? 'var(--ink-2)' : p>=60?'var(--n5)':p>=45?'var(--n4)':p>=30?'var(--n3)':'var(--n2)';
 
   /* --- Ontwikkelreeks per speler, voor het lijntje achter de naam ---
@@ -2451,7 +2453,7 @@ export function htmlStats(){
       + `<svg width="${B}" height="${H}" viewBox="0 0 ${B} ${H}" fill="none" aria-hidden="true">`
       + `<polyline points="${punten}" stroke="${kl}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>`
       + `<circle cx="${B-1}" cy="${ly}" r="1.8" fill="${kl}"/></svg>`
-      + `<span class="pijl" style="color:${kl}">${pijl}</span></span>`;
+      + `<span class="pijl" style="color:${tekstVan(kl)}">${pijl}</span></span>`;
   };
 
   // Opkomst training: per speler geteld over alleen de trainingen die voor
@@ -2550,9 +2552,9 @@ export function htmlStats(){
     return `
     <div class="kaart">
       ${eerlijk ? `
-      <div class="sectie-kop u-mt-0">Eerlijke speeltijd<span class="u-ml-auto u-t-2xs u-zacht" style="font-family:'Inter';font-weight:500;text-transform:none;letter-spacing:0">seizoen tot nu</span></div>
+      <div class="sectie-kop u-mt-0">Eerlijke speeltijd<span class="u-ml-auto u-t-2xs u-zacht" style="font-family:var(--font-body);font-weight:500;text-transform:none;letter-spacing:0">seizoen tot nu</span></div>
       <div class="u-mb-2xs" style="display:flex;align-items:baseline;gap:var(--space-xs)">
-        <span style="font-family:'Barlow Condensed';font-weight:700;font-size:calc(38px * var(--fs));line-height:1;color:${eerlijkKleur(eerlijk.score)}">${eerlijk.score}</span>
+        <span style="font-family:var(--font-display);font-weight:700;font-size:calc(38px * var(--fs));line-height:1;color:${eerlijkKleur(eerlijk.score)}">${eerlijk.score}</span>
         <span class="u-t-sm u-zacht">/ 100</span>
       </div>
       <div style="font-size:calc(13px * var(--fs));font-weight:600;margin-bottom:11px;color:${eerlijkKleur(eerlijk.score)}">${eerlijkLabel(eerlijk.score)}</div>
@@ -2633,7 +2635,7 @@ export function htmlStats(){
       const n = k.val(p);
       if (!n) return `<td class="leeg-cel">0</td>`;
       const stijl = k.nadruk ? ' style="font-weight:700"'
-        : k.accent ? ' style="color:var(--accent);font-weight:700"' : '';
+        : k.accent ? ' style="color:var(--accent-tekst);font-weight:700"' : '';
       return `<td${stijl}>${k.fmt ? k.fmt(n) : n}</td>`;
     };
     return overzichtKaart() + `
@@ -2646,7 +2648,7 @@ export function htmlStats(){
         return `<tr${laag ? ' class="stats-laag"' : ''}>
           ${naamCelDisc(p)}
           <td class="pct-cel">${ps!=null
-            ? `<span style="font-weight:700;color:${pctKleur(ps)}">${ps}%</span><span class="pct-bar"><span style="width:${ps}%;background:${pctKleur(ps)}"></span></span>`
+            ? `<span style="font-weight:700;color:${tekstVan(pctKleur(ps))}">${ps}%</span><span class="pct-bar"><span style="width:${ps}%;background:${pctKleur(ps)}"></span></span>`
             : '—'}</td>
           <td>${tot.wedstrijden[p.id]||0}</td>
           <td class="res-cel${pr ? '' : ' leeg-cel'}">${pr!=null?pr+'%':'—'}</td>
@@ -2704,7 +2706,7 @@ export function htmlStats(){
     }
     return kop + `
     <div class="kaart">
-      <div class="sectie-kop u-mt-0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4.2 21 19.4H3z"/><path d="M12 10v4.2"/><circle cx="12" cy="17" r="0.7" fill="currentColor" stroke="none"/></svg> Spelers die aandacht vragen<span class="u-ml-auto u-t-2xs u-zacht" style="font-family:'Inter';font-weight:500;text-transform:none;letter-spacing:0">${aandachtSignalen.length} van ${S.spelers.length}</span></div>
+      <div class="sectie-kop u-mt-0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4.2 21 19.4H3z"/><path d="M12 10v4.2"/><circle cx="12" cy="17" r="0.7" fill="currentColor" stroke="none"/></svg> Spelers die aandacht vragen<span class="u-ml-auto u-t-2xs u-zacht" style="font-family:var(--font-body);font-weight:500;text-transform:none;letter-spacing:0">${aandachtSignalen.length} van ${S.spelers.length}</span></div>
       ${aandachtSignalen.map(({p, redenen, tags, gewicht}) => `
         <button type="button" class="aandacht-kaart" data-statsprofiel="${p.id}">
           <span class="stip" style="background:${gewicht>=2?'var(--n1)':'var(--warn)'}"></span>
@@ -2734,7 +2736,7 @@ export function htmlStats(){
 export function koppelStatsBlad(root){
   (root || document).querySelectorAll('[data-statsblad]').forEach(b => b.onclick = () => {
     S.statsBlad = b.dataset.statsblad;
-    import('./teams.js?v=20261116r').then(m => m.renderTeam?.());
+    import('./teams.js?v=20261116t').then(m => m.renderTeam?.());
   });
 }
 
@@ -3549,8 +3551,8 @@ ${confroHtml}
   /* Acties die in het oude scherm onderaan staan en in het zijlijnscherm ook in het menu. */
   const acties = {
     verslag: modalVerslag,
-    evaluatie: () => import('./teams.js?v=20261116r').then(m => m.modalTeamEvaluatie(S.wedstrijdId)),
-    tactiek: () => import('./tactiekbord.js?v=20261116n').then(m => m.openTactiekLijst(w)),
+    evaluatie: () => import('./teams.js?v=20261116t').then(m => m.modalTeamEvaluatie(S.wedstrijdId)),
+    tactiek: () => import('./tactiekbord.js?v=20261116t').then(m => m.openTactiekLijst(w)),
     bijwerk: () => { S.bijwerkKwart = S.kwart; toonBijwerkScherm(); },
     sjabloon: () => bewaarWedstrijdAlsSjabloon(w),
     verwijder: async () => {
@@ -3593,7 +3595,7 @@ ${confroHtml}
   const bsj = v.querySelector('#bewaarSjabloon');
   if (bsj) bsj.onclick = () => bewaarWedstrijdAlsSjabloon(w);
   const tbk = v.querySelector('#tactiekbordKnop');
-  if (tbk) tbk.onclick = () => import('./tactiekbord.js?v=20261116n').then(m => m.openTactiekLijst(w));
+  if (tbk) tbk.onclick = () => import('./tactiekbord.js?v=20261116t').then(m => m.openTactiekLijst(w));
   { const db = v.querySelector('#doelBanner') || v.querySelector('#zlDoel'); if (db) db.onclick = () => toonWijzigOpzet('doel'); }
   v.querySelector('#subFormatieKlik').onclick = (e) => { e.stopPropagation(); toonKwartFormatie(); };
   { const kfk = v.querySelector('#kwartFormatieKnop'); if (kfk) kfk.onclick = toonKwartFormatie; }
@@ -3620,7 +3622,7 @@ ${confroHtml}
   { const bwk = v.querySelector('#bijwerkKnop'); if (bwk) bwk.onclick = () => { S.bijwerkKwart = S.kwart; toonBijwerkScherm(); }; }
   const teamEvalKnop = v.querySelector('#teamEvalKnop');
   if (teamEvalKnop) teamEvalKnop.onclick = () => {
-    import('./teams.js?v=20261116r').then(m => m.modalTeamEvaluatie(S.wedstrijdId));
+    import('./teams.js?v=20261116t').then(m => m.modalTeamEvaluatie(S.wedstrijdId));
   };
   v.querySelectorAll('[data-corrigeer-goal]').forEach(b => b.onclick = e => {
     e.stopPropagation(); modalGoalCorrigeren(Number(b.dataset.corrigeerGoal));

@@ -6,10 +6,10 @@
    ene club; start en stop staan in het toegangslog van de club.
 ==================================================================== */
 import { db, collection, getDocs, doc, getDoc, setDoc, serverTimestamp, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261116n';
-import { logoImgVoorDoc, DISTRICTEN, kalenderId, valideerKalender, ORIGINEEL } from './clubconfig.js?v=20261116n';
+import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261116t';
+import { logoImgVoorDoc, DISTRICTEN, kalenderId, valideerKalender, ORIGINEEL } from './clubconfig.js?v=20261116t';
 import { STARTLIJST_STAPPEN } from './startlijst.js?v=20261011d';
-import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261116n';
+import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261116t';
 
 /* [20261011d] Platformdashboard: eigen breed scherm i.p.v. een lijstje.
    Bron: platformstats/overzicht (Cloud Function platformOverzichtNu / nachtelijk), met
@@ -85,7 +85,7 @@ async function leesAanmeldingen(){
    blijft als openPlatformOud() bestaan tot het centrum in productie bewezen is. */
 export async function openPlatform(scherm){
   if (!isPlatformBeheerder()) return;
-  const m = await import('./platform-centrum.js?v=20261116r');
+  const m = await import('./platform-centrum.js?v=20261116t');
   return m.openCentrum(scherm);
 }
 export async function openPlatformOud(){
@@ -228,7 +228,7 @@ function tekenPlatform(o, aanmeldingen){
   };
   document.getElementById('pfCoachAlle')?.addEventListener('click', () => { PF.coachAlle = !PF.coachAlle; opnieuw(); });
   document.getElementById('pfKalenders')?.addEventListener('click', () => openKalenders());
-  document.getElementById('pfNieuweClub')?.addEventListener('click', () => import('./club.js?v=20261116r').then(m => m.modalNieuwClub()));
+  document.getElementById('pfNieuweClub')?.addEventListener('click', () => import('./club.js?v=20261116t').then(m => m.modalNieuwClub()));
   document.getElementById('pfVernieuw')?.addEventListener('click', async e => {
     const k = e.currentTarget; k.disabled = true; k.textContent = 'Bezig…';
     try { await httpsCallable(functions, 'platformOverzichtNu')({}); meld('Cijfers bijgewerkt'); openPlatformOud(); }
@@ -255,10 +255,10 @@ function tekenPlatform(o, aanmeldingen){
   document.querySelectorAll('[data-platform-club]').forEach(b => b.onclick = async () => {
     const id = b.dataset.platformClub;
     b.disabled = true;
-    const ond = await import('./ondersteuning.js?v=20261116r').catch(() => null);
+    const ond = await import('./ondersteuning.js?v=20261116t').catch(() => null);
     if (!ond || !(await ond.startOndersteuning(id))){ b.disabled = false; return; }
     sluitModal();
-    import('./club.js?v=20261116r').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
+    import('./club.js?v=20261116t').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
   });
   document.querySelectorAll('[data-aanmeld-ok], [data-aanmeld-af]').forEach(b => b.onclick = async () => {
     const id = b.dataset.aanmeldOk || b.dataset.aanmeldAf, goed = !!b.dataset.aanmeldOk;
@@ -297,11 +297,11 @@ export async function openKalenders(){
     const n = k ? ['pup', 'jun', 'sen', 'mei'].reduce((t, c) => t + (k[c] || []).length, 0) : 0;
     const ingebouwd = !k && d.id === 'zuid1' && sz === "2026/'27";
     const tekst = k ? `✓ ${n} dagen` : ingebouwd ? '✓ ingebouwd' : '✗ ontbreekt';
-    return `<button class="knop licht klein" data-kal="${esc(sz)}|${d.id}" style="${k || ingebouwd ? '' : 'color:var(--accent)'}">${tekst}</button>`;
+    return `<button class="knop licht klein" data-kal="${esc(sz)}|${d.id}" style="${k || ingebouwd ? '' : 'color:var(--accent-tekst)'}">${tekst}</button>`;
   };
   openModal(`<h2>KNVB-kalenders</h2>
     <p class="cb-uitleg" style="margin:0 0 12px">Voer per district en seizoen één keer de speeldagen in. Clubs in dat district krijgen ze automatisch, zodra hun huidige seizoen overeenkomt. Zuid I en Zuid II delen één kalender. Een club kan hem zelf nog overschrijven.</p>
-    ${leesFout ? '<p class="cb-uitleg" style="color:var(--accent)">Lezen mislukt: zijn de nieuwste firestore.rules gedeployed?</p>' : ''}
+    ${leesFout ? '<p class="cb-uitleg" style="color:var(--accent-tekst)">Lezen mislukt: zijn de nieuwste firestore.rules gedeployed?</p>' : ''}
     <div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:8px;align-items:center">
       <b></b>${szs.map(s => `<b>${esc(s)}</b>`).join('')}
       ${KAL_DISTRICTEN.map(d => `<span>${esc(d.id === 'zuid1' ? 'Zuid I / II' : d.naam)}</span>${szs.map(sz => cel(sz, d)).join('')}`).join('')}

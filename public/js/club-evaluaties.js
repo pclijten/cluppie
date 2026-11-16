@@ -5,9 +5,9 @@
    Losse module (i.p.v. in club.js) omdat de Excel-export een eigen lui geladen
    library (ExcelJS via CDN) nodig heeft die de rest van de app nooit gebruikt. */
 import { db, collection, getDocs, query, where } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal } from './state.js?v=20261116n';
-import { TEAM_CATEGORIEEN, SKILLS } from './config.js?v=20261116n';
-import { priveBeoordelingenVan } from './beoordelingen-prive.js?v=20261116n';
+import { S, esc, meld, openModal } from './state.js?v=20261116t';
+import { TEAM_CATEGORIEEN, SKILLS } from './config.js?v=20261116t';
+import { priveBeoordelingenVan } from './beoordelingen-prive.js?v=20261116t';
 
 /* korte kolomkoppen voor de heatmap — TEAM_CATEGORIEEN.naam is te lang voor
    een tabelkop; alleen hier lokaal gebruikt, config.js blijft de brontekst. */
@@ -235,7 +235,7 @@ export function koppelClubEvaluaties(v, teamsData, herRender){
     openModal(`
       <h2>${esc(el.dataset.catnaam)}</h2>
       <p class="u-t-sm u-zacht u-mb-md">${esc(el.dataset.team)}<span class="sep" aria-hidden="true"></span>gemiddelde laatste ${esc(el.dataset.n)} wedstrijden</p>
-      <div style="font-family:'Barlow Condensed';font-weight:700;font-size:38px;color:${kleurVoorGemiddelde(parseFloat(el.dataset.v))}">${parseFloat(el.dataset.v).toFixed(1).replace('.',',')}<span class="u-t-md u-zacht" style="font-weight:500"> / 5</span></div>`);
+      <div style="font-family:var(--font-display);font-weight:700;font-size:38px;color:${kleurVoorGemiddelde(parseFloat(el.dataset.v))}">${parseFloat(el.dataset.v).toFixed(1).replace('.',',')}<span class="u-t-md u-zacht" style="font-weight:500"> / 5</span></div>`);
   });
   v.querySelectorAll('[data-domeintoggle]').forEach(kop => kop.onclick = () => {
     const i = kop.dataset.domeintoggle;
