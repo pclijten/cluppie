@@ -12,7 +12,7 @@
 import { functions, httpsCallable } from './firebase.js?v=20261011g';
 import { esc, meld } from './state.js?v=20261116n';
 import { ico } from './icons.js?v=20261116j';
-import { TEKSTVELDEN, VELDNAAM, controleer, zelfde, statusVan, voorbeeldVan, voorAanmelding, tijdTekst } from './platform-mails-logica.js?v=20261116p';
+import { TEKSTVELDEN, VELDNAAM, controleer, zelfde, statusVan, voorbeeldVan, voorAanmelding, tijdTekst } from './platform-mails-logica.js?v=20261116q';
 
 const M = { root: null, data: null, laden: false, fout: '', tab: 'teksten', sel: null, concept: {}, algemeen: null,
   laatsteVeld: 'tekst', zeker: null, bezig: false };

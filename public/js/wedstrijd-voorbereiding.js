@@ -22,8 +22,8 @@ import { db, doc, setDoc, updateDoc, functions, httpsCallable } from './firebase
 import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261116n';
 import { ico } from './icons.js?v=20261116j';
 import { telGebruik, telNav } from './tracker.js?v=20261116n';
-import { plekHtml, routeUrl, presentieWedstrijd, afwezigTekst, opstellingKlaar } from './nu-scherm.js?v=20261116p';
-import { htmlPollsBijWedstrijd, openPollVoorWedstrijd } from './kamer-beheer.js?v=20261116n';   /* [20261116m] polls bij een wedstrijd */
+import { plekHtml, routeUrl, presentieWedstrijd, afwezigTekst, opstellingKlaar } from './nu-scherm.js?v=20261116q';
+import { htmlPollsBijWedstrijd, openPollVoorWedstrijd, zetDeelOpstelling } from './kamer-beheer.js?v=20261116p';   /* [20261116m] polls bij een wedstrijd */
 
 const p2 = n => String(n).padStart(2, '0');
 const isoVan = d => `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
@@ -577,11 +577,13 @@ function koppel(body){
     if (!w) return;
     const tp = ev.target.closest('[data-tk-poll]');   /* [20261116m] poll maken: naar de teamkamer, formulier al ingevuld */
     if (tp){ openPollVoorWedstrijd(tp.dataset.wid, tp.dataset.tkPoll); sluitModal(); _ctx?.zetTeamTab?.('teamkamer'); return; }
+    const td = ev.target.closest('[data-tk-deel]');   /* [20261116p] opstelling van deze wedstrijd delen met de teamkamer */
+    if (td){ td.disabled = true; try { await zetDeelOpstelling(td.dataset.tkDeel, td.getAttribute('aria-checked') !== 'true'); } catch (x){ meld('Dat lukte niet. Probeer het opnieuw.'); } teken(); return; }
     const wd = ev.target.closest('[data-vb-wedstrijd]');
     if (wd){
       const id = wd.dataset.vbWedstrijd;
       sluitModal();
-      const m = await import('./wedstrijd.js?v=20261116p');
+      const m = await import('./wedstrijd.js?v=20261116q');
       m.openWedstrijd(id);
       return;
     }

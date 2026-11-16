@@ -8,8 +8,8 @@
    - Geen chat, geen vrije tekst, geen foto's. Afmelden gaat via WhatsApp: de knop zet alleen het
      bericht klaar, Cluppie verstuurt en bewaart niets. */
 import { auth, db, functions, httpsCallable, signInAnonymously, signOut, onAuthStateChanged, signInWithEmailAndPassword,
-  createUserWithEmailAndPassword, collection, doc, getDoc, getDocs, setDoc, onSnapshot } from './firebase.js?v=20261011g';
-import * as K from './kamer-logica.js?v=20261116n';
+  createUserWithEmailAndPassword, sendEmailVerification, collection, doc, getDoc, getDocs, setDoc, onSnapshot } from './firebase.js?v=20261011g';
+import * as K from './kamer-logica.js?v=20261116p';
 
 const wortel = document.getElementById('tk');
 const qs = new URLSearchParams(location.search);
@@ -18,8 +18,9 @@ const bewaar = { get: (k) => { try { return localStorage.getItem(k) || ''; } cat
   set: (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch { /* geen opslag */ } } };
 
 const A = { scherm: 'laden', fout: '', bezig: false, user: null, link: null, lid: null, teamId: '', teams: [], kind: '',
-  kamer: null, agenda: [], polls: [], berichten: [], gezin: {}, stemmen: {}, weer: {}, tab: qs.get('poll') ? 'polls' : 'vandaag',
+  kamer: null, agenda: [], polls: [], berichten: [], gezin: {}, stemmen: {}, stemGeteld: {}, stemWacht: {}, gelezen: 0, weer: {}, tab: qs.get('poll') ? 'polls' : 'vandaag',
   open: '', blad: null, code: null, thuisOpen: false, subs: [] };
+let naarPoll = qs.get('poll') || '';                   /* [20261116p] link uit WhatsApp: één keer naar die poll schuiven */
 const TABNAAM = { vandaag: 'Vandaag', agenda: 'Agenda', polls: 'Polls', kind: 'Mijn kind' };
 if (qs.get('k')) bewaar.set('tkCode', K.schoonCode(qs.get('k'), 12));
 
@@ -81,30 +82,40 @@ function htmlUitnodiging(){
     <p class="tk-zacht" style="margin:0">Vraag de trainer om een nieuwe teamlink.</p><button class="tk-knop licht" data-doe="vergeetlink">Verder zonder link</button></section></div>`;
   return `${merk}<div class="tk-inhoud">
     <div><h1 class="tk-h1">Je bent uitgenodigd</h1><p class="tk-zacht" style="margin:6px 0 0">Voor de teamkamer van ${e(l.teamNaam || 'het team')}${l.clubNaam ? ', ' + e(l.clubNaam) : ''}. Je ziet de agenda, wie erbij is, mededelingen en polls.</p></div>
+    ${A.teams.length ? '<button class="tk-knop licht" data-doe="vergeetlink">Ik heb al toegang: naar mijn teamkamer</button>' : ''}
+    ${stappen(1)}
     <form data-form="aanmelden" class="tk-kaart">
       ${A.user ? `<p class="tk-zacht" style="margin:0">Ingelogd als ${e(A.user.email || '')}.</p>` : `
       <div class="tk-veld"><label for="f-mail">E-mailadres</label><input class="tk-invoer" id="f-mail" name="mail" type="email" autocomplete="email" required></div>
-      <div class="tk-veld"><label for="f-ww">Wachtwoord</label><input class="tk-invoer" id="f-ww" name="ww" type="password" autocomplete="new-password" minlength="6" required>
-        <span class="tk-klein tk-zacht">Heb je al een Cluppie-account? Gebruik dan dat wachtwoord.</span></div>`}
+      <div class="tk-veld"><label for="f-ww">Kies een wachtwoord</label>
+        <div class="tk-met-knop"><input class="tk-invoer" id="f-ww" name="ww" type="password" autocomplete="new-password" minlength="6" required><button type="button" class="tk-knop licht klein" data-doe="toonww" aria-controls="f-ww">Toon</button></div>
+        <span class="tk-klein tk-zacht">Minstens 6 tekens. Heb je al een Cluppie-account? Gebruik dan dat wachtwoord.</span></div>`}
       <div class="tk-veld"><label for="f-kind">Ik ben ouder of verzorger van</label><input class="tk-invoer" id="f-kind" name="kind" type="text" maxlength="40" placeholder="Voornaam van je kind" required>
         <span class="tk-klein tk-zacht">De trainer koppelt je aan de juiste speler. Je kiest niet uit een lijst met namen.</span></div>
       <label class="tk-vink"><input type="checkbox" name="ok" required><span>Ik heb de ${privacyLink} gelezen</span></label>
       ${foutHtml()}
-      <button class="tk-knop" ${A.bezig ? 'disabled' : ''}>Vraag toegang aan</button>
+      <button class="tk-knop" ${A.bezig ? 'disabled' : ''}>${A.bezig ? 'Even geduld…' : 'Vraag toegang aan'}</button>
+      ${A.user ? '' : '<button type="button" class="tk-knop tekst" data-doe="reset">Wachtwoord vergeten</button>'}
     </form>
     <div class="tk-melding">${ico('slot', true)}<span>Tot de trainer je goedkeurt, zie je niets van het team.</span></div>
   </div>`;
 }
+/* [20261116p] waar je bent in het aanmelden: 1 account, 2 e-mailadres bevestigen, 3 de trainer keurt goed */
+const STAPPEN = ['Account', 'E-mail bevestigen', 'Trainer keurt goed'];
+const stappen = (nu) => `<ol class="tk-stappen" aria-label="Stap ${nu} van 3">${STAPPEN.map((s, n) => `<li class="${n + 1 < nu ? 'klaar' : n + 1 === nu ? 'nu' : ''}"${n + 1 === nu ? ' aria-current="step"' : ''}><b>${n + 1}</b><span>${s}</span></li>`).join('')}</ol>`;
 function htmlBevestig(){
-  return `${merk}<div class="tk-inhoud"><section class="tk-kaart"><h1 class="tk-h2">Bevestig je e-mailadres</h1>
-    <p style="margin:0">We hebben een mail gestuurd naar ${e(A.user?.email || 'je e-mailadres')}. Klik op de link in die mail en kom hier terug.</p>
+  return `${merk}<div class="tk-inhoud">${bewaar.get('tkCode') ? stappen(2) : ''}<section class="tk-kaart"><h1 class="tk-h2">Bevestig je e-mailadres</h1>
+    <p style="margin:0">We hebben een mail gestuurd naar:</p>
+    <p class="tk-vet tk-adres" style="margin:0">${e(A.user?.email || 'je e-mailadres')}</p>
+    <p style="margin:0">Klik op de knop in die mail. Deze pagina gaat daarna vanzelf verder; je hoeft hem niet te sluiten.</p>
+    <p class="tk-klein tk-zacht" style="margin:0">Geen mail? Kijk bij ongewenste mail, of stuur hem opnieuw.</p>
     ${foutHtml()}
     <button class="tk-knop" data-doe="bevestigd" ${A.bezig ? 'disabled' : ''}>Ik heb bevestigd</button>
     <button class="tk-knop licht" data-doe="mailopnieuw">Stuur de mail opnieuw</button>
     <button class="tk-knop tekst" data-doe="uitloggen">Uitloggen</button></section></div>`;
 }
 function htmlWacht(){
-  return `${merk}<div class="tk-inhoud"><div><h1 class="tk-h1">Wacht op de trainer</h1>
+  return `${merk}<div class="tk-inhoud">${stappen(3)}<div><h1 class="tk-h1">Wacht op de trainer</h1>
     <p class="tk-zacht" style="margin:6px 0 0">Je aanvraag is verstuurd. De trainer ziet je e-mailadres en de naam die je invulde.</p></div>
     <section class="tk-kaart">
       <div><b class="tk-ok">Aanvraag verstuurd</b></div>
@@ -130,6 +141,23 @@ const kindNaam = () => (A.gezin[kindId()] && A.gezin[kindId()].voornaam) || K.sp
 const spelers = () => (A.kamer && A.kamer.spelers) || {};
 const pollsVan = (wedstrijdId) => A.polls.filter(p => p.wedstrijdId === wedstrijdId);
 const zichtbarePolls = () => (mag('polls') ? K.sorteerPolls(A.polls) : []);
+/* [20261116p] de poll zoals hij eruitziet met de eigen stem er al in (de server telt een paar tellen later) */
+const metEigen = (p) => K.pollMetEigen(p, kindId(), A.stemGeteld[p.id], A.stemmen[p.id]);
+const nieuweBerichten = () => (mag('berichten') ? K.nieuweBerichten(A.berichten, A.gelezen) : []);
+const nogStemmen = () => K.nogStemmen(zichtbarePolls(), A.stemmen, rol());
+
+/* [20261116p] opstelling op een veld; zonder plekken (oude kopie) de namen als tekst */
+function htmlOpstelling(op){
+  if (!op) return '';
+  const sp = spelers(), plekken = K.veldPlekken(op), eigen = kindId();
+  const wissels = (op.wissels || []).length ? `<div class="tk-rij" style="align-items:flex-start"><span class="tk-zacht" style="white-space:nowrap">Begint als wissel</span><span>${e(K.namenLijst(sp, op.wissels))}</span></div>` : '';
+  if (!plekken.length) return `<div class="tk-rij" style="align-items:flex-start"><span class="tk-zacht">Start</span><span>${e(K.namenLijst(sp, op.basis))}</span></div>${wissels}`;
+  const tekst = plekken.map(x => K.spelerNaam(sp, x.spelerId)).join(', ');
+  return `<div class="tk-opstelling"><div class="tk-rij"><span class="tk-label">Opstelling bij de aftrap</span>${op.formatie ? `<span class="tk-klein tk-zacht">${e(op.formatie)}</span>` : ''}</div>
+    <div class="tk-gras" role="img" aria-label="Opstelling: ${e(tekst)}">${plekken.map(x => { const s = sp[x.spelerId] || {};
+      return `<span class="tk-pos${x.spelerId === eigen ? ' eigen' : ''}" style="left:${x.x}%;top:${x.y}%"><b>${s.nr != null ? e(s.nr) : ''}</b><span>${e(x.spelerId === eigen ? kindNaam() : K.spelerNaam(sp, x.spelerId))}</span></span>`; }).join('')}</div>
+    ${wissels}<div class="tk-klein tk-zacht">De trainer kan de opstelling nog wijzigen.</div></div>`;
+}
 
 function htmlWedstrijdKaart(i){
   const d = K.hoofdletter(K.datumLang(i.datum)), polls = mag('polls') ? pollsVan(i.id.replace(/^w_/, '')) : [];
@@ -145,11 +173,12 @@ function htmlWedstrijdKaart(i){
     ${i.plek ? `<div class="tk-rij" style="justify-content:flex-start">${ico('plek', true)}<div style="flex:1;min-width:0;text-align:left"><div class="tk-vet">${e([i.plek, i.veld].filter(Boolean).join(', '))}</div>${adres ? `<div class="tk-klein tk-zacht">${e(adres)}</div>` : ''}</div>
       ${i.route ? `<a class="tk-knop licht klein" href="${e(i.route)}" target="_blank" rel="noopener">Route</a>` : ''}</div>` : ''}
     <div class="tk-lijn" style="display:flex;flex-direction:column;gap:8px">
-      ${polls.map(p => { const w = K.pollWeergave(p, spelers(), A.stemmen[p.id]); const ja = w.opties[0];
+      ${polls.map(p => { const w = K.pollWeergave(metEigen(p), spelers(), A.stemmen[p.id]); const ja = w.opties[0];
         return `<div class="tk-rij"><span class="tk-zacht">${e(K.BEURT_NAMEN[p.soort] || 'Poll')}</span><span class="tk-vet">${e(w.nodig || (ja ? (ja.namen || `${ja.aantal} keer ${ja.tekst.toLowerCase()}`) : ''))}</span></div>`; }).join('')}
       ${weer ? `<div class="tk-rij"><span class="tk-zacht">Weer bij de club</span><span class="tk-vet">${e(weer)}</span></div>` : ''}
       <div class="tk-rij"><span class="tk-zacht">${e(isOuder() ? kindNaam() : 'Jij')}</span><span class="tk-vet ${K.eigenStatus(i, kindId()) === 'Erbij' ? 'tk-ok' : 'tk-let'}">${K.eigenStatus(i, kindId())}</span></div>
     </div>
+    ${i.opstelling && !i.afgelast ? htmlOpstelling(i.opstelling) : ''}
     ${isOuder() && mag('afmelden') && !i.afgelast ? `<button class="tk-knop licht" data-doe="afmelden" data-id="${e(i.id)}">Afmelden via WhatsApp</button>` : ''}
   </section>`;
 }
@@ -164,18 +193,26 @@ function htmlTrainingKaart(i){
 function htmlVandaag(){
   const vandaag = K.vandaagIso(), kom = K.komend(A.agenda, vandaag), eerst = kom[0];
   const open = zichtbarePolls().filter(p => p.status === 'open');
-  const bericht = mag('berichten') ? A.berichten[0] : null;
+  const nieuw = nieuweBerichten(), stem = nogStemmen();
+  const eerder = mag('berichten') ? A.berichten.filter(b => !nieuw.includes(b)).slice(0, 2) : [];
+  const meta = (b) => e([b.door && 'Trainer ' + b.door, b.datum && K.datumLang(b.datum)].filter(Boolean).join(', '));
+  /* [20261116p] wat nieuw is of nog iets van je vraagt staat bovenaan, vóór de agenda */
+  const boven = `${nieuw.length ? `<section class="tk-kaart nieuw" aria-live="polite"><div class="tk-rij"><h2 class="tk-label accent">${nieuw.length === 1 ? 'Nieuw van de trainer' : nieuw.length + ' nieuwe mededelingen'}</h2><span class="tk-stip" aria-hidden="true"></span></div>
+      ${nieuw.slice(0, 3).map(b => `<div class="tk-nieuw-bericht"><p style="margin:0;white-space:pre-line">${e(b.tekst)}</p><div class="tk-klein tk-zacht">${meta(b)}</div></div>`).join('')}
+      <button class="tk-knop licht klein" data-doe="gelezen">Gelezen</button></section>` : ''}
+    ${stem.length ? `<section class="tk-kaart nieuw" style="gap:4px"><h2 class="tk-label accent">${stem.length === 1 ? 'Je stem is nodig' : 'Je stem is nodig bij ' + stem.length + ' polls'}</h2>
+      ${stem.map(p => `<button class="tk-item-kop" style="padding:4px 0;min-height:52px" data-doe="naarpoll" data-id="${e(p.id)}"><span class="tk-item-tekst tk-vet">${e(p.vraag)}</span><span class="tk-klein tk-let">Stem nu</span></button>`).join('')}</section>` : ''}`;
   const wedstrijdSnel = kom.find(i => i.soort === 'wedstrijd' && K.binnenDagen(i.datum, vandaag, 2));
   const wedstrijdWeek = kom.find(i => i.soort === 'wedstrijd' && K.binnenDagen(i.datum, vandaag, 7));
   const videos = (A.kamer?.thuisVideos || []).filter(v => v && (v.yt || v.url));
-  return `<div class="tk-kolom">${eerst ? (eerst.soort === 'wedstrijd' ? htmlWedstrijdKaart(eerst) : htmlTrainingKaart(eerst)) : '<section class="tk-kaart"><p class="tk-zacht" style="margin:0">Er staat nog niets in de agenda.</p></section>'}
+  return `<div class="tk-kolom">${boven}${eerst ? (eerst.soort === 'wedstrijd' ? htmlWedstrijdKaart(eerst) : htmlTrainingKaart(eerst)) : '<section class="tk-kaart"><p class="tk-zacht" style="margin:0">Er staat nog niets in de agenda.</p></section>'}
     ${wedstrijdWeek && wedstrijdWeek !== eerst ? htmlWedstrijdKaart(wedstrijdWeek) : ''}
     ${kom.length && mag('agenda') ? '<button class="tk-knop licht" data-doe="ics">Zet alles in mijn agenda</button>' : ''}</div>
-    <div class="tk-kolom">${open.length ? `<section class="tk-kaart" style="gap:4px"><h2 class="tk-label">Open polls</h2>
-      ${open.map(p => `<button class="tk-item-kop" style="padding:4px 0;min-height:52px" data-doe="tab" data-tab="polls"><span class="tk-item-tekst">${e(p.vraag)}</span>
+    <div class="tk-kolom">${open.filter(p => !stem.includes(p)).length ? `<section class="tk-kaart" style="gap:4px"><h2 class="tk-label">Open polls</h2>
+      ${open.filter(p => !stem.includes(p)).map(p => `<button class="tk-item-kop" style="padding:4px 0;min-height:52px" data-doe="naarpoll" data-id="${e(p.id)}"><span class="tk-item-tekst">${e(p.vraag)}</span>
         <span class="tk-klein ${(A.stemmen[p.id] || []).length ? 'tk-ok' : 'tk-let'}">${(A.stemmen[p.id] || []).length ? 'Gestemd' : (K.magStemmen(p, rol()) ? 'Nog stemmen' : 'Voor ouders')}</span></button>`).join('')}</section>` : ''}
-    ${bericht ? `<section class="tk-kaart" style="gap:6px"><h2 class="tk-label">Mededeling</h2><p style="margin:0;white-space:pre-line">${e(bericht.tekst)}</p>
-      <div class="tk-klein tk-zacht">${e([bericht.door && 'Trainer ' + bericht.door, bericht.datum && K.datumLang(bericht.datum)].filter(Boolean).join(', '))}</div></section>` : ''}
+    ${eerder.length ? `<section class="tk-kaart"><h2 class="tk-label">${eerder.length === 1 ? 'Mededeling' : 'Mededelingen'}</h2>
+      ${eerder.map(b => `<div class="tk-nieuw-bericht"><p style="margin:0;white-space:pre-line">${e(b.tekst)}</p><div class="tk-klein tk-zacht">${meta(b)}</div></div>`).join('')}</section>` : ''}
     ${A.kamer?.thuis || videos.length ? `<section class="tk-kaart"><h2 class="tk-label">Thuis oefenen</h2>
       ${A.kamer?.thuis ? `<div class="tk-vet">${e(A.kamer.thuis.naam || 'Oefening van de week')}</div>
       <div id="tk-thuis" class="tk-3d" ${A.thuisOpen ? '' : 'hidden'}></div>
@@ -195,7 +232,7 @@ function htmlItem(i){
     ${isOpen ? `<div class="tk-item-meer">
       <div class="tk-rij"><span class="tk-zacht">${e(isOuder() ? kindNaam() : 'Jij')}</span><span class="tk-vet ${K.eigenStatus(i, kindId()) === 'Erbij' ? 'tk-ok' : 'tk-let'}">${K.eigenStatus(i, kindId())}</span></div>
       <div class="tk-rij"><span class="tk-zacht">Afwezig</span><span class="tk-vet ${af.length ? 'tk-let' : ''}">${af.length ? e(K.namenLijst(spelers(), af)) : 'Niemand'}</span></div>
-      ${op ? `<div class="tk-rij"><span class="tk-zacht">Start</span><span>${e(K.namenLijst(spelers(), op.basis))}</span></div>${op.wissels.length ? `<div class="tk-rij"><span class="tk-zacht">Begint als wissel</span><span>${e(K.namenLijst(spelers(), op.wissels))}</span></div>` : ''}` : ''}
+      ${op ? htmlOpstelling(op) : ''}
       ${i.plek ? `<div class="tk-klein tk-zacht">${e([i.plek, i.veld].filter(Boolean).join(', '))}</div>` : ''}
       ${isOuder() && mag('afmelden') && !i.afgelast && i.datum >= K.vandaagIso() ? `<button class="tk-knop licht klein" data-doe="afmelden" data-id="${e(i.id)}">Afmelden via WhatsApp</button>` : ''}
     </div>` : ''}</section>`;
@@ -207,12 +244,12 @@ function htmlAgenda(){
     ${oud.length ? `<h2 class="tk-label" style="margin-top:8px">Geweest</h2>${oud.slice(0, 6).map(htmlItem).join('')}` : ''}`;
 }
 function htmlPoll(p){
-  const w = K.pollWeergave(p, spelers(), A.stemmen[p.id], A.kamer?.aantal), mag = K.magStemmen(p, rol());
+  const w = K.pollWeergave(metEigen(p), spelers(), A.stemmen[p.id], A.kamer?.aantal), mag = K.magStemmen(p, rol());
   if (!w.open){
     const top = K.BEURT_SOORTEN.includes(p.soort) ? w.opties[0] : [...w.opties].sort((a, b) => b.aantal - a.aantal)[0];   /* bij een beurt telt wie "ja" zei */
     return `<section class="tk-kaart" style="gap:4px"><div class="tk-vet">${e(p.vraag)}</div><div class="tk-klein tk-zacht">Gesloten. ${top ? e(top.tekst) + ': ' + (top.namen ? e(top.namen) : top.aantal) : ''}</div></section>`;
   }
-  return `<section class="tk-kaart" style="gap:12px">
+  return `<section class="tk-kaart" style="gap:12px" id="poll-${e(p.id)}">
     <div class="tk-rij"><span class="tk-label ${p.wedstrijdId ? 'accent' : ''}">${p.wedstrijdId && p.wedstrijdDatum ? 'Wedstrijd ' + e(K.datumKort(p.wedstrijdDatum)) : 'Losse poll'}${p.meer ? ', meer antwoorden mogelijk' : ''}</span>${w.nodig ? `<span class="tk-klein tk-vet">${e(w.nodig)}</span>` : ''}</div>
     <h2 class="tk-h3">${e(p.vraag)}</h2>
     ${w.opties.map(o => `<button class="tk-optie" data-doe="stem" data-poll="${e(p.id)}" data-optie="${e(o.id)}" aria-pressed="${o.gekozen}" ${mag ? '' : 'disabled'}>
@@ -268,7 +305,10 @@ function htmlKamer(){
   const tabs = [['vandaag', 'Vandaag', 'huis'], ['agenda', 'Agenda', 'agenda'], ...(mag('polls') ? [['polls', 'Polls', 'poll']] : []), ['kind', isOuder() ? 'Mijn kind' : 'Ik', 'mens']];
   const tab = tabs.some(t => t[0] === A.tab) ? A.tab : 'vandaag';
   const inhoud = tab === 'agenda' ? htmlAgenda() : tab === 'polls' ? htmlPolls() : tab === 'kind' ? htmlKind() : htmlVandaag();
-  const knoppen = tabs.map(t => `<button data-doe="tab" data-tab="${t[0]}" aria-current="${tab === t[0]}">${ico(t[2])}<span>${t[1]}</span></button>`).join('');
+  const teller = { vandaag: nieuweBerichten().length, polls: nogStemmen().length };
+  const tellerTekst = { vandaag: 'nieuwe mededelingen', polls: 'polls waar je nog op stemt' };
+  const knoppen = tabs.map(t => `<button data-doe="tab" data-tab="${t[0]}" aria-current="${tab === t[0]}"${teller[t[0]] ? ` aria-label="${t[1]}, ${teller[t[0]]} ${tellerTekst[t[0]]}"` : ''}><span class="tk-ico-vak">${ico(t[2])}${teller[t[0]] ? `<i class="tk-badge">${teller[t[0]]}</i>` : ''}</span><span>${t[1]}</span></button>`).join('');
+  try { const n = teller.vandaag + teller.polls; document.title = (n ? `(${n}) ` : '') + 'Teamkamer · Cluppie'; } catch { /* geen titel */ }
   const ander = A.teams.length > 1 ? '<button class="tk-knop licht klein" data-doe="wisselteam">Ander team</button>' : '';
   const team = A.kamer.teamNaam || 'Team', club = A.kamer.clubNaam || 'Teamkamer';
   /* op de computer: zijbalk en kruimelpad zoals in de app; op de telefoon: kop en balk onderaan */
@@ -289,14 +329,48 @@ function htmlKamer(){
 function teken(){
   const vorigeThuis = document.getElementById('tk-thuis');
   const blok3d = vorigeThuis && vorigeThuis.firstElementChild;
+  /* [20261116p] wat iemand al intypte blijft staan als het scherm opnieuw wordt getekend (bezig, foutmelding).
+     Eerder was het formulier na een fout leeg en moest alles opnieuw. */
+  const ingevuld = {}; let focus = '';
+  wortel.querySelectorAll('input[id]').forEach(x => { ingevuld[x.id] = x.type === 'checkbox' ? x.checked : x.value; });
+  wortel.querySelectorAll('input[name="ok"]').forEach(x => { ingevuld['@ok'] = x.checked; });
+  if (document.activeElement && wortel.contains(document.activeElement)) focus = document.activeElement.id || '';
   wortel.innerHTML = A.scherm === 'kamer' ? htmlKamer() : smal(A.scherm === 'start' ? htmlStart() : A.scherm === 'uitnodiging' ? htmlUitnodiging()
     : A.scherm === 'bevestig' ? htmlBevestig() : A.scherm === 'wacht' ? htmlWacht() : A.scherm === 'geen' ? htmlGeen()
     : `${merk}<div class="tk-inhoud"><p class="tk-zacht">Laden…</p></div>`);
   /* het 3D-veld overleeft een hertekening (anders begint de animatie opnieuw) */
   const nieuw = document.getElementById('tk-thuis');
   if (nieuw && blok3d && A.thuisOpen) nieuw.appendChild(blok3d);
+  for (const [id, v] of Object.entries(ingevuld)){
+    const x = id === '@ok' ? wortel.querySelector('input[name="ok"]') : document.getElementById(id);
+    if (!x || !wortel.contains(x)) continue;
+    if (x.type === 'checkbox') x.checked = v === true; else if (!x.value) x.value = v;
+  }
+  if (focus && document.getElementById(focus)) document.getElementById(focus).focus({ preventScroll: true });
+  bewaakBevestiging();
+  if (naarPoll && A.scherm === 'kamer' && A.tab === 'polls'){
+    const doel = document.getElementById('poll-' + naarPoll);
+    if (doel){ naarPoll = ''; doel.classList.add('nieuw'); doel.scrollIntoView({ block: 'center' }); }
+  }
   legNet();
 }
+/* [20261116p] Op het scherm "Bevestig je e-mailadres" kijken we zelf of het adres al bevestigd is (elke 4 tellen
+   en als je terugkomt op de pagina). Eerder moest je terug naar deze pagina en op een knop tikken. */
+let bevestigTimer = 0, bevestigBezig = false;
+async function kijkBevestigd(){
+  if (bevestigBezig || A.scherm !== 'bevestig' || !auth.currentUser || document.hidden) return;
+  bevestigBezig = true;
+  try {
+    await auth.currentUser.reload();
+    if (auth.currentUser && auth.currentUser.emailVerified && A.scherm === 'bevestig'){ await auth.currentUser.getIdToken(true); await naInloggen(auth.currentUser); }
+  } catch { /* geen verbinding: straks opnieuw */ }
+  bevestigBezig = false;
+}
+function bewaakBevestiging(){
+  if (A.scherm === 'bevestig'){ if (!bevestigTimer) bevestigTimer = setInterval(kijkBevestigd, 4000); }
+  else if (bevestigTimer){ clearInterval(bevestigTimer); bevestigTimer = 0; }
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) kijkBevestigd(); });
 
 /* ==================== video afspelen (Thuis oefenen) ====================
    De speler staat buiten #tk, zodat een hertekening (nieuwe gegevens) de video niet opnieuw start.
@@ -363,25 +437,38 @@ window.addEventListener('popstate', (ev) => {
 function openKamer(teamId, lid){
   stopSubs();
   bewaar.set('tkTeam', teamId);
-  Object.assign(A, { scherm: 'kamer', teamId, lid, kamer: null, agenda: [], polls: [], berichten: [], gezin: {}, stemmen: {}, weer: {}, dicht: false, fout: '' });
+  Object.assign(A, { scherm: 'kamer', teamId, lid, kamer: null, agenda: [], polls: [], berichten: [], gezin: {}, stemmen: {}, stemGeteld: {}, stemWacht: {}, weer: {}, dicht: false, fout: '',
+    gelezen: Number(bewaar.get('tkGelezen:' + teamId)) || 0 });
   const basis = doc(db, 'teamkamer', teamId);
   const mis = () => { stopSubs(); zet({ scherm: 'geen', dicht: true }); };
   A.subs.push(onSnapshot(doc(basis, 'kamerleden', A.user.uid), s => { if (!s.exists()) mis(); else { A.lid = s.data(); teken(); } }, mis));
   A.subs.push(onSnapshot(basis, s => { const k = s.data(); if (!k || k.aan !== true) return mis(); A.kamer = k; teken(); weerHalen(); }, mis));
   A.subs.push(onSnapshot(collection(basis, 'agenda'), s => { A.agenda = s.docs.map(d => ({ id: d.id, ...d.data() })); teken(); weerHalen(); }, () => {}));
   A.subs.push(onSnapshot(collection(basis, 'berichten'), s => { A.berichten = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.ms || 0) - (a.ms || 0)); teken(); }, () => {}));
-  A.subs.push(onSnapshot(collection(basis, 'polls'), s => { A.polls = s.docs.map(d => ({ id: d.id, ...d.data() })); teken(); eigenStemmen(); }, () => {}));
+  A.subs.push(onSnapshot(collection(basis, 'polls'), s => { A.polls = s.docs.map(d => ({ id: d.id, ...d.data() })); stemmenIngehaald(); teken(); eigenStemmen(); }, () => {}));
   (lid.spelerIds || []).forEach(id => A.subs.push(onSnapshot(doc(basis, 'gezin', id), s => { A.gezin[id] = s.data() || {}; teken(); }, () => {})));
   teken();
 }
+/* [20261116p] alle eigen stemmen tegelijk ophalen (was één voor één), en per kind apart: bij twee kinderen
+   bleef na het wisselen de stem van het andere kind staan. */
 async function eigenStemmen(){
-  const id = kindId(); if (!id) return;
+  const id = kindId(), teamId = A.teamId; if (!id) return;
+  const halen = A.polls.filter(p => !A.stemmen['_' + p.id + '|' + id]);
+  if (!halen.length) return;
+  halen.forEach(p => { A.stemmen['_' + p.id + '|' + id] = true; });
+  await Promise.all(halen.map(async p => {
+    let keuzes = [];
+    try { const s = await getDoc(doc(db, 'teamkamer', teamId, 'polls', p.id, 'stemmen', id)); keuzes = s.exists() ? (s.data().keuzes || []) : []; } catch { /* geen stem te lezen */ }
+    if (A.teamId !== teamId || kindId() !== id || A.stemWacht[p.id]) return;       /* intussen gewisseld of zelf gestemd */
+    A.stemmen[p.id] = keuzes; A.stemGeteld[p.id] = keuzes;
+  }));
+  teken();
+}
+/* de server heeft geteld: de eigen stem zit nu in poll.telling */
+function stemmenIngehaald(){
   for (const p of A.polls){
-    const sleutel = p.id + '|' + id;
-    if (A.stemmen['_' + sleutel]) continue;
-    A.stemmen['_' + sleutel] = true;
-    try { const s = await getDoc(doc(db, 'teamkamer', A.teamId, 'polls', p.id, 'stemmen', id)); A.stemmen[p.id] = s.exists() ? (s.data().keuzes || []) : []; teken(); }
-    catch { A.stemmen[p.id] = []; }
+    const w = A.stemWacht[p.id];
+    if (w && K.stemGeteld(p, w.ms, w.telling)){ A.stemGeteld[p.id] = A.stemmen[p.id] || []; delete A.stemWacht[p.id]; }
   }
 }
 async function weerHalen(){
@@ -425,7 +512,9 @@ async function naInloggen(user){
   if (!user){
     stopSubs();
     const code = bewaar.get('tkCode');
-    if (code){ zet({ scherm: 'uitnodiging', link: A.link || {} }); if (!A.link){ try { A.link = await roep('kamerLinkInfo', { code }); } catch { A.link = { geldig: false }; } teken(); } }
+    /* [20261116p] A.link werd hier eerst op {} gezet en daarna nooit meer opgehaald: wie niet was ingelogd zag
+       "de teamkamer van het team" zonder naam, en een verlopen link werd pas na het aanmelden gemeld */
+    if (code){ const had = !!A.link; zet({ scherm: 'uitnodiging', link: A.link || {} }); if (!had){ try { A.link = await roep('kamerLinkInfo', { code }); } catch { A.link = { geldig: false }; } if (!A.user) teken(); } }
     else zet({ scherm: 'start' });
     return;
   }
@@ -437,6 +526,11 @@ async function naInloggen(user){
   if (!user.isAnonymous && code){
     if (bewaar.get('tkKind')){ try { return await vraagAan(); } catch (x){ bewaar.set('tkKind', ''); A.fout = foutTekst(x); } }
     try { A.link = await roep('kamerLinkInfo', { code }); } catch { A.link = { geldig: false }; }
+    /* [20261116p] de teamlink staat in de groepsapp en wordt steeds opnieuw aangetikt: wie al binnen is (of al
+       wacht op de trainer) hoort niet opnieuw het aanmeldformulier te krijgen */
+    const al = A.link && A.link.teamId ? A.teams.find(x => x.teamId === A.link.teamId) : null;
+    if (al){ bewaar.set('tkCode', ''); return openKamer(al.teamId, al.lid); }
+    if (A.link && A.link.teamId && (A.link.status === 'wacht' || bewaar.get('tkWacht') === A.link.teamId) && !bewaar.get('tkKind')){ bewaar.set('tkCode', ''); return wachtOp(A.link.teamId); }
     return zet({ scherm: 'uitnodiging' });
   }
   if (A.teams.length){
@@ -489,9 +583,11 @@ wortel.addEventListener('submit', async (ev) => {
     A.bezig = false;
   } catch (x){ zet({ bezig: false, fout: AUTH_FOUT[x.code] || foutTekst(x) }); }
 });
+/* [20261116p] de link in de mail brengt je terug naar de teamkamer (met de code van de teamlink), niet naar de trainersapp */
 async function stuurBevestiging(user){
-  try { await roep('verificatieMail'); }
-  catch { try { const { sendEmailVerification } = await import('./firebase.js?v=20261011g'); await sendEmailVerification(user); } catch { /* later opnieuw */ } }
+  const code = bewaar.get('tkCode');
+  try { await roep('verificatieMail', { naar: 'kamer', code }); }
+  catch { try { await sendEmailVerification(user, { url: K.KAMER_URL + (code ? '?k=' + code : '') }); } catch { try { await sendEmailVerification(user); } catch { /* later opnieuw */ } } }
 }
 wortel.addEventListener('click', async (ev) => {
   const b = ev.target.closest('[data-doe]'); if (!b) return;
@@ -503,7 +599,10 @@ wortel.addEventListener('click', async (ev) => {
     if (doe === 'video'){ const v = (A.kamer?.thuisVideos || []).filter(x => x && (x.yt || x.url))[Number(b.dataset.n)]; if (v) openSpeler(v); return; }
     if (doe === 'kopieercode'){ await navigator.clipboard.writeText(K.toonCode(A.code)); return toast('Code gekopieerd'); }
     if (doe === 'open') return zet({ open: A.open === b.dataset.id ? '' : b.dataset.id });
-    if (doe === 'kind'){ A.kind = b.dataset.id; A.code = null; teken(); return eigenStemmen(); }
+    if (doe === 'kind'){ A.kind = b.dataset.id; A.code = null; A.stemmen = {}; A.stemGeteld = {}; A.stemWacht = {}; teken(); return eigenStemmen(); }
+    if (doe === 'gelezen'){ A.gelezen = Math.max(Date.now(), ...A.berichten.map(x => Number(x.ms) || 0)); bewaar.set('tkGelezen:' + A.teamId, String(A.gelezen)); return teken(); }
+    if (doe === 'naarpoll'){ naarPoll = b.dataset.id; return zet({ tab: 'polls', open: '' }); }
+    if (doe === 'toonww'){ const x = document.getElementById('f-ww'); if (x){ x.type = x.type === 'password' ? 'text' : 'password'; b.textContent = x.type === 'password' ? 'Toon' : 'Verberg'; } return; }
     if (doe === 'afmelden'){ const i = A.agenda.find(x => x.id === b.dataset.id); if (i) zet({ blad: { tekst: K.afmeldTekst(kindNaam(), i) } }); return; }
     if (doe === 'sluitblad' || doe === 'sluitblad-knop') return zet({ blad: null });
     if (doe === 'sluitblad-na') return setTimeout(() => zet({ blad: null }), 300);
@@ -530,10 +629,12 @@ wortel.addEventListener('click', async (ev) => {
     }
     if (doe === 'stem'){
       const p = A.polls.find(x => x.id === b.dataset.poll); if (!p || !K.magStemmen(p, rol())) return;
-      const keuzes = K.kiesOptie(p, A.stemmen[p.id], b.dataset.optie), vorige = A.stemmen[p.id];
-      A.stemmen[p.id] = keuzes; teken();
-      try { await setDoc(doc(db, 'teamkamer', A.teamId, 'polls', p.id, 'stemmen', kindId()), { keuzes, door: A.user.uid, ms: Date.now() }); }
-      catch { A.stemmen[p.id] = vorige; teken(); toast('Stemmen lukte niet. Is de poll al gesloten?'); }
+      const keuzes = K.kiesOptie(p, A.stemmen[p.id], b.dataset.optie), vorige = A.stemmen[p.id], wachtVoor = A.stemWacht[p.id], ms = Date.now();
+      if (A.stemGeteld[p.id] === undefined) A.stemGeteld[p.id] = vorige || [];
+      /* meteen zichtbaar, met het aantal erbij; de server telt daarna (zie pollMetEigen) */
+      A.stemmen[p.id] = keuzes; A.stemWacht[p.id] = { ms, telling: wachtVoor ? wachtVoor.telling : JSON.stringify(p.telling || {}) }; teken();
+      try { await setDoc(doc(db, 'teamkamer', A.teamId, 'polls', p.id, 'stemmen', kindId()), { keuzes, door: A.user.uid, ms }); }
+      catch { if (A.stemWacht[p.id] && A.stemWacht[p.id].ms === ms){ A.stemmen[p.id] = vorige; if (wachtVoor) A.stemWacht[p.id] = wachtVoor; else delete A.stemWacht[p.id]; teken(); } toast('Stemmen lukte niet. Is de poll al gesloten?'); }
       return;
     }
     if (doe === 'kindcode'){ zet({ bezig: true }); const r = await roep('maakKindCode', { teamId: A.teamId, spelerId: kindId() }); return zet({ bezig: false, code: r.code }); }
