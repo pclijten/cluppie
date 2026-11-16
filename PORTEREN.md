@@ -15,7 +15,7 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 
 ## Open
 **Voor Paul — Over-pagina bijgewerkt met alles van 15 en 16 november (branch `over-pagina-16nov`, alleen de over-pagina, geen deploy)**
-- [ ] PR mergen. Geraakt: `public/over.html`, `over/over.css` (zes telefoons naast elkaar), `over/app/*.jpg`, `llms.txt`, `tools/over-schermen.mjs`. Geen app-code, geen versie-bump, geen regel in Wat is er nieuw.
+- [x] Live sinds 16-11 via PR #76 (akkoord Paul: "push maar"). Geraakt: `public/over.html`, `over/over.css` (zes telefoons naast elkaar), `over/app/*.jpg`, `llms.txt`, `tools/over-schermen.mjs`. Geen app-code, geen versie-bump, geen regel in Wat is er nieuw.
 - [ ] **Nieuw in Cluppie** (de rij kaarten) is vervangen door negen kaarten: speelwijze als rode draad, elke oefening in 3D, Vandaag (spelers en weer), houvast langs de lijn, Teamkamer, polls, de week van de bouw, gewone taal, meer uit Sportlink. De oude kaarten (werkwijze, alleen starten, coachmodel, laptop) staan nog in "Alles op een rij" en bij "Voor wie ben je hier".
 - [ ] **Schermafbeeldingen** zijn allemaal opnieuw gemaakt uit de demo (licht en donker). Nieuw: laptop Speelwijze, telefoon Oefening in 3D en telefoon Teamkamer (wat een ouder ziet). De telefoon Evaluatie is eruit (staat al bij de laptop). `tools/over-schermen.mjs` kent nu `--alleen=naam,naam` en een eigen adres per scherm.
 - [ ] **Alles op een rij:** nieuw tabblad Ouders en spelers; Trainen en plannen en Club en team beheren zijn aangevuld (3D, zeven velden, Vandaag, rode draad, weekoverzicht voor coördinatoren, periodestand).
