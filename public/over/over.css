@@ -331,7 +331,7 @@ h3 { font-size: var(--text-title); line-height: 1.05; }
 
 .telefoons { margin-top: var(--space-3xl); }
 .telefoons h3 { font-size: clamp(1.75rem, 2.4vw, 2.25rem); margin-bottom: var(--space-lg); }
-.telefoons__rij { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-lg); }
+.telefoons__rij { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--space-lg); }
 .telefoons__rij:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 4px; }
 .telefoon { margin: 0; }
 .telefoon__scherm { padding: 6px; border-radius: 28px; background: var(--color-ink); box-shadow: 0 0 0 1px var(--color-rule); }
