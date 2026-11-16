@@ -4,10 +4,10 @@
    wat hierboven al in dit bestand staat. De zoekfunctionaliteit
    (#helpZoek) wordt door de hub (teams.js/koppelTeamTab) aangesloten,
    want die werkt direct op het gerenderde DOM-element. */
-import { esc } from './state.js?v=20261116k';
-import { beleidsplanNaam } from './clubconfig.js?v=20261116k';
-import { ROLKAARTEN } from './rolkaart.js?v=20261116k';
-import { onboardingHerstartBlok } from './onboarding.js?v=20261116k';
+import { esc } from './state.js?v=20261116l';
+import { beleidsplanNaam } from './clubconfig.js?v=20261116l';
+import { ROLKAARTEN } from './rolkaart.js?v=20261116l';
+import { onboardingHerstartBlok } from './onboarding.js?v=20261116l';
 
 export function htmlHandleiding(){
   return `<div class="hl">
@@ -118,6 +118,20 @@ export function htmlHandleiding(){
       <li>De tekening zie je nog in de kleine schets in de tijdlijn, bij afdrukken, en op een apparaat dat geen 3D kan tonen. Een training uit een eigen PDF houdt zijn eigen plaatjes.</li>
       <li>Heeft een eigen vorm van je club maar één of twee pijlen, dan laat 3D daarna een <b>voorbeeld van het vervolg</b> zien. Dat is een voorbeeld op basis van de opstelling, geen vaste afspraak van de oefening.</li>
     </ul>
+    </section>
+
+    <section class="hl-sec" data-zoek="🌦 vandaag spelers en weer training aanpassen aantal spelers minder spelers afmeldingen regen koud warm weerbericht presentie neem over terug naar het plan vervangen groepen veld aangepast voor vandaag andere training maken">
+    <h3>🌦 Vandaag: de training aanpassen aan spelers en weer</h3>
+    <p>Bovenaan elke training staat de balk <b>Vandaag</b>. Kies hoeveel <b>spelers</b> er zijn (− en +) en wat voor <b>weer</b> het is (Gewoon, Koud, Regen of Warm). De training past zich meteen aan, met dezelfde oefeningen.</p>
+    <ul>
+      <li><b>Voorstellen:</b> staat de presentie van die dag erin, of heeft iemand een vaste afmelding, dan zie je "11 van 14 aanwezig" met de knop <b>Neem over</b>. Binnen een week voor de training staat er ook het weerbericht op het trainingsmoment. Er verandert nooit iets vanzelf: jij tikt.</li>
+      <li><b>Wat er verandert:</b> de groepen, de wissels, de maat van het veld, het materiaal en bij ander weer de tijdsindeling (bij kou en regen een korte ontvangst en korte drinkpauzes, bij warmte juist langere).</li>
+      <li><b>Vervangen:</b> kan een oefening niet met dit aantal, dan komt er een andere uit de bibliotheek die bij het thema past. Bij de oefening staat wat het was en waarom.</li>
+      <li><b>Wat blijft:</b> het thema, het leerdoel, de coachwoorden en de totale duur.</li>
+      <li><b>Terug naar het plan</b> zet de training weer zoals hij gepland was. Het plan zelf wordt nooit overschreven, ook niet dat van de club.</li>
+      <li>Je medecoaches van het team zien dezelfde aanpassing. Er worden alleen aantallen bewaard, geen namen.</li>
+    </ul>
+    <div class="tip">Een training uit een eigen PDF past Cluppie niet zelf aan: je krijgt dan tips voor dit aantal en dit weer. Wil je een heel andere training voor die dag, gebruik dan <b>Andere training maken</b> (als Training maken voor jou aan staat).</div>
     </section>
 
     <section class="hl-sec" data-zoek="🔎 oefenkaart lezen zo zie je dat het lukt waarom dit werkt kijk en grijp in zie je doe dan tel mee richtpunt spelers aan zet regie differentiatie coachmomenten doel succes ingrijpen aanpassen te makkelijk te moeilijk tellen meten kopballen koppen knvb advies">

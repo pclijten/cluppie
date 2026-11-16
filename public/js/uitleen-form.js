@@ -11,18 +11,18 @@
 
    Alleen coördinatoren (bouw of eigen bouw) en de clubadmin mogen uitlenen;
    magUitlenen() is de zichtbaarheidscheck voor de knoppen. */
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261116k';
+import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261116l';
 import {
   db, collection, doc, getDoc, getDocs, addDoc, updateDoc, query, where, documentId, serverTimestamp
 } from './firebase.js?v=20261011g';
-import { momentenVanTeam, tijdTekst } from './trainingsmomenten.js?v=20261116k';
-import { bouwLeenSnapshot } from './teams-spelers.js?v=20261116k';
-import { telGebruik } from './tracker.js?v=20261116k';
+import { momentenVanTeam, tijdTekst } from './trainingsmomenten.js?v=20261116l';
+import { bouwLeenSnapshot } from './teams-spelers.js?v=20261116l';
+import { telGebruik } from './tracker.js?v=20261116l';
 import {
   vandaagLokaal, plusDagen, DAG_NAMEN, leenDatum, leenDelen, leenGrenzen, wedDeelTekst, trainDeelTekst
 } from './uitleen-regels.js?v=20261113b';
 
-export { magUitlenen } from './uitleen-rechten.js?v=20261116k';
+export { magUitlenen } from './uitleen-rechten.js?v=20261116l';
 
 /* ---------- Data ophalen ---------- */
 async function clubTeams(clubId, behalve){
