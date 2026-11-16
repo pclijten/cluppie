@@ -4,10 +4,10 @@
    wat hierboven al in dit bestand staat. De zoekfunctionaliteit
    (#helpZoek) wordt door de hub (teams.js/koppelTeamTab) aangesloten,
    want die werkt direct op het gerenderde DOM-element. */
-import { esc } from './state.js?v=20261116i';
-import { beleidsplanNaam } from './clubconfig.js?v=20261116i';
-import { ROLKAARTEN } from './rolkaart.js?v=20261116i';
-import { onboardingHerstartBlok } from './onboarding.js?v=20261116i';
+import { esc } from './state.js?v=20261116j';
+import { beleidsplanNaam } from './clubconfig.js?v=20261116j';
+import { ROLKAARTEN } from './rolkaart.js?v=20261116j';
+import { onboardingHerstartBlok } from './onboarding.js?v=20261116j';
 
 export function htmlHandleiding(){
   return `<div class="hl">
@@ -129,6 +129,46 @@ export function htmlHandleiding(){
       <li><b>Coachmomenten</b>: <i>Tel mee</i> (één ding om te tellen, met een richtpunt) en <i>Spelers aan zet</i> (één manier om de spelers zelf iets te laten kiezen of bedenken).</li>
     </ul>
     <p>De richtpunten zijn een houvast, geen norm. Haalt je groep het makkelijk, maak het dan moeilijker; lukt het bijna nooit, maak het dan makkelijker. Bij oefeningen met koppen staat onder Veiligheid het advies van de KNVB over het aantal kopballen en de hersteltijd.</p>
+    </section>
+
+    <section class="hl-sec" data-zoek="📖 voetbaltaal woordenlijst begrippen betekenis wat betekent aannemen afronden back blok compact dekken derde man diep spelen druk zetten joker kaatsen kantelen kappen knijpen linie nummer 10 omschakelen opendraaien overlap overtal positiespel restverdediging rondo rugdekking schijnbeweging spits steekpass tegendruk tweede bal uitstappen vleugelspeler zestien aanname kaatser diepte ondertal linies vaktaal jargon">
+    <h3>📖 Voetbaltaal in het kort</h3>
+    <p>De oefeningen zijn in gewone taal geschreven. Een paar voetbalwoorden blijven staan, omdat je ze op elk veld hoort. Dit is wat ze betekenen:</p>
+    <ul>
+      <li><b>Aannemen</b>: de bal met je eerste aanraking onder controle brengen. Dat heet ook de aanname.</li>
+      <li><b>Afronden</b>: een aanval afmaken met een schot of kopbal op doel.</li>
+      <li><b>Back</b>: de verdediger aan de zijkant.</li>
+      <li><b>Blok</b>: het hele team dat dicht bij elkaar verdedigt.</li>
+      <li><b>Compact</b>: dicht bij elkaar staan, zodat er weinig ruimte tussen de spelers is.</li>
+      <li><b>Dekken</b>: dicht bij een tegenstander blijven, zodat die de bal niet vrij krijgt.</li>
+      <li><b>Derde man</b>: de speler die al loopt terwijl twee anderen de bal naar elkaar spelen, en hem daarna krijgt.</li>
+      <li><b>Diep spelen</b>: de bal naar voren spelen, achter de verdedigers. Die ruimte heet de diepte.</li>
+      <li><b>Druk zetten</b>: snel op de speler met de bal af gaan, zodat die weinig tijd heeft.</li>
+      <li><b>Joker</b>: een speler die altijd meedoet met het team dat de bal heeft.</li>
+      <li><b>Kaatsen</b>: de bal in één keer terugspelen. Wie dat doet, is de kaatser.</li>
+      <li><b>Kantelen</b>: de bal snel naar de andere kant van het veld spelen.</li>
+      <li><b>Kappen</b>: de bal met je voet van richting veranderen.</li>
+      <li><b>Knijpen</b>: als verdediger naar binnen schuiven, dichter naar het midden.</li>
+      <li><b>Linie</b>: een rij spelers: de verdediging, het middenveld of de aanval. Tussen de linies is de ruimte daartussen.</li>
+      <li><b>Nummer 10</b>: de aanvallende middenvelder, tussen het middenveld en de spits.</li>
+      <li><b>Omschakelen</b>: het moment dat de bal van team wisselt: van aanvallen naar verdedigen of andersom.</li>
+      <li><b>Opendraaien</b>: de bal zo aannemen dat je daarna naar voren kijkt.</li>
+      <li><b>Overlap</b>: aan de buitenkant achter een medespeler langs lopen om de bal verderop te krijgen.</li>
+      <li><b>Overtal</b>: met meer spelers zijn dan de tegenstander op een deel van het veld. Ondertal is het omgekeerde.</li>
+      <li><b>Positiespel</b>: de bal in het team houden door goed te staan en te bewegen.</li>
+      <li><b>Restverdediging</b>: de spelers die tijdens de aanval achter de bal blijven.</li>
+      <li><b>Rondo</b>: spelers in een kring houden de bal weg bij een of meer jagers in het midden.</li>
+      <li><b>Rugdekking</b>: schuin achter een medespeler staan om te helpen als die wordt gepasseerd.</li>
+      <li><b>Schijnbeweging</b>: doen alsof je de ene kant op gaat en dan de andere kant op gaan.</li>
+      <li><b>Spits</b>: de voorste aanvaller.</li>
+      <li><b>Steekpass</b>: een pass tussen de verdedigers door, voor een speler die diep loopt.</li>
+      <li><b>Tegendruk</b>: direct na balverlies samen druk zetten om de bal terug te winnen.</li>
+      <li><b>Tweede bal</b>: de bal die vrij komt na een duel, een kopbal of een gekeerd schot.</li>
+      <li><b>Uitstappen</b>: als verdediger naar voren stappen, naar de speler met de bal.</li>
+      <li><b>Vleugelspeler</b>: de aanvaller aan de zijkant.</li>
+      <li><b>Zestien</b>: het strafschopgebied.</li>
+    </ul>
+    <p>Tegen de jongste spelers gebruik je deze woorden nog niet. In het veld <b>Uitleg</b> staat steeds een zin die je zo kunt zeggen.</p>
     </section>
 
     <section class="hl-sec" data-zoek="📆 seizoen jaarlijn blokken bijsturing seizoensplan club eigen plan alleen lezen coördinator opzet opbouwmodel leercurve vrije weken trainingen per week duur accent signalen thema-check evaluatie">

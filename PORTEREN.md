@@ -2,7 +2,7 @@
 
 Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
 
-## Stand (bijgewerkt 16-11-2026, versie 20261116i op branch `rode-draad-speelwijze`; live is 20261116g)
+## Stand (bijgewerkt 16-11-2026, versie 20261116j op branch `rode-draad-speelwijze`; live is 20261116g)
 - **Rooktest per rol:** `npm run test:rook` (`tools/rooktest.mjs`) opent de demo als elk van de zeven rollen in Chrome, op 414×896 en 1440×900, klikt op de telefoon elke tegel van het teamscherm open en meldt fouten, lege schermen, horizontaal schuiven, tikdoelen onder 44 px en contrast onder de norm. Laatst 16-11: 109 schermen, geen fouten. Nodig: `puppeteer-core` (`npm i -g puppeteer-core` of `PUPPETEER_PAD`) en Chrome. Met `--donker` voor het donkere thema.
 - **Storage-rules:** getest in de emulator met `npm run test:storage` (20 proeven per gebruikerstype, laatst 20/20 op 16-11; eigen poorten in `firebase.test.json`). Deploy: `firebase deploy --only storage --project cluppie-ad329`.
 - **Firestore-rules:** per club afgeschermd (teams, trainingen, video's, documenten, berichten via clublidmaatschap). Getest in de emulator: `npm run test:rules` (40 scenario's, laatst 40/40 groen op 14-11). Deploy: `firebase deploy --only firestore:rules --project cluppie-ad329`.
@@ -13,6 +13,26 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
 
 ## Open
+**Voor Paul — Alle oefeningen nagelezen en verbeterd (release 20261116j, zelfde branch en PR #70, alleen client plus de kennisbank van de hulp-chat)**
+- [ ] **Wat je vroeg (16-11):** de inhoud laten nalezen door een hoofdtrainer uit een bvo met een pedagogische master, zodat iedereen het kan lezen en er toch kwaliteit van afstraalt. **Er heeft geen mens meegelezen.** Claude heeft alle 326 oefeningen nagelopen met de meetlat van zo'n trainer. Een echte trainer die een steekproef leest blijft het advies.
+- [ ] **De meetlat** (staat als test in `tests/taal.test.mjs`, 177.395 controles, in `npm test`): geen zin langer dan 22 woorden; de uitleg is een zin om te zeggen van hooguit 45 woorden; gewone woorden in plaats van vaktaal; een speler heet speler, verdediger of tegenstander (geen "hij" of "man"); "andere voet" in plaats van "zwakke voet"; geen afvallers; geen oorlogsbeelden in een kinderspel; open coachvragen, minstens twee verschillende; tijd en maat in cijfers en in seconden; een klein duel duurt hooguit 2 minuten per ronde.
+- [ ] **Wat er is veranderd** (2.029 van de 14.175 tekstregels, in alle 326 oefeningen; zonder de vaste zinnen bij "Waarom dit werkt" en "Spelers aan zet" in 317):
+  - Zinnen langer dan 18 woorden: van 347 naar 51. Lange opstellingszinnen zijn gesplitst ("Zet een vak uit van … Aan één kant staat …").
+  - "Waarom dit werkt" (39 zinnen) en "Spelers aan zet" (12 zinnen) zijn opnieuw geschreven: korter en concreter.
+  - "Hij" voor een speler: van 394 naar 0 (de 14 die er staan gaan over de bal). Bezittelijk "zijn": van 162 naar 0. "Vrije man", "laatste man", "middenman": van 83 naar 0. "Derde man" blijft, dat is de naam van het begrip.
+  - "Zwakke voet" werd "andere voet". "Die de fout maakte" werd "die de bal verloor". "Ploeg" werd "team", "goal" werd "doelpunt".
+  - Tijd: overal seconden in cijfers (was door elkaar "vijf tellen" en "5 seconden", in 47 oefeningen).
+  - **Koningsvak**: wie de bal kwijt is valt niet meer af, maar doet een korte opdracht en komt terug. Punten voor weggetikte ballen.
+  - **Mijnenveld** heet nu **Krokodillenrivier** (en de partij: Partij met krokodillen). De id's `dr-n-mijnenveld` en `pa-p-mijnenveld` zijn gelijk gebleven, dus bewaarde trainingen blijven werken.
+  - **Kleine duels** (1 tegen 1 en 2 tegen 2 waar iedereen tegelijk speelt, 14 oefeningen): rondes van 3 of 4 minuten zijn 1 of 2 minuten geworden, met meer herhalingen. De totale tijd van het blok is gelijk gebleven, de planner verandert niet.
+  - Acht oefeningen hadden twee keer dezelfde coachvraag; die hebben een tweede vraag gekregen. De afsluitingen in de kring hebben een eigen zin bij "Spelers aan zet".
+  - `wu-f-pass-driehoek`: de looproute klopte niet met drie spelers op drie pionnen; uitleg en opstelling zijn herschreven.
+  - In het spelverloop staat nu wie iets doet ("De speler met de bal legt breed") waar "Hij" of "Die" naar de verkeerde speler kon wijzen.
+- [ ] **Nieuw in de handleiding:** 📖 Voetbaltaal in het kort, een woordenlijst met 32 voetbalwoorden die blijven staan (kaatsen, kantelen, overtal, rugdekking, zestien …). Ook in `functions/kennis.js` voor de hulp-chat (pas actief na deploy van `chatHulp`).
+- [ ] **Getest:** `npm test` groen (taal 177.395, uitwerking 4.435, speelwijze 7.535 controles), rooktest per rol, en één oefenkaart plus de woordenlijst bekeken op 414 breed in het donkere thema. Twaalf oefeningen van 6 tot 19 jaar helemaal gelezen; wat daar opviel is daarna in alle oefeningen gezocht en hersteld.
+- [ ] **Niet gedaan:** niet alle 326 oefeningen woord voor woord gelezen; de rest is met zoekregels en de test nagelopen. De teksten van de 18 principes van de speelwijze (`speelwijze-logica.js`) en de themaregels zijn niet meegenomen. De voetbalinhoud (klopt deze oefening voor dit doel) is alleen in de steekproef beoordeeld.
+- [ ] **Eigen keuzes om na te lopen:** de namen Krokodillenrivier en Partij met krokodillen; "andere voet"; "seconden" in plaats van "tellen"; de kortere rondes bij duels; welke 32 woorden in de woordenlijst staan.
+
 **Voor Paul — Alle oefeningen met de hand uitgewerkt (release 20261116i, zelfde branch en PR #70, alleen client plus de kennisbank van de hulp-chat)**
 - [ ] **PR bekijken en mergen.** Gebouwd op jouw verzoek van 15-11 ("verander ze allemaal en maak het echt topwerk"). Zit in dezelfde PR als de speelwijze (20261116h): één keer mergen brengt beide live. Bekijken: `index.html?demo=coach` › Training voorbereiden (klap Doel, Differentiatie en Coachmomenten open, en kies 3D), of `?demo=los` › Training maken.
 - [ ] **Wat er per oefening is gedaan (alle 326, ook de 23 speelwijze-vormen):**

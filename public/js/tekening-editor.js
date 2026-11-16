@@ -12,7 +12,7 @@
 
    De functies bovenaan zijn puur (tests/tekening-editor.test.mjs). Opslaan doet platform-bibliotheek.js:
    de tekening is een gewoon veld van de vorm en gaat mee in de overlay (platform/bibliotheek/vormen/{id}). */
-import { stappenVan, maak3DBlok } from './scene3d.js?v=20261116i';
+import { stappenVan, maak3DBlok } from './scene3d.js?v=20261116j';
 
 export const SOORTEN = { pass: 'Pass', loopweg: 'Loopt', dribbel: 'Dribbelt', schot: 'Schot' };
 export const KANTEN = { eigen: 'Eigen team', tegen: 'Tegenstander', joker: 'Joker', keeper: 'Keeper' };

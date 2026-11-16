@@ -66,7 +66,7 @@ export const THEMAREGELS = {
 };
 
 export const BIBLIOTHEEK = {
-  versie: '2026.11.16-uitwerking',
+  versie: '2026.11.16-nagelezen',
   taal: 'nl',
   licentie: 'Eigen werk (Cluppie). Referentiekader: KNVB-spelregels en -principes. Geen KNVB-tekst of -afbeeldingen overgenomen.',
   themaregels: THEMAREGELS,

@@ -5,10 +5,10 @@
    daarna alleen de uitleg personaliseren; de keuze en controle gebeuren hier.
    ========================================================================== */
 
-import { LEERCURVE } from './config.js?v=20261116i';
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261116i';
+import { LEERCURVE } from './config.js?v=20261116j';
+import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261116j';
 import { haalbaar, MATERIAAL_NAAM, MAX_INTENSITEIT_VOOR_WEDSTRIJD, dagVoorWedstrijd, ruimteM2 } from './trainingscontext-logica.js?v=20261019a';
-import { vormBonus, principeVoorThema, principeVanVorm } from './speelwijze-logica.js?v=20261116i';
+import { vormBonus, principeVoorThema, principeVanVorm } from './speelwijze-logica.js?v=20261116j';
 export { LEERCURVE };
 
 /* ───────────── Trainingsopbouw ───────────── */

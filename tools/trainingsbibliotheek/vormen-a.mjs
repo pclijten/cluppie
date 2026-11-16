@@ -1,5 +1,5 @@
 /* Deel A — warming-ups, positiespelen en dieptespel (opbouw).
-   Alle teksten zijn eigen werk; de KNVB-bronnen zijn alleen referentiekader (zie FASE1-onderzoek-en-ontwerp.md). */
+   Alle teksten de eigen werk; de KNVB-bronnen zijn alleen referentiekader (zie FASE1-onderzoek-en-ontwerp.md). */
 import { P, loop, pass, drib, schot, doel, zone, pion } from './hulp.mjs';
 
 export const DEEL_A = [
@@ -93,11 +93,11 @@ export const DEEL_A = [
     'Houd je eigen bal en probeer andere ballen uit het vak te schieten of af te pakken.',
     'Raakt je bal uit het vak, haal hem snel terug. Na 2 minuten tel je hoeveel ballen je nog hebt.',
   ],
-  regels: ['Duwen en trekken mag niet.', 'Wie zijn bal buiten het vak kwijt is, haalt hem zelf op en doet gewoon weer mee.'],
+  regels: ['Duwen en trekken mag niet.', 'Wie de bal buiten het vak kwijt is, haalt hem zelf op en doet gewoon weer mee.'],
   coachpunten: ['Zet je lichaam tussen de bal en de tegenstander.', 'Blijf bewegen op je tenen.', 'Pak de bal af als hij los van de voet ligt.'],
   coachvragen: ['Waar sta je als je de bal wilt afschermen?'],
   makkelijker: ['Groter vak.', 'Alleen afschermen, nog niet afpakken.'],
-  moeilijker: ['Kleiner vak.', 'Wie zijn bal kwijt is, wordt jager.'],
+  moeilijker: ['Kleiner vak.', 'Wie de bal kwijt is, wordt jager.'],
   tekening: {
     iedereenBal: true,
     spelers: [P(1,22,30),P(2,36,38),P(3,70,24),P(4,80,36),P(5,26,72),P(6,40,78),P(7,68,70),P(8,80,80)],
@@ -115,7 +115,7 @@ export const DEEL_A = [
   doel: 'Rustig opwarmen met de bal: aannemen, passen en bewegen terwijl één jager meedoet.',
   organisatie: [
     'Vier spelers staan op de hoeken van een vak van 12 bij 12 meter, een jager staat erin.',
-    'De buitenspelers spelen de bal rond; de jager probeert de bal te raken. Raakt hij de bal, dan wisselt hij met de speler die de fout maakte.',
+    'De buitenspelers spelen de bal rond; de jager probeert de bal te raken. Raakt de jager de bal, dan wisselt de jager met de speler die de bal verloor.',
     'Begin rustig en maak het geleidelijk sneller.',
   ],
   regels: ['Eerst onbeperkt aanraken, daarna maximaal twee.'],
@@ -142,7 +142,7 @@ export const DEEL_A = [
   organisatie: [
     'Vier spelers staan op de hoeken van een vierkant van 12 bij 12 meter. Twee spelers staan in het midden.',
     'De buitenspelers houden de bal rond. De twee middelste spelers proberen de bal af te pakken.',
-    'Pakken zij de bal af, of gaat de bal uit het vak? Dan wisselt de speler die de fout maakte met een jager.',
+    'Pakken zij de bal af, of gaat de bal uit het vak? Dan wisselt de speler die de bal verloor met een jager.',
   ],
   regels: ['De buitenspelers mogen maximaal twee keer aanraken.', 'Na 3 minuten tellen we hoe vaak jagers de bal wonnen.'],
   coachpunten: ['Bied je aan: loop naar een open plek zodat de passer je ziet.', 'Neem de bal mee weg van de jager.', 'Speel de bal met de goede snelheid: stevig maar nauwkeurig.'],
@@ -214,7 +214,7 @@ export const DEEL_A = [
   materiaal: { pionnen: 14, ballen: 1, hesjes: 4, doeltjes: 0 },
   doel: 'Samen de bal houden en passopties zoeken door de poortjes: meerdere richtingen om te scoren.',
   organisatie: [
-    'Zet in een vak van 25 bij 20 meter vier poortjes van twee meter breed (twee pionnen per poortje).',
+    'Zet in een vak van 25 bij 20 meter vier poortjes van 2 meter breed (twee pionnen per poortje).',
     'Twee teams van vier. Je scoort door de bal door een poortje naar een teamgenoot te passen.',
     'Je mag door ieder poortje scoren, ook meerdere keren achter elkaar door verschillende poortjes.',
   ],
@@ -239,14 +239,14 @@ export const DEEL_A = [
   thema: ['Dieptespel opbouw'], domeinen: ['TA', 'TE'],
   complexiteit: 2, intensiteit: 2, voetbalecht: false,
   materiaal: { pionnen: 6, ballen: 4, hesjes: 3, doeltjes: 0 },
-  doel: 'De opbouw zo spelen dat de diepe pass op de spits komt: eerst kijken naar voren, dan pas breed.',
+  doel: 'Opbouwen met de pass naar de spits als eerste keuze: eerst naar voren kijken, dan pas opzij spelen.',
   organisatie: [
     'Zet een vak uit van 25 bij 30 meter met bovenin een eindzone van 6 meter.',
     'Vier opbouwers spelen tegen drie verdedigers. In de eindzone staat een spits (joker) die alleen aangespeeld wordt.',
     'De opbouwers proberen de diepe pass op de spits te spelen. Komt de bal goed aan, dan krijgt het team een punt.',
   ],
   regels: ['De spits mag niet worden aangevallen in de eindzone.', 'Na een punt begint het team opnieuw achterin.'],
-  coachpunten: ['Kijk eerst naar voren: kan de diepe pass?', 'De spits beweegt eerst naar de bal toe, draait dan weg in de ruimte.', 'Speel de pass in de loopweg van de spits, niet in zijn voeten.'],
+  coachpunten: ['Kijk eerst naar voren: kan de diepe pass?', 'De spits beweegt eerst naar de bal toe, draait dan weg in de ruimte.', 'Speel de pass in de loopweg van de spits, niet in de voeten.'],
   coachvragen: ['Wanneer is de diepe pass mogelijk en wanneer niet?', 'Wat doet de spits om zichzelf vrij te maken?'],
   makkelijker: ['Twee verdedigers in plaats van drie.', 'Vergroot de eindzone.'],
   moeilijker: ['Een extra verdediger in de eindzone (2 tegen 1 op de spits).', 'Maximaal drie passes voor de diepe pass.'],
@@ -267,12 +267,12 @@ export const DEEL_A = [
   doel: 'Ruimte in de diepte zoeken en de diepe pass op het juiste moment spelen.',
   organisatie: [
     'Zet in een vak van 25 bij 35 meter aan beide kopse kanten een diepte-zone van 6 meter.',
-    'Twee teams van vijf. Een punt scoor je door een speler in de zone aan te spelen terwijl hij loopt (hij komt in de zone aan de bal).',
+    'Twee teams van vijf. Je scoort een punt met een pass op een speler die de zone in loopt. Die speler krijgt de bal pas in de zone.',
     'Verovert de tegenstander de bal, dan speelt dat team naar de andere zone.',
   ],
   regels: ['De pass moet voor de zone worden gegeven; de ontvanger loopt in de zone.', 'In de zone mag één verdediger meegaan.'],
   coachpunten: ['Loop vrij in de diepte vóór de pass.', 'De passer let op het moment: is de loopweg open?', 'Reageer direct op balwinst: kijk meteen diep.'],
-  coachvragen: ['Hoe haal je een verdediger uit zijn positie voordat de diepe bal komt?'],
+  coachvragen: ['Hoe haal je een verdediger uit de eigen positie voordat de diepe bal komt?'],
   makkelijker: ['Een extra aanvaller (5 tegen 4).', 'Vergroot de zone.'],
   moeilijker: ['Verdedigers mogen met twee in de zone.', 'Maximaal vijf passes per aanval.'],
   tekening: {
@@ -293,11 +293,11 @@ export const DEEL_A = [
   doel: 'Eerst kijken naar voren: de bal in de ruimte achter de verdedigers brengen.',
   organisatie: [
     'Zet een vak van 15 bij 20 meter uit met bovenin een eindzone van 5 meter.',
-    'Drie aanvallers spelen tegen twee verdedigers. De aanvallers scoren door de bal in de eindzone te dribbelen of te passen naar een medespeler die hem daar stopt.',
-    'Verovert een verdediger de bal, dan dribbelt hij naar de onderlijn. Na elke aanval wisselt een aanvaller met een verdediger.',
+    'Drie aanvallers spelen tegen twee verdedigers. De aanvallers scoren in de eindzone: de bal erin dribbelen, of passen naar een medespeler die hem daar stopt.',
+    'Een verdediger die de bal verovert, dribbelt naar de onderlijn. Na elke aanval wisselt een aanvaller met een verdediger.',
   ],
   regels: ['Eerst kijken of de diepe pass kan; pas dan breed.'],
-  coachpunten: ['Kijk eerst naar voren.', 'De spits loopt in de ruimte achter de verdedigers.', 'Speel de bal voor zijn voeten uit, in de loopweg.'],
+  coachpunten: ['Kijk eerst naar voren.', 'De spits loopt in de ruimte achter de verdedigers.', 'Speel de bal voor de voeten uit, in de loopweg.'],
   coachvragen: ['Wanneer kan de bal diep, en wanneer niet?'],
   makkelijker: ['Eén verdediger.', 'Grotere eindzone.'],
   moeilijker: ['Een extra verdediger.', 'Kleinere eindzone.'],
@@ -319,10 +319,10 @@ export const DEEL_A = [
   organisatie: [
     'Zet een vak van 20 bij 30 meter uit. Onderin staat een keeper met drie veldspelers; twee aanvallers zetten druk.',
     'Het opbouwteam probeert de bal over de bovenlijn te dribbelen of door een van de twee doeltjes te spelen.',
-    'Verovert de druk-ploeg de bal, dan mogen zij zelf scoren in het doeltje achter de keeper.',
+    'Verovert het team dat druk zet de bal, dan mogen zij zelf scoren in het doeltje achter de keeper.',
   ],
   regels: ['De keeper mag de bal ook met de voet spelen.', 'Na elke aanval wisselt de keeper met een van de opbouwers.'],
-  coachpunten: ['De keeper is een extra speler: laat hem meedoen.', 'Kies de pass naar de vrije speler.', 'Zoek de diepte als de druk-ploeg zich laat uitspelen.'],
+  coachpunten: ['De keeper is een extra speler: laat hem meedoen.', 'Kies de pass naar de vrije speler.', 'Zoek de diepte als het team dat druk zet zich laat uitspelen.'],
   coachvragen: ['Wanneer speel je met de keeper en wanneer ga je er overheen?'],
   makkelijker: ['Eén aanvaller laten zetten.', 'Grotere ruimte.'],
   moeilijker: ['Drie aanvallers laten drukzetten.', 'Maximaal vier passes voor de verste lijn.'],
@@ -347,7 +347,7 @@ export const DEEL_A = [
     'De trainer stopt het spel af en toe en vraagt wat de beste keuze was.',
   ],
   regels: ['Alle gewone wedstrijdregels (geen buitenspel).', 'De bal mag door alle zones en iedereen mag overal komen.'],
-  coachpunten: ['Spelers in de achterste zone kijken eerst naar voren.', 'Aanvallers bieden zich aan in de diepte op het moment dat de pass kan.', 'Houd de ploeg compact: verbindingen tussen de lijnen.'],
+  coachpunten: ['Spelers in de achterste zone kijken eerst naar voren.', 'Aanvallers bieden zich aan in de diepte op het moment dat de pass kan.', 'Houd het team compact: verbindingen tussen de lijnen.'],
   coachvragen: ['Wanneer sla je een zone over, en wanneer is dat te riskant?'],
   makkelijker: ['Zones alleen als hulp, zonder dubbele punten.', 'Eén tegenstander minder.'],
   moeilijker: ['Dubbel punt alleen als de pass door twee verdedigers heen gaat.', 'Maximaal 8 seconden per balbezit.'],
