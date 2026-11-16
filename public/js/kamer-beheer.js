@@ -6,9 +6,9 @@
    teamdocument (teams/{id}.teamkamer), waarna de server de kopie bijwerkt.
    Importeert niets uit teams.js (geen kringverwijzing): teams.js geeft renderTeam mee aan
    koppelTeamkamer(). state.js is niet aangeraakt. */
-import { db, functions, httpsCallable, doc, collection, addDoc, updateDoc, deleteDoc, getDocs, query, where, onSnapshot, Timestamp } from './firebase.js?v=20261011g';
+import { db, functions, httpsCallable, doc, collection, addDoc, setDoc, updateDoc, deleteDoc, getDocs, query, where, onSnapshot, Timestamp } from './firebase.js?v=20261011g';
 import { S, esc, meld } from './state.js?v=20261116n';
-import * as K from './kamer-logica.js?v=20261116p';
+import * as K from './kamer-logica.js?v=20261116q';
 
 const roep = (naam, data) => httpsCallable(functions, naam)(data || {}).then(r => r.data);
 const M = { teamId: null, sub: 'toegang', subs: [], kamer: null, link: null, aanvragen: [], leden: [], polls: [], berichten: [], gezin: {},
@@ -17,7 +17,8 @@ const M = { teamId: null, sub: 'toegang', subs: [], kamer: null, link: null, aan
 export const teamkamerZichtbaar = (team = S.team) => K.teamkamerMag(team, S._clubPlatform, S._teamkamerLos);
 /* wat de eindbaas voor deze club (of voor trainers zonder club) heeft aangezet; wat uit staat, toont dit scherm niet */
 const mag = (k) => K.optiesVan(S.team, S._clubPlatform, S._teamkamerLosOpties)[k] === true;
-const inst = () => { const k = (S.team && S.team.teamkamer) || {}; return { aan: k.aan === true, namen: k.namen !== false, uitslag: k.uitslag === true, live: k.live === true, lijn: Array.isArray(k.lijn) ? k.lijn : [], thuis: k.thuis || null,
+const inst = () => { const k = (S.team && S.team.teamkamer) || {}; return { aan: k.aan === true, namen: k.namen !== false, uitslag: k.uitslag === true, live: k.live === true,
+  trainingen: k.trainingen === true, opstellingAltijd: k.opstellingAltijd === true, stats: { aan: false, ...(k.stats || {}) }, lijn: Array.isArray(k.lijn) ? k.lijn : [], thuis: k.thuis || null,
   thuisVideos: (Array.isArray(k.thuisVideos) ? k.thuisVideos : []).map(K.thuisVideo).filter(Boolean) }; };
 /* video's die de club met dit team deelde (S.videos, zie teams.js), als kandidaat voor Thuis oefenen */
 const clubVideos = () => (S.videos || []).filter(v => (v.teams || []).includes(S.teamId)).map(v => K.thuisVideo(v)).filter(Boolean);
@@ -29,6 +30,45 @@ const naamVan = (id) => voornaam(eigenSpelers().find(p => p.id === id)) || 'Spel
 const komendeWedstrijden = () => (S.wedstrijden || []).filter(w => w.datum && w.datum >= K.vandaagIso() && w.status !== 'afgelast')
   .slice().sort((a, b) => String(a.datum).localeCompare(String(b.datum))).slice(0, 6);
 const foutTekst = (x) => (x && x.code === 'functions/not-found' ? 'De teamkamer-functies zijn nog niet gedeployed.' : (x && x.message) || 'Dat lukte niet.');
+
+/* ==================== [20261116q] aanleveren: trainingen en cijfers ====================
+   De trainersapp rekent al uit welke training op welke dag valt (trainingenPerWeek) en wat de speeltijd is
+   (analyse.js). Een tweede berekening op de server zou andere uitkomsten kunnen geven. Daarom levert de app van de
+   trainer aan (teams/{id}/kamerBeheer/trainingen en /stats) en zet de server daar alleen de toegestane velden van in
+   de kopie voor ouders. Dit loopt mee als een trainer het team opent; er wordt alleen geschreven als er iets anders is. */
+let syncTimer = 0;
+const onthoud = { get: (k) => { try { return localStorage.getItem(k) || ''; } catch (e){ return ''; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e){ /* geen opslag */ } } };
+export function syncTeamkamer(nu){ clearTimeout(syncTimer); syncTimer = setTimeout(() => doeSync().catch(() => {}), nu ? 300 : 4000); }
+async function lever(teamId, naam, inhoud){
+  const tekst = JSON.stringify(inhoud), sleutel = `tkSync:${teamId}:${naam}`;
+  if (onthoud.get(sleutel) === tekst) return;
+  await setDoc(doc(db, 'teams', teamId, 'kamerBeheer', naam), { ...inhoud, ms: Date.now(), tm: K.vandaagIso() });
+  onthoud.set(sleutel, tekst);
+}
+async function doeSync(){
+  const teamId = S.teamId, team = S.team;
+  if (!teamId || !team || !teamkamerZichtbaar(team)) return;
+  const i = inst();
+  if (!i.aan) return;
+  if (i.trainingen && mag('trainingen')){
+    const { trainingenPerWeek } = await import('./teams-training.js?v=20261116q');
+    if (S.teamId !== teamId) return;
+    const vandaag = K.vandaagIso(), items = {};
+    for (const g of trainingenPerWeek().komend) for (const x of g.items){
+      if (!x.iso || x.iso < vandaag || items[x.iso] || Object.keys(items).length >= 4) continue;
+      items[x.iso] = K.trainingVoorOuders(x.t);
+    }
+    await lever(teamId, 'trainingen', { items });
+  }
+  if (i.stats.aan && mag('stats') && (S.spelers || []).length){
+    const [A, O] = await Promise.all([import('./analyse.js?v=20261116n'), import('./opkomst.js?v=20260922c')]);
+    if (S.teamId !== teamId) return;
+    const sz = S.huidigSeizoen, ditSeizoen = (x) => !sz || !x.seizoen || x.seizoen === sz;
+    const spelers = K.statsVoorOuders(eigenSpelers(), (S.wedstrijden || []).filter(ditSeizoen), (S.presentie || []).filter(ditSeizoen),
+      { analyse: A.analyseWedstrijd, reserve: A.speeltijdReserve, opkomst: O.opkomstVoor });
+    await lever(teamId, 'stats', { spelers });
+  }
+}
 
 function herteken(){
   S._vbVerversen?.();                                  /* open wedstrijdvoorbereiding (pollblok) */
@@ -80,7 +120,7 @@ function htmlUit(){
   return `<section class="tk-kaart"><h2 class="tk-h2">Teamkamer voor ouders en spelers</h2>
     <p style="margin:0">Ouders en spelers zien de agenda, wie erbij is, je mededelingen en polls. Afmelden blijft via de groepsapp gaan: jij zet het in Cluppie.</p>
     <div class="tk-label ok">Dit zien ze</div><div>Trainingen en wedstrijden, met tijd en plek</div><div>${mag('namen') ? 'Wie erbij is, met voornaam en zonder reden' : 'Hoeveel spelers erbij zijn, zonder namen en zonder reden'}</div>${mag('polls') ? '<div>Polls, zoals wie rijdt en wie wast</div>' : ''}
-    <div class="tk-label let">Dit zien ze nooit</div><div>Beoordelingen, leerpunten en notities</div><div>De reden van een afmelding</div><div>Achternamen, andere teams en statistieken</div>
+    <div class="tk-label let">Dit zien ze nooit</div><div>Beoordelingen, leerpunten en notities</div><div>De reden van een afmelding</div><div>Achternamen, andere teams en cijfers van andere kinderen</div>
     <button class="tk-knop" data-tk="aan">Zet de teamkamer aan</button>
     <p class="tk-klein tk-zacht" style="margin:0">Je keurt elke ouder zelf goed.${mag('spelers') ? ' Een speler komt binnen met een code van de eigen ouder, zonder e-mailadres.' : ''}</p></section>`;
 }
@@ -163,7 +203,13 @@ function htmlInstellingen(){
       ${mag('namen') ? sw('Voornamen van teamgenoten', 'Een ouder kan het eigen kind verbergen', i.namen, 'data-tk="isw" data-veld="namen"') : '<div class="tk-zacht">Ouders zien hoeveel spelers erbij zijn, zonder namen.</div>'}
       ${mag('uitslag') ? sw('Uitslag', 'De dag na de wedstrijd', i.uitslag, 'data-tk="isw" data-veld="uitslag"') : ''}
       ${mag('live') ? sw('Live stand', 'Op de wedstrijddag, alleen de stand en geen namen', i.live, 'data-tk="isw" data-veld="live"') : ''}
+      ${mag('trainingen') ? sw('Trainingen', 'De komende trainingen met thema, oefeningen en 3D. Alleen kijken, zonder jouw aantekeningen.', i.trainingen, 'data-tk="isw" data-veld="trainingen"') : ''}
+      ${mag('opstelling') ? sw('Opstelling altijd delen', i.opstellingAltijd ? 'Elke wedstrijd, vanaf de dag ervoor' : 'Uit: je deelt per wedstrijd (hieronder)', i.opstellingAltijd, 'data-tk="isw" data-veld="opstellingAltijd"') : ''}
       <div class="tk-klein tk-zacht tk-lijn">Nooit zichtbaar, ook niet met een schakelaar: redenen van afwezigheid, beoordelingen, leerpunten en achternamen.</div></section>
+    ${mag('stats') ? `<section class="tk-kaart" style="gap:4px"><div class="tk-label">Cijfers van het eigen kind</div>
+      ${sw('Cijfers tonen aan ouders', 'Een ouder ziet alleen het eigen kind. Nooit teamgenoten, nooit een ranglijst. Spelers zelf zien het niet.', i.stats.aan === true, 'data-tk="statsaan"')}
+      ${i.stats.aan === true ? K.STATS_SOORTEN.map(([k, naam, uitleg]) => `<label class="tk-vink" style="padding-left:12px;border-left:2px solid var(--hair)"><input type="checkbox" data-tkstat="${k}" ${i.stats[k] === true ? 'checked' : ''}><span>${esc(naam)}${uitleg ? `<span class="tk-klein tk-zacht" style="display:block">${esc(uitleg)}</span>` : ''}</span></label>`).join('')
+        + '<div class="tk-klein tk-zacht" style="padding-top:8px">De cijfers komen uit jouw statistieken van dit seizoen en lopen bij als een trainer het team opent.</div>' : ''}</section>` : ''}
     ${ws.length && mag('opstelling') ? `<section class="tk-kaart" style="gap:4px"><div class="tk-label">Opstelling delen</div>
       ${ws.map(w => sw(`${K.hoofdletter(K.datumKort(w.datum))}${w.tegenstander ? ', ' + w.tegenstander : ''}`, w.deelOpstelling === true ? 'Ouders zien de opstelling van de eerste periode' : 'Staat uit tot jij hem aanzet', w.deelOpstelling === true, `data-tk="opstelling" data-id="${esc(w.id)}"`)).join('')}</section>` : ''}
     ${mag('thuis') ? `<section class="tk-kaart"><h2 class="tk-label">Thuis oefenen</h2>
@@ -259,8 +305,9 @@ export function koppelTeamkamer(v, { renderTeam }){
     if (t.dataset.tkf === 'nodig') f.nodig = t.value;
     if (t.dataset.tkf === 'sluit') f.sluit = t.value;
   });
-  root.addEventListener('change', (ev) => {
+  root.addEventListener('change', async (ev) => {
     const t = ev.target;
+    if (t.dataset.tkstat){ try { await zetInst({ stats: { ...inst().stats, [t.dataset.tkstat]: t.checked } }); syncTeamkamer(true); } catch (x){ meld('Dat lukte niet.'); } return; }
     if (t.dataset.tkf === 'wedstrijdId' && M.form){ M.form.wedstrijdId = t.value; renderTeam(); }
   });
   root.addEventListener('click', async (ev) => {
@@ -314,7 +361,13 @@ export function koppelTeamkamer(v, { renderTeam }){
         meld('Mededeling geplaatst'); return renderTeam();
       }
       if (a === 'wisbericht'){ if (!confirm('Deze mededeling verwijderen?')) return; return deleteDoc(doc(basis, 'berichten', id)); }
-      if (a === 'isw'){ await zetInst({ [b.dataset.veld]: b.getAttribute('aria-checked') !== 'true' }); return renderTeam(); }
+      if (a === 'isw'){ await zetInst({ [b.dataset.veld]: b.getAttribute('aria-checked') !== 'true' }); syncTeamkamer(true); return renderTeam(); }
+      if (a === 'statsaan'){
+        const aan = b.getAttribute('aria-checked') !== 'true', nu = inst().stats;
+        /* eerste keer aan: alles behalve speeltijd en kaarten; die zet de trainer bewust zelf aan */
+        await zetInst({ stats: aan && !K.STATS_SOORTEN.some(([k]) => nu[k] === true) ? { aan: true, wedstrijden: true, doelpunten: true, opkomst: true, speeltijd: false, kaarten: false } : { ...nu, aan } });
+        syncTeamkamer(true); return renderTeam();
+      }
       if (a === 'opstelling'){
         await zetDeelOpstelling(id, b.getAttribute('aria-checked') !== 'true'); return renderTeam();
       }

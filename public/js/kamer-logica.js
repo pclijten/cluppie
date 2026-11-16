@@ -49,7 +49,8 @@ export function itemTelling(i, aantal){
   if (aantal) return `${Math.max(0, aantal - af)} van ${aantal}`;
   return af ? `${af} afwezig` : '';
 }
-export const eigenStatus = (i, spelerId) => ((i.afwezig || []).includes(spelerId) ? 'Afwezig' : 'Erbij');
+/* [20261116q] nietMee = de wedstrijden waarvoor de trainer dit kind niet selecteerde (alleen het eigen gezin krijgt die lijst) */
+export const eigenStatus = (i, spelerId, nietMee) => ((i.afwezig || []).includes(spelerId) ? 'Afwezig' : (nietMee || []).includes(i.id) ? 'Niet in de selectie' : 'Erbij');
 
 /* ---------- opstelling op een veld [20261116p] ----------
    De kopie bevat de plekken van de eerste periode ({ K: id, V1: id, M2: id … }) en de formatie ("3-3-1").
@@ -276,6 +277,56 @@ export const OPTIES = [
   ['lijn', 'Zo moedigen wij aan', 'Drie afspraken voor langs de lijn, rond een wedstrijd.'],
   ['agenda', 'Agenda-bestand', 'Ouders zetten trainingen en wedstrijden in hun eigen agenda.'],
   ['weer', 'Weerbericht', 'Het weer bij de club op de wedstrijddag (via Open-Meteo).'],
+  ['trainingen', 'Trainingen bekijken', 'De trainer mag de komende trainingen tonen: thema, oefeningen en 3D. Alleen kijken.'],
+  ['stats', 'Cijfers van het eigen kind', 'De trainer mag ouders de cijfers van hun eigen kind tonen. Nooit van anderen, nooit een ranglijst.'],
 ];
+/* [20261116q] welke cijfers de trainer per team aanzet (zelfde sleutels als STATS_SOORTEN op de server) */
+export const STATS_SOORTEN = [
+  ['wedstrijden', 'Wedstrijden', 'Hoeveel wedstrijden het kind meedeed'],
+  ['speeltijd', 'Speeltijd', 'Percentage en minuten per wedstrijd'],
+  ['doelpunten', 'Doelpunten en assists', ''],
+  ['opkomst', 'Opkomst bij trainingen', ''],
+  ['kaarten', 'Kaarten', ''],
+];
+/* Wat de app van de trainer van één training aanlevert voor ouders. De server laat er nog een keer alleen de
+   toegestane velden van door (schoonTraining). Aantekeningen, coachpunten, differentiatie en video's gaan niet mee. */
+export function trainingVoorOuders(t){
+  const doel = (o) => { const b = (o.blokken || []).find(x => x && x.veld === 'doel' && x.type === 'tekst' && x.tekst); return b ? String(b.tekst).slice(0, 300) : ''; };
+  return { titel: String(t.titel || '').slice(0, 80), thema: String(t.thema || (t.plan && t.plan.thema) || '').slice(0, 80),
+    vormen: (Array.isArray(t.oefeningen) ? t.oefeningen : []).filter(o => o && o.titel).slice(0, 8)
+      .map(o => ({ naam: String(o.titel).slice(0, 80), slot: String((o.bron && o.bron.slot) || '').slice(0, 30), min: Number(o.bron && o.bron.minuten) || 0, vormId: String((o.bron && o.bron.vormId) || ''), doel: doel(o) })) };
+}
+/* Cijfers per speler uit wat de trainersapp al berekent. analyse = analyseWedstrijd, reserve = speeltijdReserve
+   (analyse.js), opkomst = opkomstVoor (opkomst.js): meegegeven, zodat dit bestand zonder imports blijft. */
+export function statsVoorOuders(spelers, wedstrijden, presentie, { analyse, reserve, opkomst }){
+  const gespeeld = wedstrijden.map(w => ({ w, a: analyse(w) })).filter(x => x.a.kwarten && x.a.matchduur).sort((x, y) => String(y.w.datum).localeCompare(String(x.w.datum)));
+  const sr = reserve(wedstrijden), uit = {};
+  for (const p of spelers){
+    const mee = gespeeld.filter(x => (x.w.selectie || []).includes(p.id)), r = sr[p.id], o = opkomst(p, presentie);
+    const tel = (lijst, f) => lijst.reduce((n, x) => n + (f(x) ? 1 : 0), 0);
+    uit[p.id] = {
+      gespeeld: mee.filter(x => x.a.tijd[p.id] > 0).length, totaal: gespeeld.length,
+      pct: r && r.speelbaar > 0 ? Math.round((r.speeltijd / r.speelbaar) * 100) : null,
+      laatste: mee.slice(0, 5).map(x => ({ datum: String(x.w.datum).slice(0, 10), min: Math.round((x.a.tijd[p.id] || 0) / 60), van: Math.round(x.a.matchduur / 60) })),
+      doelpunten: wedstrijden.reduce((n, w) => n + tel(w.goals || [], g => g.type === 'voor' && g.pid === p.id), 0),
+      assists: wedstrijden.reduce((n, w) => n + tel(w.goals || [], g => g.type === 'voor' && g.assist === p.id), 0),
+      geel: wedstrijden.reduce((n, w) => n + tel(w.kaarten || [], c => !c.auto && c.type === 'geel' && c.pid === p.id), 0),
+      rood: wedstrijden.reduce((n, w) => n + tel(w.kaarten || [], c => !c.auto && c.type === 'rood' && c.pid === p.id), 0),
+      trErbij: o.aanwezig || 0, trTotaal: o.totaal || 0,
+    };
+  }
+  return uit;
+}
+/* de cijfers van één ouder als tegels: [getal, bijschrift] */
+export function statsTegels(s){
+  const uit = [];
+  if (!s) return uit;
+  if (s.wedstrijden) uit.push([`${s.wedstrijden.gespeeld} van ${s.wedstrijden.totaal}`, 'wedstrijden']);
+  if (s.speeltijd && s.speeltijd.pct != null) uit.push([`${s.speeltijd.pct}%`, 'speeltijd']);
+  if (s.trainingen && s.trainingen.totaal) uit.push([`${s.trainingen.erbij} van ${s.trainingen.totaal}`, 'trainingen']);
+  if (s.doelpunten != null) uit.push([String(s.doelpunten), s.doelpunten === 1 ? 'doelpunt' : 'doelpunten'], [String(s.assists || 0), s.assists === 1 ? 'assist' : 'assists']);
+  if (s.kaarten) uit.push([String((s.kaarten.geel || 0) + (s.kaarten.rood || 0)), 'kaarten']);
+  return uit;
+}
 export function opties(bron){ const uit = {}; for (const [k] of OPTIES) uit[k] = !!(bron && bron[k] === true); return uit; }
 export const optiesVan = (team, clubPlatform, losOpties) => opties(team && team.club ? (clubPlatform && clubPlatform.platformModules && clubPlatform.platformModules.teamkamerOpties) : losOpties);

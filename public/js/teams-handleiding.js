@@ -7,7 +7,7 @@
 import { esc } from './state.js?v=20261116n';
 import { beleidsplanNaam } from './clubconfig.js?v=20261116n';
 import { ROLKAARTEN } from './rolkaart.js?v=20261116n';
-import { onboardingHerstartBlok } from './onboarding.js?v=20261116p';
+import { onboardingHerstartBlok } from './onboarding.js?v=20261116q';
 
 export function htmlHandleiding(){
   return `<div class="hl">
@@ -124,6 +124,8 @@ export function htmlHandleiding(){
     <h3>🏠 Teamkamer: ouders en spelers kijken mee</h3>
     <p>In de <b>Teamkamer</b> zien ouders en spelers de agenda, wie erbij is, je mededelingen en polls. Ze zien geen beoordelingen, leerpunten, notities of de reden van een afmelding. Afmelden blijft via de groepsapp gaan: jij zet het in Cluppie.</p>
     <ul>
+      <li><b>Zelf aan en uit (Teamkamer, Instellingen):</b> Trainingen (ouders zien de komende trainingen met thema, oefeningen en 3D, zonder jouw aantekeningen), Opstelling altijd delen (vanaf de dag voor de wedstrijd) en Cijfers van het eigen kind. Bij cijfers vink je aan wat mee mag: wedstrijden, speeltijd, doelpunten en assists, opkomst, kaarten. Een ouder ziet alleen het eigen kind, nooit een ranglijst; het kind zelf ziet het niet. Alles staat uit tot jij het aanzet. De cijfers en trainingen lopen bij als een trainer het team opent.</li>
+      <li><b>Niet geselecteerd en afgelast:</b> staat een kind niet in de selectie van een wedstrijd, dan zien alleen de eigen ouders "Niet in de selectie". Een afgelaste training staat als afgelast in de agenda van ouders, zonder de reden die jij erbij typte.</li>
       <li><b>Aanzetten:</b> tegel <b>Teamkamer</b> onder Meer (op de computer onder Team). Zie je de tegel niet, dan staat de teamkamer nog niet aan voor je club.</li>
       <li><b>Wat je ziet hangt af van je club:</b> Cluppie zet elke mogelijkheid per club aan (voornamen, spelers zelf, polls, mededelingen, uitslag, live stand, opstelling, thuis oefenen en meer). Wat uit staat, zie je hier niet. Met alleen de teamkamer aan zien ouders de agenda en hoeveel spelers erbij zijn.</li>
       <li><b>Ouders binnenlaten:</b> deel de <b>teamlink</b> in de groepsapp. Een ouder maakt een account en vult de voornaam van het kind in. Jij ziet de aanvraag met het e-mailadres, kiest de speler en tikt op <b>Goedkeuren</b>. Ken je iemand niet, wijs dan af.</li>

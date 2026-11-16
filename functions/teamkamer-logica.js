@@ -43,7 +43,7 @@ const voornaam = (naam) => str(String(naam || '').split(/\s+/)[0], 24);
    eindbaas: per club in clubs/{id}.platformModules.teamkamerOpties, voor trainers zonder club in
    platform/instellingen.teamkamerLosOpties. Alles staat standaard UIT. Met alleen de hoofdschakelaar aan
    zien ouders de agenda en hoeveel spelers erbij zijn, meer niet. */
-const OPTIES = ['namen', 'spelers', 'polls', 'beurten', 'berichten', 'afmelden', 'uitslag', 'live', 'opstelling', 'thuis', 'lijn', 'agenda', 'weer'];
+const OPTIES = ['namen', 'spelers', 'polls', 'beurten', 'berichten', 'afmelden', 'uitslag', 'live', 'opstelling', 'thuis', 'lijn', 'agenda', 'weer', 'trainingen', 'stats'];   /* [20261116q] trainingen en cijfers van het eigen kind */
 function opties(team, club, platform){
   const bron = team && team.club ? (club && club.platformModules && club.platformModules.teamkamerOpties) : (platform && platform.teamkamerLosOpties);
   const uit = {};
@@ -69,6 +69,49 @@ function thuisVideos(lijst){
   }
   return uit;
 }
+/* [20261116q] welke cijfers van het eigen kind mag een ouder zien? null = geen. Speeltijd is een eigen vinkje. */
+const STATS_SOORTEN = ['wedstrijden', 'speeltijd', 'doelpunten', 'opkomst', 'kaarten'];
+function statsKeuze(s, mag){
+  if (!mag || mag.stats !== true || !s || s.aan !== true) return null;
+  const uit = {};
+  for (const k of STATS_SOORTEN) uit[k] = s[k] === true;
+  return STATS_SOORTEN.some(k => uit[k]) ? uit : null;
+}
+const getal = (v, max) => { const n = Math.round(Number(v)); return Number.isFinite(n) && n >= 0 ? Math.min(n, max) : 0; };
+/* Cijfers van één speler zoals de app van de trainer ze aanlevert (teams/{id}/kamerBeheer/stats). De app rekent
+   (analyse.js: één bron voor speeltijd), dit bestand laat alleen getallen door die de trainer heeft aangezet.
+   Geen namen, geen vergelijking met anderen, geen tekst. */
+function schoonStats(s, keuze){
+  if (!keuze || !s || typeof s !== 'object') return null;
+  const uit = {};
+  if (keuze.wedstrijden) uit.wedstrijden = { gespeeld: getal(s.gespeeld, 99), totaal: getal(s.totaal, 99) };
+  if (keuze.speeltijd){
+    uit.speeltijd = { pct: s.pct == null ? null : Math.min(100, getal(s.pct, 100)),
+      laatste: (Array.isArray(s.laatste) ? s.laatste : []).filter(x => x && /^\d{4}-\d{2}-\d{2}$/.test(x.datum || '')).slice(0, 5)
+        .map(x => ({ datum: x.datum, min: getal(x.min, 200), van: getal(x.van, 200) })) };
+  }
+  if (keuze.doelpunten){ uit.doelpunten = getal(s.doelpunten, 999); uit.assists = getal(s.assists, 999); }
+  if (keuze.opkomst) uit.trainingen = { erbij: getal(s.trErbij, 999), totaal: getal(s.trTotaal, 999) };
+  if (keuze.kaarten) uit.kaarten = { geel: getal(s.geel, 99), rood: getal(s.rood, 99) };
+  return uit;
+}
+/* Wat ouders van een training zien: titel, thema en per oefening naam, onderdeel, minuten, doel en de vorm uit de
+   bibliotheek (voor 3D). Geen aantekeningen, coachpunten, differentiatie, video's of namen. */
+function schoonTraining(t){
+  if (!t || typeof t !== 'object') return null;
+  const vormen = (Array.isArray(t.vormen) ? t.vormen : []).filter(v => v && str(v.naam, 80)).slice(0, 8)
+    .map(v => ({ naam: str(v.naam, 80), slot: str(v.slot, 30), min: getal(v.min, 120), vormId: /^[a-z0-9-]{1,60}$/.test(v.vormId || '') ? v.vormId : '', doel: str(v.doel, 300) }));
+  const uit = { titel: str(t.titel, 80), thema: str(t.thema, 80), vormen };
+  return uit.titel || uit.thema || vormen.length ? uit : null;
+}
+/* Wie staat bij deze wedstrijd niet in de selectie, zonder afmelding? Alleen het eigen gezin krijgt dit te zien
+   (gezin/{spelerId}.nietMee); in de agenda van het team staat het bewust niet. Zonder selectie: niemand. */
+function nietMee(w, spelerIds){
+  if (!w || !Array.isArray(w.selectie) || !w.selectie.length || w.status === 'afgelast') return [];
+  const sel = new Set(w.selectie), af = w.afwezigRedenen || {};
+  return (spelerIds || []).filter(id => !sel.has(id) && !af[id]).sort();
+}
+const selectieSleutel = (w) => (w ? JSON.stringify([Array.isArray(w.selectie) ? [...w.selectie].sort() : null, Object.keys(w.afwezigRedenen || {}).sort(), w.status === 'afgelast', String(w.datum || '').slice(0, 10)]) : 'geen');
 function inst(team, mag = ALLES_AAN){
   const k = (team && team.teamkamer) || {};
   const lijn = Array.isArray(k.lijn) ? k.lijn.map(x => str(x, 90)).filter(Boolean).slice(0, 3) : [];
@@ -78,6 +121,10 @@ function inst(team, mag = ALLES_AAN){
     uitslag: k.uitslag === true && mag.uitslag === true,
     live: k.live === true && mag.live === true,
     opstelling: mag.opstelling === true,
+    /* [20261116q] de trainer zet deze drie zelf aan; standaard uit */
+    opstellingAltijd: k.opstellingAltijd === true && mag.opstelling === true,
+    trainingen: k.trainingen === true && mag.trainingen === true,
+    stats: statsKeuze(k.stats, mag),
     lijn: mag.lijn === true ? (lijn.length ? lijn : LIJN_STANDAARD) : [],
     thuis: mag.thuis === true && k.thuis && typeof k.thuis.vormId === 'string' && k.thuis.vormId
       ? { vormId: str(k.thuis.vormId, 60), naam: str(k.thuis.naam, 80) } : null,
@@ -94,7 +141,7 @@ function toegestaan(team, club, platform){
 /* Welke velden van het teamdocument tellen voor de kopie? (vergelijken vóór en na een wijziging) */
 function teamSleutel(team){
   if (!team) return 'geen';
-  return JSON.stringify([team.naam || '', team.club || '', team.teamkamer || null, team.trainingsmomenten || null,
+  return JSON.stringify([team.naam || '', team.club || '', team.teamkamer || null, (team.afgelast && team.afgelast.datum) || null, team.trainingsmomenten || null,
     team.trainingsdagen || null, (team.vasteAfmeldingen || []).map(r => r && [r.spelerId, r.dag, r.van, r.tot]),
     (team.eigenClub && [team.eigenClub.naam, team.eigenClub.lat, team.eigenClub.lon]) || null]);
 }
@@ -125,6 +172,7 @@ function kamerDoc(team, club, spelers, verborgen, platform){
     club: team.club || null,
     mag,                                   /* wat de eindbaas toestaat: de rules en de pagina van ouders lezen dit */
     namen: i.namen, uitslag: i.uitslag, live: i.live,
+    opstellingAltijd: i.opstellingAltijd, trainingen: i.trainingen, stats: !!i.stats,
     lijn: i.lijn, thuis: i.thuis, thuisVideos: i.thuisVideos,
     plek: mag.weer && Number.isFinite(lat) && Number.isFinite(lon) && loc.lat != null && loc.lon != null ? { lat, lon } : null,
     spelers: kamerSpelers(spelers, verborgen, i.namen),
@@ -162,7 +210,8 @@ function projectWedstrijd(w, i, vandaag){
   if (i.live && datum === vandaag && gestart) uit.stand = { voor: telt('voor'), tegen: telt('tegen'), bezig: kwarten.some(k => k && k.klok && k.klok.running === true) };
   else if ((i.uitslag || i.live) && datum < vandaag && gespeeld && !uit.afgelast) uit.stand = { voor: telt('voor'), tegen: telt('tegen'), bezig: false };
   /* opstelling: alleen als de coach hem voor deze wedstrijd deelt */
-  if (w.deelOpstelling === true && i.opstelling === true){
+  /* [20261116q] of altijd, vanaf de dag voor de wedstrijd, als de trainer dat voor het team heeft aangezet */
+  if ((w.deelOpstelling === true || (i.opstellingAltijd === true && datum <= plusDagen(vandaag, 1))) && i.opstelling === true){
     const nrs = Object.keys(w.kwarten || {}).sort((a, b) => Number(a) - Number(b));
     const lineup = (nrs.length && w.kwarten[nrs[0]] && w.kwarten[nrs[0]].lineup) || {};
     const basis = [...new Set(Object.values(lineup).filter(x => typeof x === 'string'))];
@@ -188,14 +237,17 @@ function momenten(team){
   return (Array.isArray(team.trainingsdagen) ? team.trainingsdagen : []).filter(d => d >= 1 && d <= 7).map(d => ({ dag: Number(d), start: '', eind: '' }));
 }
 /* presentie: { datum: [spelerId] } van records die al bestaan (de coach legde afwezigheid vast) */
-function projectTrainingen(team, presentie, vandaag, dagen = 28){
+function projectTrainingen(team, presentie, vandaag, dagen = 28, plannen = null){
   const ms = momenten(team), uit = {};
   for (let n = 0; n <= dagen; n++){
     const datum = plusDagen(vandaag, n), m = ms.find(x => x.dag === weekdag(datum));
     if (!m) continue;
     const rec = presentie && presentie[datum];
-    uit['t_' + datum] = { soort: 'training', datum, tijd: m.start, eind: m.eind, afgelast: false,
+    /* [20261116q] afgelast: de trainer zet dat op het team (teams.afgelast.datum). De reden is vrije tekst en gaat niet mee. */
+    uit['t_' + datum] = { soort: 'training', datum, tijd: m.start, eind: m.eind, afgelast: !!(team.afgelast && team.afgelast.datum === datum),
       afwezig: Array.isArray(rec) ? [...new Set(rec)].sort() : vasteAfwezig(team, datum), erbij: null };
+    const plan = plannen ? schoonTraining(plannen[datum]) : null;
+    if (plan) uit['t_' + datum].training = plan;
   }
   return uit;
 }
@@ -245,6 +297,6 @@ module.exports = {
   BEURT_SOORTEN, LIJN_STANDAARD, MAX_VOLWASSENEN, MAX_TOESTELLEN, KINDCODE_MINUTEN,
   plusDagen, weekdag, vandaagNL, seizoenEindeMs, voornaam,
   OPTIES, ALLES_AAN, opties, inst, toegestaan, teamSleutel, spelerActief, kamerSpelers, spelerSleutel, kamerDoc,
-  projectWedstrijd, vasteAfwezig, momenten, projectTrainingen,
+  projectWedstrijd, vasteAfwezig, momenten, projectTrainingen, STATS_SOORTEN, statsKeuze, schoonStats, schoonTraining, nietMee, selectieSleutel,
   pollGeldig, stemGeldig, telStemmen, beurtenVan, schoonKind, lidId,
 };
