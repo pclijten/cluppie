@@ -13,14 +13,14 @@
    Pure logica (fases, Vandaag doen, filters) staat in platform-logica.js.
 ==================================================================== */
 import { db, collection, getDocs, doc, getDoc, setDoc, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, isPlatformBeheerder, terugLaag, terugLaagWeg, bewaakTerug } from './state.js?v=20261116m';
+import { S, esc, meld, isPlatformBeheerder, terugLaag, terugLaagWeg, bewaakTerug } from './state.js?v=20261116n';
 import { ico } from './icons.js?v=20261116j';
-import { logoImgVoorDoc, DISTRICTEN, CLUPPIE_LOGO } from './clubconfig.js?v=20261116m';
+import { logoImgVoorDoc, DISTRICTEN, CLUPPIE_LOGO } from './clubconfig.js?v=20261116n';
 import { STARTLIJST_STAPPEN } from './startlijst.js?v=20261011d';
-import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261116m';
+import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261116n';
 import { FASES, FASE_NAAM, STANDAARD, KOPPEL_NAAM, faseVan, volgendeStap, filterClubs, vandaagDoen, trainersMetClub, kpiWaarden, dagenSinds } from './platform-logica.js?v=20261111a';
-import { modulesVoorNieuweClub } from './onderdelen.js?v=20261116m';
-import { OPTIES as TK_OPTIES } from './kamer-logica.js?v=20261116m';   /* [20261116m] mogelijkheden van de teamkamer, elk met een eigen schakelaar */
+import { modulesVoorNieuweClub } from './onderdelen.js?v=20261116n';
+import { OPTIES as TK_OPTIES } from './kamer-logica.js?v=20261116n';   /* [20261116m] mogelijkheden van de teamkamer, elk met een eigen schakelaar */
 import { KEUZES as PDF_KEUZES, schoonProfiel, isStandaard, PDF_LIMIET_STANDAARD, AANWIJZING_MAX } from './pdf-profiel.js?v=20261115e';
 
 const STAP_NAAM = Object.fromEntries(STARTLIJST_STAPPEN.map(s => [s.id, s.titel]));
@@ -341,12 +341,14 @@ function htmlLade(){
   else if (tab === 'meehelpen') body = ladeMeehelpen(k, c);
   else body = ladeOverzicht(k, c);
   const logo = logoImgVoorDoc(c, 'club-schild');
-  return `<div class="pc-lade-achter" data-pc="sluitlade"></div>
-    <aside class="pc-lade" role="dialog" aria-modal="true" aria-label="${esc(k.naam)}">
-      <div class="pc-lade-kop">${logo ? `<span class="club-shirt">${logo}</span>` : ''}<div class="pc-lade-titel"><h2 class="tc-h2">${esc(k.naam)}</h2><p class="tc-meta">${esc([k.plaats, k.terugvalRij ? '' : 'laatst gebruikt ' + relatief(k.laatsteGebruik), k.gemaakt ? 'sinds ' + datum(k.gemaakt) : ''].filter(Boolean).join(' · '))}</p></div>
-        <button class="tc-uit" data-pc="sluitlade" aria-label="Sluiten">${ico('navigation-close', 20)}</button></div>
+  /* [20261116n] De club opent in het hoofdscherm (was een smalle lade rechts): zelfde tabbladen, volle breedte.
+     De terugknop van de telefoon of de browser sluit hem via terugStap(). */
+  const vanwaar = MENU.find(m => m[0] === P.scherm)?.[1] || 'Overzicht';
+  return `<section class="pc-lade" aria-label="${esc(k.naam)}">
+      <button class="knop licht klein pc-lade-terug" data-pc="sluitlade">${ico('navigation-back', 16)} Terug naar ${esc(vanwaar)}</button>
+      <div class="pc-lade-kop">${logo ? `<span class="club-shirt">${logo}</span>` : ''}<div class="pc-lade-titel"><h1 class="tc-h1">${esc(k.naam)}</h1><p class="tc-meta">${esc([k.plaats, k.terugvalRij ? '' : 'laatst gebruikt ' + relatief(k.laatsteGebruik), k.gemaakt ? 'sinds ' + datum(k.gemaakt) : ''].filter(Boolean).join(', '))}</p></div></div>
       <div class="pc-lade-tabs" role="tablist">${LADE_TABS.map(([id, n]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? 'actief' : ''}" data-pc="ladetab" data-tab="${id}">${esc(n)}</button>`).join('')}</div>
-      <div class="pc-lade-body">${body}</div></aside>`;
+      <div class="pc-lade-body">${body}</div></section>`;
 }
 function ladeOverzicht(k, c){
   const st = k.startlijst || {}, pv = c.instellingen?.privacy || {};
@@ -458,8 +460,8 @@ async function pdfProef(file){
   const stap = t => { st.proef = { bezig: true, naam: file.name, stap: t }; if (P.lade?.clubId === clubId) teken(); };
   stap('PDF inlezen…');
   try {
-    const ai = await import('./training-ai.js?v=20261116m');
-    const tw = await import('./training-weergave.js?v=20261116m');
+    const ai = await import('./training-ai.js?v=20261116n');
+    const tw = await import('./training-weergave.js?v=20261116n');
     const { paginas, diagramBlobs, aantalPaginas, overgeslagen } = await ai.leesPdf(file, profiel);
     if (!paginas.some(x => x.tekst.trim())) throw new Error('geen leesbare tekst (een scan?)');
     stap('Omzetten met de AI…');
@@ -522,7 +524,7 @@ function teken(){
   let inhoud;
   if (P.laden && !P.o) inhoud = '<div class="tc-leeg">Cijfers laden…</div>';
   else if (P.fout) inhoud = `<div class="kaart leeg">${esc(P.fout)}</div>`;
-  else inhoud = ({ overzicht: htmlOverzicht, uitrol: htmlUitrol, clubs: htmlClubs, trainers: htmlTrainers, instellingen: htmlInstellingen, bibliotheek: () => '<div id="pbRoot"></div>' })[P.scherm]();
+  else inhoud = (P.lade && htmlLade()) || ({ overzicht: htmlOverzicht, uitrol: htmlUitrol, clubs: htmlClubs, trainers: htmlTrainers, instellingen: htmlInstellingen, bibliotheek: () => '<div id="pbRoot"></div>' })[P.scherm]();
   const link = ([id, n, ic]) => `<button class="tc-link ${P.scherm === id ? 'actief' : ''}" data-pc="scherm" data-scherm="${id}">${ico(ic, 20)}<span>${n}</span>${telling[id] ? `<span class="pc-tel">${telling[id]}</span>` : ''}</button>`;
   const merk = `<img src="${CLUPPIE_LOGO}" alt=""><span><b class="cond">Platform</b><small>Cluppie · eindbaas</small></span>`;
   const sy = P.el.querySelector('.tc-hoofd')?.scrollTop || 0;
@@ -541,13 +543,16 @@ function teken(){
         <div class="tc-inhoud-wrap pc-wrap">${inhoud}</div>
       </main>
     </div>
-    <nav class="tc-onder" aria-label="Platformmenu">${MENU.map(([id, n, ic]) => `<button class="${P.scherm === id ? 'actief' : ''}" data-pc="scherm" data-scherm="${id}">${ico(ic, 22)}<span>${n}</span>${telling[id] ? `<i class="pc-tel-stip"></i>` : ''}</button>`).join('')}</nav>
-    ${P.lade ? htmlLade() : ''}`;
-  const h = P.el.querySelector('.tc-hoofd'); if (h) h.scrollTop = sy;
+    <nav class="tc-onder" aria-label="Platformmenu">${MENU.map(([id, n, ic]) => `<button class="${P.scherm === id ? 'actief' : ''}" data-pc="scherm" data-scherm="${id}">${ico(ic, 22)}<span>${n}</span>${telling[id] ? `<i class="pc-tel-stip"></i>` : ''}</button>`).join('')}</nav>`;
+  /* de club en de lijst erachter hebben elk hun eigen scrollstand */
+  const ladeNu = P.lade ? P.lade.clubId : '';
+  if (ladeNu && !P._ladeOpen) P._lijstScroll = sy;
+  const h = P.el.querySelector('.tc-hoofd'); if (h) h.scrollTop = ladeNu ? (P._ladeOpen === ladeNu ? sy : 0) : (P._ladeOpen ? (P._lijstScroll || 0) : sy);
+  P._ladeOpen = ladeNu;
   if (fokus != null){ const z = document.getElementById('pcZoek'); if (z){ z.focus(); try { z.setSelectionRange(fokus, fokus); } catch (e) {} } }
-  if (P.lade) P.el.querySelector('.pc-lade [aria-selected="true"]')?.focus({ preventScroll: true });
+  if (P.lade && P._fokusLade){ P._fokusLade = false; P.el.querySelector('.pc-lade [aria-selected="true"]')?.focus({ preventScroll: true }); }
   const pb = P.el.querySelector('#pbRoot');
-  if (pb) import('./platform-bibliotheek.js?v=20261116m').then(m => m.toonBibliotheek(pb)).catch(e => { pb.innerHTML = '<div class="kaart leeg">Bibliotheek laden mislukt.</div>'; console.error(e); });
+  if (pb) import('./platform-bibliotheek.js?v=20261116n').then(m => m.toonBibliotheek(pb)).catch(e => { pb.innerHTML = '<div class="kaart leeg">Bibliotheek laden mislukt.</div>'; console.error(e); });
   bewaakTerug();
 }
 
@@ -558,16 +563,16 @@ async function klik(e){
   const a = b.dataset.pc;
   if (a === 'scherm') return zetScherm(b.dataset.scherm);
   if (a === 'naarapp') return sluitCentrum();
-  if (a === 'club'){ P.lade = { clubId: b.dataset.id, tab: 'overzicht' }; P.bevestig = null; return teken(); }
+  if (a === 'club'){ P.lade = { clubId: b.dataset.id, tab: 'overzicht' }; P.bevestig = null; P._fokusLade = true; return teken(); }
   if (a === 'sluitlade'){ P.lade = null; return teken(); }
-  if (a === 'ladetab'){ P.lade.tab = b.dataset.tab; return teken(); }
+  if (a === 'ladetab'){ P.lade.tab = b.dataset.tab; P._fokusLade = true; return teken(); }
   if (a === 'filter'){ P.filter = b.dataset.filter; return teken(); }
   if (a === 'fase'){ P.faseFilter = b.dataset.fase; P.filter = 'alle'; return zetScherm('clubs'); }
   if (a === 'fasewis'){ P.faseFilter = null; return teken(); }
   if (a === 'alletaken'){ P.alleTaken = !P.alleTaken; return teken(); }
   if (a === 'alletrainers'){ P.alleTrainers = !P.alleTrainers; return teken(); }
-  if (a === 'nieuweclub') return import('./club.js?v=20261116m').then(m => m.modalNieuwClub());
-  if (a === 'kalenders') return import('./platform.js?v=20261116m').then(m => m.openKalenders());
+  if (a === 'nieuweclub') return import('./club.js?v=20261116n').then(m => m.modalNieuwClub());
+  if (a === 'kalenders') return import('./platform.js?v=20261116n').then(m => m.openKalenders());
   if (a === 'kopieer') return kopieer(b.dataset.tekst);
   if (a === 'vernieuw') return vernieuw(b);
   if (a === 'goedkeuren' || a === 'afwijzen') return beoordeel(b, a === 'goedkeuren');
@@ -660,10 +665,10 @@ async function vernieuw(b){
 async function meehelpen(b){
   const id = P.lade.clubId;
   b.disabled = true;
-  const ond = await import('./ondersteuning.js?v=20261116m').catch(() => null);
+  const ond = await import('./ondersteuning.js?v=20261116n').catch(() => null);
   if (!ond || !(await ond.startOndersteuning(id))){ b.disabled = false; return; }
   sluitCentrum();
-  import('./club.js?v=20261116m').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
+  import('./club.js?v=20261116n').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
 }
 const soloNu = () => ({ aan: false, limiet: 20, ...(P.platform?.soloAI || {}) });
 /* platform/instellingen schrijven kan alleen via de functie zetPlatformInstellingen (valideert ook) */

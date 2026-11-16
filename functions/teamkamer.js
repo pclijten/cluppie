@@ -19,7 +19,7 @@ const L = require('./teamkamer-logica');
 const REGIO = 'europe-west1';
 const ALFABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';      // geen 0/O/1/I/L
 const DAG = 86400000;
-const APP_URL = 'https://cluppie.io/kamer.html';
+const APP_URL = 'https://www.cluppie.io/kamer.html';
 const nieuweCode = (n) => Array.from(crypto.randomBytes(n), b => ALFABET[b % ALFABET.length]).join('');
 const ipVan = (request) => request.rawRequest?.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || request.rawRequest?.ip || 'onbekend';
 const rateLimit = (...a) => require('./toegang').rateLimit(...a);

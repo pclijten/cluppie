@@ -21,19 +21,37 @@
     Storage.prototype[m] = function(k){ var a = [].slice.call(arguments); a[0] = 'cluppieDemo:' + k; return o.apply(this, a); }; }); } catch (e) { /* geen opslag */ }
 })();
 </script>
+<script>
+/* Thema-gate (vóór paint), zelfde afspraak en dezelfde sleutels als index.html: wie in de app licht of
+   donker koos (of een club die het afdwingt) ziet de teamkamer in hetzelfde thema. Zonder keuze: donker,
+   tenzij het systeem licht vraagt. */
+(function(){
+  var t = 'donker';
+  try {
+    var dwang = localStorage.getItem('cluppieThemaDwang'), eigen = localStorage.getItem('cluppieThemaEigen'), deflt = localStorage.getItem('cluppieThemaDefault');
+    if (dwang === 'donker' || dwang === 'licht') t = dwang;
+    else if (eigen === 'donker' || eigen === 'licht') t = eigen;
+    else if (deflt === 'licht') t = 'licht';
+    else t = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'licht' : 'donker';
+  } catch (e) { /* geen opslag: donker */ }
+  document.documentElement.setAttribute('data-thema', t);
+  var mc = document.querySelector('meta[name="theme-color"]');
+  if (mc) mc.setAttribute('content', t === 'licht' ? '#e9edf2' : '#0e1116');
+})();
+</script>
 <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preload" href="fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="fonts/fonts.css">
-<link rel="stylesheet" href="kamer.css?v=20261116m">
+<link rel="stylesheet" href="kamer.css?v=20261116n">
 </head>
 <body>
-<!-- [20261116m] Teamkamer: de pagina voor ouders en spelers. Staat los van de trainersapp (index.html):
+<!-- [20261116n] Teamkamer: de pagina voor ouders en spelers. Staat los van de trainersapp (index.html):
      geen teams.js, geen state.js, en alleen de kopie teamkamer/{teamId} wordt gelezen. Zie js/kamer-app.js. -->
 <div id="tk" class="tk-app">
-  <div class="tk-kop"><div class="tk-merk" aria-hidden="true">C</div><div class="tk-kop-tekst"><div class="tk-h2">Cluppie</div><div class="tk-klein tk-zacht">Teamkamer laden…</div></div></div>
+  <div class="tk-smal"><div class="tk-kop"><div class="tk-merkregel"><img class="tk-merk" src="icons/icon.svg" alt="" width="40" height="40"><span><b>Cluppie</b><small>Teamkamer laden…</small></span></div></div></div>
   <noscript><p style="padding:16px">De teamkamer werkt alleen met JavaScript aan.</p></noscript>
 </div>
-<script type="module" src="js/kamer-app.js?v=20261116m"></script>
+<script type="module" src="js/kamer-app.js?v=20261116n"></script>
 </body>
 </html>
