@@ -235,7 +235,7 @@ export function koppelClubEvaluaties(v, teamsData, herRender){
     openModal(`
       <h2>${esc(el.dataset.catnaam)}</h2>
       <p class="u-t-sm u-zacht u-mb-md">${esc(el.dataset.team)}<span class="sep" aria-hidden="true"></span>gemiddelde laatste ${esc(el.dataset.n)} wedstrijden</p>
-      <div style="font-family:'Barlow Condensed';font-weight:700;font-size:38px;color:${kleurVoorGemiddelde(parseFloat(el.dataset.v))}">${parseFloat(el.dataset.v).toFixed(1).replace('.',',')}<span class="u-t-md u-zacht" style="font-weight:500"> / 5</span></div>`);
+      <div style="font-family:var(--font-display);font-weight:700;font-size:38px;color:${kleurVoorGemiddelde(parseFloat(el.dataset.v))}">${parseFloat(el.dataset.v).toFixed(1).replace('.',',')}<span class="u-t-md u-zacht" style="font-weight:500"> / 5</span></div>`);
   });
   v.querySelectorAll('[data-domeintoggle]').forEach(kop => kop.onclick = () => {
     const i = kop.dataset.domeintoggle;

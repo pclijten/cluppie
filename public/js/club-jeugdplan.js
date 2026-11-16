@@ -157,7 +157,7 @@ function htmlDetail(rechten){
         const rij = toew[t.id];
         const achter = rij && (rij.planVersie || 0) < (p.planVersie || 1);
         const volgtAnder = !rij && (c.plannen || []).some(x => x.id !== p.id && x.toegewezen?.[t.id]);
-        const status = !rij ? `<span class="tm-badge">${volgtAnder ? 'volgt ander plan' : 'nog niet toegewezen'}</span>` : achter ? `<span class="tm-badge" style="color:var(--accent)">bijwerken (v${rij.planVersie})</span>` : `<span class="tm-badge">volgt dit plan</span>`;
+        const status = !rij ? `<span class="tm-badge">${volgtAnder ? 'volgt ander plan' : 'nog niet toegewezen'}</span>` : achter ? `<span class="tm-badge" style="color:var(--accent-tekst)">bijwerken (v${rij.planVersie})</span>` : `<span class="tm-badge">volgt dit plan</span>`;
         const dagen = Array.isArray(t.trainingsdagen) && t.trainingsdagen.length ? `${t.trainingsdagen.length}× per week` : 'geen trainingsdagen';
         return `<div class="tm-rij" style="padding:8px 0;border-bottom:1px solid var(--hair)"><div><b>${esc(t.naam)}</b><div class="tm-info">${esc(catLabel(t.categorie))} · ${esc(bouwNaam(bouwVanTeamUi(t)))} · ${esc(dagen)} · ${p.params?.duur === 'leeftijd' || !p.params?.duur ? duurVoorLeeftijd(Number(String(t.categorie).match(/O(\d+)/)?.[1]) || 99) : p.params.duur}′</div></div>
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;min-width:0">${status}${mag ? `<button class="knop klein ${!rij || achter ? 'fluo' : 'licht'}" data-cjp="toewijs" data-team="${esc(t.id)}">${!rij ? 'Toewijzen' : achter ? 'Bijwerken' : 'Opnieuw'}</button>` : ''}</div></div>`;

@@ -35,7 +35,7 @@ function teken(){
   const min = Math.ceil(rest / 60000), naam = S.club && S.club.id === _clubId ? S.club.naam : 'deze club';
   const b = balk();
   b.innerHTML = `<span>Je werkt als eindbaas in ${esc(naam || 'deze club')} · nog ${min >= 60 ? Math.floor(min / 60) + ' u ' + (min % 60) + ' min' : min + ' min'}</span>
-    <button type="button" id="ondStop" style="background:#fff;color:var(--accent);border:0;border-radius:6px;padding:4px 10px;font-weight:700;cursor:pointer">Stoppen</button>`;
+    <button type="button" id="ondStop" style="background:#fff;color:var(--accent-tekst);border:0;border-radius:6px;padding:4px 10px;font-weight:700;cursor:pointer">Stoppen</button>`;
   document.body.style.paddingTop = (b.offsetHeight || 40) + 'px';
   document.getElementById('ondStop').onclick = () => stopOndersteuning(true);
 }
@@ -64,8 +64,8 @@ export async function stopOndersteuning(terugNaarPlatform){
   meld('Ondersteuning gestopt');
   if (terugNaarPlatform){
     try {
-      const c = await import('./club.js?v=20261116r'); c.verlaatClubView();
-      const p = await import('./platform.js?v=20261116r'); p.openPlatform();
+      const c = await import('./club.js?v=20261116s'); c.verlaatClubView();
+      const p = await import('./platform.js?v=20261116s'); p.openPlatform();
     } catch (e){}
   }
 }

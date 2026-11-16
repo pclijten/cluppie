@@ -40,7 +40,7 @@ import { htmlVolledigFormulier, koppelVolledigFormulier, koppelInfo, htmlSamenva
    import). Dynamic import() binnen de aanroepende functie is het patroon
    dat de rest van de app ook al gebruikt (zie club.js/wedstrijd.js). */
 async function herrenderTeam(){
-  const m = await import('./teams.js?v=20261116r');
+  const m = await import('./teams.js?v=20261116s');
   m.renderTeam();
 }
 
@@ -726,7 +726,7 @@ function htmlLeerlijn(p){
             <div class="lp-domein">${d ? esc(d.naam) : 'Algemeen'}</div>
             <div class="t">${esc(l.tekst)}</div>
             <div class="d">${l.klaar ? 'Afgerond op '+datumNL(l.klaarOp||l.sinds) : 'Sinds '+datumNL(l.sinds)}</div>
-            ${thema ? `<div style="font-size:var(--t-2xs);color:var(--accent);font-weight:700;margin-top:var(--space-2xs);cursor:pointer" data-thema-info="${esc(thema.thema)}">Achtergrond &amp; tips bekijken</div>` : ''}
+            ${thema ? `<div style="font-size:var(--t-2xs);color:var(--accent-tekst);font-weight:700;margin-top:var(--space-2xs);cursor:pointer" data-thema-info="${esc(thema.thema)}">Achtergrond &amp; tips bekijken</div>` : ''}
           </div>
           <button class="lp-weg" data-lp-weg="${l.id}" title="Verwijderen"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5.4 7.4h13.2"/><path d="M7.4 7.4 8.3 20h7.4l.9-12.6"/><path d="M9.6 4.4h4.8l.6 3H9z"/><path d="M10.6 11v5.4M13.4 11v5.4"/></svg></button>
         </div>`;
@@ -1491,7 +1491,7 @@ export async function modalUitlenen(spelerId){
      Uitgebreid) en mag alleen door coördinatoren en de clubadmin. */
   const team = { ...S.team, id: S.teamId };
   if (!magUitlenen(team)) return meld('Uitlenen regelt de coördinator van de bouw');
-  const m = await import('./uitleen-form.js?v=20261116r');
+  const m = await import('./uitleen-form.js?v=20261116s');
   m.openUitleenForm({ clubId, vanTeam: team, speler: p });
 }
 
@@ -1499,7 +1499,7 @@ export async function modalUitlenen(spelerId){
 export async function wijzigUitlening(u, clubIdOverride, naOpslaan){
   const clubId = clubIdOverride || S.team?.club;
   if (!clubId || !u) return meld('Uitlening niet gevonden');
-  const m = await import('./uitleen-form.js?v=20261116r');
+  const m = await import('./uitleen-form.js?v=20261116s');
   m.openUitleenForm({ clubId, vanTeam: { id: u.vanTeam, naam: u.vanTeamNaam }, speler: { id: u.spelerId, naam: u.snapshot?.naam || 'Speler' }, bestaand: u, naOpslaan });
 }
 

@@ -20,7 +20,7 @@ import {
 } from './config.js?v=20261116n';
 import { onderdeelAan } from './onderdelen.js?v=20261116n';
 import { htmlKompas } from './teams-leerlijn.js?v=20261116n';
-import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261116r';
+import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261116s';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
 import { spelersOpTraining } from './uitleen-regels.js?v=20261113b';
 import {
@@ -691,7 +691,7 @@ export function modalWijzigCode(){
     <p style="font-size:calc(12px * var(--fs));color:var(--ink-2);margin-bottom:12px">Let op: bestaande uitnodigingslinks met de oude code werken daarna niet meer.</p>
     <div class="veldgroep"><label>Nieuwe code</label>
       <input class="invoer" id="mWcCode" value="${esc(S.team.code)}" maxlength="20"
-        style="text-transform:uppercase;font-family:'Barlow Condensed';font-size:var(--t-2xl);letter-spacing:1px"></div>
+        style="text-transform:uppercase;font-family:var(--font-display);font-size:var(--t-2xl);letter-spacing:1px"></div>
     <button class="knop vol" id="mWcOk">Code opslaan</button>`);
   $('#mWcOk').onclick = async () => {
     const nieuw = $('#mWcCode').value.trim().toUpperCase().replace(/[^A-Z0-9-]+/g,'');

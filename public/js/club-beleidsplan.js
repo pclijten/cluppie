@@ -9,7 +9,7 @@ import { functions, httpsCallable } from './firebase.js?v=20261011g';
 import { uploadHulpHtml, UPLOAD_HULP } from './upload-hulp.js?v=20261113c';
 import { aiAan, kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261116n';
 import { opslaanContent } from './content.js?v=20261116n';
-import { huidigeContentLijst } from './club-content.js?v=20261116n';
+import { huidigeContentLijst } from './club-content.js?v=20261116s';
 
 const MAX_STUK = 12000;
 const slug = t => String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60);
@@ -134,7 +134,7 @@ export function openBeleidsplanImport(){
           <input class="invoer bpTitel" value="${esc(it.titel || '')}" style="${it.categorie === 'leercurve' ? 'display:none' : ''}" maxlength="300">
           <textarea class="invoer bpAch" rows="3" style="margin-top:6px" placeholder="Achtergrond">${esc(it.achtergrond || '')}</textarea>
           <textarea class="invoer bpTips" rows="3" style="margin-top:6px" placeholder="Tips, één per regel">${esc((it.tips || []).join('\n'))}</textarea>
-          ${it.categorie === 'leercurve' && heeft('leercurve', it.thema || it.titel) ? '<p class="cb-uitleg" style="margin:4px 0 0;color:var(--accent)">Vervangt de bestaande eigen tekst voor dit thema.</p>' : ''}
+          ${it.categorie === 'leercurve' && heeft('leercurve', it.thema || it.titel) ? '<p class="cb-uitleg" style="margin:4px 0 0;color:var(--accent-tekst)">Vervangt de bestaande eigen tekst voor dit thema.</p>' : ''}
         </div>`).join('')}</div>
       <div class="rij"><button class="knop licht vol" id="bpTerug">Terug</button><button class="knop vol" id="bpOpslaan">Opslaan als concept</button></div>`);
     document.querySelectorAll('[data-bp]').forEach(k => {

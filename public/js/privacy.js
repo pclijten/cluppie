@@ -32,7 +32,7 @@ export function openPrivacy(){
     ${htmlKlikgedragKeuze('pv')}
     <a class="knop licht vol" href="privacy.html" target="_blank" rel="noopener" style="display:block;text-align:center;margin-bottom:8px">Privacyverklaring lezen</a>
     <button class="knop licht vol" id="pvExport">Download mijn gegevens (JSON)</button>
-    <button class="knop licht vol" id="pvWis" style="margin-top:8px;color:var(--accent)">Verwijder mijn account</button>
+    <button class="knop licht vol" id="pvWis" style="margin-top:8px;color:var(--accent-tekst)">Verwijder mijn account</button>
     <button class="knop licht vol" id="pvSluit" style="margin-top:8px">Sluiten</button>`);
   document.getElementById('pvSluit').onclick = sluitModal;
   koppelKlikgedragKeuze(document, 'pv');
