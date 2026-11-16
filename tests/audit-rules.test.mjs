@@ -1,6 +1,9 @@
 // Beveiligingsaudit (WP1): toetst de Firestore-rules per gebruikerstype.
 // Elke proef meldt TOEGESTAAN of GEWEIGERD naast wat veilig is; een afwijking laat de test falen.
 // Draaien:  npm run test:rules  of  npm run audit:rules   (Java nodig; start de emulator)
+// [20261116n] Eigen projectId: anders wist clearFirestore() hier de database van tests/rules.test.mjs,
+// dat in dezelfde emulator draait. Daarnaast draait npm run test:rules de bestanden na elkaar
+// (--test-concurrency=1); node --test start meerdere bestanden standaard tegelijk.
 // Vaste fictieve testaccounts (zie docs/rollenkaart.md), nooit echte gegevens.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert';
@@ -29,7 +32,7 @@ async function proef(nr, rol, wat, veilig, actie){
 before(async () => {
   const [host, port] = (process.env.FIRESTORE_EMULATOR_HOST || '127.0.0.1:8080').split(':');
   env = await initializeTestEnvironment({
-    projectId: 'cluppie-rules-test',
+    projectId: 'cluppie-audit-test',
     firestore: { rules: fs.readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8'), host, port: Number(port) },
   });
 });
