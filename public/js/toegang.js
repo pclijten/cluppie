@@ -7,14 +7,15 @@
    - kennisname van de privacyregels + e-mailverificatie bij eerste gebruik
    Serverkant: functions/toegang.js. Data: uitnodigingen, aanvragen, toegangslog.
 ==================================================================== */
+import { ico } from './icons.js?v=20261116t';
 import {
   auth, db, functions, httpsCallable,
   collection, doc, getDoc, getDocs, query, where
 } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261116n';
+import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261116t';
 import { stuurVerificatieMail } from './verificatie.js?v=20261020e';
-import { bewaar } from './club-instellingen.js?v=20261116s';
-import { effectief } from './clubconfig.js?v=20261116n';
+import { bewaar } from './club-instellingen.js?v=20261116t';
+import { effectief } from './clubconfig.js?v=20261116t';
 
 export const PRIVACY_VERSIE = '2026-10';
 const roep = (naam, data) => httpsCallable(functions, naam)(data || {}).then(r => r.data);
@@ -139,7 +140,7 @@ export function modalUitnodigNieuw(team){
         <div class="uitnodig-link">${esc(link)}</div>
         <div class="rij" style="margin:12px 0">
           <button class="knop vol" id="uitnKopieer">Link kopiëren</button>
-          <button class="knop fluo vol" id="uitnWa">📲 WhatsApp</button>
+          <button class="knop fluo vol" id="uitnWa">${ico('action-whatsapp', 16)} WhatsApp</button>
         </div>`;
       kn.style.display = 'none';
       document.getElementById('uitnKopieer').onclick = async () => {
@@ -306,7 +307,7 @@ export async function koppelToegang(v, herteken){
     klaar(() => roep('verwijderLid', { clubId, uid: b.dataset.lidWeg }), b, 'Uitgeschreven');
   });
 
-  q('#pvVoLees')?.addEventListener('click', () => import('./club.js?v=20261116s').then(m => m.modalVerwerkersovereenkomst()));
+  q('#pvVoLees')?.addEventListener('click', () => import('./club.js?v=20261116t').then(m => m.modalVerwerkersovereenkomst()));
   q('#pvOpslaan').onclick = (e) => klaar(async () => {
     const wijz = [
       ['privacy.contactNaam', q('#pvNaam').value.trim()], ['privacy.contactEmail', q('#pvMail').value.trim()],

@@ -8,19 +8,19 @@ import {
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, speler, initialen, openModal, sluitModal, toon, isBeheerder
-} from './state.js?v=20261116n';
-import { telGebruik } from './tracker.js?v=20261116n';
-import { voorbeeldTeamcode } from './clubconfig.js?v=20261116n';
-import { ico } from './icons.js?v=20261116j';
+} from './state.js?v=20261116t';
+import { telGebruik } from './tracker.js?v=20261116t';
+import { voorbeeldTeamcode } from './clubconfig.js?v=20261116t';
+import { ico } from './icons.js?v=20261116t';
 
 import {
   CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, youtubeId, youtubeThumb, youtubeWatch,
   SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo, isoWeek,
   catLabel,
-} from './config.js?v=20261116n';
-import { onderdeelAan } from './onderdelen.js?v=20261116n';
-import { htmlKompas } from './teams-leerlijn.js?v=20261116n';
-import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261116s';
+} from './config.js?v=20261116t';
+import { onderdeelAan } from './onderdelen.js?v=20261116t';
+import { htmlKompas } from './teams-leerlijn.js?v=20261116t';
+import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261116t';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
 import { spelersOpTraining } from './uitleen-regels.js?v=20261113b';
 import {
@@ -628,10 +628,10 @@ export function htmlInstellingen(){
     </div>` : ''}
     <div class="kaart">
       <div class="sectie-kop" style="margin-top:0">Coaches (${ledenIds.length})</div>
-      <p style="font-size:calc(12.5px * var(--fs));color:var(--ink-2);margin-bottom:10px">Staat er iemand dubbel of verkeerd in de lijst? Verwijder die met 🗑.</p>
+      <p style="font-size:calc(12.5px * var(--fs));color:var(--ink-2);margin-bottom:10px">Staat er iemand dubbel of verkeerd in de lijst? Verwijder die met het prullenbakje.</p>
       ${ledenHtml}
       <!-- [20261012c] vaste teamcode weg: collega's komen binnen via een persoonlijke link (toegang.js) -->
-      <button class="knop fluo vol" id="deelLink" style="margin-top:10px">📲 Coach uitnodigen</button>
+      <button class="knop fluo vol" id="deelLink" style="margin-top:10px">${ico('team-player-add', 16)} Coach uitnodigen</button>
       <p style="font-size:calc(12px * var(--fs));color:var(--ink-2);margin:6px 0 0">Je collega krijgt een persoonlijke link, 14 dagen geldig.</p>
       <button class="knop licht vol" id="wijzigMijnNaam" style="margin-top:10px">✏️ Mijn weergavenaam wijzigen</button>
     </div>
