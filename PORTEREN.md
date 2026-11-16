@@ -3,6 +3,7 @@
 Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'33, repo `cluppieasv33`). Alle clubwaarden staan in `clubs/{id}.instellingen` en zijn in de browser instelbaar (Club → Instellingen; wizard "Nieuwe club"); de app bevat geen ASV-verwijzingen meer. Project `cluppie-ad329`, alles in de EU (`europe-west1`), client via GitHub Pages vanaf `main`.
 
 ## Stand (bijgewerkt 16-11-2026; open PR `teamkamer-ronde2` met versie 20261116p, zie Open; op `main` staat 20261116o. Eerder 20261116m: Teamkamer, client op `main`, functions en rules nog NIET gedeployed; daarvoor 20261116l en 20261116k via PR #71)
+- **Platform › Mails (20261116q):** client op `main` sinds 16-11 (PR #78); de functies `leesMailteksten`, `zetMailtekst`, `stuurProefmail`, `mailOpruimen` en de gewijzigde mailfuncties zijn nog niet gedeployed (stappen bovenaan Open).
 - **`npm run test:rules` draaide de twee bestanden tegelijk** (standaardgedrag van `node --test`), waardoor ze elkaars database wisten: 5 van de 41 tests vielen om met NOT_FOUND of permission-denied. Sinds 16-11 draaien ze na elkaar (`--test-concurrency=1`) en heeft `tests/audit-rules.test.mjs` een eigen project (`cluppie-audit-test`). Dit speelde sinds de audittest op 15-11 aan het script werd toegevoegd; de melding "Property email_verified is undefined" in de uitvoer is normale ruis bij proeven die horen te falen.
 - **Rooktest per rol:** `npm run test:rook` (`tools/rooktest.mjs`) opent de demo als elk van de zeven rollen in Chrome, op 414×896 en 1440×900, klikt op de telefoon elke tegel van het teamscherm open en meldt fouten, lege schermen, horizontaal schuiven, tikdoelen onder 44 px en contrast onder de norm. Laatst 16-11: 109 schermen, geen fouten. Nodig: `puppeteer-core` (`npm i -g puppeteer-core` of `PUPPETEER_PAD`) en Chrome. Met `--donker` voor het donkere thema.
 - **Storage-rules:** getest in de emulator met `npm run test:storage` (20 proeven per gebruikerstype, laatst 20/20 op 16-11; eigen poorten in `firebase.test.json`). Deploy: `firebase deploy --only storage --project cluppie-ad329`.
@@ -14,9 +15,10 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
 
 ## Open
-**Voor Paul — Platform › Mails: alle mailteksten zelf aanpassen (release 20261116q, branch `mails-beheren`, client plus functions, geen rules of indexen)**
+**Voor Paul — Platform › Mails: alle mailteksten zelf aanpassen (release 20261116q, client op `main` via PR #78, functions nog NIET gedeployed; geen rules of indexen)**
 - [x] Akkoord Paul 16-11 op de mockup "Cluppie Platform › Mails" en de acht keuzes ("akkoord"). Analyse en besluiten: projectdocument `claude/eindbaas-mails-beheren-impactanalyse.md`.
-- [ ] **PR mergen**, en dan **eerst de functies deployen** (tot die tijd toont het scherm "De functies voor Mails zijn nog niet gedeployed"; de rest van de app merkt niets):
+- [x] PR #78 gemerged op 16-11 (akkoord Paul: "push"). De client staat live.
+- [ ] **Nu de functies deployen** (tot die tijd toont het scherm "De functies voor Mails zijn nog niet gedeployed"; de rest van de app merkt niets):
   1. `cd functions && npm install`
   2. `firebase deploy --only functions:leesMailteksten,functions:zetMailtekst,functions:stuurProefmail,functions:mailOpruimen,functions:verstuurMail,functions:meldClubAan,functions:beoordeelClubAanmelding,functions:meldNieuweAanvraag,functions:wachtwoordReset,functions:verificatieMail --project cluppie-ad329`
   3. De drie nieuwe callables hebben de invoker `allUsers` nodig, anders geeft het scherm een CORS-fout: `gcloud run services add-iam-policy-binding <naam> --region=europe-west1 --member=allUsers --role=roles/run.invoker --project cluppie-ad329` voor `leesmailteksten`, `zetmailtekst` en `stuurproefmail`.
