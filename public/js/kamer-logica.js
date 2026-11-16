@@ -160,6 +160,26 @@ export function weerTekst(json, tijd){
 }
 export const binnenDagen = (datum, vandaag, n) => { const a = d12(vandaag), b = d12(datum); return (b - a) / 864e5 >= 0 && (b - a) / 864e5 <= n; };
 
+/* ---------- thuis oefenen: video's (YouTube of een video die de club in Cluppie zette) ----------
+   Zelfde regels als functions/teamkamer-logica.js: van YouTube bewaren we alleen de video-id, een eigen
+   video moet in de opslag van Cluppie staan. Iets anders komt niet in de teamkamer. */
+export const MAX_THUIS_VIDEOS = 6;
+export function youtubeId(url){
+  const m = String(url || '').match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:[^ #]*&)?v=|embed\/|shorts\/|live\/))([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : '';
+}
+export const isCluppieVideo = (url) => /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/[a-z0-9.-]+\/o\/clubs%2F/.test(String(url || ''));
+/* Maakt van een link of een clubvideo het stukje dat op het teamdocument komt. null = niet bruikbaar. */
+export function thuisVideo(v){
+  const titel = String((v && v.titel) || '').trim().slice(0, 80);
+  const yt = v && v.bron !== 'upload' ? youtubeId(v.yt ? 'https://youtu.be/' + v.yt : v.url) : '';
+  if (yt) return { titel: titel || 'Video', yt };
+  if (v && isCluppieVideo(v.url)) return { titel: titel || 'Video', url: String(v.url) };
+  return null;
+}
+export const ytEmbed = (id) => `https://www.youtube-nocookie.com/embed/${id}?rel=0&playsinline=1`;
+export const ytThumb = (id) => `https://img.youtube.com/vi/${id}/mqdefault.jpg`;
+
 /* ---------- codes ---------- */
 export const schoonCode = (v, n) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, n);
 export const toonCode = (c) => (c && c.length === 6 ? c.slice(0, 3) + ' ' + c.slice(3) : c || '');
@@ -177,9 +197,13 @@ export function teamkamerMag(team, clubPlatform, losAan){
   if (team.club) return !!(clubPlatform && clubPlatform.platformModules && clubPlatform.platformModules.teamkamer === true);
   return losAan === true;
 }
-export const KAMER_URL = 'https://cluppie.io/kamer.html';
+/* met www: het certificaat van de site geldt alleen voor www.cluppie.io, zonder www meldt de browser "niet beveiligd" */
+export const KAMER_URL = 'https://www.cluppie.io/kamer.html';
 export const linkTekst = (teamNaam, code) => `Meld je aan voor de teamkamer van ${teamNaam || 'ons team'} in Cluppie: ${KAMER_URL}?k=${code}\nJe ziet de agenda, wie erbij is en de polls. Afmelden blijft via deze groep.`;
 export const pollTekst = (vraag, id) => `Nieuwe poll in de teamkamer: ${vraag}\n${KAMER_URL}?poll=${id}`;
+/* de ouder stuurt de code door naar het eigen kind; de code werkt 15 minuten en één keer */
+export const kindCodeTekst = (naam, code) => `${naam ? naam + ', dit' : 'Dit'} is je code voor de teamkamer in Cluppie: ${toonCode(code)}
+Open ${KAMER_URL} en vul hem in bij "Ik ben speler". De code werkt 15 minuten.`;
 export const berichtTekst = () => `Er staat een nieuwe mededeling in de teamkamer: ${KAMER_URL}`;
 
 /* ---------- mogelijkheden die de eindbaas per club (of voor trainers zonder club) aan- en uitzet ----------

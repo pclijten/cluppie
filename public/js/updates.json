@@ -1,4 +1,27 @@
 [
+  { "datum": "2026-11-16", "titel": "Trainingen in de juiste week", "punten": [
+    "Een reeks trainingen die niet bij blokweek 1 begint (bijvoorbeeld Week 9 tot en met 14) wordt nu ingepland vanaf de week die je kiest. Eerder schoof zo'n reeks een paar weken op.",
+    "Pas je bij Training aanpassen het weeknummer van een ingeplande training aan, dan verhuist de training mee naar die week. Je ziet er ook bij in welke week hij nu staat."
+  ] },
+  { "datum": "2026-11-16", "titel": "Nog meer uit Sportlink", "punten": [
+    "Stand en poule: bij seniorenteams een nieuw tabblad Periode, met de huidige periode gemarkeerd.",
+    "In de planning staan nu ook de clubactiviteiten uit Sportlink, zoals de ledenvergadering.",
+    "Wedstrijdinfo: de kleedkamer van de scheidsrechter, als die in Sportlink staat. De naam van de scheidsrechter slaat Cluppie niet op."
+  ] },
+  { "datum": "2026-11-16", "titel": "Teamkamer met video's, videocategorieën en een betere terugknop", "punten": [
+    "Thuis oefenen in de Teamkamer: naast de oefening in 3D zet je nu ook video's klaar. Plak een YouTube-link of kies een video die de club al met je team deelde. Spelers bekijken ze in de teamkamer zelf.",
+    "Een ouder kan de code voor het eigen kind doorsturen via WhatsApp of kopiëren.",
+    "De teamlink opende soms met de melding dat de site niet beveiligd is. Dat is opgelost; maak je geen nieuwe link, dan werkt de oude gewoon door.",
+    "De pagina van ouders en spelers ziet er nu uit als de rest van Cluppie: op de computer met het menu links, en in hetzelfde lichte of donkere thema als de app.",
+    "Clubbeheerders verdelen video's in eigen categorieën, bijvoorbeeld oefenstof en uitleg over de app. Coaches zien de video's per categorie.",
+    "Terugknop: twee keer snel terug sloot soms de hele app. Nu gaat elke tik één stap terug, ook in de teamkamer."
+  ] },
+  { "datum": "2026-11-16", "titel": "Coördinatoren zien wat er deze week getraind wordt", "punten": [
+    "Bouw-dashboard: bovenaan staat nu Deze week op het trainingsveld. Je ziet per groep teams welke trainingen er deze week zijn, met de doelen erbij, en of het gebeurd is.",
+    "Nieuw scherm Trainingen in de bouw-omgeving (op de telefoon de tab Training): de hele week per dag of per team, met tijd, training en status. Blader met de pijlen naar een andere week.",
+    "De status zegt wat er bekend is: klaargezet, bekeken door de coach, getraind (met het aantal aanwezigen) of presentie ontbreekt. Ook zie je het als een team traint zonder oefenstof.",
+    "Tik op een training voor de doelen, de oefenvormen, de uitgewerkte training en de PDF. Meekijken als coördinator telt niet mee als bekeken door de coach."
+  ] },
   { "datum": "2026-11-16", "titel": "Teamkamer: ouders en spelers kijken mee, met polls", "punten": [
     "Nieuw: de Teamkamer. Ouders en spelers zien de agenda, wie erbij is, je mededelingen en polls. Meer niet: geen beoordelingen, geen leerpunten en geen reden van een afmelding.",
     "Je vindt hem bij je team onder Meer (op de computer onder Team). Zet hem aan, deel de teamlink in de groepsapp en keur elke ouder zelf goed. Een speler komt binnen met een code van de eigen ouder, zonder e-mailadres.",

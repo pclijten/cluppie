@@ -54,6 +54,21 @@ const ALLES_AAN = Object.fromEntries(OPTIES.map(k => [k, true]));
 
 /* ---------- instellingen van het team (teams/{id}.teamkamer; de coach schrijft die zelf) ----------
    mag = wat de eindbaas toestaat: een keuze van de coach telt alleen als de eindbaas die mogelijkheid aan heeft. */
+/* Video's bij "Thuis oefenen": van YouTube alleen de video-id, een eigen video alleen uit de opslag van
+   Cluppie (clubs/{clubId}/videos). Zelfde regels als public/js/kamer-logica.js. */
+const MAX_THUIS_VIDEOS = 6;
+function thuisVideos(lijst){
+  if (!Array.isArray(lijst)) return [];
+  const uit = [];
+  for (const v of lijst){
+    if (!v || typeof v !== 'object') continue;
+    const titel = str(v.titel, 80) || 'Video';
+    if (typeof v.yt === 'string' && /^[A-Za-z0-9_-]{11}$/.test(v.yt)) uit.push({ titel, yt: v.yt });
+    else if (typeof v.url === 'string' && v.url.length < 900 && /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/[a-z0-9.-]+\/o\/clubs%2F/.test(v.url)) uit.push({ titel, url: v.url });
+    if (uit.length >= MAX_THUIS_VIDEOS) break;
+  }
+  return uit;
+}
 function inst(team, mag = ALLES_AAN){
   const k = (team && team.teamkamer) || {};
   const lijn = Array.isArray(k.lijn) ? k.lijn.map(x => str(x, 90)).filter(Boolean).slice(0, 3) : [];
@@ -66,6 +81,7 @@ function inst(team, mag = ALLES_AAN){
     lijn: mag.lijn === true ? (lijn.length ? lijn : LIJN_STANDAARD) : [],
     thuis: mag.thuis === true && k.thuis && typeof k.thuis.vormId === 'string' && k.thuis.vormId
       ? { vormId: str(k.thuis.vormId, 60), naam: str(k.thuis.naam, 80) } : null,
+    thuisVideos: mag.thuis === true ? thuisVideos(k.thuisVideos) : [],
   };
 }
 /* Mag dit team een teamkamer hebben? De eindbaas zet het per club aan (platformModules.teamkamer);
@@ -109,7 +125,7 @@ function kamerDoc(team, club, spelers, verborgen, platform){
     club: team.club || null,
     mag,                                   /* wat de eindbaas toestaat: de rules en de pagina van ouders lezen dit */
     namen: i.namen, uitslag: i.uitslag, live: i.live,
-    lijn: i.lijn, thuis: i.thuis,
+    lijn: i.lijn, thuis: i.thuis, thuisVideos: i.thuisVideos,
     plek: mag.weer && Number.isFinite(lat) && Number.isFinite(lon) && loc.lat != null && loc.lon != null ? { lat, lon } : null,
     spelers: kamerSpelers(spelers, verborgen, i.namen),
     aantal: spelers.filter(spelerActief).length,

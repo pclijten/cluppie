@@ -263,6 +263,13 @@ export function initGlobaleFoutafhandeling(){
    keer op terug om af te sluiten" kwam nooit in beeld. Nu vangt het vangnet de
    eerste tik op; pas een tweede tik binnen 2 seconden sluit de app.
 
+   [20261116n] Waarom na een terugtik "vooruit" en niet opnieuw pushState? Na een terugtik staan we op
+   de basis-entry en ligt het vangnet nog vooruit in de geschiedenis. Legden we daar een nieuw vangnet met
+   pushState, dan gebeurde dat zonder nieuwe aanraking, en Chrome markeert de basis-entry dan als
+   "overslaan". De volgende terugtik sprong dan over de basis heen: de app sloot in één keer (twee keer
+   terug zonder het scherm aan te raken, bijvoorbeeld venster dicht en meteen nog een keer terug). Daarom
+   stappen we met history.forward() terug op het bestaande vangnet; er komt geen nieuwe entry bij.
+
    Waarom pas na een aanraking? Chrome op Android slaat history-entries over
    die zonder gebruikersinteractie zijn toegevoegd ("history manipulation
    intervention"). Bij een herstart met automatisch geopend team zou het
@@ -315,17 +322,20 @@ let _vangnetActief = false;   // ligt het vangnet op de history-stack?
 let _afsluitGewapend = false; // eerste terugtik op hoofdscherm gehad?
 let _terugBezig = false;      // voorkomt herentry tijdens afhandeling
 let _terugWacht = false;      // doeTerug() wacht op de popstate van zijn history.back()
+let _netGelegd = false;       // er is een vangnet-entry gemaakt (ligt vooruit zodra we op de basis staan)
+let _opBasis = false;         // na een terugtik: we staan op de basis, het vangnet ligt vooruit
+let _vooruitWacht = 0;        // timer: wacht op de popstate van onze eigen history.forward()
 
 /* ---------- Lagen die state.js zelf kent (via DOM, i.v.m. circulaire imports) ---------- */
 const STATISCHE_LAGEN = [
-  { z:1200, open: tactiekbordOpen, sluit: () => { import('./tactiekbord.js?v=20261116m').then(m => m.sluitTactiekbord()); } },
+  { z:1200, open: tactiekbordOpen, sluit: () => { import('./tactiekbord.js?v=20261116n').then(m => m.sluitTactiekbord()); } },
   /* Leerplein heeft twee niveaus (themakeuze → voorbeeld): de ‹-knop weet welke stap hoort. */
   { z:1180, open: leerpleinOpen,   sluit: () => {
       const knop = document.querySelector('.lp-scherm #lpTerug');
-      if (knop) knop.click(); else import('./leerplein.js?v=20261116m').then(m => m.sluitLeerplein());
+      if (knop) knop.click(); else import('./leerplein.js?v=20261116n').then(m => m.sluitLeerplein());
   } },
-  { z:65,   open: lightboxOpen,    sluit: () => { import('./training-weergave.js?v=20261116m').then(m => m.sluitLightbox()); } },
-  { z:60,   open: pdfViewerOpen,   sluit: () => { import('./pdf-viewer.js?v=20261116m').then(m => m.sluitPdfViewer()); } },
+  { z:65,   open: lightboxOpen,    sluit: () => { import('./training-weergave.js?v=20261116n').then(m => m.sluitLightbox()); } },
+  { z:60,   open: pdfViewerOpen,   sluit: () => { import('./pdf-viewer.js?v=20261116n').then(m => m.sluitPdfViewer()); } },
   { z:50,   open: modalOpen,       sluit: () => sluitModal() },
 ];
 
@@ -391,9 +401,21 @@ function wachtOpAanraking(){
    (toon() en openModal() doen dat al). Goedkoop en veilig om vaker aan te roepen. */
 export function bewaakTerug(){
   if (!S.user || _vangnetActief) return;
+  if (_opBasis && _netGelegd){ naarVangnet(); return; }   // het vangnet ligt er nog: stap erop terug
   if (!isAangeraakt()){ wachtOpAanraking(); return; }
-  _vangnetActief = true;
+  _vangnetActief = true; _netGelegd = true; _opBasis = false;
   history.pushState({ cluppie:true, vangnet:true }, '');
+}
+/* Terug op het vangnet dat al in de geschiedenis ligt. Komt de popstate daarvan niet (het vangnet was
+   weg, bijvoorbeeld na een herlaad), dan leggen we alsnog een nieuw. */
+function naarVangnet(){
+  if (_vooruitWacht) return;
+  _vangnetActief = true;
+  _vooruitWacht = setTimeout(() => {
+    _vooruitWacht = 0; _vangnetActief = false; _netGelegd = false; _opBasis = false;
+    bewaakTerug();
+  }, 400);
+  try { history.forward(); } catch(e){ /* de timer hierboven vangt dit op */ }
 }
 
 /* Bleef in gebruik bij de overlays die dit al aanriepen. Het vangnet blijft nu
@@ -404,7 +426,7 @@ export function vangnetStilTerugAlsNodig(/* wasOpen */){}
 /* Circulair-veilig navpad loggen vanuit state.js (tracker importeert state.js,
    dus geen top-level import terug — zelfde patroon als pdf-viewer hierboven). */
 function _navTerug(scherm){
-  import('./tracker.js?v=20261116m').then(m => m.telNav?.(scherm, 'terug')).catch(()=>{});
+  import('./tracker.js?v=20261116n').then(m => m.telNav?.(scherm, 'terug')).catch(()=>{});
 }
 
 /* Eén terug-stap volgens prioriteit. true = afgehandeld (app blijft open). */
@@ -476,8 +498,15 @@ export function doeTerug(){
 /* Eén keer registreren (vanuit main.js). */
 export function initTerugknop(){
   history.replaceState({ cluppie:true, basis:true }, '');
-  window.addEventListener('popstate', () => {
+  window.addEventListener('popstate', (ev) => {
+    /* onze eigen stap vooruit (naarVangnet), of de vooruit-knop van de browser: we staan weer op het vangnet */
+    if (_vooruitWacht || (ev.state && ev.state.vangnet)){
+      clearTimeout(_vooruitWacht); _vooruitWacht = 0;
+      _vangnetActief = true; _netGelegd = true; _opBasis = false;
+      return;
+    }
     _vangnetActief = false;            // het vangnet is zojuist verbruikt
+    _opBasis = _netGelegd;             // en ligt nu vooruit in de geschiedenis
     _terugWacht = false;
     if (!S.user) return;               // niet ingelogd: de browser doet zijn gewone ding
     _terugBezig = true;

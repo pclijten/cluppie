@@ -118,9 +118,56 @@ function infoUitRegel(r, thuis){
     verzamel: tijd(r?.verzameltijd),
     vertrek: tijd(r?.vertrektijd),
     kleedkamer: schoon(thuis ? r?.kleedkamerthuisteam : r?.kleedkameruitteam, 30),
+    /* [20261116o] alleen de kleedkamer van de scheidsrechter. De naam van de scheidsrechter en de rijders
+       slaan we NIET op: dat zijn namen van personen (scheidsrechters bij de jeugd zijn vaak minderjarig). */
+    kleedkamerScheids: schoon(r?.kleedkamerscheidsrechter, 30),
   };
   for (const k of Object.keys(info)) if (!info[k]) delete info[k];
   return info;
+}
+
+/* ---------- 4b. periodestanden en clubagenda [20261116o] ---------- */
+
+/* Eén rij van `periodestand`. Eigen team: Sportlink zegt het zelf (eigenteam), anders op teamnaam. */
+function periodeRijen(stand, teamnaam){
+  const eigenNaam = normSleutel(teamnaam);
+  return (Array.isArray(stand) ? stand : []).map((s, i) => ({
+    positie: Number(s?.positie) || i + 1,
+    team: schoon(s?.teamnaam, 80),
+    eigen: String(s?.eigenteam) === 'true' || (!!eigenNaam && normSleutel(s?.teamnaam) === eigenNaam),
+    gespeeld: Number(s?.aantalwedstrijden) || 0, gewonnen: Number(s?.gewonnen) || 0,
+    gelijk: Number(s?.gelijkspel) || 0, verloren: Number(s?.verloren) || 0,
+    voor: Number(s?.doelpuntenvoor) || 0, tegen: Number(s?.tegendoelpunten) || 0,
+    saldo: Number(s?.doelsaldo) || 0, punten: Number(s?.totaalpunten) || 0,
+  })).filter(r => r.team).sort((a, b) => a.positie - b.positie);
+}
+/* `keuzelijst-periodenummers` → [{ nr, huidig }]. Jeugdpoules hebben geen periodes: dan een lege lijst. */
+function periodeNummers(lijst){
+  const uit = [];
+  for (const p of (Array.isArray(lijst) ? lijst : [])){
+    const nr = Number(p?.waarde);
+    if (nr >= 1 && nr <= 9 && !uit.some(x => x.nr === nr)) uit.push({ nr, huidig: /^ja$/i.test(String(p?.huidig || '')) });
+  }
+  return uit.sort((a, b) => a.nr - b.nr);
+}
+/* `verenigingsactiviteiten` → openbare clubactiviteiten voor de planning (ALV, clubavond, toernooi).
+   Alleen titel, datum, tijd, plaats en een https-link; geen opmerkingen (vrije tekst van de club). */
+function clubagendaUit(lijst){
+  const uit = [];
+  for (const a of (Array.isArray(lijst) ? lijst : [])){
+    const van = String(a?.datumvan || ''), tot = String(a?.datumtm || '');
+    const titel = schoon(a?.activiteit, 80), datum = /^\d{4}-\d{2}-\d{2}/.test(van) ? van.slice(0, 10) : '';
+    if (!titel || !datum) continue;
+    const heleDag = /^true$/i.test(String(a?.heledag));
+    const url = String(a?.url || '');
+    uit.push({
+      titel, datum, tijd: heleDag ? null : (tijd(van.slice(11, 16)) || null),
+      totDatum: /^\d{4}-\d{2}-\d{2}/.test(tot) ? tot.slice(0, 10) : null, totTijd: heleDag ? null : (tijd(tot.slice(11, 16)) || null),
+      plaats: schoon(a?.plaats, 60) || null, url: /^https:\/\//i.test(url) && url.length < 300 ? url : null,
+    });
+    if (uit.length >= 60) break;
+  }
+  return uit.sort((x, y) => x.datum.localeCompare(y.datum));
 }
 
 function accommodatieSleutel(naam, plaats){
@@ -285,5 +332,5 @@ module.exports = {
   clubNaamUitTeams, gidsUitRegels, gidsSamenvoegen,
   spelersUitIndeling,
   schoon, netjesPlaats, kleurUitTekst, filterClubgegevens, soortVan, poulesPerTeam, bekerPoule,
-  infoUitRegel, accommodatieSleutel, accommodatieUit, afgelastPlan, afgelastRegel, inAfgelastVenster,
+  infoUitRegel, periodeRijen, periodeNummers, clubagendaUit, accommodatieSleutel, accommodatieUit, afgelastPlan, afgelastRegel, inAfgelastVenster,
 };

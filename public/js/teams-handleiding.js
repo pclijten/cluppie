@@ -4,10 +4,10 @@
    wat hierboven al in dit bestand staat. De zoekfunctionaliteit
    (#helpZoek) wordt door de hub (teams.js/koppelTeamTab) aangesloten,
    want die werkt direct op het gerenderde DOM-element. */
-import { esc } from './state.js?v=20261116m';
-import { beleidsplanNaam } from './clubconfig.js?v=20261116m';
-import { ROLKAARTEN } from './rolkaart.js?v=20261116m';
-import { onboardingHerstartBlok } from './onboarding.js?v=20261116m';
+import { esc } from './state.js?v=20261116n';
+import { beleidsplanNaam } from './clubconfig.js?v=20261116n';
+import { ROLKAARTEN } from './rolkaart.js?v=20261116n';
+import { onboardingHerstartBlok } from './onboarding.js?v=20261116o';
 
 export function htmlHandleiding(){
   return `<div class="hl">
@@ -134,7 +134,7 @@ export function htmlHandleiding(){
       <li><b>Instellingen:</b> voornamen van teamgenoten, uitslag, live stand, de opstelling per wedstrijd, een oefening voor thuis en drie afspraken voor langs de lijn. Alles staat uit tot jij het aanzet, behalve de voornamen.</li>
       <li><b>Toegang stopt</b> vanzelf op 30 juni en meteen als een speler het team verlaat. Bij <b>Wie kijkt mee</b> trek je iemands toegang in.</li>
     </ul>
-    <p>Ouders en spelers openen <b>cluppie.io/kamer.html</b>. Dat is een eigen pagina, los van deze app.</p>
+    <p>Ouders en spelers openen <b>www.cluppie.io/kamer.html</b>. Dat is een eigen pagina, los van deze app.</p>
     </section>
     <section class="hl-sec" data-zoek="🌦 vandaag spelers en weer training aanpassen aantal spelers minder spelers afmeldingen regen koud warm weerbericht presentie neem over terug naar het plan vervangen groepen veld aangepast voor vandaag andere training maken">
     <h3>🌦 Vandaag: de training aanpassen aan spelers en weer</h3>

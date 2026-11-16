@@ -238,4 +238,36 @@ ok('spelers: lege of rare invoer', () => {
   assert.deepEqual(h.spelersUitIndeling([{ rol: 'Teamspeler', naam: 'Noor Jansen' }]).zichtbaar, [{ voornaam: 'Noor' }]);
 });
 
+/* ---------- [20261116o] scheidsrechter en rijders, periodestanden, clubagenda ---------- */
+ok('wedstrijdinfo: wel de kleedkamer van de scheidsrechter, geen namen van scheidsrechter of rijders', () => {
+  const i = h.infoUitRegel({ scheidsrechter: 'J. de Vries', kleedkamerscheidsrechter: '7', rijders: 'Fam. Jansen, fam. Bakker' }, false);
+  assert.deepEqual(i, { kleedkamerScheids: '7' });
+});
+ok('periodenummers: alleen geldige nummers, huidige periode gemarkeerd', () => {
+  assert.deepEqual(h.periodeNummers([{ waarde: '2', huidig: 'Ja' }, { waarde: '1', huidig: 'Nee' }, { waarde: 'x' }, { waarde: '1' }]), [{ nr: 1, huidig: false }, { nr: 2, huidig: true }]);
+  assert.deepEqual(h.periodeNummers(null), []);
+});
+ok('periodestand: rijen op positie, eigen team via Sportlink of op naam', () => {
+  const rijen = h.periodeRijen([
+    { positie: '2', teamnaam: 'VV Elders 1', aantalwedstrijden: '4', gewonnen: '2', gelijkspel: '1', verloren: '1', doelpuntenvoor: '7', tegendoelpunten: '5', doelsaldo: '2', totaalpunten: '7' },
+    { positie: '1', teamnaam: 'SV Voorbeeld 1', eigenteam: 'true', aantalwedstrijden: '4', gewonnen: '3', gelijkspel: '1', verloren: '0', doelsaldo: '6', totaalpunten: '10' },
+    { teamnaam: '' },
+  ], 'VV Elders 1');
+  assert.equal(rijen.length, 2);
+  assert.deepEqual([rijen[0].team, rijen[0].eigen, rijen[0].punten], ['SV Voorbeeld 1', true, 10]);
+  assert.deepEqual([rijen[1].eigen, rijen[1].saldo, rijen[1].gespeeld], [true, 2, 4]);
+  assert.deepEqual(h.periodeRijen(undefined, 'x'), []);
+});
+ok('clubagenda: titel, datum en tijd; geen http-links en geen opmerkingen', () => {
+  const uit = h.clubagendaUit([
+    { activiteit: 'Clubavond', datumvan: '2026-12-11 19:30', datumtm: '2026-12-11 22:00', heledag: 'false', plaats: 'Kantine', url: 'https://voorbeeld.nl/clubavond', opmerkingen: 'Neem je buurman mee' },
+    { activiteit: 'Ledenvergadering', datumvan: '2026-11-30 00:00', datumtm: '2026-11-30 00:00', heledag: 'true', url: 'http://onveilig.nl' },
+    { activiteit: '', datumvan: '2026-12-01 10:00' }, { activiteit: 'Zonder datum' },
+  ]);
+  assert.deepEqual(uit.map(a => a.titel), ['Ledenvergadering', 'Clubavond']);
+  assert.deepEqual(uit[1], { titel: 'Clubavond', datum: '2026-12-11', tijd: '19:30', totDatum: '2026-12-11', totTijd: '22:00', plaats: 'Kantine', url: 'https://voorbeeld.nl/clubavond' });
+  assert.deepEqual([uit[0].tijd, uit[0].url], [null, null]);
+  assert.ok(!JSON.stringify(uit).includes('buurman'));
+});
+
 console.log(`sportlink-meer: alle ${n} controles geslaagd`);

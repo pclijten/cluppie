@@ -1,4 +1,4 @@
-/* ==================== TEAMKAMER — de pagina van ouders en spelers (kamer.html) [20261116m] ====================
+/* ==================== TEAMKAMER — de pagina van ouders en spelers (kamer.html) [20261116n] ====================
    Bewust los van de trainersapp: deze pagina laadt geen teams.js of state.js en leest niets onder
    teams/**. Alles wat hier staat komt uit de kopie teamkamer/{teamId} (zie firestore.rules en
    functions/teamkamer.js).
@@ -9,7 +9,7 @@
      bericht klaar, Cluppie verstuurt en bewaart niets. */
 import { auth, db, functions, httpsCallable, signInAnonymously, signOut, onAuthStateChanged, signInWithEmailAndPassword,
   createUserWithEmailAndPassword, collection, doc, getDoc, getDocs, setDoc, onSnapshot } from './firebase.js?v=20261011g';
-import * as K from './kamer-logica.js?v=20261116m';
+import * as K from './kamer-logica.js?v=20261116n';
 
 const wortel = document.getElementById('tk');
 const qs = new URLSearchParams(location.search);
@@ -20,6 +20,7 @@ const bewaar = { get: (k) => { try { return localStorage.getItem(k) || ''; } cat
 const A = { scherm: 'laden', fout: '', bezig: false, user: null, link: null, lid: null, teamId: '', teams: [], kind: '',
   kamer: null, agenda: [], polls: [], berichten: [], gezin: {}, stemmen: {}, weer: {}, tab: qs.get('poll') ? 'polls' : 'vandaag',
   open: '', blad: null, code: null, thuisOpen: false, subs: [] };
+const TABNAAM = { vandaag: 'Vandaag', agenda: 'Agenda', polls: 'Polls', kind: 'Mijn kind' };
 if (qs.get('k')) bewaar.set('tkCode', K.schoonCode(qs.get('k'), 12));
 
 const ICO = {
@@ -47,14 +48,16 @@ function zet(o){ Object.assign(A, o); teken(); }
 function stopSubs(){ A.subs.forEach(u => { try { u(); } catch { /* al gestopt */ } }); A.subs = []; }
 
 /* ==================== inloggen en binnenkomen ==================== */
-const merk = '<div class="tk-kop"><div class="tk-merk" aria-hidden="true">C</div><div class="tk-kop-tekst"><div class="tk-h2">Cluppie</div><div class="tk-klein tk-zacht">Teamkamer voor ouders en spelers</div></div></div>';
+const merkregel = (naam, sub) => `<div class="tk-merkregel"><img class="tk-merk" src="icons/icon.svg" alt="" width="40" height="40"><span><b>${e(naam)}</b><small>${e(sub)}</small></span></div>`;
+const merk = `<div class="tk-kop">${merkregel('Cluppie', 'Teamkamer voor ouders en spelers')}</div>`;
+const smal = (html) => `<div class="tk-smal">${html}</div>`;
 const foutHtml = () => (A.fout ? `<p class="tk-fout" role="alert">${e(A.fout)}</p>` : '');
 const privacyLink = '<a href="privacy.html#teamkamer" target="_blank" rel="noopener">privacy-uitleg voor ouders</a>';
 
 function htmlStart(){
   return `${merk}<div class="tk-inhoud">
     <section class="tk-kaart"><h1 class="tk-h2">Ik ben ouder of verzorger</h1>
-      <form data-form="login" class="tk-kaart" style="padding:0">
+      <form data-form="login" class="tk-kaart kaal">
         <div class="tk-veld"><label for="f-mail">E-mailadres</label><input class="tk-invoer" id="f-mail" name="mail" type="email" autocomplete="email" required></div>
         <div class="tk-veld"><label for="f-ww">Wachtwoord</label><input class="tk-invoer" id="f-ww" name="ww" type="password" autocomplete="current-password" required></div>
         ${foutHtml()}
@@ -64,7 +67,7 @@ function htmlStart(){
       <p class="tk-klein tk-zacht" style="margin:0">Nog geen toegang? De trainer deelt een teamlink in de groepsapp. Open die link om je aan te melden.</p>
     </section>
     <section class="tk-kaart"><h2 class="tk-h2">Ik ben speler</h2>
-      <form data-form="kindcode" class="tk-kaart" style="padding:0">
+      <form data-form="kindcode" class="tk-kaart kaal">
         <div class="tk-veld"><label for="f-code">Code van je ouder (6 tekens)</label><input class="tk-invoer tk-code" id="f-code" name="code" inputmode="text" autocapitalize="characters" autocomplete="off" maxlength="7" placeholder="ABC 234" required></div>
         <button class="tk-knop" ${A.bezig ? 'disabled' : ''}>Ga naar mijn team</button>
       </form>
@@ -85,7 +88,7 @@ function htmlUitnodiging(){
         <span class="tk-klein tk-zacht">Heb je al een Cluppie-account? Gebruik dan dat wachtwoord.</span></div>`}
       <div class="tk-veld"><label for="f-kind">Ik ben ouder of verzorger van</label><input class="tk-invoer" id="f-kind" name="kind" type="text" maxlength="40" placeholder="Voornaam van je kind" required>
         <span class="tk-klein tk-zacht">De trainer koppelt je aan de juiste speler. Je kiest niet uit een lijst met namen.</span></div>
-      <label style="display:flex;align-items:center;gap:12px;min-height:44px;cursor:pointer"><input type="checkbox" name="ok" required style="width:22px;height:22px;flex:none"><span>Ik heb de ${privacyLink} gelezen</span></label>
+      <label class="tk-vink"><input type="checkbox" name="ok" required><span>Ik heb de ${privacyLink} gelezen</span></label>
       ${foutHtml()}
       <button class="tk-knop" ${A.bezig ? 'disabled' : ''}>Vraag toegang aan</button>
     </form>
@@ -164,19 +167,23 @@ function htmlVandaag(){
   const bericht = mag('berichten') ? A.berichten[0] : null;
   const wedstrijdSnel = kom.find(i => i.soort === 'wedstrijd' && K.binnenDagen(i.datum, vandaag, 2));
   const wedstrijdWeek = kom.find(i => i.soort === 'wedstrijd' && K.binnenDagen(i.datum, vandaag, 7));
-  return `${eerst ? (eerst.soort === 'wedstrijd' ? htmlWedstrijdKaart(eerst) : htmlTrainingKaart(eerst)) : '<section class="tk-kaart"><p class="tk-zacht" style="margin:0">Er staat nog niets in de agenda.</p></section>'}
+  const videos = (A.kamer?.thuisVideos || []).filter(v => v && (v.yt || v.url));
+  return `<div class="tk-kolom">${eerst ? (eerst.soort === 'wedstrijd' ? htmlWedstrijdKaart(eerst) : htmlTrainingKaart(eerst)) : '<section class="tk-kaart"><p class="tk-zacht" style="margin:0">Er staat nog niets in de agenda.</p></section>'}
     ${wedstrijdWeek && wedstrijdWeek !== eerst ? htmlWedstrijdKaart(wedstrijdWeek) : ''}
-    ${open.length ? `<section class="tk-kaart" style="gap:4px"><div class="tk-label">Open polls</div>
+    ${kom.length && mag('agenda') ? '<button class="tk-knop licht" data-doe="ics">Zet alles in mijn agenda</button>' : ''}</div>
+    <div class="tk-kolom">${open.length ? `<section class="tk-kaart" style="gap:4px"><h2 class="tk-label">Open polls</h2>
       ${open.map(p => `<button class="tk-item-kop" style="padding:4px 0;min-height:52px" data-doe="tab" data-tab="polls"><span class="tk-item-tekst">${e(p.vraag)}</span>
         <span class="tk-klein ${(A.stemmen[p.id] || []).length ? 'tk-ok' : 'tk-let'}">${(A.stemmen[p.id] || []).length ? 'Gestemd' : (K.magStemmen(p, rol()) ? 'Nog stemmen' : 'Voor ouders')}</span></button>`).join('')}</section>` : ''}
-    ${bericht ? `<section class="tk-kaart" style="gap:6px"><div class="tk-label">Mededeling</div><p style="margin:0;white-space:pre-line">${e(bericht.tekst)}</p>
+    ${bericht ? `<section class="tk-kaart" style="gap:6px"><h2 class="tk-label">Mededeling</h2><p style="margin:0;white-space:pre-line">${e(bericht.tekst)}</p>
       <div class="tk-klein tk-zacht">${e([bericht.door && 'Trainer ' + bericht.door, bericht.datum && K.datumLang(bericht.datum)].filter(Boolean).join(', '))}</div></section>` : ''}
-    ${A.kamer?.thuis ? `<section class="tk-kaart"><div class="tk-label">Thuis oefenen</div><div class="tk-vet">${e(A.kamer.thuis.naam || 'Oefening van de week')}</div>
+    ${A.kamer?.thuis || videos.length ? `<section class="tk-kaart"><h2 class="tk-label">Thuis oefenen</h2>
+      ${A.kamer?.thuis ? `<div class="tk-vet">${e(A.kamer.thuis.naam || 'Oefening van de week')}</div>
       <div id="tk-thuis" class="tk-3d" ${A.thuisOpen ? '' : 'hidden'}></div>
-      ${A.thuisOpen ? '' : '<button class="tk-knop licht" data-doe="thuis">Bekijk de oefening in 3D</button>'}</section>` : ''}
-    ${wedstrijdSnel && (A.kamer?.lijn || []).length ? `<section class="tk-kaart" style="gap:6px"><div class="tk-label">Zo moedigen wij aan</div>${A.kamer.lijn.map(r => `<div>${e(r)}</div>`).join('')}</section>` : ''}
-    ${kom.length && mag('agenda') ? '<button class="tk-knop licht" data-doe="ics">Zet alles in mijn agenda</button>' : ''}
-    ${rol() === 'speler' ? `<div class="tk-melding">${ico('slot', true)}<span>Je ouder beheert je toegang. Chatten kan hier niet.</span></div>` : ''}`;
+      ${A.thuisOpen ? '' : '<button class="tk-knop licht" data-doe="thuis">Bekijk de oefening in 3D</button>'}` : ''}
+      ${videos.map((v, n) => `<button class="tk-video-rij tk-video-speel" data-doe="video" data-n="${n}"><span class="tk-video-beeld">${v.yt ? `<img src="${e(K.ytThumb(v.yt))}" alt="" loading="lazy">` : ''}</span>
+        <span class="tk-item-tekst tk-vet">${e(v.titel || 'Video')}</span><span class="tk-klein tk-zacht">Bekijk</span></button>`).join('')}</section>` : ''}
+    ${wedstrijdSnel && (A.kamer?.lijn || []).length ? `<section class="tk-kaart" style="gap:6px"><h2 class="tk-label">Zo moedigen wij aan</h2>${A.kamer.lijn.map(r => `<div>${e(r)}</div>`).join('')}</section>` : ''}
+    ${rol() === 'speler' ? `<div class="tk-melding">${ico('slot', true)}<span>Je ouder beheert je toegang. Chatten kan hier niet.</span></div>` : ''}</div>`;
 }
 function htmlItem(i){
   const d = K.datumDelen(i.datum), isOpen = A.open === i.id, af = i.afwezig || [];
@@ -197,7 +204,7 @@ function htmlAgenda(){
   const vandaag = K.vandaagIso(), kom = K.komend(A.agenda, vandaag), oud = K.geweest(A.agenda, vandaag);
   return `<div class="tk-melding">${ico('slot', true)}<span>Alleen lezen. Afmelden doe je in de groepsapp; de trainer verwerkt het hier.</span></div>
     ${kom.map(htmlItem).join('') || '<section class="tk-kaart"><p class="tk-zacht" style="margin:0">Er staat nog niets in de agenda.</p></section>'}
-    ${oud.length ? `<div class="tk-label" style="margin-top:8px">Geweest</div>${oud.slice(0, 6).map(htmlItem).join('')}` : ''}`;
+    ${oud.length ? `<h2 class="tk-label" style="margin-top:8px">Geweest</h2>${oud.slice(0, 6).map(htmlItem).join('')}` : ''}`;
 }
 function htmlPoll(p){
   const w = K.pollWeergave(p, spelers(), A.stemmen[p.id], A.kamer?.aantal), mag = K.magStemmen(p, rol());
@@ -206,7 +213,7 @@ function htmlPoll(p){
     return `<section class="tk-kaart" style="gap:4px"><div class="tk-vet">${e(p.vraag)}</div><div class="tk-klein tk-zacht">Gesloten. ${top ? e(top.tekst) + ': ' + (top.namen ? e(top.namen) : top.aantal) : ''}</div></section>`;
   }
   return `<section class="tk-kaart" style="gap:12px">
-    <div class="tk-rij"><span class="tk-label ${p.wedstrijdId ? 'accent' : ''}">${p.wedstrijdId && p.wedstrijdDatum ? 'Wedstrijd ' + e(K.datumKort(p.wedstrijdDatum)) : 'Losse poll'}${p.meer ? ' · meer antwoorden mogelijk' : ''}</span>${w.nodig ? `<span class="tk-klein tk-vet">${e(w.nodig)}</span>` : ''}</div>
+    <div class="tk-rij"><span class="tk-label ${p.wedstrijdId ? 'accent' : ''}">${p.wedstrijdId && p.wedstrijdDatum ? 'Wedstrijd ' + e(K.datumKort(p.wedstrijdDatum)) : 'Losse poll'}${p.meer ? ', meer antwoorden mogelijk' : ''}</span>${w.nodig ? `<span class="tk-klein tk-vet">${e(w.nodig)}</span>` : ''}</div>
     <h2 class="tk-h3">${e(p.vraag)}</h2>
     ${w.opties.map(o => `<button class="tk-optie" data-doe="stem" data-poll="${e(p.id)}" data-optie="${e(o.id)}" aria-pressed="${o.gekozen}" ${mag ? '' : 'disabled'}>
       <span class="tk-optie-kop"><span>${e(o.tekst)}</span>${o.gekozen ? '<span class="tk-jouw">Jouw stem</span>' : ''}<b>${o.aantal}</b></span>
@@ -228,9 +235,11 @@ function htmlKind(){
     <button class="tk-knop licht" data-doe="uitloggen">Uitloggen op dit toestel</button>`;
   return `${meer ? `<div class="tk-seg">${A.lid.spelerIds.map(s => `<button data-doe="kind" data-id="${e(s)}" aria-pressed="${s === id}">${e((A.gezin[s] && A.gezin[s].voornaam) || 'Kind')}</button>`).join('')}</div>` : ''}
     <section class="tk-kaart" style="flex-direction:row;align-items:center;gap:14px"><div class="tk-nr">${g.nr ?? ''}</div><div><div class="tk-h2">${e(kindNaam())}</div>
-      <div class="tk-klein tk-zacht">${e(A.kamer?.teamNaam || '')}${tot ? ' · toegang tot ' + e(K.datumLang(K.vandaagIso(tot))) : ''}</div></div></section>
-    ${mag('spelers') ? `<section class="tk-kaart"><div class="tk-label">Toegang voor ${e(kindNaam())} zelf</div>
-      ${A.code ? `<div class="tk-bericht" style="text-align:center"><div class="tk-code" style="min-height:0">${e(K.toonCode(A.code))}</div><div class="tk-klein tk-zacht">15 minuten geldig, één keer te gebruiken. ${e(kindNaam())} vult hem in op cluppie.io/kamer.html.</div></div>`
+      <div class="tk-klein tk-zacht">${e(A.kamer?.teamNaam || '')}${tot ? ', toegang tot ' + e(K.datumLang(K.vandaagIso(tot))) : ''}</div></div></section>
+    ${mag('spelers') ? `<section class="tk-kaart"><h2 class="tk-label">Toegang voor ${e(kindNaam())} zelf</h2>
+      ${A.code ? `<div class="tk-bericht" style="text-align:center"><div class="tk-code" style="min-height:0">${e(K.toonCode(A.code))}</div><div class="tk-klein tk-zacht">15 minuten geldig, één keer te gebruiken. ${e(kindNaam())} vult hem in op www.cluppie.io/kamer.html.</div></div>
+        <div class="tk-twee"><a class="tk-knop" href="${e(K.waUrl(K.kindCodeTekst(kindNaam(), A.code)))}" target="_blank" rel="noopener">Stuur via WhatsApp</a><button class="tk-knop licht" data-doe="kopieercode">Kopieer de code</button></div>
+        <p class="tk-klein tk-zacht" style="margin:0">Stuur de code alleen naar ${e(kindNaam())} zelf, niet naar een groep.</p>`
         : `<button class="tk-knop" data-doe="kindcode" ${A.bezig ? 'disabled' : ''}>Maak een code voor ${e(kindNaam())}</button>`}
       <p class="tk-klein tk-zacht" style="margin:0">${e(kindNaam())} heeft geen e-mailadres of wachtwoord nodig en ziet hetzelfde als jij, zonder dit scherm.</p>
       <button class="tk-knop licht klein" data-doe="stopkind">Stop de toegang van ${e(kindNaam())}</button>
@@ -238,8 +247,8 @@ function htmlKind(){
     ${A.kamer?.namen ? `<section class="tk-kaart" style="flex-direction:row;align-items:center"><div style="flex:1"><div class="tk-vet" id="lbl-naam">Toon de voornaam van ${e(kindNaam())}</div>
       <div class="tk-klein tk-zacht">${zichtbaar ? `Andere gezinnen zien: ${e(kindNaam())}${g.nr != null ? ', nummer ' + g.nr : ''}.` : 'Andere gezinnen zien: Speler.'}</div></div>
       <button class="tk-sw" role="switch" aria-checked="${zichtbaar}" aria-labelledby="lbl-naam" data-doe="verberg"></button></section>` : ''}
-    ${beurten.length ? `<section class="tk-kaart"><div class="tk-label">Beurten dit seizoen</div>${beurten.map(s => `<div class="tk-rij"><span>${K.BEURT_NAMEN[s]}</span><span><b>${(g.beurten && g.beurten[s]) || 0}</b> <span class="tk-klein tk-zacht">gemiddeld in het team ${gem[s] ?? 0}</span></span></div>`).join('')}</section>` : ''}
-    <section class="tk-kaart" style="gap:8px"><div class="tk-label">Dit staat niet in de teamkamer</div><div>Beoordelingen en leerpunten</div><div>De reden van een afmelding</div><div>Achternamen en geboortedata</div><div>E-mail of telefoon van andere ouders</div>
+    ${beurten.length ? `<section class="tk-kaart"><h2 class="tk-label">Beurten dit seizoen</h2>${beurten.map(s => `<div class="tk-rij"><span>${K.BEURT_NAMEN[s]}</span><span><b>${(g.beurten && g.beurten[s]) || 0}</b> <span class="tk-klein tk-zacht">gemiddeld in het team ${gem[s] ?? 0}</span></span></div>`).join('')}</section>` : ''}
+    <section class="tk-kaart" style="gap:8px"><h2 class="tk-label">Dit staat niet in de teamkamer</h2><div>Beoordelingen en leerpunten</div><div>De reden van een afmelding</div><div>Achternamen en geboortedata</div><div>E-mail of telefoon van andere ouders</div>
       <a href="privacy.html#teamkamer" target="_blank" rel="noopener" class="tk-vet" style="min-height:44px;display:inline-flex;align-items:center">Privacy in gewone taal</a></section>
     <button class="tk-knop licht" data-doe="verlaat">Teamkamer verlaten</button>
     <button class="tk-knop tekst" data-doe="uitloggen">Uitloggen</button>`;
@@ -255,26 +264,100 @@ function htmlBlad(){
     <button class="tk-knop licht" data-doe="sluitblad-knop">Annuleren</button></div></div>`;
 }
 function htmlKamer(){
-  if (!A.kamer) return `${merk}<div class="tk-inhoud"><p class="tk-zacht">Laden…</p></div>`;
+  if (!A.kamer) return smal(`${merk}<div class="tk-inhoud"><p class="tk-zacht">Laden…</p></div>`);
   const tabs = [['vandaag', 'Vandaag', 'huis'], ['agenda', 'Agenda', 'agenda'], ...(mag('polls') ? [['polls', 'Polls', 'poll']] : []), ['kind', isOuder() ? 'Mijn kind' : 'Ik', 'mens']];
-  const inhoud = A.tab === 'agenda' ? htmlAgenda() : A.tab === 'polls' && mag('polls') ? htmlPolls() : A.tab === 'kind' ? htmlKind() : htmlVandaag();
-  return `<header class="tk-kop"><div class="tk-kop-tekst"><div class="tk-label">Teamkamer</div><h1 class="tk-h1">${e([A.kamer.teamNaam, A.kamer.clubNaam].filter(Boolean).join(' · '))}</h1></div>
-      ${A.teams.length > 1 ? '<button class="tk-knop licht klein" data-doe="wisselteam">Ander team</button>' : ''}</header>
-    <main class="tk-inhoud">${inhoud}</main>
-    <nav class="tk-nav" aria-label="Teamkamer"><div class="tk-nav-in">${tabs.map(t => `<button data-doe="tab" data-tab="${t[0]}" aria-current="${A.tab === t[0]}">${ico(t[2])}<span>${t[1]}</span></button>`).join('')}</div></nav>
+  const tab = tabs.some(t => t[0] === A.tab) ? A.tab : 'vandaag';
+  const inhoud = tab === 'agenda' ? htmlAgenda() : tab === 'polls' ? htmlPolls() : tab === 'kind' ? htmlKind() : htmlVandaag();
+  const knoppen = tabs.map(t => `<button data-doe="tab" data-tab="${t[0]}" aria-current="${tab === t[0]}">${ico(t[2])}<span>${t[1]}</span></button>`).join('');
+  const ander = A.teams.length > 1 ? '<button class="tk-knop licht klein" data-doe="wisselteam">Ander team</button>' : '';
+  const team = A.kamer.teamNaam || 'Team', club = A.kamer.clubNaam || 'Teamkamer';
+  /* op de computer: zijbalk en kruimelpad zoals in de app; op de telefoon: kop en balk onderaan */
+  return `<div class="tk-schil">
+      <aside class="tk-zij">${merkregel(team, club)}
+        <div class="tk-zij-kop">Teamkamer</div>
+        <nav aria-label="Teamkamer">${knoppen}</nav>
+        <div class="tk-zij-voet"><button data-doe="uitloggen">${ico('slot')}<span>Uitloggen</span></button></div></aside>
+      <div class="tk-hoofd">
+        <header class="tk-kop"><div class="tk-kop-tekst"><div class="tk-label">Teamkamer</div><h1 class="tk-h1">${e([A.kamer.teamNaam, A.kamer.clubNaam].filter(Boolean).join(', '))}</h1></div>${ander}</header>
+        <div class="tk-kruimel"><span>${e(team)} / <b>${tab === 'kind' && !isOuder() ? 'Ik' : TABNAAM[tab]}</b></span>${ander}</div>
+        <main class="tk-inhoud${tab === 'vandaag' ? ' breed' : ''}">${inhoud}</main>
+      </div></div>
+    <nav class="tk-nav" aria-label="Teamkamer"><div class="tk-nav-in">${knoppen}</div></nav>
     ${htmlBlad()}`;
 }
 
 function teken(){
   const vorigeThuis = document.getElementById('tk-thuis');
   const blok3d = vorigeThuis && vorigeThuis.firstElementChild;
-  wortel.innerHTML = A.scherm === 'kamer' ? htmlKamer() : A.scherm === 'start' ? htmlStart() : A.scherm === 'uitnodiging' ? htmlUitnodiging()
+  wortel.innerHTML = A.scherm === 'kamer' ? htmlKamer() : smal(A.scherm === 'start' ? htmlStart() : A.scherm === 'uitnodiging' ? htmlUitnodiging()
     : A.scherm === 'bevestig' ? htmlBevestig() : A.scherm === 'wacht' ? htmlWacht() : A.scherm === 'geen' ? htmlGeen()
-    : `${merk}<div class="tk-inhoud"><p class="tk-zacht">Laden…</p></div>`;
+    : `${merk}<div class="tk-inhoud"><p class="tk-zacht">Laden…</p></div>`);
   /* het 3D-veld overleeft een hertekening (anders begint de animatie opnieuw) */
   const nieuw = document.getElementById('tk-thuis');
   if (nieuw && blok3d && A.thuisOpen) nieuw.appendChild(blok3d);
+  legNet();
 }
+
+/* ==================== video afspelen (Thuis oefenen) ====================
+   De speler staat buiten #tk, zodat een hertekening (nieuwe gegevens) de video niet opnieuw start.
+   YouTube speelt via youtube-nocookie, met rel=0: na afloop geen video's van andere kanalen. */
+let speler = null;
+function openSpeler(v){
+  sluitSpeler();
+  const achter = document.createElement('div'); achter.className = 'tk-blad-achter';
+  achter.innerHTML = `<div class="tk-blad breed" role="dialog" aria-modal="true" aria-labelledby="speler-kop">
+    <h2 class="tk-h2" id="speler-kop">${e(v.titel || 'Video')}</h2>
+    <div class="tk-speler">${v.yt ? `<iframe src="${e(K.ytEmbed(v.yt))}" title="${e(v.titel || 'Video')}" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`
+      : `<video src="${e(v.url)}" controls playsinline preload="metadata"></video>`}</div>
+    <button class="tk-knop licht" data-sluit>Sluiten</button></div>`;
+  achter.addEventListener('click', (ev) => { if (ev.target === achter || ev.target.closest('[data-sluit]')) sluitSpeler(); });
+  achter.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') sluitSpeler(); });
+  document.body.appendChild(achter); speler = achter;
+  achter.querySelector('[data-sluit]').focus();
+  legNet();
+}
+function sluitSpeler(){ if (speler){ speler.remove(); speler = null; } }
+
+/* ==================== terugknop ====================
+   Zelfde afspraak als de app (state.js): de terugknop van de telefoon of de browser gaat één stap terug
+   binnen de teamkamer en sluit niet meteen alles. Daarvoor ligt er één extra stap in de geschiedenis (het
+   vangnet), pas na een eerste aanraking: Chrome op Android slaat stappen over die zonder aanraking zijn
+   toegevoegd. Na een terugtik stappen we met history.forward() terug op dat vangnet in plaats van een
+   nieuw te leggen: een nieuwe stap zonder aanraking laat Chrome de vorige overslaan, en dan sluit de
+   volgende terugtik alles in één keer. Als geïnstalleerde app sluit op het eerste scherm pas een tweede
+   tik de app. */
+let net = false, netGelegd = false, opBasis = false, vooruit = 0, gewapend = false;
+const alsApp = () => { try { return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch { return false; } };
+function legNet(){
+  if (net || A.scherm !== 'kamer') return;
+  if (opBasis && netGelegd){                       /* het vangnet ligt nog vooruit: stap erop terug */
+    if (vooruit) return;
+    net = true;
+    vooruit = setTimeout(() => { vooruit = 0; net = false; netGelegd = false; opBasis = false; legNet(); }, 400);
+    try { history.forward(); } catch { /* de timer hierboven vangt dit op */ }
+    return;
+  }
+  try { const act = navigator.userActivation; if (act && !act.hasBeenActive) return; } catch { /* oudere browser: gewoon leggen */ }
+  try { history.pushState({ tk: true }, ''); net = true; netGelegd = true; opBasis = false; } catch { /* geen geschiedenis beschikbaar */ }
+}
+function stapTerug(){
+  if (speler){ sluitSpeler(); return true; }
+  if (A.scherm !== 'kamer') return false;
+  if (A.blad){ zet({ blad: null }); return true; }
+  if (A.open){ zet({ open: '' }); return true; }
+  if (A.tab !== 'vandaag'){ zet({ tab: 'vandaag' }); return true; }
+  return false;
+}
+window.addEventListener('popstate', (ev) => {
+  if (vooruit || (ev.state && ev.state.tk)){ clearTimeout(vooruit); vooruit = 0; net = true; netGelegd = true; opBasis = false; return; }   /* weer op het vangnet */
+  net = false; opBasis = netGelegd;
+  if (stapTerug()){ gewapend = false; return legNet(); }
+  if (A.scherm !== 'kamer') return;
+  if (!alsApp()) return history.back();          /* in de browser: gewoon terug naar de vorige pagina */
+  if (gewapend) return;
+  gewapend = true; toast('Tik nog een keer op terug om af te sluiten');
+  setTimeout(() => { gewapend = false; legNet(); }, 2000);
+});
 
 /* ==================== gegevens ==================== */
 function openKamer(teamId, lid){
@@ -415,13 +498,16 @@ wortel.addEventListener('click', async (ev) => {
   const doe = b.dataset.doe;
   if (doe === 'sluitblad' && ev.target !== b) return;            /* tik in het blad zelf sluit niet */
   try {
+    legNet();
     if (doe === 'tab') return zet({ tab: b.dataset.tab, open: '' });
+    if (doe === 'video'){ const v = (A.kamer?.thuisVideos || []).filter(x => x && (x.yt || x.url))[Number(b.dataset.n)]; if (v) openSpeler(v); return; }
+    if (doe === 'kopieercode'){ await navigator.clipboard.writeText(K.toonCode(A.code)); return toast('Code gekopieerd'); }
     if (doe === 'open') return zet({ open: A.open === b.dataset.id ? '' : b.dataset.id });
     if (doe === 'kind'){ A.kind = b.dataset.id; A.code = null; teken(); return eigenStemmen(); }
     if (doe === 'afmelden'){ const i = A.agenda.find(x => x.id === b.dataset.id); if (i) zet({ blad: { tekst: K.afmeldTekst(kindNaam(), i) } }); return; }
     if (doe === 'sluitblad' || doe === 'sluitblad-knop') return zet({ blad: null });
     if (doe === 'sluitblad-na') return setTimeout(() => zet({ blad: null }), 300);
-    if (doe === 'uitloggen'){ stopSubs(); bewaar.set('tkWacht', ''); if (auth.currentUser?.isAnonymous) bewaar.set('tkTeam', ''); A.link = null; await signOut(auth); return; }
+    if (doe === 'uitloggen'){ sluitSpeler(); stopSubs(); bewaar.set('tkWacht', ''); if (auth.currentUser?.isAnonymous) bewaar.set('tkTeam', ''); A.link = null; await signOut(auth); return; }
     if (doe === 'vergeetlink'){ bewaar.set('tkCode', ''); A.link = null; return naInloggen(auth.currentUser); }
     if (doe === 'wisselteam'){ const n = (A.teams.findIndex(t => t.teamId === A.teamId) + 1) % A.teams.length; return openKamer(A.teams[n].teamId, A.teams[n].lid); }
     if (doe === 'reset'){

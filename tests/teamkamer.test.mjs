@@ -305,4 +305,19 @@ ok(!/afwezigRedenen\[|\.reden\b|\.notitie\b|leerpunten|beoordeling/.test(logica.
 const index = fs.readFileSync(new URL('../functions/index.js', import.meta.url), 'utf8');
 ok(index.includes("require('./teamkamer').functies") && Object.keys(F).length === 20, 'functies geëxporteerd');
 
+/* [20261116n] thuis oefenen: video's. Alleen een YouTube-id of een video uit de opslag van Cluppie komt in de kopie. */
+const opslag = 'https://firebasestorage.googleapis.com/v0/b/voorbeeld.appspot.com/o/clubs%2Fc1%2Fvideos%2Fclip.mp4?alt=media&token=x';
+const metVideos = { ...team, teamkamer: { aan: true, thuisVideos: [{ titel: 'Kappen', yt: 'dQw4w9WgXcQ' }, { titel: 'Eigen clip', url: opslag }, { titel: 'Vreemd', url: 'https://voorbeeld.nl/x.mp4' }, { yt: 'te-kort' }, null] } };
+const kv = L.kamerDoc(metVideos, { naam: 'x', platformModules: { teamkamer: true, teamkamerOpties: { thuis: true } } }, spelers, {}, null);
+assert.deepEqual(kv.thuisVideos, [{ titel: 'Kappen', yt: 'dQw4w9WgXcQ' }, { titel: 'Eigen clip', url: opslag }], 'alleen YouTube en de eigen opslag komen in de kopie'); n++;
+ok(L.kamerDoc(metVideos, { naam: 'x', platformModules: { teamkamer: true } }, spelers, {}, null).thuisVideos.length === 0, 'thuis uit bij de eindbaas: geen video\'s');
+ok(L.kamerDoc({ ...team, teamkamer: { aan: true, thuisVideos: Array.from({ length: 9 }, () => ({ yt: 'dQw4w9WgXcQ' })) } }, { naam: 'x', platformModules: { teamkamer: true, teamkamerOpties: { thuis: true } } }, spelers, {}, null).thuisVideos.length === K.MAX_THUIS_VIDEOS, 'maximaal zes video\'s');
+ok(K.youtubeId('https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=3') === 'dQw4w9WgXcQ' && K.youtubeId('https://youtu.be/dQw4w9WgXcQ') === 'dQw4w9WgXcQ' && K.youtubeId('https://www.youtube.com/shorts/dQw4w9WgXcQ') === 'dQw4w9WgXcQ' && K.youtubeId('https://voorbeeld.nl') === '', 'YouTube-links herkennen');
+assert.deepEqual(K.thuisVideo({ url: 'https://youtu.be/dQw4w9WgXcQ', titel: ' Kappen ' }), { titel: 'Kappen', yt: 'dQw4w9WgXcQ' }); n++;
+assert.deepEqual(K.thuisVideo({ bron: 'upload', url: opslag, titel: 'Clip' }), { titel: 'Clip', url: opslag }); n++;
+ok(K.thuisVideo({ url: 'https://voorbeeld.nl/x.mp4' }) === null && K.thuisVideo({ bron: 'upload', url: 'https://youtu.be/dQw4w9WgXcQ' }) === null, 'andere links komen er niet in');
+/* de link moet met www: het certificaat van de site geldt alleen voor www.cluppie.io */
+ok(K.KAMER_URL.startsWith('https://www.cluppie.io/') && K.linkTekst('O11-1', 'ABC').includes('https://www.cluppie.io/kamer.html?k=ABC'), 'teamlink met www');
+ok(K.kindCodeTekst('Pim', 'D7JSGF').includes('D7J SGF') && K.kindCodeTekst('Pim', 'D7JSGF').includes(K.KAMER_URL), 'code doorsturen: code en adres in het bericht');
+
 console.log(`teamkamer: ${n} controles geslaagd`);

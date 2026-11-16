@@ -1,4 +1,4 @@
-/* ==================== TEAMKAMER — beheerscherm van de trainer [20261116m] ====================
+/* ==================== TEAMKAMER — beheerscherm van de trainer [20261116n] ====================
    Tegel Teamkamer (sectie Meer) en, op de computer, Team › Teamkamer. De trainer zet hier de teamkamer
    aan, deelt de teamlink, keurt ouders goed, plaatst mededelingen en polls en kiest wat ouders en
    spelers zien. Wat ouders zien staat in een aparte kopie (teamkamer/{teamId}) die de Cloud Functions
@@ -7,8 +7,8 @@
    Importeert niets uit teams.js (geen kringverwijzing): teams.js geeft renderTeam mee aan
    koppelTeamkamer(). state.js is niet aangeraakt. */
 import { db, functions, httpsCallable, doc, collection, addDoc, updateDoc, deleteDoc, getDocs, query, where, onSnapshot, Timestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261116m';
-import * as K from './kamer-logica.js?v=20261116m';
+import { S, esc, meld } from './state.js?v=20261116n';
+import * as K from './kamer-logica.js?v=20261116n';
 
 const roep = (naam, data) => httpsCallable(functions, naam)(data || {}).then(r => r.data);
 const M = { teamId: null, sub: 'toegang', subs: [], kamer: null, link: null, aanvragen: [], leden: [], polls: [], berichten: [], gezin: {},
@@ -17,7 +17,11 @@ const M = { teamId: null, sub: 'toegang', subs: [], kamer: null, link: null, aan
 export const teamkamerZichtbaar = (team = S.team) => K.teamkamerMag(team, S._clubPlatform, S._teamkamerLos);
 /* wat de eindbaas voor deze club (of voor trainers zonder club) heeft aangezet; wat uit staat, toont dit scherm niet */
 const mag = (k) => K.optiesVan(S.team, S._clubPlatform, S._teamkamerLosOpties)[k] === true;
-const inst = () => { const k = (S.team && S.team.teamkamer) || {}; return { aan: k.aan === true, namen: k.namen !== false, uitslag: k.uitslag === true, live: k.live === true, lijn: Array.isArray(k.lijn) ? k.lijn : [], thuis: k.thuis || null }; };
+const inst = () => { const k = (S.team && S.team.teamkamer) || {}; return { aan: k.aan === true, namen: k.namen !== false, uitslag: k.uitslag === true, live: k.live === true, lijn: Array.isArray(k.lijn) ? k.lijn : [], thuis: k.thuis || null,
+  thuisVideos: (Array.isArray(k.thuisVideos) ? k.thuisVideos : []).map(K.thuisVideo).filter(Boolean) }; };
+/* video's die de club met dit team deelde (S.videos, zie teams.js), als kandidaat voor Thuis oefenen */
+const clubVideos = () => (S.videos || []).filter(v => (v.teams || []).includes(S.teamId)).map(v => K.thuisVideo(v)).filter(Boolean);
+const zelfdeVideo = (a, b) => (a.yt && a.yt === b.yt) || (a.url && a.url === b.url);
 const eigenSpelers = () => (S._eigenSpelers && S._eigenSpelers.length ? S._eigenSpelers : (S.spelers || [])).filter(p => p && !p.gearchiveerd && p.naam)
   .slice().sort((a, b) => (Number(a.nummer) || 999) - (Number(b.nummer) || 999) || String(a.naam).localeCompare(String(b.naam), 'nl'));
 const voornaam = (p) => String((p && p.naam) || '').trim().split(/\s+/)[0];
@@ -133,7 +137,7 @@ function htmlPollBeheer(p){
   const stemmen = M.stemmen[p.id] || [], w = K.pollWeergave(p, spelersMap, [], sp.length);
   const wie = (optieId) => K.namenLijst(spelersMap, stemmen.filter(s => s.keuzes.includes(optieId)).map(s => s.spelerId));
   const niet = K.nogNiet(sp.map(x => x.id), stemmen.filter(s => s.keuzes.length).map(s => s.spelerId));
-  return `<section class="tk-kaart"><div class="tk-rij"><span class="tk-label ${w.open ? 'accent' : ''}">${w.open ? 'Loopt' : 'Gesloten'}${p.wedstrijdDatum ? ' · wedstrijd ' + esc(K.datumKort(p.wedstrijdDatum)) : ''}</span>${w.nodig ? `<span class="tk-klein tk-vet">${esc(w.nodig)}</span>` : ''}</div>
+  return `<section class="tk-kaart"><div class="tk-rij"><span class="tk-label ${w.open ? 'accent' : ''}">${w.open ? 'Loopt' : 'Gesloten'}${p.wedstrijdDatum ? ', wedstrijd ' + esc(K.datumKort(p.wedstrijdDatum)) : ''}</span>${w.nodig ? `<span class="tk-klein tk-vet">${esc(w.nodig)}</span>` : ''}</div>
     <div class="tk-h3">${esc(p.vraag)}</div>
     ${w.opties.map(o => `<div class="tk-rij" style="align-items:flex-start"><span class="tk-zacht" style="text-align:left">${esc(o.tekst)}</span><span><b>${o.aantal}</b>${w.open && wie(o.id) ? `<div class="tk-klein">${esc(wie(o.id))}</div>` : (o.namen ? `<div class="tk-klein">${esc(o.namen)}</div>` : '')}</span></div>`).join('')}
     <div class="tk-rij tk-lijn"><span class="tk-zacht">Gestemd</span><span class="tk-vet">${w.gestemd} van ${sp.length} gezinnen</span></div>
@@ -162,20 +166,35 @@ function htmlInstellingen(){
       <div class="tk-klein tk-zacht tk-lijn">Nooit zichtbaar, ook niet met een schakelaar: redenen van afwezigheid, beoordelingen, leerpunten en achternamen.</div></section>
     ${ws.length && mag('opstelling') ? `<section class="tk-kaart" style="gap:4px"><div class="tk-label">Opstelling delen</div>
       ${ws.map(w => sw(`${K.hoofdletter(K.datumKort(w.datum))}${w.tegenstander ? ', ' + w.tegenstander : ''}`, 'Staat uit tot jij hem aanzet', w.deelOpstelling === true, `data-tk="opstelling" data-id="${esc(w.id)}"`)).join('')}</section>` : ''}
-    ${mag('thuis') ? `<section class="tk-kaart"><div class="tk-label">Thuis oefenen</div>
-      ${i.thuis ? `<div class="tk-rij"><span class="tk-vet" style="text-align:left">${esc(i.thuis.naam || i.thuis.vormId)}</span><button class="tk-knop licht klein" data-tk="thuisweg">Haal weg</button></div>` : '<div class="tk-zacht">Kies één oefening die spelers thuis kunnen doen. Ze zien hem in 3D.</div>'}
-      <div class="tk-veld"><label for="tk-zoek">Zoek een oefening</label><input class="tk-invoer" id="tk-zoek" data-tkf="zoek" value="${esc(M.zoek)}" placeholder="Bijvoorbeeld: dribbelen"></div>
-      <div id="tk-treffers" style="display:flex;flex-direction:column;gap:8px">${treffers.map(trefferHtml).join('')}</div></section>` : ''}
+    ${mag('thuis') ? `<section class="tk-kaart"><h2 class="tk-label">Thuis oefenen</h2>
+      <div class="tk-klein tk-zacht">Wat spelers thuis kunnen doen: één oefening in 3D en tot ${K.MAX_THUIS_VIDEOS} video's.</div>
+      <h3 class="tk-veldnaam">Oefening in 3D</h3>
+      ${i.thuis ? `<div class="tk-rij"><span class="tk-vet" style="text-align:left">${esc(i.thuis.naam || i.thuis.vormId)}</span><button class="tk-knop licht klein" data-tk="thuisweg">Haal weg</button></div>` : ''}
+      <div class="tk-veld"><label for="tk-zoek">${i.thuis ? 'Kies een andere oefening' : 'Zoek een oefening'}</label><input class="tk-invoer" id="tk-zoek" data-tkf="zoek" value="${esc(M.zoek)}" placeholder="Bijvoorbeeld: dribbelen"></div>
+      <div id="tk-treffers" style="display:flex;flex-direction:column;gap:8px">${treffers.map(trefferHtml).join('')}</div>
+      <h3 class="tk-veldnaam tk-lijn">Video's</h3>
+      ${i.thuisVideos.map((v, n) => `<div class="tk-video-rij">${videoBeeld(v)}<span class="tk-vet tk-item-tekst">${esc(v.titel)}<span class="tk-klein tk-zacht" style="display:block;font-weight:400">${v.yt ? 'YouTube' : 'Video van de club'}</span></span>
+        <button class="tk-knop licht klein" data-tk="videoweg" data-n="${n}">Haal weg</button></div>`).join('') || '<div class="tk-zacht">Nog geen video. Plak een YouTube-link of kies een video van de club.</div>'}
+      ${i.thuisVideos.length < K.MAX_THUIS_VIDEOS ? `
+      <div class="tk-veld"><label for="tk-yt">YouTube-link</label><input class="tk-invoer" id="tk-yt" type="url" inputmode="url" autocomplete="off" placeholder="https://www.youtube.com/watch?v=..."></div>
+      <div class="tk-veld"><label for="tk-yt-titel">Titel voor de spelers</label><input class="tk-invoer" id="tk-yt-titel" maxlength="80" autocomplete="off" placeholder="Bijvoorbeeld: kappen en draaien"></div>
+      <button class="tk-knop licht" data-tk="videoplus">Voeg de video toe</button>
+      ${(() => { const kies = clubVideos().filter(v => !i.thuisVideos.some(x => zelfdeVideo(x, v)));
+        return kies.length ? `<div class="tk-veld"><span class="tk-veldnaam">Of kies een video van de club</span>
+          ${kies.slice(0, 12).map(v => `<button class="tk-video-rij tk-video-kies" data-tk="videoclub" data-yt="${esc(v.yt || '')}" data-url="${esc(v.url || '')}" data-titel="${esc(v.titel)}">${videoBeeld(v)}<span class="tk-item-tekst tk-vet">${esc(v.titel)}</span><span class="tk-klein tk-zacht">Voeg toe</span></button>`).join('')}</div>`
+          : (S.team && S.team.club ? `<div class="tk-klein tk-zacht">Video's die de club met dit team deelt (Training, Video's) kun je hier ook kiezen.</div>` : ''); })()}` : `<div class="tk-klein tk-zacht">Het maximum van ${K.MAX_THUIS_VIDEOS} video's is bereikt.</div>`}
+      <div class="tk-klein tk-zacht">Kies alleen video's die kinderen zonder toezicht mogen zien, en geen beelden waarop spelers herkenbaar zijn.</div></section>` : ''}
     ${mag('lijn') ? `<section class="tk-kaart"><div class="tk-label">Zo moedigen wij aan</div><div class="tk-klein tk-zacht">Drie afspraken voor langs de lijn. Ouders zien ze rond een wedstrijd. Leeg laten geeft de standaardtekst.</div>
       ${lijn.map((r, n) => `<input class="tk-invoer" data-tklijn="${n}" maxlength="90" value="${esc(r)}" aria-label="Afspraak ${n + 1}" placeholder="Afspraak ${n + 1}">`).join('')}
       <button class="tk-knop licht" data-tk="lijn">Bewaar de afspraken</button></section>` : ''}
     ${beurten.length && mag('beurten') ? `<section class="tk-kaart"><div class="tk-label">Beurten dit seizoen</div><div class="tk-klein tk-zacht">Geteld bij het sluiten van een poll (rijden, wassen, fruit, vlaggen). Een ouder ziet alleen de eigen teller en het gemiddelde.</div>
-      ${beurten.map(p => `<div class="tk-rij"><span class="tk-vet" style="text-align:left">${esc(voornaam(p))}</span><span class="tk-klein">${K.BEURT_SOORTEN.filter(s => M.gezin[p.id].beurten[s]).map(s => `${K.BEURT_NAMEN[s]} ${M.gezin[p.id].beurten[s]}`).join(' · ')}</span></div>`).join('')}
+      ${beurten.map(p => `<div class="tk-rij"><span class="tk-vet" style="text-align:left">${esc(voornaam(p))}</span><span class="tk-klein">${K.BEURT_SOORTEN.filter(s => M.gezin[p.id].beurten[s]).map(s => `${K.BEURT_NAMEN[s]} ${M.gezin[p.id].beurten[s]}`).join(', ')}</span></div>`).join('')}
       ${(() => { const nooit = sp.filter(p => !(M.gezin[p.id] && M.gezin[p.id].beurten && M.gezin[p.id].beurten.rijden)); return nooit.length && nooit.length < sp.length ? `<div class="tk-rij tk-lijn" style="align-items:flex-start"><span class="tk-zacht" style="white-space:nowrap">Nog niet gereden</span><span>${esc(nooit.map(voornaam).join(', '))}</span></div>` : ''; })()}</section>` : ''}
     <div class="tk-klein tk-zacht">Meer mogelijkheden (zoals polls, mededelingen of de live stand) zet Cluppie per club aan.</div>
     <section class="tk-kaart"><button class="tk-knop licht" data-tk="ververs">Werk de teamkamer nu bij</button>
       <button class="tk-knop licht" data-tk="uit">Zet de teamkamer uit</button><div class="tk-klein tk-zacht">Uitzetten sluit de teamkamer voor iedereen. Polls en mededelingen blijven bewaard tot je hem weer aanzet.</div></section>`;
 }
+const videoBeeld = (v) => `<span class="tk-video-beeld">${v.yt ? `<img src="${esc(K.ytThumb(v.yt))}" alt="" loading="lazy">` : ''}</span>`;
 const trefferHtml = (v) => `<button class="tk-knop licht klein" style="justify-content:flex-start" data-tk="thuis" data-id="${esc(v.id)}">${esc(v.naam)}</button>`;
 export function htmlTeamkamer(){
   if (!teamkamerZichtbaar()) return '<div class="kaart leeg">De teamkamer staat niet aan voor deze club.</div>';
@@ -293,6 +312,17 @@ export function koppelTeamkamer(v, { renderTeam }){
       }
       if (a === 'thuis'){ const vorm = (M.vormen || []).find(x => x.id === id); await zetInst({ thuis: { vormId: id, naam: vorm ? vorm.naam : '' } }); M.zoek = ''; meld('Thuisoefening gekozen'); return renderTeam(); }
       if (a === 'thuisweg'){ await zetInst({ thuis: null }); return renderTeam(); }
+      if (a === 'videoplus' || a === 'videoclub'){
+        const nu = inst().thuisVideos;
+        if (nu.length >= K.MAX_THUIS_VIDEOS) return meld(`Maximaal ${K.MAX_THUIS_VIDEOS} video's`);
+        const nieuw = a === 'videoclub' ? K.thuisVideo({ yt: b.dataset.yt, url: b.dataset.url, bron: b.dataset.yt ? '' : 'upload', titel: b.dataset.titel })
+          : K.thuisVideo({ url: root.querySelector('#tk-yt')?.value, titel: root.querySelector('#tk-yt-titel')?.value });
+        if (!nieuw) return meld('Plak een geldige YouTube-link');
+        if (nu.some(x => zelfdeVideo(x, nieuw))) return meld('Deze video staat er al');
+        b.disabled = true;
+        await zetInst({ thuisVideos: [...nu, nieuw] }); meld('Video toegevoegd aan Thuis oefenen'); return renderTeam();
+      }
+      if (a === 'videoweg'){ const nu = inst().thuisVideos; nu.splice(Number(b.dataset.n), 1); await zetInst({ thuisVideos: nu }); return renderTeam(); }
       if (a === 'lijn'){
         const lijn = [...root.querySelectorAll('[data-tklijn]')].map(x => x.value.trim().slice(0, 90)).filter(Boolean);
         await zetInst({ lijn }); return meld('Afspraken bewaard');

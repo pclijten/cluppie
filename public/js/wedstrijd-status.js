@@ -42,6 +42,8 @@ export function wedstrijdInfo(w){
     aftrap: w && w.aftrap ? { t: w.aftrap, bron: w.bron === 'sportlink' ? 'sportlink' : 'eigen' } : { t: '', bron: '' },
     // [20261012h] bij een eigen wedstrijd (of een aangepaste plek) gaat infoEigen voor
     accommodatie: eigen.accommodatie || sl.accommodatie || '', veld: sl.veld || '', kleedkamer: sl.kleedkamer || '',
+    // [20261116o] uit Sportlink, alleen voor de coach (niet in het bericht voor ouders); geen naam van de scheidsrechter
+    kleedkamerScheids: sl.kleedkamerScheids || '',
     plaats: sl.plaats || '',
     adres: eigen.accommodatie ? (eigen.adres || '') : (sl.adres || ''),
     plaatsAdres: eigen.accommodatie ? (eigen.plaatsAdres || '') : (sl.plaatsAdres || ''),
