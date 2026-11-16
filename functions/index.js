@@ -190,6 +190,8 @@ exports.verificatieMail = require('./verificatie-mail').verificatieMail;   // e-
 exports.verstuurMail = require('./mail').verstuurMail;   // SMTP-verzending van `mail/{id}` (vervangt de Trigger Email-extensie)
 /* [20261011h] speler overzetten / seizoensovergang in één transactie (functions/overdracht.js) */
 exports.zetSpelerOver = require('./overdracht').zetSpelerOver;
+/* [20261116m] Teamkamer: ouders en spelers (kopie, toegang, polls). Zie functions/teamkamer.js. */
+Object.assign(exports, require('./teamkamer').functies);
 
 /* ==================== 2. AI-FUNCTIES ==================== */
 

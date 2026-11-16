@@ -21,6 +21,17 @@ Let op: de regel over privé-rondebeoordelingen (`beoordelingenPrive`) hoort bij
 
 Een persoon kan meerdere rollen tegelijk hebben (coach én coördinator, admin én coach). De rollen tellen los van elkaar.
 
+### Aanvulling 16-11-2026 (release 20261116m): ouder en speler
+
+Twee gebruikerstypen erbij, buiten de acht hierboven. Ze staan niet in `teams.leden` of `clubs.leden` en hebben in geen enkele bestaande regel rechten.
+
+| Gebruikerstype | Rechtenbron (Firestore) | Herkenning in de client | Rol op de server |
+|---|---|---|---|
+| Ouder | `teamkamer/{teamId}/kamerleden/<uid>` met `rol: 'ouder'`, `spelerIds`, `vervaltOp` (alleen door Cloud Functions gemaakt, na goedkeuring door de trainer) | eigen pagina `kamer.html` (`kamer-app.js`), niet de trainersapp | geen clubrol; `lidVan` in `functions/teamkamer.js` |
+| Speler | zelfde pad met `rol: 'speler'`, anoniem account, `door: <uid van de ouder>` | `kamer.html` | idem; telt alleen als de eindbaas "Spelers zelf" aan heeft |
+
+Wat ze mogen: lezen van `teamkamer/{teamId}` (hoofddocument, `agenda`, `berichten`, `polls`), het eigen `gezin/{spelerId}`, het eigen `kamerleden`-document en de eigen stem; schrijven van alleen de eigen stem in een open poll. De trainer (zelfde kring als `magSchrijven`) leest alles onder `teamkamer/{teamId}` en schrijft mededelingen en polls, voor zover de eindbaas die mogelijkheid aan heeft (`mag` in het hoofddocument). De kopie zelf, het lidmaatschap en de gezinsdocumenten schrijft alleen de server. Getest in `tests/rules.test.mjs` (zeven scenario's, nog te draaien in de emulator) en `tests/teamkamer.test.mjs`.
+
 ## 2. Wat elke rol mag volgens de rules
 
 L = lezen, S = schrijven, – = geen toegang. "eigen" = alleen eigen team of eigen bouw.

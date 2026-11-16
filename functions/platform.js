@@ -278,6 +278,11 @@ function schoonPlatformInstellingen(d = {}){
     if (limiet === null) fout('Kies een AI-limiet per trainer tussen 0 en 1000.');
     uit.soloAI = { aan: d.soloAI.aan === true, limiet };
   }
+  if (d.teamkamerLos !== undefined) uit.teamkamerLos = d.teamkamerLos === true;   /* [20261116m] teamkamer voor trainers zonder club */
+  if (d.teamkamerLosOpties && typeof d.teamkamerLosOpties === 'object'){            /* per mogelijkheid, alleen bekende sleutels */
+    const OPTIES = require('./teamkamer-logica').OPTIES;
+    uit.teamkamerLosOpties = Object.fromEntries(OPTIES.map(k => [k, d.teamkamerLosOpties[k] === true]));
+  }
   if (d.standaard){
     const s = d.standaard, l = s.aiLimiet;
     const aiLimiet = (l === null || l === '' || l === undefined) ? null : geheel(l, 0, 100000);

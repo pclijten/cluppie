@@ -518,6 +518,81 @@ service cloud.firestore {
       allow read: if (id == 'overzicht' && echt()) || isClubAdmin(id) || isPlatform();
       allow write: if false;
     }
+    /* ======================= teamkamer: ouders en spelers [20261116m] ======================= */
+    /* Ouders en spelers staan NIET in teams.leden of clubs.leden: geen van de regels hierboven geldt voor hen.
+       Zij lezen alleen de kopie onder teamkamer/{teamId}, die de Cloud Functions vullen met toegestane velden
+       (functions/teamkamer-logica.js). Lidmaatschap (kamerleden) maken alleen de Cloud Functions: een ouder na
+       goedkeuring door de coach, een speler met een code van de eigen ouder (anoniem account, geen e-mail).
+       Coaches (magSchrijven) lezen alles van hun eigen team en schrijven mededelingen en polls. */
+    function kamerLid(t) { return get(/databases/$(database)/documents/teamkamer/$(t)/kamerleden/$(uid())).data; }
+    function kamerAan(t) {
+      return exists(/databases/$(database)/documents/teamkamer/$(t))
+        && get(/databases/$(database)/documents/teamkamer/$(t)).data.get('aan', false) == true;
+    }
+    /* wat de eindbaas voor deze club (of voor trainers zonder club) heeft aangezet; de Cloud Functions zetten het in de kopie (mag).
+       Standaard staat elke mogelijkheid uit. */
+    function kamerMag(t, k) {
+      return kamerAan(t) && get(/databases/$(database)/documents/teamkamer/$(t)).data.get('mag', {}).get(k, false) == true;
+    }
+    /* een speler (code van de ouder) telt alleen als lid zolang de eindbaas toegang voor spelers aan heeft */
+    function isKamerLid(t) {
+      return ingelogd() && exists(/databases/$(database)/documents/teamkamer/$(t)/kamerleden/$(uid())) && kamerLid(t).vervaltOp > request.time
+        && (kamerLid(t).get('rol', '') != 'speler' || kamerMag(t, 'spelers'));
+    }
+    function kamerLezen(t) { return (isKamerLid(t) && kamerAan(t)) || magSchrijven(t); }
+    function kamerEigenSpeler(t, s) { return isKamerLid(t) && s in kamerLid(t).get('spelerIds', []); }
+    function pollDoc(t, p) { return get(/databases/$(database)/documents/teamkamer/$(t)/polls/$(p)).data; }
+    function pollOpen(t, p) {
+      return pollDoc(t, p).get('status', '') == 'open'
+        && (pollDoc(t, p).get('sluitOp', null) == null || pollDoc(t, p).sluitOp > request.time);
+    }
+    match /teamkamer/{teamId} {
+      allow read: if kamerLezen(teamId);
+      allow write: if false;                       /* alleen Cloud Functions */
+      match /agenda/{id} {
+        allow read: if kamerLezen(teamId);
+        allow write: if false;
+      }
+      /* alleen het eigen gezin (voornaam, rugnummer, beurten) en de coach */
+      match /gezin/{spelerId} {
+        allow read: if (kamerEigenSpeler(teamId, spelerId) && kamerAan(teamId)) || magSchrijven(teamId);
+        allow write: if false;
+      }
+      match /kamerleden/{lidUid} {
+        allow read: if (ingelogd() && lidUid == uid()) || magSchrijven(teamId);
+        allow write: if false;
+      }
+      match /berichten/{id} {
+        allow read: if kamerLezen(teamId);
+        allow create, update: if magSchrijven(teamId) && kamerMag(teamId, 'berichten');
+        allow delete: if magSchrijven(teamId);
+      }
+      match /polls/{pollId} {
+        allow read: if kamerLezen(teamId);
+        allow create, update: if magSchrijven(teamId) && kamerMag(teamId, 'polls');
+        allow delete: if magSchrijven(teamId);
+        /* één document per speler = één stem per gezin. Een gezin leest en schrijft alleen de eigen stem,
+           alleen zolang de poll open is, en een speler alleen als de coach dat voor deze poll toestaat.
+           Tellen doet de Cloud Function kamerStem; wie wat koos staat alleen in de poll als de coach dat aanzet. */
+        match /stemmen/{spelerId} {
+          allow read: if kamerEigenSpeler(teamId, spelerId) || magSchrijven(teamId);
+          allow create, update: if kamerEigenSpeler(teamId, spelerId) && kamerMag(teamId, 'polls') && pollOpen(teamId, pollId)
+            && (pollDoc(teamId, pollId).get('spelers', false) == true || kamerLid(teamId).get('rol', '') == 'ouder')
+            && request.resource.data.keys().hasOnly(['keuzes', 'door', 'ms'])
+            && request.resource.data.door == uid()
+            && request.resource.data.keuzes is list && request.resource.data.keuzes.size() <= 12;
+          allow delete: if magSchrijven(teamId);
+        }
+      }
+    }
+    /* aanvraag van een ouder: zelf lezen, de coach van het team leest ook; schrijven via Cloud Functions */
+    match /kamerAanvragen/{id} {
+      allow read: if echt() && (resource.data.uid == uid() || magSchrijven(resource.data.teamId));
+      allow write: if false;
+    }
+    /* teamlinks en kindcodes: alleen Cloud Functions */
+    match /kamerLinks/{id} { allow read, write: if false; }
+    match /kindCodes/{id} { allow read, write: if false; }
     /* platformcijfers per club (platformdashboard): alleen de platformbeheerder */
     match /platformstats/{id} {
       allow read: if isPlatform();

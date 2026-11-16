@@ -19,10 +19,11 @@
    spelers- of teamgegevens. Spelersnamen staan alleen op het scherm van de
    coach en nooit in de deeltekst. */
 import { db, doc, setDoc, updateDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261116l';
+import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261116m';
 import { ico } from './icons.js?v=20261116j';
-import { telGebruik, telNav } from './tracker.js?v=20261116l';
-import { plekHtml, routeUrl, presentieWedstrijd, afwezigTekst, opstellingKlaar } from './nu-scherm.js?v=20261116l';
+import { telGebruik, telNav } from './tracker.js?v=20261116m';
+import { plekHtml, routeUrl, presentieWedstrijd, afwezigTekst, opstellingKlaar } from './nu-scherm.js?v=20261116m';
+import { htmlPollsBijWedstrijd, openPollVoorWedstrijd } from './kamer-beheer.js?v=20261116m';   /* [20261116m] polls bij een wedstrijd */
 
 const p2 = n => String(n).padStart(2, '0');
 const isoVan = d => `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
@@ -267,7 +268,8 @@ function tabPraktisch(w){
   return `${kaart('Weer bij aanvang', weer)}
     ${kaart('Waar en wanneer', `${veldInfo}${plek || leeg('Nog geen locatie, veld of kleedkamer bekend. Vul die in bij Wijzig opzet.')}`)}
     <div class="nu-acties">${knop('Deel in de groepsapp', 'action-whatsapp', 'data-vb-deel')}</div>
-    <p class="vb-bron">Zonder spelersnamen: alleen datum, tijd, plek en weer.</p>`;
+    <p class="vb-bron">Zonder spelersnamen: alleen datum, tijd, plek en weer.</p>
+    ${htmlPollsBijWedstrijd(w)}`;
 }
 
 /* ==================== TAB: PLAN ==================== */
@@ -573,11 +575,13 @@ function koppel(body){
     if (t){ S._vbTab = t.dataset.vbTab; teken(); telNav('wedstrijd:voorbereiding:' + S._vbTab, 'tab'); return; }
     const w = huidig();
     if (!w) return;
+    const tp = ev.target.closest('[data-tk-poll]');   /* [20261116m] poll maken: naar de teamkamer, formulier al ingevuld */
+    if (tp){ openPollVoorWedstrijd(tp.dataset.wid, tp.dataset.tkPoll); sluitModal(); _ctx?.zetTeamTab?.('teamkamer'); return; }
     const wd = ev.target.closest('[data-vb-wedstrijd]');
     if (wd){
       const id = wd.dataset.vbWedstrijd;
       sluitModal();
-      const m = await import('./wedstrijd.js?v=20261116l');
+      const m = await import('./wedstrijd.js?v=20261116m');
       m.openWedstrijd(id);
       return;
     }
