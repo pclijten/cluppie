@@ -1,0 +1,126 @@
+/* ==================== TEAMKAMER [20261116m] ====================
+   Eén stijlblad voor de teamkamer: de pagina van ouders en spelers (kamer.html, html.tk-pagina) en het
+   beheerscherm van de trainer in de app (tegel Teamkamer). Alle klassen beginnen met tk-. De tokens
+   hieronder gelden alleen op kamer.html; in de app komen ze uit styles.css. */
+html.tk-pagina{
+  --font-display:"Barlow Condensed","Arial Narrow",sans-serif; --font-body:"Inter",ui-sans-serif,system-ui,sans-serif;
+  --bg:#0e1116; --surface:#181d24; --surface-2:#1f262f; --ink:#f5f6f8; --ink-2:#8b95a1; --hair:rgba(255,255,255,.08);
+  --accent-vlak:#cc2620; --accent-ink:#fdfdfe; --accent-tekst:#ff7a72; --ok:#35c47a; --warn:#f5b13d; --veld:#16361f;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){
+  html.tk-pagina{
+    --bg:#e9edf2; --surface:#ffffff; --surface-2:#eef1f4; --ink:#1a1f26; --ink-2:#5a6572; --hair:rgba(15,22,32,.14);
+    --accent-vlak:#c8211c; --accent-ink:#fdfdfe; --accent-tekst:#c8211c; --ok:#178048; --warn:#8f5207; --veld:#2e7d46;
+    color-scheme:light;
+  }
+}
+html.tk-pagina, html.tk-pagina body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.45;-webkit-text-size-adjust:100%}
+html.tk-pagina *{box-sizing:border-box}
+html.tk-pagina button, html.tk-pagina input, html.tk-pagina select, html.tk-pagina textarea{font-family:inherit}
+.tk-app{max-width:480px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column}
+.tk-kop{display:flex;align-items:center;gap:12px;padding:16px 16px 12px}
+.tk-kop-tekst{flex:1;min-width:0}
+.tk-inhoud{flex:1;padding:4px 16px 96px;display:flex;flex-direction:column;gap:12px}
+.tk-nav{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;background:var(--surface);border-top:1px solid var(--hair);padding-bottom:env(safe-area-inset-bottom)}
+.tk-nav-in{width:100%;max-width:480px;display:grid;grid-auto-flow:column;grid-auto-columns:1fr}
+.tk-nav button{min-height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:transparent;border:0;color:var(--ink-2);font-size:12px;font-weight:600;cursor:pointer}
+.tk-nav button[aria-current="true"]{color:var(--ink)}
+.tk-nav svg, .tk-ico{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.tk-ico.klein{width:20px;height:20px}
+
+/* gedeeld: pagina en app */
+.tkb{max-width:680px;margin-inline:auto;width:100%}
+.tk-label{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
+.tk-label.accent{color:var(--accent-tekst, var(--accent))}
+.tk-label.ok{color:var(--ok)} .tk-label.let{color:var(--warn)}
+.tk-h1{margin:0;font-family:var(--font-display);font-weight:700;font-size:28px;line-height:1.05;letter-spacing:.5px;text-transform:uppercase}
+.tk-h2{margin:0;font-family:var(--font-display);font-weight:700;font-size:24px;line-height:1.1;letter-spacing:.4px;text-transform:uppercase}
+.tk-h3{margin:0;font-size:17px;font-weight:600;line-height:1.3}
+.tk-zacht{color:var(--ink-2)} .tk-klein{font-size:13px} .tk-vet{font-weight:600}
+.tk-ok{color:var(--ok)} .tk-let{color:var(--warn)}
+.tk-kaart{background:var(--surface);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.tk-kaart.nieuw{border:1px solid var(--accent-tekst, var(--accent))}
+.tk-rij{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.tk-rij > :last-child{text-align:right}
+.tk-lijn{border-top:1px solid var(--hair);padding-top:10px}
+.tk-tijden{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tk-tijd{background:var(--surface-2);border-radius:10px;padding:10px 12px}
+.tk-tijd b{display:block;font-family:var(--font-display);font-weight:700;font-size:24px;line-height:1.1}
+.tk-tijd span{font-size:12px;color:var(--ink-2)}
+.tk-knop{min-height:48px;padding:0 16px;border-radius:12px;border:0;background:var(--accent-vlak);color:var(--accent-ink);font-size:15px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;text-align:center}
+.tk-knop.licht{background:transparent;color:var(--ink);border:1px solid color-mix(in srgb, var(--ink) 30%, transparent)}
+.tk-knop.klein{min-height:44px;padding:0 12px;font-size:14px;border-radius:10px}
+.tk-knop.vol{width:100%}
+.tk-knop.tekst{background:transparent;color:var(--accent-tekst, var(--accent));padding:0 4px}
+.tk-knop:disabled{opacity:.5;cursor:not-allowed}
+.tk-knop:focus-visible, .tk-optie:focus-visible, .tk-sw:focus-visible, .tk-item-kop:focus-visible, .tk-nav button:focus-visible, .tk-chip:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.tk-twee{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tk-veld{display:flex;flex-direction:column;gap:6px}
+.tk-veld label, .tk-veldnaam{font-size:13px;font-weight:600}
+.tk-invoer{min-height:48px;width:100%;border-radius:10px;border:1px solid color-mix(in srgb, var(--ink) 45%, transparent);background:var(--surface-2);color:var(--ink);font-size:16px;padding:0 12px}
+textarea.tk-invoer{padding:12px;min-height:96px;resize:vertical;line-height:1.45}
+select.tk-invoer{padding-right:8px}
+.tk-code{font-family:var(--font-display);font-weight:700;font-size:36px;letter-spacing:6px;text-align:center;text-transform:uppercase;min-height:64px}
+.tk-sw{position:relative;width:52px;height:44px;border:0;background:transparent;padding:0;cursor:pointer;flex:none}
+.tk-sw::before{content:"";position:absolute;left:0;top:7px;width:52px;height:30px;border-radius:999px;background:color-mix(in srgb, var(--ink) 28%, var(--surface))}
+.tk-sw::after{content:"";position:absolute;top:10px;left:3px;width:24px;height:24px;border-radius:50%;background:#fdfdfe;transition:left .15s ease}
+.tk-sw[aria-checked="true"]::before{background:var(--accent-vlak)}
+.tk-sw[aria-checked="true"]::after{left:25px}
+.tk-schakel{display:flex;align-items:center;gap:12px;min-height:52px}
+.tk-schakel > div{flex:1;min-width:0}
+.tk-seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;padding:4px;background:var(--surface);border-radius:12px}
+.tk-seg button{min-height:44px;border-radius:9px;border:0;background:transparent;color:var(--ink);font-size:14px;font-weight:600;cursor:pointer}
+.tk-seg button[aria-pressed="true"]{background:color-mix(in srgb, var(--ink) 14%, var(--surface))}
+.tk-chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tk-chip{min-height:44px;border-radius:10px;border:2px solid var(--hair);background:var(--surface-2);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer}
+.tk-chip[aria-pressed="true"]{border-color:var(--accent-tekst, var(--accent))}
+.tk-melding{background:var(--surface-2);border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--ink-2)}
+.tk-fout{color:var(--warn);font-weight:600}
+
+/* agenda */
+.tk-item{background:var(--surface);border-radius:14px;overflow:hidden}
+.tk-item-kop{display:flex;align-items:center;gap:14px;width:100%;min-height:72px;padding:12px 16px;background:transparent;border:0;color:var(--ink);text-align:left;cursor:pointer;font-size:15px}
+.tk-datum{width:48px;text-align:center;flex:none}
+.tk-datum b{display:block;font-family:var(--font-display);font-weight:700;font-size:28px;line-height:1}
+.tk-datum span{font-size:12px;color:var(--ink-2)} .tk-datum span:first-child{font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-tekst, var(--accent))}
+.tk-item-tekst{flex:1;min-width:0}
+.tk-item-meer{border-top:1px solid var(--hair);padding:12px 16px 16px;display:flex;flex-direction:column;gap:8px}
+.tk-afgelast{text-decoration:line-through;color:var(--ink-2)}
+.tk-stand{font-family:var(--font-display);font-weight:700;font-size:40px;line-height:1;text-align:center}
+
+/* polls */
+.tk-optie{display:flex;flex-direction:column;gap:8px;width:100%;min-height:56px;padding:12px 14px;background:var(--surface-2);border:2px solid var(--hair);border-radius:12px;color:var(--ink);text-align:left;cursor:pointer;font-size:15px}
+.tk-optie[aria-pressed="true"]{border-color:var(--accent-tekst, var(--accent))}
+.tk-optie:disabled{cursor:default}
+.tk-optie-kop{display:flex;align-items:center;gap:10px}
+.tk-optie-kop > :first-child{flex:1;font-weight:600}
+.tk-optie-kop b{font-family:var(--font-display);font-size:22px;line-height:1}
+.tk-balk{display:block;height:6px;border-radius:999px;background:color-mix(in srgb, var(--ink) 12%, transparent);overflow:hidden}
+.tk-balk i{display:block;height:6px;border-radius:999px;background:var(--accent-vlak)}
+.tk-jouw{font-size:12px;font-weight:600;color:var(--accent-tekst, var(--accent))}
+
+/* spelers */
+.tk-shirts{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.tk-shirt{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;font-size:12px}
+.tk-shirt b{width:40px;height:40px;border-radius:12px;background:var(--surface-2);border:1px solid var(--hair);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:20px}
+.tk-shirt span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tk-nr{width:52px;height:52px;border-radius:14px;background:var(--accent-vlak);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:28px;flex:none}
+.tk-merk{width:44px;height:44px;border-radius:12px;background:var(--accent-vlak);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:30px;flex:none}
+
+/* blad onderaan (afmelden via WhatsApp) */
+.tk-blad-achter{position:fixed;inset:0;background:rgba(10,13,18,.6);display:flex;flex-direction:column;justify-content:flex-end;z-index:50}
+.tk-blad{background:var(--surface);border-radius:22px 22px 0 0;padding:20px 16px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px;max-width:480px;width:100%;margin:0 auto}
+.tk-bericht{background:var(--surface-2);border-radius:12px;padding:14px}
+.tk-toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:600;z-index:60;max-width:90vw;text-align:center}
+.tk-3d{border-radius:12px;overflow:hidden;background:var(--surface-2)}
+.tk-3d .s3d-knoppen{display:flex;flex-wrap:wrap;gap:8px;padding:8px}
+.tk-3d .s3d-knoppen button{min-height:44px;padding:0 12px;border-radius:10px;border:1px solid color-mix(in srgb, var(--ink) 30%, transparent);background:transparent;color:var(--ink);font-weight:600;cursor:pointer}
+.tk-3d .s3d-stage{height:300px;position:relative;overflow:hidden;background:radial-gradient(ellipse at center,color-mix(in srgb,var(--veld) 55%,var(--surface)) 0%,var(--bg) 75%)}
+.tk-3d .s3d-stage canvas{display:block;width:100%;height:100%}
+.tk-3d .s3d-wacht{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--ink-2)}
+.tk-3d .s3d-stap{padding:0 12px 12px;font-size:14px}
+@media (prefers-reduced-motion: reduce){ .tk-sw::after{transition:none} }
+
+/* platformcentrum: mogelijkheden van de teamkamer onder de hoofdschakelaar */
+.pc-tkopties{margin:4px 0 12px 12px;padding-left:12px;border-left:2px solid var(--hair)}

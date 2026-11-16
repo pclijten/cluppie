@@ -240,7 +240,7 @@ const DEMO_ANTWOORD = {
   sportlinkSyncNu: () => ({ teams: 8, gematcht: 8, wedstrijden: 40, totaalWedstrijden: 40 }),
 };
 export function httpsCallable(_f, naam){
-  return DEMO_ANTWOORD[naam] ? async () => ({ data: DEMO_ANTWOORD[naam]() }) : nietInDemo('Deze functie (' + naam + ')');
+  return DEMO_ANTWOORD[naam] ? async (d) => ({ data: DEMO_ANTWOORD[naam](d || {}) }) : nietInDemo('Deze functie (' + naam + ')');
 }
 export const STORAGE_BUCKET = 'demo';
 export const storage = { bucket: 'demo' };
@@ -510,6 +510,64 @@ if (DEMO_ROL){
     store.set('teams/demo-o11-2', t);
   }
   store.set(`clubs/${CLUB}`, club);
+}
+
+/* ==================== DEMO: TEAMKAMER [20261116m] ====================
+   index.html?demo=coach  → tegel Teamkamer bij O11-2: aan, met een aanvraag, polls en een mededeling.
+   kamer.html?demo=ouder  → de pagina van een ouder bij O11-2;  kamer.html?demo=speler → die van een speler.
+   Met &kaal=1 erbij (bijv. kamer.html?demo=ouder&kaal=1) staat elke mogelijkheid van de eindbaas uit.
+   De kopie die de Cloud Functions in het echt maken, staat hier als vaste voorbeeldgegevens. In de demo
+   telt niemand de stemmen: je ziet je eigen stem, de aantallen blijven staan. */
+{
+  const T = 'demo-o11-2', team = store.get(`teams/${T}`), club = store.get(`clubs/${CLUB}`);
+  if (team && team.club && club){
+    const p2 = n => String(n).padStart(2, '0'), iso = d => `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
+    const over = n => { const d = new Date(); d.setDate(d.getDate() + n); return d; };
+    const opDag = (dag, vanaf = 1) => { for (let n = vanaf; n < vanaf + 8; n++) if (over(n).getDay() === dag) return iso(over(n)); return iso(over(vanaf)); };
+    const tot = Timestamp.fromMillis(Date.now() + 200 * 864e5);
+    const spelers = [...store.entries()].filter(([pad]) => pad.startsWith(`teams/${T}/spelers/`)).map(([pad, d]) => ({ id: pad.split('/').pop(), ...d })).filter(x => x.naam && !x.gearchiveerd);
+    const voor = x => String(x.naam).split(' ')[0], ids = spelers.map(x => x.id), kindVan = ids[6] || ids[0];
+    const zaterdag = opDag(6), komend = [...store.entries()].filter(([pad, d]) => pad.startsWith(`teams/${T}/wedstrijden/`) && d.datum >= iso(new Date())).sort((a, b) => a[1].datum.localeCompare(b[1].datum))[0];
+    const wid = komend ? komend[0].split('/').pop() : 'demo-w', wd = komend ? komend[1] : { datum: zaterdag, aftrap: '09:30', tegenstander: 'VV Voorbeeld O11-1', thuis: false, info: { accommodatie: 'Sportpark Voorbeeld' } };
+    const MAG = Object.fromEntries(['namen', 'spelers', 'polls', 'beurten', 'berichten', 'afmelden', 'uitslag', 'live', 'opstelling', 'thuis', 'lijn', 'agenda', 'weer'].map(k => [k, !/[?&]kaal=1/.test(location.search)]));   /* in de demo staat alles aan; met &kaal=1 alles uit (alleen de hoofdschakelaar) */
+    store.set(`clubs/${CLUB}`, { ...club, platformModules: { ...(club.platformModules || {}), teamkamer: true, teamkamerOpties: MAG } });
+    store.set(`teams/${T}`, { ...team, teamkamer: { aan: true, live: true } });
+    zetSeed(`teamkamer/${T}`, { aan: true, mag: MAG, teamNaam: team.naam, clubNaam: CLUBNAAM, club: CLUB, namen: true, uitslag: false, live: true, aantal: spelers.length, plek: null,
+      lijn: ['We moedigen het hele team aan, niet alleen ons eigen kind.', 'De trainer coacht, wij juichen.', 'De scheidsrechter doet zijn best. Dat laten we zo.'],
+      thuis: { vormId: 'wu-m-verkeerslicht', naam: 'Verkeerslicht' }, beurtenGem: { rijden: 1.2, wassen: 0.8, fruit: 0, vlaggen: 0 },
+      spelers: Object.fromEntries(spelers.map((x, n) => [x.id, n === 9 || !MAG.namen ? { v: true } : { n: voor(x), nr: x.nummer ?? null }])),
+      ...(MAG.namen ? {} : { namen: false, live: false, lijn: [], thuis: null }) });
+    zetSeed(`teamkamer/${T}/agenda/w_${wid}`, { soort: 'wedstrijd', datum: wd.datum, tijd: wd.aftrap || '09:30', thuis: wd.thuis === true, tegenstander: wd.tegenstander || '', afgelast: false,
+      verzamel: '08:15', vertrek: wd.thuis ? '' : '08:30', plek: (wd.info && wd.info.accommodatie) || '', veld: 'veld 2', adres: 'Dorpsstraat 1', plaats: 'Utrecht', route: 'https://www.google.com/maps/', afwezig: ids.slice(11, 13), erbij: null });
+    [opDag(2), opDag(4), opDag(2, 8)].forEach((datum, n) => zetSeed(`teamkamer/${T}/agenda/t_${datum}`, { soort: 'training', datum, tijd: '18:00', eind: '19:00', afgelast: false, afwezig: n === 0 ? ids.slice(5, 6) : [], erbij: null }));
+    spelers.forEach((x, n) => zetSeed(`teamkamer/${T}/gezin/${x.id}`, { voornaam: voor(x), nr: x.nummer ?? null, ...(n % 3 === 0 ? { beurten: { rijden: 1 + (n % 2), wassen: 1 } } : {}) }));
+    const rolKamer = /[?&]demo=speler/.test(location.search) ? 'speler' : 'ouder';
+    zetSeed(`teamkamer/${T}/kamerleden/${DEMO_UID}`, { teamId: T, club: CLUB, uid: DEMO_UID, email: 'ouder1@voorbeeld.nl', rol: rolKamer, spelerIds: [kindVan], sinds: TS, vervaltOp: tot });
+    zetSeed(`teamkamer/${T}/kamerleden/demo-ouder-2`, { teamId: T, club: CLUB, uid: 'demo-ouder-2', email: 'ouder2@voorbeeld.nl', rol: 'ouder', spelerIds: [ids[1] || kindVan], sinds: TS, vervaltOp: tot });
+    zetSeed(`teamkamer/${T}/kamerleden/demo-kind-2`, { teamId: T, club: CLUB, uid: 'demo-kind-2', rol: 'speler', spelerIds: [ids[1] || kindVan], door: 'demo-ouder-2', sinds: TS, vervaltOp: tot });
+    zetSeed(`gebruikers/${DEMO_UID}/kamers/${T}`, { teamId: T, rol: rolKamer });
+    zetSeed(`kamerAanvragen/${T}_demo-nieuw`, { teamId: T, club: CLUB, uid: 'demo-nieuw', email: 'nieuwe.ouder@voorbeeld.nl', kind: spelers[2] ? voor(spelers[2]) : 'Sam', gemaakt: TS });
+    zetSeed(`teams/${T}/kamerBeheer/link`, { code: 'DEMOCODE23', verlooptOp: Timestamp.fromMillis(Date.now() + 14 * 864e5), maxGebruik: 40, gebruikt: 9 });
+    zetSeed(`teamkamer/${T}/polls/demo-rijden`, { vraag: `Wie rijdt zaterdag${wd.tegenstander ? ' naar ' + wd.tegenstander : ''}?`, opties: [{ id: 'o1', tekst: 'Wij rijden' }, { id: 'o2', tekst: 'Deze keer niet' }], soort: 'rijden',
+      meer: false, namen: true, spelers: false, status: 'open', wedstrijdId: wid, wedstrijdDatum: wd.datum, nodig: 4, sluitDatum: wd.datum, sluitOp: Timestamp.fromMillis(Date.now() + 4 * 864e5), gemaaktMs: Date.now() - 864e5,
+      telling: { o1: 3, o2: 4 }, gestemd: 7, wie: { o1: ids.slice(0, 3), o2: ids.slice(3, 7).filter(x => x !== kindVan).concat(ids.slice(7, 8)) } });
+    ids.slice(0, 3).forEach(id => zetSeed(`teamkamer/${T}/polls/demo-rijden/stemmen/${id}`, { keuzes: ['o1'], door: 'demo', ms: 1 }));
+    ids.slice(3, 8).filter(x => x !== kindVan).slice(0, 4).forEach(id => zetSeed(`teamkamer/${T}/polls/demo-rijden/stemmen/${id}`, { keuzes: ['o2'], door: 'demo', ms: 1 }));
+    zetSeed(`teamkamer/${T}/polls/demo-uitje`, { vraag: 'Wat doen we op het teamuitje?', opties: [{ id: 'o1', tekst: 'Bowlen' }, { id: 'o2', tekst: 'Zwemmen' }, { id: 'o3', tekst: 'Lasergamen' }], soort: 'vrij',
+      meer: true, namen: false, spelers: true, status: 'open', wedstrijdId: null, sluitDatum: iso(over(9)), sluitOp: Timestamp.fromMillis(Date.now() + 9 * 864e5), gemaaktMs: Date.now() - 2 * 864e5, telling: { o1: 5, o2: 3, o3: 6 }, gestemd: 9 });
+    zetSeed(`teamkamer/${T}/polls/demo-wassen`, { vraag: 'Wie wast de shirts?', opties: [{ id: 'o1', tekst: 'Wij wassen' }, { id: 'o2', tekst: 'Deze keer niet' }], soort: 'wassen', meer: false, namen: true, spelers: false,
+      status: 'gesloten', beurtenGeteld: true, wedstrijdId: wid, wedstrijdDatum: wd.datum, gemaaktMs: Date.now() - 5 * 864e5, telling: { o1: 1, o2: 6 }, gestemd: 7, wie: { o1: ids.slice(1, 2), o2: [] } });
+    zetSeed(`teamkamer/${T}/berichten/demo-1`, { tekst: 'Donderdag trainen we op veld 3. Neem scheenbeschermers mee.', door: 'Demo-trainer', datum: iso(over(-1)), ms: Date.now() - 864e5 });
+    const zonder = (pad) => { store.delete(pad); veranderd(); };
+    Object.assign(DEMO_ANTWOORD, {
+      kamerVervers: () => ({ aan: true }), maakKamerLink: () => ({ code: 'DEMOCODE23' }), kamerVerleng: () => ({ aantal: 3 }),
+      kamerLinkInfo: () => ({ geldig: true, teamNaam: team.naam, clubNaam: CLUBNAAM }),
+      beoordeelKamerAanvraag: (d) => { zonder(`kamerAanvragen/${d.id}`); return { ok: true }; },
+      trekKamerToegangIn: (d) => { zonder(`teamkamer/${T}/kamerleden/${d.uid || DEMO_UID}`); return { ok: true }; },
+      maakKindCode: () => ({ code: 'K7M4QX', minuten: 15 }), stopKindToegang: () => ({ aantal: 1 }),
+      kamerVerberg: (d) => { const k = store.get(`teamkamer/${T}`), x = spelers.find(q => q.id === d.spelerId); k.spelers[d.spelerId] = d.verborgen ? { v: true } : { n: x ? voor(x) : 'Speler', nr: x ? x.nummer ?? null : null }; veranderd(); return { ok: true }; },
+    });
+  }
 }
 
 window.__cluppieDemo = { store, uid: DEMO_UID, club: CLUB, rol: DEMO_ROL };

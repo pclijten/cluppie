@@ -103,6 +103,7 @@ exports.exporteerMijnGegevens = onCall({ region: REGIO, cors: true }, async (req
       .map(d => ({ id: d.id, naam: d.data().naam, rol: d.data().admins?.[uid] ? 'beheerder' : 'coach', jouwGegevens: d.data().ledenInfo?.[uid] || d.data().adminsInfo?.[uid] || null })),
     privacyKennisname: (await db.doc(`privacyKennisname/${uid}`).get()).data() || null,
     openAanvragen: await perUid(db, 'aanvragen', uid),
+    teamkamer: await require('./teamkamer').exportUid(db, uid),
     logins: await perUid(db, 'logins', uid),
     gebruik: await perUid(db, 'gebruik', uid),
     navigatiepaden: await perUid(db, 'navpaden', uid),
@@ -140,6 +141,7 @@ exports.verwijderMijnAccount = onCall({ region: REGIO, cors: true }, async (requ
   await verwijderQuery(db.collection('logins').where('uid', '==', uid));
   await verwijderQuery(db.collection('gebruik').where('uid', '==', uid));
   await verwijderQuery(db.collection('navpaden').where('uid', '==', uid));
+  await require('./teamkamer').verwijderUid(db, uid);   /* vóór het wissen van gebruikers/{uid}: daar staan de wijzers */
   await db.recursiveDelete(db.doc(`gebruikers/${uid}`));
   await db.doc(`trainingToegang/${uid}`).delete().catch(() => {});
   await db.doc(`privacyKennisname/${uid}`).delete().catch(() => {});

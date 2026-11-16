@@ -11,20 +11,21 @@
    alleen HTML + de opslaghulpjes voor de wedstrijd-presentie. Het importeert
    bewust NIET terug uit teams.js (geen circulaire import). */
 import { db, doc, updateDoc, deleteField } from './firebase.js?v=20261011g';
-import { S, esc, meld, datumNL, modAan, openModal } from './state.js?v=20261116l';
-import { AFWEZIG_REDENEN, afwezigRedenInfo, catLabel } from './config.js?v=20261116l';
+import { S, esc, meld, datumNL, modAan, openModal } from './state.js?v=20261116m';
+import { AFWEZIG_REDENEN, afwezigRedenInfo, catLabel } from './config.js?v=20261116m';
 import { ico } from './icons.js?v=20261116j';
-import { logoImg, primaireClubId } from './clubconfig.js?v=20261116l';
-import { analyseWedstrijd, WISSEL_BEURT } from './analyse.js?v=20261116l';
-import { telGebruik } from './tracker.js?v=20261116l';
-import { ongelezenBerichten } from './berichten.js?v=20261116l';
-import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261116l';
-import { htmlRondeBalk } from './evaluatierondes.js?v=20261116l';
-import { onderdeelAan } from './onderdelen.js?v=20261116l';
-import { eersteStappenPlaats } from './snelstart.js?v=20261116l';
-import { htmlNu } from './nu-scherm.js?v=20261116l';
+import { logoImg, primaireClubId } from './clubconfig.js?v=20261116m';
+import { analyseWedstrijd, WISSEL_BEURT } from './analyse.js?v=20261116m';
+import { telGebruik } from './tracker.js?v=20261116m';
+import { ongelezenBerichten } from './berichten.js?v=20261116m';
+import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261116m';
+import { htmlRondeBalk } from './evaluatierondes.js?v=20261116m';
+import { onderdeelAan } from './onderdelen.js?v=20261116m';
+import { teamkamerMag } from './kamer-logica.js?v=20261116m';
+import { eersteStappenPlaats } from './snelstart.js?v=20261116m';
+import { htmlNu } from './nu-scherm.js?v=20261116m';
 import { spelersOpWedstrijd, effectieveSelectie, leenErbijNa } from './uitleen-regels.js?v=20261113b';
-import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261116l';
+import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261116m';
 import { isAfgelast, telMee, soortPill, wedstrijdInfo, htmlAfgelastBanner, afgelastMeldingen, deelTekst } from './wedstrijd-status.js?v=20261012h';
 
 
@@ -124,6 +125,7 @@ export function htmlHub(updInfo){
       tegel('planning',         'Kalender',     'planning-calendar'),
       tegel('documenten',       'Documenten',   'admin-document', documentenOngelezen || null),
       ...(modAan('lijstjes') ? [tegel('lijstjes', 'Lijstjes', 'attendance-fill', lijstjesOpenTotaal() || null)] : []),
+      ...(teamkamerMag(S.team, S._clubPlatform, S._teamkamerLos) ? [tegel('teamkamer', 'Teamkamer', 'navigation-home')] : []),   /* [20261116m] ouders en spelers */
       tegel('instellingen',     'Instellingen', 'navigation-settings'),
       tegel('help',             'Help',         'navigation-help'),
       `<button class="hub-tegel" data-open-hulpchat="1">${ico('communication-chat', 40)}<span class="hub-tnaam">Hulpchat</span></button>`,

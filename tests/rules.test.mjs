@@ -359,3 +359,160 @@ test('privé-rondebeoordeling aanmaken: niet voor een ander team, een andere clu
   await assertFails(setDoc(doc(als('coachA'), 'beoordelingenPrive/q3'), data({ door: { uid: 'adminA' } })));
   await assertFails(setDoc(doc(als('coachA'), 'beoordelingenPrive/q4'), data({ zichtbaarVoor: ['adminA'] })));
 });
+
+/* ---------- teamkamer: ouders en spelers [20261116m] ---------- */
+async function zaaiKamer(extra = {}){
+  await env.withSecurityRulesDisabled(async ctx => {
+    const db = ctx.firestore();
+    const mag = { namen: true, spelers: true, polls: true, beurten: true, berichten: true, afmelden: true, uitslag: true, live: true, opstelling: true, thuis: true, lijn: true, agenda: true, weer: true };
+    await setDoc(doc(db, 'teamkamer/t1'), { aan: true, mag, teamNaam: 'JO11-1', spelers: { s1: { n: 'Speler', nr: 7 }, s2: { v: true } }, ...(extra.kamer || {}) });
+    await setDoc(doc(db, 'teamkamer/t1/agenda/w_1'), { soort: 'wedstrijd', datum: '2099-01-01', afwezig: ['s2'] });
+    await setDoc(doc(db, 'teamkamer/t1/gezin/s1'), { voornaam: 'Speler', nr: 7 });
+    await setDoc(doc(db, 'teamkamer/t1/gezin/s2'), { voornaam: 'Ander', nr: 9 });
+    await setDoc(doc(db, 'teamkamer/t1/berichten/b1'), { tekst: 'Donderdag veld 3', ms: 1 });
+    await setDoc(doc(db, 'teamkamer/t1/kamerleden/ouder1'), { teamId: 't1', uid: 'ouder1', rol: 'ouder', spelerIds: ['s1'], vervaltOp: volgendJaar });
+    await setDoc(doc(db, 'teamkamer/t1/kamerleden/kind1'), { teamId: 't1', uid: 'kind1', rol: 'speler', spelerIds: ['s1'], door: 'ouder1', vervaltOp: volgendJaar });
+    await setDoc(doc(db, 'teamkamer/t1/kamerleden/verlopen'), { teamId: 't1', uid: 'verlopen', rol: 'ouder', spelerIds: ['s1'], vervaltOp: gisteren });
+    await setDoc(doc(db, 'teamkamer/t1/polls/open'), { vraag: 'Wie rijdt?', opties: [{ id: 'o1', tekst: 'Wij' }, { id: 'o2', tekst: 'Niet' }], status: 'open', sluitOp: morgen, spelers: false });
+    await setDoc(doc(db, 'teamkamer/t1/polls/spelers'), { vraag: 'Welk uitje?', opties: [{ id: 'o1', tekst: 'A' }, { id: 'o2', tekst: 'B' }], status: 'open', sluitOp: morgen, spelers: true });
+    await setDoc(doc(db, 'teamkamer/t1/polls/dicht'), { vraag: 'Oud', opties: [{ id: 'o1', tekst: 'A' }, { id: 'o2', tekst: 'B' }], status: 'gesloten', sluitOp: morgen });
+    await setDoc(doc(db, 'teamkamer/t1/polls/verlopen'), { vraag: 'Te laat', opties: [{ id: 'o1', tekst: 'A' }, { id: 'o2', tekst: 'B' }], status: 'open', sluitOp: gisteren });
+    await setDoc(doc(db, 'teamkamer/t1/polls/open/stemmen/s2'), { keuzes: ['o2'], door: 'iemand', ms: 1 });
+    await setDoc(doc(db, 'teamkamer/tB'), { aan: true, teamNaam: 'JO11-1' });
+    await setDoc(doc(db, 'teamkamer/tB/agenda/w_1'), { soort: 'wedstrijd', datum: '2099-01-01', afwezig: [] });
+    await setDoc(doc(db, 'kamerAanvragen/t1_nieuw'), { teamId: 't1', uid: 'nieuw', email: 'nieuw@voorbeeld.test', kind: 'Speler' });
+    await setDoc(doc(db, 'kamerLinks/CODE123456'), { teamId: 't1', gebruikt: 0 });
+    await setDoc(doc(db, 'kindCodes/ABC234'), { teamId: 't1', spelerId: 's1', door: 'ouder1' });
+    await setDoc(doc(db, 'teams/t1/wedstrijden/w1'), { datum: '2099-01-01', afwezigRedenen: { s2: { reden: 'ziek' } } });
+    await setDoc(doc(db, 'teams/t1/presentie/p1'), { datum: '2099-01-02', afwezig: ['s2'], afwezigRedenen: { s2: { reden: 'blessure' } } });
+  });
+}
+test('teamkamer: ouder en speler lezen de kopie van hun eigen team', async () => {
+  await zaaiKamer();
+  for (const db of [als('ouder1'), anoniem('kind1')]){
+    await assertSucceeds(getDoc(doc(db, 'teamkamer/t1')));
+    await assertSucceeds(getDocs(collection(db, 'teamkamer/t1/agenda')));
+    await assertSucceeds(getDocs(collection(db, 'teamkamer/t1/berichten')));
+    await assertSucceeds(getDocs(collection(db, 'teamkamer/t1/polls')));
+    await assertSucceeds(getDoc(doc(db, 'teamkamer/t1/gezin/s1')));
+  }
+  await assertSucceeds(getDoc(doc(als('ouder1'), 'teamkamer/t1/kamerleden/ouder1')));
+});
+test('teamkamer: ouder en speler lezen NIETS van de coach, de club of een ander team', async () => {
+  await zaaiKamer();
+  for (const db of [als('ouder1'), anoniem('kind1')]){
+    await assertFails(getDoc(doc(db, 'teams/t1')));
+    await assertFails(getDoc(doc(db, 'teams/t1/spelers/s1')));
+    await assertFails(getDocs(collection(db, 'teams/t1/spelers')));
+    await assertFails(getDoc(doc(db, 'teams/t1/wedstrijden/w1')));
+    await assertFails(getDoc(doc(db, 'teams/t1/presentie/p1')));
+    await assertFails(getDoc(doc(db, 'teams/t1/beoordelingen/b1')));
+    await assertFails(getDoc(doc(db, 'teams/t1/kamerBeheer/link')));
+    await assertFails(getDoc(doc(db, 'clubs/A')));
+    await assertFails(getDoc(doc(db, 'trainingen/tr1')));
+    await assertFails(getDoc(doc(db, 'teamkamer/tB')));
+    await assertFails(getDocs(collection(db, 'teamkamer/tB/agenda')));
+    await assertFails(getDoc(doc(db, 'teamkamer/t1/gezin/s2')));                    // het gezin van een ander
+    await assertFails(getDocs(collection(db, 'teamkamer/t1/gezin')));
+    await assertFails(getDoc(doc(db, 'teamkamer/t1/kamerleden/verlopen')));         // wie er nog meer meekijkt
+    await assertFails(getDocs(collection(db, 'teamkamer/t1/kamerleden')));
+    await assertFails(getDoc(doc(db, 'teamkamer/t1/polls/open/stemmen/s2')));       // de stem van een ander gezin
+    await assertFails(getDocs(collection(db, 'teamkamer/t1/polls/open/stemmen')));
+    await assertFails(getDoc(doc(db, 'kamerLinks/CODE123456')));
+    await assertFails(getDoc(doc(db, 'kindCodes/ABC234')));
+    await assertFails(getDoc(doc(db, 'kamerAanvragen/t1_nieuw')));
+  }
+});
+test('teamkamer: ouder en speler schrijven niets behalve de eigen stem', async () => {
+  await zaaiKamer();
+  for (const db of [als('ouder1'), anoniem('kind1')]){
+    await assertFails(setDoc(doc(db, 'teamkamer/t1'), { aan: true }, { merge: true }));
+    await assertFails(setDoc(doc(db, 'teamkamer/t1/agenda/w_1'), { afwezig: [] }, { merge: true }));     // beschikbaarheid is alleen lezen
+    await assertFails(setDoc(doc(db, 'teamkamer/t1/agenda/nieuw'), { soort: 'training' }));
+    await assertFails(setDoc(doc(db, 'teamkamer/t1/berichten/x'), { tekst: 'hoi' }));                    // geen chat
+    await assertFails(setDoc(doc(db, 'teamkamer/t1/polls/x'), { vraag: 'eigen poll' }));
+    await assertFails(updateDoc(doc(db, 'teamkamer/t1/polls/open'), { telling: { o1: 99 } }));
+    await assertFails(setDoc(doc(db, 'teamkamer/t1/gezin/s1'), { beurten: { rijden: 0 } }, { merge: true }));
+    await assertFails(setDoc(doc(db, 'teamkamer/t1/kamerleden/ouder1'), { spelerIds: ['s1', 's2'] }, { merge: true }));
+    await assertFails(setDoc(doc(db, 'teams/t1/presentie/p1'), { afwezig: [] }, { merge: true }));
+    await assertFails(updateDoc(doc(db, 'teams/t1/wedstrijden/w1'), { afwezigRedenen: {} }));
+  }
+});
+test('teamkamer: stemmen alleen voor het eigen gezin, in een open poll, met vaste velden', async () => {
+  await zaaiKamer();
+  const o = als('ouder1'), k = anoniem('kind1'), stem = (uid, extra = {}) => ({ keuzes: ['o1'], door: uid, ms: 1, ...extra });
+  await assertSucceeds(setDoc(doc(o, 'teamkamer/t1/polls/open/stemmen/s1'), stem('ouder1')));
+  await assertSucceeds(getDoc(doc(o, 'teamkamer/t1/polls/open/stemmen/s1')));
+  await assertSucceeds(setDoc(doc(o, 'teamkamer/t1/polls/open/stemmen/s1'), stem('ouder1', { keuzes: [] })));     // stem intrekken
+  await assertFails(setDoc(doc(o, 'teamkamer/t1/polls/open/stemmen/s2'), stem('ouder1')));                        // voor een ander gezin
+  await assertFails(setDoc(doc(o, 'teamkamer/t1/polls/open/stemmen/s1'), stem('iemandanders')));
+  await assertFails(setDoc(doc(o, 'teamkamer/t1/polls/open/stemmen/s1'), stem('ouder1', { opmerking: 'vrije tekst' })));
+  await assertFails(setDoc(doc(o, 'teamkamer/t1/polls/open/stemmen/s1'), stem('ouder1', { keuzes: 'o1' })));
+  await assertFails(setDoc(doc(o, 'teamkamer/t1/polls/dicht/stemmen/s1'), stem('ouder1')));
+  await assertFails(setDoc(doc(o, 'teamkamer/t1/polls/verlopen/stemmen/s1'), stem('ouder1')));
+  await assertFails(deleteDoc(doc(o, 'teamkamer/t1/polls/open/stemmen/s1')));
+  await assertFails(setDoc(doc(k, 'teamkamer/t1/polls/open/stemmen/s1'), stem('kind1')));                         // poll alleen voor ouders
+  await assertSucceeds(setDoc(doc(k, 'teamkamer/t1/polls/spelers/stemmen/s1'), stem('kind1')));
+});
+test('teamkamer: geen toegang zonder lidmaatschap, na verlopen of als de teamkamer uit staat', async () => {
+  await zaaiKamer();
+  for (const db of [als('vreemd'), als('verlopen'), anoniem('anon'), als('coachB'), als('ouderVanB')]){
+    await assertFails(getDoc(doc(db, 'teamkamer/t1')));
+    await assertFails(getDocs(collection(db, 'teamkamer/t1/agenda')));
+    await assertFails(getDocs(collection(db, 'teamkamer/t1/polls')));
+    await assertFails(setDoc(doc(db, 'teamkamer/t1/polls/open/stemmen/s1'), { keuzes: ['o1'], door: 'vreemd', ms: 1 }));
+  }
+  await assertFails(getDoc(doc(gast(), 'teamkamer/t1')));
+  await env.withSecurityRulesDisabled(c => setDoc(doc(c.firestore(), 'teamkamer/t1'), { aan: false }, { merge: true }));
+  await assertFails(getDoc(doc(als('ouder1'), 'teamkamer/t1')));
+  await assertFails(getDocs(collection(als('ouder1'), 'teamkamer/t1/agenda')));
+  await assertFails(getDoc(doc(als('ouder1'), 'teamkamer/t1/gezin/s1')));
+  await assertFails(setDoc(doc(als('ouder1'), 'teamkamer/t1/polls/open/stemmen/s1'), { keuzes: ['o1'], door: 'ouder1', ms: 1 }));
+  await assertSucceeds(getDoc(doc(als('coachA'), 'teamkamer/t1')));                                              // de coach blijft erbij kunnen
+});
+test('teamkamer: de coach beheert mededelingen en polls van het eigen team, de kopie zelf niet', async () => {
+  await zaaiKamer();
+  const c = als('coachA');
+  await assertSucceeds(getDocs(collection(c, 'teamkamer/t1/kamerleden')));
+  await assertSucceeds(getDocs(collection(c, 'teamkamer/t1/gezin')));
+  await assertSucceeds(getDocs(collection(c, 'teamkamer/t1/polls/open/stemmen')));
+  await assertSucceeds(getDocs(query(collection(c, 'kamerAanvragen'), where('teamId', '==', 't1'))));
+  await assertSucceeds(setDoc(doc(c, 'teamkamer/t1/berichten/n1'), { tekst: 'Veld 3', ms: 2 }));
+  await assertSucceeds(setDoc(doc(c, 'teamkamer/t1/polls/n1'), { vraag: 'Wie wast?', opties: [{ id: 'o1', tekst: 'Wij' }, { id: 'o2', tekst: 'Niet' }], status: 'open' }));
+  await assertSucceeds(updateDoc(doc(c, 'teamkamer/t1/polls/open'), { status: 'gesloten' }));
+  await assertSucceeds(updateDoc(doc(c, 'teams/t1'), { 'teamkamer.aan': true }));
+  await assertFails(setDoc(doc(c, 'teamkamer/t1'), { aan: true, spelers: {} }));
+  await assertFails(setDoc(doc(c, 'teamkamer/t1/agenda/w_1'), { afwezig: [] }, { merge: true }));
+  await assertFails(setDoc(doc(c, 'teamkamer/t1/kamerleden/vriend'), { teamId: 't1', uid: 'vriend', rol: 'ouder', spelerIds: ['s1'], vervaltOp: volgendJaar }));   // toegang alleen via de functies
+  await assertFails(setDoc(doc(c, 'teamkamer/t1/gezin/s1'), { beurten: { rijden: 5 } }, { merge: true }));
+  for (const db of [als('coachB'), als('coach2')]){                                                              // andere club, en ander team van dezelfde club
+    await assertFails(getDoc(doc(db, 'teamkamer/t1')));
+    await assertFails(getDocs(collection(db, 'teamkamer/t1/kamerleden')));
+    await assertFails(setDoc(doc(db, 'teamkamer/t1/berichten/n2'), { tekst: 'x' }));
+    await assertFails(getDocs(query(collection(db, 'kamerAanvragen'), where('teamId', '==', 't1'))));
+  }
+  await assertSucceeds(getDoc(doc(als('adminA'), 'teamkamer/t1')));
+  await assertSucceeds(getDoc(doc(als('nieuw'), 'kamerAanvragen/t1_nieuw')));                                    // de aanvrager ziet de eigen aanvraag
+  await assertFails(setDoc(doc(als('nieuw'), 'kamerAanvragen/t1_nieuw'), { status: 'goed' }, { merge: true }));
+  await assertFails(getDoc(doc(als('ouder1'), 'kamerAanvragen/t1_nieuw')));
+});
+test('teamkamer: wat de eindbaas uit heeft staan, kan niemand gebruiken', async () => {
+  await zaaiKamer({ kamer: { mag: {} } });                                                                          // alleen de hoofdschakelaar aan
+  const c = als('coachA'), o = als('ouder1'), k = anoniem('kind1');
+  await assertSucceeds(getDoc(doc(o, 'teamkamer/t1')));                                                             // de agenda blijft
+  await assertSucceeds(getDocs(collection(o, 'teamkamer/t1/agenda')));
+  await assertFails(setDoc(doc(c, 'teamkamer/t1/polls/n1'), { vraag: 'Wie wast?', opties: [{ id: 'o1', tekst: 'Wij' }, { id: 'o2', tekst: 'Niet' }], status: 'open' }));
+  await assertFails(updateDoc(doc(c, 'teamkamer/t1/polls/open'), { vraag: 'Anders' }));
+  await assertSucceeds(deleteDoc(doc(c, 'teamkamer/t1/polls/dicht')));                                              // opruimen mag altijd
+  await assertFails(setDoc(doc(c, 'teamkamer/t1/berichten/n1'), { tekst: 'Veld 3', ms: 2 }));
+  await assertFails(setDoc(doc(o, 'teamkamer/t1/polls/open/stemmen/s1'), { keuzes: ['o1'], door: 'ouder1', ms: 1 }));
+  await assertFails(getDoc(doc(k, 'teamkamer/t1')));                                                                // spelers staan uit
+  await assertFails(getDocs(collection(k, 'teamkamer/t1/agenda')));
+  await assertFails(getDoc(doc(k, 'teamkamer/t1/gezin/s1')));
+  await env.withSecurityRulesDisabled(x => setDoc(doc(x.firestore(), 'teamkamer/t1'), { mag: { polls: true, spelers: true } }, { merge: true }));
+  await assertSucceeds(setDoc(doc(o, 'teamkamer/t1/polls/open/stemmen/s1'), { keuzes: ['o1'], door: 'ouder1', ms: 1 }));
+  await assertSucceeds(getDoc(doc(k, 'teamkamer/t1')));
+  await assertFails(setDoc(doc(c, 'teamkamer/t1/berichten/n2'), { tekst: 'Veld 3', ms: 2 }));                       // mededelingen staan nog uit
+  await assertFails(setDoc(doc(c, 'teamkamer/t1'), { mag: { berichten: true } }, { merge: true }));                 // de coach zet zelf niets aan
+  await assertFails(updateDoc(doc(als('adminA'), 'clubs/A'), { 'platformModules.teamkamerOpties.polls': true }));   // de clubadmin ook niet
+});

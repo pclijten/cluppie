@@ -4,10 +4,10 @@
    wat hierboven al in dit bestand staat. De zoekfunctionaliteit
    (#helpZoek) wordt door de hub (teams.js/koppelTeamTab) aangesloten,
    want die werkt direct op het gerenderde DOM-element. */
-import { esc } from './state.js?v=20261116l';
-import { beleidsplanNaam } from './clubconfig.js?v=20261116l';
-import { ROLKAARTEN } from './rolkaart.js?v=20261116l';
-import { onboardingHerstartBlok } from './onboarding.js?v=20261116l';
+import { esc } from './state.js?v=20261116m';
+import { beleidsplanNaam } from './clubconfig.js?v=20261116m';
+import { ROLKAARTEN } from './rolkaart.js?v=20261116m';
+import { onboardingHerstartBlok } from './onboarding.js?v=20261116m';
 
 export function htmlHandleiding(){
   return `<div class="hl">
@@ -120,6 +120,22 @@ export function htmlHandleiding(){
     </ul>
     </section>
 
+    <section class="hl-sec" data-zoek="🏠 teamkamer ouders spelers kinderen meekijken toegang teamlink aanvraag goedkeuren code poll polls wie rijdt wie wast fruit vlaggen stemmen mededeling afmelden whatsapp beurten thuis oefenen live stand opstelling delen privacy verbergen">
+    <h3>🏠 Teamkamer: ouders en spelers kijken mee</h3>
+    <p>In de <b>Teamkamer</b> zien ouders en spelers de agenda, wie erbij is, je mededelingen en polls. Ze zien geen beoordelingen, leerpunten, notities of de reden van een afmelding. Afmelden blijft via de groepsapp gaan: jij zet het in Cluppie.</p>
+    <ul>
+      <li><b>Aanzetten:</b> tegel <b>Teamkamer</b> onder Meer (op de computer onder Team). Zie je de tegel niet, dan staat de teamkamer nog niet aan voor je club.</li>
+      <li><b>Wat je ziet hangt af van je club:</b> Cluppie zet elke mogelijkheid per club aan (voornamen, spelers zelf, polls, mededelingen, uitslag, live stand, opstelling, thuis oefenen en meer). Wat uit staat, zie je hier niet. Met alleen de teamkamer aan zien ouders de agenda en hoeveel spelers erbij zijn.</li>
+      <li><b>Ouders binnenlaten:</b> deel de <b>teamlink</b> in de groepsapp. Een ouder maakt een account en vult de voornaam van het kind in. Jij ziet de aanvraag met het e-mailadres, kiest de speler en tikt op <b>Goedkeuren</b>. Ken je iemand niet, wijs dan af.</li>
+      <li><b>Spelers:</b> een ouder maakt in de teamkamer een code. Het kind vult die in en heeft geen e-mailadres of wachtwoord nodig. De ouder kan de toegang altijd stoppen.</li>
+      <li><b>Polls:</b> kies een sjabloon (Wie rijdt, Wie wast, Fruit, Vlaggen, Teamuitje) of typ een eigen vraag. Een poll kan bij een wedstrijd horen of los staan. Elk gezin heeft één stem. Jij ziet wie nog niet stemde en deelt de link in WhatsApp.</li>
+      <li><b>Namen bij een poll:</b> jij kiest per poll of ouders zien wie wat koos, of alleen de aantallen.</li>
+      <li><b>Mededelingen:</b> korte berichten van jou. Ouders en spelers kunnen niet reageren. Zet er geen namen of gezondheid van spelers in.</li>
+      <li><b>Instellingen:</b> voornamen van teamgenoten, uitslag, live stand, de opstelling per wedstrijd, een oefening voor thuis en drie afspraken voor langs de lijn. Alles staat uit tot jij het aanzet, behalve de voornamen.</li>
+      <li><b>Toegang stopt</b> vanzelf op 30 juni en meteen als een speler het team verlaat. Bij <b>Wie kijkt mee</b> trek je iemands toegang in.</li>
+    </ul>
+    <p>Ouders en spelers openen <b>cluppie.io/kamer.html</b>. Dat is een eigen pagina, los van deze app.</p>
+    </section>
     <section class="hl-sec" data-zoek="🌦 vandaag spelers en weer training aanpassen aantal spelers minder spelers afmeldingen regen koud warm weerbericht presentie neem over terug naar het plan vervangen groepen veld aangepast voor vandaag andere training maken">
     <h3>🌦 Vandaag: de training aanpassen aan spelers en weer</h3>
     <p>Bovenaan elke training staat de balk <b>Vandaag</b>. Kies hoeveel <b>spelers</b> er zijn (− en +) en wat voor <b>weer</b> het is (Gewoon, Koud, Regen of Warm). De training past zich meteen aan, met dezelfde oefeningen.</p>

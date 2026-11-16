@@ -47,6 +47,17 @@ Status: technische maatregelen doorgevoerd (okt 2026). **Niet getest** tegen de 
 - **Wedstrijden**: geen scheidsrechternamen (bij de jeugd vaak minderjarig). Wel sportpark, veld, kleedkamer, tijden en het adres van het sportpark.
 - **Spelers uit de teamindeling** (`sportlinkTeamSpelers`, release 20261012g): alleen op verzoek van een coach van het team, nooit automatisch of 's nachts. De server geeft alleen de **voornaam** terug, en de achternaam alleen als de club achternamen vastlegt (`instellingen.privacy.achternamen`). Alleen rol "Teamspeler": geen staf. Nooit: lidnummer (relatiecode), geslacht, functie, e-mail, telefoon, foto, einddatum. Leden die in Sportlink **afgeschermd** zijn, worden alleen geteld en nooit overgenomen. De coach kiest zelf wie er in de selectie komt; Cluppie bewaart geen Sportlink-sleutel bij de speler (alleen `bron: 'sportlink'`).
 
+## Teamkamer: ouders en spelers (nov 2026, release 20261116m)
+- **Nieuwe betrokkenen:** ouders (account met e-mailadres) en spelers (anoniem account via een code van de ouder; geen e-mail, naam of wachtwoord van het kind). Standaard uit; de eindbaas zet de teamkamer en elke mogelijkheid per club aan.
+- **Dataminimalisatie:** ouders en spelers lezen alleen de kopie `teamkamer/{teamId}`, die de Cloud Functions vullen met een vaste lijst van velden. Niet in de kopie: reden van afwezigheid (gezondheid), notities, beoordelingen, leerpunten, achternamen, geboortedata, selectie. Van een ouder bewaren we uid, e-mailadres (alleen leesbaar voor de trainers van het team en de ouder zelf), rol, gekoppelde speler en einddatum. Geen telefoonnummer.
+- **Toegang:** via de teamlink plus goedkeuring en koppeling door de trainer; verloopt op 30 juni en bij vertrek van de speler; intrekbaar door trainer, ouder en (voor het kind) de ouder. Gelogd in `toegangslog`.
+- **Geen inhoud van ouders of kinderen:** geen chat, vrije tekst of foto's. Een stem op een poll is het enige. Bij een poll met namen zien andere gezinnen de voornaam van het kind; de trainer kan namen uitzetten, de ouder kan het kind verbergen.
+- **Kinderen onder 16:** toegang loopt altijd via de ouder (toestemming). Laat een jurist dit en de tekst in `privacy.html` (stuk Teamkamer) beoordelen.
+- **Externe verbinding:** weerbericht bij een wedstrijd via Open-Meteo (alleen coördinaten van de club en de datum), alleen als de eindbaas "Weerbericht" aanzet. De WhatsApp-knoppen openen `wa.me` met een tekst; Cluppie stuurt zelf niets naar WhatsApp.
+- **Geen AI** op gegevens uit de teamkamer. De eindbaas ziet geen namen (alleen in de ondersteuningsmodus, zoals nu).
+- **Bewaartermijn:** verlopen toegang, aanvragen, links en codes verdwijnen elke nacht (`kamerNacht`). Polls, stemmen en mededelingen blijven bij het team tot de trainer ze verwijdert: neem ze mee in de seizoensopruiming (restpunt 3).
+- **DPIA:** deze uitbreiding (accounts van ouders, toegang voor minderjarigen) maakt restpunt 2 dringender. Doe de DPIA vóór je de teamkamer bij clubs aanzet.
+
 ## Bewuste restpunten (kies/regel zelf)
 1. **Verwerkersovereenkomst** per club + verwerkersovereenkomsten/DPA met Google (Firebase DPA; Firestore stond in nam5 en de standaard-bucket in de VS: overstap naar europe-west1 volgens MIGRATIE-EU.md) en Anthropic (DPA + zero-data-retention overwegen; VS-doorgifte via SCC/DPF).
 2. **DPIA**: verwerking van gegevens van minderjarigen op schaal (30 clubs) → doe een DPIA vóór uitrol; dit document is de basis. Verwerkingsregister: gebruik de tabel hierboven.

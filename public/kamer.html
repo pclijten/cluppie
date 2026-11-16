@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="nl" class="tk-pagina">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0e1116">
+<title>Teamkamer · Cluppie</title>
+<script>
+/* Demo (kamer.html?demo=ouder of ?demo=speler): dezelfde pagina, maar js/firebase.js wordt vervangen door
+   js/firebase-demo.js, een database in het geheugen. Niets gaat naar Firebase. Zelfde afspraak als index.html:
+   DEMO_VERSIE is de ?v= waarmee de modules firebase.js importeren. */
+(function(){
+  if (!/[?&]demo(=|&|$)/.test(location.search)) return;
+  var DEMO_VERSIE = '20261011g';
+  var kaart = { imports: {} };
+  kaart.imports[new URL('js/firebase.js?v=' + DEMO_VERSIE, location.href).href] = new URL('js/firebase-demo.js', location.href).href;
+  var s = document.createElement('script'); s.type = 'importmap'; s.textContent = JSON.stringify(kaart);
+  document.currentScript.after(s);
+  try { ['getItem', 'setItem', 'removeItem'].forEach(function(m){ var o = Storage.prototype[m];
+    Storage.prototype[m] = function(k){ var a = [].slice.call(arguments); a[0] = 'cluppieDemo:' + k; return o.apply(this, a); }; }); } catch (e) { /* geen opslag */ }
+})();
+</script>
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preload" href="fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="kamer.css?v=20261116m">
+</head>
+<body>
+<!-- [20261116m] Teamkamer: de pagina voor ouders en spelers. Staat los van de trainersapp (index.html):
+     geen teams.js, geen state.js, en alleen de kopie teamkamer/{teamId} wordt gelezen. Zie js/kamer-app.js. -->
+<div id="tk" class="tk-app">
+  <div class="tk-kop"><div class="tk-merk" aria-hidden="true">C</div><div class="tk-kop-tekst"><div class="tk-h2">Cluppie</div><div class="tk-klein tk-zacht">Teamkamer laden…</div></div></div>
+  <noscript><p style="padding:16px">De teamkamer werkt alleen met JavaScript aan.</p></noscript>
+</div>
+<script type="module" src="js/kamer-app.js?v=20261116m"></script>
+</body>
+</html>

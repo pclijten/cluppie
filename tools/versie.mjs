@@ -13,7 +13,7 @@ const [versie, basis = 'origin/main'] = process.argv.slice(2);
 if (!/^\d{8}[a-z]$/.test(versie || '')) { console.error('Gebruik: node tools/versie.mjs JJJJMMDDx [basis]'); process.exit(1); }
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const jsDir = path.join(root, 'js');
-const bestanden = [...fs.readdirSync(jsDir).filter(f => f.endsWith('.js')).map(f => path.join(jsDir, f)), path.join(root, 'index.html')];
+const bestanden = [...fs.readdirSync(jsDir).filter(f => f.endsWith('.js')).map(f => path.join(jsDir, f)), path.join(root, 'index.html'), path.join(root, 'kamer.html')];
 
 const gewijzigd = new Set(execSync(`git diff --name-only ${basis} -- public`, { encoding: 'utf8' }).split('\n')
   .filter(Boolean).map(f => path.basename(f)).filter(f => /\.(js|css)$/.test(f)));
