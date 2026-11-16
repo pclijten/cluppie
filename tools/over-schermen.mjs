@@ -2,7 +2,7 @@
    Laptop (1440 × 900) en telefoon (390 × 844, 2×), in het lichte en het donkere thema.
 
    Gebruik (met de site lokaal gestart, bv. `npm run serve` op poort 5002):
-     node tools/over-schermen.mjs [http://localhost:5002] [--donker] [--licht]
+     node tools/over-schermen.mjs [http://localhost:5002] [--donker] [--licht] [--alleen=naam,naam]
    Zonder --donker/--licht worden beide gemaakt. Nodig: puppeteer-core en Chrome
    (npm i -g puppeteer-core, of zet PUPPETEER_PAD naar een map met puppeteer-core).
    Schrijft naar public/over/app/<naam>.jpg (licht) en <naam>-donker.jpg (donker). */
@@ -24,6 +24,8 @@ const args = process.argv.slice(2);
 const BASIS = (args.find(a => /^https?:/.test(a)) || 'http://localhost:5002').replace(/\/$/, '');
 const themas = args.includes('--donker') || args.includes('--licht')
   ? ['licht', 'donker'].filter(t => args.includes('--' + t)) : ['licht', 'donker'];
+/* --alleen=naam,naam maakt alleen die schermen opnieuw */
+const ALLEEN = (args.find(a => a.startsWith('--alleen=')) || '').slice(9).split(',').filter(Boolean);
 const UIT = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'over', 'app');
 const wacht = ms => new Promise(r => setTimeout(r, ms));
 const TEAM = 'demo-o11-2';
@@ -33,6 +35,7 @@ const LAPTOP = [
   ['trainer-dashboard', null],
   ['trainer-evaluatie', '[data-actie=tab][data-tab=evaluatie]'],
   ['trainer-training', '[data-actie=tab][data-tab=presentietraining]'],
+  ['trainer-speelwijze', '[data-actie=tab][data-tab=speelwijze]'],
   ['bouwcoordinator', '[data-actie=bouwtoggle][data-bouw=onder]'],
   ['trainingscoordinator', '[data-actie=trainco]'],
 ];
@@ -53,8 +56,17 @@ const TELEFOON = [
     await openTab(pg, 'trainingen'); await wacht(2500);
     await pg.evaluate(() => document.querySelector('[data-open-training]')?.click());
   }],
-  ['telefoon-evaluatie', async pg => openTab(pg, 'evaluatie')],
+  /* een oefening uit de training, in 3D (het veld komt zodra de oefening in beeld schuift) */
+  ['telefoon-oefening', async pg => {
+    await openTab(pg, 'trainingen'); await wacht(2500);
+    await pg.evaluate(() => document.querySelector('[data-open-training]')?.click());
+    await wacht(2500);
+    await pg.evaluate(() => document.querySelector('.trw-oef')?.scrollIntoView({ block: 'start' }));
+    await wacht(4000);
+  }],
   ['telefoon-speeltijd', async pg => openTab(pg, 'stats')],
+  /* de teamkamer zoals een ouder hem ziet: een eigen pagina (kamer.html), derde veld = adres */
+  ['telefoon-teamkamer', null, '/kamer.html?demo=ouder'],
 ];
 async function openTab(pg, tab){
   await pg.evaluate(async (team, tab) => {
@@ -65,7 +77,7 @@ async function openTab(pg, tab){
   }, TEAM, tab);
 }
 
-async function nieuwePagina(browser, thema, telefoon){
+async function nieuwePagina(browser, thema, telefoon, adres = '/index.html?demo'){
   /* elke opname een eigen, schone sessie: de app onthoudt anders waar de vorige opname was */
   const ctx = await browser.createBrowserContext();
   const pg = await ctx.newPage();
@@ -74,7 +86,7 @@ async function nieuwePagina(browser, thema, telefoon){
   await pg.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: thema === 'donker' ? 'dark' : 'light' }, { name: 'prefers-reduced-motion', value: 'reduce' }]);
   if (telefoon) await pg.setViewport({ width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   else await pg.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
-  await pg.goto(BASIS + '/index.html?demo', { waitUntil: 'networkidle0' });
+  await pg.goto(BASIS + adres, { waitUntil: 'networkidle0' });
   await wacht(3500);
   return pg;
 }
@@ -83,13 +95,15 @@ const browser = await puppeteer.launch({ executablePath: CHROME, headless: true 
 for (const thema of themas){
   const achter = thema === 'donker' ? '-donker' : '';
   for (const [naam, klik] of LAPTOP){
+    if (ALLEEN.length && !ALLEEN.includes(naam)) continue;
     const pg = await nieuwePagina(browser, thema, false);
     if (klik){ await pg.evaluate(s => document.querySelector(s)?.click(), klik); await wacht(3000); }
     await pg.screenshot({ path: join(UIT, naam + achter + '.jpg'), type: 'jpeg', quality: 84 });
     await pg.sluit(); console.log('✓', naam + achter);
   }
-  for (const [naam, stap] of TELEFOON){
-    const pg = await nieuwePagina(browser, thema, true);
+  for (const [naam, stap, adres] of TELEFOON){
+    if (ALLEEN.length && !ALLEEN.includes(naam)) continue;
+    const pg = await nieuwePagina(browser, thema, true, adres);
     if (stap){ await stap(pg); await wacht(3000); }
     await pg.screenshot({ path: join(UIT, naam + achter + '.jpg'), type: 'jpeg', quality: 82 });
     await pg.sluit(); console.log('✓', naam + achter);
