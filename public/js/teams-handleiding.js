@@ -4,10 +4,10 @@
    wat hierboven al in dit bestand staat. De zoekfunctionaliteit
    (#helpZoek) wordt door de hub (teams.js/koppelTeamTab) aangesloten,
    want die werkt direct op het gerenderde DOM-element. */
-import { esc } from './state.js?v=20261116j';
-import { beleidsplanNaam } from './clubconfig.js?v=20261116j';
-import { ROLKAARTEN } from './rolkaart.js?v=20261116j';
-import { onboardingHerstartBlok } from './onboarding.js?v=20261116j';
+import { esc } from './state.js?v=20261116k';
+import { beleidsplanNaam } from './clubconfig.js?v=20261116k';
+import { ROLKAARTEN } from './rolkaart.js?v=20261116k';
+import { onboardingHerstartBlok } from './onboarding.js?v=20261116k';
 
 export function htmlHandleiding(){
   return `<div class="hl">
@@ -110,12 +110,12 @@ export function htmlHandleiding(){
     <div class="tip">Leeftijd gaat voor de speelwijze: druk zetten en omschakelen als team komt standaard vanaf O12, vaste posities vanaf O10. Zonder speelwijze werkt alles zoals altijd, op het thema van de week. De speelwijze is een eigen ontwerp op basis van ervaring van trainers, geen gevalideerde test.</div>
     </section>
 
-    <section class="hl-sec" data-zoek="🎬 oefening in 3d spelverloop stappen bij elke vorm kies je boven de tekening tussen tekening en 3d. in 3d zie je het hele spelverloop stap voor stap: vorige, afspelen, volgende, opnieuw, en schuifjes voor hoek en draai. stappen die tegelijk gebeuren (pass en loopactie) spelen samen. elke oefening heeft een uitgeschreven verloop in fases (opbouw, doorbreken, afronden, omschakelen): de reactie van de tegenstander, de afronding en wat er daarna gebeurt. eigen vorm van de club zonder stappen voorbeeld van het vervolg">
+    <section class="hl-sec" data-zoek="🎬 oefening in 3d spelverloop stappen elke oefening uit de bibliotheek staat in 3d, je hoeft niets te kiezen. je ziet het hele spelverloop stap voor stap: vorige, afspelen, volgende, opnieuw. de tekening zie je nog in de kleine schets, bij afdrukken en op een apparaat zonder 3d. stappen die tegelijk gebeuren (pass en loopactie) spelen samen. elke oefening heeft een uitgeschreven verloop in fases (opbouw, doorbreken, afronden, omschakelen): de reactie van de tegenstander, de afronding en wat er daarna gebeurt. eigen vorm van de club zonder stappen voorbeeld van het vervolg">
     <h3>🎬 Oefening in 3D: het hele spelverloop</h3>
-    <p>Bij elke vorm kies je boven de tekening tussen <b>Tekening</b> en <b>3D</b>. In 3D zie je het spelverloop stap voor stap, met Vorige, Afspelen, Volgende en Opnieuw. Stappen die tegelijk gebeuren (een pass en een loopactie) spelen samen.</p>
+    <p>Elke oefening uit de bibliotheek staat in <b>3D</b>: je hoeft niets te kiezen. Je ziet het spelverloop stap voor stap, met Vorige, Afspelen, Volgende en Opnieuw. Stappen die tegelijk gebeuren (een pass en een loopactie) spelen samen.</p>
     <ul>
       <li>Elke oefening uit de bibliotheek heeft een uitgeschreven verloop in fases (bijvoorbeeld Opbouw, Doorbreken, Afronden, Omschakelen). Je ziet ook wat de tegenstander doet en wat er na de afronding gebeurt. Hetzelfde verloop staat in het veld <b>Uitleg</b>.</li>
-      <li>De tekening laat alleen de eerste stappen zien, zodat hij leesbaar blijft. De rest zie je in 3D.</li>
+      <li>De tekening zie je nog in de kleine schets in de tijdlijn, bij afdrukken, en op een apparaat dat geen 3D kan tonen. Een training uit een eigen PDF houdt zijn eigen plaatjes.</li>
       <li>Heeft een eigen vorm van je club maar één of twee pijlen, dan laat 3D daarna een <b>voorbeeld van het vervolg</b> zien. Dat is een voorbeeld op basis van de opstelling, geen vaste afspraak van de oefening.</li>
     </ul>
     </section>

@@ -6251,13 +6251,21 @@ h3.tm-kop2{font-size:calc(20px * var(--fs))}
 .ok-veld[open]>summary .ok-pijl{transform:rotate(90deg)}
 .ok-veld[open]>summary .ok-kort{visibility:hidden}
 .trw-ok{margin-top:10px}
-.trw-oef .s3d-keuze{margin:4px 0 8px}
-.trw-3d{margin-bottom:10px}
-/* [20261115b] Oefenvorm in 3D (scene3d.js, motor over/over-3d.js) */
-.s3d-keuze{display:inline-flex;gap:2px;padding:2px;margin:8px 0 6px;border:1px solid var(--hair);border-radius:999px;background:var(--op-vlak)}
-.s3d-keuze button{all:unset;cursor:pointer;padding:5px 14px;border-radius:999px;font-size:calc(13px * var(--fs));font-weight:600;color:var(--ink-2);min-height:28px;display:inline-flex;align-items:center}
-.s3d-keuze button[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 22%,var(--card));color:var(--ink)}
-.s3d-keuze button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+/* [20261116k] Altijd 3D: de plek van een oefening uit de bibliotheek (training-weergave.js, beheer3D). De tekening
+   staat er als terugval in; `wacht` = het 3D-veld komt eraan of is tijdelijk uit beeld (de plek houdt zijn hoogte),
+   `is-3d` = het veld staat erin. Bij afdrukken altijd de tekening. */
+.trw-teken{margin:0 0 var(--space-sm)}
+.trw-teken.wacht{position:relative;min-height:470px;border-radius:12px;background:radial-gradient(ellipse at center,color-mix(in srgb,var(--veld) 55%,var(--card)) 0%,var(--bg) 75%)}
+.trw-teken.wacht::after{content:"3D laden\2026";position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-2);font-size:calc(13px * var(--fs))}
+.trw-teken.wacht>.trw-diagram,.trw-teken.is-3d>.trw-diagram{display:none}
+html.desk .trw-teken.wacht{min-height:510px}
+@media print{
+  .trw-teken>.s3d{display:none}
+  .trw-teken>.trw-diagram{display:block !important}
+  .trw-teken.wacht{min-height:0 !important;background:none}
+  .trw-teken.wacht::after{content:none}
+}
+/* [20261115b] Oefenvorm in 3D (scene3d.js, motor over/over-3d.js). [20261116k] de keuze Tekening/3D en de schuifjes Hoek en Draai zijn weg. */
 .s3d{display:grid;gap:8px}
 .s3d-stage{position:relative;height:340px;border-radius:12px;overflow:hidden;background:radial-gradient(ellipse at center,color-mix(in srgb,var(--veld) 55%,var(--card)) 0%,var(--bg) 75%)}
 .s3d-stage canvas{display:block;width:100%;height:100%}
@@ -6268,9 +6276,6 @@ h3.tm-kop2{font-size:calc(20px * var(--fs))}
 .s3d-voortgang{display:flex;gap:5px}
 .s3d-voortgang span{flex:1;height:6px;border-radius:3px;background:var(--op-vlak-2,var(--hair))}
 .s3d-voortgang span.klaar{background:var(--accent)}
-.s3d-kijk{display:flex;flex-wrap:wrap;gap:14px;font-size:calc(13px * var(--fs));color:var(--ink-2)}
-.s3d-kijk label{display:flex;align-items:center;gap:6px}
-.s3d-kijk input[type=range]{accent-color:var(--accent);width:120px}
 html.desk .s3d-stage{height:380px}
 .tm-diff .moe{background:color-mix(in srgb,var(--accent) 9%,var(--card));border-color:color-mix(in srgb,var(--accent) 35%,var(--hair))}
 .tm-diff h4{margin:0 0 3px;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.08em;font-size:calc(13px * var(--fs))}
@@ -7498,6 +7503,20 @@ html.desk .dk-ss .sn-kop,html.desk .dk-ss .sn-balk,html.desk .dk-ss .sn-voet,htm
   html.desk .wz-achter{ left:var(--zij-w); transition:left .22s cubic-bezier(.3,.8,.3,1); }
   html.desk .modal-achter[data-vorm="scherm"] .modal{ max-width:640px; }
   html.desk .modal-achter[data-vorm="scherm"] .modal-kop{ padding-top:var(--space-lg); }
+}
+/* [20261116k] Desktop: geen enkel dekkend scherm over de zijbalk. Deze schermvullende lagen openden nog
+   over het hele venster (training bekijken, tekening vergroten, PDF, training bewerken, notities beheren,
+   opstelling-sjablonen, tactiekbord, leerplein, rapport en de bouw-hub); ze staan nu naast de zijbalk.
+   Een klik in de zijbalk sluit ze eerst (desktop.js, sluitPaginaLagen). Alleen op het scherm, niet bij
+   afdrukken. #bouwhubPagina zet zijn plek met een inline stijl, vandaar !important.
+   Bewust niet: het platformcentrum en het scherm van de trainingscoördinator (.tc-app, eigen zijbalk),
+   de deelpagina voor ouders (buiten de app) en halfdoorzichtige lagen achter een dialoog of blad. */
+@media screen and (min-width:1100px) and (min-height:520px){
+  html.desk .trw-overlay, html.desk .trw-lb, html.desk .pdfv-achter, html.desk .trb-overlay, html.desk .tnb-overlay,
+  html.desk .sj-overlay, html.desk .tb-board, html.desk .lp-scherm, html.desk .rapport-achter{ left:var(--zij-w); transition:left .22s cubic-bezier(.3,.8,.3,1); }
+  html.desk #bouwhubPagina{ left:var(--zij-w) !important; }
+  /* de oefeningenbalk plakt in de trainingsweergave bovenaan: de regel met --dk-kop liet er 64 px tekst boven doorschuiven */
+  html.desk .trw-overlay .trw-nav{ top:0; }
 }
 
 /* ==================== [20261113b] TRAINING MAKEN: overzichtelijker ====================

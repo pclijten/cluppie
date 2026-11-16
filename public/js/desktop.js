@@ -13,17 +13,17 @@
    de DOM (MutationObserver op #app) om te weten welk scherm actief is.
    Stijl: blok "DESKTOP-SCHIL" achteraan in styles.css (html.desk).
 ========================================================================== */
-import { S, $, esc, modAan, isBeheerder, isPlatformBeheerder, stopUnsubs, meld, sluitModal } from './state.js?v=20261116j';
+import { S, $, esc, modAan, isBeheerder, isPlatformBeheerder, stopUnsubs, meld, sluitModal } from './state.js?v=20261116k';
 import { ico } from './icons.js?v=20261116j';
-import { logoImg, primaireClubId } from './clubconfig.js?v=20261116j';
-import { BOUWEN, catLabel } from './config.js?v=20261116j';
-import { openTeam, zetTeamTab, verlaatTeamView, updatesInfo, renderTeam } from './teams.js?v=20261116j';
-import { initSchermen, ruimOp } from './desktop-schermen.js?v=20261116j';
-import { openBouw, bouwTeams, bouwHuidig, zetHerteken, bouwIsSelectie } from './desktop-bouw.js?v=20261116j';
-import { ongelezenBerichten } from './berichten.js?v=20261116j';
-import { evaluatieOpen } from './teams-hub.js?v=20261116j';
-import { onderdeelAan } from './onderdelen.js?v=20261116j';
-import { telNav } from './tracker.js?v=20261116j';
+import { logoImg, primaireClubId } from './clubconfig.js?v=20261116k';
+import { BOUWEN, catLabel } from './config.js?v=20261116k';
+import { openTeam, zetTeamTab, verlaatTeamView, updatesInfo, renderTeam } from './teams.js?v=20261116k';
+import { initSchermen, ruimOp } from './desktop-schermen.js?v=20261116k';
+import { openBouw, bouwTeams, bouwHuidig, zetHerteken, bouwIsSelectie } from './desktop-bouw.js?v=20261116k';
+import { ongelezenBerichten } from './berichten.js?v=20261116k';
+import { evaluatieOpen } from './teams-hub.js?v=20261116k';
+import { onderdeelAan } from './onderdelen.js?v=20261116k';
+import { telNav } from './tracker.js?v=20261116k';
 
 const K_KLEIN = 'cluppie_zijbalk_klein';
 let openBouwSleutel = null, openBouwTeam = null;
@@ -57,9 +57,9 @@ function rolNaam(){
    loopt onze vervolgstap gegarandeerd ná die render. */
 async function sluitOpenWedstrijd(){
   if (huidigeView() !== 'wedstrijd' && !S.wedstrijdId) return;
-  const w = await import('./wedstrijd.js?v=20261116j');
+  const w = await import('./wedstrijd.js?v=20261116k');
   w.sluitWedstrijd();
-  await import('./teams.js?v=20261116j');
+  await import('./teams.js?v=20261116k');
   await new Promise(r => requestAnimationFrame(() => r()));
 }
 /* Club-view verlaten zónder terug te springen naar het teamoverzicht
@@ -75,7 +75,7 @@ async function gaNaarTab(tab, opties = {}){
   telNav('desk:' + tab, 'zijbalk');
   const view = huidigeView();
   if (view === 'wedstrijd'){
-    const w = await import('./wedstrijd.js?v=20261116j');
+    const w = await import('./wedstrijd.js?v=20261116k');
     if (opties.profiel) S._beoordeelProfiel = opties.profiel;
     w.sluitWedstrijd(tab);
     return;
@@ -101,16 +101,16 @@ async function naarOverzicht(){
   teamKeuzeOpen = false;
   await sluitOpenWedstrijd();
   if (S.teamId){ verlaatTeamView(); return; }
-  if (huidigeView() === 'club'){ const c = await import('./club.js?v=20261116j'); c.verlaatClubView(); }
+  if (huidigeView() === 'club'){ const c = await import('./club.js?v=20261116k'); c.verlaatClubView(); }
 }
 async function openClubDesk(id){
   await sluitOpenWedstrijd();
   if (S.teamId) verlaatTeamView();
-  const c = await import('./club.js?v=20261116j');
+  const c = await import('./club.js?v=20261116k');
   c.openClub(id);
 }
 async function openBouwDesk(clubId, bouw){
-  const b = await import('./bouw-hub.js?v=20261116j');
+  const b = await import('./bouw-hub.js?v=20261116k');
   b.openBouwHub(clubId, bouw);
 }
 /* Bouw-omgeving openen: eerst een open wedstrijd/club/team netjes verlaten. */
@@ -154,17 +154,17 @@ async function voerActieUit(actie, data = {}){
     if (data.pag === 'dash' || data.pag === 'uit' || data.pag === 'selmaken') return naarBouw(data.club, data.bouw, data.pag);
     return naarBouwPag(data.club, data.bouw, data.team, data.pag);
   }
-  if (actie === 'trainco')    return import('./trainco.js?v=20261116j').then(m => m.openVanuitApp());
-  if (actie === 'platform')   return import('./platform.js?v=20261116j').then(m => m.openPlatform());
+  if (actie === 'trainco')    return import('./trainco.js?v=20261116k').then(m => m.openVanuitApp());
+  if (actie === 'platform')   return import('./platform.js?v=20261116k').then(m => m.openPlatform());
   if (actie === 'coordbeheer'){
     await openClubDesk(data.id);
     S.clubTab = 'bouwen';          // [20260929a] coördinatoren staan nu onder Club → Bouwen
     return;
   }
-  if (actie === 'chat')       return import('./chatbot.js?v=20261116j').then(m => m.openChatbot());
+  if (actie === 'chat')       return import('./chatbot.js?v=20261116k').then(m => m.openChatbot());
   if (actie === 'tactiek'){
     if (!S.teamId){ const tid = laatsteTeamId(); if (tid) openTeam(tid); }
-    return import('./tactiekbord.js?v=20261116j').then(m => m.openTactiekBibliotheek());
+    return import('./tactiekbord.js?v=20261116k').then(m => m.openTactiekBibliotheek());
   }
   if (actie === 'speler'){ S._dkModus = null; S._profielTab = 'overzicht'; return gaNaarTab('spelers', { profiel: data.id }); }
   if (actie === 'selectie'){ S._dkModus = null; return gaNaarTab('spelers'); }
@@ -176,7 +176,7 @@ async function voerActieUit(actie, data = {}){
   }
   if (actie === 'wedstrijd'){
     if (huidigeView() !== 'team' && huidigeView() !== 'wedstrijd') return;
-    return import('./wedstrijd.js?v=20261116j').then(m => m.openWedstrijd(data.id));
+    return import('./wedstrijd.js?v=20261116k').then(m => m.openWedstrijd(data.id));
   }
 }
 
@@ -353,7 +353,27 @@ function teken(){
 }
 function plan(){ if (!gepland){ gepland = true; requestAnimationFrame(teken); } }
 
-function klik(e){
+/* [20261116k] Schermvullende lagen staan op desktop naast de zijbalk (styles.css, blok 20261116k). Een klik in
+   de zijbalk sluit ze eerst, de bovenste het eerst, zodat het gekozen scherm ook echt in beeld komt. Elke laag
+   wordt in de DOM herkend en met zijn eigen sluitfunctie gesloten (dezelfde als zijn ‹-knop); de module is
+   dan al geladen, dus de import haalt niets op. Nieuwe schermvullende laag: hier én in styles.css toevoegen. */
+async function sluitPaginaLagen(){
+  const open = s => !!document.querySelector(s);
+  const veilig = async f => { try { await f(); } catch(e){ console.warn('[zijbalk] laag sluiten mislukt', e); } };
+  if (open('.rapport-achter.open')) await veilig(async () => (await import('./club-inzicht.js?v=20261116k')).sluitRapport());
+  if (open('.tb-board'))            await veilig(async () => (await import('./tactiekbord.js?v=20261116k')).sluitTactiekbord());
+  if (open('.lp-scherm'))           await veilig(async () => (await import('./leerplein.js?v=20261116k')).sluitLeerplein());
+  if (open('.trw-lb.open'))         await veilig(async () => (await import('./training-weergave.js?v=20261116k')).sluitLightbox());
+  if (open('.tnb-overlay.open'))    await veilig(async () => (await import('./training-notities-beheer.js?v=20261116k')).sluitBeheerNotities());
+  if (open('.trb-overlay.open'))    await veilig(async () => (await import('./training-bewerken.js?v=20261116k')).sluitTrainingBewerken());
+  if (open('.pdfv-achter.open'))    await veilig(async () => (await import('./pdf-viewer.js?v=20261116k')).sluitPdfViewer());
+  if (open('.sj-overlay.open'))     await veilig(async () => (await import('./opstelling-sjabloon.js?v=20261116k')).sluitSjabloonScherm());
+  if (open('.trw-overlay.open'))    await veilig(async () => (await import('./training-weergave.js?v=20261116k')).sluitTrainingWeergave());
+  const bh = document.getElementById('bouwhubPagina');
+  if (bh && bh.style.display !== 'none') await veilig(async () => (await import('./bouw-hub.js?v=20261116k')).sluitBouwHub());
+}
+
+async function klik(e){
   const b = e.target.closest('[data-actie]'); if (!b) return;
   const a = b.dataset.actie;
   if (a === 'teamkeuze'){ teamKeuzeOpen = !teamKeuzeOpen; plan(); return; }
@@ -369,7 +389,9 @@ function klik(e){
   if ($('#wizardAchter')?.classList.contains('open')){ meld('Rond eerst de wedstrijdopzet af, of kies Overslaan'); return; }
   const ma = $('#modalAchter');
   if (ma?.classList.contains('open') && ['scherm', 'breed'].includes(ma.getAttribute('data-vorm') || 'scherm')) sluitModal();
-  voerActieUit(a, { ...b.dataset });
+  const data = { ...b.dataset };          /* vóór het wachten: de zijbalk kan intussen opnieuw getekend worden */
+  await sluitPaginaLagen();
+  voerActieUit(a, data);
   plan();
 }
 
@@ -439,7 +461,7 @@ function sluitPalet(){ pal?.classList.remove('open'); }
 function kiesPalet(i){
   const it = palZicht[i]; if (!it) return;
   sluitPalet();
-  voerActieUit(it.actie, it.data);
+  sluitPaginaLagen().then(() => voerActieUit(it.actie, it.data));
 }
 function sneltoets(e){
   if (!document.documentElement.classList.contains('desk')) return;

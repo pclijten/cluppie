@@ -25,9 +25,9 @@
 
 import { db, collection, doc, addDoc, updateDoc, deleteDoc, setDoc,
          onSnapshot, serverTimestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld, spelerNaam, spelerNr, modAan, bewaakTerug, vangnetStilTerugAlsNodig, terugLaag } from './state.js?v=20261116j';
-import { bouwSlots } from './config.js?v=20261116j';
-import { telNav } from './tracker.js?v=20261116j';
+import { S, esc, meld, spelerNaam, spelerNr, modAan, bewaakTerug, vangnetStilTerugAlsNodig, terugLaag } from './state.js?v=20261116k';
+import { bouwSlots } from './config.js?v=20261116k';
+import { telNav } from './tracker.js?v=20261116k';
 
 const NS = 'http://www.w3.org/2000/svg';
 
@@ -216,7 +216,7 @@ export function openTactiekLijst(w){
   if (toonLeerplein){
     host.querySelector('#tbLeerplein').onclick = () => {
       sluit();
-      import('./leerplein.js?v=20261116j').then(m => m.openLeerplein(w));
+      import('./leerplein.js?v=20261116k').then(m => m.openLeerplein(w));
     };
   }
 

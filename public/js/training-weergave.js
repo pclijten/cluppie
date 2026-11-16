@@ -8,9 +8,10 @@
    Gebruikt dezelfde overlay-aanpak en terug-bewaking als pdf-viewer.js, zodat de
    Android-terugknop / veeg-terug de weergave sluit i.p.v. de app te verlaten. */
 
-import { bewaakTerug, vangnetStilTerugAlsNodig, esc, terugLaag } from './state.js?v=20261116j';
+import { bewaakTerug, vangnetStilTerugAlsNodig, esc, terugLaag } from './state.js?v=20261116k';
 import { principe as principeOpId } from './speelwijze-logica.js?v=20261116j';
 import { htmlPrincipeChip } from './speelwijze-html.js?v=20261116j';
+import { maak3DBlok, heeftWebGL } from './scene3d.js?v=20261116k';
 
 let _overlay = null;
 
@@ -47,10 +48,10 @@ export function sluitTrainingWeergave(){
   // ruimt de deel-knop al op zijn eigen manier op).
   const nb = _overlay.querySelector('.trw-notitie-knop:not(.trw-deel-knop)');
   if (nb) nb.remove();
-  import('./training-aantekeningen.js?v=20261116j').then(m => m.resetAantekeningen()).catch(() => {});
-  import('./training-video.js?v=20261116j').then(m => m.resetTrainingVideos()).catch(() => {});
-  import('./training-tactiek.js?v=20261116j').then(m => m.resetTrainingTactiek()).catch(() => {});
-  import('./training-delen.js?v=20261116j').then(m => m.resetTrainingDelen()).catch(() => {});
+  import('./training-aantekeningen.js?v=20261116k').then(m => m.resetAantekeningen()).catch(() => {});
+  import('./training-video.js?v=20261116k').then(m => m.resetTrainingVideos()).catch(() => {});
+  import('./training-tactiek.js?v=20261116k').then(m => m.resetTrainingTactiek()).catch(() => {});
+  import('./training-delen.js?v=20261116k').then(m => m.resetTrainingDelen()).catch(() => {});
   vangnetStilTerugAlsNodig(wasOpen);
 }
 
@@ -134,15 +135,20 @@ export function diagramVoorOefening(idx, diagramUrls){
 
 export function oefHtml(idx, oef, diagramUrls){
   const url = diagramVoorOefening(idx, diagramUrls);
-  const diagram = !url && oef.svg
-    ? `<figure class="trw-diagram trw-svg">${oef.svg}</figure>`
+  /* [20261116k] Een oefening uit de bibliotheek staat altijd in 3D (de keuze Tekening/3D is weg). De tekening
+     staat er als terugval onder: die blijft zichtbaar zonder WebGL, als de vorm niet meer in de bibliotheek
+     staat, en bij afdrukken. Het 3D-veld zelf komt erin zodra de oefening in beeld schuift (beheer3D). */
+  const drie = !url && oef.svg && oef.bron?.vormId;
+  const figuur = `<figure class="trw-diagram trw-svg">${oef.svg || ''}</figure>`;
+  const diagram = drie
+    ? `<div class="trw-teken${kan3D() ? ' wacht' : ''}" data-trw-vorm="${esc(oef.bron.vormId)}" data-trw-plek="${idx}">${figuur}</div>`
+    : !url && oef.svg
+    ? figuur
     : url
     ? `<figure class="trw-diagram" data-zoom="${esc(url)}" data-zoomtitel="${esc(oef.titel || 'Oefening ' + idx)}"><img src="${esc(url)}" alt="" loading="lazy"><span class="trw-zoomhint"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.3 15.3 20 20"/></svg> tik om te vergroten</span></figure>`
     : '';
   const zeven = (oef.blokken || []).some(b => b.veld);
   const blokken = zeven ? htmlVeldenVan(oef.blokken) : (oef.blokken || []).map(blokHtml).join('');
-  /* [20261115c] oefening uit de bibliotheek: keuze tekening of 3D (stappen uit de tekening van de vorm) */
-  const drieD = oef.svg && oef.bron?.vormId ? `<div class="s3d-keuze" role="group" aria-label="Weergave"><button type="button" data-trw-drie="0" aria-pressed="true">Tekening</button><button type="button" data-trw-drie="1" data-vorm="${esc(oef.bron.vormId)}" aria-pressed="false">3D</button></div>` : '';
   return `
     <section class="trw-oef">
       <div class="trw-oef-kop">
@@ -150,7 +156,7 @@ export function oefHtml(idx, oef, diagramUrls){
         <h2>${esc(oef.titel || 'Oefening ' + idx)}</h2>
       </div>
       ${oef.principe && principeOpId(oef.principe) ? `<div class="sw-blokchip">${htmlPrincipeChip(principeOpId(oef.principe))}</div>` : ''}
-      ${drieD}${diagram}<div class="trw-3d" hidden></div>
+      ${diagram}
       <div class="${zeven ? 'ok-kaart trw-ok' : 'hl'}">${blokken}</div>
     </section>`;
 }
@@ -176,21 +182,64 @@ function htmlVeldenVan(blokken){
   }).join('');
 }
 
-/* [20261115c] Klik op Tekening/3D in een oefening: het 3D-blok wordt pas bij de eerste tik gemaakt. */
-if (typeof document !== 'undefined') document.addEventListener('click', async e => {
-  const b = e.target.closest?.('[data-trw-drie]'); if (!b) return;
-  const sec = b.closest('.trw-oef'), plek = sec?.querySelector('.trw-3d'), fig = sec?.querySelector('.trw-diagram'); if (!plek) return;
-  const aan = b.dataset.trwDrie === '1';
-  sec.querySelectorAll('[data-trw-drie]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-  plek.hidden = !aan; if (fig) fig.style.display = aan ? 'none' : '';
-  if (aan && !plek.firstChild){
-    const vormId = sec.querySelector('[data-trw-drie="1"]').dataset.vorm;
-    const [{ maak3DBlok }, { vormOpId }] = await Promise.all([import('./scene3d.js?v=20261116j'), import('./bibliotheek.js?v=20261116j')]);
-    const v = vormOpId(vormId);
-    if (!v){ plek.innerHTML = '<p class="s3d-wacht">Deze vorm staat niet meer in de bibliotheek.</p>'; return; }
-    plek.appendChild(maak3DBlok(v, v.veld));
-  }
-});
+/* ---------- [20261116k] Altijd 3D: beheer van de 3D-velden ----------
+   oefHtml zet per oefening uit de bibliotheek een plek neer (.trw-teken[data-trw-vorm]). Dat gebeurt op meer
+   schermen (deze weergave, het trainingsscherm op desktop, de trainingscoördinator, de deelpagina), en die
+   schermen tekenen zichzelf soms opnieuw. Daarom regelt één beheerder hier alles, los van wie de html plaatste:
+     • een veld wordt pas gemaakt als de oefening (bijna) in beeld is, en weer vrijgegeven als hij uit beeld
+       schuift: een browser staat maar een beperkt aantal 3D-velden tegelijk toe en een telefoon heeft weinig
+       geheugen. De plek houdt dan zijn hoogte, zodat de pagina niet verspringt;
+     • tekent een scherm zichzelf opnieuw, dan verhuist het lopende veld naar de nieuwe plek (zelfde scherm,
+       oefening en vorm), zodat de animatie niet opnieuw begint;
+     • een plek die uit de pagina verdwijnt, ruimt zijn veld op.
+   Zonder WebGL, of als de vorm niet meer in de bibliotheek staat, blijft de tekening staan. */
+let _kan3D = null;
+function kan3D(){
+  if (_kan3D === null) _kan3D = typeof document !== 'undefined' && typeof IntersectionObserver !== 'undefined' && typeof MutationObserver !== 'undefined' && heeftWebGL();
+  return _kan3D;
+}
+const D3 = { io: null, gepland: false, gezien: new WeakSet(), aan: new Set() };
+const sleutel3D = el => (el.closest('.trw-overlay') ? 'o' : 'i') + ':' + el.dataset.trwPlek + ':' + el.dataset.trwVorm;
+function plaats3D(el, blok){
+  el._blok = blok; el.appendChild(blok); el.classList.add('is-3d'); el.classList.remove('wacht'); el.style.minHeight = ''; D3.aan.add(el);
+}
+async function zet3D(el){
+  if (el._blok || el._bezig || !el.isConnected || !kan3D()) return;
+  el._bezig = true;
+  try {
+    const { vormOpId } = await import('./bibliotheek.js?v=20261116j');
+    const v = vormOpId(el.dataset.trwVorm);
+    if (!v){ el.classList.remove('wacht'); el.style.minHeight = ''; return; }      /* vorm bestaat niet meer: de tekening blijft */
+    if (el.isConnected && el._inBeeld && !el._blok) plaats3D(el, maak3DBlok(v, v.veld));
+  } catch (e){ el.classList.remove('wacht'); el.style.minHeight = ''; }
+  finally { el._bezig = false; }
+}
+function haal3D(el, houdPlek = true){
+  if (!el._blok) return;
+  if (houdPlek && el.isConnected){ el.style.minHeight = el.offsetHeight + 'px'; el.classList.add('wacht'); }
+  el._blok.weg?.(); el._blok.remove(); el._blok = null; el.classList.remove('is-3d'); D3.aan.delete(el);
+}
+function beheer3D(){
+  D3.gepland = false;
+  const wezen = new Map();                                   /* velden waarvan de plek uit de pagina is verdwenen */
+  for (const el of [...D3.aan]) if (!el.isConnected){ D3.aan.delete(el); if (el._blok) wezen.set(el._sleutel, el); }
+  document.querySelectorAll('.trw-teken[data-trw-vorm]').forEach(el => {
+    if (D3.gezien.has(el)) return;
+    D3.gezien.add(el); el._sleutel = sleutel3D(el);
+    const oud = wezen.get(el._sleutel);
+    if (oud){ wezen.delete(el._sleutel); const blok = oud._blok; oud._blok = null; el._inBeeld = true; plaats3D(el, blok); }
+    D3.io.observe(el);
+  });
+  for (const el of wezen.values()){ el._blok.weg?.(); el._blok = null; }
+}
+function start3D(){
+  if (D3.io || typeof IntersectionObserver === 'undefined' || typeof MutationObserver === 'undefined') return;
+  D3.io = new IntersectionObserver(es => { for (const e of es){ e.target._inBeeld = e.isIntersecting; if (e.isIntersecting) zet3D(e.target); else haal3D(e.target); } }, { rootMargin: '300px 0px' });
+  const plan = () => { if (!D3.gepland){ D3.gepland = true; requestAnimationFrame(beheer3D); } };
+  new MutationObserver(plan).observe(document.body, { childList: true, subtree: true });
+  plan();
+}
+if (typeof document !== 'undefined'){ if (document.body) start3D(); else document.addEventListener('DOMContentLoaded', start3D); }
 
 /* openTrainingWeergave({ training, diagramUrls, oefeningen, onOrigineel })
    - training: het Firestore-doc (voor titel/meta)
@@ -242,7 +291,7 @@ export function openTrainingWeergave({ titel, meta, oefeningen, diagramUrls, onO
   // Aantekeningen-laag (additief): notitie-knop in de balk + tik-op-regel.
   // Alleen als er een trainingId is om notities aan te koppelen.
   if (trainingId){
-    import('./training-aantekeningen.js?v=20261116j').then(mod => {
+    import('./training-aantekeningen.js?v=20261116k').then(mod => {
       const balk = el.querySelector('.trw-balk');
       mod.initAantekeningen({ stage, balk, trainingId });
       mod.bindItemKlik(stage);
@@ -250,20 +299,20 @@ export function openTrainingWeergave({ titel, meta, oefeningen, diagramUrls, onO
 
     // Video-uitleg-laag (additief): 🎬-knop in de balk die de zichtbare oefening
     // volgt + afspeeltegel per oefening; beheerder kan uploaden/vervangen/wissen.
-    import('./training-video.js?v=20261116j').then(mod => {
+    import('./training-video.js?v=20261116k').then(mod => {
       const balk = el.querySelector('.trw-balk');
       mod.initTrainingVideos({ stage, balk, trainingId, videos: oefeningVideos || {}, trainingClub });
     }).catch(() => {});
 
     // Tactiekbord-laag (additief): compact tactiekbord-icoon per oefening, op één
     // lijn met het video-icoon. Koppelt een bord aan de oefening.
-    import('./training-tactiek.js?v=20261116j').then(mod => {
+    import('./training-tactiek.js?v=20261116k').then(mod => {
       mod.initTrainingTactiek({ stage, trainingId, borden: oefeningTactiek || {} });
     }).catch(() => {});
 
     // Deel-knop (additief): 📤-knop rechts in de balk waarmee een coach deze
     // training + de presentie ervan tijdelijk deelt met een meehelpende ouder.
-    import('./training-delen.js?v=20261116j').then(mod => {
+    import('./training-delen.js?v=20261116k').then(mod => {
       const balk = el.querySelector('.trw-balk');
       mod.initTrainingDelen({ balk, trainingId, teamId, teamNaam, clubNaam, titel });
     }).catch(() => {});

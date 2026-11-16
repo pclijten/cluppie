@@ -18,27 +18,27 @@
    Tabblad: 'trainingsmodule'. Importeert NIET uit teams.js (geen kringimport); teams.js geeft
    zetTeamTab mee aan koppelTrainingsmodule(). */
 import { db, collection, addDoc, setDoc, getDoc, getDocs, deleteDoc, doc, functions, httpsCallable, serverTimestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261116j';
-import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } from './config.js?v=20261116j';
-import { aiAan, aiDoel } from './clubconfig.js?v=20261116j';
+import { S, esc, meld } from './state.js?v=20261116k';
+import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } from './config.js?v=20261116k';
+import { aiAan, aiDoel } from './clubconfig.js?v=20261116k';
 import { ico } from './icons.js?v=20261116j';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261116j';
 import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261116j';
-import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, kiesDuur, SLOT_NAAM, groepsindeling, opbouwVoor, WEER } from './trainingsplanner.js?v=20261116j';
+import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, kiesDuur, SLOT_NAAM, groepsindeling, opbouwVoor, WEER } from './trainingsplanner.js?v=20261116k';
 import { MATERIAAL, MATERIAAL_NAAM, PRESETS, presetVan, VELDEN, schoonContext, behoefte, haalbaar, valtAf, tipTekst } from './trainingscontext-logica.js?v=20261019a';
-import { htmlZevenVelden, STANDAARD_OPEN } from './oefenkaart.js?v=20261116j';
-import { maak3DBlok } from './scene3d.js?v=20261116j';
+import { htmlZevenVelden, STANDAARD_OPEN } from './oefenkaart.js?v=20261116k';
+import { maak3DBlok, heeftWebGL } from './scene3d.js?v=20261116k';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
 import { TERUGBLIK_VRAGEN, zetAntwoord, terugblikKlaar, terugblikSamenvatting, signaalVormBewaard, signaalVormGewisseld, signaalTerugblik, signaalMateriaal, signaalGat, gatRedenen } from './leren-logica.js?v=20261019b';
-import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261116j';
+import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261116k';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261116j';
-import { positieWeek, seizoensweekOp, weekKalender, standaardVrij, maandagVan, seizoenStartJaar } from './seizoensplan-logica.js?v=20261116j';
-import { trainingenRef } from './seizoensplan-trainingen.js?v=20261116j';
-import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261116j';
-import { oefeningVan, geplandeTraining, vormIdsVan, rondBlok } from './seizoensplan-club.js?v=20261116j';
-import { onderdeelAan } from './onderdelen.js?v=20261116j';
+import { positieWeek, seizoensweekOp, weekKalender, standaardVrij, maandagVan, seizoenStartJaar } from './seizoensplan-logica.js?v=20261116k';
+import { trainingenRef } from './seizoensplan-trainingen.js?v=20261116k';
+import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261116k';
+import { oefeningVan, geplandeTraining, vormIdsVan, rondBlok } from './seizoensplan-club.js?v=20261116k';
+import { onderdeelAan } from './onderdelen.js?v=20261116k';
 /* [20261116h] de speelwijze als rode draad: leerdoel, coachwoorden, vormen die het principe trainen en de regel in het partijspel */
-import { speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad } from './speelwijze.js?v=20261116j';
+import { speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad } from './speelwijze.js?v=20261116k';
 import { rodeDraad, principe as principeOpId, principeVoorThema, principeVanVorm, LESOPBOUW } from './speelwijze-logica.js?v=20261116j';
 import { htmlDraadKaart, htmlPrincipeChip } from './speelwijze-html.js?v=20261116j';
 
@@ -274,13 +274,13 @@ function markeerSpeelwijze(plan){
   plan.controle = valideer(plan);
 }
 
-/* [20261115b] Tekening of 3D. Het 3D-blok zelf (scene3d.js) wordt na het tekenen op de plek gezet (plaats3D),
-   en bij opnieuw tekenen teruggezet, zodat de animatie doorloopt als je een veld van de oefenkaart opent. */
-function htmlTekenKeuze(i, v, veld){
-  const t = staat(), drie = !!(t.drie || {})[i];
-  const knop = (aan, tekst) => `<button type="button" data-tm-drie="${i}" data-tm-drie-aan="${aan ? 1 : 0}" aria-pressed="${drie === aan}">${tekst}</button>`;
-  return `<div class="s3d-keuze" role="group" aria-label="Weergave">${knop(false, 'Tekening')}${knop(true, '3D')}</div>
-    ${drie ? `<div class="s3d-plek" data-s3d-plek="${i}:${esc(v.id)}:${veld.b}x${veld.l}"></div>` : vormSvg(v, veld) + TEKENING_LEGENDA}`;
+/* [20261116k] Een open vorm staat altijd in 3D (de keuze Tekening/3D is weg); zonder WebGL staat de tekening er.
+   Het 3D-blok zelf (scene3d.js) wordt na het tekenen op de plek gezet (plaats3D), en bij opnieuw tekenen teruggezet,
+   zodat de animatie doorloopt als je een veld van de oefenkaart opent. De kleine schets in de tijdlijn blijft een tekening. */
+let _kan3D = null;
+const kan3D = () => (_kan3D === null ? (_kan3D = heeftWebGL()) : _kan3D);
+function htmlTekening(i, v, veld){
+  return kan3D() ? `<div class="s3d-plek" data-s3d-plek="${i}:${esc(v.id)}:${veld.b}x${veld.l}"></div>` : vormSvg(v, veld) + TEKENING_LEGENDA;
 }
 const blokken3D = new Map();
 function plaats3D(root){
@@ -312,7 +312,7 @@ function htmlOnderdeel(od, i){
   return `<div class="tm-vorm${open ? ' open' : ''}" style="--c:${SLOT_KLEUR[od.slot]}">
     <button class="tm-vk" data-tm-open-vorm="${i}" aria-expanded="${open}"><span class="tm-min">${od.minuten}′</span><span class="tm-schets" aria-hidden="true">${vormSvg(v, kn.veld)}</span>
       <span class="tm-mid"><span class="tm-slot">${esc(naam)}${stap ? ` · <em>${esc(stap.stap)}</em>` : ''}</span><span class="tm-nm">${esc(v.naam)}</span><span class="tm-vsub">${od.groepen}×${od.groepGrootte} · ${kn.veld.b}×${kn.veld.l} m · ${esc(v.doel)}</span>${pr ? htmlPrincipeChip(pr) : ''}</span><span class="tm-pij">⌄</span></button>
-    ${open ? `<div class="tm-vb"><div class="tm-vb-teken">${htmlTekenKeuze(i, v, kn.veld)}</div><div class="tm-vb-tekst">
+    ${open ? `<div class="tm-vb"><div class="tm-vb-teken">${htmlTekening(i, v, kn.veld)}</div><div class="tm-vb-tekst">
       <div class="ok-feiten"><span>${od.minuten} min</span><span>${od.groepen}×${od.groepGrootte}${od.wissel ? '+' + od.wissel : ''} spelers</span><span>${kn.veld.b}×${kn.veld.l} m</span><span>niveau ${v.complexiteit}/3</span></div>
       <div class="ok-kaart">${velden}</div>
       <div class="tm-rij" style="margin-top:12px">${knoppen}<span class="tm-info">${esc((v.domeinen || []).join(' · '))}</span></div>
@@ -513,7 +513,6 @@ export function koppelTrainingsmodule(v, { zetTeamTab = null } = {}){
     else if (d.tmLos){ t.vervangt = null; t.bewaardId = null; meld('Wordt een extra training; de geplande training blijft staan'); teken(); }
     else if (d.tmMaak){ t.seed++; maak(); stuurSignalen(gatRedenen(t.plan).map(r => signaalGat(leeftijdVanCategorie(S.team?.categorie), r))); teken(); const r = root.querySelector('.tm-kop2'); if (r) window.scrollTo({ top: r.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' }); }
     else if (d.tmOpenVorm !== undefined){ const i = Number(d.tmOpenVorm); t.open = t.open === i ? null : i; teken(); }
-    else if (d.tmDrie !== undefined){ t.drie = t.drie || {}; t.drie[Number(d.tmDrie)] = d.tmDrieAan === '1'; teken(); }
     else if (d.tmOk){ const [i, k] = d.tmOk.split(':'); const cur = t.tab[Number(i)] === undefined ? STANDAARD_OPEN : t.tab[Number(i)]; t.tab[Number(i)] = cur === k ? null : k; teken(); }
     else if (d.tmPas){ t.pas = !t.pas; teken(); }
     else if (d.tmCk){ t.ckOpen = !t.ckOpen; teken(); }
