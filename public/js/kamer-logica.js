@@ -51,6 +51,32 @@ export function itemTelling(i, aantal){
 }
 export const eigenStatus = (i, spelerId) => ((i.afwezig || []).includes(spelerId) ? 'Afwezig' : 'Erbij');
 
+/* ---------- opstelling op een veld [20261116p] ----------
+   De kopie bevat de plekken van de eerste periode ({ K: id, V1: id, M2: id … }) en de formatie ("3-3-1").
+   Zelfde verdeling als parseFormatie in config.js (die module hoort bij de trainersapp en laden we hier niet):
+   linies van achter naar voren, spelers per linie van links naar rechts. Geeft [] als er niets te tekenen is. */
+function spreidX(aantal){
+  const marge = { 1: 0, 2: 32, 3: 22, 4: 14, 5: 10, 6: 8 }[aantal] ?? 12;
+  if (aantal === 1) return [50];
+  return Array.from({ length: aantal }, (_, i) => Math.round(marge + (100 - 2 * marge) * i / (aantal - 1)));
+}
+export function veldPlekken(op){
+  const plekken = (op && op.plekken) || {}, ids = Object.keys(plekken);
+  if (!ids.length) return [];
+  let lijnen = String((op && op.formatie) || '').trim().split(/[-\s.]+/).filter(d => /^\d+$/.test(d)).map(Number);
+  const tel = (l) => ids.filter(k => k[0] === l).reduce((m, k) => Math.max(m, Number(k.slice(1)) || 0), 0);
+  const som = lijnen.reduce((a, b) => a + b, 0), nodig = tel('V') + tel('M') + tel('A');
+  if (lijnen.length < 2 || lijnen.some(x => x < 1 || x > 6) || som < nodig) lijnen = [tel('V'), tel('M'), tel('A')].filter(Boolean);   /* onbekende formatie: de linies die er zijn */
+  const uit = [], n = lijnen.length, nr = { V: 0, M: 0, A: 0 };
+  if (plekken.K) uit.push({ plek: 'K', x: 50, y: 90, spelerId: plekken.K });
+  lijnen.forEach((aantal, idx) => {
+    const rol = n === 1 ? 'M' : idx === 0 ? 'V' : idx === n - 1 ? 'A' : 'M';
+    const y = n === 1 ? 49 : Math.round(74 - (74 - 20) * idx / (n - 1));
+    spreidX(aantal).forEach(x => { nr[rol]++; const plek = rol + nr[rol]; if (plekken[plek]) uit.push({ plek, x, y, spelerId: plekken[plek] }); });
+  });
+  return uit;
+}
+
 /* ---------- afmelden via WhatsApp: Cluppie verstuurt en bewaart niets ---------- */
 export function afmeldTekst(naam, i){
   const wat = i.soort === 'training' ? 'training' : `wedstrijd${i.tegenstander ? ' tegen ' + i.tegenstander : ''}`;
@@ -130,6 +156,29 @@ export function pollWeergave(poll, spelers, keuzes, aantalGezinnen){
   return { opties, gestemd: Number(poll.gestemd) || 0, open: poll.status === 'open',
     nodig: poll.nodig ? `${ja} van ${poll.nodig} auto\u2019s` : '' };
 }
+/* [20261116p] De eigen stem meteen meetellen. De server telt (kamerStem) en dat duurt een paar tellen; tot die
+   tijd liet de pagina wel "Jouw stem" zien maar nog het oude aantal. geteld = de eigen keuzes die al in
+   poll.telling zitten, nu = wat het gezin net koos. Geeft een kopie van de poll met telling, gestemd en wie
+   alsof de server al geteld had. */
+export function pollMetEigen(poll, spelerId, geteld, nu){
+  const oud = new Set(geteld || []), nieuw = new Set(nu || []);
+  if (!spelerId || (oud.size === nieuw.size && [...oud].every(k => nieuw.has(k)))) return poll;
+  const telling = { ...(poll.telling || {}) }, wie = poll.wie ? Object.fromEntries(Object.entries(poll.wie).map(([k, v]) => [k, [...v]])) : null;
+  for (const o of (poll.opties || [])){
+    const d = (nieuw.has(o.id) ? 1 : 0) - (oud.has(o.id) ? 1 : 0);
+    if (!d) continue;
+    telling[o.id] = Math.max(0, (Number(telling[o.id]) || 0) + d);
+    if (wie){ const rij = (wie[o.id] || []).filter(x => x !== spelerId); if (d > 0) rij.push(spelerId); wie[o.id] = rij; }
+  }
+  const gestemd = Math.max(0, (Number(poll.gestemd) || 0) + (nieuw.size ? 1 : 0) - (oud.size ? 1 : 0));
+  return { ...poll, telling, gestemd, ...(wie ? { wie } : {}) };
+}
+/* Heeft de server de stem van `ms` al meegeteld? Met geteldMs (nieuwe server) weten we het zeker; zonder
+   dat veld nemen we aan van wel zodra de telling is veranderd sinds de tik. */
+export function stemGeteld(poll, ms, tellingBijTik){
+  if (Number(poll.geteldMs) > 0) return Number(poll.geteldMs) >= ms;
+  return JSON.stringify(poll.telling || {}) !== tellingBijTik;
+}
 /* nieuwe eigen keuze na een tik op een antwoord */
 export function kiesOptie(poll, keuzes, optieId){
   const nu = new Set(keuzes || []);
@@ -143,6 +192,10 @@ export function sorteerPolls(polls){
 }
 /* wie stemde nog niet (alleen voor de trainer): spelers zonder stem */
 export function nogNiet(spelerIds, stemIds){ const s = new Set(stemIds); return spelerIds.filter(id => !s.has(id)); }
+
+/* ---------- nieuw voor dit toestel [20261116p]: mededelingen na de laatste keer "Gelezen" en polls waar nog op gestemd moet worden ---------- */
+export const nieuweBerichten = (berichten, gelezenMs) => (berichten || []).filter(b => (Number(b.ms) || 0) > (Number(gelezenMs) || 0));
+export const nogStemmen = (polls, stemmen, rol) => (polls || []).filter(p => magStemmen(p, rol) && Array.isArray(stemmen[p.id]) && !stemmen[p.id].length);
 
 /* ---------- weer bij de club (Open-Meteo; alleen coördinaten en datum gaan naar buiten) ---------- */
 export function weerUrl(plek, datum){

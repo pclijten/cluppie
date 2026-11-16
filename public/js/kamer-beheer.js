@@ -8,7 +8,7 @@
    koppelTeamkamer(). state.js is niet aangeraakt. */
 import { db, functions, httpsCallable, doc, collection, addDoc, updateDoc, deleteDoc, getDocs, query, where, onSnapshot, Timestamp } from './firebase.js?v=20261011g';
 import { S, esc, meld } from './state.js?v=20261116n';
-import * as K from './kamer-logica.js?v=20261116n';
+import * as K from './kamer-logica.js?v=20261116p';
 
 const roep = (naam, data) => httpsCallable(functions, naam)(data || {}).then(r => r.data);
 const M = { teamId: null, sub: 'toegang', subs: [], kamer: null, link: null, aanvragen: [], leden: [], polls: [], berichten: [], gezin: {},
@@ -165,7 +165,7 @@ function htmlInstellingen(){
       ${mag('live') ? sw('Live stand', 'Op de wedstrijddag, alleen de stand en geen namen', i.live, 'data-tk="isw" data-veld="live"') : ''}
       <div class="tk-klein tk-zacht tk-lijn">Nooit zichtbaar, ook niet met een schakelaar: redenen van afwezigheid, beoordelingen, leerpunten en achternamen.</div></section>
     ${ws.length && mag('opstelling') ? `<section class="tk-kaart" style="gap:4px"><div class="tk-label">Opstelling delen</div>
-      ${ws.map(w => sw(`${K.hoofdletter(K.datumKort(w.datum))}${w.tegenstander ? ', ' + w.tegenstander : ''}`, 'Staat uit tot jij hem aanzet', w.deelOpstelling === true, `data-tk="opstelling" data-id="${esc(w.id)}"`)).join('')}</section>` : ''}
+      ${ws.map(w => sw(`${K.hoofdletter(K.datumKort(w.datum))}${w.tegenstander ? ', ' + w.tegenstander : ''}`, w.deelOpstelling === true ? 'Ouders zien de opstelling van de eerste periode' : 'Staat uit tot jij hem aanzet', w.deelOpstelling === true, `data-tk="opstelling" data-id="${esc(w.id)}"`)).join('')}</section>` : ''}
     ${mag('thuis') ? `<section class="tk-kaart"><h2 class="tk-label">Thuis oefenen</h2>
       <div class="tk-klein tk-zacht">Wat spelers thuis kunnen doen: één oefening in 3D en tot ${K.MAX_THUIS_VIDEOS} video's.</div>
       <h3 class="tk-veldnaam">Oefening in 3D</h3>
@@ -211,8 +211,12 @@ export function htmlTeamkamer(){
 }
 /* kort blok voor de wedstrijdvoorbereiding: polls bij deze wedstrijd */
 export function htmlPollsBijWedstrijd(w){
-  if (!w || !teamkamerZichtbaar() || !inst().aan || !mag('polls')) return '';
+  if (!w || !teamkamerZichtbaar() || !inst().aan || !(mag('polls') || mag('opstelling'))) return '';
   if (M.teamId !== S.teamId) start(S.teamId);
+  /* [20261116p] opstelling delen staat ook hier, bij de wedstrijd zelf (was alleen te vinden onder Teamkamer › Instellingen) */
+  const deel = mag('opstelling') ? `<section class="tk-kaart" style="margin-bottom:12px"><div class="tk-label">Teamkamer: opstelling</div>
+    ${sw('Deel de opstelling met ouders en spelers', w.deelOpstelling === true ? 'Ze zien de opstelling van de eerste periode op een veld, met voornamen' : 'Staat uit tot jij hem aanzet', w.deelOpstelling === true, `data-tk-deel="${esc(w.id)}"`)}</section>` : '';
+  if (!mag('polls')) return deel;
   const polls = M.polls.filter(p => p.wedstrijdId === w.id), sp = eigenSpelers(), spelersMap = Object.fromEntries(sp.map(x => [x.id, { n: voornaam(x) }]));
   const regel = (p) => { const x = K.pollWeergave(p, spelersMap, [], sp.length), ja = x.opties[0];
     const wie = ja ? K.namenLijst(spelersMap, (M.stemmen[p.id] || []).filter(s => s.keuzes.includes(ja.id)).map(s => s.spelerId)) : '';
@@ -220,7 +224,14 @@ export function htmlPollsBijWedstrijd(w){
   const ontbreekt = ['rijden', 'wassen'].filter(s => !polls.some(p => p.soort === s) && (s !== 'rijden' || w.thuis !== true));
   return `<section class="tk-kaart" style="margin-bottom:12px"><div class="tk-label">Teamkamer: polls bij deze wedstrijd</div>
     ${polls.map(regel).join('') || '<div class="tk-zacht">Nog geen polls.</div>'}
-    ${ontbreekt.length ? `<div class="tk-twee">${ontbreekt.map(s => `<button class="tk-knop licht klein" data-tk-poll="${s}" data-wid="${esc(w.id)}">Poll: ${s === 'rijden' ? 'wie rijdt' : 'wie wast'}</button>`).join('')}</div>` : ''}</section>`;
+    ${ontbreekt.length ? `<div class="tk-twee">${ontbreekt.map(s => `<button class="tk-knop licht klein" data-tk-poll="${s}" data-wid="${esc(w.id)}">Poll: ${s === 'rijden' ? 'wie rijdt' : 'wie wast'}</button>`).join('')}</div>` : ''}</section>${deel}`;
+}
+/* de opstelling van één wedstrijd wel of niet delen met de teamkamer (Instellingen en de wedstrijdvoorbereiding) */
+export async function zetDeelOpstelling(id, aan){
+  const w = (S.wedstrijden || []).find(x => x.id === id);
+  await updateDoc(doc(db, 'teams', S.teamId, 'wedstrijden', id), { deelOpstelling: aan });
+  if (w) w.deelOpstelling = aan;
+  meld(aan ? 'Opstelling gedeeld met de teamkamer' : 'Opstelling niet meer gedeeld');
 }
 
 /* ==================== bediening ==================== */
@@ -305,10 +316,7 @@ export function koppelTeamkamer(v, { renderTeam }){
       if (a === 'wisbericht'){ if (!confirm('Deze mededeling verwijderen?')) return; return deleteDoc(doc(basis, 'berichten', id)); }
       if (a === 'isw'){ await zetInst({ [b.dataset.veld]: b.getAttribute('aria-checked') !== 'true' }); return renderTeam(); }
       if (a === 'opstelling'){
-        const w = (S.wedstrijden || []).find(x => x.id === id), nieuw = b.getAttribute('aria-checked') !== 'true';
-        await updateDoc(doc(db, 'teams', S.teamId, 'wedstrijden', id), { deelOpstelling: nieuw });
-        if (w) w.deelOpstelling = nieuw;
-        meld(nieuw ? 'Opstelling gedeeld met de teamkamer' : 'Opstelling niet meer gedeeld'); return renderTeam();
+        await zetDeelOpstelling(id, b.getAttribute('aria-checked') !== 'true'); return renderTeam();
       }
       if (a === 'thuis'){ const vorm = (M.vormen || []).find(x => x.id === id); await zetInst({ thuis: { vormId: id, naam: vorm ? vorm.naam : '' } }); M.zoek = ''; meld('Thuisoefening gekozen'); return renderTeam(); }
       if (a === 'thuisweg'){ await zetInst({ thuis: null }); return renderTeam(); }

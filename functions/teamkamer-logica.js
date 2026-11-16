@@ -166,7 +166,12 @@ function projectWedstrijd(w, i, vandaag){
     const nrs = Object.keys(w.kwarten || {}).sort((a, b) => Number(a) - Number(b));
     const lineup = (nrs.length && w.kwarten[nrs[0]] && w.kwarten[nrs[0]].lineup) || {};
     const basis = [...new Set(Object.values(lineup).filter(x => typeof x === 'string'))];
-    if (basis.length) uit.opstelling = { basis, wissels: [...sel].filter(id => !basis.includes(id)) };
+    /* [20261116p] plekken en formatie erbij, zodat ouders de opstelling op een veld zien (zelfde plek-id's als de app: K, V1, M2, A1) */
+    const plekken = {};
+    for (const [plek, id] of Object.entries(lineup)) if (/^(K|[VMA]\d{1,2})$/.test(plek) && typeof id === 'string') plekken[plek] = id;
+    const eerste = w.kwarten[nrs[0]] || {};
+    if (basis.length) uit.opstelling = { basis, wissels: [...sel].filter(id => !basis.includes(id)).sort(), plekken,
+      formatie: str(eerste.formatie || w.formatie, 14), format: str(String(w.format || ''), 2) };
   }
   return uit;
 }

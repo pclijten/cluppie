@@ -14,7 +14,16 @@ const { nederlandseLink } = require('./wachtwoord-reset');
 
 const REGIO = 'europe-west1';
 const APP_URL = 'https://www.cluppie.io/';
+const KAMER_URL = 'https://www.cluppie.io/kamer.html';
 const MAX_PER_UUR = 3;
+/* [20261116p] Waar komt iemand uit na het bevestigen? Een ouder die zich via de teamlink aanmeldt moet terug naar
+   de teamkamer (met de code van de teamlink, zodat het ook werkt als de mail in een andere browser opent),
+   niet naar de trainersapp. PURE (getest). */
+function terugUrl(naar, code){
+  if (naar !== 'kamer') return APP_URL;
+  const c = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+  return KAMER_URL + (c ? '?k=' + c : '');
+}
 const isMail = s => /^[^@\s<>,;]+@[^@\s<>,;]+\.[^@\s<>,;]+$/.test(s);
 
 /* PURE (getest) */
@@ -36,7 +45,7 @@ function maakVerificatieMail(link, naam){
 }
 
 /* Hele afhandeling, los van onCall zodat hij getest kan worden. */
-async function verwerkVerificatie({ uid, email, naam, bevestigd }, { db = getFirestore(), auth = admin.auth(), nu = new Date() } = {}){
+async function verwerkVerificatie({ uid, email, naam, bevestigd, naar, code }, { db = getFirestore(), auth = admin.auth(), nu = new Date() } = {}){
   const adres = String(email || '').trim().toLowerCase();
   if (!uid || !isMail(adres)) return 'geen-adres';
   if (bevestigd) return 'al-bevestigd';
@@ -51,7 +60,7 @@ async function verwerkVerificatie({ uid, email, naam, bevestigd }, { db = getFir
   });
   if (!mag) return 'limiet';
 
-  const link = await auth.generateEmailVerificationLink(adres, { url: APP_URL });
+  const link = await auth.generateEmailVerificationLink(adres, { url: terugUrl(naar, code) });
   const voornaam = naam ? String(naam).split(/\s+/)[0].slice(0, 40) : '';
   const m = maakVerificatieMail(nederlandseLink(link), voornaam);
   await db.collection('mail').add({
@@ -66,7 +75,8 @@ const verificatieMail = onCall({ region: REGIO, cors: true, timeoutSeconds: 30 }
   if (!a || a.token.firebase?.sign_in_provider === 'anonymous') throw new HttpsError('unauthenticated', 'Log eerst in met je eigen account.');
   let uitkomst;
   try {
-    uitkomst = await verwerkVerificatie({ uid: a.uid, email: a.token.email, naam: a.token.name, bevestigd: a.token.email_verified === true });
+    uitkomst = await verwerkVerificatie({ uid: a.uid, email: a.token.email, naam: a.token.name, bevestigd: a.token.email_verified === true,
+      naar: request.data?.naar, code: request.data?.code });
   } catch (e){
     console.error('[verificatieMail]', e && e.message || e);
     throw new HttpsError('internal', 'Versturen mislukt, probeer het zo opnieuw.');
@@ -76,4 +86,4 @@ const verificatieMail = onCall({ region: REGIO, cors: true, timeoutSeconds: 30 }
   return { ok: true, alBevestigd: uitkomst === 'al-bevestigd' };
 });
 
-module.exports = { verificatieMail, verwerkVerificatie, maakVerificatieMail };
+module.exports = { verificatieMail, verwerkVerificatie, maakVerificatieMail, terugUrl };
