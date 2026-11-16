@@ -1,4 +1,10 @@
 [
+  { "datum": "2026-11-16", "titel": "Altijd 3D, en het menu blijft in beeld op de computer", "punten": [
+    "Elke oefening uit de bibliotheek staat nu meteen in 3D, bij Trainingen en bij Training maken. Kiezen tussen Tekening en 3D hoeft niet meer.",
+    "De schuifjes Hoek en Draai zijn weg: het veld staat altijd in dezelfde kijkhoek.",
+    "De tekening zie je nog in de kleine schets, bij afdrukken en op een apparaat zonder 3D. Een training uit een eigen PDF houdt zijn eigen plaatjes.",
+    "Computer: een training op volledig scherm, het tactiekbord, het Leerplein, de PDF-weergave, de opstelling-sjablonen en het rapport openen nu naast het menu. Het menu blijft dus zichtbaar; een klik erin sluit het geopende scherm."
+  ] },
   { "datum": "2026-11-16", "titel": "Alle oefeningen uitgewerkt: spelverloop, kijken en ingrijpen", "punten": [
     "Alle 326 oefeningen hebben nu een eigen spelverloop in stappen en fases. Je ziet ook wat de tegenstander doet, hoe de aanval eindigt en wat er daarna gebeurt. Het verloop staat in het veld Uitleg en speelt in 3D.",
     "Doel: bij elke oefening staat “Zo zie je dat het lukt” (twee dingen die je langs de lijn kunt zien) en “Waarom dit werkt”.",

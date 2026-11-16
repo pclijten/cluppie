@@ -1,8 +1,9 @@
 /* ==================== OEFENVORM IN 3D (TRAINING MAKEN) ====================
    [20261115b] Elke oefenvorm uit de bibliotheek kan als geanimeerd 3D-veld worden bekeken,
    stap voor stap zoals in de goedgekeurde mockup "Passen en lopen (3D)":
-   Vorige · Afspelen/Pauze · Volgende · Opnieuw, de tekst van de stap, een voortgangsbalk,
-   en schuifjes voor de kijkhoek en de draai.
+   Vorige · Afspelen/Pauze · Volgende · Opnieuw, de tekst van de stap en een voortgangsbalk.
+   [20261116k] 3D is de standaardweergave van een oefening (de keuze Tekening/3D is weg); de schuifjes
+   voor kijkhoek en draai zijn weg, het veld staat in één vaste kijkhoek.
 
    De stappen komen uit de tekening die elke vorm al heeft (tekening.lijnen): elke lijn is één actie.
    Er hoeft dus niets per oefening te worden ingevoerd. De 3D-motor is dezelfde als op de over-pagina
@@ -313,7 +314,7 @@ export function laad3D(){
   if (!laden) laden = (async () => {
     if (!window.THREE) await script('vendor/over/three.min.js');
     if (!window.gsap) await script('vendor/over/gsap.min.js');
-    await script('over/over-3d.js?v=20261116j');   /* versie mee, anders kan de cache een oude motor zonder stappen geven */
+    await script('over/over-3d.js?v=20261116k');   /* versie mee, anders kan de cache een oude motor zonder stappen geven */
     if (!window.Veld3D) throw new Error('3D niet beschikbaar');
     return window.Veld3D;
   })().catch(e => { laden = null; throw e; });
@@ -342,14 +343,10 @@ export function maak3DBlok(vorm0, veld){
       <button type="button" class="knop klein licht" data-s3d-k="opnieuw">Opnieuw</button>
     </div>
     <div class="s3d-stap" aria-live="polite"></div>
-    <div class="s3d-voortgang">${stappen.map(x => `<span${x.auto ? ' class="auto"' : ''}></span>`).join('')}</div>
-    <div class="s3d-kijk">
-      <label>Hoek <input type="range" min="15" max="85" value="40" data-s3d-r="hoek"></label>
-      <label>Draai <input type="range" min="-60" max="60" value="8" data-s3d-r="draai"></label>
-    </div>`;
+    <div class="s3d-voortgang">${stappen.map(x => `<span${x.auto ? ' class="auto"' : ''}></span>`).join('')}</div>`;
   const stage = el.querySelector('.s3d-stage'), stapEl = el.querySelector('.s3d-stap'), balkjes = [...el.querySelectorAll('.s3d-voortgang span')];
   const speelKnop = el.querySelector('[data-s3d-k="speel"]');
-  let veld3d = null, k = 0, speelt = false;
+  let veld3d = null, k = 0, speelt = false, weg = false;
 
   const toon = () => {
     stapEl.innerHTML = !stappen.length ? 'Deze oefening heeft geen looplijnen om af te spelen.'
@@ -371,6 +368,7 @@ export function maak3DBlok(vorm0, veld){
     if (!heeftWebGL()){ stage.innerHTML = '<div class="s3d-wacht">3D werkt niet op dit apparaat. De tekening blijft gewoon beschikbaar.</div>'; return; }
     try {
       const V = await laad3D();
+      if (weg) return;                              /* al weggehaald terwijl de 3D-motor nog laadde */
       stage.innerHTML = '';
       veld3d = V.maak(stage, { naam: vorm.naam, veld: veld || vorm.veld, tekening: vorm.tekening }, { opStap, vervaag: true });
       veld3d.kijk(40, 8);
@@ -395,10 +393,7 @@ export function maak3DBlok(vorm0, veld){
     else if (w === 'opnieuw'){ speelt = false; k = 0; veld3d.naarStap(0); }
     toon();
   });
-  el.addEventListener('input', () => {
-    if (!veld3d) return;
-    veld3d.kijk(Number(el.querySelector('[data-s3d-r="hoek"]').value), Number(el.querySelector('[data-s3d-r="draai"]').value));
-  });
-  el.weg = () => veld3d?.weg();
+  /* [20261116k] de schuifjes Hoek en Draai zijn weg: het veld staat altijd in dezelfde vaste kijkhoek (40°, draai 8°) */
+  el.weg = () => { weg = true; veld3d?.weg(); veld3d = null; };
   return el;
 }

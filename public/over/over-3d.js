@@ -279,7 +279,7 @@
 
     /* alleen tekenen als het veld zichtbaar is */
     let zichtbaar = false;
-    new IntersectionObserver(([e]) => { zichtbaar = e.isIntersecting; }).observe(box);
+    const io = new IntersectionObserver(([e]) => { zichtbaar = e.isIntersecting; }); io.observe(box);
     const teken = () => { if (zichtbaar && box.offsetParent !== null) renderer.render(scene, camera); };
     gsap.ticker.add(teken);
     zetBegin();
@@ -294,7 +294,9 @@
       speelStap: k => { const a = k <= 0 ? INTRO : stapTijd[k], b = stapTijd[k + 1] ?? EIND; tl.tweenFromTo(Math.max(INTRO, a), b, { onComplete: klaar }); },
       speelVanaf: k => { tl.tweenFromTo(k <= 0 ? INTRO : stapTijd[k], EIND, { onComplete: klaar }); },
       kijk: (hoek, draai) => { stand.hoek = hoek; stand.draai = draai; zetCamera(); },
-      weg: () => { tl.kill(); gsap.ticker.remove(teken); ro.disconnect(); renderer.dispose(); canvas.remove(); },
+      /* [20261116k] geeft de WebGL-context meteen terug: sinds 3D de standaardweergave is, komen en gaan er
+         meer velden op één scherm en een browser staat maar een beperkt aantal contexten tegelijk toe */
+      weg: () => { tl.kill(); gsap.ticker.remove(teken); ro.disconnect(); io.disconnect(); try { renderer.forceContextLoss(); } catch (e){ /* oudere three.js */ } renderer.dispose(); canvas.remove(); },
     };
   }
 
