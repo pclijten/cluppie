@@ -9,7 +9,7 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const admin = require('firebase-admin');
-const { maakMail } = require('./mail-sjabloon');
+const mailTeksten = require('./mail-teksten');
 const { nederlandseLink } = require('./wachtwoord-reset');
 
 const REGIO = 'europe-west1';
@@ -17,22 +17,10 @@ const APP_URL = 'https://www.cluppie.io/';
 const MAX_PER_UUR = 3;
 const isMail = s => /^[^@\s<>,;]+@[^@\s<>,;]+\.[^@\s<>,;]+$/.test(s);
 
-/* PURE (getest) */
+/* PURE (getest): de mail met de standaardtekst. De echte verzending gebruikt de tekst uit Platform › Mails. */
+const vasteDelen = link => ({ knopUrl: link, slotVooraf: ['Werkt de knop niet? Kopieer dan deze link in je browser:\n' + link] });
 function maakVerificatieMail(link, naam){
-  return maakMail({
-    voorkop: 'Bevestigen',
-    titel: 'Bevestig je e-mailadres',
-    alineas: [
-      naam ? `Hoi ${naam},` : 'Hoi,',
-      'Welkom bij Cluppie! Bevestig je e-mailadres met de knop hieronder. Dat is nodig om je aan te sluiten bij een team of club.',
-    ],
-    knop: { tekst: 'E-mailadres bevestigen', url: link },
-    slot: [
-      'Werkt de knop niet? Kopieer dan deze link in je browser:\n' + link,
-      'Heb je je niet aangemeld bij Cluppie? Dan kun je deze mail negeren.',
-    ],
-    voet: 'Deze link werkt één keer.',
-  });
+  return mailTeksten.stelOp('bevestig', { naam: naam || '' }, { vast: vasteDelen(link) });
 }
 
 /* Hele afhandeling, los van onCall zodat hij getest kan worden. */
@@ -53,11 +41,7 @@ async function verwerkVerificatie({ uid, email, naam, bevestigd }, { db = getFir
 
   const link = await auth.generateEmailVerificationLink(adres, { url: APP_URL });
   const voornaam = naam ? String(naam).split(/\s+/)[0].slice(0, 40) : '';
-  const m = maakVerificatieMail(nederlandseLink(link), voornaam);
-  await db.collection('mail').add({
-    to: adres, message: { subject: 'Bevestig je e-mailadres voor Cluppie', text: m.text, html: m.html },
-    gemaakt: FieldValue.serverTimestamp(),
-  });
+  await mailTeksten.verstuur(db, 'bevestig', adres, { naam: voornaam }, { vast: vasteDelen(nederlandseLink(link)) });
   return 'verstuurd';
 }
 

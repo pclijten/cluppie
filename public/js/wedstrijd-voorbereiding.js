@@ -22,7 +22,7 @@ import { db, doc, setDoc, updateDoc, functions, httpsCallable } from './firebase
 import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261116n';
 import { ico } from './icons.js?v=20261116j';
 import { telGebruik, telNav } from './tracker.js?v=20261116n';
-import { plekHtml, routeUrl, presentieWedstrijd, afwezigTekst, opstellingKlaar } from './nu-scherm.js?v=20261116o';
+import { plekHtml, routeUrl, presentieWedstrijd, afwezigTekst, opstellingKlaar } from './nu-scherm.js?v=20261116p';
 import { htmlPollsBijWedstrijd, openPollVoorWedstrijd } from './kamer-beheer.js?v=20261116n';   /* [20261116m] polls bij een wedstrijd */
 
 const p2 = n => String(n).padStart(2, '0');
@@ -581,7 +581,7 @@ function koppel(body){
     if (wd){
       const id = wd.dataset.vbWedstrijd;
       sluitModal();
-      const m = await import('./wedstrijd.js?v=20261116o');
+      const m = await import('./wedstrijd.js?v=20261116p');
       m.openWedstrijd(id);
       return;
     }

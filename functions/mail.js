@@ -27,7 +27,17 @@ const SMTP_WACHTWOORD = defineSecret('SMTP_WACHTWOORD');
 const isMail = s => typeof s === 'string' && /^[^@\s<>,;]+@[^@\s<>,;]+\.[^@\s<>,;]+$/.test(s);
 const schoon = (s, max) => String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, max);
 
-/* PURE (getest): documentdata → { fout } of { bericht }. De afzender komt nooit uit het document. */
+/* [20261116p] Soorten waarvan de inhoud een inloglink bevat: die tekst wordt na het versturen uit het document gewist. */
+const WIS_INHOUD = Object.entries(require('./mail-teksten').SOORTEN).filter(([, s]) => s.wisInhoud).map(([k]) => k);
+/* Alleen de NAAM van de afzender mag uit het document komen (Platform › Mails › Algemeen); het adres nooit. */
+function afzender(van, naam){
+  const n = schoon(naam, 40).replace(/[<>"\\,;:@]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!n) return van;
+  const adres = (/<([^<>]+)>/.exec(String(van)) || [])[1] || String(van).trim();
+  return `${n} <${adres}>`;
+}
+
+/* PURE (getest): documentdata → { fout } of { bericht }. Het adres van de afzender komt nooit uit het document. */
 function maakBericht(data, van){
   if (!data || typeof data !== 'object') return { fout: 'Leeg document.' };
   const lijst = (Array.isArray(data.to) ? data.to : [data.to]).map(x => schoon(x, 200).toLowerCase()).filter(Boolean);
@@ -43,7 +53,7 @@ function maakBericht(data, van){
   if (!text.trim()) return { fout: 'Geen tekst.' };
   /* optionele HTML-versie (alleen door Cloud Functions geschreven); de tekst blijft verplicht als terugval */
   const html = typeof m.html === 'string' && m.html.trim() ? m.html.slice(0, MAX_HTML) : '';
-  return { bericht: { from: van, replyTo: ANTWOORD_AAN, to: uniek, subject, text, ...(html ? { html } : {}) } };
+  return { bericht: { from: afzender(van, data.vanNaam), replyTo: ANTWOORD_AAN, to: uniek, subject, text, ...(html ? { html } : {}) } };
 }
 
 let transporter = null;
@@ -71,20 +81,23 @@ async function verwerk(snap, { transporterFn = getTransporter, van = () => MAIL_
   });
   if (!claimed) return 'overgeslagen';
 
-  const { fout, bericht } = maakBericht(snap.data(), van());
+  const data = snap.data() || {};
+  const { fout, bericht } = maakBericht(data, van());
+  /* de link in een inlogmail hoort niet te blijven staan, ook niet als versturen mislukt */
+  const wis = WIS_INHOUD.includes(data.soort) ? { 'message.text': FieldValue.delete(), 'message.html': FieldValue.delete() } : {};
   if (fout){
     console.warn('[mail] niet verstuurd:', fout);
-    await ref.update({ delivery: { state: 'ERROR', attempts: 1, error: fout, endTime: FieldValue.serverTimestamp() } });
+    await ref.update({ ...wis, delivery: { state: 'ERROR', attempts: 1, error: fout, endTime: FieldValue.serverTimestamp() } });
     return 'ongeldig';
   }
   try {
     const info = await transporterFn().sendMail(bericht);
-    await ref.update({ delivery: { state: 'SUCCESS', attempts: 1, endTime: FieldValue.serverTimestamp(),
+    await ref.update({ ...wis, delivery: { state: 'SUCCESS', attempts: 1, endTime: FieldValue.serverTimestamp(),
       info: { messageId: info.messageId || null, accepted: (info.accepted || []).length, rejected: (info.rejected || []).length } } });
     return 'verstuurd';
   } catch (e){
     console.error('[mail] versturen mislukt', e && e.message || e);
-    await ref.update({ delivery: { state: 'ERROR', attempts: 1, error: schoon(e && e.message || e, 300), endTime: FieldValue.serverTimestamp() } });
+    await ref.update({ ...wis, delivery: { state: 'ERROR', attempts: 1, error: schoon(e && e.message || e, 300), endTime: FieldValue.serverTimestamp() } });
     return 'mislukt';
   }
 }
@@ -94,4 +107,4 @@ const verstuurMail = onDocumentCreated(
   async (event) => { await verwerk(event.data); }
 );
 
-module.exports = { verstuurMail, maakBericht, verwerk };
+module.exports = { verstuurMail, maakBericht, verwerk, afzender, WIS_INHOUD };

@@ -3,8 +3,8 @@
    [20261111a] Vervangt de brede platform-pop-up (goedgekeurde mockup "Cluppie
    Platformcentrum", impactanalyse claude/eindbaas-platformcentrum-impactanalyse.md).
 
-   Vijf onderdelen: Overzicht (Vandaag doen), Uitrol (fases per club), Clubs
-   (tabel + clubdetail in een lade), Trainers (zonder club) en Instellingen.
+   Onderdelen: Overzicht (Vandaag doen), Uitrol (fases per club), Clubs
+   (tabel + clubdetail in een lade), Trainers (zonder club), Bibliotheek, Mails en Instellingen.
    Schakelaars per club staan alleen nog in het clubdetail; de ondersteuningsmodus
    start alleen nog via de knop in het tabblad Meehelpen.
 
@@ -30,6 +30,7 @@ const MENU = [
   ['clubs', 'Clubs', 'admin-manage'],
   ['trainers', 'Trainers', 'team-trainer'],
   ['bibliotheek', 'Bibliotheek', 'training-plan'],   /* [20261113d] trainingsvormen beheren */
+  ['mails', 'Mails', 'communication-mail'],          /* [20261116p] teksten van alle mails */
   ['instellingen', 'Instellingen', 'navigation-settings'],
 ];
 const LADE_TABS = [['overzicht', 'Overzicht'], ['onderdelen', 'Onderdelen en limieten'], ['pdf', 'PDF-trainingen'], ['teams', 'Teams'], ['meehelpen', 'Meehelpen']];
@@ -524,7 +525,7 @@ function teken(){
   let inhoud;
   if (P.laden && !P.o) inhoud = '<div class="tc-leeg">Cijfers laden…</div>';
   else if (P.fout) inhoud = `<div class="kaart leeg">${esc(P.fout)}</div>`;
-  else inhoud = (P.lade && htmlLade()) || ({ overzicht: htmlOverzicht, uitrol: htmlUitrol, clubs: htmlClubs, trainers: htmlTrainers, instellingen: htmlInstellingen, bibliotheek: () => '<div id="pbRoot"></div>' })[P.scherm]();
+  else inhoud = (P.lade && htmlLade()) || ({ overzicht: htmlOverzicht, uitrol: htmlUitrol, clubs: htmlClubs, trainers: htmlTrainers, instellingen: htmlInstellingen, bibliotheek: () => '<div id="pbRoot"></div>', mails: () => '<div id="pmRoot"></div>' })[P.scherm]();
   const link = ([id, n, ic]) => `<button class="tc-link ${P.scherm === id ? 'actief' : ''}" data-pc="scherm" data-scherm="${id}">${ico(ic, 20)}<span>${n}</span>${telling[id] ? `<span class="pc-tel">${telling[id]}</span>` : ''}</button>`;
   const merk = `<img src="${CLUPPIE_LOGO}" alt=""><span><b class="cond">Platform</b><small>Cluppie · eindbaas</small></span>`;
   const sy = P.el.querySelector('.tc-hoofd')?.scrollTop || 0;
@@ -553,6 +554,9 @@ function teken(){
   if (P.lade && P._fokusLade){ P._fokusLade = false; P.el.querySelector('.pc-lade [aria-selected="true"]')?.focus({ preventScroll: true }); }
   const pb = P.el.querySelector('#pbRoot');
   if (pb) import('./platform-bibliotheek.js?v=20261116n').then(m => m.toonBibliotheek(pb)).catch(e => { pb.innerHTML = '<div class="kaart leeg">Bibliotheek laden mislukt.</div>'; console.error(e); });
+  P.el.querySelector('.tc-onder .actief')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });   /* [20261116p] onderbalk schuift bij zeven onderdelen */
+  const pm = P.el.querySelector('#pmRoot');
+  if (pm) import('./platform-mails.js?v=20261116p').then(m => m.toonMails(pm)).catch(e => { pm.innerHTML = '<div class="kaart leeg">Mails laden mislukt.</div>'; console.error(e); });
   bewaakTerug();
 }
 
@@ -571,8 +575,8 @@ async function klik(e){
   if (a === 'fasewis'){ P.faseFilter = null; return teken(); }
   if (a === 'alletaken'){ P.alleTaken = !P.alleTaken; return teken(); }
   if (a === 'alletrainers'){ P.alleTrainers = !P.alleTrainers; return teken(); }
-  if (a === 'nieuweclub') return import('./club.js?v=20261116o').then(m => m.modalNieuwClub());
-  if (a === 'kalenders') return import('./platform.js?v=20261116o').then(m => m.openKalenders());
+  if (a === 'nieuweclub') return import('./club.js?v=20261116p').then(m => m.modalNieuwClub());
+  if (a === 'kalenders') return import('./platform.js?v=20261116p').then(m => m.openKalenders());
   if (a === 'kopieer') return kopieer(b.dataset.tekst);
   if (a === 'vernieuw') return vernieuw(b);
   if (a === 'goedkeuren' || a === 'afwijzen') return beoordeel(b, a === 'goedkeuren');
@@ -647,10 +651,17 @@ async function schakel(b){
 }
 async function beoordeel(b, goed){
   const id = b.dataset.id;
-  if (!goed && P.bevestig !== id){ P.bevestig = id; return teken(); }
+  /* [20261116p] "Eerst laten zien" (Platform › Mails): de mail voor deze ene club bekijken en aanpassen.
+     Staat dat uit, of zijn de functies er nog niet, dan gaat het zoals voorheen (afwijzen met een tweede tik). */
   b.disabled = true;
+  let keuze = { direct: true };
+  try { keuze = await (await import('./platform-mails.js?v=20261116p')).vraagMailBij(goed ? 'welkomClub' : 'afwijzing', P.aanmeldingen.find(a => a.id === id) || {}); }
+  catch (x){ console.warn('[platform] mail vooraf tonen mislukt', x); }
+  if (keuze === null){ b.disabled = false; return; }
+  if (keuze.direct && !goed && P.bevestig !== id){ P.bevestig = id; return teken(); }
   try {
-    await httpsCallable(functions, 'beoordeelClubAanmelding')({ id, besluit: goed ? 'goedkeuren' : 'afwijzen' });
+    await httpsCallable(functions, 'beoordeelClubAanmelding')({ id, besluit: goed ? 'goedkeuren' : 'afwijzen',
+      ...(keuze.mail ? { mail: keuze.mail } : {}), ...(keuze.zonderMail ? { zonderMail: true } : {}), ...(keuze.reden ? { reden: keuze.reden } : {}) });
     meld(goed ? 'Club aangemaakt; de aanvrager is clubbeheerder ✓' : 'Aanmelding afgewezen');
     P.aanmeldingen = P.aanmeldingen.filter(a => a.id !== id); P.bevestig = null;
     if (goed) await laad(); else teken();
@@ -665,10 +676,10 @@ async function vernieuw(b){
 async function meehelpen(b){
   const id = P.lade.clubId;
   b.disabled = true;
-  const ond = await import('./ondersteuning.js?v=20261116o').catch(() => null);
+  const ond = await import('./ondersteuning.js?v=20261116p').catch(() => null);
   if (!ond || !(await ond.startOndersteuning(id))){ b.disabled = false; return; }
   sluitCentrum();
-  import('./club.js?v=20261116o').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
+  import('./club.js?v=20261116p').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
 }
 const soloNu = () => ({ aan: false, limiet: 20, ...(P.platform?.soloAI || {}) });
 /* platform/instellingen schrijven kan alleen via de functie zetPlatformInstellingen (valideert ook) */
