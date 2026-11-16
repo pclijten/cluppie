@@ -20,7 +20,7 @@ import {
 } from './config.js?v=20261116n';
 import { onderdeelAan } from './onderdelen.js?v=20261116n';
 import { htmlKompas } from './teams-leerlijn.js?v=20261116n';
-import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261116o';
+import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261116p';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
 import { spelersOpTraining } from './uitleen-regels.js?v=20261113b';
 import {

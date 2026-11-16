@@ -184,9 +184,13 @@ async function telPoll(db, teamId, pollId){
   const ref = db.doc(`teamkamer/${teamId}/polls/${pollId}`);
   const poll = (await ref.get()).data();
   if (!poll) return;
-  const stemmen = (await ref.collection('stemmen').get()).docs.map(d => ({ spelerId: d.id, keuzes: d.data().keuzes }));
+  const docs = (await ref.collection('stemmen').get()).docs;
+  const stemmen = docs.map(d => ({ spelerId: d.id, keuzes: d.data().keuzes }));
   const t = L.telStemmen(poll, stemmen);
-  await ref.update({ telling: t.telling, gestemd: t.gestemd, wie: t.wie || FieldValue.delete() });
+  /* [20261116p] geteldMs = de nieuwste stem die in deze telling zit. De pagina van ouders telt de eigen stem
+     zelf alvast mee en laat dat los zodra geteldMs die stem heeft ingehaald. */
+  const geteldMs = docs.reduce((m, d) => Math.max(m, Number(d.data().ms) || 0), 0);
+  await ref.update({ telling: t.telling, gestemd: t.gestemd, wie: t.wie || FieldValue.delete(), geteldMs });
 }
 const kamerStem = onDocumentWritten({ document: 'teamkamer/{teamId}/polls/{pollId}/stemmen/{spelerId}', region: REGIO }, async (event) => {
   await telPoll(getFirestore(), event.params.teamId, event.params.pollId);
@@ -230,7 +234,15 @@ const kamerLinkInfo = onCall({ region: REGIO, cors: true }, async (request) => {
   const code = String(request.data?.code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
   const l = code ? (await db.doc(`kamerLinks/${code}`).get()).data() : null;
   if (!l || l.ingetrokken || l.verlooptOp.toMillis() < Date.now() || l.gebruikt >= l.maxGebruik) return { geldig: false };
-  return { geldig: true, teamNaam: l.teamNaam || '', clubNaam: l.clubNaam || '' };
+  const uit = { geldig: true, teamNaam: l.teamNaam || '', clubNaam: l.clubNaam || '' };
+  /* [20261116p] Wie al toegang heeft (of al wacht op de trainer) en de link opnieuw aantikt, hoort niet opnieuw het
+     aanmeldformulier te krijgen. Alleen diegene krijgt het team erbij; voor ieder ander blijft het bij de twee namen. */
+  if (request.auth && !isAnoniem(request)){
+    const uid = request.auth.uid;
+    if (await lidVan(db, l.teamId, uid)) return { ...uit, teamId: l.teamId, status: 'lid' };
+    if ((await db.doc(`kamerAanvragen/${L.lidId(l.teamId, uid)}`).get()).exists) return { ...uit, teamId: l.teamId, status: 'wacht' };
+  }
+  return uit;
 });
 const maakKamerLink = onCall({ region: REGIO, cors: true }, async (request) => {
   const db = getFirestore(), teamId = String(request.data?.teamId || '');

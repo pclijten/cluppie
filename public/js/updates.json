@@ -1,4 +1,12 @@
 [
+  { "datum": "2026-11-16", "titel": "Teamkamer: aanmelden loopt beter, nieuws valt op, opstelling op een veld", "punten": [
+    "Aanmelden als ouder: bij een lang e-mailadres viel het scherm op de telefoon aan de zijkant weg. Dat is opgelost. Je ziet nu in drie stappen waar je bent, en wat je al intypte blijft staan na een foutmelding.",
+    "De knop in de bevestigingsmail brengt een ouder terug naar de teamkamer in plaats van naar de trainersapp. De pagina merkt zelf dat het adres bevestigd is en gaat vanzelf verder.",
+    "Wie al toegang heeft en de teamlink in de groepsapp nog een keer aantikt, komt meteen binnen.",
+    "Een nieuwe mededeling staat bovenaan in een gekleurde kaart, met een rood cijfer op de tab Vandaag, tot de ouder op Gelezen tikt. Polls waar nog op gestemd moet worden staan er direct onder, met een cijfer op de tab Polls.",
+    "Stemmen op een poll telt meteen mee. Eerder zag je wel je eigen stem, maar sprong het aantal pas een paar tellen later om.",
+    "Een gedeelde opstelling staat nu als veld met rugnummers en voornamen op de wedstrijdkaart van ouders. Als trainer zet je het delen aan in de wedstrijdvoorbereiding (tab Praktisch) of bij Teamkamer, Instellingen."
+  ] },
   { "datum": "2026-11-16", "titel": "Trainingen in de juiste week", "punten": [
     "Een reeks trainingen die niet bij blokweek 1 begint (bijvoorbeeld Week 9 tot en met 14) wordt nu ingepland vanaf de week die je kiest. Eerder schoof zo'n reeks een paar weken op.",
     "Pas je bij Training aanpassen het weeknummer van een ingeplande training aan, dan verhuist de training mee naar die week. Je ziet er ook bij in welke week hij nu staat."

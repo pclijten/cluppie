@@ -320,4 +320,33 @@ ok(K.thuisVideo({ url: 'https://voorbeeld.nl/x.mp4' }) === null && K.thuisVideo(
 ok(K.KAMER_URL.startsWith('https://www.cluppie.io/') && K.linkTekst('O11-1', 'ABC').includes('https://www.cluppie.io/kamer.html?k=ABC'), 'teamlink met www');
 ok(K.kindCodeTekst('Pim', 'D7JSGF').includes('D7J SGF') && K.kindCodeTekst('Pim', 'D7JSGF').includes(K.KAMER_URL), 'code doorsturen: code en adres in het bericht');
 
+/* ==================== 5. ronde 2 [20261116p]: stem meteen meetellen, veldkaart, nieuw, terug naar de teamkamer ==================== */
+const pe = { opties: [{ id: 'o1' }, { id: 'o2' }], telling: { o1: 3, o2: 4 }, gestemd: 7, wie: { o1: ['p2'], o2: ['p3'] } };
+const pe1 = K.pollMetEigen(pe, 'p1', [], ['o1']);
+ok(pe1.telling.o1 === 4 && pe1.telling.o2 === 4 && pe1.gestemd === 8 && pe1.wie.o1.join() === 'p2,p1', 'eerste stem telt meteen mee, met naam');
+const pe2 = K.pollMetEigen(pe, 'p3', ['o2'], ['o1']);
+ok(pe2.telling.o1 === 4 && pe2.telling.o2 === 3 && pe2.gestemd === 7 && pe2.wie.o2.length === 0 && pe2.wie.o1.includes('p3'), 'stem wisselen: de oude eraf, de nieuwe erbij');
+ok(K.pollMetEigen(pe, 'p3', ['o2'], []).gestemd === 6 && K.pollMetEigen(pe, 'p3', ['o2'], []).telling.o2 === 3, 'stem intrekken');
+ok(K.pollMetEigen(pe, 'p3', ['o2'], ['o2']) === pe && K.pollMetEigen(pe, '', [], ['o1']) === pe && pe.telling.o1 === 3, 'niets gewijzigd: de poll van de server, en die wordt nooit aangepast');
+ok(K.pollMetEigen({ ...pe, wie: undefined }, 'p1', [], ['o1']).wie === undefined, 'poll zonder namen: er komen geen namen bij');
+ok(K.stemGeteld({ geteldMs: 100 }, 100, '{}') && !K.stemGeteld({ geteldMs: 99, telling: { o1: 9 } }, 100, '{}'), 'geteld volgens de server (geteldMs)');
+ok(!K.stemGeteld({ telling: { o1: 3 } }, 100, '{"o1":3}') && K.stemGeteld({ telling: { o1: 4 } }, 100, '{"o1":3}'), 'oude server zonder geteldMs: geteld zodra de telling verandert');
+ok(K.nieuweBerichten([{ ms: 5 }, { ms: 9 }], 5).length === 1 && K.nieuweBerichten([{ ms: 5 }], 0).length === 1 && K.nieuweBerichten(null, 0).length === 0, 'nieuwe mededelingen sinds Gelezen');
+const openPoll = { id: 'q', status: 'open', spelers: false };
+ok(K.nogStemmen([openPoll], { q: [] }, 'ouder').length === 1 && K.nogStemmen([openPoll], { q: ['o1'] }, 'ouder').length === 0 && K.nogStemmen([openPoll], {}, 'ouder').length === 0 && K.nogStemmen([openPoll], { q: [] }, 'speler').length === 0,
+  'nog stemmen: alleen als bekend is dat er geen stem is, en alleen wie mag stemmen');
+const vp = K.veldPlekken({ formatie: '3-3-1', plekken: { K: 'p1', V1: 'p2', V3: 'p3', M2: 'p4', A1: 'p5' } });
+ok(vp.length === 5 && vp.find(x => x.plek === 'V1').x < vp.find(x => x.plek === 'V3').x && vp.find(x => x.plek === 'A1').y < vp.find(x => x.plek === 'M2').y && vp.find(x => x.plek === 'K').y === 90, 'veldkaart: links naar rechts, aanval boven, keeper onder');
+ok(K.veldPlekken({ formatie: '4-2-3-1', plekken: { M1: 'a', M2: 'b', M3: 'c', M5: 'd' } }).map(x => x.y).join() === '56,56,38,38', 'vier linies: de middenvelders tellen door over twee linies');
+ok(K.veldPlekken({ formatie: 'onzin', plekken: { V1: 'a', V2: 'b', A1: 'c' } }).length === 3 && K.veldPlekken({ plekken: {} }).length === 0 && K.veldPlekken(null).length === 0, 'veldkaart zonder bruikbare formatie: de linies die er zijn; zonder plekken niets');
+const wo = { ...w, format: '8', formatie: '3-3-1', selectie: ['p1', 'p3'], deelOpstelling: true, kwarten: { 1: { ...(w.kwarten && w.kwarten[1]), formatie: '3-3-1', lineup: { K: 'p1', 'x/y': 'p3', V1: 5 } } } };
+const pwo2 = L.projectWedstrijd(wo, { opstelling: true }, VANDAAG);
+assert.deepEqual(pwo2.opstelling, { basis: ['p1', 'p3'], wissels: [], plekken: { K: 'p1' }, formatie: '3-3-1', format: '8' }, 'opstelling in de kopie: alleen geldige plekken, formatie en format'); n++;
+const VM = require('../functions/verificatie-mail.js');
+ok(VM.terugUrl('kamer', 'ab-c 12') === 'https://www.cluppie.io/kamer.html?k=ABC12' && VM.terugUrl('kamer') === 'https://www.cluppie.io/kamer.html' && VM.terugUrl() === 'https://www.cluppie.io/' && VM.terugUrl('https://kwaad.nl', 'x') === 'https://www.cluppie.io/',
+  'bevestigingsmail: een ouder komt terug in de teamkamer, een trainer in de app, nooit op een ander adres');
+ok(app.includes("roep('verificatieMail', { naar: 'kamer', code })") && app.includes('pollMetEigen') && app.includes("data-doe=\"gelezen\""), 'de pagina gebruikt het: mail terug naar de teamkamer, stem meteen geteld, Gelezen');
+const stijl = fs.readFileSync(new URL('../public/kamer.css', import.meta.url), 'utf8');
+ok(/html\.tk-pagina body, \.tkb\{overflow-wrap:break-word\}/.test(stijl) && stijl.includes('.tk-adres{overflow-wrap:anywhere}'), 'lange woorden breken af (het scherm viel opzij bij een lang e-mailadres)');
+
 console.log(`teamkamer: ${n} controles geslaagd`);

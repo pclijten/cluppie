@@ -517,7 +517,7 @@ if (DEMO_ROL){
    kamer.html?demo=ouder  → de pagina van een ouder bij O11-2;  kamer.html?demo=speler → die van een speler.
    Met &kaal=1 erbij (bijv. kamer.html?demo=ouder&kaal=1) staat elke mogelijkheid van de eindbaas uit.
    De kopie die de Cloud Functions in het echt maken, staat hier als vaste voorbeeldgegevens. In de demo
-   telt niemand de stemmen: je ziet je eigen stem, de aantallen blijven staan. */
+   telt de server niet mee: de pagina telt je eigen stem zelf bij de aantallen (zie pollMetEigen in kamer-logica.js). */
 {
   const T = 'demo-o11-2', team = store.get(`teams/${T}`), club = store.get(`clubs/${CLUB}`);
   if (team && team.club && club){
@@ -538,7 +538,10 @@ if (DEMO_ROL){
       spelers: Object.fromEntries(spelers.map((x, n) => [x.id, n === 9 || !MAG.namen ? { v: true } : { n: voor(x), nr: x.nummer ?? null }])),
       ...(MAG.namen ? {} : { namen: false, live: false, lijn: [], thuis: null }) });
     zetSeed(`teamkamer/${T}/agenda/w_${wid}`, { soort: 'wedstrijd', datum: wd.datum, tijd: wd.aftrap || '09:30', thuis: wd.thuis === true, tegenstander: wd.tegenstander || '', afgelast: false,
-      verzamel: '08:15', vertrek: wd.thuis ? '' : '08:30', plek: (wd.info && wd.info.accommodatie) || '', veld: 'veld 2', adres: 'Dorpsstraat 1', plaats: 'Utrecht', route: 'https://www.google.com/maps/', afwezig: ids.slice(11, 13), erbij: null });
+      verzamel: '08:15', vertrek: wd.thuis ? '' : '08:30', plek: (wd.info && wd.info.accommodatie) || '', veld: 'veld 2', adres: 'Dorpsstraat 1', plaats: 'Utrecht', route: 'https://www.google.com/maps/', afwezig: ids.slice(11, 13), erbij: null,
+      /* [20261116p] de trainer deelt de opstelling: plekken van de eerste periode, zoals de server ze in de kopie zet */
+      ...(MAG.opstelling ? { opstelling: (() => { const mee = ids.filter((x, n) => n < 11), plekNamen = ['K', 'V1', 'V2', 'V3', 'M1', 'M2', 'M3', 'A1'];
+        const basis = mee.slice(0, plekNamen.length); return { basis, wissels: mee.slice(plekNamen.length), plekken: Object.fromEntries(plekNamen.map((k, n) => [k, basis[n]]).filter(x => x[1])), formatie: '3-3-1', format: '8' }; })() } : {}) });
     [opDag(2), opDag(4), opDag(2, 8)].forEach((datum, n) => zetSeed(`teamkamer/${T}/agenda/t_${datum}`, { soort: 'training', datum, tijd: '18:00', eind: '19:00', afgelast: false, afwezig: n === 0 ? ids.slice(5, 6) : [], erbij: null }));
     spelers.forEach((x, n) => zetSeed(`teamkamer/${T}/gezin/${x.id}`, { voornaam: voor(x), nr: x.nummer ?? null, ...(n % 3 === 0 ? { beurten: { rijden: 1 + (n % 2), wassen: 1 } } : {}) }));
     const rolKamer = /[?&]demo=speler/.test(location.search) ? 'speler' : 'ouder';
@@ -561,7 +564,7 @@ if (DEMO_ROL){
     const zonder = (pad) => { store.delete(pad); veranderd(); };
     Object.assign(DEMO_ANTWOORD, {
       kamerVervers: () => ({ aan: true }), maakKamerLink: () => ({ code: 'DEMOCODE23' }), kamerVerleng: () => ({ aantal: 3 }),
-      kamerLinkInfo: () => ({ geldig: true, teamNaam: team.naam, clubNaam: CLUBNAAM }),
+      kamerLinkInfo: () => ({ geldig: true, teamNaam: team.naam, clubNaam: CLUBNAAM, teamId: T, status: 'lid' }),
       beoordeelKamerAanvraag: (d) => { zonder(`kamerAanvragen/${d.id}`); return { ok: true }; },
       trekKamerToegangIn: (d) => { zonder(`teamkamer/${T}/kamerleden/${d.uid || DEMO_UID}`); return { ok: true }; },
       maakKindCode: () => ({ code: 'K7M4QX', minuten: 15 }), stopKindToegang: () => ({ aantal: 1 }),
