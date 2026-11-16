@@ -41,6 +41,7 @@ const PATHS = {
   'football-position': '<rect x="3.2" y="4.6" width="17.6" height="14.8" rx="2.4"/><path d="M3.2 12h17.6"/><circle cx="12" cy="12" r="3.2"/><path d="M12 6.4v2.4M12 15.2v2.4"/>',
   'football-referee': '<rect x="8.6" y="3.6" width="7" height="10.4" rx="2.3"/><path d="M12.1 14 9.4 20.4"/><path d="M6 9.6H4.2"/>',
   'football-substitution': '<path d="M4 8.8h13"/><path d="M13.6 5.4 17 8.8l-3.4 3.4"/><path d="M20 15.2H7"/><path d="M10.4 11.8 7 15.2l3.4 3.4"/>',
+  'football-speelwijze': '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.4"/><path d="M12 3v5.6M12 15.4V21M3 12h5.6M15.4 12H21"/><path d="M17.2 5.2l1.9.2-.2 1.9"/>',
   'football-tactics': '<circle cx="12" cy="12" r="9"/><path d="M12 7.2l4.2 3-1.6 4.9H9.4L7.8 10.2z"/><path d="M12 7.2 9.5 5M12 7.2 14.5 5M16.2 10.2l2.6-.6M14.6 15.1l1.7 2.1M9.4 15.1l-1.7 2.1M7.8 10.2l-2.6-.6"/>',
   'football-tournament': '<path d="M8.4 4h7.2v3.6a3.6 3.6 0 0 1-7.2 0z"/><path d="M8.4 5.4H5.8a2.4 2.4 0 0 0 2.6 3.2"/><path d="M15.6 5.4h2.6a2.4 2.4 0 0 1-2.6 3.2"/><path d="M12 11.2v3"/><path d="M9.2 19.8h5.6l-.7-3.6h-4.2z"/>',
   'football-training': '<path d="M8 7 4.6 17.4h6.8L8 7Z"/><path d="M6.4 12.6h3.2"/><path d="M3 17.4h10"/><circle cx="17.6" cy="14" r="3.4"/><path d="M15.2 11.6 20 16.4"/>',

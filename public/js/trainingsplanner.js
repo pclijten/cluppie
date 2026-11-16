@@ -5,9 +5,10 @@
    daarna alleen de uitleg personaliseren; de keuze en controle gebeuren hier.
    ========================================================================== */
 
-import { LEERCURVE } from './config.js?v=20261116c';
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261115b';
+import { LEERCURVE } from './config.js?v=20261116j';
+import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261116j';
 import { haalbaar, MATERIAAL_NAAM, MAX_INTENSITEIT_VOOR_WEDSTRIJD, dagVoorWedstrijd, ruimteM2 } from './trainingscontext-logica.js?v=20261019a';
+import { vormBonus, principeVoorThema, principeVanVorm } from './speelwijze-logica.js?v=20261116j';
 export { LEERCURVE };
 
 /* ───────────── Trainingsopbouw ───────────── */
@@ -144,8 +145,13 @@ export function standaardRuimte(leeftijd){ return leeftijd >= 13 ? 6000 : 3500; 
          recent: [vorm-id's], seed, ruimteM2, zwakDomein,
          context (optioneel, zie trainingscontext-logica.js): { materiaal, veld, wedstrijddag },
          datum ('JJJJ-MM-DD', voor de dag-voor-de-wedstrijd-regel), halfVeld (plan B: veld één stap kleiner),
-         slechtWeer (plan B: regen of koud; buiten de afsluiting alleen vormen met zwaarte 2 of 3, zodat niemand stilstaat) } */
-export function maakPlan(vormen, o){
+         slechtWeer (plan B: regen of koud; buiten de afsluiting alleen vormen met zwaarte 2 of 3, zodat niemand stilstaat),
+         speelwijze (optioneel, speelwijze-logica.js speelwijzeVan): vormen die een principe van de speelwijze trainen krijgen
+           voorrang, het principe dat bij het thema hoort het meest; het partijspel krijgt de regel van dat principe.
+           Het thema blijft leidend (+10 tegen hooguit +6) en alle controles hieronder gelden onverkort. } */
+export function maakPlan(vormen, o0){
+  const hoofd = o0.speelwijze ? principeVoorThema(o0.speelwijze, o0.thema) : null;
+  const o = { ...o0, hoofdPrincipe: hoofd ? hoofd.id : null };
   const leeftijd = o.leeftijd ?? leeftijdVan(o.categorie);
   const lftBib = clamp(leeftijd, 6, 19);               /* de bibliotheek loopt van 6 t/m 19 jaar; senioren gebruiken de oudste vormen */
   const N = o.aantalSpelers;
@@ -183,7 +189,7 @@ export function maakPlan(vormen, o){
     if (!gekozen){ meldingen.push(`Geen passende vorm gevonden voor ${SLOT_NAAM[sl.slot]} (leeftijd ${leeftijd}, ${N} spelers).`); continue; }
     gebruikt.add(gekozen.id);
     intens.push(gekozen.intensiteit); soorten.push(gekozen.soort);
-    const od = bouwOnderdeel(gekozen, sl, { N, thema: o.thema, weer, ruimte });
+    const od = bouwOnderdeel(gekozen, sl, { N, thema: o.thema, weer, ruimte, speelwijzeRegel: hoofd?.regel });
     if (gekozen.fase === 'partijspel' && N < gekozen.spelers.ideaal)
       meldingen.push(`Partijspel met ${N} spelers: speel ${Math.floor(N / 2)} tegen ${Math.ceil(N / 2)} op hetzelfde veld, of laat een speler als joker meedoen.`);
     onderdelen.push(od);
@@ -202,7 +208,7 @@ export function maakPlan(vormen, o){
     const nieuw = beste(kand, { ...o, weer, ruimte, doelC, recent, seed, thema: o.thema, slot: sl.slot, intens: [], soorten: onderdelen.filter((_, j) => j !== idx).map(x => x.vorm.soort) });
     if (!nieuw) break;
     gebruikt.delete(onderdelen[idx].vormId); gebruikt.add(nieuw.id);
-    onderdelen[idx] = bouwOnderdeel(nieuw, sl, { N, thema: o.thema, weer, ruimte });
+    onderdelen[idx] = bouwOnderdeel(nieuw, sl, { N, thema: o.thema, weer, ruimte, speelwijzeRegel: hoofd?.regel });
     meldingen.push('Een zware vorm is vervangen door een rustiger alternatief om overbelasting te voorkomen.');
   }
 
@@ -216,7 +222,7 @@ export function maakPlan(vormen, o){
     const nieuw = beste(kand, { ...o, weer, ruimte, doelC, recent, seed, thema: o.thema, slot: sl.slot, intens: [], soorten: onderdelen.filter((_, j) => j !== idx).map(x => x.vorm.soort) });
     if (!nieuw) return false;
     gebruikt.delete(onderdelen[idx].vormId); gebruikt.add(nieuw.id);
-    onderdelen[idx] = bouwOnderdeel(nieuw, sl, { N, thema: o.thema, weer, ruimte });
+    onderdelen[idx] = bouwOnderdeel(nieuw, sl, { N, thema: o.thema, weer, ruimte, speelwijzeRegel: hoofd?.regel });
     return true;
   };
   for (let ronde = 0; ronde < 3 && themaPct() < 60; ronde++){
@@ -233,6 +239,17 @@ export function maakPlan(vormen, o){
     if (themaPct() < 60){ gebruikt.delete(onderdelen[idx].vormId); gebruikt.add(vorige.vormId); onderdelen[idx] = vorige; break; }
   }
 
+  /* [20261116h] minstens de helft van de tijd voetbalecht, ook als de speelwijze vormen zonder doel naar voren haalt
+     (rondo's en positiespelen): dan maakt één kernvorm plaats voor een voetbalechte vorm van hetzelfde thema */
+  const echtPct = () => { const tot = onderdelen.reduce((a, x) => a + x.minuten, 0) || 1; return 100 * onderdelen.filter(x => x.vorm.voetbalecht).reduce((a, x) => a + x.minuten, 0) / tot; };
+  for (let ronde = 0; ronde < 2 && echtPct() < 50; ronde++){
+    const idx = onderdelen.findIndex(x => ['kern2', 'kern1'].includes(x.slot) && !x.vorm.voetbalecht);
+    if (idx < 0) break;
+    const vorige = onderdelen[idx];
+    if (!vervang(idx, v => v.voetbalecht && heeftThema(v, o.thema)) && !vervang(idx, v => v.voetbalecht)) break;
+    if (themaPct() < 60){ gebruikt.delete(onderdelen[idx].vormId); gebruikt.add(vorige.vormId); onderdelen[idx] = vorige; break; }
+  }
+
   /* afsluiting: geen vierde of vijfde vorm, maar de laatste minuten (uitlopen en terugblik) */
   const ov = opb.overgang;
   const afsKand = kandidatenCx(vormen, 'afsluiting', { leeftijd: lftBib, N, gebruikt: new Set() }, cx, meldingen);
@@ -242,7 +259,9 @@ export function maakPlan(vormen, o){
 
   const verkleind = onderdelen.filter(x => x.verkleind);
   if (verkleind.length) meldingen.push(`Het veld is kleiner gemaakt bij ${verkleind.map(x => x.vorm.naam).join(', ')}, zodat het past op de ruimte die je hebt.`);
-  const plan = { profiel: { categorie: o.categorie, leeftijd, aantalSpelers: N, niveau, duur, thema: o.thema, blokFase, doelComplexiteit: doelC, ...(weer ? { weer } : {}) },
+  /* [20261116h] welke vormen trainen een principe van de speelwijze (voor de regel "Speelwijze: …" bij de vorm) */
+  if (o.speelwijze) for (const od of onderdelen){ const pr = principeVanVorm(od.vorm, o.speelwijze, o.hoofdPrincipe); if (pr) od.principe = pr.id; }
+  const plan = { profiel: { categorie: o.categorie, leeftijd, aantalSpelers: N, niveau, duur, thema: o.thema, blokFase, doelComplexiteit: doelC, ...(weer ? { weer } : {}), ...(hoofd ? { principe: hoofd.id } : {}) },
                  onderdelen, afsluiting, overgang: { ...ov }, meldingen, ruimteM2: ruimte };
   if (cx.actief) plan.context = cx.context;
   plan.controle = valideer(plan);
@@ -339,6 +358,7 @@ function score(v, o){
   if ((o.slot === 'kern1' || o.slot === 'kern2') && v.voetbalecht) sc += 3;   /* ruim de helft van de tijd voetbalecht */
   if (v.soort && (o.soorten || []).includes(v.soort)) sc -= 4;                                              /* liever een andere soort spelvorm dan eerder in de training */
   if (o.slot === 'warming-up' && v.voetbalecht) sc += 1.5;                                                 /* warming-up als kleine spelvorm */
+  if (o.speelwijze && o.slot !== 'afsluiting') sc += vormBonus(v, o.speelwijze, o.hoofdPrincipe);          /* [20261116h] past bij de speelwijze van de club of het team */
   sc += hash(v.id + o.seed) * 0.9;                      /* stabiele variatie per week */
   return sc;
 }
@@ -347,10 +367,11 @@ export function rangschik(vormen, slot, o){ /* alternatieven voor 'wissel vorm' 
   const leeftijd = o.leeftijd ?? leeftijdVan(o.categorie);
   const kand = kandidaten(vormen, slot, { leeftijd: clamp(leeftijd, 6, 19), N: o.aantalSpelers, gebruikt: new Set(o.uitsluiten || []) }, contextVan(o, clamp(leeftijd, 6, 19)));
   const doelC = o.doelC ?? 2;
-  return kand.map(v => ({ v, s: score(v, { ...o, slot, doelC, recent: o.recent || [], seed: o.seed ?? 0, intens: o.intens || [], soorten: o.soorten || [] }) })).sort((a, b) => b.s - a.s).map(x => x.v);
+  const hoofdPrincipe = o.speelwijze ? principeVoorThema(o.speelwijze, o.thema)?.id || null : null;
+  return kand.map(v => ({ v, s: score(v, { ...o, hoofdPrincipe, slot, doelC, recent: o.recent || [], seed: o.seed ?? 0, intens: o.intens || [], soorten: o.soorten || [] }) })).sort((a, b) => b.s - a.s).map(x => x.v);
 }
 
-export function bouwOnderdeel(v, sl, { N, thema, weer = null, ruimte = null }){
+export function bouwOnderdeel(v, sl, { N, thema, weer = null, ruimte = null, speelwijzeRegel = null }){
   const gr = groepsindeling(v, N);
   let veld = schaalVeld(v, gr.groepGrootte), verkleind = false;
   /* past het niet op de ruimte die er is (half of kwart veld), dan wordt het vak evenredig kleiner */
@@ -364,6 +385,7 @@ export function bouwOnderdeel(v, sl, { N, thema, weer = null, ruimte = null }){
   return {
     slot: sl.slot, slotNaam: SLOT_NAAM[sl.slot], minuten: sl.minuten, vormId: v.id, vorm: v,
     ...gr, veld, ...ri, themaregel: regel, ...(verkleind ? { verkleind: true } : {}),
+    ...(speelwijzeRegel && v.fase === 'partijspel' ? { speelwijzeRegel } : {}),
     ruimtePerSpeler: Math.round((veld.b * veld.l) / gr.groepGrootte),
     totaleRuimte: Math.round(veld.b * veld.l * gr.groepen),
   };
@@ -458,6 +480,10 @@ export function valideer(plan){
     c.push({ id: 'weer', ok: !zwaar.length, tekst: zwaar.length ? `Zware vorm bij warm weer: ${zwaar.map(o => o.vorm.naam).join(', ')}` : 'Warm: geen zware vormen en extra drinkpauzes' });
   }
 
+  if (plan.profiel.principe){
+    const n = ond.filter(o => o.principe === plan.profiel.principe).length, regel = ond.some(o => o.speelwijzeRegel);
+    c.push({ id: 'speelwijze', ok: n > 0 || regel, tekst: `${n} van de ${ond.length} vormen trainen het principe van de speelwijze${regel ? ', en het partijspel heeft de regel van dat principe' : ''}` });
+  }
   c.push({ id: 'avg', ok: true, tekst: 'Geen namen of persoonsgegevens gebruikt (alleen teamprofiel)' });
   return { ok: c.every(x => x.ok), checks: c, voetbalechtPct: vbPct, themaPct: thPct };
 }

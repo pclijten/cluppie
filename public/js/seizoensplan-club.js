@@ -10,11 +10,12 @@
 
    Vaste docId per training (sp_{planId}_{teamId}_{seizoensweek}_{nr}) maakt een herhaalde
    uitrol idempotent: dezelfde documenten worden overschreven, nooit gedupliceerd. */
-import { maakPlan, pasKnoppenToe, bouwOnderdeel, SLOT_NAAM } from './trainingsplanner.js?v=20261116c';
-import { positieWeek, maakSeizoensplan } from './seizoensplan-logica.js?v=20261116c';
-import { leeftijdVanCategorie } from './config.js?v=20261116c';
-import { vormSvg } from './trainingsvorm-svg.js?v=20261012e';
-import { benodigdheden, tijdUitleg } from './oefenkaart.js?v=20261115b';
+import { maakPlan, pasKnoppenToe, bouwOnderdeel, SLOT_NAAM } from './trainingsplanner.js?v=20261116j';
+import { positieWeek, maakSeizoensplan } from './seizoensplan-logica.js?v=20261116j';
+import { leeftijdVanCategorie } from './config.js?v=20261116j';
+import { speelwijzeVan } from './speelwijze-logica.js?v=20261116j';
+import { vormSvg } from './trainingsvorm-svg.js?v=20261116j';
+import { benodigdheden, tijdUitleg, spelverloopRegels } from './oefenkaart.js?v=20261116j';
 
 
 export const JEUGDBOUWEN = ['onder', 'midden', 'boven'];
@@ -68,6 +69,7 @@ export function planVoorTeam(plan, team, beschikbaar){
     categorie: team.categorie, leeftijd: lv, bouw,
     model: plan.model, start: p.start, eind: p.eind, vrij: p.vrij || [], accent: p.accent || [],
     tpw, duur, niveau: p.niveau, beschikbaar,
+    speelstijl: p.speelstijl || null,                       /* [20261116h] momentopname van de speelstijl in het plan */
   });
   return { ...det, params: { ...p, bouw, duur, tpw } };
 }
@@ -100,24 +102,31 @@ export function oefeningVan(od){
   const mat = benodigdheden(v, od.groepen).map(([n, x]) => `${n === '' ? '' : n + ' '}${x}`);
   const blokken = [
     ...vt('doel', 'Doel', v.doel),
+    ...vl('doel', 'Zo zie je dat het lukt', v.lukt),          /* [20261116i] uitwerking per oefening */
+    ...vt('doel', 'Waarom dit werkt', v.inzicht),
     { veld: 'tijd', kop: 'Tijdbestek', type: 'tekst', tekst: `${od.minuten} minuten · ${od.slotNaam || ''}${od.groepen ? ` · ${od.groepen} groep${od.groepen === 1 ? '' : 'en'}` : ''}`.trim() },
     ...vt('tijd', '', tijdUitleg(od)),
     ...vl('mat', 'Benodigdheden', mat),
     ...vt('uitleg', 'Uitleg', v.uitleg),
     ...vl('uitleg', 'Organisatie', v.organisatie),
+    ...vl('uitleg', 'Spelverloop', spelverloopRegels(v)),
     ...vl('uitleg', 'Regels', v.regels),
     ...vt('uitleg', 'Themaregel', od.themaregel),
+    ...vt('uitleg', 'Regel van de speelwijze', od.speelwijzeRegel),
     ...vl('uitleg', 'Veiligheid', v.letOp),
     ...vl('diff', 'Makkelijker', v.makkelijker),
     ...vl('diff', 'Moeilijker', v.moeilijker),
+    ...vl('diff', 'Kijk en grijp in', (v.alsDan || []).map(x => `${x.zie} → ${x.doe}`)),
     ...vl('coach', 'Coachpunten', v.coachpunten),
     ...vl('coach', 'Coachvragen', v.coachvragen),
+    ...vt('coach', 'Tel mee', v.meet),
+    ...vt('coach', 'Spelers aan zet', v.regie),
     ...vl('spel', 'Spelvormen', (v.varianten || []).map(x => `${x.naam}: ${x.uitleg}`)),
   ];
   /* [20261113d] bron: genoeg om de oefening opnieuw op te bouwen als de vorm in de bibliotheek wijzigt */
   const bron = { vormId: od.vormId || v.id || null, slot: od.slot || null, minuten: od.minuten || null,
     spelers: od.groepen && od.groepGrootte ? od.groepen * od.groepGrootte + (od.wissel || 0) : null };
-  return { titel: String(v.naam || od.vormId || 'Oefening'), blokken, svg: tekeningVan(od), bron };
+  return { titel: String(v.naam || od.vormId || 'Oefening'), blokken, svg: tekeningVan(od), bron, ...(od.principe ? { principe: od.principe } : {}) };
 }
 
 /* [20261113d] Vorm-id's van een training (voor het doorvoeren van bibliotheekwijzigingen). */
@@ -186,12 +195,15 @@ export function trainingenVanPlan({ plan, team, vormen, planId, aantalSpelers = 
   const lv = leeftijdVanCategorie(team.categorie);
   const uit = [];
   let recent = [];
+  /* [20261116h] staat er een speelstijl in het plan (params.speelstijl), dan weegt de speelwijze mee in de vormkeuze */
+  const speelwijze = f.speelstijl ? speelwijzeVan(f.speelstijl, lv) : null;
   for (const w of plan.kal.filter(x => !x.vrij)){
     const pos = positieWeek(plan, w.nr);
     for (let t = 1; t <= (f.tpw || 2); t++){
       const p = maakPlan(vormen, {
         categorie: team.categorie, leeftijd: lv, aantalSpelers, niveau: f.niveau || 2, duur: f.duur || 60,
         thema: pos.blok.thema, blokFase: pos.fase, seed: `${team.id}:${planId}:${w.nr}:${t}`, recent,
+        ...(speelwijze ? { speelwijze } : {}),
       });
       recent = [...p.onderdelen.map(o => o.vormId), ...recent].slice(0, 10);
       uit.push({ w, pos, t, p });
@@ -220,6 +232,7 @@ export function trainingDocs({ plan, team, clubId, planId, planVersie, vormen, a
       titel: `${pos.blok.thema} · training ${t}`, blokNr: pos.blok.nr,
       bron: 'seizoensplan', seizoensplanId: planId, planVersie: planVersie || 1,
       thema: pos.blok.thema, fase: pos.fase, duur: p.profiel?.duur || f.duur || 60,
+      ...(p.profiel?.principe ? { principe: p.profiel.principe } : {}),
       url: '', diagramUrls: {},
       oefeningen: [...p.onderdelen.map(oefeningVan), ...(p.afsluiting ? [oefeningVan(p.afsluiting)] : [])],
     });

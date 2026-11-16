@@ -10,14 +10,17 @@
      clubs/{id}/seizoensplannen/{planId}/toewijzingen/{teamId}  { planVersie, aantal, overgeslagen, status, door, toegewezenMs }
      trainingen/{id}  — gegenereerd door toewijzen (bron 'seizoensplan', seizoensplanId, teams:[teamId])
    Alle writes merge:true. Rechten zelf staan in de rules; dit scherm toont alleen wat mag. */
-import { S, esc, meld } from './state.js?v=20261116c';
-import { db, doc, collection, getDocs, setDoc, updateDoc, deleteField, query, where, writeBatch, serverTimestamp } from './firebase.js?v=20261011g';
-import { bouwNaam, catLabel, SEIZOEN_FALLBACK } from './config.js?v=20261116c';
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261115b';
-import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261116c';
-import { MODELLEN, ACCENTEN, beschikbareThemas, maandagVan, standaardVrij, weekKalender } from './seizoensplan-logica.js?v=20261116c';
-import { rechtenVoor, magVoorBouw, teamsVoorPlan, planVoorTeam, trainingDocs, uitrolPlan, spelersVoorPlanner, duurVoorLeeftijd, JEUGDBOUWEN } from './seizoensplan-club.js?v=20261116c';
-import { bestaandeTrainingen, voerUit } from './seizoensplan-trainingen.js?v=20261116c';
+import { S, esc, meld } from './state.js?v=20261116j';
+import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteField, query, where, writeBatch, serverTimestamp } from './firebase.js?v=20261011g';
+import { bouwNaam, catLabel, SEIZOEN_FALLBACK, leeftijdVanCategorie, LEERCURVE } from './config.js?v=20261116j';
+import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261116j';
+import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261116j';
+import { MODELLEN, ACCENTEN, beschikbareThemas, maandagVan, standaardVrij, weekKalender, seizoenStartJaar } from './seizoensplan-logica.js?v=20261116j';
+import { rechtenVoor, magVoorBouw, teamsVoorPlan, planVoorTeam, trainingDocs, uitrolPlan, spelersVoorPlanner, duurVoorLeeftijd, JEUGDBOUWEN } from './seizoensplan-club.js?v=20261116j';
+import { bestaandeTrainingen, voerUit } from './seizoensplan-trainingen.js?v=20261116j';
+/* [20261116h] de speelwijze van de club weegt mee in het plan (momentopname in params.speelstijl) */
+import { speelwijzeVan, stijlVoorPlan, dekking, principeVoorThema } from './speelwijze-logica.js?v=20261116j';
+import { htmlDekking, htmlPrincipeChip } from './speelwijze-html.js?v=20261116j';
 
 /* [20261113d] vormen uit basis + beheerlaag (bibliotheek.js) */
 const vandaagIso = () => new Date().toISOString().slice(0, 10);
@@ -28,18 +31,18 @@ const uidNu = () => S.user?.uid || '';
 const isAdmin = () => !!S.club?.admins?.[uidNu()];
 
 function C(){
-  if (!S._cjp) S._cjp = { plannen: null, toew: {}, teams: [], sel: null, nieuw: false, bewerk: null, form: null, laadt: false, bezig: false, opnieuw: null };
+  if (!S._cjp) S._cjp = { plannen: null, toew: {}, teams: [], sel: null, nieuw: false, bewerk: null, form: null, laadt: false, bezig: false, opnieuw: null, stijl: undefined };
   return S._cjp;
 }
 function formStandaard(){
-  const y = Number((String(S.huidigSeizoen || SEIZOEN_FALLBACK).match(/(\d{4})/) || [0, new Date().getFullYear()])[1]);
+  const y = seizoenStartJaar(S.huidigSeizoen || SEIZOEN_FALLBACK, vandaagIso());
   const start = maandagVan(vandaagIso() > `${y}-08-24` ? vandaagIso() : `${y}-08-24`), eind = `${y + 1}-06-06`;
   return { naam: `Seizoensplan ${S.huidigSeizoen || SEIZOEN_FALLBACK}`, bouw: isAdmin() ? 'club' : (rechtenVoor(S.club, uidNu()).bouwen[0] || 'onder'),
-    model: 'leercurve', start, eind, vrij: standaardVrij(start, eind), accent: [], tpw: 2, duur: 'leeftijd', niveau: 2 };
+    model: 'leercurve', start, eind, vrij: standaardVrij(start, eind), accent: [], tpw: 2, duur: 'leeftijd', niveau: 2, speelwijze: true };
 }
 function formVan(plan){
   const p = plan.params || {};
-  return { naam: plan.naam, bouw: plan.bouw, model: plan.model, start: p.start, eind: p.eind, vrij: p.vrij || [], accent: p.accent || [], tpw: p.tpw || 2, duur: p.duur || 'leeftijd', niveau: p.niveau || 2 };
+  return { naam: plan.naam, bouw: plan.bouw, model: plan.model, start: p.start, eind: p.eind, vrij: p.vrij || [], accent: p.accent || [], tpw: p.tpw || 2, duur: p.duur || 'leeftijd', niveau: p.niveau || 2, speelwijze: p.speelstijl !== null };
 }
 
 /* ---------- laden ---------- */
@@ -49,6 +52,9 @@ async function laadPlannen(){
     const snap = await getDocs(collection(db, 'clubs', S.clubId, 'seizoensplannen'));
     c.plannen = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.gemaaktMs || 0) - (a.gemaaktMs || 0));
   } catch (e){ c.plannen = []; meld('Seizoensplannen laden mislukt: ' + (e.code || e.message)); }
+  /* [20261116h] de vastgelegde speelstijl van de club (clubs/{id}/speelstijl/huidig), of null */
+  try { const sn = await getDoc(doc(db, 'clubs', S.clubId, 'speelstijl', 'huidig')); c.stijl = sn.exists() && sn.data()?.standen ? sn.data() : null; }
+  catch (e){ c.stijl = null; }
   c.laadt = false; c.opnieuw?.();
 }
 async function laadToewijzingen(planId){
@@ -108,6 +114,11 @@ function htmlForm(rechten){
     <div class="tm-rij" style="align-items:flex-start"><span class="tm-l">Voor</span><div class="tm-chips">${bouwen.map(([w, t]) => chip('data-cjp-bouw', w, t, f.bouw === w)).join('')}</div></div>
     <div class="tm-sub">Kies je opbouw</div>
     ${Object.entries(MODELLEN).map(([k, m]) => `<button class="tm-model${k === f.model ? ' aan' : ''}" data-cjp-model="${k}"><b>${esc(m.naam)}</b><span>${esc(m.tekst)}</span></button>`).join('')}
+    <div class="tm-sub">Speelwijze van de club</div>
+    ${c.stijl ? `${c.stijl.zin ? `<p class="sw-lead klein">${esc(c.stijl.zin)}</p>` : ''}
+      <div class="tm-rij"><span class="tm-l">Meewegen in dit plan</span><div class="tm-chips">${chip('data-cjp-sw', '1', 'Aan', f.speelwijze !== false)}${chip('data-cjp-sw', '0', 'Uit', f.speelwijze === false)}</div></div>
+      <div class="tm-info" style="margin:-4px 0 8px">${f.speelwijze !== false ? 'Per team komen de thema’s die bij de speelwijze horen een keer extra, en vormen die een principe trainen krijgen voorrang. Waar een team te jong voor is, blijft eruit.' : 'Het plan volgt alleen het opbouwmodel.'}</div>`
+      : `<div class="tm-info" style="margin-bottom:8px">Nog niet vastgelegd (Club › Speelwijze). Het plan volgt dan alleen het opbouwmodel.</div>`}
     <div class="tm-rij"><span class="tm-l">Start</span><input type="date" class="tm-select" id="cjpStart" value="${esc(f.start)}"></div>
     <div class="tm-rij"><span class="tm-l">Einde</span><input type="date" class="tm-select" id="cjpEind" value="${esc(f.eind)}"></div>
     <div class="tm-rij"><span class="tm-l">Trainingen per week</span><div class="tm-stap"><button data-cjp-tpw="-1" aria-label="Minder">−</button><b>${f.tpw}</b><button data-cjp-tpw="1" aria-label="Meer">+</button></div></div>
@@ -139,6 +150,7 @@ function htmlDetail(rechten){
       <div class="tm-info">${esc(p.bouw === 'club' ? 'Hele club' : bouwNaam(p.bouw))} · ${esc(MODELLEN[p.model]?.naam || '')} · plan v${p.planVersie || 1}</div>
       ${voorbeeld ? `<div class="tm-band" style="margin-top:8px">${band}</div>
         <div class="tm-info">Voorbeeld voor ${esc(scope[0].naam)}: ${voorbeeld.blokken.map(b => `${esc(b.thema)} (${b.weken} wk)`).join(' → ')}</div>` : ''}
+      ${voorbeeld ? htmlSpeelwijzeInPlan(p, scope[0], voorbeeld) : ''}
     </div>
     <div class="kaart"><div class="tm-sub" style="margin-top:0">Teams (${scope.length})</div>
       ${scope.length ? scope.map(t => {
@@ -155,6 +167,17 @@ function htmlDetail(rechten){
       ${(c.meldingen?.[p.id] || []).length ? `<div class="tm-info" style="margin-top:10px"><b>Meldingen van de planner</b><ul class="tm-ul">${c.meldingen[p.id].slice(0, 12).map(m => `<li>${esc(m)}</li>`).join('')}</ul></div>` : ''}
       ${!mag ? `<div class="tm-info" style="margin-top:8px">Je kunt dit plan bekijken; toewijzen doet de hoofd jeugdopleiding, de clubadmin of de bouwcoördinator van deze bouw.</div>` : ''}
     </div>`;
+}
+/* [20261116h] Wat de speelwijze in dit plan doet, voor het voorbeeldteam. */
+function htmlSpeelwijzeInPlan(p, team, voorbeeld){
+  const c = C(), snap = p.params?.speelstijl;
+  if (!snap) return `<div class="tm-info" style="margin-top:8px">${c.stijl ? 'Dit plan weegt de speelwijze niet mee. Zet dat aan via “Wijzig plan”.' : 'De club heeft nog geen speelwijze vastgelegd (Club › Speelwijze).'}</div>`;
+  const sw = speelwijzeVan(snap, leeftijdVanCategorie(team.categorie));
+  const chips = [...new Map(voorbeeld.blokken.map(b => principeVoorThema(sw, b.thema)).filter(Boolean).map(x => [x.id, x])).values()];
+  const gewijzigd = c.stijl && (c.stijl.vastgelegdMs || 0) !== (snap.vastgelegdMs || 0);
+  return `<div class="tm-sub">De speelwijze in dit plan · ${esc(team.naam)}</div>${htmlDekking(dekking(voorbeeld, sw, t => beschikbareThemas(vormen()).has(t) && voorbeeld.blokken.length > 0 && (LEERCURVE.find(x => x.thema === t)?.vanaf ?? 99) <= leeftijdVanCategorie(team.categorie)), sw)}
+    <div class="sw-blokchip">${chips.map(x => htmlPrincipeChip(x, 'Traint')).join(' ')}</div>
+    ${gewijzigd ? `<div class="tm-info" style="margin-top:8px">De speelwijze van de club is gewijzigd nadat dit plan is gemaakt. Dit plan houdt de oude; sla het plan opnieuw op (Wijzig plan) en wijs het opnieuw toe om de nieuwe mee te nemen.</div>` : ''}`;
 }
 function htmlBevestig(b){
   const namen = b.eigen.map(id => C().teams.find(t => t.id === id)?.naam || id);
@@ -177,7 +200,8 @@ async function bewaarPlan(){
   c.bezig = true;
   const data = {
     naam, bouw: f.bouw, model: f.model,
-    params: { start: f.start, eind: f.eind, vrij: f.vrij || [], accent: f.accent || [], tpw: f.tpw, duur: f.duur, niveau: f.niveau },
+    params: { start: f.start, eind: f.eind, vrij: f.vrij || [], accent: f.accent || [], tpw: f.tpw, duur: f.duur, niveau: f.niveau,
+      speelstijl: f.speelwijze !== false ? stijlVoorPlan(c.stijl) : null },
     bibliotheekVersie: BIBLIOTHEEK.versie, planVersie: bestaand ? (bestaand.planVersie || 1) + 1 : 1, door: uidNu(), bijgewerktMs: Date.now(),
     ...(bestaand ? {} : { gemaaktMs: Date.now() }),
   };
@@ -277,6 +301,7 @@ export function koppelClubJeugdplan(v, teams, opnieuw){
       } catch (err){ meld('Wijzigen mislukt: ' + (err.code || err.message)); }
       return;
     }
+    if (d.cjpSw){ c.form.speelwijze = d.cjpSw === '1'; return opnieuw(); }
     if (d.cjpBouw){ c.form.bouw = d.cjpBouw; return opnieuw(); }
     if (d.cjpModel){ c.form.model = d.cjpModel; return opnieuw(); }
     if (d.cjpDuur){ c.form.duur = d.cjpDuur === 'leeftijd' ? 'leeftijd' : Number(d.cjpDuur); return opnieuw(); }

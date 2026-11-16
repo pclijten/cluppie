@@ -9,7 +9,7 @@
 
    Pure functies (voegSamen, valideerVorm, rij/kolommen voor Excel) zijn getest in
    tests/bibliotheek.test.mjs. Impactanalyse: claude/trainingsbibliotheek-beheer-impactanalyse.md. */
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261115b';
+import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261116j';
 
 export const BASIS = BIBLIOTHEEK.vormen;
 export const BASIS_VERSIE = BIBLIOTHEEK.versie;
@@ -101,10 +101,16 @@ export const KOLOMMEN = [
   ['hesjes', v => v.materiaal?.hesjes || 0], ['doeltjes', v => v.materiaal?.doeltjes || 0],
   ['overigMateriaal', v => (v.materiaalExtra || []).join('\n')],
   ['doel', 'doel'], ['uitleg', 'uitleg'],
-  ...['organisatie', 'regels', 'coachpunten', 'coachvragen', 'makkelijker', 'moeilijker', 'letOp'].map(k => [k, v => (v[k] || []).join('\n')]),
+  ...['organisatie', 'regels', 'coachpunten', 'coachvragen', 'makkelijker', 'moeilijker', 'letOp', 'lukt'].map(k => [k, v => (v[k] || []).join('\n')]),
   ['spelvormen', v => (v.varianten || []).map(x => `${x.naam}: ${x.uitleg}`).join('\n')],
+  /* [20261116i] uitwerking per oefening */
+  ['kijkEnGrijpIn', v => alsDanTekst(v.alsDan)], ['telMee', 'meet'], ['spelersAanZet', 'regie'], ['waarom', 'inzicht'],
+  ['principes', v => (v.principes || []).join(', ')],
 ];
-export const LIJSTVELDEN = ['organisatie', 'regels', 'coachpunten', 'coachvragen', 'makkelijker', 'moeilijker', 'letOp'];
+export const LIJSTVELDEN = ['organisatie', 'regels', 'coachpunten', 'coachvragen', 'makkelijker', 'moeilijker', 'letOp', 'lukt'];
+/* Kijk en grijp in: één regel per paar, "wat je ziet → wat je doet". */
+export const alsDanTekst = (a) => (a || []).map(x => `${x.zie} → ${x.doe}`).join('\n');
+export const alsDanUitTekst = (t) => String(t ?? '').split(/\r?\n/).map(s => s.trim()).filter(Boolean).map(r => { const i = r.search(/→|=>|->/); return i > 0 ? { zie: r.slice(0, i).trim(), doe: r.slice(i).replace(/^(→|=>|->)\s*/, '').trim() } : { zie: r, doe: '' }; });
 export function rijVan(v){
   const status = v._status === 'uit' ? 'uit' : 'aan';
   return Object.fromEntries(KOLOMMEN.map(([k, f]) => [k, k === 'status' ? status : typeof f === 'function' ? f(v) : v[f]]));
@@ -132,6 +138,9 @@ export function vormUitRij(r, oud = {}){
   for (const k of LIJSTVELDEN) if (r[k] != null) v[k] = lijst(r[k]);
   if (r.tijdbestek != null && r.tijdbestek !== '') v.tijd = getal(r.tijdbestek);
   if (r.overigMateriaal != null){ const x = lijst(r.overigMateriaal); if (x.length || v.materiaalExtra) v.materiaalExtra = x; }
+  if (r.kijkEnGrijpIn != null) v.alsDan = alsDanUitTekst(r.kijkEnGrijpIn);
+  for (const [kol, k] of [['telMee', 'meet'], ['spelersAanZet', 'regie'], ['waarom', 'inzicht']]) if (r[kol] != null){ const w = String(r[kol]).trim(); if (w || v[k]) v[k] = w; }
+  if (r.principes != null) v.principes = String(r.principes).split(',').map(s => s.trim()).filter(Boolean);
   if (r.spelvormen != null) v.varianten = lijst(r.spelvormen).map(x => { const i = x.indexOf(':'); return i > 0 ? { naam: x.slice(0, i).trim(), uitleg: x.slice(i + 1).trim() } : { naam: x, uitleg: '' }; });
   if (!Array.isArray(v.domeinen)) v.domeinen = [];
   return v;

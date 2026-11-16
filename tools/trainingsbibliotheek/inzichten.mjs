@@ -1,0 +1,62 @@
+/* Waarom een oefening werkt: korte onderbouwing per oefening (sleutel `inz` in de uitwerking). [20261116j]
+   Eigen samenvatting van breed gedeelde inzichten uit trainingsleer, wedstrijdanalyse en pedagogiek.
+   Bronnen en toelichting: projectdocument "claude/oefeningen-uitwerking-onderbouwing.md" (niet in de app).
+   Geen cijfers die van één toernooi of competitie afhangen; de tekst blijft waar voor elk niveau.
+   Schrijfwijze: twee korte zinnen, gewone woorden, gericht aan de trainer. Geen "hij" voor een speler. */
+export const INZICHT = {
+  kijken:   'Wie om zich heen kijkt voordat de bal komt, weet al wat de volgende actie wordt. Daarom zit het kijken in de oefening zelf.',
+  spel:     'Wat je oefent met een tegenstander, een richting en een keuze, blijft hangen. Zo ziet het er in de wedstrijd ook uit.',
+  ruimte:   'De grootte van het vak stuurt het spel. Kleiner geeft meer balcontacten en duels, groter geeft meer lopen en lange passes.',
+  regel:    'Een slimme regel lokt het gedrag uit dat je wilt zien. Wat spelers zelf ontdekken, onthouden ze beter dan wat jij voorzegt.',
+  buiten:   'Coach op wat er met de bal moet gebeuren, niet op het lichaam. "Speel hem door het poortje" werkt beter dan "draai je voet".',
+  keuze:    'Spelers die zelf iets mogen kiezen, doen meer hun best en leren sneller. Eén kleine keuze per oefening is genoeg.',
+  succes:   'Spelers leren het snelst als het vaak lukt, maar niet altijd. Lukt het bijna altijd of bijna nooit, pas dan de oefening aan.',
+  variatie: 'Oefen een techniek steeds net anders: andere voet, andere afstand, ander tempo. Dat maakt hem sterker dan honderd keer hetzelfde.',
+  vijftel:  'Vlak na balwinst of balverlies staat de tegenstander nog niet goed. Wie dan al weet wat te doen, wint het moment.',
+  terug:    'Vlak na balverlies heeft de tegenstander nog geen overzicht. Zet samen meteen druk, dan win je de bal vaak dicht bij hun doel terug.',
+  rest:     'Houd tijdens de aanval een paar spelers achter de bal. Zij vangen de tegenaanval op, of zetten meteen druk als de bal weg is.',
+  laag:     'Een lage bal terug vanaf de achterlijn geeft een grote kans. De verdedigers kijken naar de bal, de schutter komt er recht op af.',
+  midden:   'De meeste doelpunten vallen van dichtbij, recht voor het doel. Goed aanvallen is de bal daar krijgen.',
+  derde:    'Verdedigers kijken naar de bal en naar wie hem krijgt. Een derde speler die dan al loopt, komt daardoor vaak vrij.',
+  overtal:  'Sta je ergens met meer spelers dan de tegenstander, dan is er altijd iemand vrij. Dat overtal zoeken en gebruiken is de kern van goed samenspel.',
+  tussen:   'Een bal tussen twee linies dwingt een verdediger te kiezen: naar de bal stappen of blijven staan. Allebei geeft ergens ruimte.',
+  druk:     'Druk zetten lukt alleen samen. De eerste speler stuurt de bal één kant op, de anderen sluiten daar de dichtste passes af.',
+  compact:  'Een team dat dicht bij elkaar staat, laat weinig ruimte in het midden. De tegenstander moet dan buitenom of eroverheen.',
+  duel:     'Een duel win je zelden op snelheid alleen. Je wint het door de ander af te remmen en één kant op te dwingen.',
+  actie:    'Een passeeractie werkt door het verschil in tempo: eerst vertragen, dan versnellen. De schijnbeweging helpt, de versnelling beslist.',
+  eerste:   'Je eerste aanraking bepaalt wat je daarna kunt. Neem de bal aan in de ruimte, weg van de tegenstander, en je hebt tijd.',
+  tweevoet: 'Wie met twee voeten kan aannemen en passen, heeft twee keer zoveel oplossingen. Jonge spelers leren dat het makkelijkst.',
+  afronden: 'In de wedstrijd scoor je onder druk en op tempo. Afwerken met een verdediger of een tijdslimiet lijkt daar het meest op.',
+  keeper:   'Een keeper die meevoetbalt is een extra speler in de opbouw. De tegenstander komt dan bij het druk zetten altijd één speler tekort.',
+  breed:    'Jonge spelers die veel verschillende bewegingen leren, worden betere en fittere voetballers. Denk aan rennen, draaien, springen, vallen en mikken.',
+  warm:     'Een warming-up met balans, springen, landen en draaien maakt het lichaam klaar. Het verkleint ook de kans op blessures.',
+  plezier:  'Plezier is geen bijzaak. Spelers die met plezier trainen, komen vaker, durven meer en blijven langer voetballen.',
+  fout:     'Fouten horen bij leren. Wie merkt dat een mislukte poging mag, durft ook de actie die nog niet lukt.',
+  wedstrijd:'In een partijspel komt alles samen. Met één afspraak of telling komt het thema van de training terug, zonder dat je het spel stillegt.',
+  klein:    'In een kleine partij is iedereen vaak aan de bal en bij elk duel betrokken. Daardoor leren spelers er per minuut het meest.',
+  rol:      'Wie op meer plekken heeft gespeeld, begrijpt het spel beter. Voor jeugdspelers is vaak wisselen leerzamer dan een vaste plek.',
+  taak:     'Duidelijke taken geven rust. Iedereen weet wat te doen als de bal ergens is, en houdt de aandacht bij het spel.',
+  voorzet:  'Een voorzet is pas gevaarlijk als spelers op verschillende plekken inlopen: eerste paal, tweede paal en rond de strafschopstip.',
+  kopbal:   'Koppen leer je met weinig herhalingen en een lichte bal. Houd het aantal kopballen per training klein en plan daarna twee dagen zonder koppen.',
+  bespreken:'Kort terugkijken maakt van doen ook leren. Spelers die zelf zeggen wat werkte, nemen dat mee naar de wedstrijd.',
+  uithouding:'Korte, felle blokken met rust ertussen houden de kwaliteit hoog. Wie moe is, oefent vooral fouten in.',
+  communicatie:'Elkaar coachen is een vaardigheid. Eén kort woord op het goede moment helpt meer dan een hele zin achteraf.',
+  diep:     'Een pass naar voren is het gevaarlijkst als de loper al in beweging is. Loopactie en pass horen daarom bij elkaar.',
+  kantelen: 'De bal gaat sneller dan een speler. Wissel je de bal snel van kant, dan vind je ruimte waar de tegenstander nog niet staat.',
+};
+
+/* Spelers aan zet: zo geef je regie aan de spelers (sleutel `regie`, of een eigen zin). */
+export const REGIE = {
+  regel:   'Laat de spelers na de eerste ronde zelf één regel bedenken die het spel moeilijker of leuker maakt.',
+  kies:    'Laat elke speler zelf een niveau kiezen: makkelijk, gewoon of moeilijk.',
+  plan:    'Geef het team een halve minuut om samen een plan te maken. Jij luistert alleen.',
+  coach:   'Wijs per team één speler aan die mag coachen. Wissel dat elke ronde.',
+  doel:    'Vraag vooraf: wat wil jij in deze oefening laten zien? Kom daar na afloop kort op terug.',
+  score:   'Laat de spelers zelf de stand bijhouden en eerlijk melden. Jij telt niet mee.',
+  wissel:  'Laat de spelers zelf regelen wie wanneer van rol wisselt. Eén afspraak: iedereen krijgt elke rol.',
+  vraag:   'Leg het spel na een ronde kort stil en vraag wat werkte. Vat hun antwoord samen in één zin.',
+  veld:    'Loopt het niet? Laat de spelers zelf het vak groter of kleiner maken.',
+  uitdaag: 'Laat het team zelf een record neerzetten. In de volgende ronde proberen ze dat te verbeteren.',
+  maatje:  'Maak tweetallen die elkaar na elke beurt één tip geven: wat ging goed en wat kun je proberen?',
+  aanvoer: 'Laat per team één speler de opstelling en de taken verdelen. Wissel dat elke ronde.',
+};

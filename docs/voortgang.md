@@ -72,6 +72,10 @@ Paul gaf op 15-11 akkoord om WP2 t/m WP9 zelfstandig te maken. Eerlijk over wat 
 
 | Wat | Reden | Geraakte gebruikerstypen |
 |---|---|---|
+| Alle 326 oefeningen met de hand uitgewerkt: spelverloop in fases, zo zie je dat het lukt, kijk en grijp in, tel mee, spelers aan zet, waarom dit werkt (20261116i) | Bestaande oefeningen hadden één of twee pijlen en geen hulp om langs de lijn te zien of het lukt en wat je dan aanpast | Alle rollen die trainingen zien of maken |
+| Alle oefeningen nagelezen op leesbaarheid, pedagogiek en belasting; taalregels als test (`tests/taal.test.mjs`); woordenlijst Voetbaltaal in de handleiding (20261116j) | Verzoek van Paul: iedereen moet het kunnen lezen en er moet kwaliteit van afstralen. Geen mens heeft meegelezen | Coach, trainer zonder club, coördinatoren, eindbaas |
+| Losse ballen in tekening en 3D (`tekening.ballen`) | Ballenspellen en afwerkrijen waren niet te tonen met één spelbal | Coach, coördinatoren, eindbaas (Platform › Bibliotheek) |
+| Platform › Bibliotheek en Excel: nieuwe velden en principes per oefening bewerkbaar | De koppeling oefening ↔ speelwijze was niet aan te passen zonder code | Eindbaas |
 | Tegoed op → "AI staat uit" in plaats van algemene fout | Na het spendlimiet kreeg de coach een melding die naar een storing wees | Coach, coördinatoren, hoofd jeugd, clubadmin; losse trainer als solo-AI aan staat |
 | Chatbot toont de reden van de server | "Even niet bereikbaar" bij AI uit of limiet bereikt is onjuist | Iedereen met AI |
 | Logregel met cache-tokens | Zonder meting is niet te zeggen of caching werkt | Eindbaas (kosten) |
@@ -100,6 +104,9 @@ Paul gaf op 15-11 akkoord om WP2 t/m WP9 zelfstandig te maken. Eerlijk over wat 
 | Rollen in de handleiding en kennisbank | De handleiding beschreef alleen de coach | Alle clubrollen |
 | UPDATES in `js/updates.json` | Elke nieuwsregel gaf zo'n vijftig modules een nieuw versienummer | Alle (minder opnieuw laden) |
 | Verkoopmateriaal en "ruim 300 oefenvormen" | Gevraagd door Paul; het oude getal klopte niet meer | Losse trainer, clubadmin (bezoekers) |
+| Speelwijze als rode draad door Seizoen, Training maken, Trainingen en de wedstrijdevaluatie (20261116h) | Gevraagd door Paul; de speelstijl werd vastgelegd maar stuurde niets en was voor coaches en losse trainers niet beschikbaar | Alle (losse trainer en coach het meest) |
+| 23 speelwijze-vormen met volledig spelverloop; 3D met tegelijke stappen, fases en een voorbeeld van het vervolg | Gevraagd door Paul; 211 van de 303 vormen hadden één of twee stappen in 3D | Iedereen die een training bekijkt |
+| Nieuw seizoensplan bij een verlopen seizoenstekst (`seizoenStartJaar`) | Een trainer zonder club kreeg een plan van nul trainingsweken | Losse trainer; clubs vóór de seizoensovergang |
 | Werkwijze: scripts schrijven pas weg als alle vervangingen gelukt zijn | Een bewerkingsscript maakte `functions/index.js` leeg; hersteld uit de commit, niets verloren | Geen |
 
 

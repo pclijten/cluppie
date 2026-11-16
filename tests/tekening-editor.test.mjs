@@ -11,6 +11,19 @@ ok(a === 0 && b === 1 && k === 2 && t.spelers[0].nr === 1 && t.spelers[1].nr ===
 ok(t.spelers[0].kant === undefined && t.spelers[2].kant === 'keeper', 'eigen team heeft geen kant-veld, keeper wel');
 E.zetBal(t, 22, 78);
 
+// [20261116h] een stap alleen in 3D of tegelijk met de vorige
+{
+  const u = E.leegTekening();
+  E.voegSpelerToe(u, 'eigen', 20, 80); E.voegSpelerToe(u, 'eigen', 60, 40); E.zetBal(u, 20, 80);
+  E.voegLijnToe(u, 'pass', [20, 80], [60, 40]); E.voegLijnToe(u, 'loopweg', [20, 80], [30, 50]);
+  E.wisselVlag(u, 0, 'samen'); ok(!u.lijnen[0].samen, 'de eerste stap kan niet tegelijk met een vorige');
+  E.wisselVlag(u, 1, 'samen'); E.wisselVlag(u, 1, 'vervolg'); ok(u.lijnen[1].samen === true && u.lijnen[1].vervolg === true, 'vlaggen aan');
+  E.wisselVlag(u, 1, 'vervolg'); ok(!('vervolg' in u.lijnen[1]), 'vlag weer uit');
+  E.wisselVlag(u, 1, 'iets'); ok(Object.keys(u.lijnen[1]).sort().join() === 'punten,samen,soort', 'onbekende vlag doet niets');
+  const { stappen3D } = await import('../public/js/scene3d.js');
+  ok(stappen3D({ naam: 'x', fase: 'spelvorm', veld: { b: 20, l: 20 }, tekening: u }).filter(x => !x.auto).length === 1, 'tegelijk: twee lijnen, één stap');
+}
+
 // een pass klikt vast op de spelers
 const p = E.voegLijnToe(t, 'pass', [22, 82], [58, 42]);
 ok(p === 0 && JSON.stringify(t.lijnen[0].punten) === '[[20,80],[60,40]]', 'pass klikt vast op beide spelers');

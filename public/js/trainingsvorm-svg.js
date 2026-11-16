@@ -32,6 +32,7 @@ export function vormSvg(vorm, veld, opts = {}){
     s += `<polygon points="${x},${y - 5} ${x - 4},${y + 3} ${x + 4},${y + 3}" class="tv-pion"${p[2] ? ` style="fill:${esc(p[2])}"` : ''}/>`;
   }
   for (const l of t.lijnen || []){
+    if (l.vervolg) continue;                              /* [20261116h] vervolgstappen staan alleen in 3D, anders wordt de tekening onleesbaar */
     const pts = l.punten.map(p => `${X(p[0])},${Y(p[1])}`).join(' ');
     s += `<polyline points="${pts}" class="tv-lijn tv-${l.soort}" marker-end="url(#${uid})"/>`;
   }
@@ -39,6 +40,7 @@ export function vormSvg(vorm, veld, opts = {}){
     s += `<g><circle cx="${X(p.x)}" cy="${Y(p.y)}" r="9.5" class="tv-speler ${klas(p.kant)}"/><text x="${X(p.x)}" y="${Y(p.y)}" class="tv-nr ${klas(p.kant)}" text-anchor="middle" dominant-baseline="central">${p.kant === 'keeper' ? 'K' : esc(p.nr)}</text></g>`;
   }
   if (t.bal) s += `<circle cx="${X(t.bal[0])}" cy="${Y(t.bal[1])}" r="4.5" class="tv-bal"/>`;
+  for (const b of (t.ballen || [])) s += `<circle cx="${X(b[0])}" cy="${Y(b[1])}" r="3.6" class="tv-bal"/>`;   /* [20261116i] losse ballen */
   return s + '</svg>';
 }
 

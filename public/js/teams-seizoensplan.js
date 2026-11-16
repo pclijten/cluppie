@@ -19,19 +19,23 @@
 
    Tabblad: 'seizoensplan'. Importeert NIET uit teams.js; teams.js geeft zetTeamTab mee. */
 import { db, doc, collection, getDoc, getDocs, setDoc, addDoc, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261116c';
-import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261116c';
-import { aiAan, aiDoel } from './clubconfig.js?v=20261116f';
-import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261116c';
-import { trainingenVanPlan, planVoorTeam } from './seizoensplan-club.js?v=20261116c';
-import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261116c';
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261115b';
-import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261116c';
-import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261116c';
+import { S, esc, meld } from './state.js?v=20261116j';
+import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261116j';
+import { aiAan, aiDoel } from './clubconfig.js?v=20261116j';
+import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261116j';
+import { trainingenVanPlan, planVoorTeam } from './seizoensplan-club.js?v=20261116j';
+import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261116j';
+import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261116j';
+import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261116j';
+import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261116j';
 import {
   MODELLEN, ACCENTEN, maakSeizoensplan, weekKalender, herreken, standaardVrij, maandagVan, beschikbareThemas, themaVolgorde,
-  valideerBlokken, positieOp, positieWeek, teamSignalen, stelBijsturingVoor, pasVoorstelToe,
-} from './seizoensplan-logica.js?v=20261116c';
+  valideerBlokken, positieOp, positieWeek, teamSignalen, stelBijsturingVoor, pasVoorstelToe, speelwijzeExtra, seizoenStartJaar as seizoenJaar,
+} from './seizoensplan-logica.js?v=20261116j';
+/* [20261116h] de speelwijze als rode draad: weegt mee in de themavolgorde en staat bij elk blok */
+import { speelstijlNu, speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad, speelwijzeBron } from './speelwijze.js?v=20261116j';
+import { speelwijzeVan, stijlVoorPlan, dekking, principeVoorThema, rodeDraad } from './speelwijze-logica.js?v=20261116j';
+import { htmlDraadKaart, htmlDekking, htmlPrincipeChip } from './speelwijze-html.js?v=20261116j';
 
 /* [20261113d] vormen uit basis + beheerlaag (bibliotheek.js) */
 const KLEUREN = ['var(--accent)', '#4a8fe0', '#e0a526', '#3fb27f', '#a855f7', '#f08a24', '#14b8a6', '#ec4899'];
@@ -42,13 +46,13 @@ const planRef = () => doc(db, 'teams', S.teamId, 'seizoensplan', seizoenSleutel(
 
 function plusDagenIso(iso, n){ const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 function bouwKey(){ const b = S.team?.bouw; return ['onder', 'midden', 'boven'].includes(b) ? b : bouwVanCategorie(S.team?.categorie); }
-function seizoenStartJaar(){ const m = String(S.huidigSeizoen || SEIZOEN_FALLBACK).match(/(\d{4})/); return m ? Number(m[1]) : new Date().getFullYear(); }
+function seizoenStartJaar(){ return seizoenJaar(S.huidigSeizoen || SEIZOEN_FALLBACK, vandaagIso()); }
 function aanwezigeSpelers(){ const n = (S.spelers || []).filter(p => p && !p.gast && !p._ingeleend).length; return Math.max(6, Math.min(24, n || 12)); }
 
 function standaardForm(){
   const y = seizoenStartJaar(), lv = leeftijdVanCategorie(S.team?.categorie);
   const start = maandagVan(vandaagIso() > `${y}-08-24` ? vandaagIso() : `${y}-08-24`), eind = `${y + 1}-06-06`;
-  return { model: 'leercurve', start, eind, vrij: standaardVrij(start, eind), accent: [], tpw: 2, duur: lv <= 8 ? 45 : lv <= 11 ? 60 : 75, niveau: 2, bijsturen: 'voorstel' };
+  return { model: 'leercurve', start, eind, vrij: standaardVrij(start, eind), accent: [], tpw: 2, duur: lv <= 8 ? 45 : lv <= 11 ? 60 : 75, niveau: 2, bijsturen: 'voorstel', speelwijze: true };
 }
 function staat(){
   if (!S._sp || S._sp.teamId !== S.teamId){
@@ -61,6 +65,13 @@ const planVan = () => staat().plan;
    (alleen lezen). Bij Club stuurt kan de coach zonder uitzondering ook geen eigen plan maken. */
 function vanClub(){ return !!staat().clubPlan; }
 function alleenLezen(){ return vanClub() || !werkwijzeToestaat('seizoensplan', S.team); }
+/* [20261116h] De speelwijze die bij een plan hoort: de momentopname in het plan (params.speelstijl), en bij een plan
+   van vóór de speelwijze de huidige (dan stuurt hij de themavolgorde niet, maar staat het principe wel bij elk blok). */
+function swVanPlan(plan){
+  const snap = plan?.params?.speelstijl;
+  return snap ? speelwijzeVan(snap, leeftijdVanCategorie(S.team?.categorie)) : speelwijzeNu();
+}
+const stijlIsGewijzigd = plan => { const a = plan?.params?.speelstijl, b = speelstijlNu(); return !!(a && b && (a.vastgelegdMs || 0) !== (b.vastgelegdMs || 0)); };
 
 /* Document → plan in het geheugen (kalender afgeleid uit de parameters). */
 function uitDoc(d){
@@ -84,7 +95,7 @@ export function laadSeizoensplan(){
 async function laadNu(s){
   try {
     const snap = await getDoc(planRef());
-    if (snap.exists() && snap.data().params){ s.eigen = uitDoc(snap.data()); s.plan = s.eigen; s.form = { ...s.form, ...snap.data().params, model: snap.data().model }; s.tab = s.tab === 'opzet' ? 'jaarlijn' : s.tab; deelS(); }
+    if (snap.exists() && snap.data().params){ const { speelstijl, ...pr } = snap.data().params; s.eigen = uitDoc(snap.data()); s.plan = s.eigen; s.form = { ...s.form, ...pr, model: snap.data().model, speelwijze: speelstijl !== null }; s.tab = s.tab === 'opzet' ? 'jaarlijn' : s.tab; deelS(); }
     if (S.team?.club){
       try {
         const cq = await getDocs(query(collection(db, 'clubs', S.team.club, 'seizoensplannen'), where(`toegewezen.${S.teamId}`, '==', true)));
@@ -110,6 +121,7 @@ export function huidigPlan(){ return planVan(); }
 export function htmlSeizoensplan(){
   const s = staat();
   if (!s.geladen) laadSeizoensplan();
+  if (!speelwijzeGeladen()) laadSpeelwijze().then(() => teken()).catch(() => {});
   return `<div id="spRoot" class="tm sp">${htmlInhoud()}</div>`;
 }
 function htmlInhoud(){
@@ -129,6 +141,7 @@ function htmlOpzet(){
   return `<div class="kaart"><div class="tm-sub" style="margin-top:0">Kies je opbouw</div>
       ${Object.entries(MODELLEN).map(([k, m]) => `<button class="tm-model${k === f.model ? ' aan' : ''}" data-sp-model="${k}"><b>${esc(m.naam)}</b><span>${esc(m.tekst)}</span>${m.opm ? `<em>${esc(m.opm)}</em>` : ''}</button>`).join('')}
     </div>
+    ${htmlOpzetSpeelwijze()}
     <div class="kaart">
       <div class="tm-rij"><span class="tm-l">Team</span><b>${esc(S.team?.naam || '')} · ${esc(catLabel(S.team?.categorie))}</b></div>
       <div class="tm-rij"><span class="tm-l">Start</span><input type="date" class="tm-select" id="spStart" value="${esc(f.start)}"></div>
@@ -148,13 +161,31 @@ function htmlOpzet(){
     </div>`;
 }
 
+/* [20261116h] Opzet: de speelwijze weegt mee in het plan (aan of uit). */
+function htmlOpzetSpeelwijze(){
+  if (!speelwijzeGeladen()) return '';
+  const f = staat().form, sw = speelwijzeNu();
+  if (!sw) return `<div class="kaart sw-opzet"><div class="tm-sub" style="margin-top:0">Speelwijze</div>
+      <div class="tm-info">Nog geen speelwijze vastgelegd. Met een speelwijze komen de thema’s die bij jullie manier van spelen horen vaker terug, en staat bij elk blok het principe dat je traint.</div>
+      <button class="knop klein licht" data-draad="speelwijze" style="margin-top:8px">Naar Speelwijze</button></div>`;
+  const lv = leeftijdVanCategorie(S.team?.categorie), bes = beschikbareThemas(vormen());
+  const extra = speelwijzeExtra(sw, t => bes.has(t) && (LEERCURVE.find(x => x.thema === t)?.vanaf ?? 99) <= lv);
+  const aan = f.speelwijze !== false;
+  return `<div class="kaart sw-opzet"><div class="tm-kopregel"><div class="tm-sub" style="margin:0">Speelwijze</div><span class="tm-badge">${speelwijzeBron() === 'club' ? 'Van de club' : 'Van jouw team'}</span></div>
+    ${sw.zin ? `<p class="sw-lead klein">${esc(sw.zin)}</p>` : ''}
+    <div class="tm-rij"><span class="tm-l">Meewegen in dit plan</span><div class="tm-chips">${chip('data-sp-sw', '1', 'Aan', aan)}${chip('data-sp-sw', '0', 'Uit', !aan)}</div></div>
+    <div class="tm-info">${aan ? `${extra.length ? `Komt een keer extra in het seizoen: <b>${extra.map(esc).join('</b> en <b>')}</b>. ` : ''}Vormen die een principe van de speelwijze trainen krijgen voorrang, en het partijspel krijgt de regel van het principe. Het opbouwmodel en de leeftijd blijven leidend.` : 'Het plan volgt alleen het opbouwmodel. Bij elk blok staat nog wel welk principe erbij hoort.'}</div>
+    <button class="knop klein licht" data-draad="speelwijze" style="margin-top:8px">Bekijk de speelwijze</button></div>`;
+}
+
 function weekHtml(plan, weekNr, blok, alle){
   const pos = positieWeek(plan, weekNr);
   const w = plan.kal.filter(x => !x.vrij)[weekNr - 1];
   /* zelfde trainingen als op Trainingen komen (trainingenVanPlan), dus geen eigen rotatie of seed hier */
   const trainingen = alle.filter(x => x.w.nr === weekNr).map(x => `<div class="tm-sub">Training ${x.t}</div><ul class="tm-ul">${x.p.onderdelen.map(o => `<li>${o.minuten}′ ${esc(o.vorm.naam)}</li>`).join('')}</ul>
       ${onderdeelAan('trainingsmodule') ? `<button class="knop klein licht" data-sp-open="${weekNr}:${x.t}">Open in Training maken</button>` : ''}`);
-  return `<div class="tm-week"><div class="tm-wk-kop"><b>Week ${weekNr}</b><span class="tm-info">${dk(w?.iso)} · ${esc(pos.fase)}</span></div>${trainingen.join('')}<div class="tm-info" style="margin-top:6px">${esc(FASE_UITLEG[pos.fase] || '')}</div></div>`;
+  const sw = swVanPlan(plan), leerdoel = sw && principeVoorThema(sw, pos.blok.thema) ? rodeDraad(sw, { thema: pos.blok.thema, fase: pos.fase, leeftijd: leeftijdVanCategorie(S.team?.categorie) }).leerdoel : '';
+  return `<div class="tm-week"><div class="tm-wk-kop"><b>Week ${weekNr}</b><span class="tm-info">${dk(w?.iso)} · ${esc(pos.fase)}</span></div>${leerdoel ? `<div class="sw-weekdoel"><span class="sw-etiket">Leerdoel</span>${esc(leerdoel)}</div>` : ''}${trainingen.join('')}<div class="tm-info" style="margin-top:6px">${esc(FASE_UITLEG[pos.fase] || '')}</div></div>`;
 }
 
 function huidigeWeekNr(plan){
@@ -174,8 +205,19 @@ function htmlJaarlijn(){
     <div class="tm-info">${esc(MODELLEN[plan.model]?.naam || '')} · ${plan.trainingsweken} trainingsweken · ${plan.blokken.length} blokken · ${plan.params.tpw}× per week${plan.params.accent?.length ? ' · accent ' + esc(plan.params.accent.join(', ')) : ''}</div>
     <div class="tm-band">${plan.blokken.map((b, i) => `<i style="flex:${b.weken};background:${KLEUREN[i % KLEUREN.length]}" title="${esc(b.thema)}"></i>`).join('')}</div>
     <div class="tm-info">Nu: week ${nu}. Elke training komt op Trainingen op de maandag van de week ervoor; hier zie je de komende vier weken.</div></div>`;
+  /* [20261116h] de rode draad van deze week en de speelwijze in het hele seizoen */
+  const sw = swVanPlan(plan), posNu = positieWeek(plan, nu);
+  if (speelwijzeGeladen()){
+    h += htmlDraadKaart(rodeDraad(sw, { thema: posNu.blok.thema, fase: posNu.fase, blok: posNu.blok.nr, weekInBlok: posNu.weekInBlok, weken: posNu.blok.weken, leeftijd: leeftijdVanCategorie(S.team?.categorie) }), 'seizoen',
+      { geenTekst: sw ? 'Dit thema hoort bij de basis: techniek en plezier. Er hoort geen principe van de speelwijze bij.' : 'Leg de speelwijze vast om bij elk blok te zien welk principe je traint.' });
+    if (sw){
+      h += `<div class="kaart"><div class="tm-sub" style="margin-top:0">De speelwijze in dit seizoen</div>${htmlDekking(dekking(plan, sw, t => (LEERCURVE.find(x => x.thema === t)?.vanaf ?? 99) <= leeftijdVanCategorie(S.team?.categorie)), sw)}
+        ${!plan.params.speelstijl ? `<div class="tm-info">Dit plan is gemaakt zonder speelwijze: de thema’s volgen alleen het opbouwmodel. ${alleenLezen() ? '' : 'Maak het opnieuw onder “1 Opzet” om de speelwijze mee te wegen.'}</div>` : stijlIsGewijzigd(plan) ? `<div class="tm-info">De speelwijze is gewijzigd nadat dit plan is gemaakt. Dit plan houdt de oude; ${alleenLezen() ? 'de club kan het plan opnieuw maken.' : 'maak het opnieuw onder “1 Opzet” om de nieuwe mee te nemen.'}</div>` : ''}</div>`;
+    }
+  }
   plan.blokken.forEach((b, i) => {
     h += `<div class="tm-blok" style="--c:${KLEUREN[i % KLEUREN.length]}"><h3>${esc(b.thema)} <span class="tm-badge">${esc(b.domein || '')}</span> <span class="tm-badge">${b.weken} wk · ${dk(b.van)} – ${dk(b.tot)}</span>${b.soort === 'herhaling' ? ' <span class="tm-badge">herhaling</span>' : ''}</h3>
+      ${sw ? `<div class="sw-blokchip">${htmlPrincipeChip(principeVoorThema(sw, b.thema)) || '<span class="sw-chip basis">Basis: techniek en plezier</span>'}</div>` : ''}
       <div class="tm-info">${esc(b.fasen.join(' → '))}</div><div class="tm-waarom"><b>Waarom:</b> ${esc(b.waarom || '')}</div>`;
     for (let w = b.vanafWeek; w <= b.totWeek; w++) if (w >= vanaf && w <= tot) h += weekHtml(plan, w, b, alle);
     if (b.totWeek > tot && b.vanafWeek <= tot + 1 && b.totWeek > nu) h += `<div class="tm-info">Week ${Math.max(tot + 1, b.vanafWeek)}–${b.totWeek}: worden wekelijks aangevuld.</div>`;
@@ -228,9 +270,11 @@ function htmlBijsturing(){
 function maakVanForm(blokkenUitAI){
   const s = staat(), f = s.form;
   const lv = leeftijdVanCategorie(S.team?.categorie), bes = beschikbareThemas(vormen());
-  const p = { categorie: S.team?.categorie, leeftijd: lv, bouw: bouwKey(), model: f.model, start: f.start, eind: f.eind, vrij: f.vrij || [], accent: f.accent || [], tpw: f.tpw, duur: f.duur, niveau: f.niveau, beschikbaar: bes };
+  /* [20261116h] momentopname van de speelstijl in het plan (of null: dan weegt de speelwijze niet mee) */
+  const speelstijl = f.speelwijze !== false ? stijlVoorPlan(speelstijlNu()) : null;
+  const p = { categorie: S.team?.categorie, leeftijd: lv, bouw: bouwKey(), model: f.model, start: f.start, eind: f.eind, vrij: f.vrij || [], accent: f.accent || [], tpw: f.tpw, duur: f.duur, niveau: f.niveau, beschikbaar: bes, speelstijl };
   const det = maakSeizoensplan(p);
-  const params = { categorie: p.categorie, bouw: p.bouw, start: f.start, eind: f.eind, vrij: p.vrij, accent: p.accent, tpw: f.tpw, duur: f.duur, niveau: f.niveau, bijsturen: f.bijsturen };
+  const params = { categorie: p.categorie, bouw: p.bouw, start: f.start, eind: f.eind, vrij: p.vrij, accent: p.accent, tpw: f.tpw, duur: f.duur, niveau: f.niveau, bijsturen: f.bijsturen, speelstijl };
   let blokken = det.blokken;
   if (blokkenUitAI){
     blokken = blokkenUitAI.map(b => ({ thema: b.thema, domein: LEERCURVE.find(t => t.thema === b.thema)?.domein, weken: b.weken, soort: 'basis', waarom: String(b.waarom || '').slice(0, 400) }));
@@ -265,7 +309,7 @@ async function maakConcept(metAI){
     try {
       const f = s.form, lv = leeftijdVanCategorie(S.team?.categorie), bes = beschikbareThemas(vormen());
       const kal = weekKalender(f.start, f.eind, f.vrij || []), weken = kal.filter(w => !w.vrij).length;
-      const toegestaan = themaVolgorde({ model: f.model, bouw: bouwKey(), leeftijd: lv, accent: f.accent || [], beschikbaar: bes });
+      const toegestaan = themaVolgorde({ model: f.model, bouw: bouwKey(), leeftijd: lv, accent: f.accent || [], beschikbaar: bes, speelwijze: f.speelwijze !== false ? speelwijzeNu() : null });
       const alle = new Set(LEERCURVE_THEMAS(lv, bes));
       const res = await httpsCallable(functions, 'seizoensVoorstel')({ ...aiDoel(), modus: 'jaarplan', categorie: catLabel(S.team?.categorie), bouw: bouwKey(), model: MODELLEN[f.model].naam,
         accent: f.accent || [], weken, toegestaneThemas: [...alle], voorkeursvolgorde: toegestaan, niveau: f.niveau });
@@ -313,7 +357,9 @@ export function koppelSeizoensplan(v, { zetTeamTab }){
   const s = staat(), f = () => s.form;
   root.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return; const d = b.dataset;
-    if (d.spTab){ s.tab = d.spTab; teken(); }
+    if (d.draad) gaNaarDraad(d.draad, zetTeamTab);
+    else if (d.spSw){ f().speelwijze = d.spSw === '1'; teken(); }
+    else if (d.spTab){ s.tab = d.spTab; teken(); }
     else if (d.spModel){ f().model = d.spModel; teken(); }
     else if (d.spTpw){ f().tpw = Math.max(1, Math.min(3, f().tpw + Number(d.spTpw))); teken(); }
     else if (d.spDuur){ f().duur = Number(d.spDuur); teken(); }

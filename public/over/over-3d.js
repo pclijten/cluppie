@@ -8,7 +8,10 @@
    Klassiek script (geen module), zodat het ook werkt als je over.html als bestand opent.
    Nodig: window.THREE (vendor/over/three.min.js) en window.gsap.
    Gebruik: Veld3D.maak(box, vorm, { kantelBijScroll, opStap }) → { speel(), stop(), aantal, naarStap(k), speelStap(k), speelVanaf(k), kijk(hoek, draai), weg() }
-   [20261115b] Ook in de app (scene3d.js): stap voor stap afspelen en zelf de kijkhoek kiezen. */
+   [20261115b] Ook in de app (scene3d.js): stap voor stap afspelen en zelf de kijkhoek kiezen.
+   [20261116h] Een lijn met `samen: true` speelt tegelijk met de lijn ervoor en hoort bij dezelfde stap
+   (pass en loopactie tegelijk). Met opts.vervaag worden de lijnen van eerdere stappen lichter, zodat een
+   lang spelverloop leesbaar blijft. Een lange pass (of `hoog: true`) gaat met een boog. */
 (function(){
   const THREE = window.THREE;
   if (!THREE) return;
@@ -131,6 +134,8 @@
     let spelbal = null;
     if (t.bal){ const p = pos(t.bal[0], t.bal[1]); const op = spelers.find(s => s.userData.thuis.distanceTo(p) < 1.2); spelbal = maakBal(p.x + (op ? 0.55 : 0), p.z + (op ? -0.35 : 0)); }
     if (t.iedereenBal) spelers.forEach((s, i) => { if (soortVan((t.spelers[i] || {}).kant) === 'eigen') maakBal(s.userData.thuis.x + 0.5, s.userData.thuis.z - 0.3); });
+    /* [20261116i] extra ballen die los in het veld liggen (ballenspel, afwerken met een rij ballen) */
+    (t.ballen || []).forEach(b => { const p = pos(b[0], b[1]); maakBal(p.x, p.z); });
 
     /* lijnen: een plat lint per stuk, dat vanaf het begin uitgroeit */
     const lijnen = (t.lijnen || []).map(l => {
@@ -149,7 +154,7 @@
         if (laatste){ const punt = new THREE.Mesh(new THREE.CircleGeometry(0.34, 3), mat); punt.rotation.x = -Math.PI / 2; punt.position.x = eind + 0.1; binnen.add(punt); }
         scene.add(g); stukken.push(binnen);
       }
-      return { soort: l.soort, punten, stukken };
+      return { soort: l.soort, punten, stukken, mat, samen: !!l.samen, hoog: !!l.hoog };
     });
 
     /* camera: van bovenaanzicht (de tekening) naar een schuine blik langs het veld */
@@ -193,7 +198,7 @@
       spelers.forEach(s => { s.position.copy(s.userData.thuis).setY(6); s.scale.setScalar(0.001); });
       pionnen.forEach(p => p.scale.setScalar(0.001));
       ballen.forEach(b => { b.position.copy(b.userData.thuis); b.scale.setScalar(0.001); b.rotation.set(0, 0, 0); });
-      lijnen.forEach(l => l.stukken.forEach(s => (s.scale.x = 0.0001)));
+      lijnen.forEach(l => { l.stukken.forEach(s => (s.scale.x = 0.0001)); l.mat.opacity = 0.95; });
       doelen.forEach(d => d.userData.net.scale.set(1, 1, 1));
       zetCamera();
     };
@@ -205,44 +210,58 @@
       .to(spelers.map(s => s.position), { y: 0, duration: 0.7, stagger: 0.07, ease: 'bounce.out' }, 0.45)
       .to(ballen.map(b => b.scale), { x: 1, y: 1, z: 1, duration: 0.4, stagger: 0.03, ease: 'back.out(2)' }, 1.2);
     /* de spelers en bal "volgen" tijdens de animatie een virtuele positie per lijn */
-    let tijd = 2.2;
-    const stapTijd = [];   /* begin van elke lijn (stap) in de tijdlijn */
+    let tijd = 2.2, vorigBegin = 2.2;
+    const stapTijd = [];      /* begin van elke stap in de tijdlijn; een lijn met `samen` hoort bij de stap ervoor */
+    const stapLijnen = [];    /* per stap de lijnen die erbij horen */
     const plek = new Map();   // object → huidige plek in de tijdlijn (bij het bouwen)
     const plekVan = o => plek.get(o) || o.userData.thuis;
-    lijnen.forEach(l => {
-      stapTijd.push(tijd);
+    lijnen.forEach((l, li) => {
+      const samen = l.samen && li > 0;
+      const t0 = samen ? vorigBegin : tijd;
+      if (samen) stapLijnen[stapLijnen.length - 1].push(l);
+      else {
+        stapTijd.push(t0); stapLijnen.push([l]);
+        /* de lijnen van twee stappen terug worden lichter */
+        if (opts.vervaag && stapLijnen.length > 2) stapLijnen[stapLijnen.length - 3].forEach(o => tl.to(o.mat, { opacity: 0.16, duration: 0.3, ease: 'none' }, t0));
+      }
       const start = l.punten[0], eind = l.punten[l.punten.length - 1];
-      const ld = l.soort === 'schot' ? 0.5 : l.soort === 'pass' ? 0.75 : 1.1;
+      const afst = start.distanceTo(eind);
+      const ld = l.soort === 'schot' ? 0.5 : l.soort === 'pass' ? Math.max(0.75, Math.min(1.3, afst / 22)) : Math.max(1.1, Math.min(1.9, afst / 8));
       const perStuk = ld / l.stukken.length;
-      l.stukken.forEach((s, i) => tl.to(s.scale, { x: 1, duration: perStuk, ease: 'none' }, tijd + i * perStuk));
+      l.stukken.forEach((s, i) => tl.to(s.scale, { x: 1, duration: perStuk, ease: 'none' }, t0 + i * perStuk));
       const route = [...l.punten.slice(1)];
       const bal = [...ballen].sort((a, b) => plekVan(a).distanceTo(start) - plekVan(b).distanceTo(start))[0];
-      const balDichtbij = bal && plekVan(bal).distanceTo(start.clone().setY(0.22)) < 2.6;
+      const balDichtbij = bal && plekVan(bal).distanceTo(start.clone().setY(0.22)) < 4.5;
       if ((l.soort === 'pass' || l.soort === 'schot') && balDichtbij){
+        const boog = l.soort === 'pass' && route.length === 1 && (l.hoog || afst > 22);
         route.forEach((p, i) => {
           const naar = p.clone(); naar.y = l.soort === 'schot' && i === route.length - 1 ? 0.5 : 0.22;
-          tl.to(bal.position, { x: naar.x, y: naar.y, z: naar.z, duration: perStuk, ease: l.soort === 'schot' ? 'power3.in' : 'power2.out' }, tijd + i * perStuk)
-            .to(bal.rotation, { x: `-=${l.soort === 'schot' ? 14 : 8}`, duration: perStuk, ease: 'power2.out' }, tijd + i * perStuk);
+          const doel = boog ? { x: naar.x, z: naar.z } : { x: naar.x, y: naar.y, z: naar.z };
+          tl.to(bal.position, { ...doel, duration: perStuk, ease: l.soort === 'schot' ? 'power3.in' : boog ? 'none' : 'power2.out' }, t0 + i * perStuk)
+            .to(bal.rotation, { x: `-=${l.soort === 'schot' ? 14 : 8}`, duration: perStuk, ease: 'power2.out' }, t0 + i * perStuk);
+          if (boog) tl.to(bal.position, { y: Math.min(4.5, 1.2 + afst * 0.09), duration: perStuk / 2, ease: 'power1.out' }, t0)
+            .to(bal.position, { y: 0.22, duration: perStuk / 2, ease: 'power1.in' }, t0 + perStuk / 2);
         });
         plek.set(bal, eind.clone().setY(0.22));
         if (l.soort === 'schot'){
           const doel = doelen.find(d => d.position.distanceTo(eind) < 4);
-          if (doel) tl.to(doel.userData.net.scale, { z: 1.35, duration: 0.18, yoyo: true, repeat: 1, ease: 'power2.out' }, tijd + ld - 0.05);
-          tl.to(bal.position, { y: 0.22, duration: 0.4, ease: 'bounce.out' }, tijd + ld + 0.05);
+          if (doel) tl.to(doel.userData.net.scale, { z: 1.35, duration: 0.18, yoyo: true, repeat: 1, ease: 'power2.out' }, t0 + ld - 0.05);
+          tl.to(bal.position, { y: 0.22, duration: 0.4, ease: 'bounce.out' }, t0 + ld + 0.05);
         }
       } else if (l.soort === 'loopweg' || l.soort === 'dribbel'){
         const speler = spelers.reduce((best, s) => { const d = plekVan(s).distanceTo(start); return d < best.d ? { s, d } : best; }, { s: null, d: 2.4 }).s;
         if (speler){
-          route.forEach((p, i) => tl.to(speler.position, { x: p.x, z: p.z, duration: perStuk, ease: 'power1.inOut' }, tijd + 0.05 + i * perStuk));
+          route.forEach((p, i) => tl.to(speler.position, { x: p.x, z: p.z, duration: perStuk, ease: 'power1.inOut' }, t0 + 0.05 + i * perStuk));
           plek.set(speler, eind.clone());
           if (l.soort === 'dribbel' && balDichtbij){
-            route.forEach((p, i) => tl.to(bal.position, { x: p.x + 0.45, z: p.z - 0.3, duration: perStuk, ease: 'power1.inOut' }, tijd + 0.05 + i * perStuk)
-              .to(bal.rotation, { x: '-=6', duration: perStuk }, tijd + 0.05 + i * perStuk));
+            route.forEach((p, i) => tl.to(bal.position, { x: p.x + 0.45, z: p.z - 0.3, duration: perStuk, ease: 'power1.inOut' }, t0 + 0.05 + i * perStuk)
+              .to(bal.rotation, { x: '-=6', duration: perStuk }, t0 + 0.05 + i * perStuk));
             plek.set(bal, eind.clone().setY(0.22));
           }
         }
       }
-      tijd += ld + (l.soort === 'schot' ? 0.5 : 0.15);   /* [20261115b] geen overlap: elke stap is af voordat de volgende begint */
+      vorigBegin = t0;
+      tijd = Math.max(tijd, t0 + ld + (l.soort === 'schot' ? 0.5 : 0.15));   /* [20261115b] geen overlap: elke stap is af voordat de volgende begint */
     });
     void vindSpeler; void vindBal;
     tl.to({}, { duration: 0.01 }, tijd + 0.39);   /* tijdlijn loopt door tot de laatste stap echt klaar is */
@@ -267,11 +286,11 @@
     const klaar = () => opts.opStap && opts.opStap(stapOp(tl.time()), true);
     return {
       speel: () => { formaat(); tl.restart(); }, stop: () => tl.pause(),
-      aantal: lijnen.length,
+      aantal: stapTijd.length - 1,
       /* opbouw tonen en stilstaan voor de eerste stap */
       opbouw: () => { formaat(); tl.pause(0); tl.tweenFromTo(0, INTRO, { onComplete: klaar }); },
       /* direct naar de stand na k stappen (zonder animatie) */
-      naarStap: k => { tl.pause(); tl.seek(k <= 0 ? INTRO : stapTijd[Math.min(k, lijnen.length)], false); klaar(); },
+      naarStap: k => { tl.pause(); tl.seek(k <= 0 ? INTRO : stapTijd[Math.min(k, stapTijd.length - 1)], false); klaar(); },
       speelStap: k => { const a = k <= 0 ? INTRO : stapTijd[k], b = stapTijd[k + 1] ?? EIND; tl.tweenFromTo(Math.max(INTRO, a), b, { onComplete: klaar }); },
       speelVanaf: k => { tl.tweenFromTo(k <= 0 ? INTRO : stapTijd[k], EIND, { onComplete: klaar }); },
       kijk: (hoek, draai) => { stand.hoek = hoek; stand.draai = draai; zetCamera(); },

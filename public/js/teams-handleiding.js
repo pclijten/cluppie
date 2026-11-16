@@ -4,10 +4,10 @@
    wat hierboven al in dit bestand staat. De zoekfunctionaliteit
    (#helpZoek) wordt door de hub (teams.js/koppelTeamTab) aangesloten,
    want die werkt direct op het gerenderde DOM-element. */
-import { esc } from './state.js?v=20261116c';
-import { beleidsplanNaam } from './clubconfig.js?v=20261116f';
-import { ROLKAARTEN } from './rolkaart.js?v=20261116c';
-import { onboardingHerstartBlok } from './onboarding.js?v=20261116g';
+import { esc } from './state.js?v=20261116j';
+import { beleidsplanNaam } from './clubconfig.js?v=20261116j';
+import { ROLKAARTEN } from './rolkaart.js?v=20261116j';
+import { onboardingHerstartBlok } from './onboarding.js?v=20261116j';
 
 export function htmlHandleiding(){
   return `<div class="hl">
@@ -95,6 +95,80 @@ export function htmlHandleiding(){
       <li>Een aangepaste training blijft staan, ook als het seizoensplan later verandert.</li>
     </ul>
     <div class="tip">Training maken werkt <b>zonder AI</b> en bewaart geen spelersnamen. Veldmaten en ruimte per speler zijn richtwaarden, geen KNVB-normen: laat het weten als iets in de praktijk anders werkt.</div>
+    </section>
+
+    <section class="hl-sec" data-zoek="🧭 speelwijze rode draad hoe willen wij voetballen onder trainingen staat de tegel speelwijze. de speelwijze is de rode draad van het seizoen: de vier momenten van het spel (wij hebben de bal, wij verliezen de bal, zij hebben de bal, wij winnen de bal) met per moment de principes voor de leeftijd van je team. per principe zie je wat je ziet als het lukt, drie coachwoorden, een regel voor het partijspel, de vraag voor na de wedstrijd en een oefening in 3d. de club legt de speelwijze vast onder club › speelwijze (clubbeheerder of hoofd jeugdopleiding, met een stijl als startpunt of een vragenlijst). een trainer zonder club, of een team van een club die nog niets heeft vastgelegd, kiest zelf een stijl of beantwoordt 8 vragen. de speelwijze komt terug in seizoen (thema's die erbij horen komen een keer extra, bij elk blok staat het principe), in training maken (leerdoel, vormen die het principe trainen, coachwoorden, regel in het partijspel), op trainingen en in de wedstrijdevaluatie (de vraag van het principe). leeftijd gaat voor: druk zetten en omschakelen als team komt standaard vanaf o12, vaste posities vanaf o10. zonder speelwijze werkt alles zoals altijd op het thema.">
+    <h3>🧭 Speelwijze: de rode draad</h3>
+    <p>Onder <b>Trainingen</b> staat de tegel <b>Speelwijze</b>. Daar staat hoe jullie willen voetballen, in de vier momenten van het spel: wij hebben de bal, wij verliezen de bal, zij hebben de bal en wij winnen de bal. Per moment zie je de principes voor de leeftijd van je team.</p>
+    <ul>
+      <li><b>Een principe</b> heeft: wat je ziet als het lukt, drie coachwoorden, een regel voor het partijspel, een vraag voor na de wedstrijd en een oefening die je in 3D kunt bekijken.</li>
+      <li><b>Wie legt hem vast?</b> De club, onder Club › Speelwijze (clubbeheerder of hoofd jeugdopleiding). Train je zonder club, of heeft je club nog niets vastgelegd, dan kies je zelf een stijl of beantwoord je acht korte vragen.</li>
+      <li><b>Seizoen</b>: thema’s die bij de speelwijze horen komen een keer extra, en bij elk blok staat het principe dat je traint. Onder “De speelwijze in dit seizoen” zie je hoeveel weken elk moment krijgt.</li>
+      <li><b>Training maken</b>: bovenaan staat de rode draad (Speelwijze → Seizoen → Training → Wedstrijd) met het leerdoel van vandaag. Vormen die het principe trainen krijgen voorrang en het partijspel krijgt de regel van het principe.</li>
+      <li><b>Wedstrijd</b>: in de evaluatie staat de vraag van het principe van die weken. Je antwoord stuurt het seizoensplan bij.</li>
+    </ul>
+    <div class="tip">Leeftijd gaat voor de speelwijze: druk zetten en omschakelen als team komt standaard vanaf O12, vaste posities vanaf O10. Zonder speelwijze werkt alles zoals altijd, op het thema van de week. De speelwijze is een eigen ontwerp op basis van ervaring van trainers, geen gevalideerde test.</div>
+    </section>
+
+    <section class="hl-sec" data-zoek="🎬 oefening in 3d spelverloop stappen bij elke vorm kies je boven de tekening tussen tekening en 3d. in 3d zie je het hele spelverloop stap voor stap: vorige, afspelen, volgende, opnieuw, en schuifjes voor hoek en draai. stappen die tegelijk gebeuren (pass en loopactie) spelen samen. elke oefening heeft een uitgeschreven verloop in fases (opbouw, doorbreken, afronden, omschakelen): de reactie van de tegenstander, de afronding en wat er daarna gebeurt. eigen vorm van de club zonder stappen voorbeeld van het vervolg">
+    <h3>🎬 Oefening in 3D: het hele spelverloop</h3>
+    <p>Bij elke vorm kies je boven de tekening tussen <b>Tekening</b> en <b>3D</b>. In 3D zie je het spelverloop stap voor stap, met Vorige, Afspelen, Volgende en Opnieuw. Stappen die tegelijk gebeuren (een pass en een loopactie) spelen samen.</p>
+    <ul>
+      <li>Elke oefening uit de bibliotheek heeft een uitgeschreven verloop in fases (bijvoorbeeld Opbouw, Doorbreken, Afronden, Omschakelen). Je ziet ook wat de tegenstander doet en wat er na de afronding gebeurt. Hetzelfde verloop staat in het veld <b>Uitleg</b>.</li>
+      <li>De tekening laat alleen de eerste stappen zien, zodat hij leesbaar blijft. De rest zie je in 3D.</li>
+      <li>Heeft een eigen vorm van je club maar één of twee pijlen, dan laat 3D daarna een <b>voorbeeld van het vervolg</b> zien. Dat is een voorbeeld op basis van de opstelling, geen vaste afspraak van de oefening.</li>
+    </ul>
+    </section>
+
+    <section class="hl-sec" data-zoek="🔎 oefenkaart lezen zo zie je dat het lukt waarom dit werkt kijk en grijp in zie je doe dan tel mee richtpunt spelers aan zet regie differentiatie coachmomenten doel succes ingrijpen aanpassen te makkelijk te moeilijk tellen meten kopballen koppen knvb advies">
+    <h3>🔎 Zo lees je een oefening</h3>
+    <p>Elke oefening heeft dezelfde zeven velden. In drie daarvan staat extra hulp voor langs de lijn:</p>
+    <ul>
+      <li><b>Doel</b>: <i>Zo zie je dat het lukt</i> (twee dingen die je kunt zien, zonder te hoeven raden) en <i>Waarom dit werkt</i> (één zin over het idee achter de oefening).</li>
+      <li><b>Differentiatie</b>: <i>Kijk en grijp in</i>. Per oefening twee situaties die vaak voorkomen: wat je ziet, en wat je dan verandert aan het vak, de regels of de telling. Je past de oefening aan in plaats van hem stil te leggen.</li>
+      <li><b>Coachmomenten</b>: <i>Tel mee</i> (één ding om te tellen, met een richtpunt) en <i>Spelers aan zet</i> (één manier om de spelers zelf iets te laten kiezen of bedenken).</li>
+    </ul>
+    <p>De richtpunten zijn een houvast, geen norm. Haalt je groep het makkelijk, maak het dan moeilijker; lukt het bijna nooit, maak het dan makkelijker. Bij oefeningen met koppen staat onder Veiligheid het advies van de KNVB over het aantal kopballen en de hersteltijd.</p>
+    </section>
+
+    <section class="hl-sec" data-zoek="📖 voetbaltaal woordenlijst begrippen betekenis wat betekent aannemen afronden back blok compact dekken derde man diep spelen druk zetten joker kaatsen kantelen kappen knijpen linie nummer 10 omschakelen opendraaien overlap overtal positiespel restverdediging rondo rugdekking schijnbeweging spits steekpass tegendruk tweede bal uitstappen vleugelspeler zestien aanname kaatser diepte ondertal linies vaktaal jargon">
+    <h3>📖 Voetbaltaal in het kort</h3>
+    <p>De oefeningen zijn in gewone taal geschreven. Een paar voetbalwoorden blijven staan, omdat je ze op elk veld hoort. Dit is wat ze betekenen:</p>
+    <ul>
+      <li><b>Aannemen</b>: de bal met je eerste aanraking onder controle brengen. Dat heet ook de aanname.</li>
+      <li><b>Afronden</b>: een aanval afmaken met een schot of kopbal op doel.</li>
+      <li><b>Back</b>: de verdediger aan de zijkant.</li>
+      <li><b>Blok</b>: het hele team dat dicht bij elkaar verdedigt.</li>
+      <li><b>Compact</b>: dicht bij elkaar staan, zodat er weinig ruimte tussen de spelers is.</li>
+      <li><b>Dekken</b>: dicht bij een tegenstander blijven, zodat die de bal niet vrij krijgt.</li>
+      <li><b>Derde man</b>: de speler die al loopt terwijl twee anderen de bal naar elkaar spelen, en hem daarna krijgt.</li>
+      <li><b>Diep spelen</b>: de bal naar voren spelen, achter de verdedigers. Die ruimte heet de diepte.</li>
+      <li><b>Druk zetten</b>: snel op de speler met de bal af gaan, zodat die weinig tijd heeft.</li>
+      <li><b>Joker</b>: een speler die altijd meedoet met het team dat de bal heeft.</li>
+      <li><b>Kaatsen</b>: de bal in één keer terugspelen. Wie dat doet, is de kaatser.</li>
+      <li><b>Kantelen</b>: de bal snel naar de andere kant van het veld spelen.</li>
+      <li><b>Kappen</b>: de bal met je voet van richting veranderen.</li>
+      <li><b>Knijpen</b>: als verdediger naar binnen schuiven, dichter naar het midden.</li>
+      <li><b>Linie</b>: een rij spelers: de verdediging, het middenveld of de aanval. Tussen de linies is de ruimte daartussen.</li>
+      <li><b>Nummer 10</b>: de aanvallende middenvelder, tussen het middenveld en de spits.</li>
+      <li><b>Omschakelen</b>: het moment dat de bal van team wisselt: van aanvallen naar verdedigen of andersom.</li>
+      <li><b>Opendraaien</b>: de bal zo aannemen dat je daarna naar voren kijkt.</li>
+      <li><b>Overlap</b>: aan de buitenkant achter een medespeler langs lopen om de bal verderop te krijgen.</li>
+      <li><b>Overtal</b>: met meer spelers zijn dan de tegenstander op een deel van het veld. Ondertal is het omgekeerde.</li>
+      <li><b>Positiespel</b>: de bal in het team houden door goed te staan en te bewegen.</li>
+      <li><b>Restverdediging</b>: de spelers die tijdens de aanval achter de bal blijven.</li>
+      <li><b>Rondo</b>: spelers in een kring houden de bal weg bij een of meer jagers in het midden.</li>
+      <li><b>Rugdekking</b>: schuin achter een medespeler staan om te helpen als die wordt gepasseerd.</li>
+      <li><b>Schijnbeweging</b>: doen alsof je de ene kant op gaat en dan de andere kant op gaan.</li>
+      <li><b>Spits</b>: de voorste aanvaller.</li>
+      <li><b>Steekpass</b>: een pass tussen de verdedigers door, voor een speler die diep loopt.</li>
+      <li><b>Tegendruk</b>: direct na balverlies samen druk zetten om de bal terug te winnen.</li>
+      <li><b>Tweede bal</b>: de bal die vrij komt na een duel, een kopbal of een gekeerd schot.</li>
+      <li><b>Uitstappen</b>: als verdediger naar voren stappen, naar de speler met de bal.</li>
+      <li><b>Vleugelspeler</b>: de aanvaller aan de zijkant.</li>
+      <li><b>Zestien</b>: het strafschopgebied.</li>
+    </ul>
+    <p>Tegen de jongste spelers gebruik je deze woorden nog niet. In het veld <b>Uitleg</b> staat steeds een zin die je zo kunt zeggen.</p>
     </section>
 
     <section class="hl-sec" data-zoek="📆 seizoen jaarlijn blokken bijsturing seizoensplan club eigen plan alleen lezen coördinator opzet opbouwmodel leercurve vrije weken trainingen per week duur accent signalen thema-check evaluatie">

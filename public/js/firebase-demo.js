@@ -287,6 +287,17 @@ zetSeed(`clubs/${CLUB}`, {
   instellingen: { identiteit: { kleur: '#E20613' }, privacy: { contactEmail: 'privacy@cluppie.io', verwerkersovereenkomst: { geaccepteerd: true, datum: TS } } },
 });
 
+/* [20261116h] de speelwijze van de democlub (positiespel), zodat Speelwijze, Seizoen en Training maken de rode draad tonen */
+zetSeed(`clubs/${CLUB}/speelstijl/huidig`, {
+  versie: 1, modus: 'volledig', invullers: 3,
+  standen: { d1: { stand: 2, status: 'duidelijk' }, d2: { stand: 1.7, status: 'duidelijk' }, d3: { stand: 1, status: 'neigt' }, d4: { stand: 2, status: 'duidelijk' },
+    d5: { stand: -1, status: 'neigt' }, d6: { stand: 1.3, status: 'neigt' }, d7: { stand: 2, status: 'duidelijk' }, d8: { stand: 1, status: 'neigt' } },
+  gewichten: { d1: 2, d2: 2, d3: 1, d4: 2, d5: 1, d6: 1, d7: 1, d8: 1 }, fasen: { l1: 10, l2: 12, l3: 8, l4: 12, l5: 12 },
+  willenNiet: ['lang', 'schel', 'beste'], verschil: ['d6'], herkenning: { sleutel: 'pos', pct: 86 },
+  zin: 'Rustig opbouwen vanaf de keeper, direct terugpakken, geduldig rondspelen en zone: een ruimte bewaken.', doel: ['ontw', 'plezier'], opleiding: 'deels',
+  vastgelegdDoor: COACH, vastgelegdMs: Date.now() - 20 * 864e5,
+});
+
 const COLLEGA = ['Anouk', 'Jeroen', 'Fatima', 'Kees', 'Sanne', 'Ahmed', 'Petra', 'Martijn'];
 const TEAMS = [
   { id: 'demo-o9-1',   naam: 'O9-1',   cat: 'JO9',  bouw: 'onder',  format: '6' },
@@ -421,12 +432,20 @@ zetSeed(`clubs/${CLUB}`, { ...store.get(`clubs/${CLUB}`), teams: Object.fromEntr
 async function zetTrainingen(){
   const [{ BIBLIOTHEEK }, { vormSvg }] = await Promise.all([import('./trainingsbibliotheek.js'), import('./trainingsvorm-svg.js')]);
   const vormen = BIBLIOTHEEK.vormen;
-  const lijst = (kop, items) => (Array.isArray(items) && items.length ? [{ kop, type: 'lijst', items: items.map(String) }] : []);
+  /* [20261116i] Zelfde blokken als een echte training (7 vaste velden, zie oefeningVan in seizoensplan-club.js),
+     zodat de demo ook het spelverloop en de uitwerking per oefening laat zien. */
+  const lijst = (veld, kop, items) => (Array.isArray(items) && items.length ? [{ veld, kop, type: 'lijst', items: items.map(String) }] : []);
+  const tekst = (veld, kop, t) => (String(t || '').trim() ? [{ veld, kop, type: 'tekst', tekst: String(t) }] : []);
+  const verloop = v => { const l = v.tekening?.lijnen || []; if (l.length < 4 || !l.every(x => x.tekst)) return []; let fase = ''; return l.filter(x => !x.samen).map(x => { const kop = x.fase && x.fase !== fase ? x.fase + ': ' : ''; fase = x.fase || fase; return kop + x.tekst; }); };
+  const materiaal = v => Object.entries(v.materiaal || {}).filter(([, n]) => n > 0).map(([k, n]) => `${n} ${k}`).concat(v.materiaalExtra || []);
   const oefening = (v, slot, minuten) => ({
     titel: v.naam,
-    blokken: [{ kop: 'Tijd en groepen', type: 'tekst', tekst: `${minuten} minuten · ${slot}` }, ...(v.uitleg ? [{ kop: 'Uitleg', type: 'tekst', tekst: v.uitleg }] : []),
-      ...lijst('Organisatie', v.organisatie), ...lijst('Regels', v.regels), ...lijst('Coachpunten', v.coachpunten), ...lijst('Coachvragen', v.coachvragen),
-      ...lijst('Makkelijker', v.makkelijker), ...lijst('Moeilijker', v.moeilijker)],
+    blokken: [...tekst('doel', 'Doel', v.doel), ...lijst('doel', 'Zo zie je dat het lukt', v.lukt), ...tekst('doel', 'Waarom dit werkt', v.inzicht),
+      { veld: 'tijd', kop: 'Tijdbestek', type: 'tekst', tekst: `${minuten} minuten · ${slot}` }, ...lijst('mat', 'Benodigdheden', materiaal(v)),
+      ...tekst('uitleg', 'Uitleg', v.uitleg), ...lijst('uitleg', 'Organisatie', v.organisatie), ...lijst('uitleg', 'Spelverloop', verloop(v)), ...lijst('uitleg', 'Regels', v.regels), ...lijst('uitleg', 'Veiligheid', v.letOp),
+      ...lijst('diff', 'Makkelijker', v.makkelijker), ...lijst('diff', 'Moeilijker', v.moeilijker), ...lijst('diff', 'Kijk en grijp in', (v.alsDan || []).map(x => `${x.zie} → ${x.doe}`)),
+      ...lijst('coach', 'Coachpunten', v.coachpunten), ...lijst('coach', 'Coachvragen', v.coachvragen), ...tekst('coach', 'Tel mee', v.meet), ...tekst('coach', 'Spelers aan zet', v.regie),
+      ...lijst('spel', 'Spelvormen', (v.varianten || []).map(x => `${x.naam}: ${x.uitleg}`))],
     svg: v.tekening ? vormSvg(v, v.veld) : '', bron: { vormId: v.id, slot, minuten, spelers: null },
   });
   const THEMAS = ['Positiespel opbouw', 'Storen en veroveren', 'Scoren', 'Uitspelen 1:1', 'Teamsport en plezier'];

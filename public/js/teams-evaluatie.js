@@ -3,20 +3,21 @@
    wedstrijd (8 categorieën + tags + toelichtingen) en het bijbehorende
    dashboard/geschiedenis, plus de "Stats"-tab die dit combineert met de
    spelersstatistieken uit wedstrijd.js. */
-import { beleidsplanNaam } from './clubconfig.js?v=20261116f';
+import { beleidsplanNaam } from './clubconfig.js?v=20261116j';
 import {
   db, collection, doc, addDoc, deleteDoc, updateDoc, deleteField
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, openModal, sluitModal, toon, modAan
-} from './state.js?v=20261116c';
-import { NIVEAUS, niveauKleur, TEAM_CATEGORIEEN, TEAM_TAGS, teamCategorie, SEIZOEN_FALLBACK } from './config.js?v=20261116c';
-import { ico } from './icons.js?v=20261110a';
+} from './state.js?v=20261116j';
+import { NIVEAUS, niveauKleur, TEAM_CATEGORIEEN, TEAM_TAGS, teamCategorie, SEIZOEN_FALLBACK } from './config.js?v=20261116j';
+import { ico } from './icons.js?v=20261116j';
 
-import { htmlStats } from './wedstrijd.js?v=20261116g';
-import { telGebruik } from './tracker.js?v=20261116c';
-import { themaOpDatum } from './seizoensplan-logica.js?v=20261116c';
-import { onderdeelAan } from './onderdelen.js?v=20261116c';
+import { htmlStats } from './wedstrijd.js?v=20261116j';
+import { telGebruik } from './tracker.js?v=20261116j';
+import { themaOpDatum } from './seizoensplan-logica.js?v=20261116j';
+import { wedstrijdvraagNu } from './speelwijze.js?v=20261116j';
+import { onderdeelAan } from './onderdelen.js?v=20261116j';
 
 /* Kleine lokale kopie van de deelnemer-helper (ook aanwezig in teams-spelers.js)
    — bewust hier gedupliceerd i.p.v. een cross-module import voor één regel. */
@@ -60,7 +61,8 @@ export function modalTeamEvaluatie(wedstrijdId){
 
     ${TEAM_CATEGORIEEN.map(catBlok).join('')}
 
-    ${checkThema ? `<div class="veldlabel">Kwam het thema “${esc(checkThema)}” terug in de wedstrijd? (optioneel)</div>
+    ${checkThema ? `<div class="veldlabel">${wedstrijdvraagNu(checkThema) ? `Speelwijze: ${esc(wedstrijdvraagNu(checkThema).vraag)} (optioneel)` : `Kwam het thema “${esc(checkThema)}” terug in de wedstrijd? (optioneel)`}</div>
+      ${wedstrijdvraagNu(checkThema) ? `<div class="tm-info" style="margin:-2px 0 6px">Dit trainden we deze weken: thema ${esc(checkThema)}. Je antwoord stuurt het seizoensplan bij.</div>` : ''}
     <div class="tag-rij" id="mTeCheck">${[['ja','Ja'],['deels','Deels'],['nee','Nee']].map(([k,t]) => `<button class="tag ${checkAntwoord===k?'aan':''}" data-check="${k}">${t}</button>`).join('')}</div>` : ''}
 
     <div class="veldlabel">Opvallend (optioneel)</div>

@@ -11,20 +11,20 @@
    alleen HTML + de opslaghulpjes voor de wedstrijd-presentie. Het importeert
    bewust NIET terug uit teams.js (geen circulaire import). */
 import { db, doc, updateDoc, deleteField } from './firebase.js?v=20261011g';
-import { S, esc, meld, datumNL, modAan, openModal } from './state.js?v=20261116c';
-import { AFWEZIG_REDENEN, afwezigRedenInfo, catLabel } from './config.js?v=20261116c';
-import { ico } from './icons.js?v=20261110a';
-import { logoImg, primaireClubId } from './clubconfig.js?v=20261116f';
-import { analyseWedstrijd, WISSEL_BEURT } from './analyse.js?v=20261116c';
-import { telGebruik } from './tracker.js?v=20261116c';
-import { ongelezenBerichten } from './berichten.js?v=20261116c';
-import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261116c';
-import { htmlRondeBalk } from './evaluatierondes.js?v=20261116c';
-import { onderdeelAan } from './onderdelen.js?v=20261116c';
-import { eersteStappenPlaats } from './snelstart.js?v=20261116g';
-import { htmlNu } from './nu-scherm.js?v=20261116g';
+import { S, esc, meld, datumNL, modAan, openModal } from './state.js?v=20261116j';
+import { AFWEZIG_REDENEN, afwezigRedenInfo, catLabel } from './config.js?v=20261116j';
+import { ico } from './icons.js?v=20261116j';
+import { logoImg, primaireClubId } from './clubconfig.js?v=20261116j';
+import { analyseWedstrijd, WISSEL_BEURT } from './analyse.js?v=20261116j';
+import { telGebruik } from './tracker.js?v=20261116j';
+import { ongelezenBerichten } from './berichten.js?v=20261116j';
+import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261116j';
+import { htmlRondeBalk } from './evaluatierondes.js?v=20261116j';
+import { onderdeelAan } from './onderdelen.js?v=20261116j';
+import { eersteStappenPlaats } from './snelstart.js?v=20261116j';
+import { htmlNu } from './nu-scherm.js?v=20261116j';
 import { spelersOpWedstrijd, effectieveSelectie, leenErbijNa } from './uitleen-regels.js?v=20261113b';
-import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261116c';
+import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261116j';
 import { isAfgelast, telMee, soortPill, wedstrijdInfo, htmlAfgelastBanner, afgelastMeldingen, deelTekst } from './wedstrijd-status.js?v=20261012h';
 
 
@@ -103,6 +103,7 @@ export function htmlHub(updInfo){
       tegel('videos',           'Video\u2019s', 'training-video'),
       ...(onderdeelAan('trainingsmodule') ? [tegel('trainingsmodule',  'Training maken', 'training-plan')] : []),
       ...(onderdeelAan('seizoensplan') ? [tegel('seizoensplan',     'Seizoen',      'planning-month')] : []),
+      tegel('speelwijze',       'Speelwijze',   'football-speelwijze'),   /* [20261116h] de rode draad door seizoen, training en wedstrijd */
     ]],
     ['Presentie', [
       tegel('presentietraining','Aanwezig training', 'training-cones'),

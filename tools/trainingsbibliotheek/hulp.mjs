@@ -10,6 +10,16 @@ export const pass  = (...punten) => ({ soort: 'pass', punten });
 export const drib  = (...punten) => ({ soort: 'dribbel', punten });
 export const schot = (...punten) => ({ soort: 'schot', punten });
 
+/* [20261116h] Spelverloop in stappen (3D speelt elke lijn als stap, public/js/scene3d.js):
+   st  = getekende stap met eigen tekst (staat ook in de tekening);
+   v3  = vervolgstap: alleen in 3D, niet in de tekening (die blijft zo leesbaar);
+   sm  = vervolgstap die tegelijk met de stap ervoor speelt (pass en loopactie samen).
+   fase = naam van het deel van de oefening (Opbouw, Doorbreken, Afronden, Omschakelen, …). */
+export const st = (lijn, tekst, fase) => ({ ...lijn, tekst, ...(fase ? { fase } : {}) });
+export const v3 = (lijn, tekst, fase) => ({ ...lijn, vervolg: true, tekst, ...(fase ? { fase } : {}) });
+export const tg = (lijn, tekst) => ({ ...lijn, samen: true, ...(tekst ? { tekst } : {}) });      /* getekend, tegelijk met de stap ervoor */
+export const sm = (lijn, tekst) => ({ ...lijn, vervolg: true, samen: true, ...(tekst ? { tekst } : {}) });
+
 export const doel   = (x, y, breed, kant) => ({ x, y, breed, kant });
 export const zone   = (x, y, b, h, label = '') => ({ x, y, b, h, label });
 export const pion   = (x, y, kleur) => (kleur ? [x, y, kleur] : [x, y]);
@@ -76,5 +86,6 @@ export function vorm(o){
     if (o.extra.some(x => /groot doel|grote doelen/i.test(x))) v.materiaal.doeltjes = (o.tek?.doeltjes || []).filter(d => (d.breed || 0) < 26).length;
   }
   if (o.themaregel) v.themaregelVorm = true;
+  if (o.principes) v.principes = o.principes;            /* [20261116h] principes van de speelwijze (speelwijze-logica.js) */
   return v;
 }
