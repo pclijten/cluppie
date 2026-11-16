@@ -22,11 +22,11 @@ import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261116n';
 import { htmlRondeBalk } from './evaluatierondes.js?v=20261116n';
 import { onderdeelAan } from './onderdelen.js?v=20261116n';
 import { teamkamerMag } from './kamer-logica.js?v=20261116n';
-import { eersteStappenPlaats } from './snelstart.js?v=20261116n';
-import { htmlNu } from './nu-scherm.js?v=20261116n';
+import { eersteStappenPlaats } from './snelstart.js?v=20261116o';
+import { htmlNu } from './nu-scherm.js?v=20261116o';
 import { spelersOpWedstrijd, effectieveSelectie, leenErbijNa } from './uitleen-regels.js?v=20261113b';
 import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261116n';
-import { isAfgelast, telMee, soortPill, wedstrijdInfo, htmlAfgelastBanner, afgelastMeldingen, deelTekst } from './wedstrijd-status.js?v=20261012h';
+import { isAfgelast, telMee, soortPill, wedstrijdInfo, htmlAfgelastBanner, afgelastMeldingen, deelTekst } from './wedstrijd-status.js?v=20261116o';
 
 
 /* ---------- Hulpjes ---------- */
@@ -347,6 +347,7 @@ export function htmlWedstrijdInfo(w, { bewerk = true } = {}){
     ${!w.thuis ? rij('Adres', [i.adres, i.plaatsAdres || i.plaats].filter(Boolean).map(esc).join('<br>')) : ''}
     ${rij('Veld', esc(i.veld))}
     ${rij('Kleedkamer', esc(i.kleedkamer))}
+    ${rij('Kleedkamer scheidsrechter', esc(i.kleedkamerScheids))}
     ${komt ? `<div class="ws-knoppen">${!w.thuis && i.route ? `<a class="knop licht klein" href="${esc(i.route)}" target="_blank" rel="noopener">Route</a>` : ''}
       ${bewerk ? `<button class="knop klein ws-wa" id="wsDeel" data-wid="${esc(w.id)}">Deel met ouders</button>` : ''}</div>`
       : `<p class="ws-hint">Deze wedstrijd is gespeeld. Tijden invullen en delen met ouders kan bij komende wedstrijden.</p>`}

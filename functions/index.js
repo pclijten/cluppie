@@ -1026,6 +1026,25 @@ async function syncClubSportlink(clubId, { alleenTeamlijst = false } = {}){
   const afgelastRuw = await sportlinkCall(clientId, 'afgelastingen', {})
     .catch(e => { console.warn(`[sl] afgelastingen ${clubId}: ${e.message}`); return null; });
   const afgelast = afgelastRuw ? afgelastingenMap(afgelastRuw) : null;
+  /* [20261116o] clubactiviteiten uit Sportlink (ALV, clubavond): één keer per club, voor de planning van elk team.
+     Niet fataal: bij een fout blijft wat er stond staan. */
+  const clubagendaRuw = await sportlinkCall(clientId, 'verenigingsactiviteiten', { aantaldagen: 180 })
+    .catch(e => { console.warn(`[sl] clubagenda ${clubId}: ${e.message}`); return null; });
+  const clubagenda = clubagendaRuw ? slh.clubagendaUit(clubagendaRuw) : null;
+  /* [20261116o] periodestanden (senioren). Per poule één keer; jeugdpoules hebben geen periodes. */
+  const periodeCache = new Map();
+  const periodesVan = (poulecode, teamnaam) => {
+    if (!periodeCache.has(poulecode)) periodeCache.set(poulecode, (async () => {
+      const nrs = slh.periodeNummers(await sportlinkCall(clientId, 'keuzelijst-periodenummers', { poulecode }).catch(() => []));
+      const uit = [];
+      for (const p of nrs){
+        const stand = await sportlinkCall(clientId, 'periodestand', { poulecode, periodenummer: p.nr }).catch(() => []);
+        if (Array.isArray(stand) && stand.length) uit.push({ ...p, stand });
+      }
+      return uit;
+    })());
+    return periodeCache.get(poulecode).then(lijst => lijst.map(p => ({ nr: p.nr, huidig: p.huidig, rijen: slh.periodeRijen(p.stand, teamnaam) })));
+  };
   const teamWedstrijden = async (k) => {
     const t = { teamcode: k.teamcode, lokaleteamcode: k.lokaleteamcode || '-1' };
     const [programma, uitslagen] = await Promise.all([
@@ -1098,6 +1117,13 @@ async function syncClubSportlink(clubId, { alleenTeamlijst = false } = {}){
       } else {
         await col.doc('beker').delete().catch(() => {});
       }
+      /* [20261116o] periodestanden en clubagenda; een fout hier mag de rest van de sync niet tegenhouden */
+      try {
+        const perioden = k.poulecode ? await periodesVan(k.poulecode, k.teamnaam) : [];
+        if (perioden.length) await col.doc('periode').set({ perioden, poulecode: k.poulecode, ...ts });
+        else await col.doc('periode').delete().catch(() => {});
+        if (clubagenda) await col.doc('clubagenda').set({ items: clubagenda, ...ts });
+      } catch (e){ console.warn(`[sl] periodes/clubagenda ${clubId}/${teamDoc.id}: ${e.message}`); }
       await statusRef.set({
         gematcht: true, automatisch: k.automatisch, teamcode: k.teamcode, teamnaam: k.teamnaam,
         poulecode: k.poulecode || null, klassepoule: k.klassepoule || null, bekerPoulecode: beker?.poulecode || null,

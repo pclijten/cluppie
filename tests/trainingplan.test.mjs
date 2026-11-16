@@ -51,4 +51,10 @@ assert.match(srv, /const MODEL_NAUWKEURIG = null;/, 'server en client moeten sam
 for (const f of ['training-plan.js', 'upload-wachtrij.js']){
   assert.doesNotMatch(fs.readFileSync(new URL(f, dir), 'utf8'), /asv/i, `${f} bevat een ASV-verwijzing`);
 }
+/* [20261116o] weeklabel met de hand aangepast: de maandag van dat weeknummer, zo dicht mogelijk bij de oude */
+assert.equal(P.weekStartBijLabel('Week 46', '2026-11-02'), '2026-11-09');          // week 45 -> week 46
+assert.equal(P.weekStartBijLabel('wk 2', '2026-12-21'), '2027-01-11');             // over de jaargrens: het dichtstbijzijnde jaar
+assert.equal(P.weekStartBijLabel('Week 45', '2026-11-02'), '2026-11-02');          // zelfde week: blijft staan
+assert.equal(P.weekStartBijLabel('Blok 2, passen', '2026-11-02'), '2026-11-02');   // geen weeknummer: blijft staan
+assert.equal(P.weekStartBijLabel('Week 46', ''), null);                            // niet ingepland: geen weekStart
 console.log('trainingplan: alles groen');

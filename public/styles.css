@@ -8236,3 +8236,10 @@ button.btr-sessie:hover{ border-color:var(--hover-rand); }
 /* telefoon, dashboardkaart: compact houden */
 .mb-scherm .btr-dash .btr-kop-t small{ display:none; }
 .mb-scherm .btr-dash .btr-tr-tekst > span:not(.btr-st){ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+
+/* ==================== [20261116o] Sportlink: periodestanden en clubactiviteiten in de planning ==================== */
+:root{ --plan-club:#6aa8ff; --plan-club-vlak:#3d6fb6; }
+.poule-perioden{ margin-bottom:var(--space-sm); }
+.plan-rij.club{ border-left-color:var(--plan-club); }
+.plan-badge.club{ background:var(--plan-club-vlak); }
+.dk-ev.club{ background:color-mix(in srgb, var(--plan-club) 18%, transparent); box-shadow:inset 2px 0 0 var(--plan-club); }
