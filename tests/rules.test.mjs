@@ -400,7 +400,7 @@ test('teamkamer: ouder en speler lezen de kopie van hun eigen team', async () =>
   }
   await assertSucceeds(getDoc(doc(als('ouder1'), 'teamkamer/t1/kamerleden/ouder1')));
 });
-/* [20261116q] NOG NIET GEDRAAID: de emulator is in de werkomgeving van Claude niet te downloaden */
+/* [20261116r] NOG NIET GEDRAAID: de emulator is in de werkomgeving van Claude niet te downloaden */
 test('teamkamer: cijfers van het eigen kind leest alleen de ouder, niet de speler zelf of een ander gezin', async () => {
   await zaaiKamer();
   await assertSucceeds(getDoc(doc(als('ouder1'), 'teamkamer/t1/gezin/s1/ouder/stats')));

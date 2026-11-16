@@ -8243,3 +8243,92 @@ button.btr-sessie:hover{ border-color:var(--hover-rand); }
 .plan-rij.club{ border-left-color:var(--plan-club); }
 .plan-badge.club{ background:var(--plan-club-vlak); }
 .dk-ev.club{ background:color-mix(in srgb, var(--plan-club) 18%, transparent); box-shadow:inset 2px 0 0 var(--plan-club); }
+
+/* ==================== [20261116p] PLATFORM › MAILS (platform-mails.js) ==================== */
+.pm-tabs{margin-top:0}
+/* zeven onderdelen passen op een smalle telefoon niet naast elkaar: de onderbalk schuift */
+.pc-app .tc-onder{overflow-x:auto;scrollbar-width:none}
+.pc-app .tc-onder::-webkit-scrollbar{display:none}
+.pc-app .tc-onder button{flex:1 0 68px}
+.pm-tabs button{min-height:44px;padding:var(--space-xs) var(--space-md) 10px}
+.pm-drie{display:grid;grid-template-columns:minmax(240px,1fr) minmax(0,1.5fr) minmax(0,1.5fr);gap:var(--space-md);align-items:start}
+.pm-lijst{display:flex;flex-direction:column;gap:6px;min-width:0}
+.pm-groep{margin:var(--space-xs) 0 0;font-family:var(--font-body);font-size:var(--t-xs);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+.pm-lijst .pm-groep:first-child{margin-top:0}
+.pm-rij{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;font:inherit;padding:var(--space-sm) 14px;border-radius:var(--radius);background:var(--surface);border:1.5px solid var(--line-d);color:var(--ink);cursor:pointer}
+.pm-rij:hover{background:var(--surface-2)}
+.pm-rij.actief{background:var(--surface-2);border-color:var(--accent)}
+.pm-rij:focus-visible,.pm-chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.pm-rij-kop{display:flex;justify-content:space-between;align-items:baseline;gap:var(--space-xs)}
+.pm-rij-kop b{font-weight:700;min-width:0}
+.pm-rij small{font-size:var(--t-sm);color:var(--ink-2);line-height:1.4}
+.pm-status{flex-shrink:0;font-size:var(--t-2xs);font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.pm-status.ok{color:var(--ok)}
+.pm-status.let{color:var(--warn)}
+.pm-editor{display:flex;flex-direction:column;gap:14px;min-width:0;margin:0}
+.pm-editor .tc-h2{margin:0}
+.pm-editor .tc-meta{margin:2px 0 0}
+.pm-veld{display:flex;flex-direction:column;gap:6px;min-width:0}
+.pm-veld label,.pm-label{font-size:var(--t-sm);font-weight:600;color:var(--ink)}
+.pm-veld .invoer{min-height:44px;box-sizing:border-box;font-family:inherit;color:var(--ink)}
+.pm-veld textarea.invoer{line-height:1.5}
+.pm-chip{min-height:44px;padding:0 var(--space-sm);border-radius:99px;border:1px solid var(--hover-rand, var(--line-d));background:var(--surface-2);color:var(--ink);font:inherit;font-size:var(--t-sm);font-weight:600;cursor:pointer}
+.pm-chip code,.pm-dialoog code{font-family:var(--font-mono);font-size:var(--t-xs);color:var(--ink-2)}
+.pm-editor .pc-signaal{margin:0}
+.pm-editor .pc-schakel{padding-bottom:0}
+.pm-editor .pc-sw{min-height:28px}
+.pm-vast{padding-top:var(--space-sm);border-top:1px solid var(--line-d)}
+.pm-acties .knop,.pm-dialoog-voet .knop{min-height:44px}
+.pm-acties .knop{width:auto}
+.pm-acties .knop svg{vertical-align:-3px}
+.pm-voorbeeld{display:flex;flex-direction:column;gap:var(--space-xs);min-width:0;position:sticky;top:var(--space-sm)}
+.pm-voorbeeld-kop{display:flex;justify-content:space-between;align-items:baseline;gap:var(--space-xs);flex-wrap:wrap}
+.pm-voorbeeld-kop .pm-groep{margin:0}
+/* De mail zelf: vaste lichte kleuren uit functions/mail-sjabloon.js, in beide thema's gelijk (zo komt hij aan). */
+.pm-mail{--pm-accent:#e2342f;--pm-inkt:#0e1013;--pm-tekst:#1f2430;--pm-zacht:#5b6472;--pm-rand:#e6e8ec;--pm-vlak:#f4f5f7;--pm-wit:#ffffff;--pm-accent-tekst:#c0231e;
+  border-radius:var(--radius);overflow:hidden;border:1px solid var(--line-d);background:var(--pm-vlak);color:var(--pm-tekst);font-family:var(--font-body)}
+.pm-mail-kop{display:flex;flex-direction:column;gap:2px;padding:var(--space-sm) var(--space-md);background:var(--pm-wit);border-bottom:1px solid var(--pm-rand)}
+.pm-mail-kop b{font-size:var(--t-base);color:var(--pm-inkt);overflow-wrap:anywhere}
+.pm-mail-kop small{font-size:var(--t-xs);color:var(--pm-zacht)}
+.pm-mail-vel{padding:var(--space-md) var(--space-sm)}
+.pm-mail-kaart{background:var(--pm-wit);border:1px solid var(--pm-rand);border-radius:14px;overflow:hidden}
+.pm-mail-merk{display:flex;align-items:center;gap:10px;padding:var(--space-md) 20px;background:var(--pm-inkt);border-bottom:4px solid var(--pm-accent)}
+.pm-mail-merk span{width:34px;height:34px;border-radius:9px;background:var(--pm-accent);color:var(--pm-wit);font-family:var(--font-display);font-weight:700;font-size:26px;line-height:34px;text-align:center}
+.pm-mail-merk b{font-family:var(--font-display);font-weight:700;font-size:24px;color:var(--pm-wit)}
+.pm-mail-inhoud{padding:var(--space-lg) 20px var(--space-xs);overflow-wrap:anywhere}
+.pm-mail-voorkop{margin-bottom:6px;font-size:var(--t-xs);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--pm-accent-tekst)}
+.pm-mail-titel{margin-bottom:var(--space-md);font-family:var(--font-display);font-weight:700;font-size:28px;line-height:1.15;color:var(--pm-inkt)}
+.pm-mail-inhoud p{margin:0 0 14px;font-size:var(--t-base);line-height:1.6;color:var(--pm-tekst)}
+.pm-mail-stappen{margin:0 0 var(--space-md);padding:0;list-style:none;counter-reset:pm;display:flex;flex-direction:column;gap:var(--space-xs)}
+.pm-mail-stappen li{counter-increment:pm;display:flex;align-items:center;gap:10px;font-size:var(--t-base);color:var(--pm-tekst)}
+.pm-mail-stappen li::before{content:counter(pm);flex-shrink:0;width:24px;height:24px;border-radius:12px;background:var(--pm-accent);color:var(--pm-wit);font-family:var(--font-display);font-weight:700;font-size:15px;line-height:24px;text-align:center}
+.pm-mail-gegevens{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px var(--space-sm);margin:0 0 var(--space-md);padding:14px var(--space-md);background:var(--pm-vlak);border:1px solid var(--pm-rand);border-radius:10px}
+.pm-mail-gegevens dt{font-size:var(--t-sm);color:var(--pm-zacht)}
+.pm-mail-gegevens dd{margin:0;font-size:var(--t-base);color:var(--pm-tekst)}
+.pm-mail-knop{display:inline-block;margin:4px 0 20px;padding:12px 24px;border-radius:10px;background:var(--pm-accent);color:var(--pm-wit);font-size:var(--t-base);font-weight:700}
+.pm-mail-voet{padding:var(--space-sm) 20px 20px;border-top:1px solid var(--pm-rand);font-size:var(--t-xs);line-height:1.6;color:var(--pm-zacht);overflow-wrap:anywhere}
+.pm-uitleg{max-width:720px;margin:0}
+.pm-tabel{min-width:620px}
+.pm-tijd{white-space:nowrap;color:var(--ink-2)}
+.pm-reden{display:block;color:var(--ink-2);font-size:var(--t-sm)}
+/* eerst laten zien: dialoog bij goedkeuren en afwijzen (dimt het scherm, bedekt de zijbalk niet dekkend) */
+.pm-dialoog{width:min(640px, calc(100vw - 2 * var(--space-md)));max-height:calc(100dvh - 2 * var(--space-md));padding:0;border:1px solid var(--line-d);border-radius:var(--r-m, 16px);background:var(--surface);color:var(--ink);box-shadow:var(--lift)}
+.pm-dialoog::backdrop{background:var(--ob-waas, rgba(10,13,18,.5))}
+.pm-dialoog-vorm{display:flex;flex-direction:column;max-height:calc(100dvh - 2 * var(--space-md))}
+.pm-dialoog-kop{padding:var(--space-md) var(--space-md) var(--space-sm);border-bottom:1px solid var(--line-d)}
+.pm-dialoog-kop .tc-h2{margin:0;font-family:var(--font-display)}
+.pm-dialoog-kop .tc-meta{margin:4px 0 0}
+.pm-dialoog-body{display:flex;flex-direction:column;gap:var(--space-sm);padding:var(--space-md);overflow-y:auto}
+.pm-dialoog-body .tc-meta,.pm-dialoog-body .pc-signaal{margin:0}
+.pm-dialoog-voet{padding:var(--space-sm) var(--space-md) var(--space-md);border-top:1px solid var(--line-d)}
+.pm-dialoog-voet .knop{width:auto}
+@media (max-width:1299px){
+  .pm-drie{grid-template-columns:minmax(220px,1fr) minmax(0,2fr)}
+  .pm-voorbeeld{grid-column:1 / -1;position:static}
+}
+@media (max-width:999px){
+  .pm-drie{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:560px){
+  .pm-acties .knop,.pm-dialoog-voet .knop{width:100%}
+}

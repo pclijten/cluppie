@@ -49,7 +49,7 @@ export function itemTelling(i, aantal){
   if (aantal) return `${Math.max(0, aantal - af)} van ${aantal}`;
   return af ? `${af} afwezig` : '';
 }
-/* [20261116q] nietMee = de wedstrijden waarvoor de trainer dit kind niet selecteerde (alleen het eigen gezin krijgt die lijst) */
+/* [20261116r] nietMee = de wedstrijden waarvoor de trainer dit kind niet selecteerde (alleen het eigen gezin krijgt die lijst) */
 export const eigenStatus = (i, spelerId, nietMee) => ((i.afwezig || []).includes(spelerId) ? 'Afwezig' : (nietMee || []).includes(i.id) ? 'Niet in de selectie' : 'Erbij');
 
 /* ---------- opstelling op een veld [20261116p] ----------
@@ -280,7 +280,7 @@ export const OPTIES = [
   ['trainingen', 'Trainingen bekijken', 'De trainer mag de komende trainingen tonen: thema, oefeningen en 3D. Alleen kijken.'],
   ['stats', 'Cijfers van het eigen kind', 'De trainer mag ouders de cijfers van hun eigen kind tonen. Nooit van anderen, nooit een ranglijst.'],
 ];
-/* [20261116q] welke cijfers de trainer per team aanzet (zelfde sleutels als STATS_SOORTEN op de server) */
+/* [20261116r] welke cijfers de trainer per team aanzet (zelfde sleutels als STATS_SOORTEN op de server) */
 export const STATS_SOORTEN = [
   ['wedstrijden', 'Wedstrijden', 'Hoeveel wedstrijden het kind meedeed'],
   ['speeltijd', 'Speeltijd', 'Percentage en minuten per wedstrijd'],

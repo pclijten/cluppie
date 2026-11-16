@@ -43,7 +43,7 @@ const voornaam = (naam) => str(String(naam || '').split(/\s+/)[0], 24);
    eindbaas: per club in clubs/{id}.platformModules.teamkamerOpties, voor trainers zonder club in
    platform/instellingen.teamkamerLosOpties. Alles staat standaard UIT. Met alleen de hoofdschakelaar aan
    zien ouders de agenda en hoeveel spelers erbij zijn, meer niet. */
-const OPTIES = ['namen', 'spelers', 'polls', 'beurten', 'berichten', 'afmelden', 'uitslag', 'live', 'opstelling', 'thuis', 'lijn', 'agenda', 'weer', 'trainingen', 'stats'];   /* [20261116q] trainingen en cijfers van het eigen kind */
+const OPTIES = ['namen', 'spelers', 'polls', 'beurten', 'berichten', 'afmelden', 'uitslag', 'live', 'opstelling', 'thuis', 'lijn', 'agenda', 'weer', 'trainingen', 'stats'];   /* [20261116r] trainingen en cijfers van het eigen kind */
 function opties(team, club, platform){
   const bron = team && team.club ? (club && club.platformModules && club.platformModules.teamkamerOpties) : (platform && platform.teamkamerLosOpties);
   const uit = {};
@@ -69,7 +69,7 @@ function thuisVideos(lijst){
   }
   return uit;
 }
-/* [20261116q] welke cijfers van het eigen kind mag een ouder zien? null = geen. Speeltijd is een eigen vinkje. */
+/* [20261116r] welke cijfers van het eigen kind mag een ouder zien? null = geen. Speeltijd is een eigen vinkje. */
 const STATS_SOORTEN = ['wedstrijden', 'speeltijd', 'doelpunten', 'opkomst', 'kaarten'];
 function statsKeuze(s, mag){
   if (!mag || mag.stats !== true || !s || s.aan !== true) return null;
@@ -121,7 +121,7 @@ function inst(team, mag = ALLES_AAN){
     uitslag: k.uitslag === true && mag.uitslag === true,
     live: k.live === true && mag.live === true,
     opstelling: mag.opstelling === true,
-    /* [20261116q] de trainer zet deze drie zelf aan; standaard uit */
+    /* [20261116r] de trainer zet deze drie zelf aan; standaard uit */
     opstellingAltijd: k.opstellingAltijd === true && mag.opstelling === true,
     trainingen: k.trainingen === true && mag.trainingen === true,
     stats: statsKeuze(k.stats, mag),
@@ -210,7 +210,7 @@ function projectWedstrijd(w, i, vandaag){
   if (i.live && datum === vandaag && gestart) uit.stand = { voor: telt('voor'), tegen: telt('tegen'), bezig: kwarten.some(k => k && k.klok && k.klok.running === true) };
   else if ((i.uitslag || i.live) && datum < vandaag && gespeeld && !uit.afgelast) uit.stand = { voor: telt('voor'), tegen: telt('tegen'), bezig: false };
   /* opstelling: alleen als de coach hem voor deze wedstrijd deelt */
-  /* [20261116q] of altijd, vanaf de dag voor de wedstrijd, als de trainer dat voor het team heeft aangezet */
+  /* [20261116r] of altijd, vanaf de dag voor de wedstrijd, als de trainer dat voor het team heeft aangezet */
   if ((w.deelOpstelling === true || (i.opstellingAltijd === true && datum <= plusDagen(vandaag, 1))) && i.opstelling === true){
     const nrs = Object.keys(w.kwarten || {}).sort((a, b) => Number(a) - Number(b));
     const lineup = (nrs.length && w.kwarten[nrs[0]] && w.kwarten[nrs[0]].lineup) || {};
@@ -243,7 +243,7 @@ function projectTrainingen(team, presentie, vandaag, dagen = 28, plannen = null)
     const datum = plusDagen(vandaag, n), m = ms.find(x => x.dag === weekdag(datum));
     if (!m) continue;
     const rec = presentie && presentie[datum];
-    /* [20261116q] afgelast: de trainer zet dat op het team (teams.afgelast.datum). De reden is vrije tekst en gaat niet mee. */
+    /* [20261116r] afgelast: de trainer zet dat op het team (teams.afgelast.datum). De reden is vrije tekst en gaat niet mee. */
     uit['t_' + datum] = { soort: 'training', datum, tijd: m.start, eind: m.eind, afgelast: !!(team.afgelast && team.afgelast.datum === datum),
       afwezig: Array.isArray(rec) ? [...new Set(rec)].sort() : vasteAfwezig(team, datum), erbij: null };
     const plan = plannen ? schoonTraining(plannen[datum]) : null;

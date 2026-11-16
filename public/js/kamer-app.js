@@ -9,7 +9,7 @@
      bericht klaar, Cluppie verstuurt en bewaart niets. */
 import { auth, db, functions, httpsCallable, signInAnonymously, signOut, onAuthStateChanged, signInWithEmailAndPassword,
   createUserWithEmailAndPassword, sendEmailVerification, collection, doc, getDoc, getDocs, setDoc, onSnapshot } from './firebase.js?v=20261011g';
-import * as K from './kamer-logica.js?v=20261116q';
+import * as K from './kamer-logica.js?v=20261116r';
 
 const wortel = document.getElementById('tk');
 const qs = new URLSearchParams(location.search);
@@ -146,10 +146,10 @@ const metEigen = (p) => K.pollMetEigen(p, kindId(), A.stemGeteld[p.id], A.stemme
 const nieuweBerichten = () => (mag('berichten') ? K.nieuweBerichten(A.berichten, A.gelezen) : []);
 const nogStemmen = () => K.nogStemmen(zichtbarePolls(), A.stemmen, rol());
 
-/* [20261116q] eigen kind: erbij, afwezig, of niet geselecteerd voor deze wedstrijd (dat laatste ziet alleen het eigen gezin) */
+/* [20261116r] eigen kind: erbij, afwezig, of niet geselecteerd voor deze wedstrijd (dat laatste ziet alleen het eigen gezin) */
 const status = (i) => K.eigenStatus(i, kindId(), (A.gezin[kindId()] || {}).nietMee);
 const statusHtml = (i) => `<span class="tk-vet ${status(i) === 'Erbij' ? 'tk-ok' : 'tk-let'}">${status(i)}</span>`;
-/* [20261116q] wat er getraind wordt: thema en oefeningen, alleen kijken. Een oefening uit de bibliotheek opent in 3D. */
+/* [20261116r] wat er getraind wordt: thema en oefeningen, alleen kijken. Een oefening uit de bibliotheek opent in 3D. */
 function htmlTrainingInhoud(i){
   const t = i.training; if (!t || !A.kamer?.trainingen || !mag('trainingen')) return '';
   return `<div class="tk-lijn" style="display:flex;flex-direction:column;gap:8px">
@@ -218,7 +218,7 @@ function htmlVandaag(){
   const wedstrijdSnel = kom.find(i => i.soort === 'wedstrijd' && K.binnenDagen(i.datum, vandaag, 2));
   const wedstrijdWeek = kom.find(i => i.soort === 'wedstrijd' && K.binnenDagen(i.datum, vandaag, 7));
   const videos = (A.kamer?.thuisVideos || []).filter(v => v && (v.yt || v.url));
-  /* [20261116q] daarna: de volgende training en de volgende wedstrijd, voor zover ze hierboven niet al staan */
+  /* [20261116r] daarna: de volgende training en de volgende wedstrijd, voor zover ze hierboven niet al staan */
   const rest = kom.filter(i => i !== eerst && i !== wedstrijdWeek);
   const daarna = [rest.find(i => i.soort === 'training'), rest.find(i => i.soort === 'wedstrijd')].filter(Boolean).sort((a, b) => a.datum.localeCompare(b.datum));
   return `<div class="tk-kolom">${boven}${eerst ? (eerst.soort === 'wedstrijd' ? htmlWedstrijdKaart(eerst) : htmlTrainingKaart(eerst)) : '<section class="tk-kaart"><p class="tk-zacht" style="margin:0">Er staat nog niets in de agenda.</p></section>'}
@@ -415,7 +415,7 @@ function openSpeler(v){
   legNet();
 }
 function sluitSpeler(){ if (speler){ speler.remove(); speler = null; } }
-/* [20261116q] een oefening van de training in 3D, met het doel erbij */
+/* [20261116r] een oefening van de training in 3D, met het doel erbij */
 async function openOefening(v){
   sluitSpeler();
   const achter = document.createElement('div'); achter.className = 'tk-blad-achter';
@@ -491,7 +491,7 @@ function openKamer(teamId, lid){
   A.subs.push(onSnapshot(collection(basis, 'berichten'), s => { A.berichten = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.ms || 0) - (a.ms || 0)); teken(); }, () => {}));
   A.subs.push(onSnapshot(collection(basis, 'polls'), s => { A.polls = s.docs.map(d => ({ id: d.id, ...d.data() })); stemmenIngehaald(); teken(); eigenStemmen(); }, () => {}));
   (lid.spelerIds || []).forEach(id => A.subs.push(onSnapshot(doc(basis, 'gezin', id), s => { A.gezin[id] = s.data() || {}; teken(); }, () => {})));
-  /* [20261116q] cijfers van het eigen kind: alleen ouders mogen dit document lezen (rules) */
+  /* [20261116r] cijfers van het eigen kind: alleen ouders mogen dit document lezen (rules) */
   if (lid.rol === 'ouder') (lid.spelerIds || []).forEach(id => A.subs.push(onSnapshot(doc(basis, 'gezin', id, 'ouder', 'stats'), s => { A.stats[id] = s.data() || null; teken(); }, () => {})));
   teken();
 }

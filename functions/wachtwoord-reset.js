@@ -11,7 +11,7 @@ const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const admin = require('firebase-admin');
 const crypto = require('crypto');
-const { maakMail } = require('./mail-sjabloon');
+const mailTeksten = require('./mail-teksten');
 
 const REGIO = 'europe-west1';
 const APP_URL = 'https://www.cluppie.io/';
@@ -24,22 +24,10 @@ function nederlandseLink(link){
   return /([?&])lang=[a-zA-Z-]*/.test(l) ? l.replace(/([?&])lang=[a-zA-Z-]*/, '$1lang=nl') : l + (l.includes('?') ? '&' : '?') + 'lang=nl';
 }
 
-/* PURE (getest): de mail zelf. */
+/* PURE (getest): de mail met de standaardtekst. De echte verzending gebruikt de tekst uit Platform › Mails. */
+const vasteDelen = link => ({ knopUrl: link, slotVooraf: ['Werkt de knop niet? Kopieer dan deze link in je browser:\n' + link] });
 function maakResetMail(link, naam){
-  return maakMail({
-    voorkop: 'Wachtwoord',
-    titel: 'Kies een nieuw wachtwoord',
-    alineas: [
-      naam ? `Hoi ${naam},` : 'Hoi,',
-      'Je vroeg om een nieuw wachtwoord voor Cluppie. Klik op de knop hieronder en kies een nieuw wachtwoord. Daarna kun je meteen weer inloggen.',
-    ],
-    knop: { tekst: 'Nieuw wachtwoord kiezen', url: link },
-    slot: [
-      'Werkt de knop niet? Kopieer dan deze link in je browser:\n' + link,
-      'Heb je dit niet aangevraagd? Dan hoef je niets te doen: je wachtwoord blijft zoals het was.',
-    ],
-    voet: 'Deze link werkt één keer en maar een beperkte tijd.',
-  });
+  return mailTeksten.stelOp('wachtwoord', { naam: naam || '' }, { vast: vasteDelen(link) });
 }
 
 /* Hele afhandeling, los van onCall zodat hij getest kan worden. Geeft een korte uitkomst terug (voor de logs, niet voor de app). */
@@ -68,11 +56,7 @@ async function verwerkReset(emailRuw, { db = getFirestore(), auth = admin.auth()
     return 'mislukt';
   }
   const naam = gebruiker && gebruiker.displayName ? String(gebruiker.displayName).split(/\s+/)[0].slice(0, 40) : '';
-  const m = maakResetMail(nederlandseLink(link), naam);
-  await db.collection('mail').add({
-    to: email, message: { subject: 'Kies een nieuw wachtwoord voor Cluppie', text: m.text, html: m.html },
-    gemaakt: FieldValue.serverTimestamp(),
-  });
+  await mailTeksten.verstuur(db, 'wachtwoord', email, { naam }, { vast: vasteDelen(nederlandseLink(link)) });
   return 'verstuurd';
 }
 

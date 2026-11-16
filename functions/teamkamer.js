@@ -95,7 +95,7 @@ async function bouwKamer(db, teamId, opties = {}){
   const verborgen = (await tRef.collection('kamerBeheer').doc('verborgen').get()).data() || {};
   const hoofd = { ...L.kamerDoc(team, club, spelers, verborgen, platform), bijgewerkt: FieldValue.serverTimestamp() };
   const acties = [(b) => b.set(kRef, hoofd, { mergeFields: Object.keys(hoofd) })];
-  /* [20261116q] wat de app van de trainer aanlevert: trainingen per datum en cijfers per speler (zie kamer-beheer.js, syncTeamkamer) */
+  /* [20261116r] wat de app van de trainer aanlevert: trainingen per datum en cijfers per speler (zie kamer-beheer.js, syncTeamkamer) */
   const beheer = tRef.collection('kamerBeheer');
   const plannen = i.trainingen ? ((await beheer.doc('trainingen').get()).data() || {}).items || {} : null;
   const cijfers = i.stats ? ((await beheer.doc('stats').get()).data() || {}) : null;
@@ -177,7 +177,7 @@ const kamerWedstrijd = onDocumentWritten({ document: 'teams/{teamId}/wedstrijden
   const db = getFirestore(), { teamId, wedstrijdId } = event.params;
   const k = await kamerAan(db, teamId);
   if (!k) return;
-  /* [20261116q] niet geselecteerd: per gezin bijwerken als de selectie van deze wedstrijd verandert */
+  /* [20261116r] niet geselecteerd: per gezin bijwerken als de selectie van deze wedstrijd verandert */
   if (selectieAnders){
     const ids = Object.keys(k.spelers || {}), komend = na && String(na.datum || '').slice(0, 10) >= vandaag;
     const niet = new Set(komend ? L.nietMee(na, ids) : []), sleutel = 'w_' + wedstrijdId;
@@ -201,7 +201,7 @@ const kamerPresentie = onDocumentWritten({ document: 'teams/{teamId}/presentie/{
     { soort: 'training', datum, erbij: null, afwezig: (Array.isArray(na.afwezig) ? [...new Set(na.afwezig.filter(x => typeof x === 'string'))] : []).sort() }, { merge: true });
 });
 
-/* [20261116q] de app van de trainer leverde trainingen of cijfers aan: kopie opnieuw (alleen toegestane velden komen erin) */
+/* [20261116r] de app van de trainer leverde trainingen of cijfers aan: kopie opnieuw (alleen toegestane velden komen erin) */
 const kamerAanlevering = onDocumentWritten({ document: 'teams/{teamId}/kamerBeheer/{docId}', region: REGIO }, async (event) => {
   if (!['trainingen', 'stats'].includes(event.params.docId)) return;
   const db = getFirestore();
@@ -341,12 +341,7 @@ const beoordeelKamerAanvraag = onCall({ region: REGIO, cors: true }, async (requ
   /* mail zonder namen van spelers */
   if (a.email){
     try {
-      const { maakMail } = require('./mail-sjabloon');
-      const inhoud = maakMail({ titel: 'Je kunt de teamkamer in',
-        alineas: [`De trainer van ${x.team.naam || 'het team'} heeft je aanvraag goedgekeurd. Je ziet nu de agenda, wie erbij is, mededelingen en polls.`,
-          'Afmelden blijft via de groepsapp gaan. In de teamkamer staat een knop die het bericht voor je klaarzet.'],
-        knop: { tekst: 'Open de teamkamer', url: APP_URL } });
-      await db.collection('mail').add({ to: a.email, message: { subject: 'Cluppie: je kunt de teamkamer in', text: inhoud.text, html: inhoud.html }, gemaakt: FieldValue.serverTimestamp() });
+      await require('./mail-teksten').verstuur(db, 'teamkamer', a.email, { team: x.team.naam || 'het team' }, { vast: { knopUrl: APP_URL } });
     } catch (e){ logger.warn('[teamkamer] mail mislukt', e.message || e); }
   }
   return { ok: true };

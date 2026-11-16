@@ -11,6 +11,7 @@
        knop:     { tekst: 'Naar Cluppie', url: 'https://www.cluppie.io/' },   // optioneel
        slot:     ['Veel plezier!'],               // alinea's na knop (optioneel)
        voet:     'Je ontvangt deze mail omdat …', // kleine grijze regel (optioneel)
+       merkregel: 'Cluppie · …',                  // vervangt de vaste regel onderaan (optioneel)
      }) */
 
 const KLEUR = { accent: '#e2342f', inkt: '#0e1013', tekst: '#1f2430', zacht: '#5b6472', rand: '#e6e8ec', vlak: '#f4f5f7', wit: '#ffffff' };
@@ -36,7 +37,9 @@ function maakMail(o = {}){
   if (gegevens.length) t.push('', ...gegevens.map(([l, w]) => `${l}: ${w}`));
   if (knop) t.push('', `${knop.tekst}: ${knop.url}`);
   slot.forEach(a => t.push('', a));
-  t.push('', '— Cluppie · www.cluppie.io');
+  /* [20261116p] merkregel: de regel onderaan, in te stellen in Platform › Mails; zonder is alles als voorheen */
+  const merk = o.merkregel ? String(o.merkregel) : '';
+  t.push('', merk ? `— ${merk} · www.cluppie.io` : '— Cluppie · www.cluppie.io');
   if (o.voet) t.push(o.voet);
   const text = t.join('\n');
 
@@ -85,7 +88,7 @@ function maakMail(o = {}){
       ${slot.map(a => alinea(a)).join('')}
     </td></tr>
     <tr><td style="padding:16px 28px 28px;border-top:1px solid ${KLEUR.rand};">
-      <p style="margin:0;font-family:${LETTER};font-size:12px;line-height:1.6;color:${KLEUR.zacht};">Cluppie · de trainersapp voor jeugdvoetbalclubs · <a href="https://www.cluppie.io/" style="color:${KLEUR.zacht};">www.cluppie.io</a>${o.voet ? `<br>${esc(o.voet)}` : ''}</p>
+      <p style="margin:0;font-family:${LETTER};font-size:12px;line-height:1.6;color:${KLEUR.zacht};">${merk ? esc(merk) : 'Cluppie · de trainersapp voor jeugdvoetbalclubs'} · <a href="https://www.cluppie.io/" style="color:${KLEUR.zacht};">www.cluppie.io</a>${o.voet ? `<br>${esc(o.voet)}` : ''}</p>
     </td></tr>
   </table>
 </td></tr></table>

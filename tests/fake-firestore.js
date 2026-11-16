@@ -42,8 +42,9 @@ class Doc {
 }
 class Query {
   constructor(col, f = [], lim = 1e9){ this.col = col; this.f = f; this.lim = lim; }
-  where(p, op, v){ return new Query(this.col, [...this.f, [p, op, v]], this.lim); }
-  limit(n){ return new Query(this.col, this.f, n); }
+  where(p, op, v){ const q = new Query(this.col, [...this.f, [p, op, v]], this.lim); q.o = this.o; return q; }
+  limit(n){ const q = new Query(this.col, this.f, n); q.o = this.o; return q; }
+  orderBy(p, richting){ const q = new Query(this.col, this.f, this.lim); q.o = [p, richting === 'desc' ? -1 : 1]; return q; }
   async get(){
     const docs = [];
     for (const [p, d] of store){
@@ -54,6 +55,7 @@ class Query {
           docs.push({ id: p.split('/').pop(), ref: new Doc(p), data: () => clone(d) });
       }
     }
+    if (this.o) docs.sort((a, b) => { const x = getPath(a.data(), this.o[0]), y = getPath(b.data(), this.o[0]); return (x > y ? 1 : x < y ? -1 : 0) * this.o[1]; });
     const l = docs.slice(0, this.lim);
     return { docs: l, empty: !l.length, size: l.length };
   }

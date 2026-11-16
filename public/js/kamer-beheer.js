@@ -8,7 +8,7 @@
    koppelTeamkamer(). state.js is niet aangeraakt. */
 import { db, functions, httpsCallable, doc, collection, addDoc, setDoc, updateDoc, deleteDoc, getDocs, query, where, onSnapshot, Timestamp } from './firebase.js?v=20261011g';
 import { S, esc, meld } from './state.js?v=20261116n';
-import * as K from './kamer-logica.js?v=20261116q';
+import * as K from './kamer-logica.js?v=20261116r';
 
 const roep = (naam, data) => httpsCallable(functions, naam)(data || {}).then(r => r.data);
 const M = { teamId: null, sub: 'toegang', subs: [], kamer: null, link: null, aanvragen: [], leden: [], polls: [], berichten: [], gezin: {},
@@ -31,7 +31,7 @@ const komendeWedstrijden = () => (S.wedstrijden || []).filter(w => w.datum && w.
   .slice().sort((a, b) => String(a.datum).localeCompare(String(b.datum))).slice(0, 6);
 const foutTekst = (x) => (x && x.code === 'functions/not-found' ? 'De teamkamer-functies zijn nog niet gedeployed.' : (x && x.message) || 'Dat lukte niet.');
 
-/* ==================== [20261116q] aanleveren: trainingen en cijfers ====================
+/* ==================== [20261116r] aanleveren: trainingen en cijfers ====================
    De trainersapp rekent al uit welke training op welke dag valt (trainingenPerWeek) en wat de speeltijd is
    (analyse.js). Een tweede berekening op de server zou andere uitkomsten kunnen geven. Daarom levert de app van de
    trainer aan (teams/{id}/kamerBeheer/trainingen en /stats) en zet de server daar alleen de toegestane velden van in
@@ -51,7 +51,7 @@ async function doeSync(){
   const i = inst();
   if (!i.aan) return;
   if (i.trainingen && mag('trainingen')){
-    const { trainingenPerWeek } = await import('./teams-training.js?v=20261116q');
+    const { trainingenPerWeek } = await import('./teams-training.js?v=20261116r');
     if (S.teamId !== teamId) return;
     const vandaag = K.vandaagIso(), items = {};
     for (const g of trainingenPerWeek().komend) for (const x of g.items){

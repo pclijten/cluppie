@@ -349,7 +349,7 @@ ok(app.includes("roep('verificatieMail', { naar: 'kamer', code })") && app.inclu
 const stijl = fs.readFileSync(new URL('../public/kamer.css', import.meta.url), 'utf8');
 ok(/html\.tk-pagina body, \.tkb\{overflow-wrap:break-word\}/.test(stijl) && stijl.includes('.tk-adres{overflow-wrap:anywhere}'), 'lange woorden breken af (het scherm viel opzij bij een lang e-mailadres)');
 
-/* ==================== 6. ronde 2b [20261116q]: trainingen, cijfers, niet geselecteerd, afgelast, opstelling altijd ==================== */
+/* ==================== 6. ronde 2b [20261116r]: trainingen, cijfers, niet geselecteerd, afgelast, opstelling altijd ==================== */
 const magQ = { ...L.ALLES_AAN };
 ok(L.inst({ teamkamer: { aan: true } }, magQ).trainingen === false && L.inst({ teamkamer: { aan: true } }, magQ).stats === null && L.inst({ teamkamer: { aan: true } }, magQ).opstellingAltijd === false, 'trainingen, cijfers en opstelling altijd staan uit tot de trainer ze aanzet');
 ok(L.inst({ teamkamer: { trainingen: true, opstellingAltijd: true, stats: { aan: true, wedstrijden: true } } }, { ...magQ, trainingen: false, stats: false, opstelling: false }).trainingen === false

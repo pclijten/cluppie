@@ -542,7 +542,7 @@ if (DEMO_ROL){
       /* [20261116p] de trainer deelt de opstelling: plekken van de eerste periode, zoals de server ze in de kopie zet */
       ...(MAG.opstelling ? { opstelling: (() => { const mee = ids.filter((x, n) => n < 11), plekNamen = ['K', 'V1', 'V2', 'V3', 'M1', 'M2', 'M3', 'A1'];
         const basis = mee.slice(0, plekNamen.length); return { basis, wissels: mee.slice(plekNamen.length), plekken: Object.fromEntries(plekNamen.map((k, n) => [k, basis[n]]).filter(x => x[1])), formatie: '3-3-1', format: '8' }; })() } : {}) });
-    /* [20261116q] de eerstvolgende training met inhoud, de derde afgelast; cijfers van het eigen kind */
+    /* [20261116r] de eerstvolgende training met inhoud, de derde afgelast; cijfers van het eigen kind */
     const demoTraining = { titel: 'Opbouwen van achteruit, 75 min', thema: 'Opbouwen van achteruit', vormen: [
       { naam: 'Verkeerslicht', slot: 'Warming-up', min: 15, vormId: 'wu-m-verkeerslicht', doel: 'Dribbelen met het hoofd omhoog en snel reageren op een teken.' },
       { naam: 'Passen in de driehoek', slot: 'Oefening 1', min: 20, vormId: 'wu-f-pass-driehoek', doel: 'Strak inspelen en meteen vrijlopen voor de volgende pass.' },
