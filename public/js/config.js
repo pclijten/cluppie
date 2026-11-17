@@ -1,4 +1,4 @@
-import { S } from './state.js?v=20261116t';
+import { S } from './state.js?v=20261117a';
 
 /* ==================== CLUB-CONFIGURATIE (actieve laag) ====================
    [20260929c] Alles in dit bestand is de STANDAARD. Per club kan een beheerder
@@ -551,6 +551,19 @@ export function kalenderKolomVoorCategorie(categorie){
 export function knvbKalenderVoorTeam(team){
   const kol = kalenderKolomVoorCategorie(team?.categorie);
   return KNVB_KALENDER[kol] || KNVB_KALENDER.jun;
+}
+/* [20261117a] De KNVB-kalender noemt een speelweekend bij de zondag. Jeugdteams
+   (JO/MO) spelen op zaterdag: voor hen hoort een zondag-speeldag op de zaterdag
+   ervoor. Senioren en Vrouwen houden de datum uit de kalender. Dagen die al op
+   een andere weekdag staan (Paaszaterdag, 2e Paasdag, Hemelvaart, of een eigen
+   kalender die al zaterdagen noemt) blijven ongemoeid. Rekent in UTC, dus los
+   van de tijdzone. Gepoort uit ASV'33 (daar in teams.js). */
+export function speeldagDatum(team, iso){
+  if (kalenderKolomVoorCategorie(team?.categorie) === 'sen') return iso;
+  const d = new Date(iso + 'T12:00:00Z');
+  if (isNaN(d) || d.getUTCDay() !== 0) return iso;
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
 }
 
 /* ==================== ONTWIKKELDOMEINEN (hybride model) ====================

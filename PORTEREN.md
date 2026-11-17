@@ -16,6 +16,17 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
 - **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
 
 ## Open
+**Voor Paul — Planning: jeugd-speeldagen op zaterdag (release 20261117a, gepoort uit ASV'33 PR #65; alleen hosting, geen functions, rules of indexen)**
+- [x] Vraag Paul 17-11: in de Planning van een jeugdteam stonden de speeldagen en vrije weekenden op zondag; "dit ook wijzigen in cluppie.io".
+- [ ] **Wat er verandert:** de KNVB-kalender noemt een speelweekend bij de zondag. Jeugdteams (JO/MO, ook een onbekende categorie) zien speeldagen, beker, inhaal en vrije weekenden nu op de zaterdag ervoor, ook in de filters en in de desktop-kalender. Senioren en Vrouwen houden de datum uit de kalender. Paaszaterdag, 2e Paasdag en Hemelvaart blijven staan.
+- [ ] **Bijwerking:** de algemene wedstrijddag verdwijnt als er in dat speelweekend (zaterdag of zondag) een echte wedstrijd staat. Bij jeugd gebeurde dat niet, omdat de wedstrijd op zaterdag stond en de speeldag op zondag. Het filter Speeldagen wordt voor jeugd dus korter.
+- [ ] **Aanvangstijd:** in ASV'33 las de Planning `w.tijd` in plaats van `w.aftrap`. Hier stond al `w.tijd || w.aftrap`; niets aan gewijzigd.
+- [ ] **Datamodel ongewijzigd:** een aanpassing op een KNVB-dag blijft `teams/{id}/planning/knvb_<kalenderdatum>`. Het planning-item heeft `datum` (de dag die het team ziet) en `knvbDatum` (de sleutel); `modalPlanDag` schrijft op `knvbDatum`. Bestaande aanpassingen blijven werken.
+- [ ] **Code:** `speeldagDatum(team, iso)` in `config.js` (in ASV'33 staat hij in `teams.js`; hier in `config.js` zodat hij te testen is), `planningItems()` in `teams.js`, `modalPlanDag` in `teams-training.js`, `updates.json`, nieuwe `tests/speeldag.test.mjs` (in `npm test`).
+- [ ] **Bekende beperking (multi-tenant):** senioren van een zaterdagclub zien de zondag uit de kalender. De regel kijkt alleen naar de categorie, niet naar de dag waarop het team echt speelt. Kandidaat: de speeldag per team of per club instelbaar maken, of afleiden uit de ingelezen wedstrijden.
+- [ ] **Getest:** `npm test` groen, rooktest coach (telefoon en laptop) zonder fouten. In Chrome op 414 breed, donker, demo coach O11-2: Planning toont alleen zaterdagen plus 2e Paasdag en Hemelvaart, de wedstrijd met aanvangstijd, geen dubbele wedstrijddag; filters Speeldagen en Vrij; tik op een vrije zaterdag opent het paneel met die datum.
+- [ ] **Niet getest:** opslaan, verbergen en herstellen van een KNVB-dag tegen echte Firebase, de desktop-kalender in de browser, een club met een eigen of platformkalender, een echte telefoon.
+
 **Voor Paul — Teamkamer ronde 2b: trainingen, cijfers van het eigen kind, opstelling altijd, niet geselecteerd, afgelast (release 20261116r, client op `main`; functions en rules nog NIET gedeployed)**
 - [x] Akkoord Paul 16-11 (13:29) op mockup en keuzes: "niet geselecteerd is goed voorstel, afgelaste trainingen in de agenda verwerken, rest is perfect, push en merge alles maar". Analyse en mockup: projectdocument `claude/teamkamer-ronde2-stats-evaluaties-trainingen-impactanalyse.md`.
 - [ ] **Evaluaties zijn NIET gebouwd.** Zoals in de keuzes stond (twee releases): die komen pas nadat de rules van de teamkamer in de emulator groen zijn. Dat kan Claude niet draaien (de emulator is in de werkomgeving niet te downloaden), dus dit wacht op stap 3 hieronder.
