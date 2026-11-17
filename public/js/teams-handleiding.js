@@ -4,10 +4,10 @@
    wat hierboven al in dit bestand staat. De zoekfunctionaliteit
    (#helpZoek) wordt door de hub (teams.js/koppelTeamTab) aangesloten,
    want die werkt direct op het gerenderde DOM-element. */
-import { esc } from './state.js?v=20261116t';
-import { beleidsplanNaam } from './clubconfig.js?v=20261116t';
-import { ROLKAARTEN } from './rolkaart.js?v=20261116t';
-import { onboardingHerstartBlok } from './onboarding.js?v=20261116t';
+import { esc } from './state.js?v=20261117a';
+import { beleidsplanNaam } from './clubconfig.js?v=20261117a';
+import { ROLKAARTEN } from './rolkaart.js?v=20261117a';
+import { onboardingHerstartBlok } from './onboarding.js?v=20261117a';
 
 export function htmlHandleiding(){
   return `<div class="hl">
