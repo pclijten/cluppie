@@ -1,4 +1,15 @@
 [
+  { "datum": "2026-11-17", "titel": "Startscherm: ook clubactiviteiten", "punten": [
+    "Een clubactiviteit uit Sportlink, zoals de algemene ledenvergadering, staat nu ook op het startscherm onder Daarna. Een tik opent de Planning."
+  ]},
+  { "datum": "2026-11-17", "titel": "Startscherm: wedstrijd en training altijd in beeld", "punten": [
+    "Onder de kaart op het startscherm staat nu altijd de eerstvolgende wedstrijd of training die niet op de kaart zelf staat. Die regel valt niet meer weg als het scherm vol is.",
+    "Er staat ook één bijzondere dag uit de Planning bij: een eigen dag zoals de teamfoto, of een vrij, beker- of inhaalweekend waarvoor nog geen wedstrijd is ingelezen. Een tik opent de Planning.",
+    "De regels zijn rustiger: bovenaan wat het is, eronder thuis of uit en hoeveel spelers meedoen.",
+    "Het doel van de training staat op één regel. Tik erop voor de hele tekst en alle doelen.",
+    "Op een kleine telefoon krimpt de kaart, zodat de eerstvolgende wedstrijd of training zonder scrollen zichtbaar blijft.",
+    "Een wedstrijd zonder aanvangstijd en een training zonder ingestelde tijd staan er nu ook bij, met alleen de dag."
+  ]},
   { "datum": "2026-11-17", "titel": "Planning: aanvangstijd en de juiste speeldag", "punten": [
     "Jeugdteams zien de speeldagen en vrije weekenden van de KNVB nu op zaterdag in plaats van op zondag. Dat geldt ook voor de filters Speeldagen, Beker en Vrij. Senioren en Vrouwen houden de dag uit de kalender.",
     "Staat er in een speelweekend al een echte wedstrijd, dan verdwijnt de algemene wedstrijddag van dat weekend, zodat je geen dubbele regels ziet.",
