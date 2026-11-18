@@ -43,7 +43,7 @@ const voornaam = (naam) => str(String(naam || '').split(/\s+/)[0], 24);
    eindbaas: per club in clubs/{id}.platformModules.teamkamerOpties, voor trainers zonder club in
    platform/instellingen.teamkamerLosOpties. Alles staat standaard UIT. Met alleen de hoofdschakelaar aan
    zien ouders de agenda en hoeveel spelers erbij zijn, meer niet. */
-const OPTIES = ['namen', 'spelers', 'polls', 'beurten', 'berichten', 'afmelden', 'uitslag', 'live', 'opstelling', 'thuis', 'lijn', 'agenda', 'weer', 'trainingen', 'stats'];   /* [20261116r] trainingen en cijfers van het eigen kind */
+const OPTIES = ['namen', 'spelers', 'polls', 'beurten', 'berichten', 'afmelden', 'uitslag', 'live', 'opstelling', 'thuis', 'lijn', 'agenda', 'weer', 'trainingen', 'stats', 'hulp'];   /* [20261116r] trainingen en cijfers van het eigen kind; [20261118a] trainingshulp (Lijstjes): de rules lezen mag.hulp */
 function opties(team, club, platform){
   const bron = team && team.club ? (club && club.platformModules && club.platformModules.teamkamerOpties) : (platform && platform.teamkamerLosOpties);
   const uit = {};

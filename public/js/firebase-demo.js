@@ -529,7 +529,7 @@ if (DEMO_ROL){
     const voor = x => String(x.naam).split(' ')[0], ids = spelers.map(x => x.id), kindVan = ids[6] || ids[0];
     const zaterdag = opDag(6), komend = [...store.entries()].filter(([pad, d]) => pad.startsWith(`teams/${T}/wedstrijden/`) && d.datum >= iso(new Date())).sort((a, b) => a[1].datum.localeCompare(b[1].datum))[0];
     const wid = komend ? komend[0].split('/').pop() : 'demo-w', wd = komend ? komend[1] : { datum: zaterdag, aftrap: '09:30', tegenstander: 'VV Voorbeeld O11-1', thuis: false, info: { accommodatie: 'Sportpark Voorbeeld' } };
-    const MAG = Object.fromEntries(['namen', 'spelers', 'polls', 'beurten', 'berichten', 'afmelden', 'uitslag', 'live', 'opstelling', 'thuis', 'lijn', 'agenda', 'weer', 'trainingen', 'stats'].map(k => [k, !/[?&]kaal=1/.test(location.search)]));   /* in de demo staat alles aan; met &kaal=1 alles uit (alleen de hoofdschakelaar) */
+    const MAG = Object.fromEntries(['namen', 'spelers', 'polls', 'beurten', 'berichten', 'afmelden', 'uitslag', 'live', 'opstelling', 'thuis', 'lijn', 'agenda', 'weer', 'trainingen', 'stats', 'hulp'].map(k => [k, !/[?&]kaal=1/.test(location.search)]));   /* in de demo staat alles aan; met &kaal=1 alles uit (alleen de hoofdschakelaar) */
     store.set(`clubs/${CLUB}`, { ...club, platformModules: { ...(club.platformModules || {}), teamkamer: true, teamkamerOpties: MAG } });
     store.set(`teams/${T}`, { ...team, teamkamer: { aan: true, live: true, trainingen: true, stats: { aan: true, wedstrijden: true, doelpunten: true, opkomst: true, speeltijd: true, kaarten: false } } });
     zetSeed(`teamkamer/${T}`, { aan: true, mag: MAG, teamNaam: team.naam, clubNaam: CLUBNAAM, club: CLUB, namen: true, uitslag: false, live: true, trainingen: MAG.trainingen, opstellingAltijd: false, stats: MAG.stats, aantal: spelers.length, plek: null,
@@ -570,6 +570,21 @@ if (DEMO_ROL){
     zetSeed(`teamkamer/${T}/polls/demo-wassen`, { vraag: 'Wie wast de shirts?', opties: [{ id: 'o1', tekst: 'Wij wassen' }, { id: 'o2', tekst: 'Deze keer niet' }], soort: 'wassen', meer: false, namen: true, spelers: false,
       status: 'gesloten', beurtenGeteld: true, wedstrijdId: wid, wedstrijdDatum: wd.datum, gemaaktMs: Date.now() - 5 * 864e5, telling: { o1: 1, o2: 6 }, gestemd: 7, wie: { o1: ids.slice(1, 2), o2: [] } });
     zetSeed(`teamkamer/${T}/berichten/demo-1`, { tekst: 'Donderdag trainen we op veld 3. Neem scheenbeschermers mee.', door: 'Demo-trainer', datum: iso(over(-1)), ms: Date.now() - 864e5 });
+    /* [20261118a] Trainingshulp: een lijst in Lijstjes waar ouders zich in de teamkamer en via een open link
+       inschrijven (index.html?demo=coach › Lijstjes, kamer.html?demo=ouder, index.html?demo&hulp=demo-hulp). */
+    {
+      const dagen = [opDag(2), opDag(4), opDag(2, 8), opDag(4, 8)], rij = d => 'd' + d.replace(/-/g, '');
+      const nu = Date.now();
+      zetSeed(`teams/${T}/lijsten/demo-hulp`, { naam: 'Trainingshulp', sjabloon: 'trainingshulp', rijen: 'trainingen', hulpDeelId: 'demo-hulp', kolommen: [], waarden: {},
+        inPlanning: false, gearchiveerd: false, seizoen: SEIZOEN, gemaaktDoor: COACH, gemaaktMs: nu - 3 * 864e5, bijgewerktMs: nu - 3 * 864e5 });
+      zetSeed('hulpDeel/demo-hulp', { teamId: T, lijstId: 'demo-hulp', club: CLUB, teamNaam: team.naam, titel: 'Trainingshulp', open: true, kamer: MAG.hulp, standaard: 2,
+        momenten: Object.fromEntries(dagen.map(d => [rij(d), { datum: d, start: '18:00', eind: '19:00', nodig: 2 }])), gemaaktDoor: COACH, gemaaktMs: nu - 3 * 864e5, bijgewerktMs: nu - 3 * 864e5 });
+      const meld = (id, uid, d, naam, door, ms) => zetSeed(`hulpDeel/demo-hulp/aanmeldingen/${id}`, { uid, rij: rij(d), naam, ms, door });
+      meld(`demo-ouder-2_${rij(dagen[0])}`, 'demo-ouder-2', dagen[0], 'Sandra', 'kamer', nu - 2 * 864e5);
+      meld(`demo-anoniem_${rij(dagen[1])}`, 'demo-anoniem', dagen[1], 'Joyce', 'ouder', nu - 864e5);
+      meld('demo-coach-1', 'demo-coach-x', dagen[2], 'Peter', 'coach', nu - 864e5);
+      meld(`demo-ouder-2_${rij(dagen[2])}`, 'demo-ouder-2', dagen[2], 'Sandra', 'kamer', nu - 864e4);
+    }
     const zonder = (pad) => { store.delete(pad); veranderd(); };
     Object.assign(DEMO_ANTWOORD, {
       kamerVervers: () => ({ aan: true }), maakKamerLink: () => ({ code: 'DEMOCODE23' }), kamerVerleng: () => ({ aantal: 3 }),

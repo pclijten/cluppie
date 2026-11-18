@@ -79,7 +79,7 @@ ok(L.projectWedstrijd({ ...w, status: 'afgelast' }, { uitslag: true }, '2026-11-
 
 /* eindbaas: elke mogelijkheid apart, standaard alles uit */
 const uit = L.opties({ club: 'c1' }, { platformModules: { teamkamer: true } }, null);
-ok(L.OPTIES.length === 15 && L.OPTIES.every(k => uit[k] === false), 'eindbaas: zonder keuze staat elke mogelijkheid uit');
+ok(L.OPTIES.length === 16 && L.OPTIES.every(k => uit[k] === false), 'eindbaas: zonder keuze staat elke mogelijkheid uit');
 ok(L.opties({ club: 'c1' }, { platformModules: { teamkamerOpties: { polls: true, onzin: true, live: 'ja' } } }, null).polls === true && L.opties({ club: 'c1' }, { platformModules: { teamkamerOpties: { live: 'ja' } } }, null).live === false, 'alleen echte true telt, onbekende sleutels vallen weg');
 ok(L.opties({}, null, { teamkamerLosOpties: { polls: true } }).polls === true && L.opties({}, { platformModules: { teamkamerOpties: { polls: true } } }, null).polls === false, 'trainer zonder club: eigen schakelaars');
 const coachAllesAan = { ...team, teamkamer: { aan: true, uitslag: true, live: true, thuis: { vormId: 'x', naam: 'X' }, lijn: ['Eigen regel'] } };
@@ -392,5 +392,24 @@ ok(Array.isArray(store.get('teamkamer/t1/gezin/p1').nietMee) && store.get('teamk
 store.get('teams/t1').teamkamer.stats = { aan: false };
 await T.bouwKamer(fake.db, 't1');
 ok(!store.get('teamkamer/t1/gezin/p1/ouder/stats'), 'cijfers uitgezet: het document is weg');
+
+/* ---------- [20261118a] trainingshulp: inschrijven als helper bij een training ---------- */
+ok(L.OPTIES.includes('hulp') && uit.hulp === false && L.kamerDoc(coachAllesAan, { naam: 'x', platformModules: { teamkamer: true, teamkamerOpties: { hulp: true } } }, spelers, {}, null).mag.hulp === true, 'trainingshulp: eigen schakelaar van de eindbaas, standaard uit, komt in de kopie (mag.hulp)');
+const hl = [{ id: 'b', deel: { momenten: { d20261123: { datum: '2026-11-23', start: '18:00', eind: '19:00', nodig: 2 }, d20261125: { datum: '2026-11-25', start: '18:00', eind: '', nodig: 2 },
+    d20261130: { datum: '2026-11-30', nodig: 0 }, d20261202: { datum: '2026-12-02', nodig: 1 }, d20261224: { datum: '2026-12-24', nodig: 2 } } },
+  aanm: [{ id: 'u1_d20261123', uid: 'u1', rij: 'd20261123', naam: 'Sandra', ms: 2, door: 'kamer' }, { id: 'x', uid: 'c1', rij: 'd20261123', naam: 'Mark', ms: 1, door: 'coach' },
+    { id: 'a9_d20261125', uid: 'a9', rij: 'd20261125', naam: 'Joyce', ms: 1, door: 'ouder' }, { id: 'leeg', uid: 'a8', rij: 'd20261125', naam: '', ms: 1, door: 'ouder' }] },
+  { id: 'a', deel: { momenten: { d20261202: { datum: '2026-12-02', start: '17:00', eind: '18:00', nodig: 3 } } }, aanm: [] }];
+ok(K.hulpRijId('2026-11-23') === 'd20261123' && K.hulpEigenId('u1', 'd20261123') === 'u1_d20261123', 'trainingshulp: rij en eigen document-id');
+const h23 = K.hulpOpDatum(hl, '2026-11-23', 'u1');
+ok(h23.deelId === 'b' && h23.nodig === 2 && h23.vrij === 0 && h23.ik === true && h23.ikNaam === 'Sandra' && h23.helpers.map(a => a.naam).join() === 'Mark,Sandra', 'trainingshulp: helpers op volgorde van aanmelden, eigen aanmelding herkend, vol');
+ok(K.hulpRegel(h23, 'u1') === 'Sandra (jij), Mark' && K.hulpRegel(h23, 'u2') === 'Mark, Sandra' && K.hulpTijd(h23) === '18:00 tot 19:00', 'trainingshulp: de regel met namen, zelf vooraan');
+const h25 = K.hulpOpDatum(hl, '2026-11-25', 'u1');
+ok(h25.vrij === 1 && h25.ik === false && h25.helpers.length === 1 && K.hulpRegel(h25, 'u1') === 'Joyce, nog 1 plek' && K.hulpTijd(h25) === '18:00', 'trainingshulp: lege naam telt niet, nog 1 plek');
+ok(K.hulpOpDatum(hl, '2026-11-25', 'a9').ik === false, 'trainingshulp: een aanmelding via de open link is niet "ik" in de teamkamer');
+ok(K.hulpOpDatum(hl, '2026-11-30', 'u1') === null && K.hulpOpDatum(hl, '2026-11-24', 'u1') === null && K.hulpOpDatum([], '2026-11-23', 'u1') === null && K.hulpOpDatum(null, '2026-11-23', 'u1') === null, 'trainingshulp: 0 helpers nodig, geen training of geen lijst geeft niets');
+ok(K.hulpOpDatum(hl, '2026-12-02', 'u1').deelId === 'a' && K.hulpRegel(K.hulpOpDatum(hl, '2026-12-02', 'u1'), 'u1') === 'Nog niemand, 3 plekken', 'trainingshulp: staat een training in twee lijsten, dan telt de eerste lijst');
+ok(K.hulpGezocht(hl, '2026-11-20', 'u1').map(h => h.datum).join() === '2026-11-25,2026-12-02' && K.hulpGezocht(hl, '2026-11-20', 'u2', 3).length === 0 && K.hulpGezocht(hl, '2026-11-26', 'u1').map(h => h.datum).join() === '2026-12-02', 'trainingshulp: hulp gezocht = komende 14 dagen, nog plek, niet waar je zelf al helpt, niet in het verleden');
+ok(K.hulpNaam('  Sandra   van  Dijk-de-hele-lange-achternaam ') === 'Sandra van Dijk-de-hele-' && K.hulpNaam(null) === '' && K.hulpPlekken(1) === '1 plek' && K.hulpPlekken(2) === '2 plekken', 'trainingshulp: voornaam opgeschoond en ingekort tot 24 tekens');
 
 console.log(`teamkamer: ${n} controles geslaagd`);

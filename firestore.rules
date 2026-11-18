@@ -598,6 +598,61 @@ service cloud.firestore {
     /* teamlinks en kindcodes: alleen Cloud Functions */
     match /kamerLinks/{id} { allow read, write: if false; }
     match /kindCodes/{id} { allow read, write: if false; }
+
+    /* ======================= trainingshulp (Lijstjes) [20261118a] ======================= */
+    /* Ouders schrijven zich in als helper bij een training. De trainer maakt de lijst in Lijstjes
+       (public/js/lijst-hulp.js) en kiest per lijst hoe ouders erbij komen:
+       - kamer == true: ouders en spelers met toegang tot de teamkamer van dat team, mits de eindbaas
+         Trainingshulp voor de teamkamer heeft aangezet (teamkamer/{teamId}.mag.hulp, standaard uit).
+         Alleen een ouder schrijft zich in; een speler leest mee.
+       - open == true: iedereen met de link (?hulp=<id>), ook anoniem. De collectie doorzoeken kan zo
+         iemand niet: alleen 'get' op het document, je moet het id hebben.
+       Top-level, zodat een ouder niets onder teams/{teamId} hoeft te lezen. In het document staan
+       trainingsdata en aantallen; in de aanmeldingen alleen een voornaam. De staf is dezelfde kring
+       als bij de lijstjes zelf (magSchrijven). */
+    function hulpViaKamer(d) {
+      return d.get('kamer', false) == true && isKamerLid(d.teamId) && kamerMag(d.teamId, 'hulp');
+    }
+    match /hulpDeel/{deelId} {
+      allow get: if ingelogd() && (resource.data.get('open', false) == true || hulpViaKamer(resource.data) || magSchrijven(resource.data.teamId));
+      /* de teamkamer zoekt de lijsten van het eigen team op: where teamId == … en kamer == true */
+      allow list: if ingelogd() && hulpViaKamer(resource.data);
+      allow create: if echt() && request.resource.data.teamId is string && magSchrijven(request.resource.data.teamId)
+        && request.resource.data.get('club', null) == teamClub(request.resource.data.teamId);
+      /* aantal helpers, trainingen, kamer en link aan of uit: alleen de staf; team en club liggen vast */
+      allow update: if magSchrijven(resource.data.teamId)
+        && request.resource.data.teamId == resource.data.teamId
+        && request.resource.data.get('club', null) == resource.data.get('club', null);
+      allow delete: if magSchrijven(resource.data.teamId);
+
+      match /aanmeldingen/{aanmId} {
+        function deel() { return get(/databases/$(database)/documents/hulpDeel/$(deelId)).data; }
+        function staf() { return magSchrijven(deel().teamId); }
+        allow read: if ingelogd() && (deel().get('open', false) == true || hulpViaKamer(deel()) || staf());
+        /* Aanmaken: alleen de vijf bekende velden, op eigen uid, een voornaam van hooguit 24 tekens, bij een
+           training die in de lijst staat.
+           - ouder (open link): alleen als de link aan staat, onder het vaste id <uid>_<rij>;
+           - kamer: een ouder met toegang tot de teamkamer (geen speler), onder hetzelfde vaste id;
+           - coach: de staf van het team.
+           Dat een training vol is, controleert de app en niet deze regel: twee ouders die tegelijk de laatste
+           plek nemen, staan er allebei. De trainer haalt er dan één weg. */
+        allow create: if ingelogd()
+          && request.resource.data.keys().hasOnly(['uid', 'rij', 'naam', 'ms', 'door'])
+          && request.resource.data.uid == uid()
+          && request.resource.data.naam is string && request.resource.data.naam.size() > 0 && request.resource.data.naam.size() <= 24
+          && request.resource.data.ms is number
+          && request.resource.data.rij is string && request.resource.data.rij in deel().momenten
+          && (
+            (request.resource.data.door == 'ouder' && deel().get('open', false) == true && aanmId == uid() + '_' + request.resource.data.rij)
+            || (request.resource.data.door == 'kamer' && hulpViaKamer(deel()) && kamerLid(deel().teamId).get('rol', '') == 'ouder'
+                && aanmId == uid() + '_' + request.resource.data.rij)
+            || (request.resource.data.door == 'coach' && staf())
+          );
+        allow update: if false;
+        /* weghalen: de eigen aanmelding, of de staf elke aanmelding */
+        allow delete: if ingelogd() && (resource.data.uid == uid() || staf());
+      }
+    }
     /* platformcijfers per club (platformdashboard): alleen de platformbeheerder */
     match /platformstats/{id} {
       allow read: if isPlatform();

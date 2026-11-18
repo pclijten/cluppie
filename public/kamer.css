@@ -222,3 +222,13 @@ button.tk-oef:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 
 /* platformcentrum: mogelijkheden van de teamkamer onder de hoofdschakelaar */
 .pc-tkopties{margin:var(--space-2xs) 0 var(--space-sm) var(--space-sm);padding-left:var(--space-sm);border-left:2px solid var(--hair)}
+
+/* ---------- trainingshulp [20261118a]: wie helpt bij de training, en zelf inschrijven ---------- */
+.tk-hulp{display:flex;flex-direction:column;gap:10px}
+.tk-hulp-ja{display:flex;align-items:center;gap:10px;background:color-mix(in srgb, var(--ok) 12%, var(--surface));border-radius:11px;padding:6px 6px 6px var(--space-sm);color:var(--ok);font-size:14px}
+.tk-hulp-ja > span{flex:1;min-width:0}
+.tk-hulp-ja .tk-ico{flex-shrink:0}
+.tk-item-hulp{display:flex;align-items:center;justify-content:space-between;gap:var(--space-sm);padding:0 var(--space-sm) var(--space-sm) var(--space-md);min-height:44px}
+.tk-item-hulp > span{flex:1;min-width:0}
+.tk-item-hulp .tk-knop{flex-shrink:0}
+form.tk-blad{margin-bottom:0}

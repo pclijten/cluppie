@@ -8,7 +8,7 @@
    koppelTeamkamer(). state.js is niet aangeraakt. */
 import { db, functions, httpsCallable, doc, collection, addDoc, setDoc, updateDoc, deleteDoc, getDocs, query, where, onSnapshot, Timestamp } from './firebase.js?v=20261011g';
 import { S, esc, meld } from './state.js?v=20261117a';
-import * as K from './kamer-logica.js?v=20261116r';
+import * as K from './kamer-logica.js?v=20261118a';
 
 const roep = (naam, data) => httpsCallable(functions, naam)(data || {}).then(r => r.data);
 const M = { teamId: null, sub: 'toegang', subs: [], kamer: null, link: null, aanvragen: [], leden: [], polls: [], berichten: [], gezin: {},
@@ -51,7 +51,7 @@ async function doeSync(){
   const i = inst();
   if (!i.aan) return;
   if (i.trainingen && mag('trainingen')){
-    const { trainingenPerWeek } = await import('./teams-training.js?v=20261117b');
+    const { trainingenPerWeek } = await import('./teams-training.js?v=20261118a');
     if (S.teamId !== teamId) return;
     const vandaag = K.vandaagIso(), items = {};
     for (const g of trainingenPerWeek().komend) for (const x of g.items){
@@ -205,6 +205,7 @@ function htmlInstellingen(){
       ${mag('live') ? sw('Live stand', 'Op de wedstrijddag, alleen de stand en geen namen', i.live, 'data-tk="isw" data-veld="live"') : ''}
       ${mag('trainingen') ? sw('Trainingen', 'De komende trainingen met thema, oefeningen en 3D. Alleen kijken, zonder jouw aantekeningen.', i.trainingen, 'data-tk="isw" data-veld="trainingen"') : ''}
       ${mag('opstelling') ? sw('Opstelling altijd delen', i.opstellingAltijd ? 'Elke wedstrijd, vanaf de dag ervoor' : 'Uit: je deelt per wedstrijd (hieronder)', i.opstellingAltijd, 'data-tk="isw" data-veld="opstellingAltijd"') : ''}
+      ${mag('hulp') ? '<div class="tk-klein tk-zacht tk-lijn">Trainingshulp: ouders schrijven zich hier in als helper bij een training. Je zet dat per lijst aan, in Lijstjes bij een lijst Trainingshulp.</div>' : ''}
       <div class="tk-klein tk-zacht tk-lijn">Nooit zichtbaar, ook niet met een schakelaar: redenen van afwezigheid, beoordelingen, leerpunten en achternamen.</div></section>
     ${mag('stats') ? `<section class="tk-kaart" style="gap:4px"><div class="tk-label">Cijfers van het eigen kind</div>
       ${sw('Cijfers tonen aan ouders', 'Een ouder ziet alleen het eigen kind. Nooit teamgenoten, nooit een ranglijst. Spelers zelf zien het niet.', i.stats.aan === true, 'data-tk="statsaan"')}
