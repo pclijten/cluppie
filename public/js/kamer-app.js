@@ -8,8 +8,8 @@
    - Geen chat, geen vrije tekst, geen foto's. Afmelden gaat via WhatsApp: de knop zet alleen het
      bericht klaar, Cluppie verstuurt en bewaart niets. */
 import { auth, db, functions, httpsCallable, signInAnonymously, signOut, onAuthStateChanged, signInWithEmailAndPassword,
-  createUserWithEmailAndPassword, sendEmailVerification, collection, doc, getDoc, getDocs, setDoc, onSnapshot } from './firebase.js?v=20261011g';
-import * as K from './kamer-logica.js?v=20261116r';
+  createUserWithEmailAndPassword, sendEmailVerification, collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, where, onSnapshot } from './firebase.js?v=20261011g';
+import * as K from './kamer-logica.js?v=20261118a';
 
 const wortel = document.getElementById('tk');
 const qs = new URLSearchParams(location.search);
@@ -19,7 +19,7 @@ const bewaar = { get: (k) => { try { return localStorage.getItem(k) || ''; } cat
 
 const A = { scherm: 'laden', fout: '', bezig: false, user: null, link: null, lid: null, teamId: '', teams: [], kind: '',
   kamer: null, agenda: [], polls: [], berichten: [], gezin: {}, stats: {}, stemmen: {}, stemGeteld: {}, stemWacht: {}, gelezen: 0, weer: {}, tab: qs.get('poll') ? 'polls' : 'vandaag',
-  open: '', blad: null, code: null, thuisOpen: false, subs: [] };
+  open: '', blad: null, code: null, thuisOpen: false, subs: [], hulp: {}, hulpAan: false, hulpSubs: {} };
 let naarPoll = qs.get('poll') || '';                   /* [20261116p] link uit WhatsApp: één keer naar die poll schuiven */
 const TABNAAM = { vandaag: 'Vandaag', agenda: 'Agenda', polls: 'Polls', kind: 'Mijn kind' };
 if (qs.get('k')) bewaar.set('tkCode', K.schoonCode(qs.get('k'), 12));
@@ -46,7 +46,7 @@ function toast(tekst){
   document.body.appendChild(t); setTimeout(() => t.remove(), 3500);
 }
 function zet(o){ Object.assign(A, o); teken(); }
-function stopSubs(){ A.subs.forEach(u => { try { u(); } catch { /* al gestopt */ } }); A.subs = []; }
+function stopSubs(){ A.subs.forEach(u => { try { u(); } catch { /* al gestopt */ } }); A.subs = []; hulpStop(); }
 
 /* ==================== inloggen en binnenkomen ==================== */
 const merkregel = (naam, sub) => `<div class="tk-merkregel"><img class="tk-merk" src="icons/icon.svg" alt="" width="40" height="40"><span><b>${e(naam)}</b><small>${e(sub)}</small></span></div>`;
@@ -172,6 +172,82 @@ function htmlOpstelling(op){
     ${wissels}<div class="tk-klein tk-zacht">De trainer kan de opstelling nog wijzigen.</div></div>`;
 }
 
+/* ==================== trainingshulp [20261118a] ====================
+   Ouders schrijven zich in als helper bij een training. De lijst maakt de trainer in Lijstjes (lijst-hulp.js)
+   en zet hij daar aan voor de teamkamer; de eindbaas moet de mogelijkheid hebben aangezet (mag.hulp). De
+   gegevens staan buiten de kopie teamkamer/{teamId}: hulpDeel/{id} met aanmeldingen. Een ouder schrijft
+   alleen de eigen aanmelding (<uid>_<rij>, zie firestore.rules, blok "trainingshulp"); spelers lezen mee. */
+const hulpLijsten = () => Object.entries(A.hulp).filter(([, h]) => h.deel).map(([id, h]) => ({ id, deel: h.deel, aanm: h.aanm }));
+const hulpOp = (datum) => (mag('hulp') && A.user ? K.hulpOpDatum(hulpLijsten(), datum, A.user.uid) : null);
+const hulpVoor = (i) => (i && i.soort === 'training' && !i.afgelast && i.datum >= K.vandaagIso() ? hulpOp(i.datum) : null);
+function hulpStop(){
+  Object.values(A.hulpSubs).forEach(u => { try { u(); } catch { /* al gestopt */ } });
+  A.hulpSubs = {}; A.hulp = {}; A.hulpAan = false;
+}
+/* luisteren zodra (en zolang) de eindbaas trainingshulp voor deze teamkamer aan heeft */
+function hulpSync(){
+  const moet = mag('hulp');
+  if (moet === A.hulpAan) return;
+  hulpStop();
+  if (!moet) return;
+  A.hulpAan = true;
+  const teamId = A.teamId;
+  A.hulpSubs._lijst = onSnapshot(query(collection(db, 'hulpDeel'), where('teamId', '==', teamId), where('kamer', '==', true)), s => {
+    if (A.teamId !== teamId) return;
+    const ids = new Set(s.docs.map(d => d.id));
+    for (const id of Object.keys(A.hulp)) if (!ids.has(id)){ try { A.hulpSubs[id] && A.hulpSubs[id](); } catch { /* al gestopt */ } delete A.hulpSubs[id]; delete A.hulp[id]; }
+    s.docs.forEach(d => {
+      const id = d.id;
+      (A.hulp[id] || (A.hulp[id] = { deel: null, aanm: [] })).deel = d.data();
+      if (!A.hulpSubs[id]) A.hulpSubs[id] = onSnapshot(collection(db, 'hulpDeel', id, 'aanmeldingen'),
+        a => { if (A.hulp[id]){ A.hulp[id].aanm = a.docs.map(x => ({ id: x.id, ...x.data() })); teken(); } }, () => {});
+    });
+    teken();
+  }, () => {});
+}
+const VINK = '<svg class="tk-ico klein" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>';
+const hulpAfKnop = (h) => `<button class="tk-knop licht klein" data-doe="hulpaf" data-id="${e(h.deelId)}" data-rij="${e(h.rij)}" data-datum="${e(h.datum)}">Niet meer helpen</button>`;
+/* op de trainingskaart: wie helpt, en de knop om zelf te helpen (alleen ouders) */
+function htmlHulpKaart(i){
+  const h = hulpVoor(i); if (!h) return '';
+  return `<div class="tk-lijn tk-hulp">
+    <div class="tk-rij" style="align-items:flex-start"><span class="tk-zacht" style="white-space:nowrap">Hulp bij de training</span><span class="tk-vet" style="text-align:right">${e(K.hulpRegel(h, A.user.uid))}</span></div>
+    ${h.ik ? `<div class="tk-hulp-ja">${VINK}<span class="tk-vet">Je helpt mee als ${e(h.ikNaam)}</span>${hulpAfKnop(h)}</div>`
+      : !h.vrij ? '<div class="tk-klein tk-vet tk-ok">Er zijn genoeg helpers.</div>'
+      : isOuder() ? `<button class="tk-knop" data-doe="hulp" data-datum="${e(h.datum)}">Ik help bij deze training</button>` : ''}</div>`;
+}
+/* in de agenda: één regel onder de training, met de knop ernaast */
+function htmlHulpRegel(i){
+  const h = hulpVoor(i); if (!h) return '';
+  const tekst = h.vrij ? `Hulp gezocht: ${K.hulpRegel(h, A.user.uid)}` : `Helpers: ${K.hulpRegel(h, A.user.uid)}`;
+  return `<div class="tk-item-hulp"><span class="tk-klein tk-vet ${h.vrij ? 'tk-let' : 'tk-ok'}">${e(tekst)}</span>
+    ${h.ik ? hulpAfKnop(h) : h.vrij && isOuder() ? `<button class="tk-knop klein" data-doe="hulp" data-datum="${e(h.datum)}">Ik help</button>` : ''}</div>`;
+}
+/* bovenaan Vandaag: trainingen in de komende twee weken waar nog een helper nodig is */
+function htmlHulpGezocht(vandaag){
+  if (!isOuder() || !mag('hulp')) return '';
+  const zoek = K.hulpGezocht(hulpLijsten(), vandaag, A.user.uid).slice(0, 4); if (!zoek.length) return '';
+  return `<section class="tk-kaart nieuw" style="gap:4px"><h2 class="tk-label accent">Hulp gezocht bij de training</h2>
+    ${zoek.map(h => `<button class="tk-item-kop" style="padding:4px 0;min-height:52px" data-doe="hulp" data-datum="${e(h.datum)}"><span class="tk-item-tekst"><span class="tk-vet" style="display:block">${e(K.hoofdletter(K.datumLang(h.datum)))}${h.start ? ', ' + e(h.start) : ''}</span>
+      <span class="tk-klein tk-zacht">${e(K.hulpRegel(h, A.user.uid))}</span></span><span class="tk-klein tk-let">Ik help</span></button>`).join('')}
+    <p class="tk-klein tk-zacht" style="margin:0">Je begeleidt een groepje. De trainer legt uit wat je doet.</p></section>`;
+}
+async function hulpAanmelden(ruw){
+  const b = A.blad, naam = K.hulpNaam(ruw);
+  if (!b || b.soort !== 'hulp') return;
+  if (!naam) return toast('Vul eerst je voornaam in.');
+  const h = hulpOp(b.datum);
+  if (!h){ zet({ blad: null }); return toast('Deze training staat niet meer in de lijst.'); }
+  if (h.ik) return zet({ blad: null });
+  if (!h.vrij){ zet({ blad: null }); return toast('Er zijn net genoeg helpers. Bedankt voor het aanbieden.'); }
+  bewaar.set('tkHulpNaam', naam);
+  zet({ bezig: true });
+  try {
+    await setDoc(doc(db, 'hulpDeel', h.deelId, 'aanmeldingen', K.hulpEigenId(A.user.uid, h.rij)), { uid: A.user.uid, rij: h.rij, naam, ms: Date.now(), door: 'kamer' });
+    A.bezig = false; zet({ blad: null }); toast(`Bedankt, je staat op de lijst voor ${K.datumKort(h.datum)}.`);
+  } catch { zet({ bezig: false }); toast('Inschrijven lukte niet. Probeer het opnieuw.'); }
+}
+
 function htmlWedstrijdKaart(i){
   const d = K.hoofdletter(K.datumLang(i.datum)), polls = mag('polls') ? pollsVan(i.id.replace(/^w_/, '')) : [];
   const tijden = [['Verzamelen', i.verzamel], ['Vertrek', i.vertrek], ['Aftrap', i.tijd]].filter(t => t[1]);
@@ -199,7 +275,7 @@ function htmlTrainingKaart(i){
   return `<section class="tk-kaart">
     <div class="tk-rij"><span class="tk-label accent">${e(K.hoofdletter(K.datumLang(i.datum)))}</span><span class="tk-klein tk-zacht">Training</span></div>
     <h2 class="tk-h2 ${i.afgelast ? 'tk-afgelast' : ''}">Training${i.tijd ? ' om ' + e(i.tijd) : ''}</h2>
-    ${i.afgelast ? '<p class="tk-let tk-vet" style="margin:0">Deze training is afgelast.</p>' : `<div class="tk-rij"><span class="tk-zacht">${e(isOuder() ? kindNaam() : 'Jij')}</span>${statusHtml(i)}</div>${htmlTrainingInhoud(i)}`}
+    ${i.afgelast ? '<p class="tk-let tk-vet" style="margin:0">Deze training is afgelast.</p>' : `<div class="tk-rij"><span class="tk-zacht">${e(isOuder() ? kindNaam() : 'Jij')}</span>${statusHtml(i)}</div>${htmlHulpKaart(i)}${htmlTrainingInhoud(i)}`}
     ${isOuder() && mag('afmelden') && !i.afgelast ? `<button class="tk-knop licht" data-doe="afmelden" data-id="${e(i.id)}">Afmelden via WhatsApp</button>` : ''}
   </section>`;
 }
@@ -214,7 +290,8 @@ function htmlVandaag(){
       ${nieuw.slice(0, 3).map(b => `<div class="tk-nieuw-bericht"><p style="margin:0;white-space:pre-line">${e(b.tekst)}</p><div class="tk-klein tk-zacht">${meta(b)}</div></div>`).join('')}
       <button class="tk-knop licht klein" data-doe="gelezen">Gelezen</button></section>` : ''}
     ${stem.length ? `<section class="tk-kaart nieuw" style="gap:4px"><h2 class="tk-label accent">${stem.length === 1 ? 'Je stem is nodig' : 'Je stem is nodig bij ' + stem.length + ' polls'}</h2>
-      ${stem.map(p => `<button class="tk-item-kop" style="padding:4px 0;min-height:52px" data-doe="naarpoll" data-id="${e(p.id)}"><span class="tk-item-tekst tk-vet">${e(p.vraag)}</span><span class="tk-klein tk-let">Stem nu</span></button>`).join('')}</section>` : ''}`;
+      ${stem.map(p => `<button class="tk-item-kop" style="padding:4px 0;min-height:52px" data-doe="naarpoll" data-id="${e(p.id)}"><span class="tk-item-tekst tk-vet">${e(p.vraag)}</span><span class="tk-klein tk-let">Stem nu</span></button>`).join('')}</section>` : ''}
+    ${htmlHulpGezocht(vandaag)}`;
   const wedstrijdSnel = kom.find(i => i.soort === 'wedstrijd' && K.binnenDagen(i.datum, vandaag, 2));
   const wedstrijdWeek = kom.find(i => i.soort === 'wedstrijd' && K.binnenDagen(i.datum, vandaag, 7));
   const videos = (A.kamer?.thuisVideos || []).filter(v => v && (v.yt || v.url));
@@ -246,6 +323,7 @@ function htmlItem(i){
       <span class="tk-datum"><span>${d.dag}</span><b>${d.nr}</b><span>${d.maand}</span></span>
       <span class="tk-item-tekst"><span class="tk-vet ${i.afgelast ? 'tk-afgelast' : ''}" style="display:block">${e(K.itemTitel(i))}</span><span class="tk-klein ${i.afgelast ? 'tk-let' : 'tk-zacht'}">${e(K.itemSub(i))}</span></span>
       <span class="tk-klein tk-vet">${i.stand ? `${i.stand.voor} – ${i.stand.tegen}` : e(K.itemTelling(i, A.kamer?.aantal))}</span></button>
+    ${htmlHulpRegel(i)}
     ${isOpen ? `<div class="tk-item-meer">
       <div class="tk-rij"><span class="tk-zacht">${e(isOuder() ? kindNaam() : 'Jij')}</span>${statusHtml(i)}</div>
       ${i.soort === 'training' && !i.afgelast ? htmlTrainingInhoud(i) : ''}
@@ -316,6 +394,16 @@ function htmlKind(){
 }
 function htmlBlad(){
   const b = A.blad; if (!b) return '';
+  if (b.soort === 'hulp'){
+    const h = hulpOp(b.datum), tijd = h ? K.hulpTijd(h) : '', link = h && A.hulp[h.deelId] && A.hulp[h.deelId].deel.open === true;
+    return `<div class="tk-blad-achter" data-doe="sluitblad"><form class="tk-blad" data-form="hulp" role="dialog" aria-modal="true" aria-labelledby="blad-kop">
+      <h2 class="tk-h2" id="blad-kop">Helpen bij de training</h2>
+      <p class="tk-zacht" style="margin:0">${e(K.hoofdletter(K.datumLang(b.datum)))}${tijd ? ', ' + e(tijd) : ''}. Je begeleidt een groepje. De trainer legt uit wat je doet.</p>
+      <div class="tk-veld"><label for="f-hulpnaam">Je voornaam</label><input class="tk-invoer" id="f-hulpnaam" name="naam" type="text" maxlength="${K.HULP_NAAM_MAX}" autocomplete="given-name" autocapitalize="words" value="${e(bewaar.get('tkHulpNaam'))}" placeholder="bv. Sandra"></div>
+      <p class="tk-klein tk-zacht" style="margin:0">Andere ouders ${link ? 'in de teamkamer en ouders met de inschrijflink' : 'in de teamkamer'} zien je voornaam bij deze training. De trainer ziet ook van welk kind je de ouder bent.</p>
+      <button class="tk-knop" type="submit" ${A.bezig ? 'disabled' : ''}>Ik help op ${e(K.datumKort(b.datum))}</button>
+      <button type="button" class="tk-knop licht" data-doe="sluitblad-knop">Annuleren</button></form></div>`;
+  }
   return `<div class="tk-blad-achter" data-doe="sluitblad"><div class="tk-blad" role="dialog" aria-modal="true" aria-labelledby="blad-kop">
     <h2 class="tk-h2" id="blad-kop">Afmelden via WhatsApp</h2>
     <p class="tk-zacht" style="margin:0">Dit bericht staat klaar. Jij kiest in WhatsApp de groep van het team.</p>
@@ -486,7 +574,7 @@ function openKamer(teamId, lid){
   const basis = doc(db, 'teamkamer', teamId);
   const mis = () => { stopSubs(); zet({ scherm: 'geen', dicht: true }); };
   A.subs.push(onSnapshot(doc(basis, 'kamerleden', A.user.uid), s => { if (!s.exists()) mis(); else { A.lid = s.data(); teken(); } }, mis));
-  A.subs.push(onSnapshot(basis, s => { const k = s.data(); if (!k || k.aan !== true) return mis(); A.kamer = k; teken(); weerHalen(); }, mis));
+  A.subs.push(onSnapshot(basis, s => { const k = s.data(); if (!k || k.aan !== true) return mis(); A.kamer = k; hulpSync(); teken(); weerHalen(); }, mis));
   A.subs.push(onSnapshot(collection(basis, 'agenda'), s => { A.agenda = s.docs.map(d => ({ id: d.id, ...d.data() })); teken(); weerHalen(); }, () => {}));
   A.subs.push(onSnapshot(collection(basis, 'berichten'), s => { A.berichten = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.ms || 0) - (a.ms || 0)); teken(); }, () => {}));
   A.subs.push(onSnapshot(collection(basis, 'polls'), s => { A.polls = s.docs.map(d => ({ id: d.id, ...d.data() })); stemmenIngehaald(); teken(); eigenStemmen(); }, () => {}));
@@ -606,6 +694,7 @@ wortel.addEventListener('submit', async (ev) => {
   ev.preventDefault();
   const f = ev.target, soort = f.dataset.form, d = new FormData(f);
   if (A.bezig) return;
+  if (soort === 'hulp') return hulpAanmelden(String(d.get('naam') || ''));
   if (soort === 'kindcode'){
     const code = K.schoonCode(d.get('code'), 6);
     if (code.length !== 6) return toast('De code heeft 6 tekens.');
@@ -651,6 +740,12 @@ wortel.addEventListener('click', async (ev) => {
     if (doe === 'naarpoll'){ naarPoll = b.dataset.id; return zet({ tab: 'polls', open: '' }); }
     if (doe === 'toonww'){ const x = document.getElementById('f-ww'); if (x){ x.type = x.type === 'password' ? 'text' : 'password'; b.textContent = x.type === 'password' ? 'Toon' : 'Verberg'; } return; }
     if (doe === 'afmelden'){ const i = A.agenda.find(x => x.id === b.dataset.id); if (i) zet({ blad: { tekst: K.afmeldTekst(kindNaam(), i) } }); return; }
+    if (doe === 'hulp'){ if (isOuder() && hulpOp(b.dataset.datum)) zet({ blad: { soort: 'hulp', datum: b.dataset.datum } }); return; }
+    if (doe === 'hulpaf'){
+      if (!confirm(`Je afmelden als helper op ${K.datumKort(b.dataset.datum)}?`)) return;
+      await deleteDoc(doc(db, 'hulpDeel', b.dataset.id, 'aanmeldingen', K.hulpEigenId(A.user.uid, b.dataset.rij)));
+      return toast('Je bent afgemeld als helper.');
+    }
     if (doe === 'sluitblad' || doe === 'sluitblad-knop') return zet({ blad: null });
     if (doe === 'sluitblad-na') return setTimeout(() => zet({ blad: null }), 300);
     if (doe === 'uitloggen'){ sluitSpeler(); stopSubs(); bewaar.set('tkWacht', ''); if (auth.currentUser?.isAnonymous) bewaar.set('tkTeam', ''); A.link = null; await signOut(auth); return; }

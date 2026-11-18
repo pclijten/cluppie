@@ -3,27 +3,35 @@ import { auth, onAuthStateChanged } from './firebase.js?v=20261011g';
 import { S, $, initModalSluiten, meld, initTerugknop, initGlobaleFoutafhandeling } from './state.js?v=20261117a';
 import {
   initAuthUI, checkUitnodiging, handelPendingJoin, verwerkDeeplink, registreerLogin
-} from './auth.js?v=20261117b';
-import { startTeams, openTeam, renderTeam, verlaatTeamView, teamTabTerug } from './teams.js?v=20261117b';
-import { sluitWedstrijd } from './wedstrijd.js?v=20261117b';
-import { initChatbot } from './chatbot.js?v=20261117b';
+} from './auth.js?v=20261118a';
+import { startTeams, openTeam, renderTeam, verlaatTeamView, teamTabTerug } from './teams.js?v=20261118a';
+import { sluitWedstrijd } from './wedstrijd.js?v=20261118a';
+import { initChatbot } from './chatbot.js?v=20261118a';
 
 /* [20260921] Training gedeeld met een ouder (?deel=<id>): volledig losse,
    sterk vereenvoudigde flow — geen normale login, geen navigatie, alleen de
    ene gedeelde training + de presentie ervan. Zie js/deel-boot.js voor de
    uitwerking (anonieme login, link inwisselen, tonen). Deze tak stopt hier:
    de rest van dit bestand (normale coach-login/app-boot) draait dan niet. */
-const _deelId = new URLSearchParams(location.search).get('deel');
+const _zoek = new URLSearchParams(location.search);
+const _deelId = _zoek.get('deel');
+/* [20261118a] Trainingshulp (?hulp=<id>): een ouder schrijft zich zonder
+   account in als helper bij een training. Zelfde losse opzet als ?deel=,
+   zie js/hulp-boot.js. */
+const _hulpId = _zoek.get('hulp');
 if (_deelId){
   document.getElementById('opstart')?.remove();
   import('./deel-boot.js?v=20261117a').then(m => m.bootDeelPagina(_deelId));
+} else if (_hulpId){
+  document.getElementById('opstart')?.remove();
+  import('./hulp-boot.js?v=20261118a').then(m => m.bootHulpPagina(_hulpId));
 } else {
 
 /* club.js is alleen nodig voor club-admins die het clubdashboard openen —
    dynamisch laden scheelt elke jeugdcoach het downloaden/parsen van het
    hele adminscherm. Eén keer geladen blijft de module door de browser
    gecached, dus latere aanroepen zijn instant. */
-const openClubLazy = id => import('./club.js?v=20261117b').then(m => m.openClub(id));
+const openClubLazy = id => import('./club.js?v=20261118a').then(m => m.openClub(id));
 
 /* knoppen en modal-gedrag één keer registreren */
 initModalSluiten();
@@ -53,8 +61,8 @@ function verbergOpstart(){
 S._navRerender       = renderTeam;
 S._navTeamTabTerug   = teamTabTerug;
 S._navVerlaatTeam    = verlaatTeamView;
-S._navVerlaatClub    = () => import('./club.js?v=20261117b').then(m => m.verlaatClubView());
-S._navClubTerug      = () => import('./club.js?v=20261117b').then(m => m.clubTerugEen());
+S._navVerlaatClub    = () => import('./club.js?v=20261118a').then(m => m.verlaatClubView());
+S._navClubTerug      = () => import('./club.js?v=20261118a').then(m => m.clubTerugEen());
 S._navTerugWedstrijd = sluitWedstrijd;
 initTerugknop();
 
@@ -65,7 +73,7 @@ initTerugknop();
 const _deskMq = window.matchMedia('(min-width:1100px) and (min-height:520px)');
 function _laadDesktop(){
   if (!_deskMq.matches) return;
-  import('./desktop.js?v=20261117b')
+  import('./desktop.js?v=20261118a')
     .then(m => m.initDesktop(_deskMq))
     .catch(e => console.warn('[Cluppie] desktop-schil niet geladen', e));
 }
@@ -96,7 +104,7 @@ onAuthStateChanged(auth, async user => {
 
     /* AVG-onboarding: eerst kennisname van de privacyregels, en e-mailverificatie voor wachtwoord-accounts */
     try {
-      const tg = await import('./toegang.js?v=20261117b');
+      const tg = await import('./toegang.js?v=20261118a');
       await tg.zorgKennisname();
       if (tg.eerstVerifierenNodig()) tg.toonVerificatieHint();
     } catch(e){ console.warn('[Cluppie] onboarding-controle overgeslagen', e); }
@@ -124,4 +132,4 @@ onAuthStateChanged(auth, async user => {
   }
 });
 
-} // einde van de normale (niet-?deel=) boot-tak
+} // einde van de normale (niet-?deel=, niet-?hulp=) boot-tak

@@ -28,11 +28,21 @@
    eigen namen bevatten (ouders, vrijwilligers). Opgeslagen als map met
    veldpaden (eigenRijen.<id>), zodat twee coaches tegelijk namen kunnen
    toevoegen. Mobiel toont lijsten met ≤3 korte kolommen (✓/✗, keuze, datum)
-   compact: naam en waarden op één regel, opmerking achter een potloodje. */
+   compact: naam en waarden op één regel, opmerking achter een potloodje.
+
+   [20261118a] Trainingshulp (gepoort uit ASV'33): vijfde startpunt, rijen = trainingen, ouders
+   schrijven zich in de Teamkamer of via een link zelf in. Die lijst heeft een eigen weergave en
+   eigen opslag (hulpDeel/…): zie lijst-hulp.js. Hier staan alleen de haakjes: overal waar
+   isHulp(l) waar is, neemt lijst-hulp.js het over. Alle pop-ups van Lijstjes openen sindsdien
+   als paneel (openPaneel): op desktop van rechts, zodat de zijbalk zichtbaar blijft. */
 import { db, doc, collection, addDoc, updateDoc, deleteDoc, deleteField, onSnapshot } from './firebase.js?v=20261011g';
-import { S, $, $$, esc, meld, openModal, sluitModal } from './state.js?v=20261117a';
+import { S, $, $$, esc, meld, sluitModal } from './state.js?v=20261117a';
 import { SEIZOEN_FALLBACK } from './config.js?v=20261117a';
 import { ico } from './icons.js?v=20261116t';
+import {
+  isHulp, hulpSync, hulpStop, hulpVoortgang, hulpOpenBinnenkort, htmlHulpLijst, koppelHulpLijst,
+  modalNieuwHulp, hulpMenuHtml, hulpMenuActie, hulpOpruimen, hulpZetOpen, hulpZetTitel, openPaneel,
+} from './lijst-hulp.js?v=20261118a';
 
 /* ---------- Sjablonen ---------- */
 export const MATEN_STANDAARD = ['116','128','140','152','164','S','M','L','XL'];
@@ -66,6 +76,10 @@ const SJABLONEN = {
       { id:'r3',  naam:'Rijder 3', type:'tekst', alleenUit:true },
       { id:'was', naam:'Wassen',   type:'tekst' },
     ],
+  },
+  trainingshulp: {
+    naam:'Trainingshulp', sub:'Ouders schrijven zich in per training', ico:'team-trainer',
+    rijen:'trainingen', kolommen:[],
   },
   leeg: { naam:'Leeg', sub:'Zelf kolommen kiezen', ico:'attendance-fill', rijen:'spelers', kolommen:[] },
 };
@@ -137,26 +151,32 @@ function rijCompleet(l, r){
   return kols.every(k => { const v = waarde(l, r.id, k.id); return k.type === 'check' ? v === true || v === false : !!v; });
 }
 function voortgang(l){
+  if (isHulp(l)) return hulpVoortgang(l);
   const rijen = rijenVan(l, l.rijen !== 'wedstrijden');
   const c = rijen.filter(r => rijCompleet(l, r)).length;
   return { c, t:rijen.length };
 }
 /* Badge op de hub-tegel: aantal nog open invullingen over alle actieve lijsten. */
 export function lijstjesOpenTotaal(){
-  try { return actieveLijsten().reduce((n, l) => { const v = voortgang(l); return n + (v.t - v.c); }, 0); }
+  try { return actieveLijsten().reduce((n, l) => { if (isHulp(l)) return n + hulpOpenBinnenkort(l); const v = voortgang(l); return n + (v.t - v.c); }, 0); }
   catch(e){ return 0; }
 }
 
 /* ---------- Firestore ---------- */
 export function luisterLijsten(teamId, herteken, fout){
   S._lijsten = [];
-  return onSnapshot(collection(db, 'teams', teamId, 'lijsten'), snap => {
-    S._lijsten = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-    // niet opnieuw tekenen terwijl de coach in een tekstveld van een lijst typt;
-    // bij het verlaten van dat veld tekenen we alsnog (zie koppelLijstjes)
-    if (document.activeElement?.matches?.('#view-team [data-lj-tekst]')){ S._ljUitgesteld = true; return; }
+  // niet opnieuw tekenen terwijl de coach in een tekstveld van een lijst typt;
+  // bij het verlaten van dat veld tekenen we alsnog (zie koppelLijstjes)
+  const rustig = () => {
+    if (document.activeElement?.matches?.('#view-team [data-lj-tekst], #view-team [data-lh-nieuw]')){ S._ljUitgesteld = true; return; }
     herteken();
+  };
+  const unsub = onSnapshot(collection(db, 'teams', teamId, 'lijsten'), snap => {
+    S._lijsten = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    hulpSync(S._lijsten, rustig);   // [20261118a] trainingshulp: eigen luisteraars per lijst
+    rustig();
   }, fout);
+  return () => { unsub(); hulpStop(); };
 }
 async function schrijf(id, velden){
   try { await updateDoc(lijstRef(id), { ...velden, bijgewerktMs:Date.now() }); return true; }
@@ -182,13 +202,13 @@ export function htmlLijstjes(){
     return `<button class="lj-item ${l.gearchiveerd ? 'arch' : ''}" data-lj-open="${esc(l.id)}">
       <span class="lj-ico">${ico(sj.ico, 24)}</span>
       <span class="lj-t"><span class="lj-titel">${esc(l.naam)}</span>
-        <span class="lj-meta">${l.datum ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="12" cy="14.5" r="1.4" fill="currentColor" stroke="none"/></svg> ' + esc(datumKort(l.datum)) + '<span class="sep" aria-hidden="true"></span>' : ''}${v.c} van ${v.t} ${l.rijen === 'wedstrijden' ? 'wedstrijden rond' : 'ingevuld'}</span>
+        <span class="lj-meta">${l.datum ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="12" cy="14.5" r="1.4" fill="currentColor" stroke="none"/></svg> ' + esc(datumKort(l.datum)) + '<span class="sep" aria-hidden="true"></span>' : ''}${v.c} van ${v.t} ${l.rijen === 'wedstrijden' ? 'wedstrijden rond' : isHulp(l) ? 'trainingen rond' : 'ingevuld'}</span>
         <span class="lj-balk"><i style="width:${pct}%"></i></span></span>
       <span class="lj-pijl">›</span></button>`;
   };
   return `
     <p class="lj-intro">Alleen zichtbaar voor de staf van dit team.</p>
-    ${act.length ? act.map(kaart).join('') : `<div class="kaart leeg">Nog geen lijstjes.<br>Maak er een voor een toernooi, kledingbestelling of rijschema.</div>`}
+    ${act.length ? act.map(kaart).join('') : `<div class="kaart leeg">Nog geen lijstjes.<br>Maak er een voor een toernooi, kledingbestelling, rijschema of hulp bij de training.</div>`}
     <button class="lj-nieuw" id="ljNieuw">+ Nieuwe lijst</button>
     ${arch.length ? `<button class="lj-archknop" id="ljArchToggle">${S._ljToonArchief ? 'Verberg' : 'Toon'} ${arch.length} gearchiveerd${arch.length === 1 ? 'e' : 'e'} lijst${arch.length === 1 ? '' : 'en'}</button>
       ${S._ljToonArchief ? arch.map(kaart).join('') : ''}` : ''}`;
@@ -336,6 +356,7 @@ function htmlTabel(l, rijen){
 export function htmlLijst(){
   const l = lijst(S._lijstOpen);
   if (!l) return `<div class="kaart leeg">Deze lijst bestaat niet meer.</div>`;
+  if (isHulp(l)) return htmlHulpLijst(l, { breed:isBreed(), filter:S._ljFilter, toonEerder:!!S._ljToonEerder });
   const wed = l.rijen === 'wedstrijden';
   let rijen = rijenVan(l, !wed || !!S._ljToonEerder);
   const eerderAantal = wed ? wedstrijdRijen(true).length - wedstrijdRijen(false).length : 0;
@@ -403,7 +424,8 @@ export function koppelLijstjes(v, tab, api){
   const dat = v.querySelector('#ljDatum'); if (dat) dat.onclick = () => modalDatum(l);
   const menu = v.querySelector('#ljMenu'); if (menu) menu.onclick = () => modalMenu(l);
   const deel = v.querySelector('#ljDeel'); if (deel) deel.onclick = () => modalDelen(l);
-  const herstel = v.querySelector('#ljHerstel'); if (herstel) herstel.onclick = async () => { if (await schrijf(l.id, { gearchiveerd:false })) meld('Lijst teruggezet'); };
+  const herstel = v.querySelector('#ljHerstel'); if (herstel) herstel.onclick = async () => { if (await schrijf(l.id, { gearchiveerd:false })) meld(isHulp(l) ? 'Lijst teruggezet. Inschrijven door ouders staat nog uit.' : 'Lijst teruggezet'); };
+  if (isHulp(l)) return koppelHulpLijst(v, l, API);
   const rijPlus = v.querySelector('#ljRijPlus'); if (rijPlus) rijPlus.onclick = () => modalNamenToevoegen(l);
   // compact: potloodje klapt de opmerking-regel open
   v.querySelectorAll('[data-lj-notitie]').forEach(b => b.onclick = () => {
@@ -446,7 +468,7 @@ function modalKeuze(l, rij, kol, eigenFocus){
   const r = rijenVan(l).find(x => x.id === rij);
   const huidig = waarde(l, rij, kol);
   const opts = [...(k.opties || [])]; if (huidig && !opts.includes(huidig)) opts.push(huidig);
-  openModal(`<h2>${esc(k.naam)}</h2>
+  openPaneel(`<h2>${esc(k.naam)}</h2>
     <p class="lj-msub">${r ? esc(r.naam || r.tegen) + (r.nr !== undefined && r.nr !== '' ? '<span class="sep" aria-hidden="true"></span>#' + esc(r.nr) : '') : ''}</p>
     <div class="lj-opts">${opts.map(o => `<button class="lj-opt ${o === huidig ? 'gekozen' : ''}" data-lj-kies="${esc(o)}">${esc(o)}</button>`).join('')}
       <button class="lj-opt wis" data-lj-kies="">Wissen</button></div>
@@ -487,7 +509,7 @@ function leesDatumVelden(o){ o.datum = $('#ljDDatum')?.value || ''; o.tijd = $('
 function modalDatum(l){
   const o = { datum:l.datum || '', tijd:l.tijd || '', inPlanning:l.inPlanning !== false };
   const verplicht = l.sjabloon === 'aanwezig';
-  openModal(`<h2>Datum</h2><p class="lj-msub">${esc(l.naam)}</p>${datumVeldenHtml(o, verplicht)}
+  openPaneel(`<h2>Datum</h2><p class="lj-msub">${esc(l.naam)}</p>${datumVeldenHtml(o, verplicht)}
     <button class="knop fluo vol" id="ljDOk">Opslaan</button>
     ${l.datum && !verplicht ? '<button class="knop vol u-mt-xs" id="ljDWis" >Datum weghalen</button>' : ''}`);
   koppelDatumVelden(o);
@@ -503,10 +525,15 @@ function modalDatum(l){
 
 /* ---------- Nieuwe lijst ---------- */
 function modalSjabloon(){
-  openModal(`<h2>Nieuwe lijst</h2><p class="lj-msub">Kies een startpunt, kolommen pas je daarna aan.</p>
+  openPaneel(`<h2>Nieuwe lijst</h2><p class="lj-msub">Kies een startpunt, kolommen pas je daarna aan.</p>
     <div class="lj-sjgrid">${Object.entries(SJABLONEN).map(([id, s]) => `<button class="lj-sj" data-lj-sj="${id}">${ico(s.ico, 26)}<span class="st">${esc(s.naam)}</span><span class="ss">${esc(s.sub)}</span></button>`).join('')}</div>`);
   $$('#modalInhoud [data-lj-sj]').forEach(b => b.onclick = () => {
     const s = SJABLONEN[b.dataset.ljSj];
+    if (s.rijen === 'trainingen') return modalNieuwHulp({ klaar:(id, data) => {
+      // de luisteraar van luisterLijsten start zelf de trainingshulp-luisteraars
+      S._lijsten = [...alleLijsten().filter(x => x.id !== id), { id, ...data }];
+      sluitModal(); meld('Lijst gemaakt'); openLijst(id);
+    } });
     S._ljConcept = { sjabloon:b.dataset.ljSj, naam:s.naam === 'Leeg' ? '' : s.naam, rijen:s.rijen,
       kolommen:s.kolommen.map(k => ({ ...k, opties:k.opties ? [...k.opties] : undefined })), datum:'', tijd:'', inPlanning:true,
       rijKop:'', namen:'' };
@@ -530,7 +557,7 @@ function modalNieuw(){
   const c = S._ljConcept; if (!c) return;
   const s = SJABLONEN[c.sjabloon];
   const wed = c.rijen === 'wedstrijden', eigen = c.rijen === 'eigen';
-  openModal(`<h2>${esc(s.naam)}</h2>
+  openPaneel(`<h2>${esc(s.naam)}</h2>
     <p class="lj-msub">${wed ? 'Rijen: alle wedstrijden van dit seizoen (Sportlink).' : eigen ? 'Rijen: de namen die je hieronder invult, later aan te vullen.' : 'Rijen: je hele selectie: nieuwe spelers komen er vanzelf bij.'}</p>
     <div class="veldgroep"><label>Naam</label><input class="invoer" id="ljNNaam" value="${esc(c.naam)}" placeholder="bv. Herfsttoernooi, Teamuitje" autocomplete="off" maxlength="60"></div>
     ${wed ? '' : `<div class="veldgroep"><label>Wie staat er in de lijst?</label>
@@ -588,7 +615,7 @@ function nieuweEigenRijen(tekst, start = Date.now()){
   return uit;
 }
 function modalNamenToevoegen(l){
-  openModal(`<h2>Namen toevoegen</h2><p class="lj-msub">${esc(l.naam)}<span class="sep" aria-hidden="true"></span>één naam per regel</p>
+  openPaneel(`<h2>Namen toevoegen</h2><p class="lj-msub">${esc(l.naam)}<span class="sep" aria-hidden="true"></span>één naam per regel</p>
     <div class="veldgroep"><textarea class="invoer lj-namen" id="ljRNamen" placeholder="Fam. de Wit&#10;Sandra"></textarea></div>
     <div class="avg-balk"><span class="slot"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4.6" y="10.4" width="14.8" height="9.8" rx="2.4"/><path d="M8 10.4V8a4 4 0 0 1 8 0v2.4"/><circle cx="12" cy="15.2" r="1.4" fill="currentColor" stroke="none"/></svg></span><span>${NAMEN_HINT}</span></div>
     <button class="knop fluo vol" id="ljROk">Toevoegen</button>`);
@@ -606,7 +633,7 @@ function modalNamenToevoegen(l){
 }
 function modalNamenBeheren(l){
   const rijen = eigenRijen(l);
-  openModal(`<h2>Namen beheren</h2><p class="lj-msub">Weghalen wist ook wat er bij die naam is ingevuld.</p>
+  openPaneel(`<h2>Namen beheren</h2><p class="lj-msub">Weghalen wist ook wat er bij die naam is ingevuld.</p>
     <div class="veldgroep"><label>Kop van de eerste kolom</label><input class="invoer" id="ljBKop" value="${esc(l.rijKop || 'Naam')}" maxlength="24" autocomplete="off"></div>
     <div class="lj-kollijst">${rijen.length ? rijen.map(r => `<div class="lj-kol lj-naamrij"><input class="lj-naaminv" value="${esc(r.naam)}" data-lj-rnaam="${esc(r.id)}" maxlength="40" autocomplete="off"><button data-lj-rweg="${esc(r.id)}" title="Weghalen">✕</button></div>`).join('') : '<div class="lj-kol leeg">Nog geen namen</div>'}</div>
     <button class="knop klein" id="ljBPlus">+ Namen toevoegen</button>`);
@@ -636,7 +663,7 @@ function modalKolom(klaar, terug){
   const d = { naam:'', type:'check', opties:'' };
   const teken = () => {
     const gevoelig = GEVOELIG.test(d.naam);
-    openModal(`<h2>Kolom toevoegen</h2>
+    openPaneel(`<h2>Kolom toevoegen</h2>
       <div class="veldgroep"><label>Naam</label><input class="invoer" id="ljKNaam" value="${esc(d.naam)}" placeholder="bv. Rugnummer, Betaald, Shirt" autocomplete="off" maxlength="30"></div>
       <div class="veldgroep"><label>Type</label><div class="segment">${['check', 'keuze', 'tekst', 'datum'].map(t => `<button type="button" class="${d.type === t ? 'actief' : ''}" data-lj-ktype="${t}">${TYPE_NAAM[t]}</button>`).join('')}</div></div>
       ${d.type === 'keuze' ? `<div class="veldgroep"><label>Opties (met komma's)</label><input class="invoer" id="ljKOpt" value="${esc(d.opties)}" placeholder="bv. ${MATEN_STANDAARD.join(', ')}" autocomplete="off"></div>` : ''}
@@ -665,42 +692,46 @@ function modalKolom(klaar, terug){
 
 /* ---------- Menu ⋯ ---------- */
 function modalMenu(l){
-  openModal(`<h2>${esc(l.naam)}</h2>
-    <button class="lj-mopt" data-lj-m="kolommen"><span>▦</span>Kolommen beheren</button>
+  openPaneel(`<h2>${esc(l.naam)}</h2>
+    ${isHulp(l) ? hulpMenuHtml(l) : '<button class="lj-mopt" data-lj-m="kolommen"><span>▦</span>Kolommen beheren</button>'}
     ${isEigen(l) ? '<button class="lj-mopt" data-lj-m="namen"><span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="8" r="2.8"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="8.5" r="2.3"/><path d="M15.5 13.4A4.8 4.8 0 0 1 20.5 18"/></svg></span>Namen beheren</button>' : ''}
     <button class="lj-mopt" data-lj-m="naam"><span>✎</span>Naam wijzigen</button>
-    ${l.rijen !== 'wedstrijden' ? `<button class="lj-mopt" data-lj-m="datum"><span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="12" cy="14.5" r="1.4" fill="currentColor" stroke="none"/></svg></span>${l.datum ? 'Datum wijzigen' : 'Datum toevoegen'}</button>` : ''}
+    ${l.rijen !== 'wedstrijden' && !isHulp(l) ? `<button class="lj-mopt" data-lj-m="datum"><span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="12" cy="14.5" r="1.4" fill="currentColor" stroke="none"/></svg></span>${l.datum ? 'Datum wijzigen' : 'Datum toevoegen'}</button>` : ''}
     <button class="lj-mopt" data-lj-m="arch"><span></span>${l.gearchiveerd ? 'Terugzetten uit archief' : 'Archiveren'}</button>
     <button class="lj-mopt gevaar" data-lj-m="weg"><span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5.4 7.4h13.2"/><path d="M7.4 7.4 8.3 20h7.4l.9-12.6"/><path d="M9.6 4.4h4.8l.6 3H9z"/><path d="M10.6 11v5.4M13.4 11v5.4"/></svg></span>Verwijderen</button>`);
   $$('#modalInhoud [data-lj-m]').forEach(b => b.onclick = async () => {
     const m = b.dataset.ljM;
+    if (isHulp(l) && hulpMenuActie(l, m, API)) return;
     if (m === 'kolommen') return modalKolommen(l);
     if (m === 'naam') return modalNaam(l);
     if (m === 'namen') return modalNamenBeheren(l);
     if (m === 'datum') return modalDatum(l);
     if (m === 'arch'){
       const naar = !l.gearchiveerd;
+      // [20261118a] trainingshulp: archiveren zet ook het inschrijven door ouders uit
+      if (naar && isHulp(l)) await hulpZetOpen(l, false);
       if (await schrijf(l.id, { gearchiveerd:naar })){ sluitModal(); meld(naar ? 'Gearchiveerd: terug te vinden onderaan Lijstjes' : 'Lijst teruggezet'); if (naar) terugNaarOverzicht(); }
       return;
     }
     if (m === 'weg'){
       if (!confirm(`"${l.naam}" definitief verwijderen? Alle ingevulde gegevens gaan verloren.`)) return;
+      if (isHulp(l)) await hulpOpruimen(l);
       try { await deleteDoc(lijstRef(l.id)); S._lijsten = alleLijsten().filter(x => x.id !== l.id); sluitModal(); meld('Lijst verwijderd'); terugNaarOverzicht(); }
       catch(e){ meld('Verwijderen mislukt: ' + (e.code || e.message)); }
     }
   });
 }
 function modalNaam(l){
-  openModal(`<h2>Naam wijzigen</h2><div class="veldgroep"><label>Naam</label><input class="invoer" id="ljNaamInv" value="${esc(l.naam)}" maxlength="60" autocomplete="off"></div>
+  openPaneel(`<h2>Naam wijzigen</h2><div class="veldgroep"><label>Naam</label><input class="invoer" id="ljNaamInv" value="${esc(l.naam)}" maxlength="60" autocomplete="off"></div>
     <button class="knop fluo vol" id="ljNaamOk">Opslaan</button>`);
   $('#ljNaamOk').onclick = async () => {
     const naam = $('#ljNaamInv').value.trim(); if (!naam) return meld('Geef een naam');
-    if (await schrijf(l.id, { naam })){ l.naam = naam; sluitModal(); API.renderTeam(); }
+    if (await schrijf(l.id, { naam })){ l.naam = naam; if (isHulp(l)) hulpZetTitel(l, naam); sluitModal(); API.renderTeam(); }
   };
 }
 function modalKolommen(l){
   const kols = kolommenVan(l);
-  openModal(`<h2>Kolommen</h2><p class="lj-msub">Tik op een kolom om hem te wijzigen. Weghalen wist ook wat er in die kolom is ingevuld.</p>
+  openPaneel(`<h2>Kolommen</h2><p class="lj-msub">Tik op een kolom om hem te wijzigen. Weghalen wist ook wat er in die kolom is ingevuld.</p>
     <div class="lj-kollijst">${kolLijstHtml(kols, true, true)}</div>
     <button class="knop klein" id="ljKolPlus">+ Kolom</button>`);
   $$('#modalInhoud [data-lj-kolbew]').forEach(b => b.onclick = () => modalKolomWijzig(l, Number(b.dataset.ljKolbew)));
@@ -742,7 +773,7 @@ function modalKolomWijzig(l, idx){
   const teken = () => {
     const gevoelig = GEVOELIG.test(d.naam);
     if (d.type === 'keuze' && !d.opties.length) d.opties.push({ oud:null, nieuw:'' });
-    openModal(`<h2>Kolom wijzigen</h2>
+    openPaneel(`<h2>Kolom wijzigen</h2>
       <div class="veldgroep"><label>Naam</label><input class="invoer" id="ljWNaam" value="${esc(d.naam)}" autocomplete="off" maxlength="30"></div>
       <div class="veldgroep"><label>Type</label>${typeVast
         ? `<div class="lj-kol"><span class="lj-kol-n">${TYPE_NAAM[d.type] || d.type}</span></div><p class="lj-msub u-mt-xs">Er is al iets ingevuld, daarom ligt het type vast. Ander type nodig? Haal de kolom weg en maak een nieuwe.</p>`
@@ -851,7 +882,7 @@ function modalDelen(l){
   const spelers = l.rijen === 'spelers';
   const heeftKeuze = kolommenVan(l).some(k => k.type === 'keuze' && o.kol.has(k.id));
   const tekst = waTekst(l, o);
-  openModal(`<h2>Delen via WhatsApp</h2><p class="lj-msub">Kies wat er in het bericht komt.</p>
+  openPaneel(`<h2>Delen via WhatsApp</h2><p class="lj-msub">Kies wat er in het bericht komt.</p>
     <div class="lj-wakies">${kolommenVan(l).map(k => `<button class="${o.kol.has(k.id) ? 'aan' : ''}" data-lj-wak="${esc(k.id)}">${o.kol.has(k.id) ? '✓ ' : ''}${esc(k.naam)}</button>`).join('')}</div>
     ${heeftKeuze ? `<div class="segment u-mb-sm"><button type="button" class="${!o.totalen ? 'actief' : ''}" data-lj-tot="0">${isEigen(l) ? 'Per naam' : 'Per speler'}</button><button type="button" class="${o.totalen ? 'actief' : ''}" data-lj-tot="1">Alleen totalen</button></div>` : ''}
     <div class="lj-watekst">${esc(tekst)}</div>

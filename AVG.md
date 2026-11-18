@@ -78,3 +78,11 @@ Status: technische maatregelen doorgevoerd (okt 2026). **Niet getest** tegen de 
 2. `firebase deploy --only firestore:indexes` (inclusief de nieuwe) en wacht tot de indexen klaar zijn (club+teams-queries).
 3. Hosting (nieuwe client).
 4. **Als laatste** `firestore:rules` en `storage`. Test eerst in de emulator met een tweede testclub: coach A mag niets van club B lezen.
+
+## Trainingshulp: ouders schrijven zich in als helper (nov 2026, release 20261118a)
+- **Wat het is:** een lijst in Lijstjes waarop ouders zich per training inschrijven als helper. De trainer kiest per lijst de route: in de teamkamer (ouders met toegang), via een open link (zonder account), of allebei. De teamkamer-route staat standaard uit; de eindbaas zet hem per club aan (`teamkamerOpties.hulp`).
+- **Dataminimalisatie:** een aanmelding is `{ uid, rij, naam, ms, door }`: een zelf ingevulde voornaam (maximaal 24 tekens), de training en het moment. Geen achternaam, e-mailadres of telefoonnummer, en geen verwijzing naar het kind. De trainer ziet "ouder van" door de kamerleden van het eigen team te lezen; dat staat niet in de aanmelding. De rules weigeren elk extra veld.
+- **Wie leest wat:** de staf van het team (dezelfde kring als de lijstjes: `magSchrijven`) altijd. Ouders en spelers in de teamkamer van dat team als de lijst daarvoor aan staat. Iedereen met de link als de open link aan staat. Via de open link is niets van het team te lezen, ook de teamnaam niet buiten dit ene document.
+- **Open link:** wie de link heeft kan elke voornaam invullen; er is geen controle dat het een ouder van het team is. De trainer haalt een aanmelding weg en zet de link uit (ook bij archiveren gaat alles uit).
+- **Minderjarigen:** een speler in de teamkamer leest wie er helpt, maar kan zich niet inschrijven.
+- **Bewaartermijn (open punt):** een lijst en de aanmeldingen blijven staan tot de trainer de lijst verwijdert. Er is nog geen automatische opruiming; kandidaat: meenemen in `bewaartermijnen` (lijsten van een vorig seizoen). Meenemen in de DPIA en de jurist-check van `privacy.html` (stuk Teamkamer, "Helpen bij de training").

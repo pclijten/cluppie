@@ -279,6 +279,7 @@ export const OPTIES = [
   ['weer', 'Weerbericht', 'Het weer bij de club op de wedstrijddag (via Open-Meteo).'],
   ['trainingen', 'Trainingen bekijken', 'De trainer mag de komende trainingen tonen: thema, oefeningen en 3D. Alleen kijken.'],
   ['stats', 'Cijfers van het eigen kind', 'De trainer mag ouders de cijfers van hun eigen kind tonen. Nooit van anderen, nooit een ranglijst.'],
+  ['hulp', 'Trainingshulp', 'Ouders schrijven zich in de teamkamer in als helper bij een training (Lijstjes). Andere ouders zien hun voornaam.'],
 ];
 /* [20261116r] welke cijfers de trainer per team aanzet (zelfde sleutels als STATS_SOORTEN op de server) */
 export const STATS_SOORTEN = [
@@ -330,3 +331,49 @@ export function statsTegels(s){
 }
 export function opties(bron){ const uit = {}; for (const [k] of OPTIES) uit[k] = !!(bron && bron[k] === true); return uit; }
 export const optiesVan = (team, clubPlatform, losOpties) => opties(team && team.club ? (clubPlatform && clubPlatform.platformModules && clubPlatform.platformModules.teamkamerOpties) : losOpties);
+
+/* ==================== trainingshulp [20261118a] ====================
+   Ouders schrijven zich in als helper bij een training. De lijst maakt de trainer in Lijstjes
+   (lijst-hulp.js); de gegevens staan in hulpDeel/{id} en hulpDeel/{id}/aanmeldingen. Hier alleen
+   het rekenwerk voor de pagina van ouders, zonder Firebase (tests/teamkamer.test.mjs).
+   lijsten = [{ id, deel:{ momenten:{ d20261123:{ datum, start, eind, nodig } } }, aanm:[{ id, uid, rij, naam, ms, door }] }] */
+export const HULP_NAAM_MAX = 24;
+export const hulpRijId = (datum) => 'd' + String(datum || '').replace(/-/g, '');
+export const hulpNaam = (s) => String(s || '').replace(/\s+/g, ' ').trim().slice(0, HULP_NAAM_MAX);
+/* een aanmelding uit de teamkamer staat onder <uid>_<rij>: één per ouder per training */
+export const hulpEigenId = (uid, rij) => `${uid}_${rij}`;
+function hulpMoment(l, rij, uid){
+  const m = l && l.deel && l.deel.momenten && l.deel.momenten[rij];
+  if (!m || !m.datum) return null;
+  const helpers = ((l && l.aanm) || []).filter(a => a && a.rij === rij && a.naam).sort((a, b) => (a.ms || 0) - (b.ms || 0));
+  const nodig = Math.max(0, Number(m.nodig) || 0);
+  if (!nodig && !helpers.length) return null;
+  const eigen = helpers.find(a => a.uid === uid && a.door === 'kamer');
+  return { deelId: l.id, rij, datum: String(m.datum), start: m.start || '', eind: m.eind || '', nodig, helpers,
+    vrij: Math.max(0, nodig - helpers.length), ik: !!eigen, ikNaam: eigen ? eigen.naam : '' };
+}
+/* de trainingshulp op één datum: de eerste lijst (op id) waarin die training staat */
+export function hulpOpDatum(lijsten, datum, uid){
+  const rij = hulpRijId(datum);
+  for (const l of [...(lijsten || [])].sort((a, b) => String(a.id).localeCompare(String(b.id)))){
+    const h = hulpMoment(l, rij, uid);
+    if (h) return h;
+  }
+  return null;
+}
+/* komende trainingen waar nog hulp nodig is en waar deze ouder niet al helpt, binnen `dagen` */
+export function hulpGezocht(lijsten, vandaag, uid, dagen = 14){
+  const data = new Set();
+  for (const l of lijsten || []) for (const m of Object.values((l && l.deel && l.deel.momenten) || {})) if (m && m.datum) data.add(String(m.datum));
+  return [...data].filter(d => binnenDagen(d, vandaag, dagen)).sort()
+    .map(d => hulpOpDatum(lijsten, d, uid)).filter(h => h && h.vrij > 0 && !h.ik);
+}
+export const hulpPlekken = (n) => (n === 1 ? '1 plek' : `${n} plekken`);
+/* "Sandra (jij), Mark, nog 1 plek" of "Nog niemand, 2 plekken" */
+export function hulpRegel(h, uid){
+  const namen = [...h.helpers.filter(a => a.uid === uid && a.door === 'kamer').map(a => `${a.naam} (jij)`),
+    ...h.helpers.filter(a => !(a.uid === uid && a.door === 'kamer')).map(a => a.naam)];
+  if (!namen.length) return `Nog niemand, ${hulpPlekken(h.vrij)}`;
+  return namen.join(', ') + (h.vrij ? `, nog ${hulpPlekken(h.vrij)}` : '');
+}
+export const hulpTijd = (h) => (h.start && h.eind ? `${h.start} tot ${h.eind}` : h.start || '');

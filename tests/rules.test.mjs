@@ -527,3 +527,113 @@ test('teamkamer: wat de eindbaas uit heeft staan, kan niemand gebruiken', async 
   await assertFails(setDoc(doc(c, 'teamkamer/t1'), { mag: { berichten: true } }, { merge: true }));                 // de coach zet zelf niets aan
   await assertFails(updateDoc(doc(als('adminA'), 'clubs/A'), { 'platformModules.teamkamerOpties.polls': true }));   // de clubadmin ook niet
 });
+
+/* ---------- trainingshulp (Lijstjes): open link, teamkamer en staf [20261118a] ---------- */
+const HULP_MAG = { namen: true, spelers: true, polls: true, hulp: true };
+async function zaaiHulp(mag = HULP_MAG){
+  await zaaiKamer({ kamer: { mag } });
+  await env.withSecurityRulesDisabled(async ctx => {
+    const db = ctx.firestore(), momenten = { d20990105: { datum: '2099-01-05', start: '18:00', eind: '19:00', nodig: 2 } };
+    await setDoc(doc(db, 'hulpDeel/beide'), { teamId: 't1', club: 'A', lijstId: 'l1', teamNaam: 'JO11-1', titel: 'Trainingshulp', open: true, kamer: true, standaard: 2, momenten });
+    await setDoc(doc(db, 'hulpDeel/kamer'), { teamId: 't1', club: 'A', lijstId: 'l2', open: false, kamer: true, standaard: 2, momenten });
+    await setDoc(doc(db, 'hulpDeel/link'), { teamId: 't1', club: 'A', lijstId: 'l3', open: true, kamer: false, standaard: 2, momenten });
+    await setDoc(doc(db, 'hulpDeel/uit'), { teamId: 't1', club: 'A', lijstId: 'l4', open: false, kamer: false, standaard: 2, momenten });
+    await setDoc(doc(db, 'hulpDeel/anderTeam'), { teamId: 'tB', club: 'B', lijstId: 'l5', open: false, kamer: true, standaard: 2, momenten });
+    await setDoc(doc(db, 'hulpDeel/kamer/aanmeldingen/ouder9_d20990105'), { uid: 'ouder9', rij: 'd20990105', naam: 'Mark', ms: 1, door: 'kamer' });
+    await setDoc(doc(db, 'hulpDeel/link/aanmeldingen/anon9_d20990105'), { uid: 'anon9', rij: 'd20990105', naam: 'Joyce', ms: 1, door: 'ouder' });
+  });
+}
+const aanm = (uid, door, extra = {}) => ({ uid, rij: 'd20990105', naam: 'Sandra', ms: 2, door, ...extra });
+test('trainingshulp: de open link leest één lijst en schrijft alleen de eigen aanmelding', async () => {
+  await zaaiHulp();
+  const a = anoniem('anon1');
+  await assertSucceeds(getDoc(doc(a, 'hulpDeel/link')));
+  await assertSucceeds(getDocs(collection(a, 'hulpDeel/link/aanmeldingen')));
+  await assertFails(getDoc(doc(a, 'hulpDeel/kamer')));                                                              // link staat uit
+  await assertFails(getDoc(doc(a, 'hulpDeel/uit')));
+  await assertFails(getDocs(collection(a, 'hulpDeel/kamer/aanmeldingen')));
+  await assertFails(getDocs(collection(a, 'hulpDeel')));                                                            // doorzoeken kan niet
+  await assertFails(getDocs(query(collection(a, 'hulpDeel'), where('teamId', '==', 't1'), where('kamer', '==', true))));
+  await assertFails(getDoc(doc(a, 'teams/t1')));                                                                    // en verder niets van het team
+  await assertFails(getDocs(collection(a, 'teams/t1/spelers')));
+  await assertFails(getDoc(doc(gast(), 'hulpDeel/link')));                                                          // niet ingelogd: niets
+  await assertSucceeds(setDoc(doc(a, 'hulpDeel/link/aanmeldingen/anon1_d20990105'), aanm('anon1', 'ouder')));
+  await assertFails(setDoc(doc(a, 'hulpDeel/link/aanmeldingen/anon1_d20990105'), aanm('anon1', 'ouder', { naam: 'Ander' })));   // wijzigen kan niet
+  await assertFails(setDoc(doc(a, 'hulpDeel/link/aanmeldingen/vrij'), aanm('anon1', 'ouder')));                     // alleen het vaste id: één per training
+  await assertFails(setDoc(doc(a, 'hulpDeel/link/aanmeldingen/anon1_d20990106'), aanm('anon1', 'ouder', { rij: 'd20990106' })));   // training staat niet in de lijst
+  await assertFails(setDoc(doc(anoniem('anon2'), 'hulpDeel/link/aanmeldingen/anon2_d20990105'), aanm('anon1', 'ouder')));   // andermans uid
+  await assertFails(setDoc(doc(anoniem('anon2'), 'hulpDeel/link/aanmeldingen/anon2_d20990105'), aanm('anon2', 'coach')));   // zich voordoen als staf
+  await assertFails(setDoc(doc(anoniem('anon2'), 'hulpDeel/link/aanmeldingen/anon2_d20990105'), aanm('anon2', 'kamer')));   // of als teamkamer-ouder
+  await assertFails(setDoc(doc(anoniem('anon2'), 'hulpDeel/link/aanmeldingen/anon2_d20990105'), aanm('anon2', 'ouder', { naam: '' })));
+  await assertFails(setDoc(doc(anoniem('anon2'), 'hulpDeel/link/aanmeldingen/anon2_d20990105'), aanm('anon2', 'ouder', { naam: 'x'.repeat(25) })));
+  await assertFails(setDoc(doc(anoniem('anon2'), 'hulpDeel/link/aanmeldingen/anon2_d20990105'), aanm('anon2', 'ouder', { telefoon: '06' })));   // geen extra velden
+  await assertFails(setDoc(doc(anoniem('anon2'), 'hulpDeel/kamer/aanmeldingen/anon2_d20990105'), aanm('anon2', 'ouder')));  // link uit
+  await assertFails(deleteDoc(doc(a, 'hulpDeel/link/aanmeldingen/anon9_d20990105')));                               // andermans aanmelding
+  await assertSucceeds(deleteDoc(doc(a, 'hulpDeel/link/aanmeldingen/anon1_d20990105')));                            // de eigen wel
+  await assertFails(updateDoc(doc(a, 'hulpDeel/link'), { open: false }));
+  await assertFails(updateDoc(doc(a, 'hulpDeel/link'), { 'momenten.d20990105.nodig': 9 }));
+});
+test('trainingshulp: een ouder in de teamkamer vindt de lijsten van het eigen team en schrijft zich in', async () => {
+  await zaaiHulp();
+  const o = als('ouder1'), k = anoniem('kind1');
+  const zoek = db => getDocs(query(collection(db, 'hulpDeel'), where('teamId', '==', 't1'), where('kamer', '==', true)));
+  await assertSucceeds(zoek(o));
+  await assertSucceeds(getDoc(doc(o, 'hulpDeel/kamer')));
+  await assertSucceeds(getDocs(collection(o, 'hulpDeel/kamer/aanmeldingen')));
+  await assertFails(getDocs(query(collection(o, 'hulpDeel'), where('teamId', '==', 't1'))));                        // ook de lijsten die niet voor de teamkamer zijn
+  await assertFails(getDocs(query(collection(o, 'hulpDeel'), where('teamId', '==', 'tB'), where('kamer', '==', true))));   // ander team
+  await assertFails(getDoc(doc(o, 'hulpDeel/anderTeam')));
+  await assertFails(getDoc(doc(o, 'hulpDeel/uit')));
+  await assertSucceeds(setDoc(doc(o, 'hulpDeel/kamer/aanmeldingen/ouder1_d20990105'), aanm('ouder1', 'kamer')));
+  await assertFails(setDoc(doc(o, 'hulpDeel/kamer/aanmeldingen/los'), aanm('ouder1', 'kamer')));
+  await assertFails(setDoc(doc(o, 'hulpDeel/kamer/aanmeldingen/ouder1_d20990105'), aanm('ouder1', 'coach')));
+  await assertFails(setDoc(doc(o, 'hulpDeel/link/aanmeldingen/ouder1_d20990105'), aanm('ouder1', 'kamer')));        // deze lijst staat niet aan voor de teamkamer
+  await assertFails(setDoc(doc(o, 'hulpDeel/anderTeam/aanmeldingen/ouder1_d20990105'), aanm('ouder1', 'kamer')));
+  await assertFails(deleteDoc(doc(o, 'hulpDeel/kamer/aanmeldingen/ouder9_d20990105')));
+  await assertSucceeds(deleteDoc(doc(o, 'hulpDeel/kamer/aanmeldingen/ouder1_d20990105')));
+  await assertFails(updateDoc(doc(o, 'hulpDeel/kamer'), { kamer: false }));
+  await assertSucceeds(zoek(k));                                                                                    // een speler leest mee
+  await assertSucceeds(getDocs(collection(k, 'hulpDeel/kamer/aanmeldingen')));
+  await assertFails(setDoc(doc(k, 'hulpDeel/kamer/aanmeldingen/kind1_d20990105'), aanm('kind1', 'kamer')));         // maar schrijft zich niet in
+  for (const db of [als('verlopen'), als('vreemde'), als('coachB')]){                                               // verlopen toegang, geen lid, coach van een andere club
+    await assertFails(zoek(db));
+    await assertFails(getDoc(doc(db, 'hulpDeel/kamer')));
+    await assertFails(setDoc(doc(db, 'hulpDeel/kamer/aanmeldingen/x_d20990105'), aanm('x', 'kamer')));
+  }
+});
+test('trainingshulp: zonder de schakelaar van de eindbaas kan het niet via de teamkamer', async () => {
+  await zaaiHulp({ namen: true, spelers: true, polls: true });                                                      // hulp staat uit
+  const o = als('ouder1');
+  await assertFails(getDocs(query(collection(o, 'hulpDeel'), where('teamId', '==', 't1'), where('kamer', '==', true))));
+  await assertFails(getDoc(doc(o, 'hulpDeel/kamer')));
+  await assertFails(setDoc(doc(o, 'hulpDeel/kamer/aanmeldingen/ouder1_d20990105'), aanm('ouder1', 'kamer')));
+  await assertSucceeds(getDoc(doc(o, 'hulpDeel/beide')));                                                           // de open link werkt los daarvan, voor iedereen
+  await assertSucceeds(setDoc(doc(o, 'hulpDeel/beide/aanmeldingen/ouder1_d20990105'), aanm('ouder1', 'ouder')));
+  await assertFails(setDoc(doc(o, 'hulpDeel/beide/aanmeldingen/ouder1_d20990105x'), aanm('ouder1', 'kamer')));
+});
+test('trainingshulp: alleen de staf van het team maakt en beheert de lijst', async () => {
+  await zaaiHulp();
+  const c = als('coachA'), nieuw = { teamId: 't1', club: 'A', lijstId: 'l9', teamNaam: 'JO11-1', titel: 'Hulp', open: false, kamer: false, standaard: 2, momenten: {} };
+  await assertSucceeds(setDoc(doc(c, 'hulpDeel/nieuw'), nieuw));
+  await assertSucceeds(getDoc(doc(c, 'hulpDeel/uit')));                                                             // ook als alles uit staat
+  await assertSucceeds(getDocs(collection(c, 'hulpDeel/uit/aanmeldingen')));
+  await assertSucceeds(updateDoc(doc(c, 'hulpDeel/uit'), { standaard: 3, 'momenten.d20990105.nodig': 3 }));
+  await assertSucceeds(updateDoc(doc(c, 'hulpDeel/nieuw'), { open: true, kamer: true }));                           // inschrijven aan- en uitzetten
+  await assertFails(updateDoc(doc(c, 'hulpDeel/uit'), { teamId: 'tB' }));                                           // team en club liggen vast
+  await assertFails(updateDoc(doc(c, 'hulpDeel/uit'), { club: 'B' }));
+  await assertSucceeds(setDoc(doc(c, 'hulpDeel/kamer/aanmeldingen/eigen'), aanm('coachA', 'coach')));               // de coach vult zelf een naam in
+  await assertFails(setDoc(doc(c, 'hulpDeel/kamer/aanmeldingen/eigen2'), aanm('iemand', 'coach')));
+  await assertSucceeds(deleteDoc(doc(c, 'hulpDeel/kamer/aanmeldingen/ouder9_d20990105')));                          // en haalt een ouder weg
+  await assertSucceeds(getDoc(doc(als('adminA'), 'hulpDeel/uit')));                                                 // clubadmin en coördinator van de bouw horen bij de staf
+  await assertSucceeds(updateDoc(doc(als('coordA'), 'hulpDeel/uit'), { standaard: 2 }));
+  await assertSucceeds(deleteDoc(doc(c, 'hulpDeel/nieuw')));
+  for (const db of [als('coachB'), als('coach2'), als('ouder1')]){                                                  // andere club, ander team van de club, ouder
+    await assertFails(setDoc(doc(db, 'hulpDeel/n2'), nieuw));
+    await assertFails(getDoc(doc(db, 'hulpDeel/uit')));
+    await assertFails(updateDoc(doc(db, 'hulpDeel/kamer'), { open: true }));
+    await assertFails(deleteDoc(doc(db, 'hulpDeel/kamer')));
+    await assertFails(setDoc(doc(db, 'hulpDeel/kamer/aanmeldingen/z'), aanm('z', 'coach')));
+  }
+  await assertFails(setDoc(doc(als('coachB'), 'hulpDeel/n3'), { ...nieuw, teamId: 'tB', club: 'A' }));              // club moet die van het team zijn
+  await assertFails(setDoc(doc(c, 'hulpDeel/n4'), { ...nieuw, club: 'B' }));
+});
