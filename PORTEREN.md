@@ -267,6 +267,11 @@ Cluppie.io is de multi-tenant versie van Cluppie (oorspronkelijk de app van ASV'
   - Sitemap ingediend bij Google: status Succesvol, 2 pagina's gevonden. Indexering aangevraagd voor `over.html`; die URL was tot dat moment onbekend bij Google.
   - Bing Webmaster Tools: account via Google-login, `cluppie.io` geïmporteerd uit Search Console (dus geen aparte verificatie), sitemap ingediend, indexering aangevraagd voor `over.html` (quotum 100 URL's per dag). Bing voedt ChatGPT en Copilot.
   - `cluppie.io` zonder www werkt: er staat een A-record naar GitHub Pages (185.199.108.153).
+- [x] **IndexNow aangezet (19-11).** Aanleiding: Bing meldde `over.html` als "Discovered but not crawled". Nagekeken en er was niets mis: `robots.txt` laat alles toe, de pagina staat op `index, follow`, Bing haalde de sitemap op www met status Success op, en **Google had `over.html` op 19-11 al geïndexeerd**. Bing is simpelweg traag bij een nieuw domein zonder links. IndexNow meldt voortaan zelf wat er wijzigde.
+  - `public/829afb9e146e13e3c79b1758da702ff4.txt` is het sleutelbestand; de bestandsnaam ís de sleutel. **Niet hernoemen of weggooien**, dan werkt IndexNow niet meer.
+  - `tools/indexnow.mjs` meldt na elke Pages-deploy alleen de pagina's uit `sitemap.xml` die in die commit wijzigden. De app achter de login wordt nooit gemeld. Handmatig: `node tools/indexnow.mjs --alles` of `--droog` om te zien wat er gemeld zou worden.
+  - Draait als aparte job `indexnow` in `.github/workflows/pages.yml`, na de deploy. Mislukt de melding, dan geeft hij een waarschuwing en blijft de site gewoon staan.
+  - Google doet niet mee aan IndexNow; die blijft via de sitemap lopen.
 - [ ] **Nog te doen door Paul, en dit weegt nu het zwaarst:** links naar `www.cluppie.io` vanaf clubsites van deelnemende clubs, LinkedIn en de mailhandtekening. Zonder verwijzingen van buitenaf blijft een nieuw domein laag staan, hoe goed de tags ook zijn.
 - [ ] **Over een week of twee in Search Console kijken** wat er geïndexeerd is, en pas daarna de twee punten hieronder beslissen.
 - [ ] **Idee:** een blok veelgestelde vragen op `over.html` ("Wat kost Cluppie?", "Werkt het zonder Sportlink?"). Daar citeren AI-assistenten het liefst uit. Zichtbare inhoud, dus eerst een mockup.

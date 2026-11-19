@@ -2,6 +2,7 @@
 // de publieke pagina's. Een kapotte JSON-LD of een Disallow per ongeluk merk je anders pas weken later.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 const lees = (pad) => fs.readFileSync(new URL('../public/' + pad, import.meta.url), 'utf8');
 const BASIS = 'https://www.cluppie.io/';
 assert.equal(lees('CNAME').trim(), 'www.cluppie.io', 'BASIS hoort bij het domein in CNAME');
@@ -47,4 +48,18 @@ const llms = lees('llms.txt');
 assert.match(llms, /^# Cluppie\n\n> /, 'llms.txt: kop en samenvatting');
 [...llms.matchAll(/\]\((https?:[^)]+)\)/g)].forEach(m => assert.ok(m[1].startsWith(BASIS), `llms.txt: ${m[1]}`));
 [llms, robots, sitemap].forEach(t => assert.ok(!/ASV|trainer360/i.test(t), 'geen verwijzing naar ASV of bronnen'));
-console.log(`vindbaarheid: robots, sitemap (${locs.length}), llms.txt en koppen in orde`);
+// IndexNow: sleutelbestand, script en de stap in de deploy moeten bij elkaar blijven horen.
+const { leesSleutel, sitemapUrls, gewijzigdeUrls } = await import('../tools/indexnow.mjs');
+const publiek = fileURLToPath(new URL('../public/', import.meta.url));
+const sleutel = leesSleutel(publiek);
+assert.match(sleutel, /^[0-9a-f]{32}$/, 'IndexNow: sleutel is 32 hex-tekens');
+assert.deepEqual(sitemapUrls(publiek), locs, 'IndexNow leest dezelfde URLs als de sitemap');
+assert.deepEqual(gewijzigdeUrls(['public/over.html'], locs), [BASIS + 'over.html'], 'gewijzigde pagina wordt gemeld');
+assert.deepEqual(gewijzigdeUrls(['public/js/teams.js', 'README.md'], locs), [], 'app en repo-bestanden worden niet gemeld');
+assert.deepEqual(gewijzigdeUrls(['public/sitemap.xml'], locs).sort(), [...locs].sort(), 'nieuwe sitemap meldt alles');
+assert.deepEqual(gewijzigdeUrls([`public/${sleutel}.txt`], locs).sort(), [...locs].sort(), 'nieuwe sleutel meldt alles');
+const werkstroom = fs.readFileSync(new URL('../.github/workflows/pages.yml', import.meta.url), 'utf8');
+assert.ok(werkstroom.includes('node tools/indexnow.mjs'), 'de deploy roept het IndexNow-script aan');
+assert.ok(werkstroom.includes('fetch-depth: 2'), 'IndexNow heeft de vorige commit nodig om te zien wat wijzigde');
+
+console.log(`vindbaarheid: robots, sitemap (${locs.length}), llms.txt, IndexNow en koppen in orde`);

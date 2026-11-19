@@ -25,3 +25,18 @@ jobs:
           path: public
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # Meldt gewijzigde publieke pagina's bij IndexNow (Bing, Copilot). Draait na de deploy, zodat
+  # de crawler de nieuwe versie ophaalt. Mislukt dit, dan blijft de site gewoon staan.
+  indexnow:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node tools/indexnow.mjs
+
