@@ -7,7 +7,7 @@ import { db, doc, getDoc, functions, httpsCallable } from './firebase.js?v=20261
 import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261120g';
 import { DISTRICTEN } from './clubconfig.js?v=20261120g';
 import { koppelClubSuggesties } from './clubgids.js?v=20261120g';
-import { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } from './sportlink-clubinfo.js?v=20261120g';
+import { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } from './sportlink-clubinfo.js?v=20261120h';
 
 export async function laadMijnAanmelding(el){
   if (!el || !S.user) return;

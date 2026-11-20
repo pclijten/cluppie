@@ -14,7 +14,7 @@ import { contentVoorCategorie, clubEigenVoorCategorie } from './content.js?v=202
 
 export const clubwijzerItems = () => contentVoorCategorie('afspraak').filter(c => c && c.titel && c.achtergrond);
 /* [20261120g] de eigen gouden regels van de club (niet de standaard van Cluppie): bovenaan de Clubwijzer */
-export const clubRegels = () => clubEigenVoorCategorie('gouden-regel').map(c => c.titel).filter(Boolean);
+export const clubRegels = () => clubEigenVoorCategorie('gouden-regel').filter(c => c && c.titel);
 /* De afspraken per hoofdstuk, in de vaste volgorde van het Clubprofiel. Puur: ook los te testen. */
 export function groepeerAfspraken(items){
   const groepen = new Map();
@@ -46,9 +46,9 @@ export function openClubwijzer(veld){
   if (!groepen.length && !regels.length) return;
   openModal(`<h2>Zo werken wij bij ${esc(clubNaam())}</h2>
     <p class="cb-uitleg" style="margin:0 0 12px">De afspraken van de club, uit haar eigen beleid.</p>
-    ${regels.length ? `<section class="cw-groep" data-veld="gouden-regels"><h3 class="cw-kop">Onze gouden regels</h3><ol class="cw-regels">${regels.map(r => `<li>${esc(r)}</li>`).join('')}</ol></section>` : ''}
+    ${regels.length ? `<section class="cw-groep" data-veld="gouden-regels"><h3 class="cw-kop">Onze gouden regels</h3><ol class="cw-regels">${regels.map(r => `<li data-id="${esc(r.id || '')}" data-veld="${esc(r.veld || '')}">${esc(r.titel)}</li>`).join('')}</ol></section>` : ''}
     ${groepen.map(g => `<section class="cw-groep"><h3 class="cw-kop">${esc(g.naam)}</h3>
-      ${g.items.map(c => `<div class="cw-item" data-veld="${esc(c.veld || '')}"><b>${esc(c.titel)}</b><p>${esc(c.achtergrond).replace(/\n/g, '<br>')}</p></div>`).join('')}</section>`).join('')}`);
+      ${g.items.map(c => `<div class="cw-item" data-veld="${esc(c.veld || '')}" data-bev="${esc(c.bevinding || '')}"><b>${esc(c.titel)}</b><p>${esc(c.achtergrond).replace(/\n/g, '<br>')}</p></div>`).join('')}</section>`).join('')}`);
   if (veld){
     const el = document.querySelector(`#modalInhoud [data-veld="${String(veld).replace(/[^a-z.-]/g, '')}"]`);
     if (el){ el.classList.add('cw-licht'); el.scrollIntoView({ block: 'center' }); }

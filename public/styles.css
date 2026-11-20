@@ -9308,6 +9308,14 @@ p.cp-let{margin:0;font-size:var(--t-sm)}
 .cp-tel-uitleg b{color:var(--ink)}
 .cp-tel-uitleg p{margin:0;color:var(--ink)}
 .cp-tel-uitleg .knop{align-self:flex-start;margin-top:var(--space-3xs)}
+.cp-tel-kop{grid-template-columns:minmax(0,1fr) auto auto auto}
+.cp-tel-wijsknop.actief{border-color:var(--accent);color:var(--accent-tekst);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.cp-tel.cp-tel-wijs .cp-tel-frame{box-shadow:0 0 0 3px var(--accent),0 10px 30px rgba(0,0,0,.25)}
+.cp-tel-uitleg{max-height:46vh;overflow:auto;flex-shrink:0}
+.cp-tel-uitleg .invoer{width:100%;max-width:none}
+.cp-tel-uitleg textarea.invoer{line-height:1.45;resize:vertical}
+.cp-tel-uitleg small{font-size:var(--t-xs);color:var(--ink-2)}
+.cp-tel-uitleg .cp-knoppen .knop{align-self:auto;margin-top:0}
 .cp-optel{margin-left:auto;flex-shrink:0;white-space:nowrap}
 .cp-optel svg{vertical-align:-3px}
 .cp-optel.actief{border-color:var(--accent);color:var(--accent-tekst)}

@@ -51,7 +51,7 @@ async function doeSync(){
   const i = inst();
   if (!i.aan) return;
   if (i.trainingen && mag('trainingen')){
-    const { trainingenPerWeek } = await import('./teams-training.js?v=20261120g');
+    const { trainingenPerWeek } = await import('./teams-training.js?v=20261120h');
     if (S.teamId !== teamId) return;
     const vandaag = K.vandaagIso(), items = {};
     for (const g of trainingenPerWeek().komend) for (const x of g.items){
