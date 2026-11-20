@@ -31,7 +31,7 @@
 import {
   db, collection, doc, setDoc, deleteDoc, getDocs, query, where, onSnapshot
 } from './firebase.js?v=20261011g';
-import { listenMet } from './state.js?v=20261117a';
+import { listenMet } from './state.js?v=20261120g';
 
 /* [20260929c] CONTENT PER CLUB
    De collectie 'content' is de Cluppie-STANDAARD (gedeeld). Een club kan eigen
@@ -116,6 +116,8 @@ export function kompasTips(){
   laadFallbackIndienNodig();
   return sorteer(bron().filter(c => c.categorie === 'kompas'));
 }
+/* [20261120g] alleen de eigen, gepubliceerde teksten van de club in één categorie (zonder de Cluppie-standaard) */
+export function clubEigenVoorCategorie(categorie){ return sorteer(_clubEigen.filter(c => c.categorie === categorie)); }
 export function goudenRegels(){
   laadFallbackIndienNodig();
   return sorteer(bron().filter(c => c.categorie === 'gouden-regel')).map(c => c.titel);

@@ -111,6 +111,8 @@ function bepaalIndividueleCoaches({ gebruikers = [], teams = [], clubs = [], aan
   const lijst = [];
   for (const g of gebruikers){
     if (!g || !g.uid || inClub.has(g.uid)) continue;
+    /* [20261120g] een account zonder inlogmethode is anoniem: een ouder of speler via een deellink of de teamkamer, geen trainer */
+    if (g.anoniem) continue;
     if (g.email && weg.has(String(g.email).toLowerCase())) continue;
     const status = eigen[g.uid] ? 'eigen-team' : wacht.has(g.uid) ? 'wacht-op-club' : 'nog-geen-team';
     const teamNaam = (eigen[g.uid] && eigen[g.uid][0]?.naam) || '';
@@ -136,7 +138,7 @@ async function leesAuthGebruikers(auth = getAuth(), maxTotaal = 5000){
   do {
     const r = await auth.listUsers(1000, token);
     for (const u of r.users){
-      uit.push({ uid: u.uid, email: u.email || '', naam: u.displayName || '',
+      uit.push({ uid: u.uid, email: u.email || '', naam: u.displayName || '', anoniem: !(u.providerData || []).length,
         aangemeld: u.metadata && u.metadata.creationTime ? Date.parse(u.metadata.creationTime) : null,
         laatsteLogin: u.metadata && u.metadata.lastSignInTime ? Date.parse(u.metadata.lastSignInTime) : null });
     }
@@ -308,10 +310,59 @@ const zetPlatformInstellingen = onCall({ region: REGIO }, async (request) => {
   return schoon;
 });
 
+/* ---- [20261120g] naam en plaats van een club wijzigen, door de platformbeheerder ----
+   Het clubdocument, en de gekopieerde naam (clubNaam) bij teams en clubbrede items, zoals hernoemClub()
+   in public/js/club-instellingen.js dat voor de clubbeheerder doet. Via de server, want de eindbaas mag
+   teams niet zelf schrijven. Het overzicht in platformstats wordt meteen bijgewerkt.
+   PURE (getest): schoonClubNaam valideert de invoer. */
+function schoonClubNaam(d = {}){
+  const fout = t => { throw Object.assign(new Error(t), { code: 'invalid-argument' }); };
+  const clubId = String(d.clubId || '').trim(), naam = String(d.naam ?? '').replace(/\s+/g, ' ').trim();
+  if (!/^[A-Za-z0-9_-]{1,80}$/.test(clubId)) fout('Onbekende club.');
+  if (naam.length < 2 || naam.length > 60) fout('Een clubnaam heeft 2 tot 60 tekens.');
+  const uit = { clubId, naam };
+  if (d.plaats !== undefined){
+    const plaats = String(d.plaats ?? '').replace(/\s+/g, ' ').trim();
+    if (plaats.length > 60) fout('Een plaatsnaam heeft hoogstens 60 tekens.');
+    uit.plaats = plaats;
+  }
+  return uit;
+}
+const hernoemClubPlatform = onCall({ region: REGIO, timeoutSeconds: 120 }, async (request) => {
+  if (!(await isPlatformBeheerder(request))) throw new HttpsError('permission-denied', 'Alleen voor de platformbeheerder.');
+  let s;
+  try { s = schoonClubNaam(request.data || {}); }
+  catch (e){ throw new HttpsError('invalid-argument', e.message); }
+  const db = getFirestore(), ref = db.doc('clubs/' + s.clubId), snap = await ref.get();
+  if (!snap.exists) throw new HttpsError('not-found', 'Deze club bestaat niet.');
+  const oudePlaats = ((snap.data().instellingen || {}).locatie || {}).plaats || '';
+  await ref.update({ naam: s.naam, ...(s.plaats !== undefined ? { 'instellingen.locatie.plaats': s.plaats,
+    /* een andere plaats: de oude coördinaten horen er niet meer bij (de clubbeheerder zoekt de plaats opnieuw voor het weer) */
+    ...(s.plaats !== oudePlaats ? { 'instellingen.locatie.lat': null, 'instellingen.locatie.lon': null } : {}) } : {}) });
+  /* de gekopieerde naam bij teams en clubbrede items */
+  const refs = [...Object.keys(snap.data().teams || {}).map(t => db.doc('teams/' + t))];
+  for (const col of ['berichten', 'trainingen', 'videos', 'documenten']){
+    try { (await db.collection(col).where('club', '==', s.clubId).select().get()).docs.forEach(d => refs.push(d.ref)); }
+    catch (e){ console.warn('[hernoemClubPlatform]', col, e.message); }
+  }
+  let bijgewerkt = 0;
+  for (let i = 0; i < refs.length; i += 400){
+    const b = db.batch();
+    for (const r of refs.slice(i, i + 400)) b.set(r, { clubNaam: s.naam }, { merge: true });
+    try { await b.commit(); bijgewerkt += Math.min(400, refs.length - i); } catch (e){ console.warn('[hernoemClubPlatform] batch', e.message); }
+  }
+  /* het overzicht van het platformcentrum meteen bijwerken */
+  try {
+    const st = db.doc('platformstats/overzicht'), o = (await st.get()).data();
+    if (o && Array.isArray(o.clubs)) await st.update({ clubs: o.clubs.map(k => k.id === s.clubId ? { ...k, naam: s.naam, ...(s.plaats !== undefined ? { plaats: s.plaats } : {}) } : k) });
+  } catch (e){ console.warn('[hernoemClubPlatform] overzicht', e.message); }
+  return { ...s, bijgewerkt };
+});
+
 const platformOverzichtNu = onCall({ region: REGIO, timeoutSeconds: 300, memory: '512MiB' }, async (request) => {
   if (!(await isPlatformBeheerder(request))) throw new HttpsError('permission-denied', 'Alleen voor de platformbeheerder.');
   const o = await bouwPlatformOverzicht();
   return { clubs: o.clubs.length };
 });
 
-module.exports = { schoonPlatformInstellingen, zetPlatformInstellingen, bepaalIndividueleCoaches, benchmarkWaarden, benchmarkOverzicht, bouwPlatformOverzicht, platformOverzichtNu, beoordeelClub, startlijstKlaar, STARTLIJST_IDS, isPlatformBeheerder };
+module.exports = { schoonClubNaam, hernoemClubPlatform, schoonPlatformInstellingen, zetPlatformInstellingen, bepaalIndividueleCoaches, benchmarkWaarden, benchmarkOverzicht, bouwPlatformOverzicht, platformOverzichtNu, beoordeelClub, startlijstKlaar, STARTLIJST_IDS, isPlatformBeheerder };
