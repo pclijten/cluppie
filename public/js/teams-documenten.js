@@ -10,6 +10,7 @@
 import { S, esc } from './state.js?v=20261117a';
 import { docCategorieenAlle } from './config.js?v=20261117a';
 import { ico } from './icons.js?v=20261116t';
+import { htmlClubwijzerRij } from './clubwijzer.js?v=20261120e';   /* [20261120d] de afspraken van de club, bovenaan */
 
 const CATEGORIE_ICOON = { beleid: 'PDF', knvb: 'KNVB', overig: 'DOC' };
 const CATEGORIE_KLASSE = { beleid: '', knvb: 'knvb', overig: 'overig' };
@@ -31,11 +32,12 @@ function docRij(d){
 
 export function htmlTeamDocumenten(){
   const lijst = S.documenten.filter(d => (d.teams||[]).includes(S.teamId));
+  const wijzer = htmlClubwijzerRij();
   if (!lijst.length){
-    return `<div class="kaart leeg">Nog geen documenten voor dit team.<br>Je clubadmin kan hier beleidsstukken, KNVB-stukken en ander leesmateriaal delen.</div>`;
+    return wijzer || `<div class="kaart leeg">Nog geen documenten voor dit team.<br>Je clubadmin kan hier beleidsstukken, KNVB-stukken en ander leesmateriaal delen.</div>`;
   }
   /* alle categorieën, ook uitgezette: bestaande documenten mogen niet verdwijnen */
-  return docCategorieenAlle().map(({id, naam}) => {
+  return wijzer + docCategorieenAlle().map(({id, naam}) => {
     const groep = lijst.filter(d => (d.categorie || 'overig') === id)
       .sort((a,b) => (b.gemaakt?.seconds||0) - (a.gemaakt?.seconds||0));
     if (!groep.length) return '';

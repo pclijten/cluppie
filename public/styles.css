@@ -9237,3 +9237,57 @@ a.knop{ text-decoration:none; }
   .cp-nav-knop{width:auto;white-space:nowrap;flex-shrink:0;box-shadow:inset 0 0 0 1px var(--line-d)}
   .cp-veld header{flex-direction:column}
 }
+
+/* ---- [20261120d] Clubprofiel opnieuw: per onderwerp links wat de club zegt, rechts wat er in Cluppie komt ---- */
+.cp-stappen{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:var(--space-xs) var(--space-md);font-size:var(--t-sm);color:var(--ink-2)}
+.cp-stappen li{display:flex;align-items:center;gap:var(--space-2xs)}
+.cp-stappen b{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--surface);border:1px solid var(--line-d);color:var(--ink);font-size:var(--t-xs)}
+.cp-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+.cp-schakel{display:inline-flex;align-items:center;gap:var(--space-2xs);margin-left:auto;font-size:var(--t-sm);color:var(--ink-2)}
+.cp-schakel button{border:1px solid var(--line-d);background:transparent;color:var(--ink-2);font:inherit;font-size:var(--t-sm);padding:var(--space-2xs) var(--space-sm);cursor:pointer}
+.cp-schakel button:first-of-type{border-radius:9px 0 0 9px}
+.cp-schakel button:last-of-type{border-radius:0 9px 9px 0;border-left:0}
+.cp-schakel button.actief{background:var(--surface);color:var(--ink);font-weight:600}
+.cp-schakel button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.cp-wachtrij .cp-doel{margin-top:var(--space-2xs)}
+.cp-nav-streep{height:1px;background:var(--line-d);margin:var(--space-2xs) var(--space-sm)}
+.cp-bev{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--space-md);align-items:start}
+.cp-uit,.cp-cluppie,.cp-gezet{display:flex;flex-direction:column;gap:var(--space-xs);min-width:0}
+.cp-cluppie,.cp-gezet{padding:var(--space-sm);border-radius:10px;background:var(--surface);border:1px solid var(--line-d)}
+.cp-gezet{border-color:color-mix(in srgb,var(--ok) 45%,transparent)}
+.cp-kop{font-size:var(--t-xs);font-weight:700;letter-spacing:.02em;color:var(--ink-2)}
+.cp-kop i{font-style:normal;font-weight:400}
+.cp-kop svg{vertical-align:-3px}
+.cp-ok-tekst{color:var(--ok)}
+.cp-ok-tekst i{color:var(--ink-2)}
+.cp-gezet ul{margin:0;padding-left:18px;font-size:var(--t-sm);color:var(--ink);line-height:1.45;display:flex;flex-direction:column;gap:var(--space-3xs)}
+.cp-plek{align-self:flex-start;font-size:var(--t-xs);font-weight:600;color:var(--ink-2);background:var(--surface-2);border-radius:99px;padding:2px var(--space-xs)}
+.cp-instellingen{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--space-sm)}
+.cp-instellingen.twee{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:560px){.cp-instellingen.twee{grid-template-columns:minmax(0,1fr)}}
+.cp-instel-veld .invoer{max-width:none}
+.cp-instel-veld input.invoer:not([type="color"]){max-width:360px}
+.cp-instel-veld textarea.invoer{line-height:1.45;resize:vertical}
+.cp-ontbreekt{margin:0;font-size:var(--t-sm);color:var(--ink);line-height:1.45;padding:var(--space-xs) var(--space-sm);border-radius:8px;background:color-mix(in srgb,var(--warn) 12%,transparent)}
+p.cp-let{margin:0;font-size:var(--t-sm)}
+.cp-mkop{margin:var(--space-sm) 0 0;font-size:var(--t-sm);font-weight:700;color:var(--ink-2)}
+.cp-manco{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-sm);align-items:center;padding:var(--space-sm) 0;border-top:1px solid var(--line-d)}
+.cp-mkop + .cp-manco{border-top:0}
+.cp-manco-tekst{display:flex;flex-direction:column;gap:var(--space-3xs);min-width:0}
+.cp-manco-tekst b{color:var(--ink);font-weight:600}
+.cp-manco-tekst .pf-chip{align-self:flex-start}
+.cp-manco-tekst small{font-size:var(--t-sm);color:var(--ink-2);line-height:1.4}
+.cp-manco-antw{padding-left:var(--space-sm);border-left:2px solid var(--line-d)}
+@media (max-width:1100px){.cp-bev{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:860px){.cp-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.cp-schakel{margin-left:0}.cp-manco{grid-template-columns:minmax(0,1fr)}.cp-manco .knop{justify-self:start}}
+.cp-ronde{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:var(--space-2xs) var(--space-xs);align-items:center;padding:var(--space-xs) 0;border-top:1px solid var(--line-d)}
+.cp-plek + .cp-ronde{border-top:0}
+.cp-ronde label{display:flex;align-items:center;gap:var(--space-2xs);font-size:var(--t-sm);color:var(--ink-2);font-weight:400}
+.cp-ronde .invoer,.cp-instel-veld .cp-ronde input.invoer{max-width:none;min-width:0}
+.cp-ronde .knop{justify-self:start}
+/* Clubwijzer voor trainers (clubwijzer.js) */
+.cw-groep{margin-top:var(--space-md)}
+.cw-kop{margin:0 0 var(--space-xs);font-size:var(--t-sm);font-weight:700;color:var(--ink-2)}
+.cw-item{padding:var(--space-sm) 0;border-top:1px solid var(--line-d)}
+.cw-item b{display:block;color:var(--ink);font-weight:600;margin-bottom:var(--space-3xs)}
+.cw-item p{margin:0;color:var(--ink);line-height:1.5;font-size:var(--t-md)}

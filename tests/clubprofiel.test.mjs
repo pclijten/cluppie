@@ -1,10 +1,12 @@
-// Clubprofiel: hoofdstukken, document splitsen, bevindingen samenvoegen, stand en uitvoer.
+// Clubprofiel: hoofdstukken en bestemmingen, bevindingen met voorstel, stand, manco's, uitvoer, instellen, rolnamen.
 // Draaien: node --no-warnings tests/clubprofiel.test.mjs
 import assert from 'node:assert/strict';
-import { HOOFDSTUKKEN, alleVelden, veldOpId, veldenVoorAI, documentId, splitsDocument, halveer, docxTekst, schoonBevinding,
-  opTeRuimen, nieuweBevindingen, veldStand, overzicht, pastInFilter, vragenTekst, profielTekst, werklijstTekst } from '../public/js/clubprofiel-logica.js';
+import { HOOFDSTUKKEN, GROEPEN, alleVelden, veldOpId, veldenVoorAI, bestemmingen, documentId, docxTekst, alinea, regelsUit, schoonBevinding, schoonVoorstel, voorstelLeeg,
+  opTeRuimen, nieuweBevindingen, veldStand, overzicht, pastInFilter, mancos, vragenTekst, profielTekst, titelVan, contentDocs,
+  INSTELLEN, instelVelden, instelWaarde, controleerInstelling, instelWijzigingen, instelVeldenVoorAI, schoonRondes, seizoenVan, rondesSamenvoegen } from '../public/js/clubprofiel-logica.js';
+import { rolNaam, eigenRolNaam, ROLLEN } from '../public/js/rolnamen.js';
 
-/* hoofdstukken: unieke id's, elk veld hoort bij zijn hoofdstuk en heeft een vraag en een plek in Cluppie */
+/* hoofdstukken: unieke id's, elk veld hoort bij zijn hoofdstuk en heeft een vraag */
 const ids = alleVelden().map(v => v.id);
 assert.equal(new Set(ids).size, ids.length, 'veld-id is uniek');
 assert.equal(new Set(HOOFDSTUKKEN.map(h => h.id)).size, HOOFDSTUKKEN.length);
@@ -12,98 +14,133 @@ for (const h of HOOFDSTUKKEN){
   assert.match(h.id, /^[a-z]+$/);
   for (const v of h.velden){
     assert.match(v.id, /^[a-z]+\.[a-z]+$/);
-    assert.ok(v.label && v.vraag.endsWith('?') && v.doel, v.id);
+    assert.ok(v.label && v.vraag.endsWith('?'), v.id);
     assert.equal(v.hoofdstuk, h.id);
     assert.notEqual(v.id, h.id + '.overig');
+    /* elk veld heeft een bestemming in Cluppie: niets blijft handwerk */
+    assert.ok(bestemmingen(v).length >= 1, v.id + ' heeft een bestemming');
+    assert.ok(v.tekst || instelVelden(v.id), v.id + ': zonder tekst moet er een instelling zijn');
   }
 }
 assert.equal(veldOpId('bouw.indeling').label, 'Bouwen en hun namen');
 assert.equal(veldOpId('rollen.overig').hoofdstuk, 'rollen');
 assert.equal(veldOpId('bestaatniet.overig'), null);
 assert.equal(veldOpId('rollen.verzonnen'), null);
+assert.deepEqual(alleVelden().filter(v => !v.tekst).map(v => v.id), ['id.naam', 'id.kleur', 'id.plannaam']);
+assert.deepEqual(alleVelden().filter(v => v.regels).map(v => v.id), ['gedrag.regels', 'gedrag.ouders']);
+assert.deepEqual(bestemmingen(veldOpId('bouw.grenzen')).map(b => b.soort), ['instelling', 'instelling', 'clubwijzer']);
+assert.deepEqual(bestemmingen(veldOpId('gedrag.regels')).map(b => b.soort), ['clubwijzer', 'regels']);
+assert.deepEqual(bestemmingen(veldOpId('id.kleur')).map(b => b.soort), ['instelling']);
+
+/* groepen: elk hoofdstuk precies één keer; de AI krijgt per veld wat er gevraagd wordt */
+assert.deepEqual([...GROEPEN.flat()].sort(), HOOFDSTUKKEN.map(h => h.id).sort());
+const g1 = veldenVoorAI(GROEPEN[0]);
+assert.deepEqual(g1.map(h => h.id), GROEPEN[0]);
+const bg = g1.find(h => h.id === 'bouwen').velden.find(v => v.id === 'bouw.grenzen');
+assert.deepEqual([bg.tekst, bg.regels, bg.instellingen.length, bg.instellingen[0].type], [true, false, 2, 'getal']);
 assert.equal(veldenVoorAI().length, HOOFDSTUKKEN.length);
-assert.ok(JSON.stringify(veldenVoorAI()).length < 12000, 'de veldenlijst blijft klein');
+assert.ok(GROEPEN.every(g => JSON.stringify(veldenVoorAI(g)).length < 12000), 'de veldenlijst per groep blijft klein');
 
-/* splitsen: op paginagrenzen, elk stuk binnen de maat, niets kwijt */
-const pag = n => `[pagina ${n}]\n` + 'woord '.repeat(150) + '\n\n';
-const doc = Array.from({ length: 10 }, (_, i) => pag(i + 1)).join('');
-const stukken = splitsDocument(doc, 2000);
-assert.ok(stukken.length >= 5 && stukken.every(s => s.length <= 2000));
-assert.ok(stukken.every(s => s.startsWith('[pagina ')));
-assert.equal(stukken.join(''), doc);
-const lang = '[pagina 7]\n' + Array.from({ length: 40 }, (_, i) => `Alinea ${i} ` + 'x'.repeat(200)).join('\n\n');
-const delen = splitsDocument(lang, 1500);
-assert.ok(delen.length > 3 && delen.every(s => s.length <= 1500 && s.startsWith('[pagina 7]\n')), 'een lange pagina houdt zijn paginanummer');
-assert.deepEqual(splitsDocument('  '), []);
-const [a, b] = halveer('[pagina 3]\n' + 'regel een\n'.repeat(60));
-assert.ok(a.length > 200 && b.startsWith('[pagina 3]\n'), 'de tweede helft weet nog welke pagina het is');
-
-/* docx */
+/* tekst */
 assert.equal(docxTekst('<w:body><w:p><w:r><w:t>Onderbouw &amp; middenbouw</w:t></w:r></w:p><w:p><w:r><w:t>O8</w:t><w:tab/><w:t>O9</w:t></w:r></w:p></w:body>'), 'Onderbouw & middenbouw\nO8\tO9');
 assert.notEqual(documentId('Plan.pdf', 100), documentId('Plan.pdf', 101));
 assert.equal(documentId('Plan.pdf', 100), documentId('plan  PDF', 100));
+assert.equal(alinea('  Wij  trainen\n\n\n\n twee keer.  ', 100), 'Wij trainen\n\ntwee keer.');
+assert.deepEqual(regelsUit('- Op tijd\n\n• Respect \n* Samen'), ['Op tijd', 'Respect', 'Samen']);
 
-/* bevindingen */
+/* bevindingen en voorstel */
 assert.equal(schoonBevinding({ veld: 'onbekend', waarde: 'x' }), null);
 assert.equal(schoonBevinding({ veld: 'bouw.indeling', waarde: '  ' }), null);
-const s = schoonBevinding({ veld: 'bouw.indeling', waarde: 'Drie  bouwen', pagina: '4', zeker: 'raar', oordeel: 'x' });
-assert.deepEqual([s.waarde, s.pagina, s.zeker, s.oordeel, s.verwerkt], ['Drie bouwen', 4, 'middel', 'open', false]);
+const s = schoonBevinding({ veld: 'bouw.grenzen', waarde: 'Onderbouw  t/m O10', pagina: '4', zeker: 'raar', oordeel: 'x', status: 'deels', ontbreekt: 'De grens van de middenbouw.',
+  voorstel: { tekst: 'Onze onderbouw loopt t/m O10.', regels: ['hoort hier niet'], instellingen: { 'regels.bouwGrenzen.onderTm': '10', 'regels.bouwGrenzen.middenTm': 99, 'platformModules.ai': true } } });
+assert.deepEqual([s.waarde, s.pagina, s.zeker, s.oordeel, s.verwerkt, s.status, s.ontbreekt, s.gezet], ['Onderbouw t/m O10', 4, 'middel', 'open', false, 'deels', 'De grens van de middenbouw.', null]);
+assert.deepEqual(s.voorstel, { tekst: 'Onze onderbouw loopt t/m O10.', regels: [], rondes: [], instellingen: { 'regels.bouwGrenzen.onderTm': 10 } }, 'alleen wat bij het veld hoort en geldig is');
+assert.equal(schoonBevinding({ veld: 'id.kleur', waarde: 'Rood', voorstel: { tekst: 'hoort hier niet', instellingen: { 'identiteit.kleur': '#CC0000' } } }).voorstel.tekst, '');
+assert.equal(schoonBevinding({ veld: 'bouw.indeling', waarde: 'Drie bouwen' }).voorstel, null, 'een oude bevinding heeft geen voorstel');
+assert.equal(voorstelLeeg(null) && voorstelLeeg({ tekst: '', regels: [], instellingen: {} }) && !voorstelLeeg({ tekst: 'x' }) && !voorstelLeeg({ rondes: [{ naam: 'Winter' }] }), true);
+assert.deepEqual(schoonVoorstel({ tekst: 'Zo doen wij het.', regels: '- Op tijd\n- Respect' }, 'gedrag.regels').regels, ['Op tijd', 'Respect']);
 
 let n = 0; const id = () => 'b' + (++n);
 const profiel = { documenten: {}, bevindingen: {} };
 const d1 = { id: 'd1', naam: 'Jeugdplan.pdf' }, d2 = { id: 'd2', naam: 'Reglement.docx' };
 Object.assign(profiel.bevindingen, nieuweBevindingen(profiel, [
-  { veld: 'bouw.indeling', waarde: 'Onderbouw, middenbouw en bovenbouw', citaat: 'drie bouwen', pagina: 2, zeker: 'hoog', citaatOk: true },
+  { veld: 'bouw.indeling', waarde: 'Onderbouw, middenbouw en bovenbouw', citaat: 'drie bouwen', pagina: 2, zeker: 'hoog', citaatOk: true, voorstel: { tekst: 'Wij hebben drie bouwen.', instellingen: { 'lijsten.bouwen.items.onder.naam': 'Onderbouw' } } },
   { veld: 'bouw.indeling', waarde: 'Onderbouw, middenbouw en bovenbouw' },
   { veld: 'verzonnen.veld', waarde: 'x' },
-  { veld: 'rollen.overig', waarde: 'Er is een materiaalman' },
+  { veld: 'rollen.overig', waarde: 'Materiaalman: beheert de ballen', voorstel: { tekst: 'De materiaalman beheert de ballen.' } },
+  { veld: 'eval.momenten', waarde: 'Spelers worden beoordeeld', status: 'deels', ontbreekt: 'Wanneer en hoe vaak.' },
 ], d1, 1000, id));
-assert.equal(Object.keys(profiel.bevindingen).length, 2, 'dubbel en onbekend veld vallen af');
+assert.equal(Object.keys(profiel.bevindingen).length, 3, 'dubbel en onbekend veld vallen af');
 Object.assign(profiel.bevindingen, nieuweBevindingen(profiel, [{ veld: 'bouw.indeling', waarde: 'Minis, pupillen en junioren' }], d2, 2000, id));
-const o = overzicht(profiel);
+let o = overzicht(profiel);
 const bouwen = o.hoofdstukken.find(h => h.id === 'bouwen');
 assert.equal(bouwen.velden[0].stand.stand, 'open');
 assert.equal(bouwen.velden[0].stand.meerdere, true);
-assert.deepEqual([bouwen.tel.velden, bouwen.tel.open, bouwen.tel.leeg, bouwen.tel.meerdere], [3, 1, 2, 1]);
+assert.deepEqual([bouwen.tel.velden, bouwen.tel.open, bouwen.tel.leeg, bouwen.tel.meerdere, bouwen.tel.manco], [3, 1, 2, 1, 3]);
 const rollen = o.hoofdstukken.find(h => h.id === 'rollen');
 assert.equal(rollen.velden.at(-1).overig, true, 'overig verschijnt alleen als er iets in staat');
 assert.equal(o.hoofdstukken.find(h => h.id === 'teams').velden.some(v => v.overig), false);
 assert.equal(o.totaal.velden, alleVelden().length + 1);
+assert.equal(o.hoofdstukken.find(h => h.id === 'evalueren').velden[0].stand.deels, true);
+assert.equal(o.totaal.manco, alleVelden().length - 2 + 2, 'alles wat leeg is, plus het halve en het tegenstrijdige antwoord');
+
+/* manco's: niet gevonden, half en tegenstrijdig, elk met de vraag voor de club */
+const mc = mancos(profiel);
+assert.equal(mc.length, o.totaal.manco);
+assert.deepEqual([mc.find(m => m.veld === 'eval.momenten').soort, mc.find(m => m.veld === 'eval.momenten').vraag], ['deels', 'Wanneer en hoe vaak.']);
+assert.equal(mc.find(m => m.veld === 'bouw.indeling').soort, 'meerdere');
+assert.equal(mc.find(m => m.veld === 'bouw.indeling').antwoorden.length, 2);
+assert.equal(mc.find(m => m.veld === 'bouw.grenzen').vraag, 'Welke leeftijden horen bij welke bouw?');
+assert.ok(!mc.some(m => veldOpId(m.veld).overig), 'een losse vondst (overig) is nooit een manco');
 
 /* opnieuw inlezen: alleen wat nog open is van dat document gaat weg; beoordeeld blijft en komt niet dubbel */
-const eersteBouw = Object.keys(profiel.bevindingen).find(k => profiel.bevindingen[k].veld === 'bouw.indeling' && profiel.bevindingen[k].docId === 'd1');
-const overig = Object.keys(profiel.bevindingen).find(k => profiel.bevindingen[k].veld === 'rollen.overig');
-profiel.bevindingen[eersteBouw].oordeel = 'akkoord';
-assert.deepEqual(opTeRuimen(profiel, 'd1'), [overig]);
+const vind = (veld, docId) => Object.keys(profiel.bevindingen).find(k => profiel.bevindingen[k].veld === veld && profiel.bevindingen[k].docId === docId);
+const eersteBouw = vind('bouw.indeling', 'd1');
+Object.assign(profiel.bevindingen[eersteBouw], { oordeel: 'akkoord', verwerkt: true, gezet: { ms: 1, tekst: 'Wij hebben drie bouwen.', ids: ['afspraak-bouw-indeling'] } });
+assert.deepEqual(opTeRuimen(profiel, 'd1').sort(), [vind('rollen.overig', 'd1'), vind('eval.momenten', 'd1')].sort());
 assert.deepEqual(nieuweBevindingen(profiel, [{ veld: 'bouw.indeling', waarde: 'onderbouw, middenbouw en bovenbouw.' }], d1, 3000, id), {});
+assert.deepEqual(schoonBevinding(profiel.bevindingen[eersteBouw]).gezet.ids, ['afspraak-bouw-indeling'], 'wat gezet is blijft bewaard');
 
 /* stand van een veld */
-const st = (...x) => veldStand(x.map((bev, i) => ({ id: 'x' + i, waarde: 'w' + i, oordeel: 'open', verwerkt: false, ...bev }))).stand;
-assert.equal(st(), 'leeg');
-assert.equal(st({ oordeel: 'afgewezen' }), 'leeg');
-assert.equal(st({ oordeel: 'akkoord' }, {}), 'open');
-assert.equal(st({ oordeel: 'akkoord' }, { oordeel: 'akkoord', verwerkt: true }), 'akkoord');
-assert.equal(st({ oordeel: 'akkoord', verwerkt: true }, { oordeel: 'afgewezen' }), 'verwerkt');
-assert.equal(pastInFilter({ stand: { stand: 'leeg' } }, 'leeg') && pastInFilter({ stand: { stand: 'open' } }, 'alles') && !pastInFilter({ stand: { stand: 'open' } }, 'leeg'), true);
+const st = (...x) => veldStand(x.map((bev, i) => ({ id: 'x' + i, waarde: 'w' + i, oordeel: 'open', verwerkt: false, ...bev })));
+assert.equal(st().stand, 'leeg');
+assert.equal(st({ oordeel: 'afgewezen' }).stand, 'leeg');
+assert.equal(st({ oordeel: 'akkoord' }, {}).stand, 'open');
+assert.equal(st({ oordeel: 'akkoord' }, { oordeel: 'akkoord', verwerkt: true }).stand, 'akkoord');
+assert.equal(st({ oordeel: 'akkoord', verwerkt: true }, { oordeel: 'afgewezen' }).stand, 'verwerkt');
+assert.equal(st({ status: 'deels' }, { status: 'volledig' }).deels, false);
+const f = (stand, extra = {}) => ({ stand: { stand, deels: false, meerdere: false, ...extra } });
+assert.equal(pastInFilter(f('leeg'), 'manco') && pastInFilter(f('open'), 'alles') && pastInFilter(f('akkoord'), 'open') && pastInFilter(f('verwerkt', { deels: true }), 'manco') && !pastInFilter(f('open'), 'verwerkt'), true);
 
 /* uitvoer */
 const vragen = vragenTekst(profiel, 'FC Testdorp');
 assert.match(vragen, /^Vragen voor FC Testdorp/);
 assert.match(vragen, /Welke leeftijden horen bij welke bouw\?/);
+assert.match(vragen, /Momenten in het jaar: Wanneer en hoe vaak\./);
 assert.match(vragen, /verschillende antwoorden[\s\S]*Jeugdplan\.pdf[\s\S]*Reglement\.docx/);
-assert.ok(!/In welke bouwen is de jeugd verdeeld/.test(vragen), 'een gevonden onderwerp is geen vraag meer');
+assert.ok(!/In welke bouwen is de jeugd verdeeld/.test(vragen), 'een gevonden onderwerp is geen losse vraag meer');
 const md = profielTekst(profiel, 'FC Testdorp');
 assert.match(md, /^# Clubprofiel FC Testdorp/);
 assert.match(md, /## Bouwen en leeftijdsgroepen[\s\S]*- Onderbouw, middenbouw en bovenbouw _\[Jeugdplan\.pdf, p\. 2\]_/);
 assert.match(md, /nog niet beoordeeld/);
+assert.match(md, /ontbreekt: Wanneer en hoe vaak\./);
 assert.ok(!/nog niet beoordeeld|niet gevonden/.test(profielTekst(profiel, 'FC Testdorp', true)), 'alleen goedgekeurd');
-assert.match(werklijstTekst(profiel, 'FC Testdorp'), /Standaardbouwen: Bouwen en hun namen\n {3}- Onderbouw, middenbouw en bovenbouw/);
-profiel.bevindingen[eersteBouw].verwerkt = true;
-assert.match(werklijstTekst(profiel, 'FC Testdorp'), /Niets: alles wat is goedgekeurd is verwerkt/);
 assert.match(vragenTekst({}, ''), /Vragen voor de club/);
 
-/* [20261120c] instellen: elk veld met instellingen bestaat, paden zijn geldig, waarden worden gecontroleerd */
-const { INSTELLEN, instelVelden, instelWaarde, controleerInstelling, instelWijzigingen, instelVeldenVoorAI } = await import('../public/js/clubprofiel-logica.js');
+/* naar Cluppie: teksten als clubcontent */
+assert.equal(titelVan(veldOpId('wed.speeltijd'), 'x'), 'Speeltijd');
+assert.equal(titelVan(veldOpId('rollen.overig'), 'Materiaalman: beheert de ballen'), 'Materiaalman');
+const cd = contentDocs({ veldId: 'gedrag.regels', bevId: 'b9', titel: 'Gedragsregels', tekst: 'Wij zijn op tijd.\nWij tonen respect.', regels: 'Op tijd\nRespect', status: 'gepubliceerd' });
+assert.deepEqual(cd.map(d => d.id), ['afspraak-gedrag-regels', 'gouden-regel-cp-gedrag-regels-1', 'gouden-regel-cp-gedrag-regels-2']);
+assert.deepEqual([cd[0].data.categorie, cd[0].data.hoofdstuk, cd[0].data.hoofdstukNaam, cd[0].data.status, cd[0].data.bron, cd[0].data.achtergrond], ['afspraak', 'gedrag', 'Gedrag en normen', 'gepubliceerd', 'clubprofiel', 'Wij zijn op tijd.\nWij tonen respect.']);
+assert.deepEqual([cd[1].data.categorie, cd[1].data.titel, cd[2].data.titel], ['gouden-regel', 'Op tijd', 'Respect']);
+assert.equal(contentDocs({ veldId: 'id.kleur', bevId: 'b1', tekst: 'tekst die er niet hoort', status: 'x' }).length, 0, 'een veld zonder tekst krijgt geen Clubwijzer-item');
+assert.equal(contentDocs({ veldId: 'wed.speeltijd', bevId: 'b1', tekst: 'Iedereen speelt.', status: 'raar' })[0].data.status, 'concept', 'onbekende status is concept');
+assert.equal(contentDocs({ veldId: 'rollen.overig', bevId: 'bAb1', titel: 'Materiaalman', tekst: 'Hij beheert de ballen.' })[0].id, 'afspraak-rollen-overig-bab1');
+const volg = HOOFDSTUKKEN.flatMap(h => h.velden).map(v => contentDocs({ veldId: v.id, bevId: 'b', tekst: 'x' })[0]).filter(Boolean).map(d => d.data.volgorde);
+assert.deepEqual(volg, [...volg].sort((a, b) => a - b), 'de Clubwijzer houdt de volgorde van de hoofdstukken');
+
+/* instellen: elk veld met instellingen bestaat, paden zijn geldig, waarden worden gecontroleerd */
 for (const [veldId, defs] of Object.entries(INSTELLEN)){
   assert.ok(veldOpId(veldId), veldId + ' is een bestaand veld');
   for (const d of defs){
@@ -132,8 +169,41 @@ assert.deepEqual(instelWijzigingen('rol.lijst', inst, { 'rolNamen.coach': 'Train
 assert.deepEqual(instelWijzigingen('rol.team', inst, { 'rolNamen.coach': '' }), { wijzigingen: [['rolNamen.coach', '']] }, 'leegmaken zet de naam van Cluppie terug');
 assert.equal(instelVeldenVoorAI('rol.besluit')[0].opties.length, 2);
 
-/* [20261120c] eigen rolnamen van de club */
-const { rolNaam, eigenRolNaam, ROLLEN } = await import('../public/js/rolnamen.js');
+/* [20261120e] beoordelen: momenten worden evaluatierondes, de schaal en de domeinen worden instellingen */
+const evalueren = HOOFDSTUKKEN.find(h => h.id === 'evalueren').velden;
+assert.deepEqual(evalueren.map(v => v.id), ['eval.momenten', 'eval.vorm', 'eval.criteria', 'eval.wie', 'eval.gebruik', 'eval.gesprekken', 'eval.team', 'eval.inzage', 'eval.trainers']);
+assert.deepEqual(alleVelden().filter(v => v.rondes).map(v => v.id), ['eval.momenten']);
+assert.deepEqual(bestemmingen(veldOpId('eval.momenten')).map(b => b.soort), ['clubwijzer', 'rondes']);
+assert.equal(veldenVoorAI(['evalueren'])[0].velden[0].rondes, true);
+assert.deepEqual(INSTELLEN['eval.vorm'].map(d => d.pad).slice(0, 2), ['lijsten.niveaus.items.1.label', 'lijsten.niveaus.items.1.kort']);
+assert.equal(INSTELLEN['eval.vorm'].length, 10);
+assert.deepEqual(INSTELLEN['eval.criteria'].filter(d => d.pad.endsWith('.naam')).map(d => d.pad.split('.')[3]), ['TE', 'TA', 'FY', 'ME', 'GE']);
+assert.equal(INSTELLEN['leer.domeinen'], INSTELLEN['eval.criteria']);
+/* een niveau of domein zonder naam mag niet: dat geeft een leeg label in de beoordeling */
+assert.match(controleerInstelling(INSTELLEN['eval.vorm'][0], '  ').fout, /vul een naam in/);
+assert.match(instelWijzigingen('eval.vorm', {}, Object.fromEntries(INSTELLEN['eval.vorm'].map(d => [d.pad, d.pad.endsWith('3.label') ? '' : d.standaard]))).fout, /Niveau 3: vul een naam in/);
+assert.deepEqual(instelWijzigingen('eval.vorm', {}, Object.fromEntries(INSTELLEN['eval.vorm'].map(d => [d.pad, d.pad.endsWith('1.label') ? 'Onvoldoende' : d.pad.endsWith('1.kort') ? 'ONV' : d.standaard]))),
+  { wijzigingen: [['lijsten.niveaus.items.1.label', 'Onvoldoende'], ['lijsten.niveaus.items.1.kort', 'ONV']] });
+assert.equal(instelWaarde({ lijsten: { skills: { items: { TA: { naam: 'Inzicht' } } } } }, INSTELLEN['eval.criteria'][2]), 'Inzicht');
+/* rondes: geldige datums, einde na begin, geen dubbele naam, hoogstens zes */
+assert.deepEqual(schoonRondes([{ naam: ' Winterevaluatie ', soort: 'snel', van: '2026-12-01', tot: '2026-12-31' }, { naam: 'winterevaluatie', tot: '2027-01-01' }, { naam: 'Fout', tot: 'mei' },
+  { naam: 'Omgekeerd', van: '2027-06-01', tot: '2027-05-01' }, { naam: 'Zonder begin', soort: 'raar', tot: '2027-05-31' }, { naam: '', tot: '2027-05-31' }, { naam: 'Bestaat niet', tot: '2027-13-45' }]),
+  [{ naam: 'Winterevaluatie', soort: 'snel', van: '2026-12-01', tot: '2026-12-31' }, { naam: 'Zonder begin', soort: 'volledig', van: null, tot: '2027-05-31' }]);
+assert.equal(schoonRondes(Array.from({ length: 9 }, (_, i) => ({ naam: 'R' + i, tot: '2027-01-0' + (i + 1) }))).length, 6);
+assert.deepEqual(seizoenVan("2026/'27"), { start: 2026, label: "2026/'27", tekst: 'augustus 2026 tot en met juni 2027' });
+assert.equal(seizoenVan('', Date.UTC(2026, 10, 20)).label, "2026/'27");
+assert.equal(seizoenVan(null, Date.UTC(2027, 2, 1)).label, "2026/'27");
+const rv = schoonVoorstel({ tekst: 'Wij beoordelen twee keer.', rondes: [{ naam: 'Winter', tot: '2026-12-31' }] }, 'eval.momenten');
+assert.deepEqual(rv.rondes, [{ naam: 'Winter', soort: 'volledig', van: null, tot: '2026-12-31' }]);
+assert.deepEqual(schoonVoorstel({ tekst: 'x', rondes: [{ naam: 'Winter', tot: '2026-12-31' }] }, 'eval.wie').rondes, [], 'rondes alleen bij het veld dat ze vraagt');
+/* samenvoegen met wat de club al heeft: zelfde naam wordt bijgewerkt, niets verdwijnt, nieuwe rondes gelden voor alle teams */
+const sm = rondesSamenvoegen([{ id: 'r1', naam: 'Winter', soort: 'snel', tot: '2026-12-15', teams: ['t1'], status: 'gesloten', seizoen: "2026/'27" }, { id: 'r0', naam: 'Eigen ronde van de club', tot: '2026-10-01', teams: ['t2'] }],
+  [{ naam: 'winter', van: '2026-12-01', tot: '2026-12-31' }, { naam: 'Voorjaar', van: '2027-05-01', tot: '2027-05-31' }], { teams: ['t1', 't2'], seizoen: "2026/'27", nuMs: 1000 });
+assert.deepEqual(sm.lijst.map(r => [r.id, r.naam, r.tot, r.teams.join('+'), r.status]), [['r1', 'Winter', '2026-12-31', 't1', 'gesloten'], ['r0', 'Eigen ronde van de club', '2026-10-01', 't2', undefined], [sm.ids[1], 'Voorjaar', '2027-05-31', 't1+t2', 'open']]);
+assert.deepEqual([sm.ids[0], sm.lijst[2].seizoen, sm.lijst[2].gemaaktMs, sm.lijst[0].soort], ['r1', "2026/'27", 1000, 'volledig']);
+assert.deepEqual(rondesSamenvoegen(null, [], {}).lijst, []);
+
+/* eigen rolnamen van de club */
 const clubR = { instellingen: { jeugdRolNaam: 'Hoofd opleidingen', rolNamen: { coordinator: '  TC-lid  ', coach: '', trainco: 7 } } };
 assert.equal(rolNaam('coordinator', clubR, 'Coördinator'), 'TC-lid');
 assert.equal(rolNaam('coach', clubR, 'Coach'), 'Coach');
