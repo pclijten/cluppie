@@ -228,6 +228,22 @@ service cloud.firestore {
         allow read: if isClubLid(clubId);
         allow write: if isClubAdmin(clubId);
       }
+      /* [20261120a] Veldkaart (gepoort uit ASV'33): sportparken (het eigen park en die van tegenstanders) met
+         velden en plekken. Lezen: clubleden. Schrijven: alleen de clubbeheerder (de eindbaas alleen in
+         ondersteuningsmodus, via isClubAdmin). Er staan geen spelersgegevens in. */
+      match /sportparken/{parkId} {
+        allow read: if isClubLid(clubId);
+        allow write: if isClubAdmin(clubId);
+      }
+      /* Een coach meldt dat een veld niet klopt; clubbeheer leest en handelt af. */
+      match /veldmeldingen/{meldingId} {
+        allow create: if isClubLid(clubId)
+          && request.resource.data.door == uid()
+          && request.resource.data.status == 'open'
+          && request.resource.data.toelichting is string
+          && request.resource.data.toelichting.size() <= 500;
+        allow read, update, delete: if isClubAdmin(clubId);
+      }
       match /afgelastingen/{id} {
         allow read: if isClubLid(clubId);
         allow write: if isClubAdmin(clubId);

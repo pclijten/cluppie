@@ -1,4 +1,43 @@
 [
+  { "datum": "2026-11-20", "titel": "Veldkaart: zie waar je speelt", "punten": [
+    "Tik bij een wedstrijd op het veld (bijvoorbeeld Veld 3) en je ziet een luchtfoto van het sportpark met het veld rood gemarkeerd. Bij Praktisch in de wedstrijdvoorbereiding staat de kaart er ook, en op de computer staan veld en kleedkamer bij de wedstrijd.",
+    "Je ziet het veld zoals jouw team het gebruikt: een heel veld bij 11 en 9 tegen 9, een half veld bij 8 tegen 8 en een kwart bij 6 en 4 tegen 4. Veldnamen uit Sportlink zoals \"veld 4 B1\" worden begrepen.",
+    "De kleedkamer van de wedstrijd licht op. Ook de kantine, de ingang en het parkeren staan erop als clubbeheer ze heeft ingetekend. Knijp met twee vingers om te zoomen.",
+    "Met het rondje rechtsboven zie je waar je zelf staat. Dat blijft op je telefoon en wordt niet opgeslagen.",
+    "Clubbeheerders: bij Club staat een nieuwe tegel Sportparken. Daar teken je het eigen sportpark in en sportparken van tegenstanders. Met Velden ophalen zet Cluppie de voetbalvelden uit OpenStreetMap alvast op de luchtfoto; jij tikt de nummers aan.",
+    "Klopt er iets niet of ontbreekt een veld? Met \"Klopt er iets niet? Meld het\" gaat er een melding naar clubbeheer, als je wilt met een foto van het bord met de veldindeling."
+  ]},
+  { "datum": "2026-11-20", "titel": "Eén wedstrijdscherm voor iedereen", "punten": [
+    "Het nieuwe wedstrijdscherm is nu voor iedereen het standaardscherm: klok, kwarten en stand in één blok, wisselen stap voor stap en zelden gebruikte acties in het Menu.",
+    "Het oude wedstrijdscherm is uitgezet. Je wedstrijden, wissels en speeltijden blijven gewoon bewaard.",
+    "Onder Wijzig opzet staat Opstelling leegmaken: dat wist in één keer de opstelling en geplande wissels van alle periodes, zolang de wedstrijd nog niet begonnen is. Selectie, formatie en aanvoerder blijven staan.",
+    "Startscherm op de telefoon: het paneel onder \"Alles\" veeg je nu ook met je duim omlaag om het te sluiten."
+  ]},
+  { "datum": "2026-11-20", "titel": "Team evalueren gaat anders: doel eerst", "punten": [
+    "Je kijkt eerst of het wedstrijddoel terugkwam (geen wedstrijddoel? dan kies je het blokdoel) en kiest daarna per onderdeel de zin die past bij wat je zag.",
+    "De onderdelen volgen de speelwijze en leercurve: met de bal, zonder de bal, omschakelen en team en beleving. Welke je krijgt, hangt af van de leeftijd.",
+    "Onder Evaluatie volgt de Blokspiegel per week hoe het blokdoel erin komt. Oude evaluaties blijven bewaard en tellen mee.",
+    "De spelersradar vergelijkt nu met de vorige beoordeling, zodat je groei ziet. Tik een domein voor de criteria erachter.",
+    "Op de computer vul je de evaluatie in hetzelfde venster in als op de telefoon; het scherm Evaluatie toont de samenvatting en de radar."
+  ]},
+  { "datum": "2026-11-20", "titel": "Nieuw: Toernooitje", "punten": [
+    "Onder Alles staat bij Meer een nieuwe tegel Toernooitje. Daarmee speel je een onderling toernooitje met je eigen spelers en gastspelers.",
+    "Je vinkt aan wie er meedoet en voegt gastspelers toe met alleen een voornaam. De presentie van vandaag neem je met één tik over.",
+    "Je kiest het aantal veldjes en geeft de totale tijd of de wedstrijdduur op. Cluppie rekent de rondes, de duur per wedstrijd en de eindtijd uit.",
+    "Twee vormen: vaste teams met een stand per team en als je wilt een finale, of wisselende teams waarbij elke ronde opnieuw wordt gehusseld en elke speler zijn eigen punten spaart.",
+    "Tijdens het spelen is er één klok voor alle veldjes. De score houd je per veldje bij; een collega-coach kan op zijn eigen telefoon een ander veldje doen.",
+    "Een toernooitje pas je achteraf aan met het potloodje, en teams geef je een eigen naam. Na afloop deel je de uitslag via WhatsApp. De uitslagen tellen niet mee in de speelminuten en Stats."
+  ]},
+  { "datum": "2026-11-20", "titel": "Video's: eigen volgorde en meerdere tegelijk uploaden", "punten": [
+    "Team → Video's: bovenaan kies je een categorie en je ziet alleen die video's, genummerd in de volgorde van de club. Met Alle zie je alles bij elkaar.",
+    "Clubbeheerders: in Club → Video's staan de categorieën links en de video's van de gekozen categorie rechts. Zet video's en categorieën in je eigen volgorde met de pijlen, of op de computer door te slepen.",
+    "Bij Eigen video's uploaden kies je nu meerdere bestanden in één keer. Per video pas je de titel aan; de categorie en de teams gelden voor allemaal. Een te groot bestand wordt overgeslagen, de rest gaat gewoon door.",
+    "Op de computer openen uploaden en bewerken van trainingen, video's en documenten in Club als paneel aan de rechterkant. Esc sluit het paneel."
+  ]},
+  { "datum": "2026-11-20", "titel": "Bouw-omgeving: blijft niet meer hangen op laden", "punten": [
+    "Het bouwdashboard bleef soms eindeloos op \"Gegevens van alle teams ophalen…\" staan. Reageert de server niet op tijd, dan laadt Cluppie nu de laatst bekende gegevens.",
+    "Lukt ook dat niet, dan zie je een foutmelding in plaats van een leeg laadscherm."
+  ]},
   { "datum": "2026-11-18", "titel": "Wedstrijdvoorbereiding nu ook op de computer", "punten": [
     "Op het Dashboard en bij Wedstrijden staat een knop Voorbereiding, naast Start wedstrijd of Wedstrijd openen.",
     "Je ziet daar hetzelfde als op de telefoon: de tegenstander met stand en uitslagen uit Sportlink, praktische zaken als locatie en weer, en je plan.",

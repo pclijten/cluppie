@@ -72,6 +72,14 @@ test('storage: proeven per gebruikerstype', async () => {
   await proef(18, 'niet ingelogd', 'leest een trainings-PDF', 'weigeren', () => getBytes(ref(opslag(null), T)));
   await proef(19, 'coach', 'schrijft buiten de clubmappen', 'weigeren', () => uploadBytes(ref(opslag('coach'), 'los/x.pdf'), PDF, { contentType: 'application/pdf' }));
   await proef(20, 'eindbaas', 'leest een trainings-PDF zonder ondersteuningsmodus', 'weigeren', () => getBytes(ref(opslag('paul', { email: 'pclijten@gmail.com', email_verified: true }), T)));
+  /* [20261120a] veldkaart: foto bij een veldmelding (clubs/{club}/veldfotos/{uid}/…) */
+  const JPG = new Uint8Array([255, 216, 255, 224]);
+  await proef(21, 'coach', 'stuurt een foto van de veldindeling in de eigen map', 'toestaan', () => uploadBytes(ref(opslag('coach'), 'clubs/test-fc/veldfotos/coach/1.jpg'), JPG, { contentType: 'image/jpeg' }));
+  await proef(22, 'coach', 'leest de eigen veldfoto terug', 'toestaan', () => getBytes(ref(opslag('coach'), 'clubs/test-fc/veldfotos/coach/1.jpg')));
+  await proef(23, 'clubadmin', 'leest en verwijdert de veldfoto van een coach', 'toestaan', async () => { await getBytes(ref(opslag('admin'), 'clubs/test-fc/veldfotos/coach/1.jpg')); await deleteObject(ref(opslag('admin'), 'clubs/test-fc/veldfotos/coach/1.jpg')); });
+  await proef(24, 'coach', 'zet een veldfoto in de map van een ander', 'weigeren', () => uploadBytes(ref(opslag('coach'), 'clubs/test-fc/veldfotos/admin/2.jpg'), JPG, { contentType: 'image/jpeg' }));
+  await proef(25, 'coach', 'zet een pdf in de veldfotomap', 'weigeren', () => uploadBytes(ref(opslag('coach'), 'clubs/test-fc/veldfotos/coach/3.pdf'), PDF, { contentType: 'application/pdf' }));
+  await proef(26, 'coach andere club', 'stuurt een veldfoto naar een andere club', 'weigeren', () => uploadBytes(ref(opslag('ander'), 'clubs/test-fc/veldfotos/ander/4.jpg'), JPG, { contentType: 'image/jpeg' }));
   const fout = uitkomsten.filter(u => !u.klopt).map(u => `${u.nr} ${u.rol}: ${u.wat} -> ${u.uit}`);
   assert.deepStrictEqual(fout, [], 'afwijkingen van wat veilig is');
 });

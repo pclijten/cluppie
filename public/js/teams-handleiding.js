@@ -7,7 +7,7 @@
 import { esc } from './state.js?v=20261117a';
 import { beleidsplanNaam } from './clubconfig.js?v=20261117a';
 import { ROLKAARTEN } from './rolkaart.js?v=20261117a';
-import { onboardingHerstartBlok } from './onboarding.js?v=20261118c';
+import { onboardingHerstartBlok } from './onboarding.js?v=20261120a';
 
 export function htmlHandleiding(){
   return `<div class="hl">
@@ -242,6 +242,17 @@ export function htmlHandleiding(){
     <p>Onder <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3.1"/><path d="M12 3.2 13.6 5.4l2.6-.6 1 2.5 2.6.7-.5 2.6L21 12l-1.7 1.4.5 2.6-2.6.7-1 2.5-2.6-.6L12 20.8l-1.6-2.2-2.6.6-1-2.5-2.6-.7.5-2.6L3 12l1.7-1.4-.5-2.6 2.6-.7 1-2.5 2.6.6z"/></svg> <b>Team</b> kun je via <b>"Mijn weergavenaam wijzigen"</b> instellen hoe je in de coachlijst verschijnt. Handig zodat je teamgenoten zien wie wie is.</p>
     </section>
 
+    <section class="hl-sec" data-zoek="toernooitje onderling toernooi mini toernooi klok timer score stand veldjes gastspelers husselen wijzigen aanpassen teamnaam teamnamen andere spelers met toernooitje (tegel onder alles, bij meer) speel je een onderling toernooitje met je eigen spelers en gastspelers. handig aan het eind van een training of op een vrije zaterdag. opzet in drie stappen. vink aan wie er meedoet en voeg gastspelers toe met alleen een voornaam. kies daarna het aantal veldjes en geef de totale tijd of de wedstrijdduur op: cluppie rekent de rondes, de duur en de eindtijd uit. bij vaste teams maak je als laatste de teams met husselen of eerlijk verdelen. twee vormen. bij vaste teams speelt iedereen tegen iedereen, met een stand per team en als je wilt een finale. bij wisselende teams wordt er elke ronde opnieuw gehusseld en spaart elke speler zijn eigen punten. tijdens het spelen. eén klok voor alle veldjes, met een piep en trilsignaal aan het eind van de ronde. tik op de rode plus om een doelpunt te tellen. een collega-coach kan op zijn eigen telefoon een ander veldje bijhouden. onder schema verbeter je een uitslag, onder stand zie je de tussenstand en onder teams verplaats je een speler. na afloop zie je de eindstand en deel je de uitslag via whatsapp, met alleen voornamen. de uitslagen van een toernooitje tellen niet mee in de speelminuten, stats of presentie. eerlijk verdelen gebruikt alleen de beoordelingen die het hele team ziet; de niveaus komen nergens in beeld.">
+    <h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8.4 4h7.2v3.6a3.6 3.6 0 0 1-7.2 0z"/><path d="M8.4 5.4H5.8a2.4 2.4 0 0 0 2.6 3.2"/><path d="M15.6 5.4h2.6a2.4 2.4 0 0 1-2.6 3.2"/><path d="M12 11.2v3"/><path d="M9.2 19.8h5.6l-.7-3.6h-4.2z"/></svg> Toernooitje</h3>
+    <p>Met <b>Toernooitje</b> (tegel onder <b>Alles</b>, bij Meer) speel je een onderling toernooitje met je eigen spelers en gastspelers. Handig aan het eind van een training of op een vrije zaterdag.</p>
+    <p><b>Opzet in drie stappen.</b> Vink aan wie er meedoet en voeg gastspelers toe met alleen een voornaam. Kies daarna het aantal veldjes en geef de totale tijd of de wedstrijdduur op: Cluppie rekent de rondes, de duur en de eindtijd uit. Bij vaste teams maak je als laatste de teams met Husselen of Eerlijk verdelen.</p>
+    <p><b>Twee vormen.</b> Bij <b>vaste teams</b> speelt iedereen tegen iedereen, met een stand per team en als je wilt een finale. Bij <b>wisselende teams</b> wordt er elke ronde opnieuw gehusseld en spaart elke speler zijn eigen punten.</p>
+    <p><b>Tijdens het spelen.</b> Eén klok voor alle veldjes, met een piep en trilsignaal aan het eind van de ronde. Tik op de rode plus om een doelpunt te tellen. Een collega-coach kan op zijn eigen telefoon een ander veldje bijhouden. Onder Schema verbeter je een uitslag, onder Stand zie je de tussenstand en onder Teams verplaats je een speler.</p>
+    <p><b>Wijzigen.</b> Met het potloodje rechtsboven pas je een gemaakt toernooitje aan: andere spelers, veldjes, tijd of rondes. Gespeelde wedstrijden blijven staan en de rest wordt opnieuw ingedeeld. Een ander aantal teams of een andere vorm kan na de eerste wedstrijd alleen door opnieuw te beginnen. Tik op een teamnaam om het team een eigen naam te geven.</p>
+    <p><b>Na afloop</b> zie je de eindstand en deel je de uitslag via WhatsApp, met alleen voornamen.</p>
+    <div class="tip">De uitslagen van een toernooitje tellen <b>niet</b> mee in de speelminuten, Stats of presentie. Eerlijk verdelen gebruikt alleen de beoordelingen die het hele team ziet; de niveaus komen nergens in beeld.</div>
+    </section>
+
     <h4 class="hl-hoofdstuk" id="hlh-wedstrijddag"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.2" y="4.6" width="17.6" height="14.8" rx="2.4"/><path d="M12 4.6v14.8"/><circle cx="12" cy="12" r="2.8"/></svg> Op de wedstrijddag</h4>
     <section class="hl-sec" data-zoek="snel beginnen voeg je spelers toe onder het tabblad: naam en rugnummer is genoeg. maak een nieuwe wedstrijd aan onder. kies competitie of toernooi. sleep spelers van de bank naar het veld of tik ze aan en tik daarna een positie. start de klok ▶ zodra de wedstrijd begint. wissels tijdens het spel worden automatisch gelogd met tijdstip.">
     <h3>Snel beginnen</h3>
@@ -402,35 +413,30 @@ export function htmlHandleiding(){
     <div class="tip"><b>Privacy:</b> beoordelingen en leerpunten zijn <b>coach-only</b>. Spelers en ouders zien deze nooit. Verwijder je een speler, dan gaan zijn beoordelingen mee weg.</div>
     </section>
 
-    <section class="hl-sec" data-zoek="team evalueren na de wedstrijd naast de beoordeling per speler kun je na elke wedstrijd ook het hele team evalueren. onderaan het wedstrijdscherm, onder het wedstrijdverslag, staat de knop team evalueren . al een keer ingevuld voor deze wedstrijd? dan heet de knop ✓ teamevaluatie bijwerken en pas je 'm gewoon aan. acht korte vragen, elk met dezelfde kleurbalk als bij spelers (1 aandacht t/m 5 uitblinker): inzet & concentratie, samenwerking & communicatie, taakuitvoering per linie, opbouw van achteruit, omschakeling bij balverlies/-winst, druk zetten & veroveren, spelplezier, coachbaarheid. daarna eventueel een paar tags aantikken (goede samenwerking, veel plezier, afspraken niet nagekomen, enzovoort) en twee optionele tekstvelden: wat ging het beste, en wat is het aandachtspunt voor de volgende training. drie tot vijf minuten werk, alles op één scherm, niets is verplicht behalve de acht kleurbalken.">
+    <section class="hl-sec" data-zoek="team evalueren na de wedstrijd wedstrijddoel blokdoel zagen we het terug moment bewijs per moment wij hebben de bal zij hebben de bal omschakelen snel weer meedoen team en beleving opbouwen kansen creëren en scoren storen en veroveren doelpunten voorkomen na balverlies na balwinst inzet en weerbaarheid samenspel en communicatie afspraken uitvoeren plezier en sportiviteit spelers ja deels nee opvallend zo evalueren we uitslag oude evaluaties">
     <h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg> Team evalueren na de wedstrijd</h3>
-    <p>Naast de beoordeling per speler kun je na elke wedstrijd ook het <b>hele team</b> evalueren. Onderaan het wedstrijdscherm, onder het wedstrijdverslag, staat de knop <b><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg> Team evalueren</b>.</p>
-    <p>Al een keer ingevuld voor deze wedstrijd? Dan heet de knop <b>✓ Teamevaluatie bijwerken</b> en pas je 'm gewoon aan.</p>
-    <p>Acht korte vragen, elk met dezelfde kleurbalk als bij spelers (1 Aandacht t/m 5 Uitblinker):</p>
-    <ul>
-      <li>Inzet &amp; concentratie</li>
-      <li>Samenwerking &amp; communicatie</li>
-      <li>Taakuitvoering per linie</li>
-      <li>Opbouw van achteruit</li>
-      <li>Omschakeling bij balverlies/-winst</li>
-      <li>Druk zetten &amp; veroveren</li>
-      <li>Spelplezier</li>
-      <li>Coachbaarheid</li>
-    </ul>
-    <p>Daarna eventueel een paar <b>tags</b> aantikken (goede samenwerking, veel plezier, afspraken niet nagekomen, enzovoort) en twee optionele tekstvelden: <b>wat ging het beste</b>, en <b>wat is het aandachtspunt voor de volgende training</b>.</p>
-    <div class="tip"><b>3–5 minuten werk:</b> alles staat op één scherm, tikken in plaats van typen. Niets is verplicht behalve de acht kleurbalken, de tags en tekstvelden mag je overslaan.</div>
+    <p>Naast de beoordeling per speler kun je na elke wedstrijd ook het <b>hele team</b> evalueren. Onderaan het wedstrijdscherm, onder het wedstrijdverslag, staat de knop <b><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg> Team evalueren</b>. Al ingevuld? Dan heet hij <b>✓ Teamevaluatie bijwerken</b>.</p>
+    <p>Sinds 20 november evalueer je zo:</p>
+    <ol>
+      <li><b>Waar werkten we aan?</b> Het wedstrijddoel dat je de wedstrijd meegaf. Geen wedstrijddoel? Dan kies je het blokdoel: de paar doelen die in de trainingen van het blok terugkomen.</li>
+      <li><b>Zagen we het terug?</b> Een kleur met een vaste zin (van “niet teruggezien” tot “ging vanzelf”) en één moment dat je zag.</li>
+      <li><b>Wat zag je per moment?</b> Vier groepen: <i>wij hebben de bal</i>, <i>zij hebben de bal</i>, <i>omschakelen</i> en <i>team en beleving</i>. Onder elke kleur staat een zin die zegt wat je ziet. Welke onderdelen je krijgt, hangt af van de leeftijd: omschakelen is er bij elke leeftijd (tot en met O13 als “snel weer meedoen”), vanaf O14 apart na balverlies en na balwinst.</li>
+      <li><b>Wat vonden de spelers?</b> Optioneel: laat ze kiezen tussen ja, deels of nee en tel mee.</li>
+    </ol>
+    <p>Onderaan staat één vrij veld <b>Opvallend</b> voor wat je verder opviel. De uitslag staat bewust niet op het scherm: je beoordeelt het spel, niet de stand. Achtergrond en bronnen staan onder <b>Zo evalueren we</b> bovenaan het venster.</p>
+    <div class="tip"><b>Oude evaluaties</b> blijven bewaard. Ze tellen mee in radars en trends, vertaald naar de nieuwe onderdelen. Overslaan mag nog steeds: alleen één kleur is nodig, bij het doel of bij een onderdeel.</div>
     </section>
 
-    <section class="hl-sec" data-zoek="teamevaluatie-dashboard bekijk je onder het tabblad stats , via het segment teamevaluatie naast spelers . vier onderdelen: groeicurve: een lijn met de gemiddelde teamontwikkelscore per wedstrijd, zodat je in één oogopslag ziet of het team groeit. categorieën: de acht onderdelen met hun gemiddelde over de laatste vijf wedstrijden, inclusief een pijltje omhoog, gelijk of omlaag. terugkerende aandachtspunten: automatisch signalen zodra hetzelfde onderdeel meerdere wedstrijden op rij het laagst scoort. voorgesteld trainingsthema: een suggestie voor de volgende training, gebaseerd op het onderdeel dat de meeste aandacht vraagt; sluit waar mogelijk aan bij een leercurve-thema uit het jeugdbeleidsplan. tip: na 1 evaluatie zie je alleen een cijfer, vanaf 2 verschijnt de lijn, en de terugkerende aandachtspunten worden pas zichtbaar na een paar wedstrijden, zo voorkom je dat één mindere wedstrijd meteen als patroon wordt gezien.">
-    <h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 19V10"/><path d="M11 19V5"/><path d="M18 19v-7"/></svg> Teamevaluatie-dashboard lezen</h3>
-    <p>Alle ingevulde teamevaluaties komen samen onder het tabblad <b>Stats</b>, via het segment <b><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg> Teamevaluatie</b> naast Spelers. Vier onderdelen:</p>
+    <section class="hl-sec" data-zoek="teamevaluatie dashboard blokspiegel per moment historie onderdelen terugkerende aandachtspunten voorgesteld trainingsthema radar coördinator">
+    <h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 19V10"/><path d="M11 19V5"/><path d="M18 19v-7"/></svg> Teamevaluaties terugkijken</h3>
+    <p>Onder <b>Wedstrijden → Evaluatie</b> komen alle teamevaluaties samen:</p>
     <ul>
-      <li><b>Groeicurve</b>: een lijn met de gemiddelde teamontwikkelscore per wedstrijd, zodat je in één oogopslag ziet of het team groeit.</li>
-      <li><b>Categorieën</b>: de acht onderdelen met hun gemiddelde over de laatste vijf wedstrijden, inclusief een pijltje ↗ ↘ → voor de trend.</li>
-      <li><b>Terugkerende aandachtspunten</b>: verschijnt automatisch zodra hetzelfde onderdeel meerdere wedstrijden op rij het laagst scoort.</li>
-      <li><b>Voorgesteld trainingsthema</b>: een suggestie voor de volgende training, gebaseerd op het onderdeel dat nu de meeste aandacht vraagt. Sluit waar mogelijk aan bij een leercurve-thema uit het jeugdbeleidsplan.</li>
+      <li><b>Blokspiegel</b>: per doel een vakje per week van het blok, in de kleur die je gaf. Zo zie je of het doel erin komt.</li>
+      <li><b>Per moment</b>: de vier groepen over de laatste vijf wedstrijden, met een pijltje voor de trend. Er is bewust geen totaalcijfer: verdedigen en plezier zijn geen optelsom.</li>
+      <li><b>Historie</b>: elke wedstrijd met de kleur van het doel en een strookje per onderdeel.</li>
+      <li><b>Onderdelen, aandachtspunten en trainingsthema</b>: het gemiddelde per onderdeel, terugkerende zwakke plekken en een leercurve-thema voor de volgende training.</li>
     </ul>
-    <div class="tip"><b>Even geduld bij de start:</b> na 1 evaluatie zie je alleen een cijfer, vanaf 2 verschijnt de lijn. De terugkerende aandachtspunten worden pas zichtbaar na een paar wedstrijden, zo voorkom je dat één mindere wedstrijd meteen als patroon wordt gezien.</div>
+    <div class="tip"><b>Radar:</b> op de computer en voor coördinatoren laat de radar de onderdelen bij de leeftijd zien, tegenover het gemiddelde van het blok (of anders het seizoen).</div>
     </section>
 
     <h4 class="hl-hoofdstuk" id="hlh-tips"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3.2"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2M6.3 6.3l1.5 1.5M16.2 16.2l1.5 1.5M17.7 6.3l-1.5 1.5M7.8 16.2l-1.5 1.5"/></svg> Tips &amp; privacy</h4>

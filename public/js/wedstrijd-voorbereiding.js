@@ -19,11 +19,12 @@
    spelers- of teamgegevens. Spelersnamen staan alleen op het scherm van de
    coach en nooit in de deeltekst. */
 import { db, doc, setDoc, updateDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261117a';
+import { S, esc, meld, openModal, sluitModal, isBeheerder } from './state.js?v=20261117a';
 import { ico } from './icons.js?v=20261116t';
 import { telGebruik, telNav } from './tracker.js?v=20261117a';
-import { plekHtml, routeUrl, presentieWedstrijd, afwezigTekst, opstellingKlaar } from './nu-scherm.js?v=20261118c';
-import { htmlPollsBijWedstrijd, openPollVoorWedstrijd, zetDeelOpstelling } from './kamer-beheer.js?v=20261118c';   /* [20261116m] polls bij een wedstrijd */
+import { plekHtml, routeUrl, presentieWedstrijd, afwezigTekst, opstellingKlaar, isAfgelast } from './nu-scherm.js?v=20261120a';
+import { htmlPollsBijWedstrijd, openPollVoorWedstrijd, zetDeelOpstelling } from './kamer-beheer.js?v=20261120a';   /* [20261116m] polls bij een wedstrijd */
+import { veldkaartInlineHtml, vulVeldkaarten } from './veldkaart.js?v=20261120a';
 
 const p2 = n => String(n).padStart(2, '0');
 const isoVan = d => `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
@@ -38,7 +39,8 @@ function dagenTot(datum){
   const nu = new Date(), vandaag = new Date(nu.getFullYear(), nu.getMonth(), nu.getDate(), 12);
   return Math.round((new Date(datum + 'T12:00') - vandaag) / 86400000);
 }
-function wanneer(datum){
+function wanneer(datum, w){
+  if (w && isAfgelast(w)) return 'Afgelast';
   const n = dagenTot(datum);
   return n === 0 ? 'Vandaag' : n === 1 ? 'Morgen' : n > 1 ? `Over ${n} dagen` : 'Gespeeld';
 }
@@ -177,6 +179,7 @@ const richting = gr => RICHTING[Math.round(((gr % 360) + 360) % 360 / 45) % 8];
    Uit: adres of plaats uit Sportlink, anders de clubnaam van de tegenstander. */
 function weerPlaats(w){
   const uitAdres = s => { const d = String(s || '').split(',').map(x => x.trim()).filter(Boolean); return d.length > 1 ? d[d.length - 1].replace(/^\d{4}\s?[a-z]{2}\s*/i, '') : ''; };
+  if (w.slAccommodatie?.plaats) return String(w.slAccommodatie.plaats).trim();
   if (w.plaats) return String(w.plaats).trim();
   if (w.adres && uitAdres(w.adres)) return uitAdres(w.adres);
   if (w.thuis){
@@ -264,15 +267,40 @@ function tabPraktisch(w){
   else weer = `<div class="vb-weer" data-vb-weer><p class="vb-leeg">Weer ophalen voor ${esc(plaats)}…</p></div>`;
 
   const plek = plekHtml(w);
-  const veldInfo = feiten(rij('Aanvang', w.aftrap ? `<b>${esc(w.aftrap)}</b>` : 'Nog onbekend'), rij('Thuis of uit', w.thuis ? 'Thuis' : 'Uit'));
-  return `${kaart('Weer bij aanvang', weer)}
-    ${kaart('Waar en wanneer', `${veldInfo}${plek || leeg('Nog geen locatie, veld of kleedkamer bekend. Vul die in bij Wijzig opzet.')}`)}
+  /* [20261114] Uit Sportlink: verzamel-/vertrektijd, rijders, scheidsrechter,
+     kleedkamer van de scheidsrechter en het adres van het sportpark. */
+  const acc = w.slAccommodatie || {};
+  const metVertrek = !!(w.slVerzameltijd || w.slVertrektijd || w.slRijders);
+  const veldInfo = feiten(metVertrek ? '' : rij('Aanvang', w.aftrap ? `<b>${esc(w.aftrap)}</b>` : 'Nog onbekend'), rij('Thuis of uit', w.thuis ? 'Thuis' : 'Uit'),
+    !w.thuis && acc.adres && !w.adres ? rij('Adres', `${esc(acc.adres)}${acc.plaats ? `, ${esc(acc.plaats)}` : ''}`) : '',
+    w.slScheidsrechter ? rij('Scheidsrechter', esc(w.slScheidsrechter)) : '',
+    w.slKleedkamerScheids ? rij('Kleedkamer scheids', esc(w.slKleedkamerScheids)) : '');
+  const bel = !w.thuis && acc.telefoon ? `<div class="nu-acties"><a class="knop vol licht" href="tel:${esc(acc.telefoon.replace(/[^\d+]/g, ''))}">${ico('communication-phone', 20)}Bel ${esc(acc.naam || 'het sportpark')}</a></div>` : '';
+  const vertrek = metVertrek ? kaart('Vertrek en aankomst', `${feiten(
+      w.slVerzameltijd ? rij('Verzamelen', `<b>${esc(w.slVerzameltijd)}</b>`) : '',
+      w.slVertrektijd ? rij('Vertrek', `<b>${esc(w.slVertrektijd)}</b>`) : '',
+      w.slRijders ? rij('Rijders', esc(w.slRijders)) : '',
+      rij('Aanvang', w.aftrap ? `<b>${esc(w.aftrap)}</b>` : 'Nog onbekend'))}
+    <p class="vb-bron">${ico('action-info', 16)}Uit Sportlink. Rijders gaan niet mee in het bericht voor de groepsapp.</p>`) : '';
+  const afgelast = isAfgelast(w) ? `<p class="nu-melding" role="status">${ico('action-warning', 20)}<span><b>Sportlink meldt deze wedstrijd als afgelast.</b></span></p>` : '';
+  return `${afgelast}${vertrek}${kaart('Weer bij aanvang', weer)}
+    ${kaart('Waar en wanneer', `${veldInfo}${plek || leeg('Nog geen locatie, veld of kleedkamer bekend. Vul die in bij Wijzig opzet.')}${bel}`)}
+    ${(() => { const vk = veldkaartInlineHtml(w); return vk ? kaart('Waar spelen we', vk) : ''; })()}
     <div class="nu-acties">${knop('Deel in de groepsapp', 'action-whatsapp', 'data-vb-deel')}</div>
     <p class="vb-bron">Zonder spelersnamen: alleen datum, tijd, plek en weer.</p>
     ${htmlPollsBijWedstrijd(w)}`;
 }
 
 /* ==================== TAB: PLAN ==================== */
+/* [20261120a] Opstellingsadviseur: alleen vóór de aftrap en niet bij toernooien. */
+const ADVIES_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3.5l1.7 4.3 4.3 1.7-4.3 1.7L12 15.5l-1.7-4.3L6 9.5l4.3-1.7z"/><path d="M18.5 14.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/><path d="M5.5 15.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z"/></svg>';
+/* [20261120d] PAUZE: alleen voor de clubbeheerder, zie ADVIES_VOOR_IEDEREEN in wedstrijd.js. */
+const ADVIES_VOOR_IEDEREEN = false;
+function kanAdvies(w){
+  if (!ADVIES_VOOR_IEDEREEN && !isBeheerder()) return false;
+  if (!w || w.type === 'toernooi' || isAfgelast(w)) return false;
+  return !Object.values(w.kwarten || {}).some(k => (k?.events || []).length || (k?.klok?.base || 0) > 0 || k?.klok?.running);
+}
 function tabPlan(w){
   const p = presentieWedstrijd(w), ok = opstellingKlaar(w);
   const pct = p.totaal ? Math.round(p.ja / p.totaal * 100) : 0;
@@ -299,7 +327,7 @@ function tabPlan(w){
 
   return `${kaart('Beschikbaarheid', pres)}
     ${kaart('Aandachtspunten', plan)}
-    ${kaart('Opstelling', `${opst}<div class="nu-acties">${knop('Opstelling', 'football-lineup', `data-vb-wedstrijd="${esc(w.id)}"`)}</div>`)}
+    ${kaart('Opstelling', `${opst}<div class="nu-acties">${kanAdvies(w) ? `<button type="button" class="knop vol licht" data-vb-advies="${esc(w.id)}">${ADVIES_SVG}Opstelling voorstellen</button>` : ''}${knop('Opstelling', 'football-lineup', `data-vb-wedstrijd="${esc(w.id)}"`)}</div>`)}
     ${kaart('Na afloop', na)}`;
 }
 
@@ -484,7 +512,7 @@ const huidig = () => (S.wedstrijden || []).find(x => x.id === _wid) || null;
 
 function kopHtml(w){
   return `<div class="vb-wedkop">
-      <div class="nu-kaart-kop"><span class="nu-tag nu-tag-warn">${esc(wanneer(w.datum))}</span>
+      <div class="nu-kaart-kop"><span class="nu-tag nu-tag-${isAfgelast(w) ? 'accent' : 'warn'}">${esc(wanneer(w.datum, w))}</span>
         <span class="vb-zacht">${w.thuis ? 'Thuis' : 'Uit'}${w.aftrap ? ` · ${esc(w.aftrap)}` : ''}</span></div>
       <p class="nu-titel">${esc(w.tegenstander || 'Wedstrijd')}</p>
       <p class="nu-meta"><span>${esc(hoofd(datumLang(w.datum)))}</span></p>
@@ -503,6 +531,7 @@ function teken(){
   const inhoud = tab === 'praktisch' ? tabPraktisch(w) : tab === 'plan' ? tabPlan(w) : tab === 'scouting' ? tabScouting(w) : tabTegenstander(w);
   body.innerHTML = `${kopHtml(w)}<div id="vbPaneel" role="tabpanel" aria-labelledby="vbTab-${tab}" class="vb-paneel">${inhoud}</div>`;
   if (tab === 'praktisch'){
+    vulVeldkaarten(body);   /* [20261120e] luchtfoto met het veld */
     const vak = body.querySelector('[data-vb-weer]');
     if (vak){
       haalWeer(weerPlaats(w), w.datum).then(r => {
@@ -537,6 +566,9 @@ async function deelTekst(w){
   const team = String(S.team?.naam || '').trim(), tegen = String(w.tegenstander || '').trim() || 'onbekende tegenstander';
   const kop = [`⚽ *${team ? team + ' ' : ''}${w.thuis ? 'thuis tegen' : 'uit bij'} ${tegen}*`];
   if (w.datum) kop.push(`📅 ${hoofd(datumLang(w.datum))}`);
+  if (isAfgelast(w)) kop.push('❌ *Afgelast* (volgens Sportlink)');
+  if (w.slVerzameltijd) kop.push(`🕗 Verzamelen *${w.slVerzameltijd}*`);
+  if (w.slVertrektijd && w.slVertrektijd !== w.slVerzameltijd) kop.push(`🚗 Vertrek ${w.slVertrektijd}`);
   kop.push(w.aftrap ? `⏰ Aanvang *${w.aftrap}*` : '⏰ Aanvang nog onbekend');
 
   const plek = [];
@@ -579,11 +611,19 @@ function koppel(body){
     if (tp){ openPollVoorWedstrijd(tp.dataset.wid, tp.dataset.tkPoll); sluitModal(); _ctx?.zetTeamTab?.('teamkamer'); return; }
     const td = ev.target.closest('[data-tk-deel]');   /* [20261116p] opstelling van deze wedstrijd delen met de teamkamer */
     if (td){ td.disabled = true; try { await zetDeelOpstelling(td.dataset.tkDeel, td.getAttribute('aria-checked') !== 'true'); } catch (x){ meld('Dat lukte niet. Probeer het opnieuw.'); } teken(); return; }
+    const adv = ev.target.closest('[data-vb-advies]');
+    if (adv){
+      const id = adv.dataset.vbAdvies;
+      sluitModal();
+      const m = await import('./wedstrijd.js?v=20261120a');
+      m.openWedstrijdMetAdvies(id);
+      return;
+    }
     const wd = ev.target.closest('[data-vb-wedstrijd]');
     if (wd){
       const id = wd.dataset.vbWedstrijd;
       sluitModal();
-      const m = await import('./wedstrijd.js?v=20261118c');
+      const m = await import('./wedstrijd.js?v=20261120a');
       m.openWedstrijd(id);
       return;
     }

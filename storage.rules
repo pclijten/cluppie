@@ -42,6 +42,14 @@ service firebase.storage {
         && request.resource.contentType.matches('application/pdf|image/png|image/jpeg');
       allow delete: if lid(clubId);
     }
+    /* [20261120a] Veldkaart: foto van de veldindeling bij een melding. De app verkleint hem tot een JPEG
+       (meestal 100 tot 300 kB). Lezen: de afzender en de clubbeheerder. */
+    match /clubs/{clubId}/veldfotos/{u}/{f} {
+      allow read: if ingelogd() && (request.auth.uid == u || beheerder(clubId));
+      allow create: if lid(clubId) && request.auth.uid == u
+        && request.resource.size < 3 * 1024 * 1024 && request.resource.contentType.matches('image/.*');
+      allow delete: if beheerder(clubId);
+    }
     /* alles anders (oude paden zonder club) is dicht */
     match /{ander=**} { allow read, write: if false; }
   }

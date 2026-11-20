@@ -637,3 +637,39 @@ test('trainingshulp: alleen de staf van het team maakt en beheert de lijst', asy
   await assertFails(setDoc(doc(als('coachB'), 'hulpDeel/n3'), { ...nieuw, teamId: 'tB', club: 'A' }));              // club moet die van het team zijn
   await assertFails(setDoc(doc(c, 'hulpDeel/n4'), { ...nieuw, club: 'B' }));
 });
+
+/* ---------- [20261120a] veldkaart: sportparken en veldmeldingen per club ---------- */
+test('veldkaart: de club leest sportparken, de clubbeheerder beheert ze; een coach meldt, clubbeheer handelt af', async () => {
+  const c = als('coachA'), a = als('adminA'), b = als('coachB');
+  const park = { naam: 'Sportpark A', eigen: true, lat: 52.1, lon: 5.1, velden: [], plekken: [] };
+  await assertSucceeds(setDoc(doc(a, 'clubs/A/sportparken/eigen'), park));
+  await assertSucceeds(setDoc(doc(a, 'clubs/A/sportparken/p-tegenstander'), { ...park, eigen: false }));
+  await assertSucceeds(getDoc(doc(c, 'clubs/A/sportparken/eigen')));                                                // coach van de club leest
+  await assertSucceeds(getDocs(collection(c, 'clubs/A/sportparken')));
+  await assertFails(setDoc(doc(c, 'clubs/A/sportparken/p-test'), park));                                            // maar tekent niet in
+  await assertFails(updateDoc(doc(c, 'clubs/A/sportparken/eigen'), { naam: 'Anders' }));
+  await assertFails(deleteDoc(doc(c, 'clubs/A/sportparken/eigen')));
+  await assertFails(getDoc(doc(b, 'clubs/A/sportparken/eigen')));                                                   // andere club
+  await assertFails(getDoc(doc(gast(), 'clubs/A/sportparken/eigen')));
+  await assertFails(setDoc(doc(als('adminB'), 'clubs/A/sportparken/p-b'), park));
+  await assertFails(setDoc(doc(als('paul', PLATFORM), 'clubs/A/sportparken/p-eindbaas'), park));                    // eindbaas alleen in ondersteuningsmodus
+  const melding = { park: 'eigen', parkNaam: 'Sportpark A', veld: 'Veld 3', reden: 'fout', toelichting: 'Staat een veld te ver naar links', teamId: 't1', teamNaam: 'JO11-1', door: 'coachA', status: 'open', ms: nu };
+  await assertSucceeds(setDoc(doc(c, 'clubs/A/veldmeldingen/m1'), melding));
+  await assertFails(setDoc(doc(c, 'clubs/A/veldmeldingen/m2'), { ...melding, door: 'iemand' }));                    // alleen onder de eigen naam
+  await assertFails(setDoc(doc(c, 'clubs/A/veldmeldingen/m3'), { ...melding, status: 'opgelost' }));
+  await assertFails(setDoc(doc(c, 'clubs/A/veldmeldingen/m4'), { ...melding, toelichting: 'x'.repeat(501) }));
+  await assertFails(setDoc(doc(b, 'clubs/A/veldmeldingen/m5'), { ...melding, door: 'coachB' }));                    // andere club meldt hier niet
+  await assertFails(getDoc(doc(c, 'clubs/A/veldmeldingen/m1')));                                                    // meldingen leest alleen clubbeheer
+  await assertFails(updateDoc(doc(c, 'clubs/A/veldmeldingen/m1'), { status: 'opgelost' }));
+  await assertSucceeds(getDocs(collection(a, 'clubs/A/veldmeldingen')));
+  await assertSucceeds(updateDoc(doc(a, 'clubs/A/veldmeldingen/m1'), { status: 'opgelost', opgelostMs: nu }));
+  await assertSucceeds(deleteDoc(doc(a, 'clubs/A/veldmeldingen/m1')));
+});
+test('toernooitje: het eigen team leest en schrijft, een ander team en een andere club niet', async () => {
+  const t = { naam: 'Vrijdagtoernooi', status: 'opzet', gemaaktMs: nu };
+  await assertSucceeds(setDoc(doc(als('coachA'), 'teams/t1/toernooitjes/x1'), t));
+  await assertSucceeds(getDocs(collection(als('coachA'), 'teams/t1/toernooitjes')));
+  await assertSucceeds(updateDoc(doc(als('adminA'), 'teams/t1/toernooitjes/x1'), { status: 'bezig' }));             // clubbeheerder mag in elk team van de club
+  await assertFails(getDoc(doc(als('coach2'), 'teams/t1/toernooitjes/x1')));
+  await assertFails(setDoc(doc(als('coachB'), 'teams/t1/toernooitjes/x2'), t));
+});

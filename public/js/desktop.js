@@ -18,11 +18,11 @@ import { teamkamerMag } from './kamer-logica.js?v=20261118a';
 import { ico } from './icons.js?v=20261116t';
 import { logoImg, primaireClubId } from './clubconfig.js?v=20261117a';
 import { BOUWEN, catLabel } from './config.js?v=20261117a';
-import { openTeam, zetTeamTab, verlaatTeamView, updatesInfo, renderTeam } from './teams.js?v=20261118c';
-import { initSchermen, ruimOp } from './desktop-schermen.js?v=20261118c';
-import { openBouw, bouwTeams, bouwHuidig, zetHerteken, bouwIsSelectie } from './desktop-bouw.js?v=20261118c';
+import { openTeam, zetTeamTab, verlaatTeamView, updatesInfo, renderTeam } from './teams.js?v=20261120a';
+import { initSchermen, ruimOp } from './desktop-schermen.js?v=20261120a';
+import { openBouw, bouwTeams, bouwHuidig, zetHerteken, bouwIsSelectie } from './desktop-bouw.js?v=20261120a';
 import { ongelezenBerichten } from './berichten.js?v=20261117a';
-import { evaluatieOpen } from './teams-hub.js?v=20261118c';
+import { evaluatieOpen } from './teams-hub.js?v=20261120a';
 import { onderdeelAan } from './onderdelen.js?v=20261117a';
 import { telNav } from './tracker.js?v=20261117a';
 
@@ -58,9 +58,9 @@ function rolNaam(){
    loopt onze vervolgstap gegarandeerd ná die render. */
 async function sluitOpenWedstrijd(){
   if (huidigeView() !== 'wedstrijd' && !S.wedstrijdId) return;
-  const w = await import('./wedstrijd.js?v=20261118c');
+  const w = await import('./wedstrijd.js?v=20261120a');
   w.sluitWedstrijd();
-  await import('./teams.js?v=20261118c');
+  await import('./teams.js?v=20261120a');
   await new Promise(r => requestAnimationFrame(() => r()));
 }
 /* Club-view verlaten zónder terug te springen naar het teamoverzicht
@@ -76,7 +76,7 @@ async function gaNaarTab(tab, opties = {}){
   telNav('desk:' + tab, 'zijbalk');
   const view = huidigeView();
   if (view === 'wedstrijd'){
-    const w = await import('./wedstrijd.js?v=20261118c');
+    const w = await import('./wedstrijd.js?v=20261120a');
     if (opties.profiel) S._beoordeelProfiel = opties.profiel;
     w.sluitWedstrijd(tab);
     return;
@@ -102,16 +102,16 @@ async function naarOverzicht(){
   teamKeuzeOpen = false;
   await sluitOpenWedstrijd();
   if (S.teamId){ verlaatTeamView(); return; }
-  if (huidigeView() === 'club'){ const c = await import('./club.js?v=20261118c'); c.verlaatClubView(); }
+  if (huidigeView() === 'club'){ const c = await import('./club.js?v=20261120a'); c.verlaatClubView(); }
 }
 async function openClubDesk(id){
   await sluitOpenWedstrijd();
   if (S.teamId) verlaatTeamView();
-  const c = await import('./club.js?v=20261118c');
+  const c = await import('./club.js?v=20261120a');
   c.openClub(id);
 }
 async function openBouwDesk(clubId, bouw){
-  const b = await import('./bouw-hub.js?v=20261118c');
+  const b = await import('./bouw-hub.js?v=20261120a');
   b.openBouwHub(clubId, bouw);
 }
 /* Bouw-omgeving openen: eerst een open wedstrijd/club/team netjes verlaten. */
@@ -156,13 +156,13 @@ async function voerActieUit(actie, data = {}){
     return naarBouwPag(data.club, data.bouw, data.team, data.pag);
   }
   if (actie === 'trainco')    return import('./trainco.js?v=20261117a').then(m => m.openVanuitApp());
-  if (actie === 'platform')   return import('./platform.js?v=20261118c').then(m => m.openPlatform());
+  if (actie === 'platform')   return import('./platform.js?v=20261120a').then(m => m.openPlatform());
   if (actie === 'coordbeheer'){
     await openClubDesk(data.id);
     S.clubTab = 'bouwen';          // [20260929a] coördinatoren staan nu onder Club → Bouwen
     return;
   }
-  if (actie === 'chat')       return import('./chatbot.js?v=20261118c').then(m => m.openChatbot());
+  if (actie === 'chat')       return import('./chatbot.js?v=20261120a').then(m => m.openChatbot());
   if (actie === 'tactiek'){
     if (!S.teamId){ const tid = laatsteTeamId(); if (tid) openTeam(tid); }
     return import('./tactiekbord.js?v=20261117a').then(m => m.openTactiekBibliotheek());
@@ -177,7 +177,7 @@ async function voerActieUit(actie, data = {}){
   }
   if (actie === 'wedstrijd'){
     if (huidigeView() !== 'team' && huidigeView() !== 'wedstrijd') return;
-    return import('./wedstrijd.js?v=20261118c').then(m => m.openWedstrijd(data.id));
+    return import('./wedstrijd.js?v=20261120a').then(m => m.openWedstrijd(data.id));
   }
 }
 
@@ -197,6 +197,7 @@ function groepen(){
       { tab:'documenten', ico:'admin-document',              naam:'Documenten', badge: docsNieuw },
       ...(modAan('lijstjes') ? [{ tab:'lijstjes', ico:'attendance-fill', naam:'Lijstjes' }] : []),
       ...(teamkamerMag(S.team, S._clubPlatform, S._teamkamerLos) ? [{ tab:'teamkamer', ico:'navigation-home', naam:'Teamkamer' }] : []),
+      ...(modAan('toernooitje') ? [{ tab:'toernooitjes', ico:'football-tournament', naam:'Toernooitje' }] : []),
     ]],
     ['Wedstrijd', [
       { tab:'wedstrijden',   ico:'football-lineup',      naam:'Wedstrijden', live: !!S.wedstrijdId },
@@ -236,6 +237,8 @@ function groepen(){
     beheer.push({ actie:'bouwtoggle', club:clubId, bouw:bouwId, ico:'admin-roles', naam, sub:1, kleur, pijl: open ? '\u25be' : '\u25b8' });
     if (!open) return;
     beheer.push({ actie:'bpag', club:clubId, bouw:bouwId, pag:'dash', ico:'navigation-dashboard', naam:'Dashboard', sub:2 });
+    /* [20261116b] wat de teams van de bouw deze week trainen */
+    beheer.push({ actie:'bpag', club:clubId, bouw:bouwId, pag:'tr', ico:'football-training', naam:'Trainingen', sub:2 });
     /* [20260928f] selectie-bouw (1e + 2e): spelers toewijzen voor beide teams */
     if (bouwIsSelectie(clubId, bouwId)) beheer.push({ actie:'bpag', club:clubId, bouw:bouwId, pag:'selmaken', ico:'team-members', naam:'Selectie maken', sub:2 });
     /* [20261116n] wat de teams van de bouw deze week trainen */
@@ -279,6 +282,7 @@ function actieveSleutel(){
   if (v === 'team' && S.teamTab === 'historie') return 'actie:sphis';
   if (v === 'team' && S.teamTab === 'trainingen') return 'tab:presentietraining';
   if (v === 'team' && S.teamTab === 'lijst') return 'tab:lijstjes';
+  if (v === 'team' && S.teamTab === 'toernooitje') return 'tab:toernooitjes';
   if (v === 'team')      return 'tab:' + (S.teamTab || 'hub');
   if (v === 'club')      return 'club:' + S.clubId;
   if (v === 'teams')     return 'overzicht';
@@ -371,10 +375,10 @@ async function sluitPaginaLagen(){
   if (open('.tnb-overlay.open'))    await veilig(async () => (await import('./training-notities-beheer.js?v=20261117a')).sluitBeheerNotities());
   if (open('.trb-overlay.open'))    await veilig(async () => (await import('./training-bewerken.js?v=20261117a')).sluitTrainingBewerken());
   if (open('.pdfv-achter.open'))    await veilig(async () => (await import('./pdf-viewer.js?v=20261117a')).sluitPdfViewer());
-  if (open('.sj-overlay.open'))     await veilig(async () => (await import('./opstelling-sjabloon.js?v=20261118c')).sluitSjabloonScherm());
+  if (open('.sj-overlay.open'))     await veilig(async () => (await import('./opstelling-sjabloon.js?v=20261120a')).sluitSjabloonScherm());
   if (open('.trw-overlay.open'))    await veilig(async () => (await import('./training-weergave.js?v=20261117a')).sluitTrainingWeergave());
   const bh = document.getElementById('bouwhubPagina');
-  if (bh && bh.style.display !== 'none') await veilig(async () => (await import('./bouw-hub.js?v=20261118c')).sluitBouwHub());
+  if (bh && bh.style.display !== 'none') await veilig(async () => (await import('./bouw-hub.js?v=20261120a')).sluitBouwHub());
 }
 
 async function klik(e){

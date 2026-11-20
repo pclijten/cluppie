@@ -12,11 +12,11 @@ import { S, $, esc, meld, isBeheerder, toon, terugView } from './state.js?v=2026
 import { BOUWEN, NIVEAUS, niveauKleur, bouwVanCategorie } from './config.js?v=20261117a';
 import { ico } from './icons.js?v=20261116t';
 import { analyseWedstrijd } from './analyse.js?v=20261117a';
-import { laadBouwData, zetBouwContext, presentiePctTeam, presentiePctWedstrijdTeam, uitslagenTeam, modalNieuweUitleningVanuitBouw, splitsUitleningen, leenKaartInfo } from './bouw-hub.js?v=20261118c';
-import { trekUitleningIn, definitiefOverzetten, wijzigUitlening } from './teams-spelers.js?v=20261118c';
-import { htmlMeekijk } from './desktop-schermen.js?v=20261118c';
+import { laadBouwData, zetBouwContext, presentiePctTeam, presentiePctWedstrijdTeam, uitslagenTeam, modalNieuweUitleningVanuitBouw, splitsUitleningen, leenKaartInfo } from './bouw-hub.js?v=20261120a';
+import { trekUitleningIn, definitiefOverzetten, wijzigUitlening } from './teams-spelers.js?v=20261120a';
+import { htmlMeekijk } from './desktop-schermen.js?v=20261120a';
 import { rondeStatusTeam } from './evaluatierondes.js?v=20261117a';
-import { isSelectieBouw, htmlRadarBlok, htmlSelectieTegel, htmlSelectieScherm, selectieKlik, selectieInvoer } from './selectie-bouw.js?v=20261118c';
+import { isSelectieBouw, htmlRadarBlok, htmlSelectieTegel, htmlSelectieScherm, selectieKlik, selectieInvoer } from './selectie-bouw.js?v=20261120a';
 /* [20261116n] Trainingen van de week: blok op het dashboard + eigen scherm 'tr' */
 import { zorgVoorTrainingen, htmlDashBlok, htmlTrainingenScherm, trainingenKlik } from './bouw-trainingen.js?v=20261117a';
 
@@ -89,7 +89,7 @@ terugView('dkbouw', () => {
     huidig.scherm = 'dash'; huidig.teamId = null; huidig.keuze = {};
     teken(); window.scrollTo(0, 0); return true;
   }
-  import('./teams.js?v=20261118c').then(m => { m.renderTeams(); toon('teams'); });
+  import('./teams.js?v=20261120a').then(m => { m.renderTeams(); toon('teams'); });
   return true;
 });
 

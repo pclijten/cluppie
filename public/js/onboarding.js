@@ -87,7 +87,7 @@ function naarTab(tab){
       // Onderbalk niet in beeld (bv. wedstrijdscherm of teamsoverzicht):
       // zet de tab direct, render en toon de team-view expliciet.
       S.teamTab = tab;
-      import('./teams.js?v=20261118c').then(m => { m.renderTeam?.(); toon('team'); });
+      import('./teams.js?v=20261120a').then(m => { m.renderTeam?.(); toon('team'); });
     }
     const t0 = performance.now();
     (function wacht(){
@@ -160,7 +160,7 @@ async function zorgWedstrijdOpen(){
   const eersteId = (S.wedstrijden[0]||{}).id;
   if (!eersteId) return false;
   let m;
-  try { m = await import('./wedstrijd.js?v=20261118c'); }
+  try { m = await import('./wedstrijd.js?v=20261120a'); }
   catch(e){ console.warn('[ob] kon wedstrijd.js niet laden', e); return false; }
   m.openWedstrijd?.(eersteId);
   await wachtOpElement(() => document.querySelector('#view-wedstrijd.actief'), 2000);
@@ -172,7 +172,7 @@ async function zorgWedstrijdOpen(){
 async function verlaatWedstrijd(){
   if (!wedstrijdOpen()) return;
   try {
-    const m = await import('./wedstrijd.js?v=20261118c');
+    const m = await import('./wedstrijd.js?v=20261120a');
     m.sluitWedstrijd?.('wedstrijden');
   } catch(e){
     console.warn('[ob] sluitWedstrijd faalde, val terug op terugknop', e);
@@ -204,7 +204,7 @@ export const ONBOARDING_STAPPEN = [
     opdracht:'Open een team',
     voor:async () => {
       if (!document.querySelector('#view-teams.actief')){
-        try { const t = await import('./teams.js?v=20261118c'); t.startTeams?.(); } catch(e){ console.warn('[ob] teams.js laadfout', e); }
+        try { const t = await import('./teams.js?v=20261120a'); t.startTeams?.(); } catch(e){ console.warn('[ob] teams.js laadfout', e); }
         await wachtOpElement(() => document.querySelector('#view-teams.actief'));
       }
     },
@@ -305,7 +305,7 @@ export const ONBOARDING_STAPPEN = [
   {
     hfd:'opstelling', hfdNaam:'Wedstrijd', emoji:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>', rollen:['coach'], modKey:'evaluaties',
     titel:'Team evalueren',
-    tekst:'Direct na de wedstrijd leg je kort vast wat goed ging en wat aandacht vraagt. Deze teamevaluaties verzamelen zich onder <b>Stats</b>.',
+    tekst:'Direct na de wedstrijd kijk je terug: kwam het wedstrijddoel terug, en wat zag je per moment? Deze teamevaluaties verzamelen zich onder <b>Evaluatie</b>.',
     voor:async () => { await zorgWedstrijdOpen(); },
     doel:() => document.querySelector('#view-wedstrijd #teamEvalKnop'),
     optioneelAls:() => !wedstrijdOpen() || !document.querySelector('#view-wedstrijd #teamEvalKnop'),
@@ -430,7 +430,7 @@ export const ONBOARDING_STAPPEN = [
   {
     hfd:'stats', hfdNaam:'Stats', emoji:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 19V10"/><path d="M11 19V5"/><path d="M18 19v-7"/></svg>', rollen:['coach'], modKey:'evaluaties',
     titel:'Stats & speeltijd',
-    tekst:'Onder <b>Stats</b> zie je per speler de opgebouwde speeltijd en, via de segment-knoppen, de teamevaluaties over het seizoen.',
+    tekst:'Onder <b>Stats</b> zie je per speler de opgebouwde speeltijd. De teamevaluaties en de Blokspiegel staan onder <b>Wedstrijden → Evaluatie</b>.',
     opdracht:'Open “Stats”',
     voor:() => naarTab('meer'),
     doel:() => meerTegel('stats'),
@@ -460,7 +460,7 @@ export const ONBOARDING_STAPPEN = [
     hfd:'instellingen', hfdNaam:'Uitnodigen', emoji:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="8" r="3.1"/><path d="M3.6 19.6a6.4 6.4 0 0 1 12 0"/><path d="M18.6 5v5.4"/><path d="M15.9 7.7h5.4"/></svg>', rollen:['coach'],
     titel:'Coaches uitnodigen',
     tekst:'Met <b>Coach uitnodigen</b> maak je een persoonlijke link voor een collega-coach. Deel hem via WhatsApp; hij is 14 dagen geldig.',
-    voor:async () => { S.teamTab = 'instellingen'; const m = await import('./teams.js?v=20261118c'); m.renderTeam?.();
+    voor:async () => { S.teamTab = 'instellingen'; const m = await import('./teams.js?v=20261120a'); m.renderTeam?.();
       await wachtOpElement(() => document.querySelector('#view-team #deelLink, #view-team #deelCode')); },
     doel:() => document.querySelector('#view-team #deelLink, #view-team #deelCode'),
     optioneelAls:() => !document.querySelector('#view-team #deelLink, #view-team #deelCode'),

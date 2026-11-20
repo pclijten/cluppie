@@ -32,6 +32,7 @@ export const MODULE_DEFS = [
   /* [20261013b] door de eindbaas per club vrijgegeven (zie onderdelen.js) */
   ['trainingsmodule', 'Training maken', 'Maken', 'training-plan', 'Complete trainingen samenstellen (Trainingen → Training maken).'],
   ['seizoensplan', 'Seizoensplanning', 'Seizoen', 'planning-month', 'Jaarlijn in blokken met bijsturing op basis van evaluaties (Trainingen → Seizoen).'],
+  ['toernooitje','Toernooitje','Toern', 'football-tournament','Onderling toernooitje met planner, klok, score en stand.'],
 ];
 document.addEventListener('clubconfig', () => { const d = MODULE_DEFS.find(m => m[0] === 'kompas'); if (d) d[1] = kompasNaam(); });
 const DAG_KORT = ['Ma','Di','Wo','Do','Vr','Za','Zo'];
