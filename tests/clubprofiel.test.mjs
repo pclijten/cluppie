@@ -216,4 +216,37 @@ assert.equal(eigenRolNaam('coach', { instellingen: { rolNamen: { coach: 'x'.repe
 assert.deepEqual(ROLLEN.map(r => r[0]), ['coach', 'coordinator', 'trainco', 'hoofdJeugd']);
 for (const d of [...INSTELLEN['rol.lijst'], ...INSTELLEN['rol.hoofd']]) assert.ok(d.pad === 'jeugdRolNaam' || ROLLEN.some(r => 'rolNamen.' + r[0] === d.pad), d.pad + ' is een rol die rolnamen.js kent');
 
+/* [20261120f] het overzicht voor de club: alleen wat in Cluppie is gezet, met de plek waar het staat */
+const { inrichtingOverzicht, datumVoluit } = await import('../public/js/clubprofiel-logica.js');
+const { tabelRijen, pdfTekst } = await import('../public/js/clubprofiel-pdf.js');
+assert.equal(datumVoluit('2026-12-01'), '1 december 2026');
+assert.equal(datumVoluit('onzin'), 'onzin');
+const pf = { bevindingen: {
+  a: { veld: 'bouw.grenzen', waarde: 'Onderbouw t/m O10', oordeel: 'akkoord', verwerkt: true, gemaaktMs: 1, gezet: { ms: 5, tekst: 'Onze onderbouw loopt t/m O10.', regels: [], instellingen: { 'regels.bouwGrenzen.onderTm': 10, 'regels.bouwGrenzen.middenTm': 13 }, status: 'gepubliceerd', ids: [] } },
+  b: { veld: 'eval.momenten', waarde: 'Twee keer per jaar', oordeel: 'akkoord', verwerkt: true, gemaaktMs: 2, gezet: { ms: 5, tekst: 'Wij beoordelen twee keer.', rondes: [{ naam: 'Winterevaluatie', soort: 'snel', van: '2026-12-01', tot: '2026-12-31' }], instellingen: {}, status: 'concept' } },
+  c: { veld: 'gedrag.regels', waarde: 'Op tijd', oordeel: 'akkoord', verwerkt: true, gemaaktMs: 3, gezet: { ms: 5, tekst: '', regels: ['We zijn op tijd', 'Respect'], instellingen: {}, status: 'concept' } },
+  d: { veld: 'rol.besluit', waarde: 'De club stuurt', oordeel: 'akkoord', verwerkt: true, gemaaktMs: 4, gezet: { ms: 5, tekst: '', instellingen: { werkwijze: 'club' }, status: 'concept' } },
+  e: { veld: 'rollen.overig', waarde: 'Materiaalman: beheert de ballen', oordeel: 'akkoord', verwerkt: true, gemaaktMs: 5, gezet: { ms: 5, titel: 'Materiaalman', tekst: 'Hij beheert de ballen.', status: 'gepubliceerd' } },
+  f: { veld: 'wed.speeltijd', waarde: 'Iedereen speelt', oordeel: 'open', gemaaktMs: 6 },
+  g: { veld: 'spel.visie', waarde: 'Aanvallend', oordeel: 'afgewezen', gemaaktMs: 7, gezet: { ms: 1, tekst: 'Vervallen tekst' } },
+} };
+const ov = inrichtingOverzicht(pf, { naam: 'FC Testdorp', instellingen: { identiteit: { kleur: '#0A5CFF' } } }, new Date(2026, 10, 20).getTime());
+assert.deepEqual([ov.clubNaam, ov.datum, ov.aantal, ov.totaal, ov.kleur, ov.heeftConcept], ['FC Testdorp', '20 november 2026', 5, alleVelden().length, '#0a5cff', true]);
+assert.deepEqual(ov.hoofdstukken.map(h => h.naam), ['Organisatie en rollen', 'Bouwen en leeftijdsgroepen', 'Evalueren en volgen', 'Gedrag en normen'], 'in de volgorde van de hoofdstukken, zonder wat open of afgewezen is');
+const bouwOv = ov.hoofdstukken[1].onderwerpen[0];
+assert.deepEqual(bouwOv.regels.map(r => [r.plek, r.label, r.waarde]), [['Instelling', 'Jongste bouw tot en met O-leeftijd', '10'], ['Instelling', 'Middelste bouw tot en met O-leeftijd', '13'], ['Clubwijzer', '', 'Onze onderbouw loopt t/m O10.']]);
+assert.deepEqual(ov.hoofdstukken[2].onderwerpen[0].regels[0], { soort: 'ronde', plek: 'Evaluatieronde', label: 'Winterevaluatie', waarde: 'Snelle beoordeling, 1 december 2026 tot en met 31 december 2026' });
+assert.equal(ov.hoofdstukken[2].onderwerpen[0].regels[1].concept, true);
+assert.equal(ov.hoofdstukken[3].onderwerpen[0].regels[0].waarde, '- We zijn op tijd\n- Respect');
+assert.deepEqual(ov.hoofdstukken[0].onderwerpen.map(x => [x.label, x.regels[0].waarde]), [['Wie beslist wat', 'Club stuurt'], ['Materiaalman', 'Hij beheert de ballen.']]);
+assert.ok(ov.open.some(m => m.label === 'Speeltijd') === false && ov.open.some(m => m.label === 'Voetbalvisie'), 'wat open staat is geen manco, wat is afgewezen wel');
+assert.equal(inrichtingOverzicht({}, null).aantal, 0);
+assert.equal(inrichtingOverzicht({}, { instellingen: { identiteit: { kleur: 'rood' } } }).kleur, '#e2342f');
+/* de tabel van de PDF: het onderwerp beslaat al zijn regels; alleen tekens die het PDF-font kent */
+const rijen = tabelRijen(ov.hoofdstukken[2]);
+assert.deepEqual([rijen.length, rijen[0].length, rijen[1].length, rijen[0][0].rowSpan, rijen[0][0].content], [2, 3, 2, 2, 'Momenten in het jaar']);
+assert.deepEqual(rijen[1], ['Clubwijzer (concept)', 'Wij beoordelen twee keer.']);
+assert.equal(rijen[0][2], 'Winterevaluatie: Snelle beoordeling, 1 december 2026 tot en met 31 december 2026');
+assert.equal(pdfTekst('Clubwijzer › “Zo’n” afspraak – klaar… ✓ coördinator'), 'Clubwijzer > "Zo\'n" afspraak - klaar...  coördinator');
+
 console.log('clubprofiel: ok');
