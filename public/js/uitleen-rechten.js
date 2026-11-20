@@ -4,7 +4,7 @@
    Zichtbaarheidscheck voor knoppen; los bestand zodat teams-spelers.js,
    desktop-schermen.js en uitleen-form.js hem delen zonder importkringloop. */
 import { S, isBeheerder, isPlatformBeheerder } from './state.js?v=20261117a';
-import { isBouwCoordinator } from './coordinatoren.js?v=20261117a';
+import { isBouwCoordinator } from './coordinatoren.js?v=20261120c';
 
 export function magUitlenen(team){
   if (!team) return false;

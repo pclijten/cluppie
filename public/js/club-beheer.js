@@ -19,8 +19,8 @@ import { kompasNaam } from './clubconfig.js?v=20261117a';
 import { onderdeelAan, doorPlatformUit, werkwijzeVan } from './onderdelen.js?v=20261117a';
 import { ico } from './icons.js?v=20261116t';
 import { momentenVanTeam, htmlMomentenKaart, koppelMomentenKaart, DAGEN_KORT } from './trainingsmomenten.js?v=20261117a';
-import { verwijderCoach } from './trainco-beheer.js?v=20261117a';
-import { eigenBouwenVanTeam, bouwVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261117a';
+import { verwijderCoach } from './trainco-beheer.js?v=20261120c';
+import { eigenBouwenVanTeam, bouwVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261120c';
 
 /* [sleutel, naam, kort, icoon, uitleg] — 'lijstjes' was eerder niet door de beheerder te regelen */
 export const MODULE_DEFS = [

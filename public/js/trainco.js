@@ -23,9 +23,10 @@
 import { auth, db, signOut, collection, query, where, onSnapshot, getDocs } from './firebase.js?v=20261011g';
 import { S, esc, bewaakTerug, doeTerug } from './state.js?v=20261117a';
 import { BOUWEN, isoWeek, youtubeId, youtubeThumb, youtubeWatch } from './config.js?v=20261117a';
-import { bouwVanTeam, eigenBouwenVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261117a';
+import { bouwVanTeam, eigenBouwenVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261120c';
 import { oefHtml, diagramVoorOefening, openLightbox } from './training-weergave.js?v=20261117a';
 import { logoImgVoorDoc } from './clubconfig.js?v=20261117a';
+import { rolNaam as clubRolNaam } from './rolnamen.js?v=20261120c';   /* [20261120c] eigen rolnamen van de club */
 import { ico } from './icons.js?v=20261116t';
 import { momentenVanTeam, DAGEN_LANG, DAGEN_KORT } from './trainingsmomenten.js?v=20261117a';
 
@@ -504,7 +505,7 @@ function teken(){
     ${T.voorbeeld ? '<div class="tc-voorbeeld">Voorbeeld: zo ziet de trainingscoördinator het. <button class="knop licht klein" data-tc-sluitvoorbeeld>Terug naar Cluppie</button></div>' : ''}
     <div class="tc-schil">
       <aside class="tc-zij">
-        <div class="tc-merk">${logoImgVoorDoc(T.club, '')}<span><b class="cond">${esc(T.club.naam || 'Cluppie')}</b><small>Trainingscoördinator</small></span></div>
+        <div class="tc-merk">${logoImgVoorDoc(T.club, '')}<span><b class="cond">${esc(T.club.naam || 'Cluppie')}</b><small>${esc(clubRolNaam('trainco', T.club))}</small></span></div>
         <nav class="tc-nav" aria-label="Menu">
           <div class="tc-navkop">Trainingen</div>
           ${MENU.slice(0, 2).map(([id, n, ic]) => `<button class="tc-link ${!T.detail && T.pagina === id ? 'actief' : ''}" data-tc-pagina="${id}">${ico(ic, 20)}<span>${n}</span></button>`).join('')}
@@ -516,7 +517,7 @@ function teken(){
           <button class="tc-uit" data-tc-uitloggen title="Uitloggen" aria-label="Uitloggen">${ico('team-leave', 20)}</button></div>
       </aside>
       <main class="tc-hoofd">
-        <header class="tc-balk">${T.vanuitApp ? `<button class="tc-uit" data-tc-naarapp title="Terug naar mijn team" aria-label="Terug naar mijn team">${ico('navigation-back', 22)}</button>` : ''}${logoImgVoorDoc(T.club, '')}<span><b class="cond">${esc(T.club.naam || 'Cluppie')}</b><small>Trainingscoördinator</small></span>
+        <header class="tc-balk">${T.vanuitApp ? `<button class="tc-uit" data-tc-naarapp title="Terug naar mijn team" aria-label="Terug naar mijn team">${ico('navigation-back', 22)}</button>` : ''}${logoImgVoorDoc(T.club, '')}<span><b class="cond">${esc(T.club.naam || 'Cluppie')}</b><small>${esc(clubRolNaam('trainco', T.club))}</small></span>
           <button class="tc-uit" data-tc-uitloggen title="Uitloggen" aria-label="Uitloggen">${ico('team-leave', 20)}</button></header>
         <div class="tc-inhoud-wrap">${inhoud}</div>
       </main>

@@ -12,6 +12,7 @@
 import { db, doc, updateDoc, deleteField, collection, query, where, getDocs, getDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { S, esc, meld } from './state.js?v=20261117a';
 import { ico } from './icons.js?v=20261116t';
+import { rolNaam as clubRolNaam } from './rolnamen.js?v=20261120c';   /* [20261120c] eigen rolnamen van de club */
 
 const roep = (naam, data) => httpsCallable(functions, naam)(data).then(r => r.data);
 const naamKort = n => String(n || 'Naamloos').split('@')[0];
@@ -30,9 +31,9 @@ export function htmlTraincoKaart(){
   const co = coordinatoren();
   return `
     <div class="cb-kaart" id="traincoKaart">
-      <div class="cb-kaart-kop">${ico('team-add', 18)}<b>Trainingscoördinator</b><span class="cb-telling">${co.length}</span></div>
+      <div class="cb-kaart-kop">${ico('team-add', 18)}<b>${esc(clubRolNaam('trainco', S.club))}</b><span class="cb-telling">${co.length}</span></div>
       <p class="cb-uitleg" style="margin:0 0 8px">Een coördinator ziet alle teams waarvoor trainingen klaarstaan: wie wanneer traint, het aantal spelers, de AI-training, de PDF en de diagrammen. Geen spelersnamen.</p>
-      ${co.map(c => `<div class="cb-persoon"><div class="cb-av">${esc(twee(c.naam))}</div><div class="cb-persoon-n">${esc(c.naam)} <span class="cb-rol coord">Coördinator</span></div>
+      ${co.map(c => `<div class="cb-persoon"><div class="cb-av">${esc(twee(c.naam))}</div><div class="cb-persoon-n">${esc(c.naam)} <span class="cb-rol coord">${esc(clubRolNaam('trainco', S.club, 'Coördinator'))}</span></div>
         <button class="knop licht klein" data-tc-weg="${esc(c.uid)}">Toegang intrekken</button></div>`).join('')}
       <div id="tcAanvragen"></div>
       <div class="sectie-kop" style="margin:12px 0 6px">Uitnodigen</div>

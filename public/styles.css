@@ -9162,3 +9162,78 @@ html.desk .lh-rijen .lj-rk{margin-bottom:0}
 .nu-melding > span{ display:flex; flex-direction:column; gap:var(--space-3xs); min-width:0; }
 .vb-paneel > .nu-melding{ margin:0; }
 a.knop{ text-decoration:none; }
+
+/* ==================== [20261120b] Clubprofiel (platform-clubprofiel.js): documenten van een club inlezen ==================== */
+.pc-lade-body:has(.cp-root){max-width:1240px}
+.cp{display:flex;flex-direction:column;gap:var(--space-sm);min-width:0}
+.cp .tc-meta{margin:0}
+.cp-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--space-sm)}
+.cp-acties{display:flex;flex-wrap:wrap;gap:var(--space-xs);align-items:center}
+.cp-acties .knop svg,.cp-knoppen .knop svg{vertical-align:-3px}
+.cp-wachtrij{display:flex;flex-direction:column;gap:var(--space-2xs);padding:var(--space-sm);border:1px solid var(--line-d);border-radius:var(--radius);background:var(--surface)}
+.cp-wachtrij > .knop{align-self:flex-start;margin-top:var(--space-2xs)}
+.cp-wacht{display:flex;justify-content:space-between;gap:var(--space-sm);font-size:var(--t-sm)}
+.cp-wacht b{font-weight:600;color:var(--ink);min-width:0;overflow-wrap:anywhere}
+.cp-wacht span{color:var(--ink-2);text-align:right}
+.cp-wacht.w-klaar span{color:var(--ok)}
+.cp-wacht.w-fout span{color:var(--accent-tekst)}
+.cp-raster{display:grid;grid-template-columns:250px minmax(0,1fr);gap:var(--space-md);align-items:start}
+.cp-nav{display:flex;flex-direction:column;gap:2px;position:sticky;top:var(--space-sm)}
+.cp-nav-knop{display:flex;justify-content:space-between;align-items:center;gap:var(--space-xs);width:100%;text-align:left;border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:var(--t-sm);padding:var(--space-xs) var(--space-sm);border-radius:9px;cursor:pointer}
+.cp-nav-knop:hover{background:var(--surface)}
+.cp-nav-knop.actief{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:inset 0 0 0 1px var(--line-d)}
+.cp-nav-knop:focus-visible,.cp-drop:focus-visible,.cp-vink:focus-visible,.cp-filter:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.cp-nav-knop small{display:inline-flex;align-items:center;gap:6px;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.cp-stip{width:8px;height:8px;border-radius:50%;background:var(--warn);display:inline-block}
+.cp-inhoud{display:flex;flex-direction:column;gap:var(--space-sm);min-width:0}
+.cp-inhoud .tc-h2{margin:0}
+.cp-hkop{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--space-sm)}
+.cp-filters{display:flex;flex-wrap:wrap;gap:6px}
+.cp-filter{border:1px solid transparent;cursor:pointer;font:inherit;font-size:var(--t-xs)}
+.cp-filter.actief{background:var(--surface);border-color:var(--line-d);color:var(--ink);font-weight:600}
+.cp-drop{display:flex;flex-direction:column;align-items:center;gap:var(--space-3xs);text-align:center;padding:var(--space-lg,24px) var(--space-md);border:2px dashed var(--line-d);border-radius:var(--radius);color:var(--ink-2);cursor:pointer}
+.cp-drop b{color:var(--ink);font-weight:600}
+.cp-drop span{font-size:var(--t-sm)}
+.cp-drop.over,.cp-drop:hover{border-color:var(--accent);background:var(--surface)}
+.cp-plak{display:flex;flex-direction:column;gap:var(--space-xs)}
+.cp-los{align-self:flex-start}
+.cp-veld{display:flex;flex-direction:column;gap:var(--space-xs);padding:var(--space-sm) var(--space-md);border:1px solid var(--line-d);border-radius:var(--radius);background:var(--surface)}
+.cp-veld.st-leeg{background:transparent}
+.cp-veld header{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--space-sm)}
+.cp-veld h3{margin:0;font-size:var(--t-md,15px);font-weight:700;color:var(--ink);line-height:1.3}
+.cp-veld header .pc-chips{flex-shrink:0;justify-content:flex-end}
+.cp-doel{margin:0;font-size:var(--t-xs);color:var(--ink-2)}
+.cp-vraag{margin:0;font-size:var(--t-sm);color:var(--ink);line-height:1.45}
+.cp-bev{display:flex;flex-direction:column;gap:var(--space-2xs);padding:var(--space-sm);border-radius:10px;background:var(--surface-2)}
+.cp-bev.o-akkoord{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ok) 45%,transparent)}
+.cp-bev.is-verwerkt{opacity:.75}
+.cp-waarde{margin:0;color:var(--ink);line-height:1.45;overflow-wrap:anywhere}
+.cp-citaat{margin:0;padding-left:var(--space-sm);border-left:2px solid var(--line-d);color:var(--ink-2);font-size:var(--t-sm);line-height:1.45;font-style:italic;overflow-wrap:anywhere}
+.cp-bron{margin:0;font-size:var(--t-xs);color:var(--ink-2)}
+.cp-let{color:var(--warn);font-weight:600}
+.cp-let svg{vertical-align:-2px}
+.cp-knoppen{display:flex;flex-wrap:wrap;gap:var(--space-2xs);align-items:center;margin-top:var(--space-3xs)}
+.cp-vink{display:inline-flex;align-items:center;gap:var(--space-2xs);border:1px solid var(--line-d);background:transparent;color:var(--ink);font:inherit;font-size:var(--t-sm);font-weight:600;padding:var(--space-xs) var(--space-sm);border-radius:9px;cursor:pointer}
+.cp-vink i{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--ink-2);display:inline-block;flex-shrink:0}
+.cp-vink[aria-checked="true"]{border-color:transparent;background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+.cp-vink[aria-checked="true"] i{border-color:var(--ok);background:var(--ok)}
+.cp-ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 45%,transparent)}
+.cp-bewerk{display:flex;flex-direction:column;gap:var(--space-xs)}
+.cp-instel{display:flex;flex-direction:column;gap:var(--space-sm);padding:var(--space-sm);border-radius:10px;border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);background:var(--surface)}
+.cp-instel > b{color:var(--ink);font-weight:700}
+.cp-instel-veld{display:flex;flex-direction:column;gap:var(--space-3xs)}
+.cp-instel-veld > label:first-child{font-size:var(--t-sm);font-weight:600;color:var(--ink)}
+.cp-instel-veld small{font-size:var(--t-xs);color:var(--ink-2)}
+.cp-instel-veld .invoer{max-width:360px}
+.cp-instel-veld input[type="color"]{width:72px;height:40px;padding:2px}
+.cp-afg{font-size:var(--t-sm);color:var(--ink-2)}
+.cp-afg summary{cursor:pointer}
+.cp-afg-rij{display:flex;flex-wrap:wrap;gap:var(--space-2xs);align-items:center;padding:var(--space-2xs) 0}
+.cp-afg-rij span{flex:1 1 220px;min-width:0;text-decoration:line-through;overflow-wrap:anywhere}
+@media (max-width:860px){
+  .cp-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cp-raster{grid-template-columns:minmax(0,1fr)}
+  .cp-nav{position:static;flex-direction:row;overflow-x:auto;gap:var(--space-2xs);padding-bottom:var(--space-2xs)}
+  .cp-nav-knop{width:auto;white-space:nowrap;flex-shrink:0;box-shadow:inset 0 0 0 1px var(--line-d)}
+  .cp-veld header{flex-direction:column}
+}
