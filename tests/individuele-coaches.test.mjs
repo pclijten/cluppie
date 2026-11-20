@@ -53,4 +53,14 @@ const r3 = bepaal({ gebruikers: veel, nuMs: NU, max: 3 });
 assert.equal(r3.lijst.length, 3); assert.equal(r3.totaal, 5); assert.equal(r3.afgekapt, true);
 /* geen gegevens → leeg */
 assert.equal(bepaal({ nuMs: NU }).totaal, 0);
+/* [20261120g] een anoniem account (ouder of speler via een deellink of de teamkamer) is geen trainer */
+const r4 = bepaal({ gebruikers: [{ uid: 'anon', email: '', aangemeld: dag(1), anoniem: true }, { uid: 'echt', email: 'e@m.nl', aangemeld: dag(1) }], nuMs: NU });
+assert.deepEqual(r4.lijst.map(x => x.uid), ['echt']); assert.equal(r4.nogGeenTeam, 1);
+
+/* [20261120g] naam en plaats van een club wijzigen door de eindbaas: de invoer wordt gecontroleerd */
+const { schoonClubNaam } = require('../functions/platform.js');
+assert.deepEqual(schoonClubNaam({ clubId: 'abc_1', naam: '  VV  Mifano ', plaats: ' Mierlo ' }), { clubId: 'abc_1', naam: 'VV Mifano', plaats: 'Mierlo' });
+assert.deepEqual(schoonClubNaam({ clubId: 'abc', naam: 'Mifano' }), { clubId: 'abc', naam: 'Mifano' }, 'zonder plaats blijft de plaats ongemoeid');
+for (const fout of [{ clubId: 'a/b', naam: 'Mifano' }, { clubId: 'abc', naam: 'M' }, { clubId: 'abc', naam: 'x'.repeat(61) }, { clubId: 'abc', naam: 'Mifano', plaats: 'y'.repeat(61) }, {}])
+  assert.throws(() => schoonClubNaam(fout), e => e.code === 'invalid-argument');
 console.log('individuele-coaches: alles groen');

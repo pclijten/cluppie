@@ -249,4 +249,31 @@ assert.deepEqual(rijen[1], ['Clubwijzer (concept)', 'Wij beoordelen twee keer.']
 assert.equal(rijen[0][2], 'Winterevaluatie: Snelle beoordeling, 1 december 2026 tot en met 31 december 2026');
 assert.equal(pdfTekst('Clubwijzer › “Zo’n” afspraak – klaar… ✓ coördinator'), 'Clubwijzer > "Zo\'n" afspraak - klaar...  coördinator');
 
+/* [20261120g] voorbeeld op de telefoon: elk onderwerp heeft een scherm en een uitleg */
+const { voorbeeldVoor, voorbeeldInrichting } = await import('../public/js/clubprofiel-logica.js');
+for (const v of alleVelden()){
+  const vb = voorbeeldVoor(v);
+  assert.ok(['clubwijzer', 'hub', 'spelers'].includes(vb.scherm) && vb.uitleg.length > 20, v.id);
+  if (vb.scherm === 'clubwijzer') assert.equal(v.tekst, true, v.id + ': de Clubwijzer alleen bij een veld met tekst');
+}
+assert.deepEqual([voorbeeldVoor(veldOpId('eval.momenten')).scherm, voorbeeldVoor(veldOpId('eval.vorm')).scherm, voorbeeldVoor(veldOpId('wed.speeltijd')).scherm, voorbeeldVoor(veldOpId('id.kleur')).clubwijzer], ['hub', 'spelers', 'clubwijzer', false]);
+assert.match(voorbeeldVoor(veldOpId('bouw.indeling')).uitleg, /Clubwijzer[\s\S]*coördinatoren/);
+assert.match(voorbeeldVoor(veldOpId('gedrag.regels')).uitleg, /gouden regels staan bovenaan/);
+assert.equal(voorbeeldVoor(veldOpId('rollen.overig')).scherm, 'clubwijzer');
+/* de inrichting zoals hij wordt: wat gezet is gaat voor, anders het eerste open antwoord; afgewezen telt niet */
+const vbProfiel = { bevindingen: {
+  a: { veld: 'bouw.grenzen', waarde: 'x', oordeel: 'akkoord', verwerkt: true, gemaaktMs: 1, gezet: { ms: 1, tekst: 'Gezet.', instellingen: { 'regels.bouwGrenzen.onderTm': 10, 'regels.bouwGrenzen.middenTm': 13 } } },
+  b: { veld: 'bouw.grenzen', waarde: 'y', oordeel: 'open', gemaaktMs: 2, voorstel: { tekst: 'Ander voorstel.', instellingen: { 'regels.bouwGrenzen.onderTm': 9 } } },
+  c: { veld: 'eval.momenten', waarde: 'z', oordeel: 'open', gemaaktMs: 3, voorstel: { tekst: 'Twee keer.', rondes: [{ naam: 'Winter', tot: '2026-12-31' }] } },
+  d: { veld: 'gedrag.regels', waarde: 'w', oordeel: 'afgewezen', gemaaktMs: 4, voorstel: { tekst: 'Niet gebruiken.', regels: ['Weg'] } },
+  e: { veld: 'id.kleur', waarde: 'Blauw', oordeel: 'open', gemaaktMs: 5, voorstel: { instellingen: { 'identiteit.kleur': '#0000ff' } } },
+} };
+const cv = (v, b) => { const bron = b.gezet || b.voorstel || {}; return { titel: titelVan(v, b.waarde), tekst: bron.tekst || '', regels: (bron.regels || []).join('\n'), rondes: bron.rondes || [],
+  inst: Object.fromEntries((instelVelden(v.id) || []).map(d => [d.pad, (bron.instellingen || {})[d.pad] ?? instelWaarde({}, d)])) }; };
+const inr = voorbeeldInrichting(vbProfiel, { v: 1, identiteit: { afkorting: 'FCT' } }, cv);
+assert.deepEqual([inr.instellingen.regels.bouwGrenzen, inr.instellingen.identiteit], [{ onderTm: 10, middenTm: 13 }, { afkorting: 'FCT', kleur: '#0000ff' }]);
+assert.deepEqual(inr.content.map(d => [d.id, d.data.status, d.data.achtergrond]), [['afspraak-bouw-grenzen', 'gepubliceerd', 'Gezet.'], ['afspraak-eval-momenten', 'gepubliceerd', 'Twee keer.']]);
+assert.deepEqual(inr.rondes, [{ naam: 'Winter', soort: 'volledig', van: null, tot: '2026-12-31' }]);
+assert.equal(voorbeeldInrichting({}, null, cv).instellingen.v, 1);
+
 console.log('clubprofiel: ok');

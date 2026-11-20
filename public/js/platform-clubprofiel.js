@@ -19,11 +19,11 @@
    zien ze gewoon in hun instellingen en onder Content.
 ==================================================================== */
 import { db, doc, getDoc, setDoc, updateDoc, deleteDoc, deleteField, serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { esc, meld } from './state.js?v=20261117a';
+import { esc, meld } from './state.js?v=20261120g';
 import { ico } from './icons.js?v=20261116t';
 import { VERSIE, MAX_DOCUMENT, FILTERS, GROEPEN, veldenVoorAI, veldOpId, hoofdstukOpId, documentId, docxTekst, schoonBevinding, schoonVoorstel, voorstelLeeg,
   opTeRuimen, nieuweBevindingen, overzicht, pastInFilter, mancos, vragenTekst, profielTekst, regelsUit, titelVan, contentDocs,
-  instelVelden, instelWaarde, instelWijzigingen, controleerInstelling, instelVeldenVoorAI, schoonRondes, rondesSamenvoegen, seizoenVan, inrichtingOverzicht } from './clubprofiel-logica.js?v=20261120f';
+  instelVelden, instelWaarde, instelWijzigingen, controleerInstelling, instelVeldenVoorAI, schoonRondes, rondesSamenvoegen, seizoenVan, inrichtingOverzicht, voorbeeldVoor, voorbeeldInrichting } from './clubprofiel-logica.js?v=20261120g';
 
 const K = {};                 // clubId → toestand van het scherm
 let root = null, club = null;
@@ -60,6 +60,8 @@ export function toonClubprofiel(el, clubDoc){
   const st = staat(club.id);
   if (!st.profiel && !st.laden) laad(club.id);
   teken();
+  /* [20261120g] voorbeeld op de telefoon (alleen op een breed scherm standaard aan) */
+  if (TEL.open && window.innerWidth >= 1100){ telefoonPaneel(); if (!TEL.frame.getAttribute('src')) laadFrame(); else if (TEL.klaar) synchroniseer().then(() => toonOpTelefoon(TEL.veld)); }
 }
 async function laad(id){
   const st = staat(id); st.laden = true; st.fout = '';
@@ -69,7 +71,7 @@ async function laad(id){
     st.profiel.bevindingen = Object.fromEntries(Object.entries(st.profiel.bevindingen || {}).map(([k, b]) => [k, schoonBevinding(b)]).filter(([, b]) => b));
   } catch (x){ console.error('[clubprofiel] laden', x); st.fout = foutTekst(x); }
   st.laden = false;
-  if (club?.id === id) teken();
+  if (club?.id === id){ teken(); if (TEL.klaar) synchroniseerStraks(); }
 }
 /* samenvoegen (nieuwe bevindingen, documenten, losse velden) */
 async function schrijf(id, deel){
@@ -117,8 +119,8 @@ async function fotoNaarTekst(file, clubId){
 async function leesBestand(file, clubId, voortgang = () => {}){
   const naam = file.name || '';
   if (/\.pdf$/i.test(naam) || file.type === 'application/pdf'){
-    const { laadPdfJs } = await import('./pdf-viewer.js?v=20261117a');
-    const { regelsUitTekstItems } = await import('./training-ai.js?v=20261117a');
+    const { laadPdfJs } = await import('./pdf-viewer.js?v=20261120g');
+    const { regelsUitTekstItems } = await import('./training-ai.js?v=20261120g');
     await laadPdfJs();
     const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
     const delen = []; let scans = 0;
@@ -218,6 +220,7 @@ async function analyseer(id, naam, tekst, paginas, voortgang){
     }
     klaar += ids.length; voortgang(klaar, totaal);
     if (club?.id === id && !document.activeElement?.closest?.('.cp-cluppie, .cp-bewerk, .cp-plak')) teken();
+    if (TEL.klaar && club?.id === id) synchroniseerStraks();
   };
   await doe(GROEPEN[0]);
   const uitkomsten = await Promise.allSettled(GROEPEN.slice(1).map(doe));
@@ -239,6 +242,127 @@ function conceptVan(st, v, b){
     inst[d.pad] = String(w === undefined || w === null || w === '' ? instelWaarde(club.instellingen, d) : w);
   }
   return (st.concept[b.id] = { titel: bron.titel || titelVan(v, b.waarde), tekst: bron.tekst || '', regels: (bron.regels || []).join('\n'), rondes: (bron.rondes || []).map(r => ({ ...r, van: r.van || '' })), inst });
+}
+
+/* ==================== [20261120g] VOORBEELD OP DE TELEFOON ====================
+   Een telefoonvenster rechts naast het Clubprofiel met de echte app in demomodus (index.html?demo=coach),
+   bekeken als trainer. Daarin staat de inrichting van deze club zoals hij wordt als je alles goedkeurt
+   (voorbeeldInrichting: wat al in Cluppie staat plus de voorstellen), en per onderwerp springt de telefoon
+   naar het scherm waar een trainer het ziet (voorbeeldVoor). Je kunt er gewoon doorheen tikken.
+
+   Alles gebeurt in de demo-database van het venster zelf (in het geheugen): er gaat niets naar Firebase en
+   niets naar de club. Het venster hangt aan <body> en niet in het scherm, omdat een iframe opnieuw laadt
+   zodra het in de pagina wordt verplaatst; het scherm maakt ruimte met de klasse cp-telefoon-aan. */
+const TEL = { el: null, frame: null, klaar: false, veld: null, ids: [], open: true, timer: null, bezig: null, wacht: null };
+const DEMO_TEAM = 'demo-o11-2';
+try { TEL.open = localStorage.getItem('cpTelefoon') !== 'uit'; } catch (e) {}
+const SCHERM_NAAM = { clubwijzer: 'Documenten › Clubwijzer', hub: 'Het team (startscherm)', spelers: 'Spelers' };
+
+function telefoonPaneel(){
+  if (TEL.el) return TEL.el;
+  const el = document.createElement('aside');
+  el.className = 'cp-tel'; el.setAttribute('aria-label', 'Voorbeeld op de telefoon');
+  el.innerHTML = `<div class="cp-tel-kop"><div><b>Zo ziet een trainer het</b><small>Voorbeeld met wat in Cluppie staat en alle voorstellen. Er gaat niets naar de club.</small></div>
+      <button class="knop licht klein" data-cptel="vernieuw" title="Voorbeeld opnieuw laden">${ico('action-loading', 15)}</button>
+      <button class="knop licht klein" data-cptel="dicht" title="Telefoon verbergen">${ico('navigation-close', 15)}</button></div>
+    <div class="cp-tel-wrap"><div class="cp-tel-frame"><iframe title="Cluppie zoals een trainer het ziet"></iframe><div class="cp-tel-laden">Voorbeeld laden…</div></div></div>
+    <div class="cp-tel-uitleg" aria-live="polite"></div>`;
+  el.addEventListener('click', e => {
+    const b = e.target.closest('[data-cptel]'); if (!b) return;
+    if (b.dataset.cptel === 'dicht') return zetTelefoon(false);
+    if (b.dataset.cptel === 'vernieuw'){ TEL.klaar = false; TEL.ids = []; laadFrame(); return; }
+    if (b.dataset.cptel === 'clubwijzer') return toonOpTelefoon(TEL.veld, 'clubwijzer');
+  });
+  document.body.appendChild(el);
+  TEL.el = el; TEL.frame = el.querySelector('iframe');
+  TEL.frame.addEventListener('load', () => { TEL.klaar = false; wachtOpApp(); });
+  window.addEventListener('resize', schaalTelefoon);
+  /* het venster verdwijnt als het Clubprofiel niet meer in beeld is (ander tabblad, andere club, centrum dicht) */
+  TEL.wacht = setInterval(() => { if (TEL.el) TEL.el.hidden = !(TEL.open && root && root.isConnected); document.body.classList.toggle('cp-telefoon-aan', !!(TEL.el && !TEL.el.hidden)); }, 500);
+  return el;
+}
+function laadFrame(){
+  telefoonPaneel();
+  TEL.el.querySelector('.cp-tel-laden').hidden = false;
+  TEL.frame.src = 'index.html?demo=coach&voorbeeld=' + Date.now().toString(36);
+  schaalTelefoon();
+}
+function schaalTelefoon(){
+  if (!TEL.el) return;
+  const ruimte = Math.max(420, window.innerHeight - 190);
+  TEL.el.style.setProperty('--cp-tel-schaal', String(Math.min(1, ruimte / 844).toFixed(3)));
+}
+function zetTelefoon(aan){
+  TEL.open = aan;
+  try { localStorage.setItem('cpTelefoon', aan ? 'aan' : 'uit'); } catch (e) {}
+  if (aan){ telefoonPaneel(); if (!TEL.frame.getAttribute('src')) laadFrame(); else synchroniseer(); }
+  if (TEL.el) TEL.el.hidden = !aan;
+  document.body.classList.toggle('cp-telefoon-aan', aan);
+  if (root) teken();
+}
+/* wachten tot de app in het venster een gebruiker en teams heeft */
+async function wachtOpApp(){
+  const w = TEL.frame?.contentWindow;
+  for (let i = 0; i < 80; i++){
+    try { const vb = w.__cluppieVoorbeeld, demo = w.__cluppieDemo; if (vb && demo?.api && (vb.S.teams || []).length){ TEL.klaar = true; break; } } catch (e) {}
+    await new Promise(r => setTimeout(r, 150));
+  }
+  TEL.el.querySelector('.cp-tel-laden').hidden = TEL.klaar;
+  if (!TEL.klaar){ TEL.el.querySelector('.cp-tel-laden').textContent = 'Het voorbeeld laadt niet. Probeer Vernieuwen.'; TEL.el.querySelector('.cp-tel-laden').hidden = false; return; }
+  await synchroniseer();
+  await toonOpTelefoon(TEL.veld);
+}
+/* de inrichting van deze club in de demo zetten: naam, instellingen, evaluatierondes en de teksten */
+async function synchroniseer(){
+  if (!TEL.klaar || !club) return;
+  const st = staat(club.id); if (!st.profiel) return;
+  const w = TEL.frame.contentWindow, demo = w.__cluppieDemo, { db: ddb, doc: ddoc, getDoc: dget, setDoc: dset, updateDoc: dupd, deleteDoc: ddel } = demo.api;
+  const inr = voorbeeldInrichting(st.profiel, club.instellingen, (v, b) => conceptVan(st, v, b));
+  const ref = ddoc(ddb, 'clubs', demo.club), huidig = (await dget(ref)).data() || {};
+  const teams = Object.keys(huidig.teams || {});
+  await dset(ref, { ...huidig, naam: club.naam || huidig.naam, instellingen: inr.instellingen,
+    evaluatieRondes: inr.rondes.map((r, i) => ({ id: 'vb' + i, naam: r.naam, soort: r.soort, van: null, tot: r.tot, teams, status: 'open', seizoen: huidig.huidigSeizoen || '' })) });
+  const nieuw = new Set(inr.content.map(d => d.id));
+  for (const id of TEL.ids) if (!nieuw.has(id)) await ddel(ddoc(ddb, 'clubs', demo.club, 'content', id));
+  for (const d of inr.content) await dset(ddoc(ddb, 'clubs', demo.club, 'content', d.id), d.data);
+  TEL.ids = [...nieuw]; TEL.rondes = inr.rondes.map(r => r.naam);
+  /* de clubnaam die bij de teams staat (de Clubwijzer en de kop van een team gebruiken die) */
+  for (const t of teams){ try { await dupd(ddoc(ddb, 'teams', t), { clubNaam: club.naam || '' }); } catch (e) {} }
+  try { w.__cluppieVoorbeeld.renderTeam(); } catch (e) {}
+}
+function synchroniseerStraks(){ clearTimeout(TEL.timer); TEL.timer = setTimeout(() => synchroniseer().then(() => toonOpTelefoon(TEL.veld, TEL.laatsteScherm)).catch(e => console.warn('[clubprofiel] voorbeeld', e)), 700); }
+/* een tekst in de telefoon opzoeken, ernaartoe scrollen en het blok even laten oplichten */
+function markeerInTelefoon(tekst){
+  try {
+    const d = TEL.frame.contentDocument, w = TEL.frame.contentWindow, it = d.createTreeWalker(d.body, w.NodeFilter.SHOW_TEXT);
+    for (let n = it.nextNode(); n; n = it.nextNode()){
+      if (!n.nodeValue.includes(tekst)) continue;
+      const blok = n.parentElement.closest('.kaart, button, section, li, div') || n.parentElement;
+      blok.scrollIntoView({ block: 'center' }); blok.classList.add('cw-licht'); setTimeout(() => blok.classList.remove('cw-licht'), 2600);
+      return;
+    }
+  } catch (e) {}
+}
+/* de telefoon naar het scherm van één onderwerp brengen */
+async function toonOpTelefoon(veldId, scherm){
+  if (veldId) TEL.veld = veldId;
+  const v = TEL.veld && veldOpId(TEL.veld), uitleg = TEL.el?.querySelector('.cp-tel-uitleg');
+  const vb = v ? voorbeeldVoor(v) : null;
+  const doel = scherm || (vb ? vb.scherm : 'hub');
+  TEL.laatsteScherm = scherm || null;
+  if (uitleg) uitleg.innerHTML = v ? `<b>${esc(v.overig ? 'Overig' : v.label)}</b><span>Op de telefoon: ${esc(SCHERM_NAAM[doel] || doel)}</span><p>${esc(vb.uitleg)}</p>
+      ${vb.clubwijzer && doel !== 'clubwijzer' ? '<button class="knop licht klein" data-cptel="clubwijzer">Ook de tekst in de Clubwijzer bekijken</button>' : ''}`
+    : '<p>Tik bij een onderwerp op <b>Op de telefoon</b> om te zien waar een trainer het ziet. Je kunt ook gewoon door de app tikken.</p>';
+  if (!TEL.klaar) return;
+  const vbApp = TEL.frame.contentWindow.__cluppieVoorbeeld;
+  try {
+    vbApp.sluitModal();
+    const tab = doel === 'clubwijzer' ? 'documenten' : doel;
+    if (vbApp.S.teamId !== DEMO_TEAM || vbApp.S.wedstrijdId) vbApp.openTeam(DEMO_TEAM, tab); else vbApp.zetTeamTab(tab);
+    if (doel === 'clubwijzer') setTimeout(() => vbApp.openClubwijzer(v && v.id), 250);
+    else if (v && v.rondes && (TEL.rondes || []).length) setTimeout(() => markeerInTelefoon(TEL.rondes[0]), 400);
+    TEL.frame.contentWindow.scrollTo(0, 0);
+  } catch (e){ console.warn('[clubprofiel] voorbeeld navigeren', e); }
 }
 
 /* ---------- tekenen ---------- */
@@ -271,6 +395,7 @@ function teken(){
       <button class="knop fluo klein" data-cp="kies">${ico('action-add', 16)} Documenten toevoegen</button>
       <button class="knop licht klein" data-cp="vragen">${ico('action-copy', 15)} Vragen voor de club</button>
       <button class="knop licht klein" data-cp="download">Profiel downloaden</button>
+      <button class="knop licht klein" data-cp="telefoon" aria-pressed="${TEL.open && !!TEL.el && !TEL.el.hidden}">${ico('navigation-home', 15)} ${TEL.open && TEL.el && !TEL.el.hidden ? 'Telefoon verbergen' : 'Op de telefoon bekijken'}</button>
       <button class="knop licht klein" data-cp="pdf" title="Wat er in Cluppie is gezet, per hoofdstuk, om met de club te delen">${ico('admin-document', 15)} Inrichting als PDF</button>
       <span class="cp-schakel" role="group" aria-label="Teksten voor trainers"><span>Teksten voor trainers:</span>
         <button class="${direct ? '' : 'actief'}" data-cp="tekststatus" data-s="concept" aria-pressed="${!direct}">als concept</button><button class="${direct ? 'actief' : ''}" data-cp="tekststatus" data-s="gepubliceerd" aria-pressed="${direct}">direct zichtbaar</button></span>
@@ -326,7 +451,7 @@ function htmlVeld(st, h, v){
   const s = v.stand, [naam, soort] = STAND[s.stand];
   const afg = v.bevindingen.filter(b => b.oordeel === 'afgewezen');
   return `<article class="cp-veld st-${s.stand}" data-veldkaart="${v.id}">
-    <header><h3>${esc(v.label)}</h3><span class="pc-chips">${s.meerdere ? chip('verschillende antwoorden: kies er één', 'let') : ''}${s.deels ? chip('half beantwoord', 'let') : ''}${chip(naam, soort)}</span></header>
+    <header><h3>${esc(v.label)}</h3><button class="knop licht klein cp-optel ${TEL.veld === v.id && TEL.open ? 'actief' : ''}" data-cp="optel" data-veld="${v.id}" title="Laat zien waar een trainer dit ziet">${ico('navigation-home', 14)} Op de telefoon</button><span class="pc-chips">${s.meerdere ? chip('verschillende antwoorden: kies er één', 'let') : ''}${s.deels ? chip('half beantwoord', 'let') : ''}${chip(naam, soort)}</span></header>
     ${s.mee.map(b => htmlBevinding(st, h, v, b)).join('')}
     ${s.stand === 'leeg' && v.vraag ? `<p class="cp-vraag"><b>Niet in de documenten.</b> Vraag voor de club: ${esc(v.vraag)}</p>` : ''}
     ${st.nieuw === v.id ? `<div class="cp-bewerk"><textarea class="invoer" rows="3" maxlength="1500" placeholder="Het antwoord van de club, in gewone woorden" data-cpfocus data-cptekst></textarea>
@@ -394,6 +519,7 @@ function invoer(e){
   if (sleutel === 'inst'){ if (el.type !== 'radio' || el.checked) c.inst[el.dataset.pad] = el.value; }
   else if (sleutel === 'ronde'){ const r = c.rondes[Number(el.dataset.i)]; if (r) r[el.dataset.k] = el.value; }
   else c[sleutel] = el.value;
+  if (TEL.klaar && TEL.open) synchroniseerStraks();
 }
 /* Eén bevinding in Cluppie zetten: instellingen, Clubwijzer-tekst en gouden regels in één keer. */
 async function zet(bevId, stil){
@@ -446,6 +572,7 @@ async function zet(bevId, stil){
     meld(wat ? `In Cluppie gezet: ${wat}` : 'Dit stond al zo in Cluppie; afgevinkt');
     if (club?.id === clubId) teken();
   }
+  if (TEL.klaar) synchroniseerStraks();
   return true;
 }
 /* Een voorstel voor Cluppie maken bij één antwoord (zelf ingevuld, of van vóór 20261120d). */
@@ -459,7 +586,7 @@ async function maakVoorstel(bevId){
       antwoorden: [b.waarde], velden: instelVeldenVoorAI(v.id), wilTekst: v.tekst !== false, wilRegels: v.regels === true, wilRondes: v.rondes === true, seizoen: seizoenTekst() });
     const voorstel = schoonVoorstel({ tekst: r?.data?.tekst, regels: r?.data?.regels, rondes: r?.data?.rondes, instellingen: r?.data?.instellingen || r?.data?.waarden }, v.id);
     if (voorstelLeeg(voorstel)) meld('Uit dit antwoord volgt geen duidelijk voorstel. Vul de tekst zelf in.');
-    else { p.bevindingen[bevId] = { ...p.bevindingen[bevId], voorstel }; delete st.concept[bevId]; await vervang(clubId, { [`bevindingen.${bevId}.voorstel`]: voorstel }); }
+    else { p.bevindingen[bevId] = { ...p.bevindingen[bevId], voorstel }; delete st.concept[bevId]; await vervang(clubId, { [`bevindingen.${bevId}.voorstel`]: voorstel }); if (TEL.klaar) synchroniseerStraks(); }
   } catch (x){ console.warn('[clubprofiel] voorstel', x); meld('Geen voorstel: ' + foutTekst(x) + ' Vul de tekst zelf in.'); }
   st.druk.delete(bevId);
   if (club?.id === clubId) teken();
@@ -468,6 +595,7 @@ async function zetBevinding(id, deel){
   const st = staat(club.id), clubId = club.id, oud = st.profiel.bevindingen[id];
   if (!oud) return;
   st.profiel.bevindingen[id] = { ...oud, ...deel }; teken();
+  if (TEL.klaar) synchroniseerStraks();
   try { await schrijf(clubId, { bevindingen: { [id]: deel } }); }
   catch (x){ st.profiel.bevindingen[id] = oud; meld('Opslaan mislukt: ' + foutTekst(x)); if (club?.id === clubId) teken(); }
 }
@@ -537,6 +665,8 @@ async function klik(e){
     if (a === 'rondeplus') c.rondes.push({ naam: '', soort: 'volledig', van: '', tot: '' }); else c.rondes.splice(Number(b.dataset.i), 1);
     return teken();
   }
+  if (a === 'telefoon') return zetTelefoon(!(TEL.open && TEL.el && !TEL.el.hidden));
+  if (a === 'optel'){ if (!(TEL.open && TEL.el && !TEL.el.hidden)) zetTelefoon(true); toonOpTelefoon(b.dataset.veld); root.querySelectorAll('.cp-optel.actief').forEach(x => x.classList.remove('actief')); b.classList.add('actief'); return; }
   if (a === 'zet') return zet(id);
   if (a === 'voorstel') return maakVoorstel(id);
   if (a === 'heropen'){ st.bewerk.add(id); delete st.concept[id]; return teken(); }

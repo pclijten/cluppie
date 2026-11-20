@@ -424,6 +424,55 @@ export function profielTekst(profiel, clubNaam, alleenAkkoord = false){
   return regels.join('\n').trim() + '\n';
 }
 
+/* ---------- voorbeeld op de telefoon: waar een trainer een onderwerp ziet ----------
+   [20261120g] Per onderwerp het scherm in de app (bekeken als trainer) en een zin uitleg voor de eindbaas.
+   scherm: 'clubwijzer' (tabblad Documenten, Clubwijzer open op dit onderwerp) | 'hub' | 'spelers'.
+   Instellingen die een trainer niet ziet (bouwnamen, rolnamen, formatie) worden eerlijk zo benoemd. */
+const VB = {
+  'id.naam': ['hub', 'De afkorting van de club staat bij de teamnamen en in de teamcode.'],
+  'id.kleur': ['hub', 'De clubkleur kleurt de knoppen, kopjes en accenten in de hele app.'],
+  'id.plannaam': ['hub', 'De naam van het beleidsplan gebruikt de clubbeheerder; een trainer ziet hem niet los.'],
+  'eval.momenten': ['hub', 'Een lopende evaluatieronde staat bovenaan het team. In dit voorbeeld lopen alle rondes al; in het echt verschijnen ze op hun startdatum.'],
+  'eval.vorm': ['spelers', 'De niveaus zie je bij het beoordelen van een speler. Tik op een speler en kies Beoordelen.'],
+  'eval.criteria': ['spelers', 'De domeinen zie je in de beoordeling en de radar van een speler. Tik op een speler.'],
+  'leer.domeinen': ['spelers', 'De domeinen zie je in de beoordeling en de radar van een speler. Tik op een speler.'],
+  'rol.besluit': ['hub', 'Bij "Club stuurt" heeft een trainer geen tegel Training maken; bij "Trainers vrij" wel.'],
+  'train.oefenstof': ['hub', 'Bij "Club stuurt" heeft een trainer geen tegel Training maken; bij "Trainers vrij" wel.'],
+};
+const NIET_ZICHTBAAR = {
+  'rol.lijst': 'De rolnamen zien coördinatoren en de clubbeheerder in hun eigen schermen.', 'rol.hoofd': 'De naam van het hoofd jeugdopleiding staat in zijn eigen scherm.',
+  'rol.coordinatoren': 'De naam van de coördinator zien coördinatoren en de clubbeheerder.', 'rol.team': 'De rolnaam van de coach staat op de computer onder de eigen naam.',
+  'bouw.indeling': 'De namen van de bouwen zien coördinatoren en de clubbeheerder.', 'bouw.grenzen': 'De leeftijdsgrenzen bepalen welke teams bij welke coördinator horen.',
+  'spel.formatie': 'De formatie staat bij de clubbeheerder in de instellingen.',
+};
+export function voorbeeldVoor(veld){
+  const h = hoofdstukOpId(veld.hoofdstuk), vast = VB[veld.id];
+  if (vast) return { scherm: vast[0], uitleg: vast[1], clubwijzer: veld.tekst !== false };
+  if (veld.tekst !== false) return { scherm: 'clubwijzer', clubwijzer: true,
+    uitleg: (veld.regels ? 'De gouden regels staan bovenaan de Clubwijzer, de tekst bij het onderwerp. ' : `De tekst staat in de Clubwijzer, onder ${h ? h.naam : 'het hoofdstuk'}. `)
+      + 'Trainers openen de Clubwijzer op het tabblad Documenten.' + (NIET_ZICHTBAAR[veld.id] ? ' ' + NIET_ZICHTBAAR[veld.id] : '') };
+  return { scherm: 'hub', clubwijzer: false, uitleg: NIET_ZICHTBAAR[veld.id] || 'Dit onderwerp ziet een trainer niet los in de app.' };
+}
+/* De hele inrichting zoals hij zou worden als je alles goedkeurt: per onderwerp het antwoord dat in Cluppie staat,
+   of anders het eerste antwoord dat nog open is, met het concept van het scherm (of het voorstel).
+   conceptVan(veld, bevinding) geeft { titel, tekst, regels, rondes, inst } (zie platform-clubprofiel.js). Puur. */
+export function voorbeeldInrichting(profiel, instellingen, conceptVan){
+  const inst = JSON.parse(JSON.stringify(instellingen || {})), content = [], rondes = [];
+  const zet = (pad, w) => { const k = pad.split('.'); let o = inst; for (const d of k.slice(0, -1)) o = (o[d] && typeof o[d] === 'object') ? o[d] : (o[d] = {}); o[k.at(-1)] = w; };
+  for (const h of overzicht(profiel).hoofdstukken) for (const v of h.velden){
+    const mee = v.stand.mee, kies = v.overig ? mee : [mee.find(b => b.gezet) || mee.find(b => b.oordeel !== 'afgewezen')].filter(Boolean);
+    for (const b of kies){
+      const c = conceptVan(v, b);
+      if (!c) continue;
+      for (const d of (instelVelden(v.id) || [])){ const r = controleerInstelling(d, c.inst ? c.inst[d.pad] : undefined); if (r.ok && c.inst && c.inst[d.pad] !== undefined) zet(d.pad, r.waarde); }
+      content.push(...contentDocs({ veldId: v.id, bevId: b.id, titel: c.titel, tekst: c.tekst, regels: c.regels, status: 'gepubliceerd' }));
+      if (v.rondes) rondes.push(...schoonRondes(c.rondes));
+    }
+  }
+  if (!inst.v) inst.v = 1;
+  return { instellingen: inst, content, rondes };
+}
+
 /* ---------- het overzicht voor de club: zo is Cluppie ingericht ----------
    [20261120f] Alles wat in Cluppie is gezet, per hoofdstuk en per onderwerp, met de plek waar het staat.
    Basis voor de PDF die de eindbaas met de club deelt (clubprofiel-pdf.js). Puur: alleen wat in "gezet" staat. */

@@ -8,7 +8,7 @@
    Gebruikt dezelfde overlay-aanpak en terug-bewaking als pdf-viewer.js, zodat de
    Android-terugknop / veeg-terug de weergave sluit i.p.v. de app te verlaten. */
 
-import { bewaakTerug, vangnetStilTerugAlsNodig, esc, terugLaag } from './state.js?v=20261117a';
+import { bewaakTerug, vangnetStilTerugAlsNodig, esc, terugLaag } from './state.js?v=20261120g';
 import { principe as principeOpId } from './speelwijze-logica.js?v=20261116j';
 import { htmlPrincipeChip } from './speelwijze-html.js?v=20261116j';
 import { maak3DBlok, heeftWebGL } from './scene3d.js?v=20261116k';
@@ -50,10 +50,10 @@ export function sluitTrainingWeergave(){
   // ruimt de deel-knop al op zijn eigen manier op).
   const nb = _overlay.querySelector('.trw-notitie-knop:not(.trw-deel-knop)');
   if (nb) nb.remove();
-  import('./training-aantekeningen.js?v=20261117a').then(m => m.resetAantekeningen()).catch(() => {});
-  import('./training-video.js?v=20261117a').then(m => m.resetTrainingVideos()).catch(() => {});
-  import('./training-tactiek.js?v=20261117a').then(m => m.resetTrainingTactiek()).catch(() => {});
-  import('./training-delen.js?v=20261117a').then(m => m.resetTrainingDelen()).catch(() => {});
+  import('./training-aantekeningen.js?v=20261120g').then(m => m.resetAantekeningen()).catch(() => {});
+  import('./training-video.js?v=20261120g').then(m => m.resetTrainingVideos()).catch(() => {});
+  import('./training-tactiek.js?v=20261120g').then(m => m.resetTrainingTactiek()).catch(() => {});
+  import('./training-delen.js?v=20261120g').then(m => m.resetTrainingDelen()).catch(() => {});
   vangnetStilTerugAlsNodig(wasOpen);
 }
 
@@ -263,7 +263,7 @@ export async function openTrainingWeergave({ titel, meta, oefeningen, diagramUrl
 
   let TV = null;
   if (vandaag && teamId){
-    try { TV = await import('./training-vandaag.js?v=20261117a'); } catch (e){ TV = null; }
+    try { TV = await import('./training-vandaag.js?v=20261120g'); } catch (e){ TV = null; }
     if (el._beurt !== beurt) return;
   }
 
@@ -275,10 +275,10 @@ export async function openTrainingWeergave({ titel, meta, oefeningen, diagramUrl
      precies zoals bij sluiten, en dan opnieuw koppelen aan de nieuwe oefeningen. */
   const lagen = async (opnieuw) => {
     const [aant, vid, tac, del] = await Promise.all([
-      import('./training-aantekeningen.js?v=20261117a').catch(() => null),
-      import('./training-video.js?v=20261117a').catch(() => null),
-      import('./training-tactiek.js?v=20261117a').catch(() => null),
-      import('./training-delen.js?v=20261117a').catch(() => null),
+      import('./training-aantekeningen.js?v=20261120g').catch(() => null),
+      import('./training-video.js?v=20261120g').catch(() => null),
+      import('./training-tactiek.js?v=20261120g').catch(() => null),
+      import('./training-delen.js?v=20261120g').catch(() => null),
     ]);
     if (el._beurt !== beurt || !el.classList.contains('open')) return;
     const veilig = f => { try { f(); } catch (e){ console.warn('[training] laag koppelen mislukt', e); } };

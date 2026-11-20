@@ -13,13 +13,13 @@
    Pure logica (fases, Vandaag doen, filters) staat in platform-logica.js.
 ==================================================================== */
 import { db, collection, getDocs, doc, getDoc, setDoc, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, isPlatformBeheerder, terugLaag, terugLaagWeg, bewaakTerug } from './state.js?v=20261117a';
+import { S, esc, meld, isPlatformBeheerder, terugLaag, terugLaagWeg, bewaakTerug } from './state.js?v=20261120g';
 import { ico } from './icons.js?v=20261116t';
-import { logoImgVoorDoc, DISTRICTEN, CLUPPIE_LOGO } from './clubconfig.js?v=20261117a';
+import { logoImgVoorDoc, DISTRICTEN, CLUPPIE_LOGO } from './clubconfig.js?v=20261120g';
 import { STARTLIJST_STAPPEN } from './startlijst.js?v=20261011d';
-import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261117a';
+import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261120g';
 import { FASES, FASE_NAAM, STANDAARD, KOPPEL_NAAM, faseVan, volgendeStap, filterClubs, vandaagDoen, trainersMetClub, kpiWaarden, dagenSinds } from './platform-logica.js?v=20261111a';
-import { modulesVoorNieuweClub } from './onderdelen.js?v=20261117a';
+import { modulesVoorNieuweClub } from './onderdelen.js?v=20261120g';
 import { OPTIES as TK_OPTIES } from './kamer-logica.js?v=20261118a';   /* [20261116m] mogelijkheden van de teamkamer, elk met een eigen schakelaar */
 import { KEUZES as PDF_KEUZES, schoonProfiel, isStandaard, PDF_LIMIET_STANDAARD, AANWIJZING_MAX } from './pdf-profiel.js?v=20261115e';
 
@@ -331,9 +331,29 @@ function htmlInstellingen(){
 }
 
 /* ---------- Clubdetail (lade) ---------- */
+/* [20261120g] Een club openen. Staat het clubdocument niet in de lijst die bij het openen is gelezen (bijv. een club
+   die net is aangemaakt), dan halen we het los op. Lukt dat niet, dan zeggen we dat, in plaats van niets te doen. */
+async function openLade(id){
+  P.lade = { clubId: id, tab: 'overzicht' }; P.bevestig = null; P._fokusLade = true;
+  if (!P.docs[id]){
+    teken();
+    try { const s = await getDoc(doc(db, 'clubs', id)); if (s.exists()) P.docs[id] = { id, ...s.data() }; }
+    catch (e){ console.warn('[platform] club lezen', id, e.code || e.message); }
+  }
+  teken();
+}
+function htmlLadeVeilig(){
+  try { return htmlLade(); }
+  catch (e){
+    console.error('[platform] clubdetail', P.lade?.clubId, e);
+    return `<section class="pc-lade"><button class="knop licht klein pc-lade-terug" data-pc="sluitlade">${ico('navigation-back', 16)} Terug</button>
+      <div class="pc-signaal rood"><b>Deze club kan niet worden getoond.</b><br>${esc(e.message || String(e))}</div></section>`;
+  }
+}
 function htmlLade(){
   const k = P.clubs.find(x => x.id === P.lade.clubId), c = P.docs[P.lade.clubId];
-  if (!k || !c) return '';
+  if (!k) return `<section class="pc-lade"><button class="knop licht klein pc-lade-terug" data-pc="sluitlade">${ico('navigation-back', 16)} Terug</button><div class="pc-signaal rood">Deze club staat niet meer in het overzicht. Tik op Vernieuwen.</div></section>`;
+  if (!c) return `<section class="pc-lade"><button class="knop licht klein pc-lade-terug" data-pc="sluitlade">${ico('navigation-back', 16)} Terug</button><p class="tc-leeg-klein">${esc(k.naam)} laden…</p></section>`;
   const tab = P.lade.tab;
   let body = '';
   if (tab === 'onderdelen') body = ladeOnderdelen(c);
@@ -361,6 +381,11 @@ function ladeOverzicht(k, c){
     ${k.volgende ? `<div class="pc-taak"><div class="pc-taak-tekst"><b>Volgende stap</b><small>${esc(k.volgende)}</small></div></div>` : ''}
     ${(st.open || []).length ? `<div class="pc-taak"><div class="pc-taak-tekst"><b>Nog te doen</b><small>${esc(st.open.map(x => STAP_NAAM[x] || x).join(' · '))}</small></div></div>` : ''}
     ${k.wachtend ? `<div class="pc-taak"><div class="pc-taak-tekst"><b>Coaches wachten op goedkeuring</b><small>${k.wachtend} aanvra${k.wachtend === 1 ? 'ag' : 'gen'} bij de clubbeheerder</small></div></div>` : ''}
+    <div class="pc-hernoem"><b>Naam en plaats</b>
+      <div class="pc-hernoem-rij"><label><span>Clubnaam</span><input class="invoer" id="pcClubNaam" value="${esc(c.naam || '')}" maxlength="60" autocomplete="off"></label>
+        <label><span>Plaats</span><input class="invoer" id="pcClubPlaats" value="${esc(c.instellingen?.locatie?.plaats || '')}" maxlength="60" autocomplete="off"></label>
+        <button class="knop fluo klein" data-pc="hernoem">Opslaan</button></div>
+      <small>Ook de naam die bij de teams en clubberichten staat, wordt bijgewerkt. Na een nieuwe plaats zoekt de clubbeheerder de plaats één keer opnieuw op in Instellingen, voor het weer.</small></div>
     <div class="pc-taak"><div class="pc-taak-tekst"><b>Clubbeheerder${admins.length === 1 ? '' : 's'}</b><small>${esc(admins.join(', ') || `${telKeys(c.admins)} beheerder${telKeys(c.admins) === 1 ? '' : 's'}`)}</small></div></div>
     ${pv.contactEmail ? `<div class="pc-taak"><div class="pc-taak-tekst"><b>Contact van de club</b><small class="pc-mail">${esc(pv.contactEmail)}</small></div><button class="knop licht klein" data-pc="kopieer" data-tekst="${esc(pv.contactEmail)}">${ico('action-copy', 15)} Kopieer</button></div>` : ''}`;
 }
@@ -462,8 +487,8 @@ async function pdfProef(file){
   const stap = t => { st.proef = { bezig: true, naam: file.name, stap: t }; if (P.lade?.clubId === clubId) teken(); };
   stap('PDF inlezen…');
   try {
-    const ai = await import('./training-ai.js?v=20261117a');
-    const tw = await import('./training-weergave.js?v=20261117a');
+    const ai = await import('./training-ai.js?v=20261120g');
+    const tw = await import('./training-weergave.js?v=20261120g');
     const { paginas, diagramBlobs, aantalPaginas, overgeslagen } = await ai.leesPdf(file, profiel);
     if (!paginas.some(x => x.tekst.trim())) throw new Error('geen leesbare tekst (een scan?)');
     stap('Omzetten met de AI…');
@@ -526,7 +551,7 @@ function teken(){
   let inhoud;
   if (P.laden && !P.o) inhoud = '<div class="tc-leeg">Cijfers laden…</div>';
   else if (P.fout) inhoud = `<div class="kaart leeg">${esc(P.fout)}</div>`;
-  else inhoud = (P.lade && htmlLade()) || ({ overzicht: htmlOverzicht, uitrol: htmlUitrol, clubs: htmlClubs, trainers: htmlTrainers, instellingen: htmlInstellingen, bibliotheek: () => '<div id="pbRoot"></div>', mails: () => '<div id="pmRoot"></div>' })[P.scherm]();
+  else inhoud = (P.lade && htmlLadeVeilig()) || ({ overzicht: htmlOverzicht, uitrol: htmlUitrol, clubs: htmlClubs, trainers: htmlTrainers, instellingen: htmlInstellingen, bibliotheek: () => '<div id="pbRoot"></div>', mails: () => '<div id="pmRoot"></div>' })[P.scherm]();
   const link = ([id, n, ic]) => `<button class="tc-link ${P.scherm === id ? 'actief' : ''}" data-pc="scherm" data-scherm="${id}">${ico(ic, 20)}<span>${n}</span>${telling[id] ? `<span class="pc-tel">${telling[id]}</span>` : ''}</button>`;
   const merk = `<img src="${CLUPPIE_LOGO}" alt=""><span><b class="cond">Platform</b><small>Cluppie · eindbaas</small></span>`;
   const sy = P.el.querySelector('.tc-hoofd')?.scrollTop || 0;
@@ -554,12 +579,12 @@ function teken(){
   if (fokus != null){ const z = document.getElementById('pcZoek'); if (z){ z.focus(); try { z.setSelectionRange(fokus, fokus); } catch (e) {} } }
   if (P.lade && P._fokusLade){ P._fokusLade = false; P.el.querySelector('.pc-lade [aria-selected="true"]')?.focus({ preventScroll: true }); }
   const pb = P.el.querySelector('#pbRoot');
-  if (pb) import('./platform-bibliotheek.js?v=20261117a').then(m => m.toonBibliotheek(pb)).catch(e => { pb.innerHTML = '<div class="kaart leeg">Bibliotheek laden mislukt.</div>'; console.error(e); });
+  if (pb) import('./platform-bibliotheek.js?v=20261120g').then(m => m.toonBibliotheek(pb)).catch(e => { pb.innerHTML = '<div class="kaart leeg">Bibliotheek laden mislukt.</div>'; console.error(e); });
   P.el.querySelector('.tc-onder .actief')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });   /* [20261116p] onderbalk schuift bij zeven onderdelen */
   const cp = P.el.querySelector('#cpRoot');
-  if (cp && P.lade) import('./platform-clubprofiel.js?v=20261120f').then(m => m.toonClubprofiel(cp, P.docs[P.lade?.clubId] || {})).catch(e => { cp.innerHTML = '<div class="kaart leeg">Clubprofiel laden mislukt.</div>'; console.error(e); });
+  if (cp && P.lade) import('./platform-clubprofiel.js?v=20261120g').then(m => m.toonClubprofiel(cp, P.docs[P.lade?.clubId] || {})).catch(e => { cp.innerHTML = '<div class="kaart leeg">Clubprofiel laden mislukt.</div>'; console.error(e); });
   const pm = P.el.querySelector('#pmRoot');
-  if (pm) import('./platform-mails.js?v=20261117a').then(m => m.toonMails(pm)).catch(e => { pm.innerHTML = '<div class="kaart leeg">Mails laden mislukt.</div>'; console.error(e); });
+  if (pm) import('./platform-mails.js?v=20261120g').then(m => m.toonMails(pm)).catch(e => { pm.innerHTML = '<div class="kaart leeg">Mails laden mislukt.</div>'; console.error(e); });
   bewaakTerug();
 }
 
@@ -570,7 +595,8 @@ async function klik(e){
   const a = b.dataset.pc;
   if (a === 'scherm') return zetScherm(b.dataset.scherm);
   if (a === 'naarapp') return sluitCentrum();
-  if (a === 'club'){ P.lade = { clubId: b.dataset.id, tab: 'overzicht' }; P.bevestig = null; P._fokusLade = true; return teken(); }
+  if (a === 'club') return openLade(b.dataset.id);
+  if (a === 'hernoem') return hernoem(b);
   if (a === 'sluitlade'){ P.lade = null; return teken(); }
   if (a === 'ladetab'){ P.lade.tab = b.dataset.tab; P._fokusLade = true; return teken(); }
   if (a === 'filter'){ P.filter = b.dataset.filter; return teken(); }
@@ -578,8 +604,8 @@ async function klik(e){
   if (a === 'fasewis'){ P.faseFilter = null; return teken(); }
   if (a === 'alletaken'){ P.alleTaken = !P.alleTaken; return teken(); }
   if (a === 'alletrainers'){ P.alleTrainers = !P.alleTrainers; return teken(); }
-  if (a === 'nieuweclub') return import('./club.js?v=20261120f').then(m => m.modalNieuwClub());
-  if (a === 'kalenders') return import('./platform.js?v=20261120f').then(m => m.openKalenders());
+  if (a === 'nieuweclub') return import('./club.js?v=20261120g').then(m => m.modalNieuwClub());
+  if (a === 'kalenders') return import('./platform.js?v=20261120g').then(m => m.openKalenders());
   if (a === 'kopieer') return kopieer(b.dataset.tekst);
   if (a === 'vernieuw') return vernieuw(b);
   if (a === 'goedkeuren' || a === 'afwijzen') return beoordeel(b, a === 'goedkeuren');
@@ -623,6 +649,22 @@ async function wijzig(e){
   catch (x){ meld('Opslaan mislukt: ' + (x.code === 'permission-denied' ? 'rules nog niet gedeployed?' : (x.message || x.code))); }
   inp.disabled = false;
 }
+/* [20261120g] naam en plaats van een club, via de functie hernoemClubPlatform (die ook de kopieën bij teams bijwerkt) */
+async function hernoem(b){
+  const clubId = P.lade?.clubId, c = P.docs[clubId], k = P.clubs.find(x => x.id === clubId);
+  if (!c) return;
+  const naam = P.el.querySelector('#pcClubNaam')?.value.replace(/\s+/g, ' ').trim() || '', plaats = P.el.querySelector('#pcClubPlaats')?.value.replace(/\s+/g, ' ').trim() || '';
+  if (naam.length < 2) return meld('Vul een clubnaam in');
+  if (naam === (c.naam || '') && plaats === (c.instellingen?.locatie?.plaats || '')) return meld('Er is niets veranderd');
+  b.disabled = true; b.textContent = 'Opslaan…';
+  try {
+    await httpsCallable(functions, 'hernoemClubPlatform')({ clubId, naam, plaats });
+    c.naam = naam; c.instellingen = { ...(c.instellingen || {}), locatie: { ...(c.instellingen?.locatie || {}), plaats } };
+    if (k){ k.naam = naam; k.plaats = plaats; }
+    meld('Naam en plaats opgeslagen');
+  } catch (x){ meld(x.code === 'functions/not-found' && /function/i.test(x.message || '') ? 'Functie hernoemClubPlatform is nog niet gedeployed' : 'Opslaan mislukt: ' + (x.message || x.code)); }
+  teken();
+}
 async function zetModule(clubId, sleutel, waarde){
   await setDoc(doc(db, 'clubs', clubId), { platformModules: { [sleutel]: waarde } }, { merge: true });
   const c = P.docs[clubId]; c.platformModules = { ...(c.platformModules || {}), [sleutel]: waarde };
@@ -658,7 +700,7 @@ async function beoordeel(b, goed){
      Staat dat uit, of zijn de functies er nog niet, dan gaat het zoals voorheen (afwijzen met een tweede tik). */
   b.disabled = true;
   let keuze = { direct: true };
-  try { keuze = await (await import('./platform-mails.js?v=20261117a')).vraagMailBij(goed ? 'welkomClub' : 'afwijzing', P.aanmeldingen.find(a => a.id === id) || {}); }
+  try { keuze = await (await import('./platform-mails.js?v=20261120g')).vraagMailBij(goed ? 'welkomClub' : 'afwijzing', P.aanmeldingen.find(a => a.id === id) || {}); }
   catch (x){ console.warn('[platform] mail vooraf tonen mislukt', x); }
   if (keuze === null){ b.disabled = false; return; }
   if (keuze.direct && !goed && P.bevestig !== id){ P.bevestig = id; return teken(); }
@@ -679,10 +721,10 @@ async function vernieuw(b){
 async function meehelpen(b){
   const id = P.lade.clubId;
   b.disabled = true;
-  const ond = await import('./ondersteuning.js?v=20261120f').catch(() => null);
+  const ond = await import('./ondersteuning.js?v=20261120g').catch(() => null);
   if (!ond || !(await ond.startOndersteuning(id))){ b.disabled = false; return; }
   sluitCentrum();
-  import('./club.js?v=20261120f').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
+  import('./club.js?v=20261120g').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
 }
 const soloNu = () => ({ aan: false, limiet: 20, ...(P.platform?.soloAI || {}) });
 /* platform/instellingen schrijven kan alleen via de functie zetPlatformInstellingen (valideert ook) */

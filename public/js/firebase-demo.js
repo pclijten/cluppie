@@ -597,4 +597,5 @@ if (DEMO_ROL){
   }
 }
 
-window.__cluppieDemo = { store, uid: DEMO_UID, club: CLUB, rol: DEMO_ROL };
+/* [20261120g] api: zodat het voorbeeld in het Clubprofiel (platform-clubprofiel.js) de inrichting van een club in deze demo kan zetten */
+window.__cluppieDemo = { store, uid: DEMO_UID, club: CLUB, rol: DEMO_ROL, api: { db, doc, getDoc, setDoc, updateDoc, deleteDoc } };
