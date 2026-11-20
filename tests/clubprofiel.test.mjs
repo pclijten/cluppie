@@ -276,4 +276,30 @@ assert.deepEqual(inr.content.map(d => [d.id, d.data.status, d.data.achtergrond])
 assert.deepEqual(inr.rondes, [{ naam: 'Winter', soort: 'volledig', van: null, tot: '2026-12-31' }]);
 assert.equal(voorbeeldInrichting({}, null, cv).instellingen.v, 1);
 
+/* [20261120h] waar komt een tekst in de telefoon vandaan */
+const { bronnenVoorbeeld, zoekBron, zetInConcept } = await import('../public/js/clubprofiel-logica.js');
+const bronProfiel = { bevindingen: { ...vbProfiel.bevindingen,
+  f: { veld: 'gedrag.regels', waarde: 'Op tijd', oordeel: 'open', gemaaktMs: 6, voorstel: { tekst: 'Wij houden ons aan de regels.', regels: ['We zijn op tijd', 'We tonen respect'] } },
+  g: { veld: 'rol.team', waarde: 'Trainer', oordeel: 'open', gemaaktMs: 7, voorstel: { tekst: '', instellingen: { 'rolNamen.coach': 'Trainer' } } },
+  h: { veld: 'rollen.overig', waarde: 'Materiaalman: ballen', oordeel: 'open', gemaaktMs: 8, voorstel: { tekst: 'De materiaalman beheert de ballen.' } } } };
+const cvb = (v, b) => { const c = cv(v, b); if (b.voorstel && b.voorstel.instellingen) Object.assign(c.inst, b.voorstel.instellingen); return c; };
+const bronnen = bronnenVoorbeeld(bronProfiel, cvb, 'FC Testdorp');
+const soort = s => bronnen.filter(b => b.soort === s).map(b => b.tekst);
+assert.deepEqual(soort('club'), ['FC Testdorp']);
+assert.deepEqual(soort('regel'), ['We zijn op tijd', 'We tonen respect'], 'het afgewezen voorstel telt niet, het open voorstel wel');
+assert.deepEqual(soort('ronde'), ['Winter']);
+assert.deepEqual(soort('titel'), ['Materiaalman']);
+assert.ok(soort('instelling').includes('Trainer') && soort('tekst').includes('Gezet.') && !soort('tekst').includes('Ander voorstel.'), 'wat gezet is gaat voor');
+assert.equal(zoekBron(bronnen, '  we zijn op tijd ').soort, 'regel');
+assert.deepEqual([zoekBron(bronnen, 'Winter t/m 31 dec 0/12').soort, zoekBron(bronnen, 'Winter t/m 31 dec 0/12').veld], ['ronde', 'eval.momenten']);
+assert.equal(zoekBron(bronnen, 'beheert de ballen').veld, 'rollen.overig', 'een stuk van een lange tekst');
+assert.equal(zoekBron(bronnen, 'Opstelling'), null, 'een knop van Cluppie zelf heeft geen bron');
+assert.equal(zoekBron(bronnen, ''), null);
+assert.equal(zoekBron([{ soort: 'instelling', tekst: 'ok' }], 'ok, verder'), null, 'een korte bron telt alleen exact');
+const cAan = { tekst: 'a', titel: 't', regels: 'Een\nTwee', rondes: [{ naam: 'Winter' }], inst: {} };
+assert.ok(zetInConcept(cAan, { soort: 'regel', i: 1 }, '  Drie  ') && zetInConcept(cAan, { soort: 'ronde', i: 0 }, 'Kerst') && zetInConcept(cAan, { soort: 'instelling', pad: 'rolNamen.coach' }, ' Leider ') && zetInConcept(cAan, { soort: 'tekst' }, 'Nieuw'));
+assert.deepEqual([cAan.regels, cAan.rondes[0].naam, cAan.inst['rolNamen.coach'], cAan.tekst], ['Een\nDrie', 'Kerst', 'Leider', 'Nieuw']);
+assert.equal(zetInConcept(cAan, { soort: 'club' }, 'x'), false);
+assert.equal(zetInConcept(cAan, { soort: 'regel', i: 5 }, 'x'), false);
+
 console.log('clubprofiel: ok');

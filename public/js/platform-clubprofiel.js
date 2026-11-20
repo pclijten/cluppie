@@ -23,7 +23,7 @@ import { esc, meld } from './state.js?v=20261120g';
 import { ico } from './icons.js?v=20261116t';
 import { VERSIE, MAX_DOCUMENT, FILTERS, GROEPEN, veldenVoorAI, veldOpId, hoofdstukOpId, documentId, docxTekst, schoonBevinding, schoonVoorstel, voorstelLeeg,
   opTeRuimen, nieuweBevindingen, overzicht, pastInFilter, mancos, vragenTekst, profielTekst, regelsUit, titelVan, contentDocs,
-  instelVelden, instelWaarde, instelWijzigingen, controleerInstelling, instelVeldenVoorAI, schoonRondes, rondesSamenvoegen, seizoenVan, inrichtingOverzicht, voorbeeldVoor, voorbeeldInrichting } from './clubprofiel-logica.js?v=20261120g';
+  instelVelden, instelWaarde, instelWijzigingen, controleerInstelling, instelVeldenVoorAI, schoonRondes, rondesSamenvoegen, seizoenVan, inrichtingOverzicht, voorbeeldVoor, voorbeeldInrichting, bronnenVoorbeeld, zoekBron, zetInConcept } from './clubprofiel-logica.js?v=20261120h';
 
 const K = {};                 // clubId → toestand van het scherm
 let root = null, club = null;
@@ -253,7 +253,7 @@ function conceptVan(st, v, b){
    Alles gebeurt in de demo-database van het venster zelf (in het geheugen): er gaat niets naar Firebase en
    niets naar de club. Het venster hangt aan <body> en niet in het scherm, omdat een iframe opnieuw laadt
    zodra het in de pagina wordt verplaatst; het scherm maakt ruimte met de klasse cp-telefoon-aan. */
-const TEL = { el: null, frame: null, klaar: false, veld: null, ids: [], open: true, timer: null, bezig: null, wacht: null };
+const TEL = { el: null, frame: null, klaar: false, veld: null, ids: [], open: true, timer: null, bezig: null, wacht: null, wijs: false, bron: null, aangetikt: '' };
 const DEMO_TEAM = 'demo-o11-2';
 try { TEL.open = localStorage.getItem('cpTelefoon') !== 'uit'; } catch (e) {}
 const SCHERM_NAAM = { clubwijzer: 'Documenten › Clubwijzer', hub: 'Het team (startscherm)', spelers: 'Spelers' };
@@ -263,6 +263,7 @@ function telefoonPaneel(){
   const el = document.createElement('aside');
   el.className = 'cp-tel'; el.setAttribute('aria-label', 'Voorbeeld op de telefoon');
   el.innerHTML = `<div class="cp-tel-kop"><div><b>Zo ziet een trainer het</b><small>Voorbeeld met wat in Cluppie staat en alle voorstellen. Er gaat niets naar de club.</small></div>
+      <button class="knop licht klein cp-tel-wijsknop" data-cptel="wijs" aria-pressed="false" title="Tik in de telefoon op een tekst om te zien waar hij vandaan komt">${ico('navigation-search', 15)} Aanwijzen</button>
       <button class="knop licht klein" data-cptel="vernieuw" title="Voorbeeld opnieuw laden">${ico('action-loading', 15)}</button>
       <button class="knop licht klein" data-cptel="dicht" title="Telefoon verbergen">${ico('navigation-close', 15)}</button></div>
     <div class="cp-tel-wrap"><div class="cp-tel-frame"><iframe title="Cluppie zoals een trainer het ziet"></iframe><div class="cp-tel-laden">Voorbeeld laden…</div></div></div>
@@ -272,6 +273,8 @@ function telefoonPaneel(){
     if (b.dataset.cptel === 'dicht') return zetTelefoon(false);
     if (b.dataset.cptel === 'vernieuw'){ TEL.klaar = false; TEL.ids = []; laadFrame(); return; }
     if (b.dataset.cptel === 'clubwijzer') return toonOpTelefoon(TEL.veld, 'clubwijzer');
+    if (b.dataset.cptel === 'wijs') return zetWijs(!TEL.wijs);
+    if (['bronpas', 'bronzet', 'bronnaar', 'naarnaam'].includes(b.dataset.cptel)) return bronActie(b.dataset.cptel);
   });
   document.body.appendChild(el);
   TEL.el = el; TEL.frame = el.querySelector('iframe');
@@ -309,6 +312,7 @@ async function wachtOpApp(){
   }
   TEL.el.querySelector('.cp-tel-laden').hidden = TEL.klaar;
   if (!TEL.klaar){ TEL.el.querySelector('.cp-tel-laden').textContent = 'Het voorbeeld laadt niet. Probeer Vernieuwen.'; TEL.el.querySelector('.cp-tel-laden').hidden = false; return; }
+  koppelWijs();
   await synchroniseer();
   await toonOpTelefoon(TEL.veld);
 }
@@ -350,9 +354,9 @@ async function toonOpTelefoon(veldId, scherm){
   const vb = v ? voorbeeldVoor(v) : null;
   const doel = scherm || (vb ? vb.scherm : 'hub');
   TEL.laatsteScherm = scherm || null;
-  if (uitleg) uitleg.innerHTML = v ? `<b>${esc(v.overig ? 'Overig' : v.label)}</b><span>Op de telefoon: ${esc(SCHERM_NAAM[doel] || doel)}</span><p>${esc(vb.uitleg)}</p>
+  if (uitleg && !(TEL.wijs && TEL.bron)) uitleg.innerHTML = v ? `<b>${esc(v.overig ? 'Overig' : v.label)}</b><span>Op de telefoon: ${esc(SCHERM_NAAM[doel] || doel)}</span><p>${esc(vb.uitleg)}</p>
       ${vb.clubwijzer && doel !== 'clubwijzer' ? '<button class="knop licht klein" data-cptel="clubwijzer">Ook de tekst in de Clubwijzer bekijken</button>' : ''}`
-    : '<p>Tik bij een onderwerp op <b>Op de telefoon</b> om te zien waar een trainer het ziet. Je kunt ook gewoon door de app tikken.</p>';
+    : '<p>Tik bij een onderwerp op <b>Op de telefoon</b> om te zien waar een trainer het ziet, of zet <b>Aanwijzen</b> aan en tik op een tekst in de telefoon.</p>';
   if (!TEL.klaar) return;
   const vbApp = TEL.frame.contentWindow.__cluppieVoorbeeld;
   try {
@@ -363,6 +367,129 @@ async function toonOpTelefoon(veldId, scherm){
     else if (v && v.rondes && (TEL.rondes || []).length) setTimeout(() => markeerInTelefoon(TEL.rondes[0]), 400);
     TEL.frame.contentWindow.scrollTo(0, 0);
   } catch (e){ console.warn('[clubprofiel] voorbeeld navigeren', e); }
+}
+
+/* ---------- [20261120h] aanwijzen: tik in de telefoon op een tekst en zie waar hij vandaan komt ----------
+   In de aanwijsstand vangt het paneel elke tik in de telefoon af (de app zelf reageert dan niet). Bij de aangetikte
+   tekst zoeken we de bron in het Clubprofiel (bronnenVoorbeeld + zoekBron): het onderwerp, het soort tekst en het
+   antwoord waar hij uit komt. Onder de telefoon kun je hem aanpassen; dat gaat in hetzelfde concept als het
+   formulier links, en met Goedkeuren zet je het meteen in Cluppie. */
+const BRON_SOORT = { tekst: 'Tekst in de Clubwijzer', titel: 'Titel in de Clubwijzer', regel: 'Gouden regel', ronde: 'Naam van een evaluatieronde', club: 'Clubnaam' };
+function zetWijs(aan){
+  TEL.wijs = aan; TEL.bron = null;
+  TEL.el?.classList.toggle('cp-tel-wijs', aan);
+  const k = TEL.el?.querySelector('[data-cptel="wijs"]');
+  if (k){ k.setAttribute('aria-pressed', String(aan)); k.classList.toggle('actief', aan); }
+  try { TEL.frame.contentDocument.documentElement.classList.toggle('cp-wijs-aan', aan); TEL.frame.contentDocument.querySelector('.cp-wijs-hover')?.classList.remove('cp-wijs-hover'); } catch (e) {}
+  const u = TEL.el?.querySelector('.cp-tel-uitleg');
+  if (u) u.innerHTML = aan ? '<b>Aanwijzen staat aan</b><p>Tik in de telefoon op een tekst om te zien waar hij vandaan komt en hem aan te passen. Zet Aanwijzen uit om weer gewoon door de app te tikken.</p>'
+    : '<p>Tik bij een onderwerp op <b>Op de telefoon</b> om te zien waar een trainer het ziet. Je kunt ook gewoon door de app tikken.</p>';
+}
+/* de luisteraars in het document van de telefoon (elke keer dat het venster opnieuw laadt) */
+function koppelWijs(){
+  let d; try { d = TEL.frame.contentDocument; } catch (e) { return; }
+  if (!d || d.__cpWijs) return;
+  d.__cpWijs = true;
+  const stijl = d.createElement('style');
+  stijl.textContent = 'html.cp-wijs-aan, html.cp-wijs-aan *{cursor:help !important} .cp-wijs-hover{outline:2px dashed #e2342f !important;outline-offset:2px;border-radius:4px}';
+  d.head.appendChild(stijl);
+  d.documentElement.classList.toggle('cp-wijs-aan', !!TEL.wijs);
+  const doel = e => (e.target && e.target.nodeType === 1 ? e.target : e.target && e.target.parentElement);
+  d.addEventListener('mouseover', e => {
+    if (!TEL.wijs) return;
+    d.querySelector('.cp-wijs-hover')?.classList.remove('cp-wijs-hover');
+    const el = doel(e); if (el && el !== d.body && el !== d.documentElement) el.classList.add('cp-wijs-hover');
+  }, true);
+  const vang = e => { if (!TEL.wijs) return; e.preventDefault(); e.stopPropagation(); if (e.type === 'click') wijsAan(doel(e)); };
+  for (const t of ['click', 'pointerdown', 'mousedown', 'touchstart', 'submit']) d.addEventListener(t, vang, { capture: true, passive: false });
+}
+function wijsAan(el){
+  if (!el || !club) return;
+  const st = staat(club.id); if (!st.profiel) return;
+  const bronnen = bronnenVoorbeeld(st.profiel, (v, b) => conceptVan(st, v, b), club.naam);
+  const tekst = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
+  let bron = null;
+  const li = el.closest('li[data-veld]'), item = el.closest('.cw-item[data-veld]');
+  if (li && li.dataset.veld){
+    const m = /-(\d+)$/.exec(li.dataset.id || '');
+    bron = bronnen.find(b => b.soort === 'regel' && b.veld === li.dataset.veld && b.tekst.trim() === li.textContent.trim())
+      || bronnen.find(b => b.soort === 'regel' && b.veld === li.dataset.veld && m && b.i === Number(m[1]) - 1);
+  } else if (item){
+    const v = veldOpId(item.dataset.veld), bev = item.dataset.bev, titel = !!el.closest('b');
+    bron = bronnen.find(b => b.veld === item.dataset.veld && (!bev || b.bevId === bev) && b.soort === (titel && v && v.overig ? 'titel' : 'tekst'))
+      || bronnen.find(b => b.veld === item.dataset.veld && b.soort === 'tekst');
+  }
+  if (!bron) bron = zoekBron(bronnen, tekst);
+  TEL.bron = bron ? { ...bron } : null; TEL.aangetikt = tekst;
+  toonBron();
+}
+function toonBron(){
+  const u = TEL.el?.querySelector('.cp-tel-uitleg'), bron = TEL.bron;
+  if (!u) return;
+  const kort = t => (t.length > 90 ? t.slice(0, 90) + '…' : t);
+  if (!bron){
+    u.innerHTML = `<b>Deze tekst hoort bij Cluppie zelf</b><p>Knoppen, kopjes, uitleg en de gegevens van het voorbeeldteam (spelers, wedstrijden) zijn van de app. Ze komen niet uit het Clubprofiel en zijn voor elke club gelijk.</p>
+      ${TEL.aangetikt ? `<small>Aangetikt: "${esc(kort(TEL.aangetikt))}"</small>` : ''}`;
+    return;
+  }
+  if (bron.soort === 'club'){
+    u.innerHTML = `<b>Clubnaam</b><span>Clubdetail › Overzicht › Naam en plaats</span><p>De naam van de club pas je aan in het clubdetail, op het tabblad Overzicht.</p>
+      <button class="knop licht klein" data-cptel="naarnaam">Naar Naam en plaats</button>`;
+    return;
+  }
+  const st = staat(club.id), b = st.profiel.bevindingen[bron.bevId], v = veldOpId(bron.veld), h = v && hoofdstukOpId(v.hoofdstuk);
+  if (!b || !v){ TEL.bron = null; return toonBron(); }
+  const def = bron.soort === 'instelling' ? (instelVelden(v.id) || []).find(d => d.pad === bron.pad) : null;
+  const herkomst = b.handmatig ? 'zelf ingevuld' : `uit ${b.bron || 'het document'}${b.pagina ? ', p. ' + b.pagina : ''}`;
+  const lang = bron.soort === 'tekst';
+  u.innerHTML = `<b>${esc(h ? h.naam : '')} › ${esc(v.overig ? 'Overig' : v.label)}</b>
+    <span>${esc(bron.soort === 'instelling' ? 'Instelling: ' + (bron.label || '') : BRON_SOORT[bron.soort] || bron.soort)} · ${b.gezet ? 'staat in Cluppie' : 'voorstel, nog niet in Cluppie'} · ${esc(herkomst)}</span>
+    ${lang ? `<textarea class="invoer" rows="5" maxlength="1500" data-cpbron aria-label="Tekst aanpassen">${esc(bron.tekst)}</textarea>`
+      : `<input class="invoer" data-cpbron value="${esc(bron.tekst)}" maxlength="${def ? def.max : 160}" aria-label="Tekst aanpassen">`}
+    <div class="cp-knoppen"><button class="knop licht klein" data-cptel="bronpas">Toepassen in voorbeeld</button>
+      <button class="knop fluo klein" data-cptel="bronzet">${ico('action-check', 14)} ${b.gezet ? 'Opnieuw in Cluppie zetten' : 'Goedkeuren en in Cluppie zetten'}</button>
+      <button class="knop licht klein" data-cptel="bronnaar">Naar het onderwerp</button></div>`;
+}
+/* de aangepaste tekst in het concept zetten (zelfde concept als het formulier links) */
+function bronInConcept(){
+  const bron = TEL.bron, st = staat(club.id), b = bron && st.profiel.bevindingen[bron.bevId], v = bron && veldOpId(bron.veld);
+  const veld = TEL.el.querySelector('[data-cpbron]');
+  if (!b || !v || !veld) return false;
+  const w = bron.soort === 'tekst' ? veld.value.trim() : veld.value.replace(/\s+/g, ' ').trim();
+  if (bron.soort !== 'instelling' && !w){ meld('Vul een tekst in'); return false; }
+  if (bron.soort === 'instelling'){
+    const def = (instelVelden(v.id) || []).find(d => d.pad === bron.pad), r = def ? controleerInstelling(def, w) : { ok: true };
+    if (!r.ok){ meld(r.fout); return false; }
+  }
+  if (b.gezet) st.bewerk.add(bron.bevId);     /* het formulier links toont dan het aangepaste concept */
+  const c = conceptVan(st, v, { id: bron.bevId, ...b });
+  if (!zetInConcept(c, bron, w)){ meld('Deze tekst kon niet worden aangepast'); return false; }
+  TEL.bron.tekst = w;
+  return true;
+}
+/* na het bijwerken van het voorbeeld de telefoon op dezelfde plek houden */
+async function vernieuwOpPlek(){
+  let wijzerOpen = false;
+  try { const d = TEL.frame.contentDocument; wijzerOpen = !!d.querySelector('#modalInhoud [data-veld]') && !!d.querySelector('#modalAchter.open, #modalAchter.zichtbaar'); } catch (e) {}
+  await synchroniseer();
+  if (wijzerOpen) setTimeout(() => { try { TEL.frame.contentWindow.__cluppieVoorbeeld.openClubwijzer(TEL.bron && TEL.bron.soort === 'regel' ? 'gouden-regels' : TEL.bron && TEL.bron.veld); } catch (e) {} }, 200);
+  else if (TEL.bron) setTimeout(() => markeerInTelefoon(TEL.bron.tekst), 300);
+}
+async function bronActie(actie){
+  if (!club || !TEL.bron) return;
+  const st = staat(club.id);
+  if (actie === 'naarnaam'){ document.querySelector('[data-pc="ladetab"][data-tab="overzicht"]')?.click(); setTimeout(() => document.getElementById('pcClubNaam')?.focus(), 150); return; }
+  if (actie === 'bronnaar'){
+    const v = veldOpId(TEL.bron.veld); if (!v) return;
+    st.hoofdstuk = v.hoofdstuk; st.filter = 'alles'; teken();
+    const k = root.querySelector(`[data-veldkaart="${v.id}"]`);
+    if (k){ k.scrollIntoView({ block: 'start', behavior: 'smooth' }); k.classList.add('cw-licht'); setTimeout(() => k.classList.remove('cw-licht'), 2600); }
+    return;
+  }
+  if (!bronInConcept()) return;
+  teken();
+  if (actie === 'bronpas'){ await vernieuwOpPlek(); meld('Aangepast in het voorbeeld. Nog niet in Cluppie: keur het goed om het te zetten.'); toonBron(); return; }
+  if (actie === 'bronzet'){ TEL.veld = TEL.bron.veld; const ok = await zet(TEL.bron.bevId); if (ok){ clearTimeout(TEL.timer); await vernieuwOpPlek(); } toonBron(); }
 }
 
 /* ---------- tekenen ---------- */
@@ -666,7 +793,7 @@ async function klik(e){
     return teken();
   }
   if (a === 'telefoon') return zetTelefoon(!(TEL.open && TEL.el && !TEL.el.hidden));
-  if (a === 'optel'){ if (!(TEL.open && TEL.el && !TEL.el.hidden)) zetTelefoon(true); toonOpTelefoon(b.dataset.veld); root.querySelectorAll('.cp-optel.actief').forEach(x => x.classList.remove('actief')); b.classList.add('actief'); return; }
+  if (a === 'optel'){ TEL.bron = null; if (!(TEL.open && TEL.el && !TEL.el.hidden)) zetTelefoon(true); toonOpTelefoon(b.dataset.veld); root.querySelectorAll('.cp-optel.actief').forEach(x => x.classList.remove('actief')); b.classList.add('actief'); return; }
   if (a === 'zet') return zet(id);
   if (a === 'voorstel') return maakVoorstel(id);
   if (a === 'heropen'){ st.bewerk.add(id); delete st.concept[id]; return teken(); }

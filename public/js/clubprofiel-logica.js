@@ -456,12 +456,58 @@ export function voorbeeldVoor(veld){
 /* De hele inrichting zoals hij zou worden als je alles goedkeurt: per onderwerp het antwoord dat in Cluppie staat,
    of anders het eerste antwoord dat nog open is, met het concept van het scherm (of het voorstel).
    conceptVan(veld, bevinding) geeft { titel, tekst, regels, rondes, inst } (zie platform-clubprofiel.js). Puur. */
+/* [20261120h] Waar komt een tekst in de telefoon vandaan? Alle teksten die het voorbeeld uit het Clubprofiel haalt,
+   elk met zijn herkomst: { soort: 'tekst'|'titel'|'regel'|'ronde'|'instelling'|'club', tekst, veld, bevId, i?, pad?, label? }.
+   conceptVan(veld, bevinding) zoals bij voorbeeldInrichting. Puur. */
+export function bronnenVoorbeeld(profiel, conceptVan, clubNaam){
+  const uit = [];
+  if (clubNaam) uit.push({ soort: 'club', tekst: String(clubNaam), veld: null, bevId: null, label: 'Clubnaam' });
+  for (const h of overzicht(profiel).hoofdstukken) for (const v of h.velden) for (const b of actieveBevindingen(v)){
+    const c = conceptVan(v, b);
+    if (!c) continue;
+    const bron = (soort, tekst, extra = {}) => { if (String(tekst || '').trim()) uit.push({ soort, tekst: String(tekst), veld: v.id, bevId: b.id, ...extra }); };
+    bron('tekst', c.tekst);
+    if (v.overig) bron('titel', c.titel);
+    regelsUit(c.regels).forEach((r, i) => bron('regel', r, { i }));
+    (c.rondes || []).forEach((r, i) => bron('ronde', r.naam, { i }));
+    for (const d of (instelVelden(v.id) || [])) if (d.type === 'tekst') bron('instelling', c.inst ? c.inst[d.pad] : '', { pad: d.pad, label: d.label });
+  }
+  return uit;
+}
+/* De bron bij een aangetikte tekst: eerst een exacte overeenkomst, dan de langste bron die in de tekst staat
+   (een knop "Winterevaluatie" in "Winterevaluatie t/m 31 dec"), dan een tekst die in een bron staat (een stuk
+   van een lange tekst). Korte bronnen (minder dan 3 tekens) tellen alleen exact. */
+export function zoekBron(bronnen, tekst){
+  const t = norm(tekst);
+  if (!t) return null;
+  const lijst = (bronnen || []).map(b => ({ b, n: norm(b.tekst) })).filter(x => x.n);
+  const exact = lijst.find(x => x.n === t);
+  if (exact) return exact.b;
+  const erin = lijst.filter(x => x.n.length >= 3 && t.includes(x.n)).sort((a, b) => b.n.length - a.n.length)[0];
+  if (erin) return erin.b;
+  const deel = t.length >= 12 ? lijst.filter(x => x.n.includes(t)).sort((a, b) => a.n.length - b.n.length)[0] : null;
+  return deel ? deel.b : null;
+}
+/* Een aangepaste tekst in het concept van een onderwerp zetten (zelfde vorm als het formulier van het scherm). */
+export function zetInConcept(c, bron, waarde){
+  if (!c || !bron) return false;
+  const w = String(waarde ?? '');
+  if (bron.soort === 'tekst') c.tekst = w;
+  else if (bron.soort === 'titel') c.titel = w;
+  else if (bron.soort === 'regel'){ const r = regelsUit(c.regels); if (bron.i >= r.length) return false; r[bron.i] = w.replace(/\s+/g, ' ').trim(); c.regels = r.filter(Boolean).join('\n'); }
+  else if (bron.soort === 'ronde'){ if (!c.rondes || !c.rondes[bron.i]) return false; c.rondes[bron.i].naam = w.replace(/\s+/g, ' ').trim(); }
+  else if (bron.soort === 'instelling'){ if (!c.inst) c.inst = {}; c.inst[bron.pad] = w.replace(/\s+/g, ' ').trim(); }
+  else return false;
+  return true;
+}
+/* Welke antwoorden van een onderwerp in het voorbeeld staan: wat in Cluppie staat gaat voor, anders het eerste dat
+   meedoet. Bij "overig" allemaal (elk is een eigen tekst). */
+export const actieveBevindingen = v => v.overig ? v.stand.mee : [v.stand.mee.find(b => b.gezet) || v.stand.mee.find(b => b.oordeel !== 'afgewezen')].filter(Boolean);
 export function voorbeeldInrichting(profiel, instellingen, conceptVan){
   const inst = JSON.parse(JSON.stringify(instellingen || {})), content = [], rondes = [];
   const zet = (pad, w) => { const k = pad.split('.'); let o = inst; for (const d of k.slice(0, -1)) o = (o[d] && typeof o[d] === 'object') ? o[d] : (o[d] = {}); o[k.at(-1)] = w; };
   for (const h of overzicht(profiel).hoofdstukken) for (const v of h.velden){
-    const mee = v.stand.mee, kies = v.overig ? mee : [mee.find(b => b.gezet) || mee.find(b => b.oordeel !== 'afgewezen')].filter(Boolean);
-    for (const b of kies){
+    for (const b of actieveBevindingen(v)){
       const c = conceptVan(v, b);
       if (!c) continue;
       for (const d of (instelVelden(v.id) || [])){ const r = controleerInstelling(d, c.inst ? c.inst[d.pad] : undefined); if (r.ok && c.inst && c.inst[d.pad] !== undefined) zet(d.pad, r.waarde); }
@@ -528,7 +574,7 @@ export function contentDocs({ veldId, bevId, titel, tekst, regels, status }){
   const hi = HOOFDSTUKKEN.indexOf(h), vi = veld.overig ? 90 : h.velden.findIndex(v => v.id === veld.id);
   const uit = [], t = veld.tekst === false ? '' : alinea(tekst, 1500);
   if (t) uit.push({ id: veld.overig ? `afspraak-${h.id}-overig-${slug(bevId)}` : `afspraak-${slug(veld.id)}`, data: {
-    categorie: 'afspraak', hoofdstuk: h.id, hoofdstukNaam: h.naam, veld: veld.id, titel: kort(titel, 80) || veld.label, achtergrond: t, tips: [], tags: [],
+    categorie: 'afspraak', hoofdstuk: h.id, hoofdstukNaam: h.naam, veld: veld.id, bevinding: String(bevId || ''), titel: kort(titel, 80) || veld.label, achtergrond: t, tips: [], tags: [],
     volgorde: (hi + 1) * 100 + vi, status: st, bron: 'clubprofiel' } });
   if (veld.regels) regelsUit(regels).forEach((regel, i) => uit.push({ id: `gouden-regel-cp-${slug(veld.id)}-${i + 1}`, data: {
     categorie: 'gouden-regel', veld: veld.id, titel: regel, achtergrond: '', tips: [], tags: [], volgorde: (hi + 1) * 100 + vi * 10 + i, status: st, bron: 'clubprofiel' } }));
