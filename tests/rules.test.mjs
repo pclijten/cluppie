@@ -189,6 +189,23 @@ test('clubprofiel: alleen de platformbeheerder leest en schrijft, de clubbeheerd
   await assertFails(getDoc(doc(als('paul', { email: PLATFORM.email, email_verified: false }), 'clubprofielen/A')));
   await assertFails(getDoc(doc(gast(), 'clubprofielen/A')));
 });
+/* [20261120d] goedkeuren en in Cluppie zetten: de eindbaas schrijft instellingen en clubteksten, en wat gezet is
+   (met de paden van de instellingen als sleutel) komt ongeschonden terug */
+test('clubprofiel: de platformbeheerder zet instellingen en Clubwijzer-teksten bij de club', async () => {
+  const assert = (await import('node:assert/strict')).default;
+  const baas = als('paul', PLATFORM);
+  await setDoc(doc(baas, 'clubprofielen/A'), { v: 2, clubId: 'A', bevindingen: { b2: { veld: 'bouw.grenzen', waarde: 'Onderbouw t/m O10', oordeel: 'open' } } });
+  await assertSucceeds(updateDoc(doc(baas, 'clubs/A'), { 'instellingen.regels.bouwGrenzen.onderTm': 10 }));
+  await assertSucceeds(setDoc(doc(baas, 'clubs/A/content/afspraak-wed-speeltijd'), { categorie: 'afspraak', hoofdstuk: 'wedstrijd', titel: 'Speeltijd', achtergrond: 'Iedereen speelt minstens de helft.', status: 'concept', bron: 'clubprofiel' }));
+  await assertSucceeds(deleteDoc(doc(baas, 'clubs/A/content/afspraak-wed-speeltijd')));
+  await assertSucceeds(updateDoc(doc(baas, 'clubprofielen/A'), { 'bevindingen.b2.oordeel': 'akkoord', 'bevindingen.b2.verwerkt': true,
+    'bevindingen.b2.gezet': { ms: 1, tekst: 'Onze onderbouw loopt t/m O10.', regels: [], instellingen: { 'regels.bouwGrenzen.onderTm': 10 }, status: 'concept', ids: ['afspraak-bouw-grenzen'] } }));
+  const terug = (await getDoc(doc(baas, 'clubprofielen/A'))).data().bevindingen.b2;
+  assert.equal(terug.gezet.instellingen['regels.bouwGrenzen.onderTm'], 10);
+  assert.equal(terug.waarde, 'Onderbouw t/m O10');
+  assert.equal((await getDoc(doc(als('adminA'), 'clubs/A'))).data().instellingen.regels.bouwGrenzen.onderTm, 10);
+  await assertFails(setDoc(doc(als('coachA'), 'clubs/A/content/afspraak-x'), { categorie: 'afspraak', titel: 'x', status: 'gepubliceerd' }));
+});
 
 test('platformstats en clubaanmeldingen: alleen platformbeheerder', async () => {
   await assertFails(getDoc(doc(als('adminA'), 'platformstats/overzicht')));

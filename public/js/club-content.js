@@ -19,6 +19,7 @@ const categorieLabel = () => ({
   leercurve: 'Leerlijn-thema',
   kompas: `${kompasNaam()}-tip`,
   'gouden-regel': 'Gouden regel',
+  afspraak: 'Clubwijzer (zo werken wij)',   /* [20261120d] teksten uit het Clubprofiel, zie clubwijzer.js */
 });
 
 let _huidigeLijst = [];
@@ -29,7 +30,7 @@ export function startClubContentListener(onData){
 }
 
 export function htmlClubContent(lijst){
-  const groepen = ['leercurve', 'kompas', 'gouden-regel'];
+  const groepen = ['leercurve', 'kompas', 'gouden-regel', 'afspraak'];
   const CATEGORIE_LABEL = categorieLabel();
   const sc = scope();
   return `
@@ -79,6 +80,7 @@ function modalContentBewerk(item){
         <option value="leercurve" ${c.categorie==='leercurve'?'selected':''}>Leerlijn-thema</option>
         <option value="kompas" ${c.categorie==='kompas'?'selected':''}>${esc(kompasNaam())}-tip</option>
         <option value="gouden-regel" ${c.categorie==='gouden-regel'?'selected':''}>Gouden regel</option>
+        ${c.categorie==='afspraak' ? '<option value="afspraak" selected>Clubwijzer (zo werken wij)</option>' : ''}
       </select></div>
     <div class="veldgroep"><label>Titel ${c.categorie==='leercurve' ? '(= themanaam, moet exact overeenkomen met de leerlijn)' : ''}</label>
       <input class="invoer" id="cTitel" value="${esc(c.titel||'')}"></div>
@@ -140,7 +142,7 @@ export function koppelClubContent(v, herteken){
     catch(e){ meld('Kopiëren mislukt: ' + (e.code || e.message)); }
   });
   v.querySelector('#btnContentNieuw')?.addEventListener('click', () => modalContentBewerk(null));
-  v.querySelector('#btnBeleidsplan')?.addEventListener('click', () => import('./club-beleidsplan.js?v=20261117a').then(m => m.openBeleidsplanImport()));
+  v.querySelector('#btnBeleidsplan')?.addEventListener('click', () => import('./club-beleidsplan.js?v=20261120e').then(m => m.openBeleidsplanImport()));
   v.querySelector('#btnContentSeed')?.addEventListener('click', async () => {
     meld('Bezig met seeden…');
     try {

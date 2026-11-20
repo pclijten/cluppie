@@ -19,7 +19,7 @@ import {
 } from './team-evaluatie-criteria.js?v=20261120a';
 import { ico } from './icons.js?v=20261116t';
 
-import { htmlStats } from './wedstrijd.js?v=20261120c';
+import { htmlStats } from './wedstrijd.js?v=20261120e';
 import { telGebruik } from './tracker.js?v=20261117a';
 import { themaOpDatum } from './seizoensplan-logica.js?v=20261117a';
 import { wedstrijdvraagNu } from './speelwijze.js?v=20261117a';
