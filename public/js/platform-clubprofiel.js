@@ -23,7 +23,7 @@ import { esc, meld } from './state.js?v=20261117a';
 import { ico } from './icons.js?v=20261116t';
 import { VERSIE, MAX_DOCUMENT, FILTERS, GROEPEN, veldenVoorAI, veldOpId, hoofdstukOpId, documentId, docxTekst, schoonBevinding, schoonVoorstel, voorstelLeeg,
   opTeRuimen, nieuweBevindingen, overzicht, pastInFilter, mancos, vragenTekst, profielTekst, regelsUit, titelVan, contentDocs,
-  instelVelden, instelWaarde, instelWijzigingen, controleerInstelling, instelVeldenVoorAI, schoonRondes, rondesSamenvoegen, seizoenVan } from './clubprofiel-logica.js?v=20261120e';
+  instelVelden, instelWaarde, instelWijzigingen, controleerInstelling, instelVeldenVoorAI, schoonRondes, rondesSamenvoegen, seizoenVan, inrichtingOverzicht } from './clubprofiel-logica.js?v=20261120f';
 
 const K = {};                 // clubId → toestand van het scherm
 let root = null, club = null;
@@ -271,6 +271,7 @@ function teken(){
       <button class="knop fluo klein" data-cp="kies">${ico('action-add', 16)} Documenten toevoegen</button>
       <button class="knop licht klein" data-cp="vragen">${ico('action-copy', 15)} Vragen voor de club</button>
       <button class="knop licht klein" data-cp="download">Profiel downloaden</button>
+      <button class="knop licht klein" data-cp="pdf" title="Wat er in Cluppie is gezet, per hoofdstuk, om met de club te delen">${ico('admin-document', 15)} Inrichting als PDF</button>
       <span class="cp-schakel" role="group" aria-label="Teksten voor trainers"><span>Teksten voor trainers:</span>
         <button class="${direct ? '' : 'actief'}" data-cp="tekststatus" data-s="concept" aria-pressed="${!direct}">als concept</button><button class="${direct ? 'actief' : ''}" data-cp="tekststatus" data-s="gepubliceerd" aria-pressed="${direct}">direct zichtbaar</button></span>
       <input type="file" id="cpBestanden" accept=".pdf,.docx,.txt,.md,.jpg,.jpeg,.png,.webp,application/pdf,text/plain,image/jpeg,image/png,image/webp" multiple hidden>
@@ -484,7 +485,7 @@ async function kopieer(tekst, klaar){
 }
 function download(naam, tekst){
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([tekst], { type: 'text/plain;charset=utf-8' })); a.download = naam;
+  a.href = URL.createObjectURL(tekst instanceof Blob ? tekst : new Blob([tekst], { type: 'text/plain;charset=utf-8' })); a.download = naam;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 const bestandsnaam = s => String(s || 'club').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'club';
@@ -513,6 +514,16 @@ async function klik(e){
   if (a === 'wachtrijweg'){ st.wachtrij = []; return teken(); }
   if (a === 'vragen') return kopieer(vragenTekst(p, club.naam), 'Vragen gekopieerd');
   if (a === 'download') return download(`clubprofiel-${bestandsnaam(club.naam)}.md`, profielTekst(p, club.naam));
+  if (a === 'pdf'){
+    /* [20261120f] wat er in Cluppie is gezet, als PDF om met de club te delen (clubprofiel-pdf.js) */
+    const ov = inrichtingOverzicht(p, club);
+    if (!ov.aantal) return meld('Er staat nog niets in Cluppie. Keur eerst een onderwerp goed.');
+    const oud = b.innerHTML; b.disabled = true; b.textContent = 'PDF maken…';
+    try { const m = await import('./clubprofiel-pdf.js?v=20261120f'); download(`cluppie-inrichting-${bestandsnaam(club.naam)}.pdf`, await m.maakInrichtingPdf(ov)); meld(`PDF met ${ov.aantal} onderwerp${ov.aantal === 1 ? '' : 'en'} gedownload`); }
+    catch (x){ console.error('[clubprofiel] pdf', x); meld('PDF maken mislukt: ' + foutTekst(x)); }
+    if (b.isConnected){ b.disabled = false; b.innerHTML = oud; }
+    return;
+  }
   if (a === 'tekststatus'){
     const s = b.dataset.s === 'gepubliceerd' ? 'gepubliceerd' : 'concept', clubId = club.id;
     if (p.tekstStatus === s) return;

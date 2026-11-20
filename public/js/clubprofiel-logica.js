@@ -424,6 +424,44 @@ export function profielTekst(profiel, clubNaam, alleenAkkoord = false){
   return regels.join('\n').trim() + '\n';
 }
 
+/* ---------- het overzicht voor de club: zo is Cluppie ingericht ----------
+   [20261120f] Alles wat in Cluppie is gezet, per hoofdstuk en per onderwerp, met de plek waar het staat.
+   Basis voor de PDF die de eindbaas met de club deelt (clubprofiel-pdf.js). Puur: alleen wat in "gezet" staat. */
+const MAANDEN = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
+export function datumVoluit(iso){
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+  return m && MAANDEN[Number(m[2]) - 1] ? `${Number(m[3])} ${MAANDEN[Number(m[2]) - 1]} ${m[1]}` : String(iso || '');
+}
+const isoVan = ms => { const d = new Date(ms); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const instelLeesbaar = (d, w) => d.type === 'keuze' ? ((d.opties.find(([id]) => id === String(w)) || [])[1] || String(w)).split(':')[0] : (w === '' || w == null ? 'niets ingesteld' : String(w));
+export function inrichtingOverzicht(profiel, club, nuMs = Date.now()){
+  const o = overzicht(profiel), hoofdstukken = [];
+  let aantal = 0, concept = false;
+  for (const h of o.hoofdstukken){
+    const onderwerpen = [];
+    for (const v of h.velden) for (const b of v.bevindingen){
+      const g = b.oordeel !== 'afgewezen' && b.gezet;
+      if (!g) continue;
+      const regels = [], ookConcept = g.status !== 'gepubliceerd';
+      for (const d of (instelVelden(v.id) || [])){
+        const w = (g.instellingen || {})[d.pad];
+        if (w !== undefined && w !== null) regels.push({ soort: 'instelling', plek: 'Instelling', label: d.label, waarde: instelLeesbaar(d, w) });
+      }
+      for (const r of (g.rondes || [])) regels.push({ soort: 'ronde', plek: 'Evaluatieronde', label: r.naam,
+        waarde: `${r.soort === 'snel' ? 'Snelle' : 'Volledige'} beoordeling, ${r.van ? datumVoluit(r.van) + ' tot en met ' : 'tot en met '}${datumVoluit(r.tot)}` });
+      if (g.tekst){ regels.push({ soort: 'tekst', plek: 'Clubwijzer', label: '', waarde: g.tekst, concept: ookConcept }); concept = concept || ookConcept; }
+      if ((g.regels || []).length){ regels.push({ soort: 'regels', plek: 'Gouden regels', label: '', waarde: g.regels.map(r => '- ' + r).join('\n'), concept: ookConcept }); concept = concept || ookConcept; }
+      if (!regels.length) continue;
+      onderwerpen.push({ veld: v.id, label: v.overig ? (g.titel || titelVan(v, b.waarde)) : v.label, regels }); aantal++;
+    }
+    if (onderwerpen.length) hoofdstukken.push({ id: h.id, naam: h.naam, onderwerpen });
+  }
+  const kleur = String((((club && club.instellingen) || {}).identiteit || {}).kleur || '');
+  return { clubNaam: (club && club.naam) || 'de club', datum: datumVoluit(isoVan(nuMs)), hoofdstukken, aantal, totaal: alleVelden().length, heeftConcept: concept,
+    kleur: /^#[0-9a-fA-F]{6}$/.test(kleur) ? kleur.toLowerCase() : '#e2342f',
+    open: mancos(profiel).map(m => ({ hoofdstuk: m.hoofdstukNaam, label: m.label, vraag: m.vraag })) };
+}
+
 /* ---------- naar Cluppie: de teksten als clubcontent ----------
    Eén Clubwijzer-tekst per veld (vaste id, dus opnieuw zetten vervangt), en de gouden regels van een veld
    als losse items. status: 'concept' (de clubbeheerder publiceert) of 'gepubliceerd' (trainers zien het meteen). */
