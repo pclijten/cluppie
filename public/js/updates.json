@@ -1,4 +1,11 @@
 [
+  { "datum": "2026-11-20", "titel": "Training als tijdlijn, uitzetten en Start training", "punten": [
+    "Een training staat nu als tijdlijn: per onderdeel de tijd, de fase in een eigen kleur, de duur, de groepen, de veldmaat en hoe zwaar het is. Tik een onderdeel open voor het 3D-veld en de uitleg.",
+    "Bovenaan zie je het verloop van de training in één balk. Tik op een stuk en je springt naar dat onderdeel.",
+    "Nieuw: Uitzetten. Alle vakken van de training in één plaatje op het veld, op schaal, met een pion op elke hoek en de doeltjes. Vakken die bijna even groot zijn, zet je één keer uit; Cluppie zegt hoeveel je ze moet verzetten. Ook per oefening van bovenaf en wat je klaar moet zetten.",
+    "Nieuw: Start training. Een balk onderin laat zien welk onderdeel nu aan de beurt is en wat hierna komt; met Volgende ga je door. Er loopt geen klok mee.",
+    "Op de computer staat de tijdlijn links en het gekozen onderdeel rechts, met het zijmenu gewoon in beeld. Bij Trainingen staan de knoppen Start training en Uitzetten erbij."
+  ] },
   { "datum": "2026-11-20", "titel": "Veldkaart: zie waar je speelt", "punten": [
     "Tik bij een wedstrijd op het veld (bijvoorbeeld Veld 3) en je ziet een luchtfoto van het sportpark met het veld rood gemarkeerd. Bij Praktisch in de wedstrijdvoorbereiding staat de kaart er ook, en op de computer staan veld en kleedkamer bij de wedstrijd.",
     "Je ziet het veld zoals jouw team het gebruikt: een heel veld bij 11 en 9 tegen 9, een half veld bij 8 tegen 8 en een kwart bij 6 en 4 tegen 4. Veldnamen uit Sportlink zoals \"veld 4 B1\" worden begrepen.",

@@ -5,7 +5,7 @@
 
    Vlag per rol in gebruikers/{uid}/meta/onboarding.rolkaart.<rol> (merge), alleen voor de weergave.
    Bewust een eigen module zonder wijziging in state.js; runtime-toestand staat op S._rolkaart. */
-import { S, esc, openModal, sluitModal } from './state.js?v=20261120g';
+import { S, esc, openModal, sluitModal } from './state.js?v=20261120k';
 import { db, doc, getDoc, setDoc } from './firebase.js?v=20261011g';
 
 export const ROLKAARTEN = {
