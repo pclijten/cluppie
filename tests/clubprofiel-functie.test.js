@@ -169,5 +169,52 @@ const sse = (gebeurtenissen) => ({ ok: true, status: 200, body: (async function*
   await faalt(vraagModel({ ...basis, fetchFn: nepFetch([401]) }), require('../functions/ai-fout').foutVanAntwoord(401, '{"error":{"type":"x","message":"y"}}').code);
   assert.equal(aanroepen.length, 1, 'een geweigerde sleutel proberen we niet opnieuw');
 
+  /* [20261120j] de vragenlijst over de speelwijze: vragen en antwoorden gecontroleerd, codes gelijk aan de app */
+  const F = require('../functions/clubprofiel');
+  const L = await import('../public/js/speelstijl-logica.js');
+  assert.deepEqual(F.NEE_IDS, L.NEE_OPTIES.map(o => o[0]), 'willenNiet-codes gelijk aan de app');
+  assert.deepEqual(F.DOEL_IDS, L.DOEL_OPTIES.map(o => o[0]), 'doel-codes gelijk aan de app');
+  assert.deepEqual(F.OPLEIDING_IDS, L.OPLEIDING_OPTIES.map(o => o[0]));
+  assert.deepEqual(F.REF_IDS, Object.keys(L.REFS));
+  const ss = await import('../public/js/clubprofiel-speelstijl.js');
+  const VR = F.schoonVragen(ss.vragenVoorAI());
+  assert.equal(VR.length, 26);
+  const vq = id => VR.find(v => v.id === id);
+  const LF = [6, 8, 10, 12, 14, 16, 99];
+  assert.deepEqual([F.schoonVraagWaarde(vq('d1a'), ['a'], LF), F.schoonVraagWaarde(vq('d1a'), ['?'], LF), F.schoonVraagWaarde(vq('l1'), ['O12'], LF), F.schoonVraagWaarde(vq('l1'), ['11'], LF),
+    F.schoonVraagWaarde(vq('w2'), ['deels'], LF), F.schoonVraagWaarde(vq('w1'), ['ontw', 'plezier', 'door', 'x'], LF), F.schoonVraagWaarde(vq('w1'), [], LF)],
+    ['A', undefined, 12, undefined, 'deels', ['ontw', 'plezier'], undefined]);
+  const vtSS = F.vragenTekst(VR, LF);
+  assert.match(vtSS, /- d1a \(Opbouw\): De keeper heeft de bal[^\n]*\n    A = Rustig opbouwen[^\n]*\n    B = De bal snel naar voren/);
+  assert.match(vtSS, /- w1 \(Wie zijn wij\): [^\n]*\n    hoogstens 2 van: "plezier" = Plezier en blijven voetballen/);
+  assert.match(vtSS, /- l1 \(Vaste positie\): [^\n]*\n    antwoord: één van de leeftijden 6, 8, 10, 12, 14, 16/);
+  antwoord = JSON.stringify({ antwoorden: [{ vraag: 'd1a', waarde: ['A'], citaat: 'verdeeld in drie bouwen', pagina: 2, zeker: 'hoog' }, { vraag: 'd1a', waarde: ['B'], citaat: '', pagina: 0, zeker: 'laag' },
+    { vraag: 'l1', waarde: ['10'], citaat: 'onzin citaat dat er niet staat', pagina: 0, zeker: 'middel' }, { vraag: 'zz', waarde: ['A'], citaat: '', pagina: 0, zeker: 'hoog' }, { vraag: 'w2', waarde: ['fout'], citaat: '', pagina: 0, zeker: 'hoog' }] });
+  const vs2 = await f.vulSpeelstijlIn({ auth: { uid: 'u' }, data: { clubId: 'c', documentNaam: 'Plan.pdf', tekst: TEKST, vragen: ss.vragenVoorAI() } });
+  assert.deepEqual(vs2.antwoorden.map(a => [a.vraag, a.waarde, a.citaatOk, a.pagina]), [['d1a', 'A', true, 2], ['l1', 10, false, null]]);
+  assert.equal(laatste.schema, F.SPEELSTIJL_SCHEMA);
+  assert.ok(laatste.messages[0].content[0].cache_control && /d8b \(Durf\)/.test(laatste.messages[0].content[1].text));
+  await faalt(f.vulSpeelstijlIn({ auth: { uid: 'u' }, data: { clubId: 'c', tekst: TEKST, vragen: [] } }), 'invalid-argument');
+  baas = false; await faalt(f.vulSpeelstijlIn({ auth: { uid: 'u' }, data: { clubId: 'c', tekst: TEKST, vragen: ss.vragenVoorAI() } }), 'permission-denied'); baas = true;
+
+  /* het speelstijl-document controleren en vastleggen; een speelwijze die de club zelf vastlegde wordt niet zonder meer vervangen */
+  const u = ss.uitkomstVan({ modus: 'volledig', hand: { d1a: 'A', d1b: 'A', d2a: 'B', l1: 10, w1: ['ontw'], nee: ['lang', 'tijd'], hk: 'pos' }, kandidaten: {} });
+  const schoonDoc = F.schoonSpeelstijlDoc(u.doc);
+  assert.deepEqual([schoonDoc.standen.d1, schoonDoc.standen.d2, schoonDoc.standen.d3, schoonDoc.fasen, schoonDoc.willenNiet, schoonDoc.doel, schoonDoc.modus], [{ stand: 2, status: 'duidelijk' }, { stand: -1, status: 'neigt' }, { stand: null, status: 'open' }, { l1: 10 }, ['lang', 'tijd'], ['ontw'], 'volledig']);
+  assert.ok(schoonDoc.zin.length > 10);
+  assert.throws(() => F.schoonSpeelstijlDoc({ standen: {} }), e => e.code === 'invalid-argument');
+  assert.throws(() => F.schoonSpeelstijlDoc({ standen: { d1: { stand: 7 } } }), e => e.code === 'invalid-argument');
+  const opslag = new Map();
+  const g = maak({ onCall: (o, h) => h, HttpsError, secrets: [], REGIO: 'x', apiKey: () => 'k', claude: async () => ({}), isPlatformBeheerder: async () => true,
+    db: () => ({ doc: pad => ({ get: async () => ({ exists: pad.startsWith('clubs/c') && (pad === 'clubs/c' || opslag.has(pad)), data: () => opslag.get(pad) }), set: async d => { opslag.set(pad, d); } }) }) });
+  assert.deepEqual(await g.zetSpeelstijlPlatform({ auth: { uid: 'u' }, data: { clubId: 'c', speelstijl: u.doc } }), { ok: true });
+  assert.equal(opslag.get('clubs/c/speelstijl/huidig').bron, 'clubprofiel');
+  assert.deepEqual(await g.zetSpeelstijlPlatform({ auth: { uid: 'u' }, data: { clubId: 'c', speelstijl: u.doc } }), { ok: true }, 'een eigen eerdere vastlegging vervangen mag');
+  opslag.set('clubs/c/speelstijl/huidig', { modus: 'kort', invullers: 3, zin: 'Van de club zelf.', vastgelegdMs: 5 });
+  assert.deepEqual(await g.zetSpeelstijlPlatform({ auth: { uid: 'u' }, data: { clubId: 'c', speelstijl: u.doc } }), { bestaat: { modus: 'kort', invullers: 3, zin: 'Van de club zelf.', vastgelegdMs: 5 } });
+  assert.equal(opslag.get('clubs/c/speelstijl/huidig').zin, 'Van de club zelf.', 'niet vervangen zonder bevestiging');
+  assert.deepEqual(await g.zetSpeelstijlPlatform({ auth: { uid: 'u' }, data: { clubId: 'c', speelstijl: u.doc, vervang: true } }), { ok: true });
+  assert.equal(opslag.get('clubs/c/speelstijl/huidig').bron, 'clubprofiel');
+
   console.log('clubprofiel-functie: ok');
 })().catch(e => { console.error(e); process.exit(1); });

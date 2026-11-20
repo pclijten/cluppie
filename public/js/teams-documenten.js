@@ -10,7 +10,7 @@
 import { S, esc } from './state.js?v=20261120g';
 import { docCategorieenAlle } from './config.js?v=20261120g';
 import { ico } from './icons.js?v=20261116t';
-import { htmlClubwijzerRij } from './clubwijzer.js?v=20261120h';   /* [20261120d] de afspraken van de club, bovenaan */
+import { htmlClubwijzerRij } from './clubwijzer.js?v=20261120j';   /* [20261120d] de afspraken van de club, bovenaan */
 
 const CATEGORIE_ICOON = { beleid: 'PDF', knvb: 'KNVB', overig: 'DOC' };
 const CATEGORIE_KLASSE = { beleid: '', knvb: 'knvb', overig: 'overig' };

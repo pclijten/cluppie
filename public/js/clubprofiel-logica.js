@@ -475,17 +475,18 @@ export function bronnenVoorbeeld(profiel, conceptVan, clubNaam){
   return uit;
 }
 /* De bron bij een aangetikte tekst: eerst een exacte overeenkomst, dan de langste bron die in de tekst staat
-   (een knop "Winterevaluatie" in "Winterevaluatie t/m 31 dec"), dan een tekst die in een bron staat (een stuk
+   (een knop "Winterevaluatie" in "Winterevaluatie t/m 31 dec"), dan een tekst van minstens vier woorden die in een bron staat (een stuk
    van een lange tekst). Korte bronnen (minder dan 3 tekens) tellen alleen exact. */
 export function zoekBron(bronnen, tekst){
   const t = norm(tekst);
   if (!t) return null;
-  const lijst = (bronnen || []).map(b => ({ b, n: norm(b.tekst) })).filter(x => x.n);
+  /* [20261120i] een titel ("Speelwijze") is vaak ook een kop van de app: die herkennen we alleen in de Clubwijzer zelf */
+  const lijst = (bronnen || []).filter(b => b.soort !== 'titel').map(b => ({ b, n: norm(b.tekst) })).filter(x => x.n);
   const exact = lijst.find(x => x.n === t);
   if (exact) return exact.b;
   const erin = lijst.filter(x => x.n.length >= 3 && t.includes(x.n)).sort((a, b) => b.n.length - a.n.length)[0];
   if (erin) return erin.b;
-  const deel = t.length >= 12 ? lijst.filter(x => x.n.includes(t)).sort((a, b) => a.n.length - b.n.length)[0] : null;
+  const deel = t.length >= 12 && t.split(' ').length >= 4 ? lijst.filter(x => x.n.includes(t)).sort((a, b) => a.n.length - b.n.length)[0] : null;
   return deel ? deel.b : null;
 }
 /* Een aangepaste tekst in het concept van een onderwerp zetten (zelfde vorm als het formulier van het scherm). */

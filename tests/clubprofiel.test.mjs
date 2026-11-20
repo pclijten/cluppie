@@ -292,8 +292,9 @@ assert.deepEqual(soort('titel'), ['Materiaalman']);
 assert.ok(soort('instelling').includes('Trainer') && soort('tekst').includes('Gezet.') && !soort('tekst').includes('Ander voorstel.'), 'wat gezet is gaat voor');
 assert.equal(zoekBron(bronnen, '  we zijn op tijd ').soort, 'regel');
 assert.deepEqual([zoekBron(bronnen, 'Winter t/m 31 dec 0/12').soort, zoekBron(bronnen, 'Winter t/m 31 dec 0/12').veld], ['ronde', 'eval.momenten']);
-assert.equal(zoekBron(bronnen, 'beheert de ballen').veld, 'rollen.overig', 'een stuk van een lange tekst');
+assert.equal(zoekBron(bronnen, 'materiaalman beheert de ballen').veld, 'rollen.overig', 'een stuk van een lange tekst');
 assert.equal(zoekBron(bronnen, 'Opstelling'), null, 'een knop van Cluppie zelf heeft geen bron');
+assert.equal(zoekBron(bronnen, 'Materiaalman'), null, 'een titel telt alleen in de Clubwijzer zelf, niet als kop elders in de app');
 assert.equal(zoekBron(bronnen, ''), null);
 assert.equal(zoekBron([{ soort: 'instelling', tekst: 'ok' }], 'ok, verder'), null, 'een korte bron telt alleen exact');
 const cAan = { tekst: 'a', titel: 't', regels: 'Een\nTwee', rondes: [{ naam: 'Winter' }], inst: {} };
@@ -301,5 +302,41 @@ assert.ok(zetInConcept(cAan, { soort: 'regel', i: 1 }, '  Drie  ') && zetInConce
 assert.deepEqual([cAan.regels, cAan.rondes[0].naam, cAan.inst['rolNamen.coach'], cAan.tekst], ['Een\nDrie', 'Kerst', 'Leider', 'Nieuw']);
 assert.equal(zetInConcept(cAan, { soort: 'club' }, 'x'), false);
 assert.equal(zetInConcept(cAan, { soort: 'regel', i: 5 }, 'x'), false);
+
+/* [20261120j] de speelwijze via de vragenlijst */
+const SS = await import('../public/js/clubprofiel-speelstijl.js');
+assert.equal(SS.vragenVoorAI().length, 26);
+let kand = SS.kandidatenSamenvoegen({}, [{ vraag: 'd1a', waarde: ['A'], citaat: 'x', zeker: 'middel', citaatOk: true }, { vraag: 'd2b', waarde: ['B'], zeker: 'hoog' },
+  { vraag: 'w1', waarde: ['ontw', 'plezier', 'door'], zeker: 'hoog' }, { vraag: 'l1', waarde: ['12'], zeker: 'hoog' }, { vraag: 'onbekend', waarde: ['A'] }, { vraag: 'd3a', waarde: ['?'] }], { id: 'p1', naam: 'Plan.pdf' }, 1);
+assert.deepEqual(Object.keys(kand).sort(), ['d1a', 'd2b', 'l1', 'w1']);
+assert.deepEqual([kand.w1[0].waarde, kand.l1[0].waarde, kand.d1a[0].bron], [['ontw', 'plezier'], 12, 'Plan.pdf']);
+kand = SS.kandidatenSamenvoegen(kand, [{ vraag: 'd1a', waarde: ['B'], zeker: 'hoog', citaatOk: true }], { id: 'r1', naam: 'Reglement' }, 2);
+const sp = { modus: 'volledig', hand: {}, kandidaten: kand };
+const k1 = SS.keuzeVan(sp, 'd1a');
+assert.deepEqual([k1.waarde, k1.door, k1.tegenstrijdig, k1.kandidaten.length, k1.bron.bron], ['B', 'document', true, 2, 'Reglement'], 'de zekerste wint, maar het blijft tegenstrijdig');
+sp.hand.d1a = 'A';
+assert.deepEqual([SS.keuzeVan(sp, 'd1a').waarde, SS.keuzeVan(sp, 'd1a').door, SS.keuzeVan(sp, 'd1a').tegenstrijdig], ['A', 'hand', false], 'een eigen antwoord gaat voor');
+/* opnieuw inlezen vervangt de antwoorden van dat document; een verwijderd document neemt ze mee */
+const opnieuw = SS.kandidatenSamenvoegen(kand, [{ vraag: 'd4a', waarde: ['A'] }], { id: 'p1', naam: 'Plan.pdf' }, 3);
+assert.deepEqual(Object.keys(opnieuw).sort(), ['d1a', 'd4a']);
+assert.deepEqual(Object.keys(SS.zonderDocument(kand, 'p1')), ['d1a']);
+/* de korte lijst: een antwoord op de tweede vraag van een onderdeel telt als de eerste open is */
+const ant = SS.antwoordenVan(sp, 'kort');
+assert.deepEqual(ant, { d1a: 'A', d2a: 'B' });
+const t1 = SS.telling(sp, 'kort'), t2 = SS.telling(sp, 'volledig');
+assert.deepEqual([t1.totaal, t1.ingevuld, t1.manco, t2.totaal, t2.ingevuld], [8, 2, 6, 26, 4]);
+assert.deepEqual(SS.speelstijlManco({ modus: 'kort', hand: { d1a: '?' }, kandidaten: {} }).slice(0, 1).map(m => [m.vraag, m.soort, m.onderwerp]), [['d1a', 'onbekend', 'Opbouw']]);
+assert.equal(SS.speelstijlManco({ modus: 'kort', hand: {}, kandidaten: { d1a: kand.d1a } }).find(m => m.vraag === 'd1a').soort, 'meerdere');
+/* uitkomst en tekst */
+assert.equal(SS.uitkomstVan({ modus: 'volledig', hand: { w1: ['ontw'] }, kandidaten: {} }), null, 'zonder keuze over het spel geen speelwijze');
+const uit = SS.uitkomstVan(sp);
+assert.deepEqual([uit.doc.standen.d1.stand, uit.doc.standen.d2.stand, uit.doc.modus], [1, -1, 'volledig']);
+const regelsSS = SS.speelwijzeRegels(sp);
+assert.deepEqual([regelsSS.length, regelsSS[0].tekst, regelsSS[1].tekst, regelsSS[2].tekst], [8, 'Rustig opbouwen vanaf de keeper', 'Snel vooruit', 'nog open']);
+const q = SS.vraagOpId;
+assert.deepEqual([SS.antwoordTekst(q('d1a'), 'A'), SS.antwoordTekst(q('l1'), 12), SS.antwoordTekst(q('l1'), 99), SS.antwoordTekst(q('w1'), ['ontw', 'plezier'])],
+  ['Rustig opbouwen via de keeper en de verdedigers, ook onder druk.', 'vanaf O12', 'nooit bij de jeugd', 'Spelers beter maken, Plezier en blijven voetballen']);
+assert.match(SS.speelstijlVragenTekst({ modus: 'kort', hand: {}, kandidaten: {} }), /Speelwijze \(vragenlijst\)\n1\. Opbouw: De keeper heeft de bal/);
+assert.equal(SS.speelstijlVragenTekst({ modus: 'kort', hand: Object.fromEntries(SS.KORT.map(x => [x.id, 'A'])), kandidaten: {} }), '');
 
 console.log('clubprofiel: ok');

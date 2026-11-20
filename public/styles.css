@@ -9322,6 +9322,61 @@ p.cp-let{margin:0;font-size:var(--t-sm)}
 .cp-veld header{flex-wrap:wrap}
 @media (min-width:1100px){body.cp-telefoon-aan #pc-app .tc-hoofd{padding-right:430px}}
 @media (max-width:1099px){.cp-tel{width:min(430px,100vw)}}
+/* [20261120j] Clubprofiel: de speelwijze via de vragenlijst */
+.cp-ss-modus{margin-left:0;align-self:flex-start}
+.cp-ss-uit{display:flex;flex-direction:column;gap:var(--space-xs);padding:var(--space-sm) var(--space-md);border-radius:var(--radius);background:var(--surface);border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line-d))}
+.cp-ss-zin{margin:0;font-size:var(--t-lg,16px);font-weight:600;color:var(--ink);line-height:1.4}
+.cp-ss-uit small{color:var(--ink-2);font-size:var(--t-sm)}
+.cp-ss-dims{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-2xs) var(--space-md)}
+.cp-ss-dims li{display:flex;flex-direction:column;padding:var(--space-2xs) 0;border-top:1px solid var(--line-d);font-size:var(--t-sm)}
+.cp-ss-dims b{color:var(--ink-2);font-weight:600;font-size:var(--t-xs)}
+.cp-ss-dims span{color:var(--ink)}
+.cp-ss-dims li.open span{color:var(--ink-2);font-style:italic}
+.cp-ss-opties{display:flex;flex-wrap:wrap;gap:var(--space-2xs)}
+.cp-ss-opties.ab{display:grid;grid-template-columns:repeat(2,minmax(0,1fr)) auto}
+.cp-ss-optie{border:1px solid var(--line-d);background:var(--surface-2);color:var(--ink);font:inherit;font-size:var(--t-sm);line-height:1.35;text-align:left;padding:var(--space-xs) var(--space-sm);border-radius:9px;cursor:pointer}
+.cp-ss-optie:hover{border-color:var(--ink-2)}
+.cp-ss-optie:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.cp-ss-optie.gekozen{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,var(--surface));font-weight:600}
+.cp-ss-optie.gekozen.hand{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+.cp-ss-alt{display:flex;flex-direction:column;gap:var(--space-2xs);padding:var(--space-xs) var(--space-sm);border-radius:8px;background:color-mix(in srgb,var(--warn) 10%,transparent)}
+.cp-ss-alt > div{display:flex;justify-content:space-between;align-items:center;gap:var(--space-xs);font-size:var(--t-sm);color:var(--ink)}
+.cp-ss-alt i{color:var(--ink-2);font-style:normal}
+.cp-link{border:0;background:none;padding:0;color:var(--accent-tekst);font:inherit;text-decoration:underline;cursor:pointer}
+.cp-ss-vraag h3{font-weight:600}
+@media (max-width:860px){.cp-ss-dims{grid-template-columns:minmax(0,1fr)}.cp-ss-opties.ab{grid-template-columns:minmax(0,1fr)}}
+/* [20261120j] Clubwijzer als inhoudsopgave */
+.cw-wijzer{display:flex;flex-direction:column;gap:var(--space-sm)}
+.cw-wijzer h2{margin:0}
+.cw-intro{margin:0}
+.cw-zoek{width:100%}
+.cw-regelkaart{padding:var(--space-sm) var(--space-md);border-radius:var(--radius);background:color-mix(in srgb,var(--accent) 8%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 25%,transparent)}
+.cw-regelkaart .cw-kop{margin:0 0 var(--space-2xs)}
+.cw-hoofdstukken{display:flex;flex-direction:column;border:1px solid var(--line-d);border-radius:var(--radius);overflow:hidden;background:var(--surface)}
+.cw-hoofdstuk{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:var(--space-sm);align-items:center;width:100%;text-align:left;border:0;border-top:1px solid var(--line-d);background:transparent;color:inherit;font:inherit;padding:var(--space-sm) var(--space-md);cursor:pointer}
+.cw-hoofdstuk:first-child{border-top:0}
+.cw-hoofdstuk:hover{background:var(--surface-2)}
+.cw-hoofdstuk:focus-visible,.cw-terug:focus-visible,.cw-item summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.cw-hoofdstuk b{display:block;color:var(--ink);font-weight:600}
+.cw-hoofdstuk small{display:block;color:var(--ink-2);font-size:var(--t-sm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cw-tel{min-width:26px;text-align:center;font-size:var(--t-xs);font-weight:700;color:var(--ink-2);background:var(--surface-2);border-radius:99px;padding:2px 8px}
+.cw-pijl{color:var(--ink-2);font-size:20px;line-height:1}
+.cw-terug{align-self:flex-start;border:0;background:none;color:var(--accent-tekst);font:inherit;font-weight:600;padding:var(--space-2xs) 0;cursor:pointer}
+.cw-hkop{margin:0;font-size:var(--t-lg,16px);color:var(--ink)}
+.cw-lijst{display:flex;flex-direction:column}
+.cw-lijst .cw-item{padding:0;border-top:1px solid var(--line-d)}
+.cw-lijst .cw-item:first-child{border-top:0}
+.cw-item summary{list-style:none;cursor:pointer;padding:var(--space-sm) 0;display:flex;flex-direction:column;gap:2px}
+.cw-item summary::-webkit-details-marker{display:none}
+.cw-item summary b{margin:0;display:flex;justify-content:space-between;gap:var(--space-xs)}
+.cw-item summary b::after{content:"+";color:var(--ink-2);font-weight:400}
+.cw-item[open] summary b::after{content:"–"}
+.cw-voorproef{color:var(--ink-2);font-size:var(--t-sm);line-height:1.4}
+.cw-item[open] .cw-voorproef{display:none}
+.cw-item > p{margin:0 0 var(--space-sm)}
+.cw-waar{display:block;margin-top:var(--space-xs);font-size:var(--t-xs);font-weight:700;color:var(--ink-2)}
+.cw-aantal{margin:0}
+.cw-wijzer mark{background:color-mix(in srgb,var(--warn) 35%,transparent);color:inherit;border-radius:2px}
 /* Clubwijzer voor trainers (clubwijzer.js) */
 .cw-groep{margin-top:var(--space-md)}
 .cw-kop{margin:0 0 var(--space-xs);font-size:var(--t-sm);font-weight:700;color:var(--ink-2)}
