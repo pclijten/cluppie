@@ -8,7 +8,7 @@
    Gebruikt dezelfde overlay-aanpak en terug-bewaking als pdf-viewer.js, zodat de
    Android-terugknop / veeg-terug de weergave sluit i.p.v. de app te verlaten. */
 
-import { bewaakTerug, vangnetStilTerugAlsNodig, esc, terugLaag } from './state.js?v=20261120g';
+import { bewaakTerug, vangnetStilTerugAlsNodig, esc, terugLaag } from './state.js?v=20261120k';
 import { principe as principeOpId } from './speelwijze-logica.js?v=20261116j';
 import { htmlPrincipeChip } from './speelwijze-html.js?v=20261116j';
 import { maak3DBlok, heeftWebGL } from './scene3d.js?v=20261116k';
@@ -27,7 +27,13 @@ function bouwOverlay(){
         <div class="trw-meta"></div>
       </div>
     </div>
-    <div class="trw-stage"></div>`;
+    <div class="trw-stage"></div>
+    <button type="button" class="tl-start" data-tl-start hidden><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 4l13 8-13 8z" fill="currentColor"/></svg>Start training</button>
+    <div class="tl-live" hidden aria-live="polite">
+      <span class="tl-live-nr"></span>
+      <div class="tl-live-t"><small></small><b></b><span></span></div>
+      <div class="tl-live-k"><button type="button" class="knop klein licht" data-tl-live="vorige">‹ Vorige</button><button type="button" class="knop klein" data-tl-live="volgende">Volgende ›</button><button type="button" class="knop klein licht" data-tl-live="stop">Stoppen</button></div>
+    </div>`;
   document.body.appendChild(el);
   el.querySelector('.trw-terug').onclick = () => sluitTrainingWeergave();
   /* Hardware-terug sluit de trainingweergave (z-index 45). */
@@ -41,6 +47,8 @@ export function sluitTrainingWeergave(){
   const wasOpen = _overlay.classList.contains('open');
   _overlay.classList.remove('open');
   _overlay.querySelector('.trw-stage').innerHTML = '';
+  _overlay.querySelector('.tl-start').hidden = true; _overlay.querySelector('.tl-live').hidden = true; _overlay.classList.remove('tl-loopt');
+  import('./training-tijdlijn.js?v=20261120k').then(m => m.sluitUitzet()).catch(() => {});
   _overlay._beurt = (_overlay._beurt || 0) + 1;                 /* een open-aanroep die nog laadt, vervalt */
   if (_stopVandaag){ _stopVandaag(); _stopVandaag = null; }
   // notitie-knop uit de balk verwijderen zodat een volgende training schoon start
@@ -50,10 +58,10 @@ export function sluitTrainingWeergave(){
   // ruimt de deel-knop al op zijn eigen manier op).
   const nb = _overlay.querySelector('.trw-notitie-knop:not(.trw-deel-knop)');
   if (nb) nb.remove();
-  import('./training-aantekeningen.js?v=20261120g').then(m => m.resetAantekeningen()).catch(() => {});
-  import('./training-video.js?v=20261120g').then(m => m.resetTrainingVideos()).catch(() => {});
-  import('./training-tactiek.js?v=20261120g').then(m => m.resetTrainingTactiek()).catch(() => {});
-  import('./training-delen.js?v=20261120g').then(m => m.resetTrainingDelen()).catch(() => {});
+  import('./training-aantekeningen.js?v=20261120k').then(m => m.resetAantekeningen()).catch(() => {});
+  import('./training-video.js?v=20261120k').then(m => m.resetTrainingVideos()).catch(() => {});
+  import('./training-tactiek.js?v=20261120k').then(m => m.resetTrainingTactiek()).catch(() => {});
+  import('./training-delen.js?v=20261120k').then(m => m.resetTrainingDelen()).catch(() => {});
   vangnetStilTerugAlsNodig(wasOpen);
 }
 
@@ -253,7 +261,7 @@ if (typeof document !== 'undefined'){ if (document.body) start3D(); else documen
      training-vandaag.js wordt dan pas geladen (zo blijft de deelpagina voor ouders licht), levert de balk en de
      oefeningen zoals ze vandaag zijn, en laat de weergave zichzelf opnieuw tekenen na een tik in de balk. */
 let _stopVandaag = null;
-export async function openTrainingWeergave({ titel, meta, oefeningen, diagramUrls, onOrigineel, trainingId, oefeningVideos, oefeningTactiek, trainingClub, teamId, teamNaam, clubNaam, draadHtml = '', vandaag = null }){
+export async function openTrainingWeergave({ titel, meta, oefeningen, diagramUrls, onOrigineel, trainingId, oefeningVideos, oefeningTactiek, trainingClub, teamId, teamNaam, clubNaam, draadHtml = '', vandaag = null, start = false }){
   const el = bouwOverlay();
   el.querySelector('.trw-titel').textContent = titel || 'Training';
   el.querySelector('.trw-meta').textContent = meta || '';
@@ -263,9 +271,18 @@ export async function openTrainingWeergave({ titel, meta, oefeningen, diagramUrl
 
   let TV = null;
   if (vandaag && teamId){
-    try { TV = await import('./training-vandaag.js?v=20261120g'); } catch (e){ TV = null; }
+    try { TV = await import('./training-vandaag.js?v=20261120k'); } catch (e){ TV = null; }
     if (el._beurt !== beurt) return;
   }
+  /* [20261120k] de tijdlijn: fase, duur en veld komen uit de vorm in de bibliotheek (als die er is) */
+  let TL = null, vormVan = () => null;
+  try { TL = await import('./training-tijdlijn.js?v=20261120k'); } catch (e){ TL = null; }
+  if (TL && (oefeningen || []).some(o => o?.bron?.vormId)){
+    try { const B = await import('./bibliotheek.js?v=20261116j'); vormVan = B.vormOpId; } catch (e){ /* zonder bibliotheek: tijdlijn zonder fase en veld */ }
+  }
+  if (el._beurt !== beurt) return;
+  const desk = () => document.documentElement.classList.contains('desk') && window.matchMedia?.('(min-width:1100px)').matches;
+  const T = { open: 0, live: false, info: null };
 
   const origKnop = onOrigineel
     ? `<button class="trw-orig"><span class="trw-pdftag">PDF</span> Origineel bekijken</button>`
@@ -275,10 +292,10 @@ export async function openTrainingWeergave({ titel, meta, oefeningen, diagramUrl
      precies zoals bij sluiten, en dan opnieuw koppelen aan de nieuwe oefeningen. */
   const lagen = async (opnieuw) => {
     const [aant, vid, tac, del] = await Promise.all([
-      import('./training-aantekeningen.js?v=20261120g').catch(() => null),
-      import('./training-video.js?v=20261120g').catch(() => null),
-      import('./training-tactiek.js?v=20261120g').catch(() => null),
-      import('./training-delen.js?v=20261120g').catch(() => null),
+      import('./training-aantekeningen.js?v=20261120k').catch(() => null),
+      import('./training-video.js?v=20261120k').catch(() => null),
+      import('./training-tactiek.js?v=20261120k').catch(() => null),
+      import('./training-delen.js?v=20261120k').catch(() => null),
     ]);
     if (el._beurt !== beurt || !el.classList.contains('open')) return;
     const veilig = f => { try { f(); } catch (e){ console.warn('[training] laag koppelen mislukt', e); } };
@@ -300,28 +317,29 @@ export async function openTrainingWeergave({ titel, meta, oefeningen, diagramUrl
     const tv = TV ? TV.vandaagVan(vandaag, teamId) : null;
     const lijst = tv ? tv.oefeningen : oefeningen;
     const y = stage.scrollTop;
-    const navChips = lijst.map((o, i) =>
-      `<a class="trw-chip" data-naar="${i}">${i + 1}. ${esc((o.titel || 'Oefening ' + (i+1)).slice(0, 22))}</a>`
-    ).join('');
+    const info = TL ? TL.tijdlijnInfo(lijst, vormVan, vandaag && TV?.startTijd ? TV.startTijd(vandaag, teamId) : null) : null;
+    T.info = info;
+    if (T.open == null || T.open >= lijst.length) T.open = desk() ? 0 : T.open == null ? null : 0;
+    const onderdelen = info
+      ? info.items.map(x => TL.htmlKaart(x, x.i === T.open) + TL.alsOnderdeel(oefHtml(x.i + 1, x.oef, diagramUrls), x, x.i === T.open)
+          + (x.i < info.items.length - 1 ? TL.htmlOvergang(info.items[x.i + 1]) : '')).join('')
+        + (info.eind ? `<div class="tl-einde"><span class="tl-tijd">${esc(info.eind)}</span><span class="tl-knoop"></span>Einde training</div>` : '')
+      : lijst.map((o, i) => oefHtml(i + 1, o, diagramUrls)).join('');
     stage.innerHTML = `
     ${origKnop}
-    ${tv?.html || ''}
-    ${draadHtml ? `<div class="trw-draad tm">${draadHtml}</div>` : ''}
-    <nav class="trw-nav">${navChips}</nav>
-    ${lijst.map((o, i) => oefHtml(i + 1, o, diagramUrls)).join('')}`;
+    <div class="tl-boven">
+      ${info ? TL.htmlUitzetKnop(info) : ''}
+      ${draadHtml ? `<div class="trw-draad tm">${draadHtml}</div>` : ''}
+      ${tv?.html || ''}
+      ${info ? TL.htmlVerloop(info, T.open) : ''}
+    </div>
+    <div class="${info ? `tl-onder${info.tijden ? ' met-tijd' : ''}` : 'tl-los'}">${onderdelen}</div>`;
+    el.querySelector('.tl-start').hidden = !info || T.live;
 
     // origineel-knop → PDF-viewer
     const ob = stage.querySelector('.trw-orig');
     if (ob && onOrigineel) ob.onclick = () => onOrigineel();
 
-    // snelnavigatie: scroll naar oefening
-    const secties = [...stage.querySelectorAll('.trw-oef')];
-    stage.querySelectorAll('.trw-chip').forEach(chip => {
-      chip.onclick = () => {
-        const i = Number(chip.dataset.naar);
-        if (secties[i]) secties[i].scrollIntoView({ behavior: 'smooth', block: 'start' });
-      };
-    });
 
     // diagram → schermvullende lightbox met zoom
     stage.querySelectorAll('.trw-diagram[data-zoom]').forEach(fig => {
@@ -330,10 +348,71 @@ export async function openTrainingWeergave({ titel, meta, oefeningen, diagramUrl
 
     stage.scrollTop = eerste ? 0 : y;
     if (trainingId) lagen(!eerste);
+    if (T.live) toonLive();
   };
+
+  /* ---------- [20261120k] tijdlijn: één onderdeel open, uitzetten, start training ---------- */
+  const zetOpen = (i, scroll) => {
+    T.open = i;
+    stage.querySelectorAll('.tl-oef').forEach(s => s.classList.toggle('tl-open', Number(s.dataset.tl) === i));
+    stage.querySelectorAll('.tl-kaart').forEach(k => { const aan = Number(k.dataset.tlOpen) === i; k.classList.toggle('open', aan); k.setAttribute('aria-pressed', String(aan)); });
+    stage.querySelectorAll('.tl-balk').forEach(g => g.querySelectorAll('rect')[0]?.setAttribute('fill-opacity', Number(g.dataset.tlGa) === i ? '.6' : '.3'));
+    if (scroll && i != null){
+      const doel = desk() ? stage.querySelector(`.tl-kaart[data-tl-open="${i}"]`) : stage.querySelector(`.tl-oef[data-tl="${i}"]`);
+      doel?.scrollIntoView({ behavior: 'smooth', block: desk() ? 'nearest' : 'start' });
+    }
+  };
+  const toonLive = () => {
+    const live = el.querySelector('.tl-live'), x = T.info?.items[T.open];
+    if (!x){ stopLive(); return; }
+    const volg = T.info.items[T.open + 1];
+    live.style.setProperty('--fc', x.fase && TL.FASE[x.fase] ? TL.FASE[x.fase].kl : 'var(--accent)');
+    live.querySelector('.tl-live-nr').textContent = String(x.i + 1);
+    live.querySelector('.tl-live-t small').textContent = [x.fase ? TL.FASE[x.fase]?.naam : '', x.min ? `${x.min} min` : '', x.groepen ? `${x.groepen} ${x.groepen === 1 ? 'groep' : 'groepen'}` : ''].filter(Boolean).join(' · ');
+    live.querySelector('.tl-live-t b').textContent = x.titel;
+    live.querySelector('.tl-live-t span').textContent = volg ? `Hierna: ${volg.titel}` : 'Hierna: afsluiten';
+    live.querySelector('[data-tl-live="vorige"]').disabled = x.i === 0;
+    live.querySelector('[data-tl-live="volgende"]').textContent = volg ? 'Volgende ›' : 'Afronden ✓';
+    stage.querySelectorAll('.tl-oef, .tl-kaart').forEach(n => n.classList.toggle('tl-nu', Number(n.dataset.tl ?? n.dataset.tlOpen) === x.i));
+  };
+  const naar = (i) => {
+    if (!T.info) return;
+    if (i >= T.info.items.length){ stopLive(); return; }
+    zetOpen(Math.max(0, i), true); toonLive();
+  };
+  const stopLive = () => {
+    T.live = false; el.classList.remove('tl-loopt');
+    el.querySelector('.tl-live').hidden = true; el.querySelector('.tl-start').hidden = !T.info;
+    stage.querySelectorAll('.tl-nu').forEach(n => n.classList.remove('tl-nu'));
+  };
+  const startLive = () => { if (!T.info) return; T.live = true; el.classList.add('tl-loopt'); el.querySelector('.tl-start').hidden = true; el.querySelector('.tl-live').hidden = false; naar(0); };
+  const knipOp = (n) => !!n.closest('button, a, input, textarea, select, label, summary, .trw-oef-acties, .trw-video-tegel, .trw-ann-item, .tv');
+  stage.onclick = (e) => {
+    const k = e.target.closest('[data-tl-open]');
+    if (k){ zetOpen(Number(k.dataset.tlOpen), false); if (T.live) toonLive(); return; }
+    const g = e.target.closest('[data-tl-ga]');
+    if (g){ zetOpen(Number(g.dataset.tlGa), true); if (T.live) toonLive(); return; }
+    if (e.target.closest('[data-tl-uitzet]') && T.info){ TL.openUitzet(T.info); return; }
+    /* telefoon: tik op de kop van een onderdeel klapt het open of dicht */
+    const kop = !desk() && e.target.closest('.tl-oef .trw-oef-kop, .tl-oef .tl-meta');
+    if (kop && !knipOp(e.target)){
+      const i = Number(kop.closest('.tl-oef').dataset.tl);
+      zetOpen(T.open === i ? null : i, T.open !== i);
+    }
+  };
+  stage.onkeydown = (e) => { const g = e.target.closest?.('[data-tl-ga]'); if (g && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); zetOpen(Number(g.dataset.tlGa), true); } };
+  el.querySelector('.tl-start').onclick = startLive;
+  el.querySelector('.tl-live').onclick = (e) => {
+    const b = e.target.closest('[data-tl-live]'); if (!b) return;
+    if (b.dataset.tlLive === 'volgende') naar(T.open + 1);
+    else if (b.dataset.tlLive === 'vorige') naar(T.open - 1);
+    else stopLive();
+  };
+  stopLive();
 
   teken(true);
   el.classList.add('open');
   bewaakTerug();
+  if (start) startLive();
   if (TV) _stopVandaag = TV.opWijziging(() => { if (el._beurt === beurt && el.classList.contains('open')) teken(false); });
 }

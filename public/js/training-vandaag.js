@@ -15,13 +15,13 @@
    trainingsscherm op desktop (desktop-schermen.js). Beide vragen vandaagVan(t) op bij het tekenen en luisteren met
    opWijziging() om opnieuw te tekenen. Klikken in de balk worden hier één keer voor het hele document afgehandeld. */
 import { db, doc, getDoc, setDoc, deleteDoc, serverTimestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261120g';
+import { S, esc, meld } from './state.js?v=20261120k';
 import { vormen, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261116j';
-import { speelwijzeNu } from './speelwijze.js?v=20261120g';
-import { weerLocatie } from './clubconfig.js?v=20261120g';
+import { speelwijzeNu } from './speelwijze.js?v=20261120k';
+import { weerLocatie } from './clubconfig.js?v=20261120k';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
-import { momentenVanTeam } from './trainingsmomenten.js?v=20261120g';
-import { pasAan, schoonKeuze, isAangepast, tipsVoorEigen, weerVoorstel, WEERKEUZES, MIN_SPELERS, MAX_SPELERS } from './training-vandaag-logica.js?v=20261120g';
+import { momentenVanTeam } from './trainingsmomenten.js?v=20261120k';
+import { pasAan, schoonKeuze, isAangepast, tipsVoorEigen, weerVoorstel, WEERKEUZES, MIN_SPELERS, MAX_SPELERS } from './training-vandaag-logica.js?v=20261120k';
 
 const K = new Map();            /* 'team|training' → { keuze (of null), geladen } */
 const W = new Map();            /* 'lat,lon|datum|uur' → { voorstel } of 'bezig' */
@@ -87,6 +87,13 @@ function trainingsUur(t, teamId){
   const dag = (new Date(t.datum + 'T12:00').getDay() + 6) % 7 + 1;
   const m = momentenVanTeam(team(teamId)).find(x => x.dag === dag && x.start);
   return m ? { uur: Number(m.start.slice(0, 2)), tekst: m.start } : { uur: 18, tekst: '18:00' };
+}
+/* [20261120k] Begintijd van de training ("18:30") uit de trainingsmomenten van het team, of null als die niet bekend is.
+   Voor de tijdlijn in de trainingsweergave. */
+export function startTijd(t, teamId = S.teamId){
+  if (!t?.datum || !team(teamId)) return null;
+  const dag = (new Date(t.datum + 'T12:00').getDay() + 6) % 7 + 1;
+  return momentenVanTeam(team(teamId)).find(x => x.dag === dag && x.start)?.start || null;
 }
 function weerbericht(t, teamId){
   if (!t.datum || typeof fetch !== 'function') return null;
