@@ -265,6 +265,80 @@ const SCAN_INSTRUCTIE = `Je krijgt een foto of scan van één pagina uit een doc
 - Staat er geen tekst op de pagina, antwoord dan met precies: [leeg]
 Geef alleen de overgenomen tekst, zonder uitleg.`;
 
+/* ---------- [20261120j] de vragenlijst over de speelwijze vooraf invullen uit een document ----------
+   De app stuurt de vragen van de volledige vragenlijst (public/js/speelstijl-logica.js) met hun soort en opties.
+   Soorten: ab (kant A of B), age (vanaf welke O-leeftijd), one (één optie), multi (een paar opties). */
+const SOORTEN_VRAAG = ['ab', 'age', 'one', 'multi'];
+function schoonVragen(v){
+  return (Array.isArray(v) ? v : []).slice(0, 40).map(x => ({
+    id: tekst(x && x.id, 12).replace(/[^a-z0-9]/gi, ''), k: SOORTEN_VRAAG.includes(x && x.k) ? x.k : null, q: tekst(x && x.q, 300),
+    onderwerp: tekst(x && x.onderwerp, 80), A: tekst(x && x.A, 200), B: tekst(x && x.B, 200), max: Math.min(5, Math.max(1, Math.round(Number(x && x.max)) || 1)),
+    opties: (Array.isArray(x && x.opties) ? x.opties : []).slice(0, 10).map(o => [tekst(o && o[0], 20), tekst(o && o[1], 200)]).filter(o => o[0]),
+  })).filter(x => x.id && x.k && x.q);
+}
+function schoonVraagWaarde(v, w, leeftijden){
+  const lijst = (Array.isArray(w) ? w : [w]).map(x => tekst(x, 20)).filter(Boolean);
+  if (!lijst.length) return undefined;
+  if (v.k === 'ab') return ['A', 'B'].includes(lijst[0].toUpperCase()) ? lijst[0].toUpperCase() : undefined;
+  if (v.k === 'age'){ const n = Math.round(Number(lijst[0].replace(/^[JM]?O/i, ''))); return leeftijden.includes(n) ? n : undefined; }
+  const ids = v.opties.map(o => o[0]);
+  if (v.k === 'one') return ids.includes(lijst[0]) ? lijst[0] : undefined;
+  const m = [...new Set(lijst.filter(x => ids.includes(x)))].slice(0, v.max);
+  return m.length ? m : undefined;
+}
+function vragenTekst(vragen, leeftijden){
+  return 'VRAGEN\n' + vragen.map(v => {
+    const kop = `- ${v.id}${v.onderwerp ? ' (' + v.onderwerp + ')' : ''}: ${v.q}`;
+    if (v.k === 'ab') return `${kop}\n    A = ${v.A}\n    B = ${v.B}`;
+    if (v.k === 'age') return `${kop}\n    antwoord: één van de leeftijden ${leeftijden.filter(l => l !== 99).join(', ')} (O-leeftijd), of 99 als het bij de jeugd nooit gebeurt`;
+    return `${kop}\n    ${v.k === 'multi' ? `hoogstens ${v.max} van` : 'één van'}: ` + v.opties.map(o => `"${o[0]}" = ${o[1]}`).join('; ');
+  }).join('\n');
+}
+const SPEELSTIJL_INSTRUCTIE = `Je leest een document van een Nederlandse amateurvoetbalclub (beleidsplan, jeugdplan, visie) voor Cluppie, een app voor jeugdtrainers. De club legt haar speelwijze vast met een vaste vragenlijst. Jij beantwoordt alvast de vragen waarop het document een duidelijk antwoord geeft.
+
+Zo werk je:
+- Beantwoord een vraag alleen als het document het antwoord duidelijk geeft of er rechtstreeks uit volgt. Twijfel je, of zegt het document er niets over, laat de vraag dan weg. Een lege lijst is goed.
+- Gebruik uitsluitend wat in het document staat. Vul niets aan uit wat bij clubs gebruikelijk is of uit algemene voetbalkennis.
+- Bij een vraag met A en B: kies "A" of "B" voor de kant die het document kiest. Beschrijft het document een principe (bijvoorbeeld "we bouwen op vanaf de keeper en vermijden de blinde lange bal"), dan geldt dat ook voor de situatie in de vraag.
+- Bij een leeftijdsvraag: de O-leeftijd waarop het volgens het document begint (O11 is 11).
+- Bij een vraag met opties: de code van de optie(s) die het document noemt.
+- "waarde": altijd een lijst, ook bij één antwoord, bijvoorbeeld ["A"], [12] als tekst ["12"], ["ontw","plezier"].
+- "citaat": het letterlijk overgenomen fragment (hoogstens 300 tekens) waaruit het antwoord blijkt. Niets wijzigen, geen fragmenten aan elkaar plakken.
+- "pagina": het nummer uit de laatste regel "[pagina N]" boven het citaat, of 0.
+- "zeker": "hoog" als het er letterlijk staat, "middel" als het eruit volgt, "laag" als het een aanwijzing is.
+- Noem geen namen van personen.
+
+Antwoord uitsluitend met JSON: {"antwoorden":[{"vraag":"d1a","waarde":["A"],"citaat":"…","pagina":3,"zeker":"hoog"}]}`;
+const SPEELSTIJL_SCHEMA = { type: 'object', additionalProperties: false, required: ['antwoorden'], properties: { antwoorden: { type: 'array', items: { type: 'object', additionalProperties: false,
+  required: ['vraag', 'waarde', 'citaat', 'pagina', 'zeker'], properties: { vraag: { type: 'string' }, waarde: { type: 'array', items: { type: 'string' } }, citaat: { type: 'string' },
+    pagina: { type: 'integer' }, zeker: { type: 'string', enum: ['hoog', 'middel', 'laag'] } } } } } };
+
+/* Het document clubs/{id}/speelstijl/huidig zoals de app het vastlegt (speelstijl-logica huidigDoc), gecontroleerd. */
+/* gelijk aan NEE_OPTIES, DOEL_OPTIES, OPLEIDING_OPTIES en REFS in public/js/speelstijl-logica.js (tests/clubprofiel-functie.test.js bewaakt dat) */
+const NEE_IDS = ['lang', 'pos', 'schel', 'beste', 'tijd'], DOEL_IDS = ['plezier', 'ontw', 'door', 'res'], OPLEIDING_IDS = ['geen', 'deels', 'ja'], REF_IDS = ['pos', 'druk', 'direct', 'compact', 'ontdek'];
+const LEEFTIJDEN = [6, 8, 10, 12, 14, 16, 99];
+function schoonSpeelstijlDoc(d = {}){
+  const fout = t => { throw Object.assign(new Error(t), { code: 'invalid-argument' }); };
+  const dims = ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8'], st = d.standen || {};
+  const standen = {};
+  for (const id of dims){
+    const s = st[id] || {}, n = s.stand === null || s.stand === undefined ? null : Number(s.stand);
+    if (n !== null && !(Number.isFinite(n) && n >= -2 && n <= 2)) fout('Ongeldige stand bij ' + id);
+    standen[id] = { stand: n === null ? null : Math.round(n * 10) / 10, status: ['duidelijk', 'neigt', 'open'].includes(s.status) ? s.status : 'open' };
+  }
+  if (!dims.some(id => standen[id].stand !== null)) fout('Er is nog geen enkele keuze over de speelwijze.');
+  const lijst = (a, toegestaan, max) => (Array.isArray(a) ? a : []).filter(x => toegestaan.includes(x)).slice(0, max);
+  const gew = d.gewichten || {};
+  return {
+    versie: 1, modus: d.modus === 'kort' ? 'kort' : 'volledig', invullers: 1, standen,
+    gewichten: Object.fromEntries(dims.map(id => [id, gew[id] === 2 ? 2 : 1])),
+    fasen: Object.fromEntries(Object.entries(d.fasen || {}).filter(([k, v]) => /^l[1-5]$/.test(k) && LEEFTIJDEN.includes(Number(v))).map(([k, v]) => [k, Number(v)])),
+    willenNiet: lijst(d.willenNiet, NEE_IDS, 5), verschil: [],
+    herkenning: d.herkenning && REF_IDS.includes(d.herkenning.sleutel) ? { sleutel: d.herkenning.sleutel, pct: Math.max(0, Math.min(100, Math.round(Number(d.herkenning.pct) || 0))) } : null,
+    zin: tekst(d.zin, 300), doel: lijst(d.doel, DOEL_IDS, 2), opleiding: OPLEIDING_IDS.includes(d.opleiding) ? d.opleiding : null,
+  };
+}
+
 function maak({ onCall, HttpsError, secrets, REGIO, claude, apiKey, isPlatformBeheerder, db, vraag = vraagModel }){
   const eindbaas = async (request) => {
     if (!(await isPlatformBeheerder(request))) throw new HttpsError('permission-denied', 'Dit kan alleen de platformbeheerder.');
@@ -344,8 +418,56 @@ function maak({ onCall, HttpsError, secrets, REGIO, claude, apiKey, isPlatformBe
       return { tekst: /^\[leeg\]$/i.test(uit) ? '' : maskeer(uit), afgekapt: stopReason === 'max_tokens' };
     }
   );
-  return { analyseerClubdocument, leesClubscan, stelClubinstellingenVoor };
+  /* [20261120j] De vragenlijst over de speelwijze vooraf invullen uit één document. */
+  const vulSpeelstijlIn = onCall(
+    { region: REGIO, secrets, cors: true, timeoutSeconds: 540, memory: '1GiB', maxInstances: 6 },
+    async (request) => {
+      await eindbaas(request);
+      const d = request.data || {};
+      const bron = String(d.tekst || '').replace(/\r/g, '').replace(/[ \t]+\n/g, '\n').trim();
+      if (bron.length < 80) throw new HttpsError('invalid-argument', 'Te weinig tekst om te analyseren.');
+      if (bron.length > MAX_TEKST) throw new HttpsError('invalid-argument', 'Dit document is te lang. Knip het in delen.');
+      const vragen = schoonVragen(d.vragen);
+      if (!vragen.length) throw new HttpsError('invalid-argument', 'De vragen ontbreken.');
+      const r = await vraag({
+        apiKey: apiKey(), HttpsError, schema: SPEELSTIJL_SCHEMA, maxTokens: 12000, effort: 'high',
+        system: [{ type: 'text', text: SPEELSTIJL_INSTRUCTIE }],
+        messages: [{ role: 'user', content: [
+          { type: 'text', text: `DOCUMENT: ${tekst(d.documentNaam, 120) || 'zonder naam'}\n\n${bron}`, cache_control: { type: 'ephemeral' } },
+          { type: 'text', text: vragenTekst(vragen, LEEFTIJDEN) + '\n\nBeantwoord de vragen waarop het document een duidelijk antwoord geeft.' },
+        ] }],
+      });
+      const json = uitkomst(r, 'Dit document levert te veel op in één keer.');
+      const perId = new Map(vragen.map(v => [v.id, v])), gezien = new Set(), bronN = { n: norm(bron) }, uit = [];
+      for (const a of (Array.isArray(json.antwoorden) ? json.antwoorden : []).slice(0, 60)){
+        const v = perId.get(tekst(a && a.vraag, 12)); if (!v || gezien.has(v.id)) continue;
+        const waarde = schoonVraagWaarde(v, a.waarde, LEEFTIJDEN); if (waarde === undefined) continue;
+        gezien.add(v.id);
+        const citaat = maskeer(tekst(a.citaat, 400)), pagina = Math.round(Number(a.pagina));
+        uit.push({ vraag: v.id, waarde, citaat, citaatOk: citaatKlopt(bronN, citaat), pagina: pagina > 0 && pagina < 5000 ? pagina : null, zeker: ['hoog', 'middel', 'laag'].includes(a.zeker) ? a.zeker : 'middel' });
+      }
+      return { antwoorden: uit };
+    }
+  );
+  /* [20261120j] De speelwijze van een club vastleggen vanuit het Clubprofiel. Via de server, omdat de eindbaas het
+     speelstijl-document van een club niet zelf mag schrijven. Staat er al een speelwijze die de club zelf vastlegde,
+     dan alleen met vervang: true (de app vraagt het eerst). */
+  const zetSpeelstijlPlatform = onCall({ region: REGIO, cors: true, timeoutSeconds: 60 }, async (request) => {
+    const clubId = await eindbaas(request);
+    let schoon;
+    try { schoon = schoonSpeelstijlDoc((request.data || {}).speelstijl || {}); }
+    catch (e){ throw new HttpsError('invalid-argument', e.message); }
+    if (!db) throw new HttpsError('failed-precondition', 'Geen database.');
+    const ref = db().doc(`clubs/${clubId}/speelstijl/huidig`), oud = await ref.get();
+    if (oud.exists && oud.data().bron !== 'clubprofiel' && request.data.vervang !== true){
+      const o = oud.data();
+      return { bestaat: { modus: o.modus || '', invullers: o.invullers || 0, zin: tekst(o.zin, 300), vastgelegdMs: Number(o.vastgelegdMs) || null } };
+    }
+    await ref.set({ ...schoon, bron: 'clubprofiel', vastgelegdDoor: 'cluppie', vastgelegdMs: Date.now() });
+    return { ok: true };
+  });
+  return { analyseerClubdocument, leesClubscan, stelClubinstellingenVoor, vulSpeelstijlIn, zetSpeelstijlPlatform };
 }
 
-module.exports = { maak, vraagModel, leesStroom, leesJson, schoonHoofdstukken, schoonUitvoer, schoonVoorstel, schoonRondes, citaatKlopt, maskeer, veldenTekst,
+module.exports = { schoonVragen, schoonVraagWaarde, vragenTekst, schoonSpeelstijlDoc, SPEELSTIJL_SCHEMA, NEE_IDS, DOEL_IDS, OPLEIDING_IDS, REF_IDS, maak, vraagModel, leesStroom, leesJson, schoonHoofdstukken, schoonUitvoer, schoonVoorstel, schoonRondes, citaatKlopt, maskeer, veldenTekst,
   schoonInstelVelden, schoonInstelWaarde, ANALYSE_SCHEMA, VOORSTEL_SCHEMA, MODEL_PROFIEL, MAX_TEKST, MAX_BEELD };

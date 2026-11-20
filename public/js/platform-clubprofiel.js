@@ -21,13 +21,15 @@
 import { db, doc, getDoc, setDoc, updateDoc, deleteDoc, deleteField, serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { esc, meld } from './state.js?v=20261120g';
 import { ico } from './icons.js?v=20261116t';
+import { leegSpeelstijl, schoonSp, vragenVoorAI, kandidatenSamenvoegen, zonderDocument, keuzeVan, telling, uitkomstVan, speelstijlManco, antwoordTekst, onderwerpVan,
+  vraagOpId, speelstijlVragenTekst, speelwijzeRegels, vragenVoor, DEELN, LEEFTIJDEN, REFS } from './clubprofiel-speelstijl.js?v=20261120j';   /* [20261120j] speelwijze via de vragenlijst */
 import { VERSIE, MAX_DOCUMENT, FILTERS, GROEPEN, veldenVoorAI, veldOpId, hoofdstukOpId, documentId, docxTekst, schoonBevinding, schoonVoorstel, voorstelLeeg,
   opTeRuimen, nieuweBevindingen, overzicht, pastInFilter, mancos, vragenTekst, profielTekst, regelsUit, titelVan, contentDocs,
-  instelVelden, instelWaarde, instelWijzigingen, controleerInstelling, instelVeldenVoorAI, schoonRondes, rondesSamenvoegen, seizoenVan, inrichtingOverzicht, voorbeeldVoor, voorbeeldInrichting, bronnenVoorbeeld, zoekBron, zetInConcept } from './clubprofiel-logica.js?v=20261120h';
+  instelVelden, instelWaarde, instelWijzigingen, controleerInstelling, instelVeldenVoorAI, schoonRondes, rondesSamenvoegen, seizoenVan, inrichtingOverzicht, voorbeeldVoor, voorbeeldInrichting, bronnenVoorbeeld, zoekBron, zetInConcept } from './clubprofiel-logica.js?v=20261120j';
 
 const K = {};                 // clubId → toestand van het scherm
 let root = null, club = null;
-const leeg = () => ({ v: VERSIE, documenten: {}, bevindingen: {}, tekstStatus: 'concept' });
+const leeg = () => ({ v: VERSIE, documenten: {}, bevindingen: {}, tekstStatus: 'concept', speelstijl: leegSpeelstijl() });
 function staat(id){
   if (!K[id]) K[id] = { profiel: null, laden: false, fout: '', hoofdstuk: 'documenten', filter: 'alles', wachtrij: [], bezig: false,
     concept: {}, bewerk: new Set(), druk: new Set(), nieuw: null, plak: false, zeker: null };
@@ -68,6 +70,7 @@ async function laad(id){
   try {
     const s = await getDoc(ref(id)); st.profiel = { ...leeg(), ...(s.exists() ? s.data() : {}) }; st.profiel.documenten ||= {};
     /* elke bevinding door de schoonmaak: oude bevindingen (zonder voorstel) blijven bruikbaar */
+    st.profiel.speelstijl = schoonSp(st.profiel.speelstijl);
     st.profiel.bevindingen = Object.fromEntries(Object.entries(st.profiel.bevindingen || {}).map(([k, b]) => [k, schoonBevinding(b)]).filter(([, b]) => b));
   } catch (x){ console.error('[clubprofiel] laden', x); st.fout = foutTekst(x); }
   st.laden = false;
@@ -176,8 +179,8 @@ async function verwerk(id){
       toon('bezig', 'lezen…');
       const { tekst, paginas } = item.file ? await leesBestand(item.file, id, stap => toon('bezig', stap)) : { tekst: item.tekst, paginas: null };
       item.file = null; item.tekst = null;
-      const n = await analyseer(id, item.naam, tekst, paginas, (klaar, totaal) => toon('bezig', `analyseren: ${klaar} van ${totaal} hoofdstukken klaar…`));
-      toon('klaar', `${n} onderwerp${n === 1 ? '' : 'en'} gevonden`);
+      const { gevonden: n, ssGevonden: ns } = await analyseer(id, item.naam, tekst, paginas, (klaar, totaal) => toon('bezig', `analyseren: ${klaar} van ${totaal} hoofdstukken klaar…`));
+      toon('klaar', `${n} onderwerp${n === 1 ? '' : 'en'} gevonden, ${ns} vra${ns === 1 ? 'ag' : 'gen'} over de speelwijze beantwoord`);
     } catch (x){ console.error('[clubprofiel]', item.naam, x); toon('fout', foutTekst(x)); }
     if (club?.id === id) teken();
   }
@@ -222,14 +225,28 @@ async function analyseer(id, naam, tekst, paginas, voortgang){
     if (club?.id === id && !document.activeElement?.closest?.('.cp-cluppie, .cp-bewerk, .cp-plak')) teken();
     if (TEL.klaar && club?.id === id) synchroniseerStraks();
   };
+  /* [20261120j] de vragenlijst over de speelwijze vooraf invullen uit dit document */
+  let ssGevonden = 0;
+  const doeSpeelstijl = async () => {
+    const r = await httpsCallable(functions, 'vulSpeelstijlIn', { timeout: 540000 })({ clubId: id, documentNaam: naam, tekst: schoon, vragen: vragenVoorAI() });
+    const lijst = (r && r.data && r.data.antwoorden) || [];
+    p.speelstijl.kandidaten = kandidatenSamenvoegen(p.speelstijl.kandidaten, lijst, { id: docId, naam: meta.naam }, Date.now());
+    ssGevonden = lijst.length;
+    await vervang(id, { 'speelstijl.kandidaten': p.speelstijl.kandidaten });
+    if (club?.id === id && !document.activeElement?.closest?.('.cp-cluppie, .cp-bewerk, .cp-plak')) teken();
+    if (TEL.klaar && club?.id === id) synchroniseerStraks();
+  };
   await doe(GROEPEN[0]);
+  const ssBelofte = doeSpeelstijl().catch(e => { console.warn('[clubprofiel] speelwijze', e); return e; });
   const uitkomsten = await Promise.allSettled(GROEPEN.slice(1).map(doe));
+  const ssFout = await ssBelofte;
   const mis = uitkomsten.find(u => u.status === 'rejected');
   if (mis && !gevonden) throw mis.reason;
   Object.assign(meta, { geanalyseerdMs: mis ? null : Date.now(), gevonden });
   await schrijf(id, { documenten: { [docId]: meta } });
   if (mis) throw new Error(`${gevonden} onderwerpen gevonden, maar niet alle hoofdstukken zijn gelukt (${foutTekst(mis.reason)}). Lees het document opnieuw in.`);
-  return gevonden;
+  if (ssFout instanceof Error) throw new Error(`${gevonden} onderwerpen gevonden, maar de vragenlijst over de speelwijze is niet gelukt (${foutTekst(ssFout)}). Lees het document opnieuw in.`);
+  return { gevonden, ssGevonden };
 }
 
 /* ---------- het concept van één bevinding: wat er in het formulier staat ---------- */
@@ -256,7 +273,7 @@ function conceptVan(st, v, b){
 const TEL = { el: null, frame: null, klaar: false, veld: null, ids: [], open: true, timer: null, bezig: null, wacht: null, wijs: false, bron: null, aangetikt: '' };
 const DEMO_TEAM = 'demo-o11-2';
 try { TEL.open = localStorage.getItem('cpTelefoon') !== 'uit'; } catch (e) {}
-const SCHERM_NAAM = { clubwijzer: 'Documenten › Clubwijzer', hub: 'Het team (startscherm)', spelers: 'Spelers' };
+const SCHERM_NAAM = { clubwijzer: 'Documenten › Clubwijzer', hub: 'Het team (startscherm)', spelers: 'Spelers', speelwijze: 'Speelwijze' };
 
 function telefoonPaneel(){
   if (TEL.el) return TEL.el;
@@ -330,6 +347,13 @@ async function synchroniseer(){
   for (const id of TEL.ids) if (!nieuw.has(id)) await ddel(ddoc(ddb, 'clubs', demo.club, 'content', id));
   for (const d of inr.content) await dset(ddoc(ddb, 'clubs', demo.club, 'content', d.id), d.data);
   TEL.ids = [...nieuw]; TEL.rondes = inr.rondes.map(r => r.naam);
+  /* [20261120i] de speelwijze van de democlub hoort niet in het voorbeeld van deze club: weg ermee (de app toont dan
+     dat de speelwijze nog niet is vastgelegd). Het Clubprofiel legt de speelwijze (nog) niet vast. */
+  /* [20261120j] de speelwijze uit de vragenlijst van het Clubprofiel (ook als hij nog niet is vastgelegd), anders geen */
+  const ssU = uitkomstVan(st.profiel.speelstijl);
+  try { if (ssU) await dset(ddoc(ddb, 'clubs', demo.club, 'speelstijl', 'huidig'), { ...ssU.doc, vastgelegdMs: Date.now() }); else await ddel(ddoc(ddb, 'clubs', demo.club, 'speelstijl', 'huidig')); } catch (e) {}
+  for (const t of teams){ try { await ddel(ddoc(ddb, 'teams', t, 'speelstijl', 'huidig')); } catch (e) {} }
+  try { w.__cluppieVoorbeeld.S._sw = null; } catch (e) {}   /* de app onthoudt de speelwijze per team: opnieuw laten lezen */
   /* de clubnaam die bij de teams staat (de Clubwijzer en de kop van een team gebruiken die) */
   for (const t of teams){ try { await dupd(ddoc(ddb, 'teams', t), { clubNaam: club.naam || '' }); } catch (e) {} }
   try { w.__cluppieVoorbeeld.renderTeam(); } catch (e) {}
@@ -354,7 +378,8 @@ async function toonOpTelefoon(veldId, scherm){
   const vb = v ? voorbeeldVoor(v) : null;
   const doel = scherm || (vb ? vb.scherm : 'hub');
   TEL.laatsteScherm = scherm || null;
-  if (uitleg && !(TEL.wijs && TEL.bron)) uitleg.innerHTML = v ? `<b>${esc(v.overig ? 'Overig' : v.label)}</b><span>Op de telefoon: ${esc(SCHERM_NAAM[doel] || doel)}</span><p>${esc(vb.uitleg)}</p>
+  if (uitleg && !(TEL.wijs && TEL.bron) && doel === 'speelwijze') uitleg.innerHTML = '<b>Speelwijze</b><span>Op de telefoon: Speelwijze</span><p>Zo ziet een trainer de speelwijze van de club, met de antwoorden uit het Clubprofiel (ook als ze nog niet zijn vastgelegd). Dezelfde principes komen terug bij het seizoensplan en de trainingen.</p>';
+  else if (uitleg && !(TEL.wijs && TEL.bron)) uitleg.innerHTML = v ? `<b>${esc(v.overig ? 'Overig' : v.label)}</b><span>Op de telefoon: ${esc(SCHERM_NAAM[doel] || doel)}</span><p>${esc(vb.uitleg)}</p>
       ${vb.clubwijzer && doel !== 'clubwijzer' ? '<button class="knop licht klein" data-cptel="clubwijzer">Ook de tekst in de Clubwijzer bekijken</button>' : ''}`
     : '<p>Tik bij een onderwerp op <b>Op de telefoon</b> om te zien waar een trainer het ziet, of zet <b>Aanwijzen</b> aan en tik op een tekst in de telefoon.</p>';
   if (!TEL.klaar) return;
@@ -492,6 +517,98 @@ async function bronActie(actie){
   if (actie === 'bronzet'){ TEL.veld = TEL.bron.veld; const ok = await zet(TEL.bron.bevId); if (ok){ clearTimeout(TEL.timer); await vernieuwOpPlek(); } toonBron(); }
 }
 
+/* ---------- [20261120j] de speelwijze via de vragenlijst ----------
+   Dezelfde vragen als de clubbeheerder in Club › Speelwijze krijgt (speelstijl-logica.js). De AI heeft bij elk document
+   alvast beantwoord wat het document beantwoordt; jij vult aan, kiest bij tegenstrijdige antwoorden en legt vast. */
+const ssSp = () => staat(club.id).profiel.speelstijl;
+function htmlSpeelwijze(st){
+  const sp = st.profiel.speelstijl, modus = sp.modus === 'kort' ? 'kort' : 'volledig', tel = telling(sp, modus), u = uitkomstVan(sp, modus);
+  const vast = sp.vastgelegd;
+  const stijl = u && u.uitkomst.herkenning ? REFS[u.uitkomst.herkenning.sleutel] : null;
+  const regels = speelwijzeRegels(sp, modus);
+  const uitkomst = u ? `<div class="cp-ss-uit"><span class="cp-kop">Zo komt de speelwijze in Cluppie</span>
+      <p class="cp-ss-zin">${esc(u.uitkomst.zin || 'Nog geen duidelijke keuzes.')}</p>
+      ${stijl ? `<small>Lijkt het meest op ${esc(stijl.n.toLowerCase())} (${u.uitkomst.herkenning.pct}%)</small>` : ''}
+      <ul class="cp-ss-dims">${regels.map(r => `<li class="${r.kant ? 'k' + r.kant : 'open'}"><b>${esc(r.onderdeel)}</b><span>${esc(r.tekst)}</span></li>`).join('')}</ul>
+      <div class="cp-knoppen"><button class="knop fluo klein ${st.zeker === 'ss' ? 'pc-zeker' : ''}" data-cp="ssvast">${ico('action-check', 15)} ${st.zeker === 'ss' ? 'Zeker? Vervangen' : vast ? 'Opnieuw vastleggen in Cluppie' : 'Speelwijze vastleggen in Cluppie'}</button>
+        <button class="knop licht klein" data-cp="ssoptel">${ico('navigation-home', 14)} Op de telefoon</button></div>
+      ${st.ssBestaat ? `<div class="pc-signaal">${esc(st.ssBestaat)}</div>` : ''}
+      ${vast ? `<small class="cp-ok-tekst">${ico('action-check', 14)} Vastgelegd op ${esc(datum(vast.ms))} (${vast.modus === 'kort' ? 'korte' : 'volledige'} vragenlijst)${vast.zin && vast.zin !== u.uitkomst.zin ? '. Sindsdien gewijzigd: leg opnieuw vast om het in Cluppie bij te werken.' : ''}</small>` : ''}</div>`
+    : '<div class="pc-signaal info"><b>Nog geen keuzes over de speelwijze.</b> Lees een beleidsplan of visiedocument in, of beantwoord hieronder de vragen.</div>';
+  const vr = vragenVoor(modus);
+  let deel = 0;
+  return `<div class="cp-hkop"><div><h2 class="tc-h2">Speelwijze</h2><p class="tc-meta">De vragenlijst die Cluppie gebruikt om de speelwijze van een club vast te leggen. Wat de documenten beantwoorden staat al ingevuld; de rest zijn manco’s.</p></div></div>
+    <div class="cp-schakel cp-ss-modus" role="group" aria-label="Vragenlijst"><span>Vragenlijst:</span>
+      <button class="${modus === 'kort' ? 'actief' : ''}" data-cp="ssmodus" data-m="kort" aria-pressed="${modus === 'kort'}">kort (8 vragen)</button><button class="${modus === 'volledig' ? 'actief' : ''}" data-cp="ssmodus" data-m="volledig" aria-pressed="${modus === 'volledig'}">volledig (26 vragen)</button></div>
+    <p class="tc-meta">${tel.ingevuld} van de ${tel.totaal} vragen beantwoord, ${tel.uitDoc} uit de documenten. ${tel.manco ? `${tel.manco} manco${tel.manco === 1 ? '' : '’s'}.` : 'Geen manco’s.'}${modus === 'kort' ? ' Bij de korte lijst telt een antwoord op de tweede vraag van een onderdeel mee als de eerste open is.' : ''}</p>
+    ${uitkomst}
+    ${vr.map(q => { const kop = q.deel !== deel ? `<h3 class="cp-mkop">${esc(DEELN[q.deel] || '')}</h3>` : ''; deel = q.deel; return kop + htmlVraag(sp, q); }).join('')}`;
+}
+function htmlVraag(sp, q){
+  const k = keuzeVan(sp, q.id), w = k.waarde, gekozen = x => Array.isArray(w) ? w.includes(x) : String(w) === String(x);
+  const knop = (waarde, tekst) => `<button class="cp-ss-optie ${gekozen(waarde) ? 'gekozen ' + (k.door === 'hand' ? 'hand' : 'doc') : ''}" data-cp="ssantw" data-vraag="${q.id}" data-w="${esc(String(waarde))}" aria-pressed="${gekozen(waarde)}">${esc(tekst)}</button>`;
+  const opties = q.k === 'ab' ? [knop('A', q.A), knop('B', q.B), knop('?', 'Weten we nog niet')]
+    : q.k === 'age' ? LEEFTIJDEN.map(l => knop(l, l === 99 ? 'Nooit bij de jeugd' : 'Vanaf O' + l))
+    : (q.o || []).map(o => knop(o[0], o[1]));
+  const leeg = w === undefined || w === '?' || (Array.isArray(w) && !w.length);
+  const stand = k.door === 'hand' ? chip('zelf ingevuld', 'ok') : k.tegenstrijdig ? chip('tegenstrijdig', 'let') : k.door === 'document' ? chip('uit de documenten', 'ok') : chip(w === '?' ? 'weten we nog niet' : 'manco', 'uit');
+  const bron = k.bron ? `<p class="cp-bron">Uit ${esc(k.bron.bron || 'het document')}${k.bron.pagina ? ', p. ' + k.bron.pagina : ''}, zekerheid ${esc(k.bron.zeker)}${k.bron.citaatOk === false ? ` <span class="cp-let">${ico('action-warning', 13)} citaat niet teruggevonden</span>` : ''}</p>${k.bron.citaat ? `<blockquote class="cp-citaat">${esc(k.bron.citaat)}</blockquote>` : ''}` : '';
+  const alt = k.kandidaten.length > 1 ? `<div class="cp-ss-alt"><small>In de documenten staan verschillende antwoorden:</small>${k.kandidaten.map((x, i) => `<div><span>${esc(antwoordTekst(q, x.waarde))} <i>(${esc(x.bron || '')}${x.pagina ? ', p. ' + x.pagina : ''})</i></span><button class="knop licht klein" data-cp="sskies" data-vraag="${q.id}" data-i="${i}">Kies dit</button></div>`).join('')}</div>` : '';
+  return `<article class="cp-veld cp-ss-vraag ${leeg ? 'st-leeg' : ''}" data-vraagkaart="${q.id}">
+    <header><h3>${esc(q.q)}</h3><span class="pc-chips">${onderwerpVan(q) && q.k === 'ab' ? chip(onderwerpVan(q)) : ''}${stand}</span></header>
+    <div class="cp-ss-opties ${q.k === 'ab' ? 'ab' : ''}">${opties.join('')}</div>
+    ${q.k === 'multi' ? `<small class="cp-doel">Kies er hoogstens ${q.max}.</small>` : ''}
+    ${k.door === 'hand' && k.kandidaten.length ? `<small class="cp-doel">De documenten zeggen: ${esc(antwoordTekst(q, k.kandidaten[0].waarde))}. <button class="cp-link" data-cp="sswis" data-vraag="${q.id}">Terug naar het document</button></small>` : ''}
+    ${k.door === 'document' ? bron : ''}${k.door !== 'hand' ? alt : ''}
+  </article>`;
+}
+async function ssBewaar(paden){
+  try { await vervang(club.id, paden); }
+  catch (x){ meld('Opslaan mislukt: ' + foutTekst(x)); }
+  if (TEL.klaar) synchroniseerStraks();
+}
+async function ssActie(a, b){
+  const st = staat(club.id), sp = ssSp();
+  if (a === 'ssmodus'){ sp.modus = b.dataset.m === 'kort' ? 'kort' : 'volledig'; teken(); return ssBewaar({ 'speelstijl.modus': sp.modus }); }
+  if (a === 'ssantw'){
+    const q = vraagOpId(b.dataset.vraag); if (!q) return;
+    let w = b.dataset.w;
+    if (q.k === 'age') w = Number(w);
+    if (q.k === 'multi'){
+      const nu = keuzeVan(sp, q.id).waarde, lijst = Array.isArray(nu) ? [...nu] : [];
+      w = lijst.includes(w) ? lijst.filter(x => x !== w) : [...lijst, w];
+      if (w.length > q.max) return meld(`Kies er hoogstens ${q.max}`);
+    }
+    sp.hand[q.id] = w; teken();
+    return ssBewaar({ [`speelstijl.hand.${q.id}`]: w });
+  }
+  if (a === 'sswis'){ delete sp.hand[b.dataset.vraag]; teken(); return ssBewaar({ [`speelstijl.hand.${b.dataset.vraag}`]: deleteField() }); }
+  if (a === 'sskies'){
+    const k = keuzeVan(sp, b.dataset.vraag).kandidaten[Number(b.dataset.i)]; if (!k) return;
+    sp.hand[b.dataset.vraag] = k.waarde; teken();
+    return ssBewaar({ [`speelstijl.hand.${b.dataset.vraag}`]: k.waarde });
+  }
+  if (a === 'ssoptel'){ if (!(TEL.open && TEL.el && !TEL.el.hidden)) zetTelefoon(true); TEL.bron = null; return toonOpTelefoon(null, 'speelwijze'); }
+  if (a === 'ssvast'){
+    const u = uitkomstVan(sp); if (!u) return meld('Er is nog geen keuze over de speelwijze');
+    const vervangNu = st.zeker === 'ss', clubId = club.id;
+    b.disabled = true; b.textContent = 'Vastleggen…';
+    try {
+      const r = await httpsCallable(functions, 'zetSpeelstijlPlatform', { timeout: 60000 })({ clubId, speelstijl: u.doc, vervang: vervangNu });
+      if (r?.data?.bestaat){
+        const o = r.data.bestaat; st.zeker = 'ss';
+        st.ssBestaat = `De club heeft zelf al een speelwijze vastgelegd${o.vastgelegdMs ? ' op ' + datum(o.vastgelegdMs) : ''}${o.invullers ? ` met ${o.invullers} invuller${o.invullers === 1 ? '' : 's'}` : ''}${o.zin ? ': "' + o.zin + '"' : ''}. Tik nog een keer om die te vervangen.`;
+        return teken();
+      }
+      st.zeker = null; st.ssBestaat = '';
+      sp.vastgelegd = { ms: Date.now(), modus: sp.modus, zin: u.uitkomst.zin || '', regels: speelwijzeRegels(sp) };
+      await ssBewaar({ 'speelstijl.vastgelegd': sp.vastgelegd });
+      meld('De speelwijze staat in Cluppie. Trainers zien hem onder Speelwijze en in hun trainingen.');
+    } catch (x){ meld('Vastleggen mislukt: ' + foutTekst(x)); }
+    return teken();
+  }
+}
+
 /* ---------- tekenen ---------- */
 const chip = (t, soort) => `<span class="pf-chip ${soort || ''}">${esc(t)}</span>`;
 const datum = ms => ms ? new Date(ms).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
@@ -508,16 +625,17 @@ function teken(){
   const st = staat(club.id);
   if (st.fout){ root.innerHTML = `<div class="pc-signaal rood">Clubprofiel laden mislukt: ${esc(st.fout)}</div><button class="knop licht" data-cp="opnieuw">Opnieuw proberen</button>`; return; }
   if (!st.profiel){ root.innerHTML = '<p class="tc-leeg-klein">Clubprofiel laden…</p>'; return; }
-  const o = overzicht(st.profiel), t = o.totaal, direct = st.profiel.tekstStatus === 'gepubliceerd';
+  const o = overzicht(st.profiel), t = o.totaal, direct = st.profiel.tekstStatus === 'gepubliceerd', ssTel = telling(st.profiel.speelstijl);
   const h = o.hoofdstukken.find(x => x.id === st.hoofdstuk), beoordelen = t.open + t.akkoord;
   const knop = (id, naam, rechts, actief) => `<button class="cp-nav-knop ${actief ? 'actief' : ''}" data-cp="nav" data-h="${id}" ${actief ? 'aria-current="true"' : ''}><span>${esc(naam)}</span><small>${rechts}</small></button>`;
-  const nav = [knop('documenten', 'Documenten', o.documenten, st.hoofdstuk === 'documenten'), knop('mancos', 'Manco’s', t.manco, st.hoofdstuk === 'mancos'),
+  const nav = [knop('documenten', 'Documenten', o.documenten, st.hoofdstuk === 'documenten'), knop('mancos', 'Manco’s', t.manco + ssTel.manco, st.hoofdstuk === 'mancos'),
+    knop('vragenlijst', 'Speelwijze (vragenlijst)', `${ssTel.manco ? '<i class="cp-stip" title="open vragen"></i>' : ''}${ssTel.ingevuld}/${ssTel.totaal}`, st.hoofdstuk === 'vragenlijst'),
     '<div class="cp-nav-streep"></div>',
     ...o.hoofdstukken.map(x => knop(x.id, x.naam, `${x.tel.open + x.tel.akkoord ? `<i class="cp-stip" title="${x.tel.open + x.tel.akkoord} te beoordelen"></i>` : ''}${x.tel.verwerkt}/${x.tel.velden}`, h?.id === x.id))].join('');
   const sy = root.closest('.tc-hoofd')?.scrollTop;
   root.innerHTML = `<div class="cp">
     <ol class="cp-stappen"><li><b>1</b> Lees de documenten van ${esc(club.naam || 'de club')} in.</li><li><b>2</b> Per onderwerp zie je wat de club zegt en wat er in Cluppie komt.</li><li><b>3</b> Keur goed of pas de tekst aan; Cluppie zet het op de goede plek.</li></ol>
-    <div class="cp-kpis">${kpi(o.documenten, 'documenten')}${kpi(`${t.verwerkt}<small>/${t.velden}</small>`, 'staat in Cluppie', '', '')}${kpi(beoordelen, 'te beoordelen', '', beoordelen ? 'let' : '')}${kpi(t.manco, 'manco’s', 'niet gevonden, half of tegenstrijdig', '')}</div>
+    <div class="cp-kpis">${kpi(o.documenten, 'documenten')}${kpi(`${t.verwerkt}<small>/${t.velden}</small>`, 'staat in Cluppie', '', '')}${kpi(beoordelen, 'te beoordelen', '', beoordelen ? 'let' : '')}${kpi(t.manco + ssTel.manco, 'manco’s', 'niet gevonden, half of tegenstrijdig', '')}</div>
     <div class="cp-acties">
       <button class="knop fluo klein" data-cp="kies">${ico('action-add', 16)} Documenten toevoegen</button>
       <button class="knop licht klein" data-cp="vragen">${ico('action-copy', 15)} Vragen voor de club</button>
@@ -530,7 +648,7 @@ function teken(){
     </div>
     <div class="cp-wachtrij-vak" aria-live="polite">${htmlWachtrij(st)}</div>
     <div class="cp-raster"><nav class="cp-nav" aria-label="Hoofdstukken">${nav}</nav>
-      <section class="cp-inhoud">${h ? htmlHoofdstuk(st, h) : st.hoofdstuk === 'mancos' ? htmlMancos(st) : htmlDocumenten(st, o)}</section></div></div>`;
+      <section class="cp-inhoud">${h ? htmlHoofdstuk(st, h) : st.hoofdstuk === 'mancos' ? htmlMancos(st) : st.hoofdstuk === 'vragenlijst' ? htmlSpeelwijze(st) : htmlDocumenten(st, o)}</section></div></div>`;
   const hoofd = root.closest('.tc-hoofd'); if (hoofd && sy != null) hoofd.scrollTop = sy;
   root.querySelector('.cp-nav .actief')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   const f = root.querySelector('[data-cpfocus]'); if (f){ f.focus({ preventScroll: true }); f.scrollIntoView({ block: 'nearest' }); }
@@ -554,14 +672,18 @@ function htmlDocumenten(st, o){
       : `<div class="pc-signaal info"><b>Nog geen documenten.</b><br>Onder Manco’s staan nu alle ${o.totaal.velden} onderwerpen als vraag: dat is je lijst voor een eerste gesprek met de club.</div>`}`;
 }
 function htmlMancos(st){
-  const lijst = mancos(st.profiel), SOORT = { leeg: ['niet gevonden', 'uit'], deels: ['half beantwoord', 'let'], meerdere: ['tegenstrijdig', 'let'] };
-  if (!lijst.length) return '<h2 class="tc-h2">Manco’s</h2><div class="pc-signaal info"><b>Geen manco’s.</b> Elk onderwerp is in de documenten gevonden.</div>';
+  const lijst = mancos(st.profiel), SOORT = { leeg: ['niet gevonden', 'uit'], deels: ['half beantwoord', 'let'], meerdere: ['tegenstrijdig', 'let'], onbekend: ['weten we nog niet', 'uit'] };
+  const ss = speelstijlManco(st.profiel.speelstijl);
+  const ssHtml = ss.length ? `<h3 class="cp-mkop">Speelwijze (vragenlijst, ${st.profiel.speelstijl.modus === 'kort' ? 'kort' : 'volledig'})</h3>` + ss.map(m => `<div class="cp-manco"><div class="cp-manco-tekst"><b>${esc(m.onderwerp || 'Speelwijze')}</b> ${chip(...SOORT[m.soort])}<small>${esc(m.tekst)}</small></div>
+        <button class="knop licht klein" data-cp="naarvraag" data-vraag="${m.vraag}">Beantwoorden</button></div>`).join('') : '';
+  if (!lijst.length && !ss.length) return '<h2 class="tc-h2">Manco’s</h2><div class="pc-signaal info"><b>Geen manco’s.</b> Elk onderwerp is in de documenten gevonden.</div>';
   let vorig = '';
   return `<div class="cp-hkop"><div><h2 class="tc-h2">Manco’s</h2><p class="tc-meta">Wat de documenten niet, maar half of tegenstrijdig beantwoorden. Dit zijn je vragen voor de club. Vul het antwoord in en Cluppie maakt er een voorstel van.</p></div>
       <button class="knop licht klein" data-cp="vragen">${ico('action-copy', 15)} Kopieer als vragen</button></div>
     ${lijst.map(m => { const kop = m.hoofdstuk !== vorig ? `<h3 class="cp-mkop">${esc(m.hoofdstukNaam)}</h3>` : ''; vorig = m.hoofdstuk;
       return `${kop}<div class="cp-manco"><div class="cp-manco-tekst"><b>${esc(m.label)}</b> ${chip(...SOORT[m.soort])}<small>${esc(m.vraag)}</small>${m.antwoorden.map(a => `<small class="cp-manco-antw">${esc(a)}</small>`).join('')}</div>
-        <button class="knop licht klein" data-cp="naarveld" data-h="${m.hoofdstuk}" data-veld="${m.veld}">${m.soort === 'leeg' ? 'Antwoord invullen' : 'Bekijk'}</button></div>`; }).join('')}`;
+        <button class="knop licht klein" data-cp="naarveld" data-h="${m.hoofdstuk}" data-veld="${m.veld}">${m.soort === 'leeg' ? 'Antwoord invullen' : 'Bekijk'}</button></div>`; }).join('')}
+    ${ssHtml}`;
 }
 /* welke bevindingen in één keer gezet kunnen worden: volledig, citaat teruggevonden, niet onzeker, met voorstel, en het enige antwoord */
 function inEenKeer(h){
@@ -752,7 +874,7 @@ async function klik(e){
   if (a === 'opnieuw') return laad(club.id).then(teken);
   if (!p) return;
   const wasZeker = st.zeker;
-  if (a !== 'docweg' && a !== 'alleszetten') st.zeker = null;
+  if (a !== 'docweg' && a !== 'alleszetten' && a !== 'ssvast') st.zeker = null;
   if (a === 'nav'){ st.hoofdstuk = b.dataset.h; st.nieuw = null; teken(); root.closest('.tc-hoofd')?.scrollTo?.({ top: 0 }); return; }
   if (a === 'naarveld'){
     st.hoofdstuk = b.dataset.h; st.filter = 'alles'; st.nieuw = p && !Object.values(p.bevindingen).some(x => x.veld === b.dataset.veld && x.oordeel !== 'afgewezen') ? b.dataset.veld : null;
@@ -767,11 +889,21 @@ async function klik(e){
     return voegTekstToe(root.querySelector('#cpPlakNaam')?.value.trim(), tekst);
   }
   if (a === 'wachtrijweg'){ st.wachtrij = []; return teken(); }
-  if (a === 'vragen') return kopieer(vragenTekst(p, club.naam), 'Vragen gekopieerd');
+  if (a === 'vragen') return kopieer(vragenTekst(p, club.naam) + speelstijlVragenTekst(p.speelstijl), 'Vragen gekopieerd');
+  if (a.startsWith('ss')) return ssActie(a, b);
+  if (a === 'naarvraag'){ st.hoofdstuk = 'vragenlijst'; teken(); const k = root.querySelector(`[data-vraagkaart="${b.dataset.vraag}"]`); if (k){ k.scrollIntoView({ block: 'center' }); k.classList.add('cw-licht'); setTimeout(() => k.classList.remove('cw-licht'), 2600); } return; }
   if (a === 'download') return download(`clubprofiel-${bestandsnaam(club.naam)}.md`, profielTekst(p, club.naam));
   if (a === 'pdf'){
     /* [20261120f] wat er in Cluppie is gezet, als PDF om met de club te delen (clubprofiel-pdf.js) */
-    const ov = inrichtingOverzicht(p, club);
+    const ov = inrichtingOverzicht(p, club), vs = p.speelstijl.vastgelegd;
+    if (vs && (vs.regels || []).length){
+      const plek = 'Speelwijze', i = Math.max(0, ov.hoofdstukken.findIndex(h => ['speelwijze', 'leerlijn', 'trainen', 'wedstrijd', 'evalueren', 'gedrag', 'ouders', 'trainers', 'kalender', 'privacy'].includes(h.id)));
+      ov.hoofdstukken.splice(i < 0 ? ov.hoofdstukken.length : i, 0, { id: 'speelstijl', naam: 'Speelwijze', onderwerpen: [
+        { label: 'Onze speelwijze', regels: [{ soort: 'tekst', plek, label: '', waarde: vs.zin || '' }].filter(r => r.waarde) },
+        ...vs.regels.map(r => ({ label: r.onderdeel, regels: [{ soort: 'instelling', plek, label: '', waarde: r.tekst }] }))].filter(x => x.regels.length) });
+      ov.aantal += 1;
+    }
+    ov.open.push(...speelstijlManco(p.speelstijl).map(m => ({ hoofdstuk: 'Speelwijze', label: m.onderwerp || 'Vragenlijst', vraag: m.tekst })));
     if (!ov.aantal) return meld('Er staat nog niets in Cluppie. Keur eerst een onderwerp goed.');
     const oud = b.innerHTML; b.disabled = true; b.textContent = 'PDF maken…';
     try { const m = await import('./clubprofiel-pdf.js?v=20261120f'); download(`cluppie-inrichting-${bestandsnaam(club.naam)}.pdf`, await m.maakInrichtingPdf(ov)); meld(`PDF met ${ov.aantal} onderwerp${ov.aantal === 1 ? '' : 'en'} gedownload`); }
@@ -829,8 +961,9 @@ async function klik(e){
     /* het document en wat ervan nog niet in Cluppie staat; wat gezet is blijft staan */
     const weg = Object.entries(p.bevindingen).filter(([, x]) => x.docId === id && !x.verwerkt).map(([i]) => i), clubId = club.id;
     delete p.documenten[id]; for (const i of weg) delete p.bevindingen[i];
+    p.speelstijl.kandidaten = zonderDocument(p.speelstijl.kandidaten, id);
     teken();
-    try { await updateDoc(ref(clubId), { ['documenten.' + id]: deleteField(), ...Object.fromEntries(weg.map(i => ['bevindingen.' + i, deleteField()])) }); meld('Document verwijderd'); }
+    try { await updateDoc(ref(clubId), { ['documenten.' + id]: deleteField(), 'speelstijl.kandidaten': p.speelstijl.kandidaten, ...Object.fromEntries(weg.map(i => ['bevindingen.' + i, deleteField()])) }); meld('Document verwijderd'); }
     catch (x){ meld('Verwijderen mislukt: ' + foutTekst(x)); st.profiel = null; laad(clubId); }
   }
 }
