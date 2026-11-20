@@ -12,6 +12,7 @@
      clubs/{id}/speelstijlRondes/{rondeId}                { naam, modus:'kort'|'volledig', status:'open'|'dicht', door, gemaaktMs }
      clubs/{id}/speelstijlRondes/{rondeId}/antwoorden/{uid} { rol, antwoorden, bijgewerktMs } */
 import { S, esc, meld } from './state.js?v=20261117a';
+import { rolNaam as clubRolNaam } from './rolnamen.js?v=20261120c';   /* [20261120c] eigen rolnamen van de club */
 import { db, doc, collection, getDocs, setDoc } from './firebase.js?v=20261011g';
 import { rechtenVoor } from './seizoensplan-club.js?v=20261117a';
 import * as L from './speelstijl-logica.js?v=20261019e';
@@ -33,7 +34,7 @@ function rolNaam(uid){
   if (c.admins?.[uid]) return 'Clubadmin';
   if (c.hoofdJeugd?.[uid]) return c.instellingen?.jeugdRolNaam || 'Hoofd jeugdopleiding';
   const b = L_BOUWEN.find(x => c.bouwCoordinatoren?.[x]?.[uid]);
-  return b ? `Coördinator ${b}` : 'Deelnemer';
+  return b ? `${clubRolNaam('coordinator', c, 'Coördinator')} ${b}` : 'Deelnemer';
 }
 const L_BOUWEN = ['onder', 'midden', 'boven'];
 

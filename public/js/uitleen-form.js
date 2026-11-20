@@ -16,13 +16,13 @@ import {
   db, collection, doc, getDoc, getDocs, addDoc, updateDoc, query, where, documentId, serverTimestamp
 } from './firebase.js?v=20261011g';
 import { momentenVanTeam, tijdTekst } from './trainingsmomenten.js?v=20261117a';
-import { bouwLeenSnapshot } from './teams-spelers.js?v=20261120a';
+import { bouwLeenSnapshot } from './teams-spelers.js?v=20261120c';
 import { telGebruik } from './tracker.js?v=20261117a';
 import {
   vandaagLokaal, plusDagen, DAG_NAMEN, leenDatum, leenDelen, leenGrenzen, wedDeelTekst, trainDeelTekst
 } from './uitleen-regels.js?v=20261113b';
 
-export { magUitlenen } from './uitleen-rechten.js?v=20261117a';
+export { magUitlenen } from './uitleen-rechten.js?v=20261120c';
 
 /* ---------- Data ophalen ---------- */
 async function clubTeams(clubId, behalve){

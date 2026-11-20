@@ -596,6 +596,14 @@ Object.assign(exports, require('./trainingsai').maak({
   onCall, HttpsError, secrets: [ANTHROPIC_API_KEY], REGIO, vereisAI: vereisAIOfSolo, claude, apiKey: () => ANTHROPIC_API_KEY.value(), scrubPII,
 }));
 
+/* ---------- 2c-bis. CLUBPROFIEL ====================
+   analyseerClubdocument (zie clubprofiel.js): alleen de platformbeheerder leest de documenten van
+   een club in. Telt niet mee in de AI-limiet van de club en bewaart zelf niets. */
+Object.assign(exports, require('./clubprofiel').maak({
+  onCall, HttpsError, secrets: [ANTHROPIC_API_KEY], REGIO, claude, apiKey: () => ANTHROPIC_API_KEY.value(),
+  isPlatformBeheerder: require('./platform').isPlatformBeheerder, db: getFirestore,
+}));
+
 /* ---------- 2d. HOTSPOT-SAMENVATTING ====================
    Vat de opmerkingen die coaches bij één regel (hotspot) van een training
    hebben gemaakt anoniem samen tot één of twee zinnen voor de beheerder.

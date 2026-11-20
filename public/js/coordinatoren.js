@@ -18,6 +18,7 @@
 import { S, esc, meld, openModal, sluitModal, initialen } from './state.js?v=20261117a';
 import { db, doc, updateDoc, deleteField } from './firebase.js?v=20261011g';
 import { BOUWEN, bouwNaam } from './config.js?v=20261117a';
+import { rolNaam as clubRolNaam } from './rolnamen.js?v=20261120c';   /* [20261120c] eigen rolnamen van de club */
 
 /* ---------- Rechten-check (zelfde patroon als isBeheerder() in state.js) ---------- */
 export function isBouwCoordinator(bouw){
@@ -90,7 +91,7 @@ function modalCoordinatorToevoegen(bouw, teams){
   const bestaand = new Set(Object.keys(S.club.bouwCoordinatoren?.[bouw] || {}));
   const opties = kandidaten(teams).filter(k => !bestaand.has(k.uid));
   openModal(`
-    <h2>Coördinator<span class="sep" aria-hidden="true"></span>${esc(bouwNaam(bouw))}</h2>
+    <h2>${esc(clubRolNaam('coordinator', S.club, 'Coördinator'))}<span class="sep" aria-hidden="true"></span>${esc(bouwNaam(bouw))}</h2>
     <p class="u-t-sm u-zacht u-mb-sm">Kies een coach die al bij de club bekend is.</p>
     ${opties.length ? opties.map(k => `
       <button class="knop licht" data-coord-kies="${k.uid}" style="text-align:left;justify-content:flex-start">${esc(k.naam)}</button>`).join('')

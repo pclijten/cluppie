@@ -177,6 +177,19 @@ test('gebruik-teller: alleen eigen document', async () => {
   await assertSucceeds(setDoc(doc(als('coachA'), 'gebruik/coachA_2026-10-11'), { uid: 'coachA', clubId: 'A', datum: '2026-10-11' }));
   await assertFails(setDoc(doc(als('coachA'), 'gebruik/coachB_2026-10-11'), { uid: 'coachB', clubId: 'A', datum: '2026-10-11' }));
 });
+/* [20261120b] clubprofiel: wat de eindbaas uit de documenten van een club haalt; de club zelf leest het niet */
+test('clubprofiel: alleen de platformbeheerder leest en schrijft, de clubbeheerder niet', async () => {
+  const profiel = { v: 1, clubId: 'A', bevindingen: { b1: { veld: 'bouw.indeling', waarde: 'Drie bouwen', oordeel: 'open' } } };
+  await assertSucceeds(setDoc(doc(als('paul', PLATFORM), 'clubprofielen/A'), profiel));
+  await assertSucceeds(getDoc(doc(als('paul', PLATFORM), 'clubprofielen/A')));
+  await assertSucceeds(updateDoc(doc(als('paul', PLATFORM), 'clubprofielen/A'), { 'bevindingen.b1': deleteField() }));
+  await assertFails(getDoc(doc(als('adminA'), 'clubprofielen/A')));
+  await assertFails(setDoc(doc(als('adminA'), 'clubprofielen/A'), profiel));
+  await assertFails(getDoc(doc(als('coachA'), 'clubprofielen/A')));
+  await assertFails(getDoc(doc(als('paul', { email: PLATFORM.email, email_verified: false }), 'clubprofielen/A')));
+  await assertFails(getDoc(doc(gast(), 'clubprofielen/A')));
+});
+
 test('platformstats en clubaanmeldingen: alleen platformbeheerder', async () => {
   await assertFails(getDoc(doc(als('adminA'), 'platformstats/overzicht')));
   await assertSucceeds(getDoc(doc(als('paul', PLATFORM), 'platformstats/overzicht')));

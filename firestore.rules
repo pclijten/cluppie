@@ -669,6 +669,11 @@ service cloud.firestore {
         allow delete: if ingelogd() && (resource.data.uid == uid() || staf());
       }
     }
+    /* clubprofiel: wat de platformbeheerder uit de documenten van een club heeft gehaald
+       (platform-clubprofiel.js). Bewust buiten clubs/{id}: de club zelf leest dit nog niet. */
+    match /clubprofielen/{clubId} {
+      allow read, write: if isPlatform();
+    }
     /* platformcijfers per club (platformdashboard): alleen de platformbeheerder */
     match /platformstats/{id} {
       allow read: if isPlatform();

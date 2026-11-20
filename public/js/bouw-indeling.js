@@ -15,7 +15,8 @@
 import { S, esc, meld } from './state.js?v=20261117a';
 import { db, doc, updateDoc } from './firebase.js?v=20261011g';
 import { BOUWEN, bouwVanCategorie } from './config.js?v=20261117a';
-import { koppelCoordinatorenBeheer } from './coordinatoren.js?v=20261117a';
+import { rolNaam as clubRolNaam } from './rolnamen.js?v=20261120c';   /* [20261120c] eigen rolnamen van de club */
+import { koppelCoordinatorenBeheer } from './coordinatoren.js?v=20261120c';
 
 const KLEUR = { onder:'#35c47a', midden:'#3b82f6', boven:'#a855f7' };
 const KORT  = Object.fromEntries(BOUWEN.map(b => [b.id, b.kort]));
@@ -83,7 +84,7 @@ function binnen(teams){
           }).join('') || '<em>Nog geen teams</em>'}</div>
         </div>
         <div class="cb-bouw-sub">
-          <div class="cb-bouw-lbl">Coördinatoren <button class="cb-link" data-coord-toevoegen="${b.id}">+ Toevoegen</button></div>
+          <div class="cb-bouw-lbl">${esc(clubRolNaam('coordinator', S.club, 'Coördinatoren'))} <button class="cb-link" data-coord-toevoegen="${b.id}">+ Toevoegen</button></div>
           ${co.length ? co.map(c => `<div class="cb-persoon" data-coord-rij="${b.id}|${esc(c.uid)}"><div class="cb-av">${esc(tweeLetters(c.naam))}</div><div class="cb-persoon-n lid-naam">${esc(c.naam)}</div><button class="lid-weg cb-weg" data-coord-weg="${b.id}|${esc(c.uid)}" aria-label="${esc(c.naam)} weghalen als coördinator">✕</button></div>`).join('')
             : '<span class="cb-tag geen">Nog niemand</span>'}
         </div>
