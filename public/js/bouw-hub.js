@@ -21,25 +21,25 @@
    wordt ÉÉN keer per team opgehaald bij het openen en daarna door alle
    schermen hergebruikt (huidigeContext.data) — geen dubbele reads. */
 import { teamsOpId } from './teams-ophalen.js?v=20261011g';
-import { pasClubConfigToe } from './clubconfig.js?v=20261121c';
-import { S, esc, meld, openModal, sluitModal, isBeheerder, terugLaag } from './state.js?v=20261121c';
+import { pasClubConfigToe } from './clubconfig.js?v=20261121d';
+import { S, esc, meld, openModal, sluitModal, isBeheerder, terugLaag } from './state.js?v=20261121d';
 import {
   db, collection, doc, getDoc, getDocs, addDoc, query, where, documentId, serverTimestamp
 } from './firebase.js?v=20261011g';
 /* [20261120m] Rechtstreeks uit de Firebase-SDK (zelfde URL als firebase.js, dus
    dezelfde Firestore-instantie); firebase.js zelf blijft ongewijzigd. */
 import { getDocFromCache, getDocsFromCache } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import { BOUWEN, bouwNaam, SKILLS, SEIZOEN_FALLBACK, TEAM_CATEGORIEEN, niveauKleur, catLabel, TEAM_TAGS } from './config.js?v=20261121c';
+import { BOUWEN, bouwNaam, SKILLS, SEIZOEN_FALLBACK, TEAM_CATEGORIEEN, niveauKleur, catLabel, TEAM_TAGS } from './config.js?v=20261121d';
 import { TE_GROEPEN, TE_NIV, TE_FOCUS_LADDER, TE_STEM, teDoelIco, teVervolg, teLeeftijd, teCriteriaVoor, teScores, teIsNieuw, teGroepWaarden, teKleur, teCijfer, teZinnen } from './team-evaluatie-criteria.js?v=20261120a';
 import { ico } from './icons.js?v=20261116t';
-import { trekUitleningIn, definitiefOverzetten, wijzigUitlening } from './teams-spelers.js?v=20261121c';
-import { openUitleenForm } from './uitleen-form.js?v=20261121c';
+import { trekUitleningIn, definitiefOverzetten, wijzigUitlening } from './teams-spelers.js?v=20261121d';
+import { openUitleenForm } from './uitleen-form.js?v=20261121d';
 import { vandaagLokaal, plusDagen, leenActief, leenStatus, leenSoortLabel, leenOmschrijving } from './uitleen-regels.js?v=20261113b';
-import { telGebruik } from './tracker.js?v=20261121c';
-import { analyseWedstrijd } from './analyse.js?v=20261121c';
+import { telGebruik } from './tracker.js?v=20261121d';
+import { analyseWedstrijd } from './analyse.js?v=20261121d';
 import { opkomstVoor, MIN_OPKOMST_TRAININGEN } from './opkomst.js?v=20260922c';
-import { rondesVan, rondeStatusTeam } from './evaluatierondes.js?v=20261121c';
-import { priveBeoordelingenVan } from './beoordelingen-prive.js?v=20261121c';
+import { rondesVan, rondeStatusTeam } from './evaluatierondes.js?v=20261121d';
+import { priveBeoordelingenVan } from './beoordelingen-prive.js?v=20261121d';
 
 /* [20260929a] Voortgang van de "verplichte" evaluatie per team: de lopende
    evaluatieronde van de club als die er is, anders (zoals voorheen) de
@@ -151,8 +151,8 @@ function toonTerugPil(){
   const el = document.createElement('button');
   el.id = 'bouwhubTerugPil';
   el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom));'
-    + 'z-index:40;background:var(--accent);color:#fff;border:none;border-radius:999px;padding:11px 18px;'
-    + 'font-family:Inter,sans-serif;font-weight:600;font-size:calc(13px * var(--fs));box-shadow:0 8px 22px rgba(226,52,47,.35);'
+    + 'z-index:40;background:var(--accent-vlak);color:var(--accent-ink);border:none;border-radius:999px;padding:11px 18px;'
+    + 'font-family:var(--font-body);font-weight:600;font-size:var(--t-sm);box-shadow:0 8px 22px color-mix(in srgb, var(--accent) 35%, transparent);'
     + 'display:flex;align-items:center;gap:8px;cursor:pointer;';
   el.innerHTML = `↩ Terug naar ${esc(bouwNaam(huidigeContext.bouw))} <span class="u-fw-7" style="opacity:.7;margin-left:var(--space-3xs)" id="bouwhubPilSluit">✕</span>`;
   el.onclick = (e) => {
@@ -220,7 +220,7 @@ export async function openBouwHub(clubId, bouw, isHerbezoek){
      lijn met de desktop. Lukt het laden daarvan niet, dan valt hij terug op
      het oude overlay-dashboard hieronder. */
   if (!isHerbezoek && !window.matchMedia('(min-width:1100px) and (min-height:520px)').matches){
-    try { const m = await import('./mobiel-bouw.js?v=20261121c'); await m.openMobielBouw(clubId, bouw); return; }
+    try { const m = await import('./mobiel-bouw.js?v=20261121d'); await m.openMobielBouw(clubId, bouw); return; }
     catch(e){ console.warn('[Cluppie] mobiele bouw-omgeving niet geladen, terug naar het oude dashboard', e); }
   }
   const el = bouwLaag();
@@ -657,8 +657,8 @@ function radarSVG(values, opts={}){
 }
 function radarLegende(a, b){
   return `<div class="u-t-2xs u-zacht" style="display:flex;justify-content:center;gap:var(--space-md);margin-top:-2px">
-    <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--accent);margin-right:var(--space-2xs)"></span>${esc(a)}</span>
-    <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;border:1.6px dashed var(--ink-2);margin-right:var(--space-2xs)"></span>${esc(b)}</span>
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:var(--r-2xs);background:var(--accent);margin-right:var(--space-2xs)"></span>${esc(a)}</span>
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:var(--r-2xs);border:1.6px dashed var(--ink-2);margin-right:var(--space-2xs)"></span>${esc(b)}</span>
   </div>`;
 }
 /* Overlay-radar: alle teams in één chart, elk in een eigen kleur, i.p.v. losse
@@ -727,8 +727,8 @@ function renderDashboard(){
       <div class="u-t-2xs u-zacht u-mb-2xs" style="display:flex;justify-content:space-between">
         <span>${label}</span><span style="font-weight:700;color:${kleur}">${pct==null?'–':pct+'%'}</span>
       </div>
-      <div style="height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden">
-        <div style="height:100%;width:${pct||0}%;background:${kleur};border-radius:3px"></div>
+      <div style="height:6px;background:var(--surface-2);border-radius:var(--r-2xs);overflow:hidden">
+        <div style="height:100%;width:${pct||0}%;background:${kleur};border-radius:var(--r-2xs)"></div>
       </div>
     </div>`;
 
@@ -757,7 +757,7 @@ function renderDashboard(){
       const laatsteHtml = u.laatste
         ? (() => { const uitk = u.laatste.voor>u.laatste.tegen?'w':u.laatste.voor<u.laatste.tegen?'v':'g';
             return `<span class="u-t-sm u-zacht" style="display:inline-flex;align-items:center;gap:var(--space-2xs)">
-              <span style="background:${VORMKLEUR[uitk]};color:#12140f;font-weight:800;font-size:10px;border-radius:5px;padding:1px 5px">${VORMLETTER[uitk]}</span>
+              <span style="background:${VORMKLEUR[uitk]};color:var(--vast-donkergrijs-4);font-weight:800;font-size:var(--t-2xs);border-radius:var(--r-xs);padding:1px 5px">${VORMLETTER[uitk]}</span>
               vs ${esc(u.laatste.tegenstander)} ${u.laatste.voor}-${u.laatste.tegen}</span>`; })()
         : `<span class="u-t-sm u-zacht">${u.knvbVerborgen ? 'KNVB publiceert geen uitslagen (O10 en jonger)' : 'Nog geen uitslag bekend'}</span>`;
 
@@ -811,8 +811,8 @@ function renderDashboard(){
           <div class="u-t-2xs u-zacht u-mb-2xs" style="display:flex;justify-content:space-between">
             <span>${esc(em.naam)}${losseCount>0?`, +${losseCount} los`:''}</span><span style="font-weight:700;color:${evalKleur}">${officieelCount}/${evalTotaal}</span>
           </div>
-          <div style="height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden">
-            <div style="height:100%;width:${evalPct}%;background:${evalKleur};border-radius:3px"></div>
+          <div style="height:6px;background:var(--surface-2);border-radius:var(--r-2xs);overflow:hidden">
+            <div style="height:100%;width:${evalPct}%;background:${evalKleur};border-radius:var(--r-2xs)"></div>
           </div>
         </div>` : ''}
         ${radarHtml}
@@ -883,7 +883,7 @@ function renderUitslagenScherm(teamId){
     ${lijst.length ? lijst.map(r => {
       const uitk = uitkomst(r);
       return `<div class="lijst-item" style="cursor:default">
-        <div class="team-shirt" style="background:${VORMKLEUR[uitk]};color:#12140f">${VORMLETTER[uitk]}</div>
+        <div class="team-shirt" style="background:${VORMKLEUR[uitk]};color:var(--vast-donkergrijs-4)">${VORMLETTER[uitk]}</div>
         <div class="li-tekst">
           <div class="titel">${esc(r.tegenstander)} <span class="u-zacht u-fw-6">${r.voor}-${r.tegen}</span></div>
           <div class="meta">${r.thuis?'Thuis':'Uit'}<span class="sep" aria-hidden="true"></span>${esc(r.datum||'')}</div>
@@ -911,7 +911,7 @@ function renderTeamsScherm(){
   inhoud.querySelectorAll('[data-bh-open-team]').forEach(b => {
     b.onclick = async () => {
       sluitBouwHub(); toonTerugPil();
-      const m = await import('./teams.js?v=20261121c');
+      const m = await import('./teams.js?v=20261121d');
       m.openTeam(b.dataset.bhOpenTeam);
     };
   });
@@ -1003,8 +1003,8 @@ function tekenSpelersLijst(filterTeamId){
   const items = filterTeamId === 'alle' ? spelersLijst : spelersLijst.filter(p => p.teamId === filterTeamId);
   inhoud.innerHTML = `
     <div class="u-mb-sm" style="display:flex;gap:var(--space-xs);overflow-x:auto">
-      <button class="knop klein" data-bh-filter="alle" style="white-space:nowrap${filterTeamId==='alle'?';background:var(--accent);color:#fff':';background:var(--card);color:var(--ink)'}">Alle teams</button>
-      ${teams.map(t => `<button class="knop klein" data-bh-filter="${t.id}" style="white-space:nowrap${filterTeamId===t.id?';background:var(--accent);color:#fff':';background:var(--card);color:var(--ink)'}">${esc(t.naam)}</button>`).join('')}
+      <button class="knop klein" data-bh-filter="alle" style="white-space:nowrap${filterTeamId==='alle'?';background:var(--accent-vlak);color:var(--accent-ink)':';background:var(--card);color:var(--ink)'}">Alle teams</button>
+      ${teams.map(t => `<button class="knop klein" data-bh-filter="${t.id}" style="white-space:nowrap${filterTeamId===t.id?';background:var(--accent-vlak);color:var(--accent-ink)':';background:var(--card);color:var(--ink)'}">${esc(t.naam)}</button>`).join('')}
     </div>
     ${items.length ? items.map(p => `
       <button class="lijst-item" data-bh-open-speler="${p.id}" data-bh-team="${p.teamId}">
@@ -1151,7 +1151,7 @@ function renderEvaluatiesScherm(){
       const ratio = r.totaal ? r.officieel/r.totaal : 0;
       const kleur = ratio===1 ? 'var(--ok)' : ratio<0.5 ? 'var(--uit)' : 'var(--warn)';
       return `<button class="lijst-item" data-bh-eval-team="${r.team.id}">
-        <div class="team-shirt" style="background:${kleur};color:#12140f">${r.officieel}/${r.totaal}</div>
+        <div class="team-shirt" style="background:${kleur};color:var(--vast-donkergrijs-4)">${r.officieel}/${r.totaal}</div>
         <div class="li-tekst">
           <div class="titel">${esc(r.team.naam)}</div>
           <div class="meta">${esc(r.naam)}${r.losseMetingen>0?`, +${r.losseMetingen} losse beoordeling${r.losseMetingen===1?'':'en'}`:''}</div>
@@ -1203,7 +1203,7 @@ function renderEvaluatieTeamDetail(teamId){
     ${[...evalsChron].reverse().map(ev => {
       const f = (ev.focus || []).find(x => x.niveau);
       return `<button class="lijst-item" data-bh-open-teameval="${ev.wedstrijdId||''}">
-        <div class="team-shirt" style="background:${f ? `var(--n${f.niveau})` : 'var(--surface-2)'};color:#12140f" title="${f ? 'Doel' : ''}">${f ? teDoelIco(18) : (teIsNieuw(ev) ? '–' : 'oud')}</div>
+        <div class="team-shirt" style="background:${f ? `var(--n${f.niveau})` : 'var(--surface-2)'};color:var(--vast-donkergrijs-4)" title="${f ? 'Doel' : ''}">${f ? teDoelIco(18) : (teIsNieuw(ev) ? '–' : 'oud')}</div>
         <div class="li-tekst">
           <div class="titel">${esc(ev.tegenstander||'Onbekend')}</div>
           <div class="meta">${esc(ev.datum||'')}${f ? `<span class="sep" aria-hidden="true"></span>${esc(f.tekst)}` : ''}</div>
@@ -1232,7 +1232,7 @@ function renderEvaluatieTeamDetail(teamId){
           <div class="li-tekst u-flex-1">
             <div class="titel">${esc(p.naam)}${esc(extra)}${m.officieel?' <span class="u-c-accent u-t-2xs u-fw-7"><span class="sep" aria-hidden="true"></span>HALFJAAR</span>':''}</div>
             <div class="meta u-mt-2xs" style="display:flex;gap:var(--space-2xs)">
-              ${DOM.map(dom => `<span style="display:inline-flex;align-items:center;justify-content:center;background:${KLEUR_CIJFER[m.scores[dom]]||'var(--surface-2)'};color:#12140f;border-radius:6px;padding:2px 6px;font-size:11px;font-weight:700">${m.scores[dom]||'–'}</span>`).join('')}
+              ${DOM.map(dom => `<span style="display:inline-flex;align-items:center;justify-content:center;background:${KLEUR_CIJFER[m.scores[dom]]||'var(--surface-2)'};color:var(--vast-donkergrijs-4);border-radius:var(--r-xs);padding:var(--space-3xs) 6px;font-size:var(--t-2xs);font-weight:700">${m.scores[dom]||'–'}</span>`).join('')}
             </div>
           </div>
           <span class="pijl">›</span>

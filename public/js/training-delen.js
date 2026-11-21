@@ -11,7 +11,7 @@
    deel-boot.js voor de kant van de ouder, en firestore.rules voor hoe die
    toegang precies is afgebakend (trainingDeel + trainingToegang). */
 import { db, collection, addDoc, serverTimestamp, Timestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261121c';
+import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261121d';
 import { ico } from './icons.js?v=20261116t';
 
 let _ctx = null;
@@ -92,7 +92,7 @@ function openDeelModal(){
           <button class="knop licht" id="mDeelKopieer" style="flex-shrink:0">Kopieer</button>
         </div>
       </div>
-      <button class="knop vol" id="mDeelWhatsapp" style="background:#25D366">WhatsApp</button>
+      <button class="knop vol" id="mDeelWhatsapp" style="background:var(--vast-groen-6);color:var(--vast-groen-10)">WhatsApp</button>
     </div>`);
 
   const $ = sel => document.getElementById(sel);

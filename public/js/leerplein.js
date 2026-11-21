@@ -17,10 +17,10 @@
    Afgestemd op JO12/JO13-niveau.
    ========================================================================== */
 
-import { esc, spelerNr, bewaakTerug, vangnetStilTerugAlsNodig, terugLaag } from './state.js?v=20261121c';
-import { LEERCURVE, bouwSlots } from './config.js?v=20261121c';
+import { esc, spelerNr, bewaakTerug, vangnetStilTerugAlsNodig, terugLaag } from './state.js?v=20261121d';
+import { LEERCURVE, bouwSlots } from './config.js?v=20261121d';
 import { LEERINHOUD } from './leerinhoud.js?v=20261110a';
-import { telNav } from './tracker.js?v=20261121c';
+import { telNav } from './tracker.js?v=20261121d';
 
 const NS = 'http://www.w3.org/2000/svg';
 
@@ -113,17 +113,17 @@ function toonThema(){
         <div class="lp-lijn lp-cirkel"></div>
         <svg class="lp-teken" id="lpTeken" viewBox="0 0 100 100" preserveAspectRatio="none">
           <defs>
-            <marker id="lpLoop" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--loop,#F2C94C)"/></marker>
+            <marker id="lpLoop" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--loop,var(--n3))"/></marker>
             <marker id="lpPass" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#fff"/></marker>
           </defs>
         </svg>
         <div class="lp-objecten" id="lpObjecten"></div>
         <button class="lp-veld-actie" id="lpOpstelling">+ Opstelling invoegen</button>
         <div class="lp-legenda">
-          <div class="lp-rij"><span class="lp-sample" style="border-color:var(--loop,#F2C94C);border-top-style:dashed"></span> loopactie</div>
+          <div class="lp-rij"><span class="lp-sample" style="border-color:var(--loop,var(--n3));border-top-style:dashed"></span> loopactie</div>
           <div class="lp-rij"><span class="lp-sample" style="border-color:var(--wit)"></span> pass</div>
-          <div class="lp-rij"><span class="lp-dot" style="background:#E20613"></span> eigen speler</div>
-          <div class="lp-rij"><span class="lp-dot" style="background:#2B6FD6"></span> tegenstander</div>
+          <div class="lp-rij"><span class="lp-dot" style="background:var(--vast-rood-2)"></span> eigen speler</div>
+          <div class="lp-rij"><span class="lp-dot" style="background:var(--vast-blauw-10)"></span> tegenstander</div>
         </div>
       </div>
     </div>
@@ -163,7 +163,7 @@ function toonVoorbeeld(animatie){
     const draw = () => {
       const path = document.createElementNS(NS, 'path');
       path.setAttribute('d', 'M' + ln.punten.map(p => p.join(' ')).join(' L'));
-      path.setAttribute('stroke', ln.soort === 'pass' ? '#fff' : 'var(--loop,#F2C94C)');
+      path.setAttribute('stroke', ln.soort === 'pass' ? '#fff' : 'var(--loop,var(--n3))');
       path.setAttribute('stroke-width', '3');
       path.setAttribute('fill', 'none');
       path.setAttribute('stroke-linecap', 'round');
@@ -298,5 +298,5 @@ function overnemenOpKladbord(){
   telNav('leerplein:overnemen', 'tegel');
   const w = _w;
   sluitLeerplein();
-  import('./tactiekbord.js?v=20261121c').then(m => m.openBordMet(w, objecten, tekeningen, naam));
+  import('./tactiekbord.js?v=20261121d').then(m => m.openBordMet(w, objecten, tekeningen, naam));
 }

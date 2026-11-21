@@ -14,15 +14,15 @@
    teams-training.js, de wedstrijdpresentie in de hub en de wedstrijd zelf.
    Geen locatie/GPS: dat vraagt toestemming en hoort niet ongevraagd in de app.
    Wel de wedstrijdplek: sportpark met routelink (uit), veld en kleedkamer. */
-import { S, esc } from './state.js?v=20261121c';
+import { S, esc } from './state.js?v=20261121d';
 import { ico } from './icons.js?v=20261116t';
-import { afwezigRedenInfo, isoWeek } from './config.js?v=20261121c';
+import { afwezigRedenInfo, isoWeek } from './config.js?v=20261121d';
 import { bepaalNu, evenementen, kiesDaarna, losseEvenementen } from './nu-context.js?v=20261117b';
-import { momentenVanTeam } from './trainingsmomenten.js?v=20261121c';
+import { momentenVanTeam } from './trainingsmomenten.js?v=20261121d';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
 import { effectieveSelectie, spelersOpWedstrijd, spelersOpTraining } from './uitleen-regels.js?v=20261113b';
-import { doelTeksten, samenvattingNu, haalSamenvatting } from './doel-samenvatting.js?v=20261121c';
-import { veldPilHtml } from './veldkaart.js?v=20261121c';
+import { doelTeksten, samenvattingNu, haalSamenvatting } from './doel-samenvatting.js?v=20261121d';
+import { veldPilHtml } from './veldkaart.js?v=20261121d';
 
 const p2 = n => String(n).padStart(2, '0');
 const isoVan = d => `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
@@ -452,16 +452,16 @@ export function koppelNu(v, ctx){
     const pt = ev.target.closest('[data-nu-pres-training]');
     if (pt){
       const datum = pt.dataset.nuPresTraining, rec = S.presentie.find(p => p.datum === datum) || null;
-      const m = await import('./teams-training.js?v=20261121c');
+      const m = await import('./teams-training.js?v=20261121d');
       m.modalPresentie(rec, rec ? {} : { datum });
       return;
     }
     const pw = ev.target.closest('[data-nu-pres-wedstrijd]');
     if (pw){ S._presWedstrijdId = pw.dataset.nuPresWedstrijd; ctx.zetTeamTab('preswedstrijd'); return; }
     const vb = ev.target.closest('[data-nu-voorbereiding]');
-    if (vb){ const m = await import('./wedstrijd-voorbereiding.js?v=20261121c'); m.openVoorbereiding(vb.dataset.nuVoorbereiding, ctx); return; }
+    if (vb){ const m = await import('./wedstrijd-voorbereiding.js?v=20261121d'); m.openVoorbereiding(vb.dataset.nuVoorbereiding, ctx); return; }
     const w = ev.target.closest('[data-nu-wedstrijd]');
-    if (w){ const m = await import('./wedstrijd.js?v=20261121c'); m.openWedstrijd(w.dataset.nuWedstrijd); return; }
+    if (w){ const m = await import('./wedstrijd.js?v=20261121d'); m.openWedstrijd(w.dataset.nuWedstrijd); return; }
     const tr = ev.target.closest('[data-nu-training]');
     if (tr){
       const gelukt = ctx.openTraining ? await ctx.openTraining(tr.dataset.nuTraining) : false;

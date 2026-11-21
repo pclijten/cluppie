@@ -7,7 +7,7 @@
    Importeert niets uit teams.js (geen kringverwijzing): teams.js geeft renderTeam mee aan
    koppelTeamkamer(). state.js is niet aangeraakt. */
 import { db, functions, httpsCallable, doc, collection, addDoc, setDoc, updateDoc, deleteDoc, getDocs, query, where, onSnapshot, Timestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261121c';
+import { S, esc, meld } from './state.js?v=20261121d';
 import * as K from './kamer-logica.js?v=20261118a';
 
 const roep = (naam, data) => httpsCallable(functions, naam)(data || {}).then(r => r.data);
@@ -51,7 +51,7 @@ async function doeSync(){
   const i = inst();
   if (!i.aan) return;
   if (i.trainingen && mag('trainingen')){
-    const { trainingenPerWeek } = await import('./teams-training.js?v=20261121c');
+    const { trainingenPerWeek } = await import('./teams-training.js?v=20261121d');
     if (S.teamId !== teamId) return;
     const vandaag = K.vandaagIso(), items = {};
     for (const g of trainingenPerWeek().komend) for (const x of g.items){
@@ -61,7 +61,7 @@ async function doeSync(){
     await lever(teamId, 'trainingen', { items });
   }
   if (i.stats.aan && mag('stats') && (S.spelers || []).length){
-    const [A, O] = await Promise.all([import('./analyse.js?v=20261121c'), import('./opkomst.js?v=20260922c')]);
+    const [A, O] = await Promise.all([import('./analyse.js?v=20261121d'), import('./opkomst.js?v=20260922c')]);
     if (S.teamId !== teamId) return;
     const sz = S.huidigSeizoen, ditSeizoen = (x) => !sz || !x.seizoen || x.seizoen === sz;
     const spelers = K.statsVoorOuders(eigenSpelers(), (S.wedstrijden || []).filter(ditSeizoen), (S.presentie || []).filter(ditSeizoen),
@@ -130,7 +130,7 @@ function htmlToegang(){
   const perSpeler = (id) => M.leden.filter(x => (x.spelerIds || []).includes(id));
   const gezinnen = sp.filter(p => perSpeler(p.id).some(x => x.rol === 'ouder')).length;
   return `<section class="tk-kaart"><div class="tk-label">Teamlink voor de groepsapp</div>
-      ${url ? `<div class="tk-bericht" style="overflow-wrap:anywhere;font-size:14px">${esc(url)}</div>
+      ${url ? `<div class="tk-bericht" style="overflow-wrap:anywhere;font-size:var(--t-md)">${esc(url)}</div>
         <div class="tk-klein tk-zacht">${tot ? 'Geldig tot ' + esc(tot) + '. ' : ''}${l.gebruikt || 0} van ${l.maxGebruik || 40} keer gebruikt. Wie de link opent ziet alleen de teamnaam.</div>
         <div class="tk-twee"><a class="tk-knop" href="${esc(K.waUrl(K.linkTekst(S.team?.naam, l.code)))}" target="_blank" rel="noopener">Deel in WhatsApp</a><button class="tk-knop licht" data-tk="kopieer" data-tekst="${esc(url)}">Kopieer</button></div>
         <button class="tk-knop tekst" data-tk="link">Maak een nieuwe link (de oude stopt)</button>`
