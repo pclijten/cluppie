@@ -108,6 +108,12 @@ Paul gaf op 15-11 akkoord om WP2 t/m WP9 zelfstandig te maken. Eerlijk over wat 
 | 23 speelwijze-vormen met volledig spelverloop; 3D met tegelijke stappen, fases en een voorbeeld van het vervolg | Gevraagd door Paul; 211 van de 303 vormen hadden één of twee stappen in 3D | Iedereen die een training bekijkt |
 | Nieuw seizoensplan bij een verlopen seizoenstekst (`seizoenStartJaar`) | Een trainer zonder club kreeg een plan van nul trainingsweken | Losse trainer; clubs vóór de seizoensovergang |
 | Werkwijze: scripts schrijven pas weg als alle vervangingen gelukt zijn | Een bewerkingsscript maakte `functions/index.js` leeg; hersteld uit de commit, niets verloren | Geen |
+| Platform › Maatwerk: alle clubs en onderdelen in één tabel, afwijking van de standaard, inrichting overnemen (20261121a) | Gevraagd door Paul; onderdelen stonden alleen per club in het clubdetail, er was geen overzicht van wat waar anders is | Eindbaas |
+| Clubdetail: "Maatwerk voor deze club", "Afspraken en wensen" en het tabblad Mensen | Wat een club op maat heeft stond over vijf tabbladen en de instellingen van de club verspreid; afspraken stonden nergens | Eindbaas |
+| Club › Mensen met "Wie doet wat" (heette Coaches) | Rollen werden op vijf plekken toegewezen (Instellingen, Seizoensplan, Bouwen, Coaches, Teams) en nergens stond wie wat doet | Clubadmin; coach, bouwcoördinator en hoofd jeugd lezen mee |
+| Kaart "En daarna" na Aan de slag | De startlijst zet een club technisch klaar; rollen, werkwijze en speelwijze kwamen daarna nergens meer terug | Clubadmin |
+| Rolkaart voor de clubbeheerder, en op elke rolkaart een knop naar het eigen scherm | Een medebeheerder die later aansluit kreeg geen uitleg; WP6 noemde de knop al | Clubadmin, bouwcoördinator, gekoppelde coach bouw, trainingscoördinator |
+| Demo voor de eindbaas (`?demo=eindbaas`) en de eindbaas in de rooktest | Het Platformcentrum was nergens te bekijken of automatisch te testen zonder echte gegevens | Eindbaas (ontwikkeling en verkoop) |
 
 
 ## Fable-verbruik

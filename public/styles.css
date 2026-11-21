@@ -5870,7 +5870,7 @@ html.desk .uq-label{bottom:24px;right:24px}
 .pf-club-kop .pijl{color:var(--ink-2);font-size:calc(20px * var(--fs))}
 .pf-chips{display:flex;flex-wrap:wrap;gap:6px;margin:var(--space-xs) 0 0 22px}
 .pf-chip{font-size:calc(11.5px * var(--fs));padding:3px var(--space-xs);border-radius:99px;background:var(--surface-2);color:var(--ink-2)}
-.pf-chip.ok{color:var(--ok);background:color-mix(in srgb, var(--ok) 12%, transparent)}
+.pf-chip.ok{color:color-mix(in srgb, var(--ok) 78%, var(--ink));background:color-mix(in srgb, var(--ok) 12%, transparent)}   /* [20261121a] iets donkerder: was 4,2:1 */
 .pf-chip.let{color:var(--warn);background:color-mix(in srgb, var(--warn) 14%, transparent)}
 .pf-chip.uit{opacity:.7}
 .pf-sig{margin:6px 0 0 22px;font-size:calc(12.5px * var(--fs))}
@@ -7309,6 +7309,81 @@ html.desk .dk-ss .sn-kop,html.desk .dk-ss .sn-balk,html.desk .dk-ss .sn-voet,htm
 .pc-tabel .pf-licht{display:inline-block;vertical-align:middle}
 .pc-rechts{justify-content:flex-end;flex-wrap:nowrap}
 .pc-blok > .pc-schakel:first-child{border-top:0}
+
+/* ---- [20261121a] Platform › Maatwerk: tabel met alle clubs en onderdelen, maatwerk en notities per club, rollen ---- */
+.mw-tabel{min-width:1140px}
+.mw-tabel th small{display:block;font-weight:400;font-size:11px;color:var(--ink-2)}
+.mw-tabel .mw-cel{text-align:center}
+.mw-tabel td.mw-cel .pc-sw{vertical-align:middle}
+.mw-tabel td.r.mw-cel{text-align:right}
+.mw-std td{background:var(--surface-2)}
+.mw-link{border:0;background:transparent;padding:0;font:inherit;color:var(--accent-tekst);cursor:pointer;text-align:left}
+.mw-link:hover{text-decoration:underline}
+.mw-club{color:var(--ink)}
+.mw-club b{font-weight:600}
+.mw-stip{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warn);margin-right:5px;vertical-align:1px;flex-shrink:0}
+.mw-stip.uit{background:var(--line-d)}
+.pc-sw.mw-anders{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--warn)}
+.mw-getal{width:112px}
+.mw-tabel td.pc-naam{min-width:210px}
+.mw-tabel td.pc-naam small{white-space:nowrap}
+.mw-getal.mw-anders{border-color:var(--warn)}
+.mw-gebruik{display:block;font-size:11px;color:var(--ink-2);margin-top:2px}
+.mw-neem{width:auto;min-width:150px;max-width:190px;padding:var(--space-2xs) var(--space-xs);font-size:var(--t-sm)}
+.mw-voorstel td{background:color-mix(in srgb,var(--warn) 8%,var(--surface))}
+.mw-voorstel-in{display:flex;align-items:center;justify-content:space-between;gap:var(--space-sm);flex-wrap:wrap;font-size:var(--t-sm);line-height:1.45}
+.mw-smal{display:none;flex-direction:column}
+.mw-kaart{cursor:pointer}
+.mw-kaart .pc-chips{margin-top:var(--space-2xs)}
+@media (max-width:860px){.mw-breed{display:none}.mw-smal{display:flex}}
+.mw-blok{display:flex;flex-direction:column;gap:var(--space-2xs);background:var(--surface);border:1px solid var(--line-d);border-radius:var(--radius);padding:var(--space-md);margin-top:var(--space-xs)}
+.mw-blok .tc-h2{margin:0}
+.mw-regel{cursor:pointer;grid-template-columns:auto minmax(0,1fr) auto}
+.mw-regel:hover b{color:var(--accent-tekst)}
+.mw-regel .pijl,.mw-kaart .pijl{color:var(--ink-2);font-size:20px}
+.mw-veld{display:flex;flex-direction:column;gap:var(--space-3xs);margin-top:var(--space-xs)}
+.mw-veld > span{font-size:var(--t-sm);font-weight:600;color:var(--ink-2)}
+.mw-veld textarea{resize:vertical;min-height:88px;line-height:1.45}
+.mw-wensen{display:flex;flex-direction:column;margin-top:var(--space-xs);border-top:1px solid var(--line-d);padding-top:var(--space-xs)}
+.mw-wens{display:flex;align-items:center;justify-content:space-between;gap:var(--space-xs);min-height:44px}
+.mw-wens label{display:flex;align-items:center;gap:var(--space-xs);flex:1;min-width:0;cursor:pointer;color:var(--ink);padding:var(--space-2xs) 0}
+.mw-wens input{width:20px;height:20px;accent-color:var(--ok);flex-shrink:0;margin:0}
+.mw-wens.klaar span{color:var(--ink-2);text-decoration:line-through}
+.mw-wensweg{flex-shrink:0}
+.mw-wens-nieuw{display:flex;gap:var(--space-xs);margin-top:var(--space-xs)}
+.mw-wens-nieuw .invoer{flex:1;min-width:0}
+.mw-wens-nieuw .knop{width:auto;flex-shrink:0}
+.mw-vink{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;border:2px solid var(--line-d);color:var(--wit)}
+.mw-vink.ok{background:var(--ok);border-color:var(--ok)}
+.mw-vink.open{border-color:var(--warn)}
+.mw-rol .mw-doet{color:var(--ink-2);font-size:var(--t-xs)}
+.pc-taak.mw-regel,.pc-taak.mw-kaart,.pc-taak.mw-rol{grid-template-columns:auto minmax(0,1fr) auto}
+/* raakvlak van tabbladen en ronde knoppen in het centrum minstens 44 px (gemeten met de rooktest: 40 px) */
+.pc-lade-tabs button{min-height:44px}
+.pc-app .tc-uit{min-width:44px;min-height:44px}
+
+/* ---- [20261121a] Club › Mensen: wie doet wat ---- */
+.cm-rol{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--space-sm);align-items:center;padding:var(--space-sm) 0;border-top:1px solid var(--hair)}
+.cm-vink{width:22px;height:22px;border-radius:50%;border:2px solid var(--hair);display:grid;place-items:center;flex-shrink:0;color:var(--wit)}
+.cm-rol.bezet .cm-vink{background:var(--ok);border-color:var(--ok)}
+.cm-rol.open .cm-vink{border-color:var(--warn)}
+.cm-tekst{min-width:0;display:flex;flex-direction:column;gap:var(--space-3xs)}
+.cm-tekst b{font-weight:600;color:var(--ink)}
+.cm-stand{font-size:var(--t-sm);color:var(--ink)}
+.cm-rol.open .cm-stand{color:var(--warn)}
+.cm-tekst small{font-size:calc(12px * var(--fs));line-height:1.45;color:var(--ink-2)}
+.cm-tekst .cm-let{color:var(--warn)}
+.cm-rol .knop{width:auto;white-space:nowrap}
+.cm-kaart .cb-kaart-kop{margin-bottom:var(--space-2xs)}
+.cm-open{display:flex;align-items:center;gap:var(--space-sm);width:100%;text-align:left;background:var(--card);border:1px solid var(--line-d);border-radius:var(--radius);padding:var(--space-sm) var(--space-md);margin-bottom:var(--space-sm);color:var(--ink);min-height:44px}
+.cm-open svg{color:var(--accent-tekst);flex-shrink:0}
+.cm-open span:nth-child(2){flex:1;min-width:0;display:flex;flex-direction:column}
+.cm-open small{color:var(--ink-2);font-size:var(--t-sm)}
+.cm-open .pijl{color:var(--ink-2)}
+@media (max-width:560px){
+  .cm-rol{grid-template-columns:auto minmax(0,1fr)}
+  .cm-rol .knop{grid-column:2;justify-self:start}
+}
 
 /* ==================== UITLENEN 2.0 (v20261111a) ====================
    Uitleenformulier (modal, telefoon én desktop), status in de bouw-overzichten

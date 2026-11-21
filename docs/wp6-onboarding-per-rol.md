@@ -15,6 +15,16 @@
 | **Clubadmin, nieuwe club** | Aanmeldformulier met Sportlink-ID, welkomstmail met zeven stappen, startlijst "Aan de slag" op de club-hub, wizard Nieuwe club, teams uit Sportlink in één keer. | Controleren of een clubadmin de zeven stappen zonder hulp doorloopt; dat kan alleen met een echte gebruiker (pilot, WP9). |
 | **Eindbaas** | Platformcentrum met Vandaag doen, Uitrol in vijf fases, clubdetail met Meehelpen. | Geen. |
 
+## Aanvulling 21-11-2026 (release 20261121a)
+
+| Gebruikerstype | Wat erbij is gekomen |
+|---|---|
+| **Clubadmin** | Rolkaart "Je bent clubbeheerder" bij eerste binnenkomst (ook voor een medebeheerder die later aansluit). Club › Mensen met "Wie doet wat": elke rol met wie hem heeft, wat hij doet en ziet, en een knop naar de plek om iemand aan te wijzen. Kaart "En daarna" na Aan de slag: werkwijze, hoofd jeugd, coördinator per bouw, elk team een coach, speelwijze. |
+| **Coach, bouwcoördinator, hoofd jeugd** | Zien "Wie doet wat" zonder knoppen. De rolkaart heeft een knop naar het eigen scherm (bouw, trainingen). |
+| **Eindbaas** | Per club het tabblad Mensen (welke rollen bezet zijn), en `index.html?demo=eindbaas` om het centrum te bekijken. |
+
+Nog open uit de tabel hierboven: doorverwijzen als de club van een losse trainer al meedoet (vraagt een callable), en de pilot met een echte clubadmin.
+
 ## Voorstel in volgorde van opbrengst
 
 1. **Rolkaart bij eerste binnenkomst** voor bouwcoördinator, gekoppelde coach bouw, trainingscoördinator en hoofd jeugd: één kaart met drie regels ("Dit zie je", "Dit kun je", "Dit kun je niet") en een knop naar het belangrijkste scherm. Eén onderdeel, vier teksten. Vlag per gebruiker in `gebruikers/{uid}/meta/onboarding` (bestaat al voor de snelstart).
