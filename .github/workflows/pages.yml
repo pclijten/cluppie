@@ -16,14 +16,22 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.opnieuw.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public
+      # Soms ziet de deploy het zojuist geuploade pakket nog niet ("No artifacts named github-pages").
+      # Dan een minuut wachten en het nog een keer proberen, in plaats van de hele run te laten mislukken.
       - id: deployment
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+      - if: steps.deployment.outcome == 'failure'
+        run: sleep 60
+      - id: opnieuw
+        if: steps.deployment.outcome == 'failure'
         uses: actions/deploy-pages@v4
 
   # Meldt gewijzigde publieke pagina's bij IndexNow (Bing, Copilot). Draait na de deploy, zodat
