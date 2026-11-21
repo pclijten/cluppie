@@ -7,6 +7,11 @@
    Pure functie: geeft een HTML-string, raakt de DOM niet aan. */
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+/* [20261121a] Kleur van een pion: een Nederlandse kleurnaam (rood, blauw, geel, groen …) of een CSS-kleur.
+   Eerder kwam "rood" als onbekende kleur in de tekening en bleef de pion oranje. */
+const PION_KLEUR = { rood: '#e0352f', blauw: '#2f7be0', geel: '#ffd23f', groen: '#35b560', oranje: '#f08a24', wit: '#f4f4f0', paars: '#9460d6', roze: '#f26aa8', zwart: '#23272c' };
+export const pionKleur = k => (k ? PION_KLEUR[String(k).toLowerCase()] || (/^(#[0-9a-f]{3,8}|(rgb|hsl)a?\([\d\s.,%]+\))$/i.test(k) ? k : '') : '');
+
 let teller = 0;
 export function vormSvg(vorm, veld, opts = {}){
   const t = vorm.tekening || {};
@@ -29,7 +34,7 @@ export function vormSvg(vorm, veld, opts = {}){
   }
   for (const p of t.pionnen || []){
     const x = X(p[0]), y = Y(p[1]);
-    s += `<polygon points="${x},${y - 5} ${x - 4},${y + 3} ${x + 4},${y + 3}" class="tv-pion"${p[2] ? ` style="fill:${esc(p[2])}"` : ''}/>`;
+    s += `<polygon points="${x},${y - 5} ${x - 4},${y + 3} ${x + 4},${y + 3}" class="tv-pion"${pionKleur(p[2]) ? ` style="fill:${pionKleur(p[2])}"` : ''}/>`;
   }
   for (const l of t.lijnen || []){
     if (l.vervolg) continue;                              /* [20261116h] vervolgstappen staan alleen in 3D, anders wordt de tekening onleesbaar */

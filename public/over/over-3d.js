@@ -11,12 +11,25 @@
    [20261115b] Ook in de app (scene3d.js): stap voor stap afspelen en zelf de kijkhoek kiezen.
    [20261116h] Een lijn met `samen: true` speelt tegelijk met de lijn ervoor en hoort bij dezelfde stap
    (pass en loopactie tegelijk). Met opts.vervaag worden de lijnen van eerdere stappen lichter, zodat een
-   lang spelverloop leesbaar blijft. Een lange pass (of `hoog: true`) gaat met een boog. */
+   lang spelverloop leesbaar blijft. Een lange pass (of `hoog: true`) gaat met een boog.
+   [20261121a] Pionnen zijn groter en hebben een voet, zodat je ze ook op een groot veld ziet. Kleurnamen
+   (rood, blauw, geel, groen …) werken nu. Elk vak en elke zone krijgt hoedjes op de hoeken (en halverwege
+   een lange zijde), zoals je het op het veld uitzet; waar al een pion staat, komt geen hoedje. */
 (function(){
   const THREE = window.THREE;
   if (!THREE) return;
   const KLEUR = { rand: 0x1d5a33, krijt: 0xf2f8f2, eigen: 0xd4302b, tegen: 0x4a8fe0, joker: 0xf2b23c, pion: 0xf08a24, geel: 0xffd23f, huid: 0xf1c7a3 };
   const HEX = { eigen: '#d4302b', tegen: '#4a8fe0', joker: '#f2b23c' };
+  /* kleur van een pion: een Nederlandse kleurnaam of een CSS-kleur; onbekend = oranje */
+  const PION_KLEUR = { rood: 0xe0352f, blauw: 0x2f7be0, geel: 0xffd23f, groen: 0x35b560, oranje: 0xf08a24, wit: 0xf4f4f0, paars: 0x9460d6, roze: 0xf26aa8, zwart: 0x23272c };
+  const pionMat = {};
+  const matVoorPion = k => {
+    if (!k) return MAT.pion;
+    if (pionMat[k]) return pionMat[k];
+    let kleur = PION_KLEUR[String(k).toLowerCase()];
+    if (kleur === undefined){ try { kleur = /^(#|rgb|hsl)/i.test(k) ? new THREE.Color(k).getHex() : KLEUR.pion; } catch (e){ kleur = KLEUR.pion; } }
+    return (pionMat[k] = new THREE.MeshStandardMaterial({ color: kleur, roughness: 0.6 }));
+  };
 
   /* gedeelde texturen en geometrie: één keer maken, voor alle velden */
   const canvasTex = (w, h, teken) => { const c = document.createElement('canvas'); c.width = w; c.height = h; teken(c.getContext('2d')); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; };
@@ -38,7 +51,7 @@
   };
   const GEO = {
     lijf: new THREE.CapsuleGeometry(0.34, 0.75, 6, 16), hoofd: new THREE.SphereGeometry(0.24, 20, 16),
-    pion: new THREE.ConeGeometry(0.26, 0.6, 18), bal: new THREE.SphereGeometry(0.22, 32, 24), paal: new THREE.CylinderGeometry(0.06, 0.06, 1, 10),
+    pion: new THREE.ConeGeometry(0.34, 0.85, 20), pionVoet: new THREE.BoxGeometry(0.86, 0.07, 0.86), hoedje: new THREE.CylinderGeometry(0.13, 0.42, 0.2, 20), bal: new THREE.SphereGeometry(0.22, 32, 24), paal: new THREE.CylinderGeometry(0.06, 0.06, 1, 10),
   };
   const MAT = {
     huid: new THREE.MeshStandardMaterial({ color: KLEUR.huid, roughness: 0.7 }),
@@ -46,6 +59,7 @@
     tegen: new THREE.MeshStandardMaterial({ color: KLEUR.tegen, roughness: 0.55 }),
     joker: new THREE.MeshStandardMaterial({ color: KLEUR.joker, roughness: 0.55 }),
     pion: new THREE.MeshStandardMaterial({ color: KLEUR.pion, roughness: 0.6 }),
+    hoedje: new THREE.MeshStandardMaterial({ color: KLEUR.geel, roughness: 0.6 }),
     wit: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 }),
     bal: new THREE.MeshStandardMaterial({ map: balTex, roughness: 0.45 }),
     krijt: new THREE.MeshBasicMaterial({ color: KLEUR.krijt }),
@@ -107,11 +121,31 @@
       scene.add(g); return g;
     });
 
-    /* pionnen */
+    /* pionnen: een kegel met een voet; op een groot veld iets groter, anders zie je ze niet */
+    const pionMaat = Math.max(1, Math.min(1.7, Math.max(B, L) / 26));
     const pionnen = (t.pionnen || []).map(p => {
-      const m = new THREE.Mesh(GEO.pion, p[2] ? new THREE.MeshStandardMaterial({ color: p[2], roughness: 0.6 }) : MAT.pion);
-      m.position.copy(pos(p[0], p[1])).setY(0.3); m.castShadow = true; scene.add(m); return m;
+      const g = new THREE.Group(), mat = matVoorPion(p[2]);
+      const kegel = new THREE.Mesh(GEO.pion, mat); kegel.position.y = 0.46; kegel.castShadow = true; g.add(kegel);
+      const voet = new THREE.Mesh(GEO.pionVoet, mat); voet.position.y = 0.035; voet.castShadow = true; g.add(voet);
+      g.position.copy(pos(p[0], p[1])); g.userData.maat = pionMaat; scene.add(g); return g;
     });
+    /* hoedjes: zo zet je het vak uit. Op elke hoek van het vak en van elke zone, en halverwege een zijde van 30 meter of meer.
+       Geen hoedje waar al een pion of een hoedje staat, of waar een doel staat. */
+    if (t.hoedjes !== false){
+      const plekken = [[0, 0], [100, 0], [0, 100], [100, 100]];
+      if (L >= 30) plekken.push([0, 50], [100, 50]);
+      if (B >= 30) plekken.push([50, 0], [50, 100]);
+      for (const z of t.zones || []) plekken.push([z.x, z.y], [z.x + z.b, z.y], [z.x, z.y + z.h], [z.x + z.b, z.y + z.h]);
+      const bezet = (t.pionnen || []).map(p => [p[0], p[1]]);
+      const meters = (a, b) => Math.hypot((a[0] - b[0]) * B / 100, (a[1] - b[1]) * L / 100);
+      const inDoel = q => (t.doeltjes || []).some(d => q[1] === (d.kant === 'onder' ? 100 : 0) && Math.abs(q[0] - d.x) <= d.breed / 2 + 1);
+      for (const q of plekken){
+        if (inDoel(q) || bezet.some(o => meters(o, q) < 1.6)) continue;
+        bezet.push(q);
+        const m = new THREE.Mesh(GEO.hoedje, MAT.hoedje); m.position.copy(pos(q[0], q[1])).setY(0.1); m.castShadow = true;
+        m.userData.maat = pionMaat; scene.add(m); pionnen.push(m);
+      }
+    }
 
     /* spelers */
     const soortVan = k => (k === 'tegen' ? 'tegen' : k === 'keeper' || k === 'joker' ? 'joker' : 'eigen');
@@ -205,7 +239,7 @@
     const tl = gsap.timeline({ paused: true, defaults: { ease: 'power3.out' } });
     tl.call(zetBegin)
       .to(stand, { intro: 1, duration: 2.2, ease: 'power2.inOut', onUpdate: zetCamera }, 0)
-      .to(pionnen.map(p => p.scale), { x: 1, y: 1, z: 1, duration: 0.45, stagger: 0.05, ease: 'back.out(2)' }, 0.2)
+      .to(pionnen.map(p => p.scale), { x: pionMaat, y: pionMaat, z: pionMaat, duration: 0.45, stagger: 0.03, ease: 'back.out(2)' }, 0.2)
       .to(spelers.map(s => s.scale), { x: 1, y: 1, z: 1, duration: 0.45, stagger: 0.07 }, 0.45)
       .to(spelers.map(s => s.position), { y: 0, duration: 0.7, stagger: 0.07, ease: 'bounce.out' }, 0.45)
       .to(ballen.map(b => b.scale), { x: 1, y: 1, z: 1, duration: 0.4, stagger: 0.03, ease: 'back.out(2)' }, 1.2);

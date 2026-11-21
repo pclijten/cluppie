@@ -15,6 +15,7 @@ import { DEEL_N } from './vormen-n.mjs';
 import { DEEL_O } from './vormen-o.mjs';
 import { DEEL_P } from './vormen-p.mjs';
 import { DEEL_S } from './vormen-s.mjs';
+import { DEEL_T } from './vormen-t.mjs';
 import { principesVan } from './principes.mjs';
 import { VERRIJKING } from './verrijking.mjs';
 import { werkUit } from './uitwerking/index.mjs';
@@ -40,7 +41,7 @@ const balBijSpeler = (v) => {
   const lijnen = (t.lijnen || []).map(l => ({ ...l, punten: l.punten.map(p => (d(p, oud) < 3 ? nieuw : p)) }));
   return { ...v, tekening: { ...t, bal: nieuw, lijnen } };
 };
-const NIEUW = [DEEL_D, DEEL_E, DEEL_F, DEEL_G, DEEL_H, DEEL_I, DEEL_J, DEEL_K, DEEL_M, DEEL_N, DEEL_O, DEEL_P, DEEL_S];
+const NIEUW = [DEEL_D, DEEL_E, DEEL_F, DEEL_G, DEEL_H, DEEL_I, DEEL_J, DEEL_K, DEEL_M, DEEL_N, DEEL_O, DEEL_P, DEEL_S, DEEL_T];
 const OUD = [...DEEL_A, ...DEEL_B, ...DEEL_C].map(verrijk);
 /* Tijdbestek: elke vorm heeft een vaste standaardtijd van 5, 10, 15 of 20 minuten (20 alleen met een pauze erin).
    Staat die niet in de bron, dan volgt hij uit de rondes: het midden van de rondes, afgerond op 5 minuten. */
@@ -66,7 +67,7 @@ export const THEMAREGELS = {
 };
 
 export const BIBLIOTHEEK = {
-  versie: '2026.11.16-nagelezen',
+  versie: '2026.11.21-techniek',
   taal: 'nl',
   licentie: 'Eigen werk (Cluppie). Referentiekader: KNVB-spelregels en -principes. Geen KNVB-tekst of -afbeeldingen overgenomen.',
   themaregels: THEMAREGELS,
