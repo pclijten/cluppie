@@ -19,29 +19,32 @@
    zien ze gewoon in hun instellingen en onder Content.
 ==================================================================== */
 import { db, doc, getDoc, setDoc, updateDoc, deleteDoc, deleteField, serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { esc, meld } from './state.js?v=20261121a';
+import { esc, meld } from './state.js?v=20261121b';
 import { ico } from './icons.js?v=20261116t';
 import { leegSpeelstijl, schoonSp, vragenVoorAI, kandidatenSamenvoegen, zonderDocument, keuzeVan, telling, uitkomstVan, speelstijlManco, antwoordTekst, onderwerpVan,
   vraagOpId, speelstijlVragenTekst, speelwijzeRegels, vragenVoor, DEELN, LEEFTIJDEN, REFS } from './clubprofiel-speelstijl.js?v=20261120j';   /* [20261120j] speelwijze via de vragenlijst */
 import { VERSIE, MAX_DOCUMENT, FILTERS, GROEPEN, veldenVoorAI, veldOpId, hoofdstukOpId, documentId, docxTekst, schoonBevinding, schoonVoorstel, voorstelLeeg,
   opTeRuimen, nieuweBevindingen, overzicht, pastInFilter, mancos, vragenTekst, profielTekst, regelsUit, titelVan, contentDocs,
-  instelVelden, instelWaarde, instelWijzigingen, controleerInstelling, instelVeldenVoorAI, schoonRondes, rondesSamenvoegen, seizoenVan, inrichtingOverzicht, voorbeeldVoor, voorbeeldInrichting, bronnenVoorbeeld, zoekBron, zetInConcept } from './clubprofiel-logica.js?v=20261120j';
+  instelVelden, instelWaarde, instelWijzigingen, controleerInstelling, instelVeldenVoorAI, schoonRondes, rondesSamenvoegen, seizoenVan, inrichtingOverzicht, voorbeeldVoor, voorbeeldInrichting, bronnenVoorbeeld, zoekBron, zetInConcept } from './clubprofiel-logica.js?v=20261121b';
 
 const K = {};                 // clubId → toestand van het scherm
 let root = null, club = null;
 const leeg = () => ({ v: VERSIE, documenten: {}, bevindingen: {}, tekstStatus: 'concept', speelstijl: leegSpeelstijl() });
 function staat(id){
   if (!K[id]) K[id] = { profiel: null, laden: false, fout: '', hoofdstuk: 'documenten', filter: 'alles', wachtrij: [], bezig: false,
-    concept: {}, bewerk: new Set(), druk: new Set(), nieuw: null, plak: false, zeker: null };
+    concept: {}, bewerk: new Set(), druk: new Set(), nieuw: null, plak: false, zeker: null,
+    typ: { nieuw: '', plakNaam: '', plakTekst: '' },   /* [20261121b] wat getypt is in velden zonder concept: blijft staan als het scherm opnieuw wordt getekend */
+    clubDoc: null };
   return K[id];
 }
 const ref = id => doc(db, 'clubprofielen', id);
 const contentRef = (clubId, id) => doc(db, 'clubs', clubId, 'content', id);
-const seizoenTekst = () => { const z = seizoenVan(club && club.huidigSeizoen); return `${z.label} (${z.tekst})`; };
+/* [20261121b] het seizoen van de club waarvoor de analyse loopt, niet van de club die nu toevallig open staat */
+const seizoenTekst = (c = club) => { const z = seizoenVan(c && c.huidigSeizoen); return `${z.label} (${z.tekst})`; };
 let teller = 0;
 const maakId = () => 'b' + Date.now().toString(36) + (teller++).toString(36) + Math.random().toString(36).slice(2, 5);
 const foutTekst = x => x?.code === 'permission-denied' ? 'Firestore weigert dit. Zijn de nieuwste firestore.rules gedeployed?'
-  : x?.code === 'functions/not-found' ? 'Deze functie is nog niet gedeployed (analyseerClubdocument, leesClubscan, stelClubinstellingenVoor).'
+  : x?.code === 'functions/not-found' ? (/club/i.test(x.message || '') ? x.message : 'Deze functie is nog niet gedeployed (analyseerClubdocument, leesClubscan, stelClubinstellingenVoor).')
   : x?.code === 'functions/permission-denied' ? 'Alleen de platformbeheerder kan dit.'
   : x?.code === 'functions/deadline-exceeded' ? 'De analyse duurde te lang. Probeer het opnieuw.'
   : (x?.message || x?.code || 'onbekende fout');
@@ -49,6 +52,7 @@ const foutTekst = x => x?.code === 'permission-denied' ? 'Firestore weigert dit.
 /* ---------- openen ---------- */
 export function toonClubprofiel(el, clubDoc){
   root = el; club = clubDoc;
+  if (club && club.id) staat(club.id).clubDoc = club;
   if (!el.dataset.cpKlaar){
     el.dataset.cpKlaar = '1';
     el.addEventListener('click', klik);
@@ -82,7 +86,14 @@ async function schrijf(id, deel){
 }
 /* vervangen op een pad: een heel voorstel of een hele "gezet" in één keer, zonder oude sleutels te laten staan */
 async function vervang(id, paden){
-  await updateDoc(ref(id), { bijgewerkt: serverTimestamp(), ...paden });
+  try { await updateDoc(ref(id), { bijgewerkt: serverTimestamp(), ...paden }); }
+  catch (x){
+    /* [20261121b] een club zonder profieldocument (nog geen document ingelezen): eerst aanmaken, dan nog eens.
+       Zonder dit sloeg de vragenlijst Speelwijze bij een nieuwe club niets op. */
+    if (x?.code !== 'not-found') throw x;
+    await setDoc(ref(id), { v: VERSIE, clubId: id }, { merge: true });
+    await updateDoc(ref(id), { bijgewerkt: serverTimestamp(), ...paden });
+  }
 }
 
 /* ---------- bestanden lezen (in deze browser) ---------- */
@@ -100,10 +111,16 @@ function laadJSZip(){
 /* [20261120c] Een pagina zonder tekstlaag (scan) of een foto van een pagina: als JPEG naar de functie
    leesClubscan, die de tekst overneemt. Hoogstens MAX_SCAN pagina's per document. */
 const MAX_SCAN = 60, SCAN_RAND = 1568;
+let scanAfgekapt = 0;          /* pagina's waarvan de tekst niet in één antwoord paste (per document geteld in leesBestand) */
 async function beeldNaarTekst(canvas, clubId){
   let data = canvas.toDataURL('image/jpeg', 0.82);
   if (data.length > 4200000) data = canvas.toDataURL('image/jpeg', 0.6);
-  const r = await httpsCallable(functions, 'leesClubscan', { timeout: 120000 })({ clubId, beeld: data.slice(data.indexOf(',') + 1) });
+  const vraag = () => httpsCallable(functions, 'leesClubscan', { timeout: 120000 })({ clubId, beeld: data.slice(data.indexOf(',') + 1) });
+  let r;
+  /* [20261121b] één herkansing: een enkele pagina die mislukt (druk, time-out) brak anders het hele document af */
+  try { r = await vraag(); }
+  catch (x){ if (['functions/permission-denied', 'functions/invalid-argument', 'functions/not-found', 'functions/unauthenticated'].includes(x?.code)) throw x; await new Promise(k => setTimeout(k, 2500)); r = await vraag(); }
+  if (r?.data?.afgekapt) scanAfgekapt++;
   return String(r?.data?.tekst || '').trim();
 }
 async function scanPagina(page, clubId){
@@ -122,22 +139,27 @@ async function fotoNaarTekst(file, clubId){
 async function leesBestand(file, clubId, voortgang = () => {}){
   const naam = file.name || '';
   if (/\.pdf$/i.test(naam) || file.type === 'application/pdf'){
-    const { laadPdfJs } = await import('./pdf-viewer.js?v=20261121a');
-    const { regelsUitTekstItems } = await import('./training-ai.js?v=20261121a');
+    const { laadPdfJs } = await import('./pdf-viewer.js?v=20261121b');
+    const { regelsUitTekstItems } = await import('./training-ai.js?v=20261121b');
     await laadPdfJs();
     const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
-    const delen = []; let scans = 0;
+    /* [20261121b] eerst van elke pagina de tekstlaag: zo weten we vooraf hoeveel pagina's een scan zijn, en
+       stoppen we bij te veel scans vóór de eerste (betaalde) aanroep in plaats van na de zestigste */
+    const teksten = [], scanNrs = [];
     for (let n = 1; n <= pdf.numPages; n++){
-      const page = await pdf.getPage(n);
-      let t = regelsUitTekstItems((await page.getTextContent()).items).trim();
-      if (t.replace(/\s/g, '').length < 40){
-        if (++scans > MAX_SCAN) throw new Error(`meer dan ${MAX_SCAN} ingescande pagina's: knip het document in delen`);
-        voortgang(`pagina ${n} van ${pdf.numPages} lezen (scan)…`);
-        t = await scanPagina(page, clubId);
-      }
-      if (t) delen.push(`[pagina ${n}]\n${t}\n\n`);
+      const t = regelsUitTekstItems((await (await pdf.getPage(n)).getTextContent()).items).trim();
+      teksten.push(t);
+      if (t.replace(/\s/g, '').length < 40) scanNrs.push(n);
     }
-    return { tekst: delen.join(''), paginas: pdf.numPages, scans };
+    if (scanNrs.length > MAX_SCAN) throw new Error(`${scanNrs.length} ingescande pagina's, hoogstens ${MAX_SCAN} per document: knip het document in delen`);
+    scanAfgekapt = 0;
+    for (let i = 0; i < scanNrs.length; i++){
+      const n = scanNrs[i];
+      voortgang(`pagina ${n} van ${pdf.numPages} lezen (scan ${i + 1} van ${scanNrs.length})…`);
+      teksten[n - 1] = await scanPagina(await pdf.getPage(n), clubId);
+    }
+    const delen = teksten.map((t, i) => t ? `[pagina ${i + 1}]\n${t}\n\n` : '');
+    return { tekst: delen.join(''), paginas: pdf.numPages, scans: scanNrs.length, afgekapt: scanAfgekapt };
   }
   if (/\.docx$/i.test(naam)){
     const zip = await (await laadJSZip()).loadAsync(await file.arrayBuffer());
@@ -148,8 +170,9 @@ async function leesBestand(file, clubId, voortgang = () => {}){
   if (/\.(txt|md)$/i.test(naam) || /^text\//.test(file.type || '')) return { tekst: await file.text(), paginas: null };
   if (/\.(jpe?g|png|webp)$/i.test(naam) || /^image\/(jpeg|png|webp)$/.test(file.type || '')){
     voortgang('foto lezen…');
+    scanAfgekapt = 0;
     const t = await fotoNaarTekst(file, clubId);
-    return { tekst: t ? `[pagina 1]\n${t}\n` : '', paginas: 1, scans: 1 };
+    return { tekst: t ? `[pagina 1]\n${t}\n` : '', paginas: 1, scans: 1, afgekapt: scanAfgekapt };
   }
   if (/\.doc$/i.test(naam)) throw new Error('een oud Word-bestand (.doc): sla het op als .docx of PDF');
   throw new Error('dit bestandstype kan ik niet lezen (wel PDF, Word .docx, tekst en een foto van een pagina)');
@@ -159,13 +182,13 @@ async function leesBestand(file, clubId, voortgang = () => {}){
 function voegBestandenToe(files){
   if (!club || !files.length) return;
   const st = staat(club.id);
-  for (const f of files) st.wachtrij.push({ naam: f.name || 'document', file: f, stand: 'wacht', stap: 'wacht' });
+  for (const f of files) st.wachtrij.push({ naam: f.name || 'document', file: f, grootte: f.size || 0, stand: 'wacht', stap: 'wacht' });
   teken(); verwerk(club.id);
 }
 function voegTekstToe(naam, tekst){
   const st = staat(club.id);
   st.wachtrij.push({ naam: naam || 'Geplakte tekst', tekst, stand: 'wacht', stap: 'wacht' });
-  st.plak = false; teken(); verwerk(club.id);
+  st.plak = false; st.typ.plakNaam = ''; st.typ.plakTekst = ''; teken(); verwerk(club.id);
 }
 async function verwerk(id){
   const st = staat(id);
@@ -177,10 +200,11 @@ async function verwerk(id){
     const toon = (stand, stap) => { item.stand = stand; item.stap = stap; if (club?.id === id) tekenWachtrij(); };
     try {
       toon('bezig', 'lezen…');
-      const { tekst, paginas } = item.file ? await leesBestand(item.file, id, stap => toon('bezig', stap)) : { tekst: item.tekst, paginas: null };
+      const { tekst, paginas, scans, afgekapt } = item.file ? await leesBestand(item.file, id, stap => toon('bezig', stap)) : { tekst: item.tekst, paginas: null };
       item.file = null; item.tekst = null;
-      const { gevonden: n, ssGevonden: ns } = await analyseer(id, item.naam, tekst, paginas, (klaar, totaal) => toon('bezig', `analyseren: ${klaar} van ${totaal} hoofdstukken klaar…`));
-      toon('klaar', `${n} onderwerp${n === 1 ? '' : 'en'} gevonden, ${ns} vra${ns === 1 ? 'ag' : 'gen'} over de speelwijze beantwoord`);
+      /* [20261121b] een scan levert elke keer net andere tekst op: de id van het document hangt dan aan het bestand, niet aan de tekstlengte */
+      const { gevonden: n, ssGevonden: ns } = await analyseer(id, item.naam, tekst, paginas, (klaar, totaal) => toon('bezig', `analyseren: ${klaar} van ${totaal} hoofdstukken klaar…`), scans && item.grootte ? 'b' + item.grootte : null);
+      toon('klaar', `${n} onderwerp${n === 1 ? '' : 'en'} gevonden, ${ns} vra${ns === 1 ? 'ag' : 'gen'} over de speelwijze beantwoord${afgekapt ? `. Let op: van ${afgekapt} ingescande pagina${afgekapt === 1 ? ' is' : "'s is"} niet alle tekst gelezen` : ''}`);
     } catch (x){ console.error('[clubprofiel]', item.naam, x); toon('fout', foutTekst(x)); }
     if (club?.id === id) teken();
   }
@@ -189,13 +213,13 @@ async function verwerk(id){
 }
 /* Het hele document gaat per groep hoofdstukken naar de AI. De eerste groep eerst (die zet het document in de
    cache van het model), de rest tegelijk. Levert een groep te veel op voor één antwoord, dan in tweeën. */
-async function analyseer(id, naam, tekst, paginas, voortgang){
+async function analyseer(id, naam, tekst, paginas, voortgang, vasteMaat = null){
   const st = staat(id), schoon = String(tekst || '').replace(/\r/g, '').trim();
   if (schoon.replace(/\[pagina \d+\]/g, '').trim().length < 80) throw new Error('geen leesbare tekst gevonden. Plak de tekst dan zelf.');
   if (schoon.length > MAX_DOCUMENT) throw new Error(`dit document is te groot (${Math.round(schoon.length / 1000)} duizend tekens). Knip het in delen.`);
   if (!st.profiel) await laad(id);
   if (!st.profiel) throw new Error(st.fout || 'het clubprofiel kon niet geladen worden');
-  const p = st.profiel, docId = documentId(naam, schoon.length), nu = Date.now();
+  const p = st.profiel, docId = documentId(naam, vasteMaat || schoon.length), nu = Date.now(), seizoen = seizoenTekst(st.clubDoc || club);
   const meta = { naam: naam.slice(0, 120), tekens: schoon.length, paginas: paginas || null, toegevoegdMs: p.documenten[docId]?.toegevoegdMs || nu, geanalyseerdMs: null, gevonden: 0 };
   /* opnieuw inlezen: wat van dit document nog niet beoordeeld is, gaat weg */
   const weg = opTeRuimen(p, docId);
@@ -211,7 +235,7 @@ async function analyseer(id, naam, tekst, paginas, voortgang){
   voortgang(0, totaal);
   const doe = async (ids) => {
     let r;
-    try { r = await fn({ clubId: id, documentNaam: naam, tekst: schoon, hoofdstukken: veldenVoorAI(ids), seizoen: seizoenTekst() }); }
+    try { r = await fn({ clubId: id, documentNaam: naam, tekst: schoon, hoofdstukken: veldenVoorAI(ids), seizoen }); }
     catch (x){
       if (x?.code === 'functions/resource-exhausted' && ids.length > 1){ const h = Math.ceil(ids.length / 2); await doe(ids.slice(0, h)); await doe(ids.slice(h)); return; }
       throw x;
@@ -250,15 +274,27 @@ async function analyseer(id, naam, tekst, paginas, voortgang){
 }
 
 /* ---------- het concept van één bevinding: wat er in het formulier staat ---------- */
+/* [20261121b] Meerdere onderwerpen delen een instelling (de rolnamen, de werkwijze, de domeinen). Het formulier
+   onthield voorheen bij het eerste tekenen de waarde die toen in Cluppie stond, en schreef die later terug: het ene
+   onderwerp draaide zo terug wat het andere net had gezet. Daarom staat alleen `vast` wat dit antwoord zelf levert
+   (uit het voorstel) of wat jij in het formulier hebt aangeraakt. Al het andere volgt bij elk gebruik wat er op dat
+   moment in Cluppie staat, en verandert dus niets. */
+const gevuld = w => !(w === undefined || w === null || w === '');
 function conceptVan(st, v, b){
-  if (st.concept[b.id]) return st.concept[b.id];
-  const bron = b.gezet || b.voorstel || {};
-  const inst = {};
-  for (const d of (instelVelden(v.id) || [])){
-    const w = (bron.instellingen || {})[d.pad];
-    inst[d.pad] = String(w === undefined || w === null || w === '' ? instelWaarde(club.instellingen, d) : w);
+  const defs = instelVelden(v.id) || [];
+  let c = st.concept[b.id];
+  if (!c){
+    const bron = b.gezet || b.voorstel || {}, eigen = (b.voorstel && b.voorstel.instellingen) || {};
+    const inst = {}, vast = {};
+    for (const d of defs){
+      const w = (bron.instellingen || {})[d.pad];
+      if (gevuld(eigen[d.pad]) && gevuld(w)){ inst[d.pad] = String(w); vast[d.pad] = true; }
+    }
+    c = st.concept[b.id] = { titel: bron.titel || titelVan(v, b.waarde), tekst: bron.tekst || '', regels: (bron.regels || []).join('\n'), rondes: (bron.rondes || []).map(r => ({ ...r, van: r.van || '' })), inst, vast };
   }
-  return (st.concept[b.id] = { titel: bron.titel || titelVan(v, b.waarde), tekst: bron.tekst || '', regels: (bron.regels || []).join('\n'), rondes: (bron.rondes || []).map(r => ({ ...r, van: r.van || '' })), inst });
+  if (!c.vast) c.vast = {};
+  for (const d of defs) if (!c.vast[d.pad]) c.inst[d.pad] = String(instelWaarde(club.instellingen, d));
+  return c;
 }
 
 /* ==================== [20261120g] VOORBEELD OP DE TELEFOON ====================
@@ -489,6 +525,7 @@ function bronInConcept(){
   if (b.gezet) st.bewerk.add(bron.bevId);     /* het formulier links toont dan het aangepaste concept */
   const c = conceptVan(st, v, { id: bron.bevId, ...b });
   if (!zetInConcept(c, bron, w)){ meld('Deze tekst kon niet worden aangepast'); return false; }
+  if (bron.soort === 'instelling' && bron.pad) c.vast[bron.pad] = true;
   TEL.bron.tekst = w;
   return true;
 }
@@ -651,7 +688,7 @@ function teken(){
       <section class="cp-inhoud">${h ? htmlHoofdstuk(st, h) : st.hoofdstuk === 'mancos' ? htmlMancos(st) : st.hoofdstuk === 'vragenlijst' ? htmlSpeelwijze(st) : htmlDocumenten(st, o)}</section></div></div>`;
   const hoofd = root.closest('.tc-hoofd'); if (hoofd && sy != null) hoofd.scrollTop = sy;
   root.querySelector('.cp-nav .actief')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  const f = root.querySelector('[data-cpfocus]'); if (f){ f.focus({ preventScroll: true }); f.scrollIntoView({ block: 'nearest' }); }
+  const f = root.querySelector('[data-cpfocus]'); if (f){ f.focus({ preventScroll: true }); try { f.setSelectionRange(f.value.length, f.value.length); } catch (e) {} f.scrollIntoView({ block: 'nearest' }); }
 }
 function htmlWachtrij(st){
   if (!st.wachtrij.length) return '';
@@ -662,8 +699,8 @@ function htmlDocumenten(st, o){
   const docs = Object.entries(st.profiel.documenten).sort((a, b) => (b[1].toegevoegdMs || 0) - (a[1].toegevoegdMs || 0));
   return `<h2 class="tc-h2">Documenten</h2>
     <div class="cp-drop" data-cp="kies" role="button" tabindex="0"><b>Sleep documenten hierheen</b><span>of tik om te kiezen. PDF, Word (.docx), tekst of een foto van een pagina; meer tegelijk mag. Een scan wordt ook gelezen.</span></div>
-    ${st.plak ? `<div class="cp-plak"><input class="invoer" id="cpPlakNaam" placeholder="Naam van het document" maxlength="100">
-        <textarea class="invoer" id="cpPlakTekst" rows="8" placeholder="Plak hier de tekst" data-cpfocus></textarea>
+    ${st.plak ? `<div class="cp-plak"><input class="invoer" id="cpPlakNaam" placeholder="Naam van het document" maxlength="100" value="${esc(st.typ.plakNaam)}">
+        <textarea class="invoer" id="cpPlakTekst" rows="8" placeholder="Plak hier de tekst" data-cpfocus>${esc(st.typ.plakTekst)}</textarea>
         <div class="rij"><button class="knop licht" data-cp="plak">Annuleren</button><button class="knop vol" data-cp="plakgo">Analyseren</button></div></div>`
       : '<button class="knop licht klein cp-los" data-cp="plak">Tekst plakken</button>'}
     <p class="tc-meta">Lever alles aan wat de club heeft: beleidsplan, jeugdplan, reglementen, functiebeschrijvingen, het informatieboekje. Hoe meer, hoe minder manco’s. De tekst van een document wordt niet bewaard, alleen de uitkomst met een kort citaat. Geen ledenlijsten of notulen met namen.</p>
@@ -703,7 +740,7 @@ function htmlVeld(st, h, v){
     <header><h3>${esc(v.label)}</h3><button class="knop licht klein cp-optel ${TEL.veld === v.id && TEL.open ? 'actief' : ''}" data-cp="optel" data-veld="${v.id}" title="Laat zien waar een trainer dit ziet">${ico('navigation-home', 14)} Op de telefoon</button><span class="pc-chips">${s.meerdere ? chip('verschillende antwoorden: kies er één', 'let') : ''}${s.deels ? chip('half beantwoord', 'let') : ''}${chip(naam, soort)}</span></header>
     ${s.mee.map(b => htmlBevinding(st, h, v, b)).join('')}
     ${s.stand === 'leeg' && v.vraag ? `<p class="cp-vraag"><b>Niet in de documenten.</b> Vraag voor de club: ${esc(v.vraag)}</p>` : ''}
-    ${st.nieuw === v.id ? `<div class="cp-bewerk"><textarea class="invoer" rows="3" maxlength="1500" placeholder="Het antwoord van de club, in gewone woorden" data-cpfocus data-cptekst></textarea>
+    ${st.nieuw === v.id ? `<div class="cp-bewerk"><textarea class="invoer" rows="3" maxlength="1500" placeholder="Het antwoord van de club, in gewone woorden" data-cpfocus data-cptekst>${esc(st.typ.nieuw)}</textarea>
         <div class="rij"><button class="knop licht klein" data-cp="annuleer">Annuleren</button><button class="knop fluo klein" data-cp="nieuwopslaan" data-veld="${v.id}">Opslaan en voorstel maken</button></div></div>`
       : v.overig ? '' : `<button class="knop licht klein cp-los" data-cp="nieuw" data-veld="${v.id}">${s.mee.length ? 'Ander antwoord invullen' : 'Antwoord invullen'}</button>`}
     ${afg.length ? `<details class="cp-afg"><summary>${afg.length} niet gebruikt</summary>${afg.map(b => `<div class="cp-afg-rij"><span>${esc(b.waarde)}</span><button class="knop licht klein" data-cp="terug" data-id="${b.id}">Terugzetten</button><button class="knop licht klein" data-cp="wis" data-id="${b.id}">Verwijderen</button></div>`).join('')}</details>` : ''}
@@ -719,12 +756,14 @@ function htmlBevinding(st, h, v, b){
   return `<div class="cp-bev ${b.verwerkt ? 'is-verwerkt' : ''}">${links}${b.gezet && !st.bewerk.has(b.id) ? htmlGezet(v, b) : htmlCluppie(st, h, v, b)}</div>`;
 }
 function htmlGezet(v, b){
+  const zekerVoor = club ? staat(club.id).zeker : null;
   const g = b.gezet, defs = instelVelden(v.id) || [];
   const regels = [...defs.filter(d => g.instellingen?.[d.pad] !== undefined).map(d => `<li><b>${esc(d.label)}:</b> ${esc(instelTekst(d, g.instellingen[d.pad]))}</li>`),
     (g.rondes || []).map(r => `<li><b>Evaluatieronde:</b> ${esc(r.naam)}, ${r.soort === 'snel' ? 'snelle' : 'volledige'} beoordeling, ${r.van ? esc(dag(r.van)) + ' tot ' : 'tot '}${esc(dag(r.tot))}</li>`).join(''),
     g.tekst ? `<li><b>Clubwijzer:</b> ${lijn(g.tekst)}</li>` : '', (g.regels || []).length ? `<li><b>Gouden regels:</b> ${g.regels.map(esc).join(' · ')}</li>` : ''].join('');
   return `<div class="cp-gezet"><span class="cp-kop cp-ok-tekst">${ico('action-check', 15)} Staat in Cluppie sinds ${esc(datum(g.ms))}${(g.tekst || (g.regels || []).length) && g.status !== 'gepubliceerd' ? ' <i>teksten als concept: de clubbeheerder publiceert ze onder Content</i>' : ''}</span>
-    <ul>${regels}</ul><div class="cp-knoppen"><button class="knop licht klein" data-cp="heropen" data-id="${b.id}">Aanpassen</button></div></div>`;
+    <ul>${regels}</ul><div class="cp-knoppen"><button class="knop licht klein" data-cp="heropen" data-id="${b.id}">Aanpassen</button>
+      <button class="knop licht klein ${zekerVoor === 'h:' + b.id ? 'pc-zeker' : ''}" data-cp="haalweg" data-id="${b.id}" title="Haalt de tekst, de gouden regels en nog niet begonnen rondes van dit onderwerp weg bij de club">${zekerVoor === 'h:' + b.id ? 'Zeker? Uit Cluppie halen' : 'Uit Cluppie halen'}</button></div></div>`;
 }
 const dag = iso => { try { return new Date(iso + 'T12:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e){ return iso; } };
 const instelTekst = (d, w) => d.type === 'keuze' ? ((d.opties.find(([id]) => id === String(w)) || [])[1] || '').split(':')[0] : (w === '' || w == null ? 'niets ingesteld' : String(w));
@@ -763,9 +802,13 @@ function htmlCluppie(st, h, v, b){
 /* ---------- acties ---------- */
 function invoer(e){
   const el = e.target, sleutel = el.dataset?.cpc, st = club && staat(club.id);
+  /* [20261121b] velden zonder concept: wat je typt blijft staan als het scherm opnieuw wordt getekend */
+  if (st && el.matches?.('[data-cptekst]')){ st.typ.nieuw = el.value; return; }
+  if (st && el.id === 'cpPlakNaam'){ st.typ.plakNaam = el.value; return; }
+  if (st && el.id === 'cpPlakTekst'){ st.typ.plakTekst = el.value; return; }
   if (!sleutel || !st) return;
   const c = st.concept[el.dataset.id]; if (!c) return;
-  if (sleutel === 'inst'){ if (el.type !== 'radio' || el.checked) c.inst[el.dataset.pad] = el.value; }
+  if (sleutel === 'inst'){ if (el.type !== 'radio' || el.checked){ c.inst[el.dataset.pad] = el.value; (c.vast ||= {})[el.dataset.pad] = true; } }
   else if (sleutel === 'ronde'){ const r = c.rondes[Number(el.dataset.i)]; if (r) r[el.dataset.k] = el.value; }
   else c[sleutel] = el.value;
   if (TEL.klaar && TEL.open) synchroniseerStraks();
@@ -787,16 +830,36 @@ async function zet(bevId, stil){
   const zelfde = Object.entries(p.bevindingen).filter(([id, x]) => id !== bevId && x.veld === v.id && !v.overig);
   const oudeIds = [...(b.gezet?.ids || []), ...zelfde.flatMap(([, x]) => x.gezet?.ids || [])].filter(i => !docs.some(d => d.id === i));
   st.druk.add(bevId); if (!stil) teken();
+  let rondeBlijft = [], bleefGepubliceerd = false;
   try {
     if (wijz.length) await updateDoc(doc(db, 'clubs', clubId), Object.fromEntries(wijz.map(([pad, w]) => ['instellingen.' + pad, w])));
-    if (rondes.length){
-      /* de rondes van de club vers lezen: de clubbeheerder kan er intussen zelf een hebben gemaakt */
+    const vervallen = (b.gezet?.rondes || []).map(r => r.id).filter(Boolean);
+    if (rondes.length || vervallen.length){
+      /* de rondes van de club vers lezen: de clubbeheerder kan er intussen zelf een hebben gemaakt.
+         [20261121b] Een ronde die dit onderwerp eerder zette wordt op id bijgewerkt (hernoemen maakt geen tweede),
+         en een ronde die je hier weghaalt gaat ook bij de club weg zolang hij nog niet begonnen is. */
       const vers = (await getDoc(doc(db, 'clubs', clubId))).data() || {};
-      const samen = rondesSamenvoegen(vers.evaluatieRondes, rondes, { teams: Object.keys(vers.teams || doel.teams || {}), seizoen: seizoenVan(vers.huidigSeizoen || doel.huidigSeizoen).label });
+      const samen = rondesSamenvoegen(vers.evaluatieRondes, rondes, { teams: Object.keys(vers.teams || doel.teams || {}), seizoen: seizoenVan(vers.huidigSeizoen || doel.huidigSeizoen).label, vervallen });
       await updateDoc(doc(db, 'clubs', clubId), { evaluatieRondes: samen.lijst });
       doel.evaluatieRondes = samen.lijst;
+      rondes.forEach((r, i) => { r.id = samen.ids[i]; });
+      rondeBlijft = samen.blijft;
     }
-    for (const d of docs) await setDoc(contentRef(clubId, d.id), d.data);
+    for (const d of docs){
+      /* [20261121b] De clubbeheerder kan de tekst intussen hebben gepubliceerd of er tips en tags bij hebben gezet.
+         Opnieuw zetten haalde de tekst dan weer offline (terug naar concept) en wiste die aanvullingen. Nu blijft
+         wat gepubliceerd is gepubliceerd, en blijven tips en tags van de club staan. */
+      let data = d.data;
+      try {
+        const sn = await getDoc(contentRef(clubId, d.id));
+        if (sn.exists()){
+          const o = sn.data() || {};
+          data = { ...data, ...(o.status === 'gepubliceerd' ? { status: 'gepubliceerd' } : {}), ...((o.tips || []).length ? { tips: o.tips } : {}), ...((o.tags || []).length ? { tags: o.tags } : {}) };
+          if (o.status === 'gepubliceerd') bleefGepubliceerd = true;
+        }
+      } catch (x){ console.warn('[clubprofiel] bestaande tekst lezen', d.id, x.code || x.message); }
+      await setDoc(contentRef(clubId, d.id), data, { merge: true });
+    }
     for (const i of new Set(oudeIds)) await deleteDoc(contentRef(clubId, i));
   } catch (x){ st.druk.delete(bevId); meld('In Cluppie zetten mislukt: ' + foutTekst(x)); if (club?.id === clubId) teken(); return false; }
   /* het clubdocument in het Platformcentrum bijwerken, zodat "nu in Cluppie" klopt */
@@ -804,7 +867,8 @@ async function zet(bevId, stil){
   for (const [pad, w] of wijz){ const k = pad.split('.'); let o = doel.instellingen; for (const d of k.slice(0, -1)) o = (o[d] && typeof o[d] === 'object') ? o[d] : (o[d] = {}); o[k.at(-1)] = w; }
   const tekstDoc = docs.find(d => d.data.categorie === 'afspraak');
   const gezet = { ms: Date.now(), titel: tekstDoc ? tekstDoc.data.titel : '', tekst: tekstDoc ? tekstDoc.data.achtergrond : '', regels: docs.filter(d => d.data.categorie === 'gouden-regel').map(d => d.data.titel),
-    rondes, instellingen: Object.fromEntries(defs.map(d => [d.pad, controleerInstelling(d, c.inst[d.pad]).waarde])), status, ids: docs.map(d => d.id) };
+    /* alleen de instellingen die bij dit antwoord horen (uit het voorstel of zelf aangeraakt), niet wat gewoon al in Cluppie stond */
+    rondes, instellingen: Object.fromEntries(defs.filter(d => c.vast && c.vast[d.pad]).map(d => [d.pad, controleerInstelling(d, c.inst[d.pad]).waarde])), status: bleefGepubliceerd ? 'gepubliceerd' : status, ids: docs.map(d => d.id) };
   const paden = { [`bevindingen.${bevId}.oordeel`]: 'akkoord', [`bevindingen.${bevId}.verwerkt`]: true, [`bevindingen.${bevId}.gezet`]: gezet };
   p.bevindingen[bevId] = { ...b, oordeel: 'akkoord', verwerkt: true, gezet };
   /* een ander antwoord op hetzelfde onderwerp vervalt: er staat er maar één in Cluppie */
@@ -818,11 +882,39 @@ async function zet(bevId, stil){
   catch (x){ meld('Het staat in Cluppie, maar afvinken mislukte: ' + foutTekst(x)); }
   if (!stil){
     const wat = [wijz.length ? `${wijz.length} instelling${wijz.length === 1 ? '' : 'en'}` : '', rondes.length ? `${rondes.length} evaluatieronde${rondes.length === 1 ? '' : 's'}` : '', tekstDoc ? 'tekst in de Clubwijzer' : '', gezet.regels.length ? `${gezet.regels.length} gouden regels` : ''].filter(Boolean).join(', ');
-    meld(wat ? `In Cluppie gezet: ${wat}` : 'Dit stond al zo in Cluppie; afgevinkt');
+    meld((wat ? `In Cluppie gezet: ${wat}` : 'Dit stond al zo in Cluppie; afgevinkt') + (rondeBlijft.length ? `. De ronde ${rondeBlijft.join(', ')} is al begonnen of niet door het Clubprofiel gemaakt en blijft staan; haal hem weg onder Club › Evaluaties.` : ''));
     if (club?.id === clubId) teken();
   }
   if (TEL.klaar) synchroniseerStraks();
   return true;
+}
+/* [20261121b] Wat dit onderwerp in Cluppie heeft gezet weer weghalen: de tekst in de Clubwijzer, de gouden regels en
+   de rondes die nog niet begonnen zijn. Instellingen blijven staan: wat er vóór het zetten stond is niet bewaard,
+   dus terugzetten kan niet eerlijk. Het antwoord zelf staat daarna weer op "te beoordelen". */
+async function haalUitCluppie(bevId){
+  const st = staat(club.id), clubId = club.id, doel = club, p = st.profiel, b = p.bevindingen[bevId];
+  if (!b || !b.gezet || st.druk.has(bevId)) return;
+  const g = b.gezet, rondeIds = (g.rondes || []).map(r => r.id).filter(Boolean);
+  st.druk.add(bevId); teken();
+  let blijft = [];
+  try {
+    for (const i of new Set(g.ids || [])) await deleteDoc(contentRef(clubId, i));
+    if (rondeIds.length){
+      const vers = (await getDoc(doc(db, 'clubs', clubId))).data() || {};
+      const samen = rondesSamenvoegen(vers.evaluatieRondes, [], { vervallen: rondeIds });
+      if (samen.weg.length){ await updateDoc(doc(db, 'clubs', clubId), { evaluatieRondes: samen.lijst }); doel.evaluatieRondes = samen.lijst; }
+      blijft = samen.blijft;
+    }
+    p.bevindingen[bevId] = { ...b, oordeel: 'open', verwerkt: false, gezet: null };
+    delete st.concept[bevId]; st.bewerk.delete(bevId);
+    await vervang(clubId, { [`bevindingen.${bevId}.oordeel`]: 'open', [`bevindingen.${bevId}.verwerkt`]: false, [`bevindingen.${bevId}.gezet`]: null });
+    const inst = Object.keys(g.instellingen || {}).length;
+    meld('Uit Cluppie gehaald' + (inst ? `. De ${inst} instelling${inst === 1 ? '' : 'en'} van dit onderwerp blijven staan; pas ze aan via Aanpassen of bij de club.` : '')
+      + (blijft.length ? ` De ronde ${blijft.join(', ')} is al begonnen en blijft staan.` : ''));
+  } catch (x){ meld('Weghalen mislukt: ' + foutTekst(x)); }
+  st.druk.delete(bevId);
+  if (club?.id === clubId) teken();
+  if (TEL.klaar) synchroniseerStraks();
 }
 /* Een voorstel voor Cluppie maken bij één antwoord (zelf ingevuld, of van vóór 20261120d). */
 async function maakVoorstel(bevId){
@@ -832,7 +924,7 @@ async function maakVoorstel(bevId){
   st.druk.add(bevId); teken();
   try {
     const r = await httpsCallable(functions, 'stelClubinstellingenVoor', { timeout: 180000 })({ clubId, onderwerp: v.overig ? titelVan(v, b.waarde) : v.label, vraag: v.vraag,
-      antwoorden: [b.waarde], velden: instelVeldenVoorAI(v.id), wilTekst: v.tekst !== false, wilRegels: v.regels === true, wilRondes: v.rondes === true, seizoen: seizoenTekst() });
+      antwoorden: [b.waarde], velden: instelVeldenVoorAI(v.id), wilTekst: v.tekst !== false, wilRegels: v.regels === true, wilRondes: v.rondes === true, seizoen: seizoenTekst(st.clubDoc || club) });
     const voorstel = schoonVoorstel({ tekst: r?.data?.tekst, regels: r?.data?.regels, rondes: r?.data?.rondes, instellingen: r?.data?.instellingen || r?.data?.waarden }, v.id);
     if (voorstelLeeg(voorstel)) meld('Uit dit antwoord volgt geen duidelijk voorstel. Vul de tekst zelf in.');
     else { p.bevindingen[bevId] = { ...p.bevindingen[bevId], voorstel }; delete st.concept[bevId]; await vervang(clubId, { [`bevindingen.${bevId}.voorstel`]: voorstel }); if (TEL.klaar) synchroniseerStraks(); }
@@ -874,7 +966,7 @@ async function klik(e){
   if (a === 'opnieuw') return laad(club.id).then(teken);
   if (!p) return;
   const wasZeker = st.zeker;
-  if (a !== 'docweg' && a !== 'alleszetten' && a !== 'ssvast') st.zeker = null;
+  if (a !== 'docweg' && a !== 'alleszetten' && a !== 'ssvast' && a !== 'haalweg') st.zeker = null;
   if (a === 'nav'){ st.hoofdstuk = b.dataset.h; st.nieuw = null; teken(); root.closest('.tc-hoofd')?.scrollTo?.({ top: 0 }); return; }
   if (a === 'naarveld'){
     st.hoofdstuk = b.dataset.h; st.filter = 'alles'; st.nieuw = p && !Object.values(p.bevindingen).some(x => x.veld === b.dataset.veld && x.oordeel !== 'afgewezen') ? b.dataset.veld : null;
@@ -882,7 +974,7 @@ async function klik(e){
   }
   if (a === 'filter'){ st.filter = b.dataset.f; return teken(); }
   if (a === 'kies') return root.querySelector('#cpBestanden')?.click();
-  if (a === 'plak'){ st.plak = !st.plak; st.hoofdstuk = 'documenten'; return teken(); }
+  if (a === 'plak'){ st.plak = !st.plak; if (!st.plak){ st.typ.plakNaam = ''; st.typ.plakTekst = ''; } st.hoofdstuk = 'documenten'; return teken(); }
   if (a === 'plakgo'){
     const tekst = root.querySelector('#cpPlakTekst')?.value || '';
     if (tekst.trim().length < 80) return meld('Plak eerst (meer) tekst');
@@ -897,7 +989,7 @@ async function klik(e){
     /* [20261120f] wat er in Cluppie is gezet, als PDF om met de club te delen (clubprofiel-pdf.js) */
     const ov = inrichtingOverzicht(p, club), vs = p.speelstijl.vastgelegd;
     if (vs && (vs.regels || []).length){
-      const plek = 'Speelwijze', i = Math.max(0, ov.hoofdstukken.findIndex(h => ['speelwijze', 'leerlijn', 'trainen', 'wedstrijd', 'evalueren', 'gedrag', 'ouders', 'trainers', 'kalender', 'privacy'].includes(h.id)));
+      const plek = 'Speelwijze', i = ov.hoofdstukken.findIndex(h => ['speelwijze', 'leerlijn', 'trainen', 'wedstrijd', 'evalueren', 'gedrag', 'ouders', 'trainers', 'kalender', 'privacy'].includes(h.id));
       ov.hoofdstukken.splice(i < 0 ? ov.hoofdstukken.length : i, 0, { id: 'speelstijl', naam: 'Speelwijze', onderwerpen: [
         { label: 'Onze speelwijze', regels: [{ soort: 'tekst', plek, label: '', waarde: vs.zin || '' }].filter(r => r.waarde) },
         ...vs.regels.map(r => ({ label: r.onderdeel, regels: [{ soort: 'instelling', plek, label: '', waarde: r.tekst }] }))].filter(x => x.regels.length) });
@@ -914,9 +1006,10 @@ async function klik(e){
   if (a === 'tekststatus'){
     const s = b.dataset.s === 'gepubliceerd' ? 'gepubliceerd' : 'concept', clubId = club.id;
     if (p.tekstStatus === s) return;
+    const vorige = p.tekstStatus;
     p.tekstStatus = s; teken();
     try { await schrijf(clubId, { tekstStatus: s }); meld(s === 'gepubliceerd' ? 'Teksten die je vanaf nu zet zijn direct zichtbaar voor trainers' : 'Teksten die je vanaf nu zet komen als concept bij de clubbeheerder'); }
-    catch (x){ meld('Opslaan mislukt: ' + foutTekst(x)); }
+    catch (x){ p.tekstStatus = vorige; meld('Opslaan mislukt: ' + foutTekst(x)); if (club?.id === clubId) teken(); }
     return;
   }
   if (a === 'rondeplus' || a === 'rondemin'){
@@ -929,18 +1022,23 @@ async function klik(e){
   if (a === 'zet') return zet(id);
   if (a === 'voorstel') return maakVoorstel(id);
   if (a === 'heropen'){ st.bewerk.add(id); delete st.concept[id]; return teken(); }
+  if (a === 'haalweg'){
+    if (wasZeker !== 'h:' + id){ st.zeker = 'h:' + id; return teken(); }
+    st.zeker = null;
+    return haalUitCluppie(id);
+  }
   if (a === 'sluit'){ st.bewerk.delete(id); delete st.concept[id]; return teken(); }
   if (a === 'nietgebruiken'){ delete st.concept[id]; return zetBevinding(id, { oordeel: 'afgewezen', verwerkt: false }); }
   if (a === 'terug') return zetBevinding(id, { oordeel: 'open' });
   if (a === 'wis') return wisBevindingen([id]);
-  if (a === 'nieuw'){ st.nieuw = b.dataset.veld; return teken(); }
-  if (a === 'annuleer'){ st.nieuw = null; return teken(); }
+  if (a === 'nieuw'){ st.nieuw = b.dataset.veld; st.typ.nieuw = ''; return teken(); }
+  if (a === 'annuleer'){ st.nieuw = null; st.typ.nieuw = ''; return teken(); }
   if (a === 'nieuwopslaan'){
     const w = b.closest('.cp-bewerk')?.querySelector('[data-cptekst]')?.value;
     const nieuw = schoonBevinding({ veld: b.dataset.veld, waarde: w, oordeel: 'open', handmatig: true, gemaaktMs: Date.now() });
     if (!nieuw) return meld('Vul een antwoord in');
     const nid = maakId(), clubId = club.id;
-    p.bevindingen[nid] = nieuw; st.nieuw = null; teken();
+    p.bevindingen[nid] = nieuw; st.nieuw = null; st.typ.nieuw = ''; teken();
     try { await schrijf(clubId, { bevindingen: { [nid]: nieuw } }); }
     catch (x){ delete p.bevindingen[nid]; meld('Opslaan mislukt: ' + foutTekst(x)); return teken(); }
     return maakVoorstel(nid);
@@ -951,7 +1049,8 @@ async function klik(e){
     if (wasZeker !== 'alles'){ st.zeker = 'alles'; return teken(); }
     st.zeker = null; b.disabled = true; b.textContent = 'Bezig…';
     let goed = 0;
-    for (const x of lijst) if (await zet(x.id, true)) goed++;
+    const clubId = club.id;
+    for (const x of lijst){ if (club?.id !== clubId) break; if (await zet(x.id, true)) goed++; }
     meld(`${goed} van ${lijst.length} onderwerpen in Cluppie gezet`);
     return teken();
   }

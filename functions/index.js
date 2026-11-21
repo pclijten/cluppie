@@ -50,6 +50,10 @@
    porteren/2026-09-28-sportlink-koppeling-per-team.md.
    ====================================================================== */
 
+/* [20261121b] App Check voor alle callables: één schakelaar in appcheck.js. Dit moet vóór alle andere
+   require's staan: elke onCall leest de globale opties op het moment dat hij wordt gemaakt. */
+require('firebase-functions/v2').setGlobalOptions({ enforceAppCheck: require('./appcheck').AFDWINGEN === true });
+
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');

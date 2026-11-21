@@ -50,7 +50,7 @@ Doorgifte vindt alleen plaats aan de subverwerkers in artikel 4 en op basis van 
 ## 6. Bewaren en verwijderen
 
 6.1 Gebruiksgegevens (logins, klikgedrag) worden na 400 dagen verwijderd; verlopen deel-links na 30 dagen.
-6.2 Spelersgegevens blijven staan tot de Club ze verwijdert. [Voorstel: uiterlijk één jaar na het einde van het seizoen waarin de speler is vertrokken.]
+6.2 Spelersgegevens blijven staan tot de Club ze verwijdert. [Voorstel: uiterlijk één jaar na het einde van het seizoen waarin de speler is vertrokken. De app biedt de Club hiervoor een opruimscherm met een instelbare termijn; de Club voert het opruimen zelf uit.]
 6.3 Na het einde van de overeenkomst verwijdert Cluppie alle gegevens van de Club binnen [30] dagen, of geeft ze op verzoek eerst terug in een gangbaar formaat.
 
 ## 7. Aansprakelijkheid

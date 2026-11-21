@@ -44,7 +44,7 @@ Scheiding per club in de toegangsregels, getest per rol; toegang op basis van ro
 ## E. Open punten
 
 1. Bewaartermijnen waar "[vast te stellen]" staat.
-2. Automatisch opruimen van vertrokken spelers en oude seizoenen bestaat nog niet.
+2. Opruimen van vertrokken spelers en oude seizoenen kan sinds 21-11-2026 vanuit de app, door de clubbeheerder en na een bevestiging (de club kiest de termijn). In de tabel hierboven staat bij spelers nog "Tot de club verwijdert": dat blijft kloppen, maar de club heeft nu een termijn en een scherm. Privé-rondebeoordelingen en de teamkamer lopen nog niet mee.
 3. Verzoek van een ouder om inzage of verwijdering van één speler: nu handwerk door de coach of clubadmin.
 4. Grondslag voor klikgedrag.
 5. Of Firebase Authentication gegevens buiten de EU verwerkt, en welke waarborg daarbij hoort.

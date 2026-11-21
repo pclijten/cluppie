@@ -202,6 +202,30 @@ const sm = rondesSamenvoegen([{ id: 'r1', naam: 'Winter', soort: 'snel', tot: '2
 assert.deepEqual(sm.lijst.map(r => [r.id, r.naam, r.tot, r.teams.join('+'), r.status]), [['r1', 'Winter', '2026-12-31', 't1', 'gesloten'], ['r0', 'Eigen ronde van de club', '2026-10-01', 't2', undefined], [sm.ids[1], 'Voorjaar', '2027-05-31', 't1+t2', 'open']]);
 assert.deepEqual([sm.ids[0], sm.lijst[2].seizoen, sm.lijst[2].gemaaktMs, sm.lijst[0].soort], ['r1', "2026/'27", 1000, 'volledig']);
 assert.deepEqual(rondesSamenvoegen(null, [], {}).lijst, []);
+/* [20261121b] hernoemen via de id, ander seizoen, weghalen, en datums die niet bestaan */
+assert.equal(sm.lijst[2].bron, 'clubprofiel', 'een nieuwe ronde draagt zijn herkomst');
+assert.deepEqual(schoonRondes([{ naam: 'Schrikkel', tot: '2026-02-31' }, { naam: 'Echt', van: '2026-02-01', tot: '2026-02-28', id: 'r9' }]), [{ naam: 'Echt', soort: 'volledig', van: '2026-02-01', tot: '2026-02-28', id: 'r9' }]);
+{
+  const club = [{ id: 'ra', naam: 'Winterevaluatie', soort: 'volledig', van: '2026-12-01', tot: '2026-12-31', teams: ['t1'], status: 'open', seizoen: "2026/'27", bron: 'clubprofiel' }];
+  const hernoemd = rondesSamenvoegen(club, [{ id: 'ra', naam: 'Winterbeoordeling', van: '2026-12-01', tot: '2026-12-20' }], { seizoen: "2026/'27", nuMs: 5 });
+  assert.deepEqual(hernoemd.lijst.map(r => [r.id, r.naam, r.tot]), [['ra', 'Winterbeoordeling', '2026-12-20']], 'hernoemen werkt de ronde bij, er komt geen tweede');
+  const vorig = [{ id: 'rv', naam: 'Winterevaluatie', van: '2025-12-01', tot: '2025-12-31', teams: ['t1'], status: 'gesloten', seizoen: "2025/'26" }];
+  const nieuwSeizoen = rondesSamenvoegen(vorig, [{ naam: 'Winterevaluatie', van: '2026-12-01', tot: '2026-12-31' }], { teams: ['t1'], seizoen: "2026/'27", nuMs: 7 });
+  assert.deepEqual(nieuwSeizoen.lijst.map(r => [r.id === 'rv', r.tot, r.seizoen, r.status]), [[true, '2025-12-31', "2025/'26", 'gesloten'], [false, '2026-12-31', "2026/'27", 'open']], 'de ronde van vorig seizoen blijft zoals hij was');
+  const nu = Date.parse('2026-11-21T12:00:00Z');
+  const twee = [...club, { id: 'rb', naam: 'Voorjaar', van: '2027-05-01', tot: '2027-05-31', status: 'open', seizoen: "2026/'27", bron: 'clubprofiel' }, { id: 'rc', naam: 'Herfst', van: '2026-10-01', tot: '2026-10-31', status: 'open', seizoen: "2026/'27", bron: 'clubprofiel' }, { id: 'rd', naam: 'Van de club', van: '2027-06-01', tot: '2027-06-10', status: 'open' }];
+  const minder = rondesSamenvoegen(twee, [{ id: 'ra', naam: 'Winterevaluatie', van: '2026-12-01', tot: '2026-12-31' }], { seizoen: "2026/'27", nuMs: nu, vervallen: ['ra', 'rb', 'rc', 'rd', 'bestaat-niet'] });
+  assert.deepEqual(minder.lijst.map(r => r.id), ['ra', 'rc', 'rd'], 'alleen de eigen ronde die nog niet begonnen is gaat weg');
+  assert.deepEqual([minder.weg, minder.blijft], [['rb'], ['Herfst', 'Van de club']]);
+  assert.deepEqual(rondesSamenvoegen(twee, [], { nuMs: nu, vervallen: ['rb'] }).lijst.map(r => r.id), ['ra', 'rc', 'rd'], 'alles weghalen kan ook');
+}
+/* [20261121b] opnieuw inlezen: een beoordeeld onderwerp van hetzelfde document komt er niet in andere woorden bij */
+assert.deepEqual(nieuweBevindingen(profiel, [{ veld: 'bouw.indeling', waarde: 'De club kent drie bouwen: onder, midden en boven' }], d1, 4000, id), {}, 'al goedgekeurd uit dit document');
+assert.equal(Object.keys(nieuweBevindingen(profiel, [{ veld: 'bouw.indeling', waarde: 'De club kent drie bouwen: onder, midden en boven' }], { id: 'd9', naam: 'Ander.pdf' }, 4000, id)).length, 1, 'uit een ander document wel');
+/* [20261121b] een leeggemaakte bouwnaam wordt de standaard, geen lege tekst */
+assert.deepEqual(instelWijzigingen('bouw.indeling', { lijsten: { bouwen: { items: { midden: { naam: 'Pupillen' } } } } }, { ...Object.fromEntries(INSTELLEN['bouw.indeling'].map(d => [d.pad, d.standaard])), 'lijsten.bouwen.items.midden.naam': '' }),
+  { wijzigingen: [['lijsten.bouwen.items.midden.naam', 'Middenbouw']] });
+assert.deepEqual(instelWijzigingen('rol.team', { rolNamen: { coach: 'Trainer' } }, { 'rolNamen.coach': '' }), { wijzigingen: [['rolNamen.coach', '']] }, 'een rolnaam leegmaken blijft kunnen');
 
 /* eigen rolnamen van de club */
 const clubR = { instellingen: { jeugdRolNaam: 'Hoofd opleidingen', rolNamen: { coordinator: '  TC-lid  ', coach: '', trainco: 7 } } };

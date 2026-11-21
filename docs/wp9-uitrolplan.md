@@ -10,7 +10,7 @@
 | Nagaan of de fouten uit de audit zijn gebruikt, en het besluit vastleggen | Open, Paul (zie `docs/juridisch/datalekprocedure-concept.md`) |
 | Ingelogde schermen nalopen na de release van 15-11 | Open, Paul |
 | Storage-regels testen | Open |
-| App Check op afdwingen | Open, Paul (console) |
+| App Check op afdwingen | Open, Paul. Stappen in `docs/appcheck-afdwingen.md`; voor de callables staat de schakelaar in de code (`functions/appcheck.js`), niet in de console |
 | Verwerkersovereenkomst en privacyverklaring door een jurist | Open |
 | Tweestapsverificatie voor het eindbaas-account | Niet nagegaan; aanbevolen |
 
@@ -42,10 +42,10 @@ Let op verschil tussen clubs: met en zonder Sportlink, "Club stuurt" en "Trainer
 ## Fase 3: dertig clubs
 
 Nodig vóór deze stap, en niet door Fable te vervangen:
-- **Onafhankelijke pentest.** De audit van november vond één kritieke fout die er maanden zat. Een tweede paar ogen is hier geen luxe.
-- **Juridische eindcontrole** en een DPIA (gegevens van minderjarigen op schaal).
+- **Onafhankelijke pentest.** De opdracht om naar een tester te sturen ligt klaar als concept: `docs/pentest-opdracht.md`. De audit van november vond één kritieke fout die er maanden zat. Een tweede paar ogen is hier geen luxe.
+- **Juridische eindcontrole** en een DPIA (gegevens van minderjarigen op schaal). Concept voor de adviseur: `docs/juridisch/dpia-concept.md`.
 - **Kosten per club** bekend, zodat de prijs klopt.
-- **Bewaartermijnen** in de app: vertrokken spelers en oude seizoenen opruimen.
+- **Bewaartermijnen** in de app: vertrokken spelers en oude seizoenen opruimen. Gebouwd op 21-11-2026 (Club › Instellingen › Bewaartermijnen en opruimen); nog te doen: met een echte club doorlopen, en de privé-rondebeoordelingen en de teamkamer laten meelopen.
 
 Techniek om te bewaken: de nachtelijke taken (Sportlink-sync, gebruikscijfers) lopen over alle clubs; de limieten van Firestore-regels (1000 evaluaties per verzoek, zie de audit); het AI-budget.
 

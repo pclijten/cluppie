@@ -15,13 +15,13 @@
    trainingsscherm op desktop (desktop-schermen.js). Beide vragen vandaagVan(t) op bij het tekenen en luisteren met
    opWijziging() om opnieuw te tekenen. Klikken in de balk worden hier één keer voor het hele document afgehandeld. */
 import { db, doc, getDoc, setDoc, deleteDoc, serverTimestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261121a';
+import { S, esc, meld } from './state.js?v=20261121b';
 import { vormen, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261116j';
-import { speelwijzeNu } from './speelwijze.js?v=20261121a';
-import { weerLocatie } from './clubconfig.js?v=20261121a';
+import { speelwijzeNu } from './speelwijze.js?v=20261121b';
+import { weerLocatie } from './clubconfig.js?v=20261121b';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
-import { momentenVanTeam } from './trainingsmomenten.js?v=20261121a';
-import { pasAan, schoonKeuze, isAangepast, tipsVoorEigen, weerVoorstel, WEERKEUZES, MIN_SPELERS, MAX_SPELERS } from './training-vandaag-logica.js?v=20261121a';
+import { momentenVanTeam } from './trainingsmomenten.js?v=20261121b';
+import { pasAan, schoonKeuze, isAangepast, tipsVoorEigen, weerVoorstel, WEERKEUZES, MIN_SPELERS, MAX_SPELERS } from './training-vandaag-logica.js?v=20261121b';
 
 const K = new Map();            /* 'team|training' → { keuze (of null), geladen } */
 const W = new Map();            /* 'lat,lon|datum|uur' → { voorstel } of 'bezig' */

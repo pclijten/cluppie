@@ -7,7 +7,7 @@
    Dit bestand is puur (html uit gegevens), behalve openUitzet() dat een blad of paneel opent.
    De bibliotheek wordt niet zelf geladen: de aanroeper geeft vormVan(id) mee, zodat de deelpagina licht blijft.
    Alleen aantallen en vormen; nooit namen van spelers. */
-import { esc, terugLaag } from './state.js?v=20261121a';
+import { esc, terugLaag } from './state.js?v=20261121b';
 
 export const FASE = {
   'warming-up': { naam: 'Warming-up', kl: 'var(--info)' },
