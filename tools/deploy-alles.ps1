@@ -46,7 +46,8 @@ $tak = (git branch --show-current).Trim()
 if ($tak -ne 'main'){ Stop-Met "je staat op branch '$tak'; live gaat alleen wat op main staat: git checkout main en git pull" }
 # Alleen gewijzigde bestanden die git volgt tellen; losse mappen die niet in git staan (marketing, .claude) gaan niet mee met een deploy.
 if ((git status --porcelain --untracked-files=no) -and -not $Proef){ Stop-Met 'er staan gewijzigde bestanden in de werkmap die niet gecommit zijn; deploy alleen wat op main staat (git status laat zien welke)' }
-git fetch origin main 2>$null | Out-Null
+# via Probeer: git schrijft zijn voortgang naar de foutuitvoer, en Windows PowerShell 5.1 ziet dat met 'Stop' als een fout
+if (-not (Probeer 'git fetch origin main')){ Stop-Met 'GitHub is niet bereikbaar (git fetch origin main mislukte)' }
 if ((git rev-parse HEAD).Trim() -ne (git rev-parse origin/main).Trim()){ Stop-Met 'je lokale main loopt niet gelijk met GitHub: eerst git pull' }
 Ok 'gcloud, firebase, node, git en npm gevonden, branch main'
 if ($Proef){ Write-Host '  PROEF: de commando''s hieronder worden getoond, niet uitgevoerd.' -ForegroundColor Yellow }
@@ -54,7 +55,9 @@ if ($Proef){ Write-Host '  PROEF: de commando''s hieronder worden getoond, niet 
 # ---------- 1. inloggen en afhankelijkheden ----------
 Stap 1 'Inloggen en afhankelijkheden'
 if (-not $Proef){
+  $oudEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
   $actief = (gcloud auth list --filter=status:ACTIVE --format="value(account)" 2>$null)
+  $ErrorActionPreference = $oudEap
   if (-not $actief){ Run 'gcloud auth login' } else { Ok "gcloud: $actief" }
   if (-not (Probeer "firebase projects:list")){ Run 'firebase login' } else { Ok 'firebase CLI ingelogd' }
 }
