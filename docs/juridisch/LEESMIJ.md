@@ -8,6 +8,7 @@
 | `voorwaarden-losse-trainers-concept.md` | Trainer zonder club | Concept. Bevat de lastigste vraag: wie is verantwoordelijke als er geen club is. |
 | `verwerkingsregister-concept.md` | Cluppie intern, en als hulp voor clubs | Concept, afgeleid uit de code en `AVG.md`. |
 | `datalekprocedure-concept.md` | Cluppie intern, afspraak met clubs | Concept. |
+| `dpia-concept.md` | Privacyadviseur; clubs als basis voor hun eigen DPIA | Concept van 21-11-2026: beschrijving, toets en een risicotabel met een eerste inschatting. Geen DPIA tot een adviseur het heeft beoordeeld en betrokkenen zijn gehoord. |
 | Privacyverklaring | Iedereen | Bestaat: `public/privacy.html` (versie 2026-10). Aanvullingen hieronder. |
 
 ## Aanvullingen op de bestaande privacyverklaring
@@ -26,7 +27,7 @@ Uit de code volgt dat deze punten erin horen. Niet doorgevoerd, omdat een juridi
 2. Of **toestemming van ouders** nodig is, of dat de club en de trainer zich op gerechtvaardigd belang of de uitvoering van het lidmaatschap kunnen beroepen, ook voor beoordelingen en leerpunten.
 3. De **doorgifte naar de Verenigde Staten** (Anthropic; mogelijk Firebase Authentication) en welke waarborgen daarbij horen.
 4. Of een **DPIA** verplicht is vóór de uitrol naar meer clubs. `AVG.md` adviseert van wel.
-5. **Bewaartermijnen** voor spelers die vertrokken zijn: de app ruimt die nog niet automatisch op.
+5. **Bewaartermijnen** voor spelers die vertrokken zijn: sinds 21-11-2026 kiest de club een termijn en ruimt de clubbeheerder op vanuit de app (voorstel: één jaar na het seizoen van vertrek; drie seizoenen). Te beoordelen: de termijnen zelf, en of opruimen vanzelf moet gebeuren in plaats van na een bevestiging.
 6. **Aansprakelijkheid** in de verwerkersovereenkomst voor een eenmanszaak.
 
 ## Openbare repo

@@ -504,6 +504,21 @@ if (DEMO_ROL){
   }
   if (DEMO_ROL === 'hjo'){ club.hoofdJeugd = { [COACH]: true }; club.hoofdJeugdInfo = { [COACH]: INFO }; uitTeam('demo-o11-2'); }
   if (DEMO_ROL === 'admin'){ club.admins = { [COACH]: true }; club.adminsInfo = { [COACH]: INFO }; uitTeam('demo-o11-2'); uitTeam('demo-o13-1'); }
+  /* [20261121c] voor Instellingen › Bewaartermijnen en opruimen: twee spelers die lang geleden zijn gearchiveerd
+     (één vertrokken, één overgezet), één die nog binnen de termijn valt, en gegevens uit een oud seizoen */
+  if (DEMO_ROL === 'admin'){
+    const T = 'demo-o11-1', OUD = "2022/'23";
+    zetSeed(`teams/${T}/spelers/demo-oud-1`, { naam: 'Oud-speler 1', nummer: 21, positie: 'M', gearchiveerd: true, gearchiveerdOp: '2024-05-18', naarTeam: null, naarTeamNaam: 'Verlaat de club' });
+    zetSeed(`teams/${T}/spelers/demo-oud-2`, { naam: 'Oud-speler 2', nummer: 22, positie: 'V', gearchiveerd: true, gearchiveerdOp: '2024-06-30', naarTeam: 'demo-o13-1', naarTeamNaam: 'O13-1' });
+    zetSeed(`teams/${T}/spelers/demo-oud-3`, { naam: 'Oud-speler 3', nummer: 23, positie: 'A', gearchiveerd: true, gearchiveerdOp: dag(-40), naarTeam: null, naarTeamNaam: 'Verlaat de club' });
+    zetSeed(`teams/${T}/spelers/demo-oud-2/vorigeTeams/demo-o9-1_2023-06-30`, { spelerId: 'demo-oud-2', teamId: 'demo-o9-1', teamNaam: 'O9-1' });
+    zetSeed(`teams/${T}/beoordelingen/demo-oud-1-vol`, { soort: 'volledig', spelerId: 'demo-oud-1', datum: '2023-03-11', seizoen: OUD, scores: { TE: 3, TA: 3, FY: 3, ME: 3, GE: 3 }, door: DOOR });
+    zetSeed(`teams/${T}/beoordelingen/demo-oud-2-vol`, { soort: 'volledig', spelerId: 'demo-oud-2', datum: '2024-03-09', seizoen: "2023/'24", scores: { TE: 4, TA: 3, FY: 3, ME: 4, GE: 3 }, door: DOOR });
+    zetSeed(`teams/${T}/presentie/demo-oud-pres-1`, { datum: '2023-03-14', seizoen: OUD, afwezig: ['demo-oud-1'], telaat: [], afwezigRedenen: { 'demo-oud-1': 'ziek' }, selectie: ['demo-oud-1', 'demo-oud-2'], aantalAanwezig: 1, aantalSpelers: 2 });
+    zetSeed(`teams/${T}/presentie/demo-oud-pres-2`, { datum: '2024-03-12', seizoen: "2023/'24", afwezig: [], telaat: ['demo-oud-2'], afwezigRedenen: {}, selectie: ['demo-oud-1', 'demo-oud-2'], aantalAanwezig: 2, aantalSpelers: 2 });
+    zetSeed(`teams/${T}/wedstrijden/demo-oud-wed-1`, { type: 'normaal', tegenstander: 'Oude tegenstander', datum: '2023-03-18', seizoen: OUD, selectie: ['demo-oud-1'], goals: [], kwarten: {} });
+    zetSeed(`teams/${T}/teamevaluaties/demo-oud-te-1`, { wedstrijdId: 'demo-oud-wed-1', datum: '2023-03-18', seizoen: OUD, scores: {}, door: DOOR });
+  }
   if (DEMO_ROL === 'los'){
     club.leden = {}; club.ledenInfo = {}; uitTeam('demo-o13-1');
     const t = { ...store.get('teams/demo-o11-2') }; delete t.club; delete t.clubNaam; delete t.sportlinkNaam;

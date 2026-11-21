@@ -443,8 +443,9 @@ function maak({ onCall, HttpsError, secrets, REGIO, claude, apiKey, isPlatformBe
         const v = perId.get(tekst(a && a.vraag, 12)); if (!v || gezien.has(v.id)) continue;
         const waarde = schoonVraagWaarde(v, a.waarde, LEEFTIJDEN); if (waarde === undefined) continue;
         gezien.add(v.id);
-        const citaat = maskeer(tekst(a.citaat, 400)), pagina = Math.round(Number(a.pagina));
-        uit.push({ vraag: v.id, waarde, citaat, citaatOk: citaatKlopt(bronN, citaat), pagina: pagina > 0 && pagina < 5000 ? pagina : null, zeker: ['hoog', 'middel', 'laag'].includes(a.zeker) ? a.zeker : 'middel' });
+        /* [20261121c] eerst terugzoeken, dan maskeren: een citaat met een e-mailadres of telefoonnummer werd anders nooit teruggevonden */
+        const ruwCitaat = tekst(a.citaat, 400), citaat = maskeer(ruwCitaat), pagina = Math.round(Number(a.pagina));
+        uit.push({ vraag: v.id, waarde, citaat, citaatOk: citaatKlopt(bronN, ruwCitaat) || citaatKlopt(bronN, citaat), pagina: pagina > 0 && pagina < 5000 ? pagina : null, zeker: ['hoog', 'middel', 'laag'].includes(a.zeker) ? a.zeker : 'middel' });
       }
       return { antwoorden: uit };
     }

@@ -212,8 +212,11 @@ export function instelWijzigingen(veldId, instellingen, ingevuld){
   for (const d of defs){
     const r = controleerInstelling(d, ingevuld[d.pad]);
     if (!r.ok) return { fout: r.fout };
-    nieuw[d.pad] = r.waarde;
-    if (String(r.waarde) !== String(instelWaarde(instellingen, d))) uit.push([d.pad, r.waarde]);
+    /* [20261121c] een leeggemaakte naam in een lijst (bouwen) zou als lege tekst over de standaard heen komen:
+       dan stond er in de hele app een bouw zonder naam. Leeg betekent daar: de standaard. */
+    const w = r.waarde === '' && d.type === 'tekst' && d.standaard && d.pad.startsWith('lijsten.') ? d.standaard : r.waarde;
+    nieuw[d.pad] = w;
+    if (String(w) !== String(instelWaarde(instellingen, d))) uit.push([d.pad, w]);
   }
   if (veldId === 'bouw.grenzen' && !(nieuw['regels.bouwGrenzen.onderTm'] < nieuw['regels.bouwGrenzen.middenTm'])) return { fout: 'De jongste bouw moet eerder ophouden dan de middelste' };
   return { wijzigingen: uit };
@@ -264,13 +267,16 @@ export const regelsUit = s => (Array.isArray(s) ? s : String(s ?? '').split('\n'
    Een ronde: { naam, soort: 'volledig'|'snel', van, tot } met datums als JJJJ-MM-DD. Trainers zien een ronde
    vanaf de startdatum bovenaan hun team (evaluatierondes.js); vooruit klaarzetten kan dus zonder dat iemand iets ziet. */
 const DATUM = /^\d{4}-\d{2}-\d{2}$/;
+/* [20261121c] een datum die echt bestaat: 2026-02-31 heeft de goede vorm, maar is geen dag */
+const echteDatum = s => { if (!DATUM.test(s)) return false; const d = new Date(s + 'T12:00:00Z'); return !isNaN(d) && d.toISOString().slice(0, 10) === s; };
+/* Een ronde die al in Cluppie staat houdt zijn `id` (uit gezet.rondes): zo is hernoemen bijwerken, geen tweede ronde. */
 export function schoonRondes(lijst){
   const uit = [], namen = new Set();
   for (const r of (Array.isArray(lijst) ? lijst : [])){
     const naam = kort(r && r.naam, 60), van = String((r && r.van) || ''), tot = String((r && r.tot) || '');
-    if (!naam || !DATUM.test(tot) || (van && !DATUM.test(van)) || (van && tot < van) || isNaN(Date.parse(tot)) || namen.has(naam.toLowerCase())) continue;
+    if (!naam || !echteDatum(tot) || (van && !echteDatum(van)) || (van && tot < van) || namen.has(naam.toLowerCase())) continue;
     namen.add(naam.toLowerCase());
-    uit.push({ naam, soort: r.soort === 'snel' ? 'snel' : 'volledig', van: van || null, tot });
+    uit.push({ naam, soort: r.soort === 'snel' ? 'snel' : 'volledig', van: van || null, tot, ...(r.id ? { id: kort(r.id, 40) } : {}) });
     if (uit.length >= 6) break;
   }
   return uit;
@@ -281,18 +287,37 @@ export function seizoenVan(label, nuMs = Date.now()){
   const d = new Date(nuMs), start = m ? Number(m[1]) : (d.getMonth() >= 6 ? d.getFullYear() : d.getFullYear() - 1);
   return { start, label: m ? String(label) : `${start}/'${String(start + 1).slice(-2)}`, tekst: `augustus ${start} tot en met juni ${start + 1}` };
 }
-/* Rondes bij de bestaande rondes van de club voegen. Een ronde met dezelfde naam wordt bijgewerkt (datums en soort),
-   niet verdubbeld; er wordt nooit een ronde weggehaald, want er kunnen al beoordelingen aan hangen. */
-export function rondesSamenvoegen(bestaand, nieuw, { teams = [], seizoen = '', nuMs = Date.now() } = {}){
-  const lijst = (Array.isArray(bestaand) ? bestaand : []).filter(r => r && r.id).map(r => ({ ...r })), ids = [];
+/* Rondes bij de bestaande rondes van de club voegen.
+   [20261121c] Een ronde wordt bijgewerkt als hij (1) dezelfde id heeft (eerder door dit onderwerp gezet: hernoemen
+   werkt dan gewoon), of (2) dezelfde naam heeft in hetzelfde seizoen. Een ronde met dezelfde naam uit een ander
+   seizoen blijft zoals hij was: dan komt er een nieuwe bij.
+   `vervallen` = id's die dit onderwerp eerder zette en nu niet meer: die gaan weg als de ronde door het Clubprofiel
+   is gemaakt en nog niet begonnen is (trainers hebben hem dan nog niet gezien). Anders blijft hij staan en staat
+   zijn naam in `blijft`, want er kunnen al beoordelingen aan hangen.
+   Geeft { lijst, ids (in de volgorde van `nieuw`), weg: [id], blijft: [naam] } terug. */
+export function rondesSamenvoegen(bestaand, nieuw, { teams = [], seizoen = '', nuMs = Date.now(), vervallen = [] } = {}){
+  let lijst = (Array.isArray(bestaand) ? bestaand : []).filter(r => r && r.id).map(r => ({ ...r }));
+  const ids = [], vandaag = new Date(nuMs).toISOString().slice(0, 10);
   schoonRondes(nieuw).forEach((r, i) => {
-    const oud = lijst.find(x => String(x.naam || '').toLowerCase() === r.naam.toLowerCase());
-    if (oud){ Object.assign(oud, { soort: r.soort, van: r.van, tot: r.tot }); if (!(oud.teams || []).length) oud.teams = [...teams]; ids.push(oud.id); return; }
+    const oud = (r.id && lijst.find(x => x.id === r.id))
+      || lijst.find(x => !ids.includes(x.id) && String(x.naam || '').toLowerCase() === r.naam.toLowerCase() && (!x.seizoen || !seizoen || x.seizoen === seizoen));
+    if (oud){
+      Object.assign(oud, { soort: r.soort, van: r.van, tot: r.tot }, r.id && oud.id === r.id ? { naam: r.naam } : {});
+      if (!(oud.teams || []).length) oud.teams = [...teams];
+      ids.push(oud.id); return;
+    }
     const id = 'r' + nuMs.toString(36) + i;
-    lijst.push({ id, naam: r.naam, soort: r.soort, van: r.van, tot: r.tot, teams: [...teams], status: 'open', seizoen, gemaaktMs: nuMs });
+    lijst.push({ id, naam: r.naam, soort: r.soort, van: r.van, tot: r.tot, teams: [...teams], status: 'open', seizoen, gemaaktMs: nuMs, bron: 'clubprofiel' });
     ids.push(id);
   });
-  return { lijst, ids };
+  const weg = [], blijft = [];
+  for (const id of new Set(vervallen)){
+    if (ids.includes(id)) continue;
+    const r = lijst.find(x => x.id === id); if (!r) continue;
+    if (r.bron === 'clubprofiel' && r.status !== 'gesloten' && r.van && r.van > vandaag) weg.push(id); else blijft.push(String(r.naam || ''));
+  }
+  if (weg.length) lijst = lijst.filter(r => !weg.includes(r.id));
+  return { lijst, ids, weg, blijft };
 }
 
 /* Het voorstel voor Cluppie bij een veld: alleen wat bij dat veld hoort, instellingen gecontroleerd. */
@@ -333,11 +358,16 @@ export function opTeRuimen(profiel, docId){
 /* Nieuwe bevindingen van één aanroep: geschoond, en zonder wat er al staat (zelfde veld en zelfde uitkomst
    uit hetzelfde document), zodat opnieuw inlezen een beoordeeld antwoord niet verdubbelt. */
 export function nieuweBevindingen(profiel, items, doc, nuMs, maakId){
-  const bestaand = new Set(bevLijst(profiel).map(b => b.veld + '|' + b.docId + '|' + norm(b.waarde)));
+  const alle = bevLijst(profiel);
+  const bestaand = new Set(alle.map(b => b.veld + '|' + b.docId + '|' + norm(b.waarde)));
+  /* [20261121c] De AI formuleert een tweede keer zelden letterlijk gelijk. Een onderwerp waarvan het antwoord uit dit
+     document al is goedgekeurd of afgewezen, slaan we daarom over; bij "overig" mogen er wel meer naast elkaar staan. */
+  const beoordeeld = new Set(alle.filter(b => b.docId === doc.id && !b.handmatig && (b.oordeel !== 'open' || b.verwerkt)).map(b => b.veld));
   const uit = {};
   for (const ruw of Array.isArray(items) ? items : []){
     const b = schoonBevinding({ ...ruw, docId: doc.id, bron: doc.naam, oordeel: 'open', verwerkt: false, gezet: null, handmatig: false, gemaaktMs: nuMs });
     if (!b) continue;
+    if (beoordeeld.has(b.veld) && !veldOpId(b.veld).overig) continue;
     const sleutel = b.veld + '|' + b.docId + '|' + norm(b.waarde);
     if (bestaand.has(sleutel)) continue;
     bestaand.add(sleutel); uit[maakId()] = b;
