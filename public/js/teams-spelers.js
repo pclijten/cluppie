@@ -5,7 +5,7 @@
    bewerken, én het uitlenen van een speler aan een ander team binnen de
    club (thematisch dezelfde "speler"-context, vandaar in één bestand). */
 import { teamsOpId } from './teams-ophalen.js?v=20261011g';
-import { beleidsplanNaam, cfg } from './clubconfig.js?v=20261121c';
+import { beleidsplanNaam, cfg } from './clubconfig.js?v=20261121d';
 import {
   db, collection, doc, addDoc, deleteDoc, updateDoc, setDoc,
   getDoc, getDocs, query, where, serverTimestamp, documentId, deleteField,
@@ -13,34 +13,34 @@ import {
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, speler, uurMin, openModal, sluitModal, modAan, isBeheerder
-} from './state.js?v=20261121c';
+} from './state.js?v=20261121d';
 import {
   niveau, niveauKleur, NIVEAUS, SKILLS, skillDomein,
   LEERCURVE, leercurveRelevant, leercurveThema, snelTag, SNEL_TAGS,
   POSITIE_GROEPEN, SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo,
   wisselReden, isToernooi
-} from './config.js?v=20261121c';
-import { analyseWedstrijd, speeltijdReserve, disciplinaireTijd, telaatTijd, persoonlijkeNoemer } from './analyse.js?v=20261121c';
-import { isBouwCoordinator } from './coordinatoren.js?v=20261121c';
-import { magUitlenen } from './uitleen-rechten.js?v=20261121c';
+} from './config.js?v=20261121d';
+import { analyseWedstrijd, speeltijdReserve, disciplinaireTijd, telaatTijd, persoonlijkeNoemer } from './analyse.js?v=20261121d';
+import { isBouwCoordinator } from './coordinatoren.js?v=20261121d';
+import { magUitlenen } from './uitleen-rechten.js?v=20261121d';
 import { leenOmschrijving, leenActief } from './uitleen-regels.js?v=20261113b';
 import { ico } from './icons.js?v=20261116t';
-import { rondesVoorTeam, rondeSpelers, datumKort } from './evaluatierondes.js?v=20261121c';
+import { rondesVoorTeam, rondeSpelers, datumKort } from './evaluatierondes.js?v=20261121d';
 
-import { toonThemaInfo } from './teams-leerlijn.js?v=20261121c';
-import { telGebruik } from './tracker.js?v=20261121c';
+import { toonThemaInfo } from './teams-leerlijn.js?v=20261121d';
+import { telGebruik } from './tracker.js?v=20261121d';
 import { opkomstVoor, teltMee } from './opkomst.js?v=20260922c';
-import { heeftElftallen, filterOpElftal, elftalPillen } from './elftallen.js?v=20261121c';
-import { bouwVanTeam, eigenBouwenVanTeam } from './bouw-indeling.js?v=20261121c';
+import { heeftElftallen, filterOpElftal, elftalPillen } from './elftallen.js?v=20261121d';
+import { bouwVanTeam, eigenBouwenVanTeam } from './bouw-indeling.js?v=20261121d';
 import { htmlVolledigFormulier, koppelVolledigFormulier, koppelInfo, htmlSamenvatting, htmlNaslagLink, htmlSnelAnker,
-  domeinScores, leeftijdTeam, naslagEersteKeer, htmlSpelerRadar, domeinWaardenEcht } from './beoordeling-volledig.js?v=20261121c';
+  domeinScores, leeftijdTeam, naslagEersteKeer, htmlSpelerRadar, domeinWaardenEcht } from './beoordeling-volledig.js?v=20261121d';
 
 /* Cross-module her-render: teams.js importeert functies van hieruit, dus
    deze module mag teams.js niet statisch terug-importeren (circulaire
    import). Dynamic import() binnen de aanroepende functie is het patroon
    dat de rest van de app ook al gebruikt (zie club.js/wedstrijd.js). */
 async function herrenderTeam(){
-  const m = await import('./teams.js?v=20261121c');
+  const m = await import('./teams.js?v=20261121d');
   m.renderTeam();
 }
 
@@ -98,7 +98,7 @@ export function htmlSpelers(){
           <div class="n">${esc(p.naam)}${sub}</div>
           ${lp ? `<span class="chip-info">${lp} leerpunt${lp===1?'':'en'}</span>` : ''}
           ${heeftNotitie ? `<span class="notitie-vlag" title="Heeft een coach-notitie">!</span>` : ''}
-          ${ingeleend ? `<span class="chip-info u-c-ok" style="background:rgba(53,196,122,.15)">ingeleend</span>` : ''}
+          ${ingeleend ? `<span class="chip-info u-c-ok" style="background:color-mix(in srgb, var(--ok) 15%, transparent)">ingeleend</span>` : ''}
           ${p._uitgeleendAan ? `<span class="chip-info" style="cursor:pointer" data-uitleen-terug="${p._leenIdUit}" title="Terughalen">⇄ terug</span>` : ''}
           ${stip}
           <span class="pijl">›</span>
@@ -125,7 +125,7 @@ export function htmlSpelers(){
           return `<button class="speler-rij" data-open-profiel="${g.id}" style="border-style:dashed">
             <div class="mini-shirt" style="background:transparent;border:1px dashed var(--ink-2)">${esc(g.nummer ?? '?')}</div>
             <div class="n">${esc(g.naam)}<div class="u-t-2xs u-zacht" style="font-weight:400">gast<span class="sep" aria-hidden="true"></span>nog te koppelen</div></div>
-            <span class="chip-info u-zacht" style="background:rgba(139,149,161,.15)">gast</span>
+            <span class="chip-info u-zacht" style="background:color-mix(in srgb, var(--ink-2) 15%, transparent)">gast</span>
             <span class="pijl">›</span>
           </button>`;
         }).join('');
@@ -239,7 +239,7 @@ function spelerRadarProfiel(p){
 function tipsBalk(score){
   let segs = '';
   for (let i = 1; i <= 5; i++)
-    segs += `<div class="tips-seg" style="background:${i <= score ? niveauKleur(score) : 'rgba(255,255,255,.08)'}"></div>`;
+    segs += `<div class="tips-seg" style="background:${i <= score ? niveauKleur(score) : 'var(--op-vlak-2)'}"></div>`;
   return `<div class="tips-track">${segs}</div>`;
 }
 
@@ -1503,7 +1503,7 @@ export async function modalUitlenen(spelerId){
      Uitgebreid) en mag alleen door coördinatoren en de clubadmin. */
   const team = { ...S.team, id: S.teamId };
   if (!magUitlenen(team)) return meld('Uitlenen regelt de coördinator van de bouw');
-  const m = await import('./uitleen-form.js?v=20261121c');
+  const m = await import('./uitleen-form.js?v=20261121d');
   m.openUitleenForm({ clubId, vanTeam: team, speler: p });
 }
 
@@ -1511,7 +1511,7 @@ export async function modalUitlenen(spelerId){
 export async function wijzigUitlening(u, clubIdOverride, naOpslaan){
   const clubId = clubIdOverride || S.team?.club;
   if (!clubId || !u) return meld('Uitlening niet gevonden');
-  const m = await import('./uitleen-form.js?v=20261121c');
+  const m = await import('./uitleen-form.js?v=20261121d');
   m.openUitleenForm({ clubId, vanTeam: { id: u.vanTeam, naam: u.vanTeamNaam }, speler: { id: u.spelerId, naam: u.snapshot?.naam || 'Speler' }, bestaand: u, naOpslaan });
 }
 

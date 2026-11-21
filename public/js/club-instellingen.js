@@ -13,15 +13,15 @@ import { ico } from './icons.js?v=20261116t';
 import {
   db, doc, collection, addDoc, updateDoc, setDoc, deleteDoc, getDoc, getDocs, query, where, writeBatch, serverTimestamp
 } from './firebase.js?v=20261011g';
-import { S, $, esc, meld, openModal, sluitModal, nieuweCode, isPlatformBeheerder } from './state.js?v=20261121c';
-import { ACTIEF, SEIZOEN_FALLBACK, parseFormatie, aantalVeldspelers, SKILLS, LEERCURVE, catLabel } from './config.js?v=20261121c';
+import { S, $, esc, meld, openModal, sluitModal, nieuweCode, isPlatformBeheerder } from './state.js?v=20261121d';
+import { ACTIEF, SEIZOEN_FALLBACK, parseFormatie, aantalVeldspelers, SKILLS, LEERCURVE, catLabel } from './config.js?v=20261121d';
 import {
   effectief, isLegacy, mergeLijst, LIJST_DEFS, ORIGINEEL, NEUTRAAL, CLUPPIE_LOGO, ICOONNAMEN,
   valideerKalender, herlaadKalender, pasClubConfigToe, clubAfk, DISTRICTEN
-} from './clubconfig.js?v=20261121c';
-import { MODULE_DEFS } from './club-beheer.js?v=20261121c';
-import { lerenBeschikbaar } from './leren-signalen.js?v=20261121c';
-import { doorPlatformUit, werkwijzeVan, modulesVoorNieuweClub } from './onderdelen.js?v=20261121c';
+} from './clubconfig.js?v=20261121d';
+import { MODULE_DEFS } from './club-beheer.js?v=20261121d';
+import { lerenBeschikbaar } from './leren-signalen.js?v=20261121d';
+import { doorPlatformUit, werkwijzeVan, modulesVoorNieuweClub } from './onderdelen.js?v=20261121d';
 
 /* ---------- Tabs ---------- */
 export const INSTEL_TABS = [
@@ -520,7 +520,7 @@ export function koppelInstelNieuw(v, herteken){
   else if (sub === 'pedagogiek') koppelPedagogiek(v, herteken);
   else if (sub === 'regels') koppelRegels(v, herteken);
   else if (sub === 'ai') koppelAI(v, herteken);
-  else if (sub === 'toegang') import('./toegang.js?v=20261121c').then(m => m.koppelToegang(v, herteken));
+  else if (sub === 'toegang') import('./toegang.js?v=20261121d').then(m => m.koppelToegang(v, herteken));
 }
 
 /* ---------- Identiteit ---------- */
@@ -537,7 +537,7 @@ function tabIdentiteit(eff){
       <button class="knop vol klein" id="idOpslaanNaam">Opslaan</button>`)}
     ${kaart('Logo', '', `
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px">
-        <img id="idLogoVoorbeeld" src="${esc(logo || CLUPPIE_LOGO)}" alt="" style="width:72px;height:72px;object-fit:contain;border-radius:14px;background:rgba(255,255,255,.06);padding:6px">
+        <img id="idLogoVoorbeeld" src="${esc(logo || CLUPPIE_LOGO)}" alt="" style="width:72px;height:72px;object-fit:contain;border-radius:var(--radius);background:var(--op-vlak);padding:6px">
         <div style="flex:1"><input type="file" id="idLogoBestand" accept="image/*" style="display:none">
           <button class="knop licht klein" id="idLogoKies">Logo kiezen…</button>
           ${logo ? '<button class="knop licht klein" id="idLogoWeg" style="margin-left:6px">Verwijderen</button>' : ''}</div></div>
@@ -642,7 +642,7 @@ function kalenderImport(){
   return `
     <div class="cb-uitleg" style="margin-bottom:8px">Plak de kalender als JSON, of kies een bestand. Gebruik de standaardkalender als voorbeeld van het formaat.</div>
     ${veldGroep('Seizoen (label)', `<input class="invoer" id="kalLabel" placeholder="2026/'27" maxlength="14" value="${esc(S.club.huidigSeizoen || '')}">`)}
-    <textarea class="invoer" id="kalTekst" rows="6" placeholder='{"pup":[{"d":"2026-09-06","t":"wd","l":"Fase 1"}],"jun":[],"sen":[],"mei":[]}' spellcheck="false" style="font-family:monospace;font-size:12px"></textarea>
+    <textarea class="invoer" id="kalTekst" rows="6" placeholder='{"pup":[{"d":"2026-09-06","t":"wd","l":"Fase 1"}],"jun":[],"sen":[],"mei":[]}' spellcheck="false" style="font-family:monospace;font-size:var(--t-xs)"></textarea>
     <input type="file" id="kalBestand" accept=".json,application/json" style="display:none">
     <div class="rij" style="margin-top:8px">
       <button class="knop licht klein" id="kalKies">Bestand kiezen…</button>
@@ -913,7 +913,7 @@ export function modalNieuweClub(naCreatie){
         W.naam = b.querySelector('#wzNaam').value; W.district = b.querySelector('#wzDistrict').value;
         k.disabled = true; uit.innerHTML = '<div class="sl-laden"><span class="sl-spin"></span>Club opzoeken in Sportlink…</div>';
         try {
-          const { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261121c');
+          const { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261121d');
           const info = await zoekClubInSportlink(id);
           if (info.gevonden){
             const [logo, kleur] = await Promise.all([verkleinSportlinkLogo(info.logo), leesbareKleur(info.kleur)]);
@@ -922,7 +922,7 @@ export function modalNieuweClub(naCreatie){
             W.slVondst = htmlClubVondst(info, { logo, kleur });
           } else { W.clubcode = ''; W.slVondst = htmlClubVondst(info); }
         } catch (x){
-          const { htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261121c');
+          const { htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261121d');
           W.slVondst = htmlClubVondst(null, { fout: x });
         }
         k.disabled = false; teken();
@@ -932,7 +932,7 @@ export function modalNieuweClub(naCreatie){
       b.innerHTML = kop() + `
         ${veldGroep('Afkorting', `<input class="invoer" id="wzAfk" maxlength="6" value="${esc(vs)}" style="text-transform:uppercase" autocomplete="off">`, 'Voorvoegsel van teamcodes, bv. RKVVJO11-1.')}
         <div class="veldgroep"><label>Logo (optioneel)</label>
-          <div style="display:flex;align-items:center;gap:14px"><img id="wzLogoV" src="${esc(W.logo || CLUPPIE_LOGO)}" alt="" style="width:64px;height:64px;object-fit:contain;border-radius:12px;background:rgba(255,255,255,.06);padding:5px">
+          <div style="display:flex;align-items:center;gap:14px"><img id="wzLogoV" src="${esc(W.logo || CLUPPIE_LOGO)}" alt="" style="width:64px;height:64px;object-fit:contain;border-radius:var(--radius);background:var(--op-vlak);padding:5px">
             <input type="file" id="wzLogoF" accept="image/*" style="display:none"><button class="knop licht klein" id="wzLogoK">Kiezen…</button>${W.logo ? '<button class="knop licht klein" id="wzLogoW">Weg</button>' : ''}</div></div>
         <div class="veldgroep"><label>Hoofdkleur</label><input type="color" id="wzKleur" value="${W.kleur}" style="width:56px;height:44px;border:none;background:none;padding:0">
           <div id="wzKleurVb" style="margin-top:8px">${kleurVoorbeeld(W.kleur)}</div></div>

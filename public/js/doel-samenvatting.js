@@ -11,8 +11,8 @@
         andere coaches niet opnieuw hoeven te vragen.
    Faalt de AI, dan blijft de eerste doelregel staan: de kaart breekt nooit. */
 import { functions, httpsCallable, db, doc, updateDoc } from './firebase.js?v=20261011g';
-import { S } from './state.js?v=20261121c';
-import { aiAan, aiDoel } from './clubconfig.js?v=20261121c';
+import { S } from './state.js?v=20261121d';
+import { aiAan, aiDoel } from './clubconfig.js?v=20261121d';
 
 const MAX_TEKENS = 90;
 const geheugen = new Map();      // id+hash -> tekst (deze sessie)

@@ -25,11 +25,11 @@
    Cijfers, beoordelingen en opkomst tellen over alle teams in de bouw, zodat
    een verhuisde speler zijn historie houdt. Geen extra reads, behalve één
    getDoc per verhuizing (vers spelerdocument). */
-import { S, esc, meld } from './state.js?v=20261121c';
+import { S, esc, meld } from './state.js?v=20261121d';
 import { db, doc, collection, getDoc, writeBatch, serverTimestamp } from './firebase.js?v=20261011g';
-import { bouwLeenSnapshot } from './teams-spelers.js?v=20261121c';
-import { SKILLS, POSITIE_GROEPEN, TEAM_CATEGORIEEN } from './config.js?v=20261121c';
-import { analyseWedstrijd, speeltijdReserve } from './analyse.js?v=20261121c';
+import { bouwLeenSnapshot } from './teams-spelers.js?v=20261121d';
+import { SKILLS, POSITIE_GROEPEN, TEAM_CATEGORIEEN } from './config.js?v=20261121d';
+import { analyseWedstrijd, speeltijdReserve } from './analyse.js?v=20261121d';
 import { opkomstVoor } from './opkomst.js?v=20260922c';
 import { teLeeftijd, teCriteriaVoor, teScores } from './team-evaluatie-criteria.js?v=20261120a';
 
@@ -263,7 +263,7 @@ function radarSvg(laatste, gemid, assen, breed = false){
     const [x, y] = pt(i, 5), [lx, ly] = pt(i, breed ? 6.1 : 6.3);
     const anker = breed && Math.abs(lx - cx) > 8 ? (lx > cx ? 'start' : 'end') : 'middle';
     s += `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" style="stroke:var(--line-d)"/>`;
-    s += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anker}" dominant-baseline="middle" style="fill:${d.kleur};font-family:${breed ? 'Inter,sans-serif;font-weight:600;font-size:12px' : "'Barlow Condensed',sans-serif;font-weight:800;font-size:15px"}">${esc(d.label)}</text>`;
+    s += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anker}" dominant-baseline="middle" style="fill:${d.kleur};font-family:${breed ? 'var(--font-body);font-weight:600;font-size:12px' : 'var(--font-display);font-weight:800;font-size:15px'}">${esc(d.label)}</text>`;
   });
   s += `<polygon points="${poly(gemid)}" style="fill:color-mix(in srgb,var(--elf2) 14%,transparent);stroke:var(--elf2);stroke-width:1.8;stroke-dasharray:5 3"/>`;
   s += `<polygon points="${poly(laatste)}" style="fill:color-mix(in srgb,var(--accent) 30%,transparent);stroke:var(--accent);stroke-width:2.4;stroke-linejoin:round"/>`;

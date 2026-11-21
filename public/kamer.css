@@ -1,5 +1,5 @@
-/* Hallmark · checked: 2026-11-16 · genre: modern-minimal
- * floor: 0 FAIL · fixed: 5 (24a, 34, 40, 48, 67) · structural: 0 printed
+/* Hallmark · checked: 2026-11-21 · genre: modern-minimal
+ * floor: 0 FAIL · fixed: 5 (24a, 34, 40, 48, 67); 2026-11-21: hoeken, letters en tijd op de tokens van styles.css · structural: 0 printed
  * built: the project · theme: brand (Cluppie) · scope: app · redesign: polish · v2.0.0 */
 /* ==================== TEAMKAMER [20261116n] ====================
    Eén stijlblad voor de teamkamer: de pagina van ouders en spelers (kamer.html, html.tk-pagina) en het
@@ -12,6 +12,9 @@
   --bg:#0e1116; --surface:#181d24; --surface-2:#1f262f; --ink:#f5f6f8; --ink-2:#8b95a1; --hair:rgba(255,255,255,.08); --line-d:rgba(255,255,255,.06);
   --accent:#f25a53; --accent-vlak:#cc2620; --accent-ink:#fdfdfe; --accent-tekst:#ff7a72; --ok:#35c47a; --warn:#f5b13d; --veld:#16361f;
   --wit:#fdfdfe; --zwart:#0b0d10; --waas:rgba(10,13,18,.6); --ok-ink:#06210f; --tk-kalk:rgba(255,255,255,.35); --tk-naam-vlak:rgba(11,13,16,.72);
+  --t-2xs:11px; --t-xs:12px; --t-sm:13px; --t-md:14px; --t-base:15px; --t-lg:16px; --t-xl:18px; --t-2xl:20px; --t-3xl:24px; --t-4xl:28px; --t-5xl:32px; --t-6xl:40px;
+  --r-2xs:3px; --r-xs:6px; --r-s:10px; --radius:14px; --r-m:16px; --r-l:22px; --r-pill:999px;
+  --dur-micro:120ms; --dur-short:220ms; --dur-long:420ms; --focus:var(--accent);
   --space-3xs:2px; --space-2xs:4px; --space-xs:8px; --space-sm:12px; --space-md:16px; --space-lg:24px; --space-xl:40px; --space-2xl:64px; --space-3xl:96px;
   color-scheme:dark;
 }
@@ -20,7 +23,7 @@
   --accent:#c8211c; --accent-vlak:#c8211c; --accent-ink:#fdfdfe; --accent-tekst:#c8211c; --ok:#178048; --ok-ink:#fdfdfe; --warn:#8f5207; --veld:#2e7d46;
   color-scheme:light;
 }
-html.tk-pagina, html.tk-pagina body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.45;-webkit-text-size-adjust:100%;overflow-x:clip}
+html.tk-pagina, html.tk-pagina body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:var(--t-base);line-height:1.45;-webkit-text-size-adjust:100%;overflow-x:clip}
 html.tk-pagina *{box-sizing:border-box}
 html, body{overflow-x:clip}
 /* [20261116p] Lange woorden (een e-mailadres, een clubnaam) breken af in plaats van het scherm breder te maken:
@@ -45,21 +48,21 @@ html.tk-pagina a{color:var(--accent-tekst)}
 .tk-kolom{display:flex;flex-direction:column;gap:var(--space-sm);min-width:0}
 .tk-nav{position:fixed;left:0;right:0;bottom:0;z-index:5;display:flex;justify-content:center;background:var(--surface);border-top:1px solid var(--line-d);padding-bottom:env(safe-area-inset-bottom)}
 .tk-nav-in{width:100%;max-width:480px;display:grid;grid-auto-flow:column;grid-auto-columns:1fr}
-.tk-nav button{min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-2xs);background:transparent;border:0;color:var(--ink-2);font-size:12px;font-weight:600;cursor:pointer}
+.tk-nav button{min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-2xs);background:transparent;border:0;color:var(--ink-2);font-size:var(--t-xs);font-weight:600;cursor:pointer}
 .tk-nav button[aria-current="true"]{color:var(--accent-tekst)}
 .tk-nav svg, .tk-ico{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .tk-ico.klein{width:20px;height:20px}
-.tk-merk{width:40px;height:40px;border-radius:10px;flex:none;display:block}
+.tk-merk{width:40px;height:40px;border-radius:var(--r-s);flex:none;display:block}
 .tk-merkregel{display:flex;align-items:center;gap:var(--space-sm);min-width:0}
 .tk-merkregel b{display:block;font-family:var(--font-display);font-weight:700;font-size:22px;line-height:1.05;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tk-merkregel small{display:block;font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tk-merkregel small{display:block;font-size:var(--t-sm);color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tk-merkregel > span{min-width:0}
 @media (min-width:960px){
   .tk-nav{display:none}
   .tk-zij{display:flex;flex-direction:column;gap:var(--space-2xs);width:256px;flex:none;position:sticky;top:0;height:100dvh;background:var(--surface);border-right:1px solid var(--line-d);padding:var(--space-md) var(--space-sm)}
   .tk-zij .tk-merkregel{padding:var(--space-2xs) var(--space-xs) var(--space-md)}
-  .tk-zij-kop{font-size:13px;color:var(--ink-2);padding:var(--space-xs) var(--space-sm) var(--space-2xs)}
-  .tk-zij button{display:flex;align-items:center;gap:var(--space-sm);width:100%;min-height:40px;padding:0 var(--space-sm);border:0;border-radius:9px;background:transparent;color:var(--ink);font-size:15px;text-align:left;cursor:pointer}
+  .tk-zij-kop{font-size:var(--t-sm);color:var(--ink-2);padding:var(--space-xs) var(--space-sm) var(--space-2xs)}
+  .tk-zij button{display:flex;align-items:center;gap:var(--space-sm);width:100%;min-height:40px;padding:0 var(--space-sm);border:0;border-radius:var(--r-s);background:transparent;color:var(--ink);font-size:var(--t-base);text-align:left;cursor:pointer}
   .tk-zij button .tk-ico{width:20px;height:20px;color:var(--ink-2)}
   .tk-zij button:hover{background:var(--surface-2)}
   .tk-zij button[aria-current="true"]{background:var(--surface-2);font-weight:600}
@@ -75,118 +78,118 @@ html.tk-pagina a{color:var(--accent-tekst)}
 
 /* ---------- gedeeld: pagina en app ---------- */
 .tkb{max-width:760px;margin-inline:auto;width:100%}
-.tk-label{margin:0;font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;line-height:1.3;color:var(--ink-2)}
+.tk-label{margin:0;font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:var(--t-sm);font-weight:600;line-height:1.3;color:var(--ink-2)}
 .tk-label.accent{color:var(--accent-tekst, var(--accent))}
 .tk-label.ok{color:var(--ok)} .tk-label.let{color:var(--warn)}
-.tk-h1{margin:0;font-family:var(--font-display);font-weight:700;font-size:28px;line-height:1.05;letter-spacing:.5px;text-transform:uppercase}
-.tk-h2{margin:0;font-family:var(--font-display);font-weight:700;font-size:24px;line-height:1.1;letter-spacing:.4px;text-transform:uppercase}
+.tk-h1{margin:0;font-family:var(--font-display);font-weight:700;font-size:var(--t-4xl);line-height:1.05;letter-spacing:.5px;text-transform:uppercase}
+.tk-h2{margin:0;font-family:var(--font-display);font-weight:700;font-size:var(--t-3xl);line-height:1.1;letter-spacing:.4px;text-transform:uppercase}
 .tk-h3{margin:0;font-size:17px;font-weight:600;line-height:1.3}
-.tk-zacht{color:var(--ink-2)} .tk-klein{font-size:13px} .tk-vet{font-weight:600}
+.tk-zacht{color:var(--ink-2)} .tk-klein{font-size:var(--t-sm)} .tk-vet{font-weight:600}
 .tk-ok{color:var(--ok)} .tk-let{color:var(--warn)}
-.tk-kaart{background:var(--surface);border:1px solid var(--hair);border-radius:16px;padding:var(--space-md);display:flex;flex-direction:column;gap:10px}
+.tk-kaart{background:var(--surface);border:1px solid var(--hair);border-radius:var(--r-m);padding:var(--space-md);display:flex;flex-direction:column;gap:10px}
 .tk-kaart.nieuw{border-color:var(--accent-tekst, var(--accent))}
 form.tk-kaart.kaal{border:0;border-radius:0;padding:0;background:transparent}
 .tk-rij{display:flex;justify-content:space-between;align-items:center;gap:var(--space-sm)}
 .tk-rij > :last-child{text-align:right}
 .tk-lijn{border-top:1px solid var(--hair);padding-top:10px}
 .tk-tijden{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-xs)}
-.tk-tijd{background:var(--surface-2);border-radius:10px;padding:10px var(--space-sm)}
-.tk-tijd b{display:block;font-family:var(--font-display);font-weight:700;font-size:24px;line-height:1.1}
-.tk-tijd span{font-size:12px;color:var(--ink-2)}
-.tk-knop{min-height:46px;padding:0 var(--space-md);border-radius:11px;border:1px solid transparent;background:var(--accent-vlak);color:var(--accent-ink);font-size:15px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-xs);text-decoration:none;text-align:center;transition:transform .1s ease, filter .15s ease}
+.tk-tijd{background:var(--surface-2);border-radius:var(--r-s);padding:10px var(--space-sm)}
+.tk-tijd b{display:block;font-family:var(--font-display);font-weight:700;font-size:var(--t-3xl);line-height:1.1}
+.tk-tijd span{font-size:var(--t-xs);color:var(--ink-2)}
+.tk-knop{min-height:46px;padding:0 var(--space-md);border-radius:var(--r-s);border:1px solid transparent;background:var(--accent-vlak);color:var(--accent-ink);font-size:var(--t-base);font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-xs);text-decoration:none;text-align:center;transition:transform var(--dur-micro) ease, filter var(--dur-micro) ease}
 html.tk-pagina a.tk-knop{color:var(--accent-ink)}
 .tk-knop:hover{filter:brightness(1.05)}
 .tk-knop:active{transform:scale(.98)}
 .tk-knop.licht, html.tk-pagina a.tk-knop.licht{background:var(--surface-2);color:var(--ink);border-color:var(--hair)}
-.tk-knop.klein{min-height:44px;padding:0 var(--space-sm);font-size:14px;border-radius:9px}
+.tk-knop.klein{min-height:44px;padding:0 var(--space-sm);font-size:var(--t-md);border-radius:var(--r-s)}
 .tk-knop.vol{width:100%}
 .tk-knop.tekst, html.tk-pagina a.tk-knop.tekst{background:transparent;color:var(--accent-tekst, var(--accent));padding:0 var(--space-2xs)}
 .tk-knop:disabled{opacity:.5;cursor:not-allowed}
 .tk-knop:focus-visible, .tk-optie:focus-visible, .tk-sw:focus-visible, .tk-item-kop:focus-visible, .tk-nav button:focus-visible, .tk-zij button:focus-visible,
-.tk-chip:focus-visible, .tk-seg button:focus-visible, .tk-video-kies:focus-visible, .tk-video-speel:focus-visible, .tk-invoer:focus-visible, html.tk-pagina a:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.tk-chip:focus-visible, .tk-seg button:focus-visible, .tk-video-kies:focus-visible, .tk-video-speel:focus-visible, .tk-invoer:focus-visible, html.tk-pagina a:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .tk-twee{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-xs)}
 .tk-veld{display:flex;flex-direction:column;gap:6px}
-.tk-veld label, .tk-veldnaam{margin:0;font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;color:var(--ink-2)}
-.tk-invoer{min-height:46px;width:100%;border-radius:11px;border:1px solid color-mix(in srgb, var(--ink) 38%, transparent);background:var(--surface);color:var(--ink);font-size:16px;padding:0 var(--space-sm)}
+.tk-veld label, .tk-veldnaam{margin:0;font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:var(--t-sm);font-weight:600;color:var(--ink-2)}
+.tk-invoer{min-height:46px;width:100%;border-radius:var(--r-s);border:1px solid color-mix(in srgb, var(--ink) 38%, transparent);background:var(--surface);color:var(--ink);font-size:var(--t-lg);padding:0 var(--space-sm)}
 .tk-invoer::placeholder{color:var(--ink-2)}
 textarea.tk-invoer{padding:var(--space-sm);min-height:96px;resize:vertical;line-height:1.45}
 select.tk-invoer{padding-right:var(--space-xs)}
-.tk-code{font-family:var(--font-mono);font-weight:700;font-size:32px;font-variant-numeric:tabular-nums;text-align:center;text-transform:uppercase;min-height:64px}
+.tk-code{font-family:var(--font-mono);font-weight:700;font-size:var(--t-5xl);font-variant-numeric:tabular-nums;text-align:center;text-transform:uppercase;min-height:64px}
 .tk-vink{display:flex;align-items:center;gap:var(--space-sm);min-height:44px;cursor:pointer}
 .tk-vink input{width:22px;height:22px;flex:none;accent-color:var(--accent-vlak)}
 /* schakelaar: zelfde maat en kleur als in de app (aan is groen); het tikvlak blijft 44 hoog */
 .tk-sw{position:relative;width:46px;height:44px;border:0;background:transparent;padding:0;cursor:pointer;flex:none}
-.tk-sw::before{content:"";position:absolute;left:0;top:8px;width:46px;height:28px;border-radius:999px;background:var(--surface-2);border:1px solid color-mix(in srgb, var(--ink) 38%, transparent)}
-.tk-sw::after{content:"";position:absolute;top:12px;left:4px;width:20px;height:20px;border-radius:50%;background:var(--ink-2);transition:transform .15s ease}
+.tk-sw::before{content:"";position:absolute;left:0;top:8px;width:46px;height:28px;border-radius:var(--r-pill);background:var(--surface-2);border:1px solid color-mix(in srgb, var(--ink) 38%, transparent)}
+.tk-sw::after{content:"";position:absolute;top:12px;left:4px;width:20px;height:20px;border-radius:50%;background:var(--ink-2);transition:transform var(--dur-micro) ease}
 .tk-sw[aria-checked="true"]::before{background:var(--ok);border-color:transparent}
 .tk-sw[aria-checked="true"]::after{transform:translateX(18px);background:var(--wit)}
 .tk-schakel{display:flex;align-items:center;gap:var(--space-sm);min-height:52px}
 .tk-schakel > div{flex:1;min-width:0}
 /* tabbladen: zoals .segment in de app */
-.tk-seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:var(--space-2xs);padding:var(--space-2xs);background:var(--surface-2);border-radius:11px}
-.tk-seg button{min-height:44px;border-radius:9px;border:0;background:transparent;color:var(--ink-2);font-size:14px;font-weight:600;cursor:pointer}
+.tk-seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:var(--space-2xs);padding:var(--space-2xs);background:var(--surface-2);border-radius:var(--r-s)}
+.tk-seg button{min-height:44px;border-radius:var(--r-s);border:0;background:transparent;color:var(--ink-2);font-size:var(--t-md);font-weight:600;cursor:pointer}
 .tk-seg button[aria-pressed="true"]{background:var(--accent-vlak);color:var(--accent-ink)}
 .tk-chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-xs)}
-.tk-chip{min-height:44px;border-radius:9px;border:1px solid var(--hair);background:var(--surface-2);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer}
+.tk-chip{min-height:44px;border-radius:var(--r-s);border:1px solid var(--hair);background:var(--surface-2);color:var(--ink);font-size:var(--t-md);font-weight:600;cursor:pointer}
 .tk-chip[aria-pressed="true"]{border-color:var(--accent-tekst, var(--accent));box-shadow:inset 0 0 0 1px var(--accent-tekst, var(--accent))}
-.tk-melding{background:var(--surface-2);border-radius:11px;padding:var(--space-sm) 14px;display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--ink-2)}
+.tk-melding{background:var(--surface-2);border-radius:var(--r-s);padding:var(--space-sm) 14px;display:flex;gap:10px;align-items:flex-start;font-size:var(--t-sm);color:var(--ink-2)}
 .tk-fout{color:var(--warn);font-weight:600}
 
 /* agenda */
-.tk-item{background:var(--surface);border:1px solid var(--hair);border-radius:16px;overflow:hidden}
-.tk-item-kop{display:flex;align-items:center;gap:14px;width:100%;min-height:72px;padding:var(--space-sm) var(--space-md);background:transparent;border:0;color:var(--ink);text-align:left;cursor:pointer;font-size:15px}
+.tk-item{background:var(--surface);border:1px solid var(--hair);border-radius:var(--r-m);overflow:hidden}
+.tk-item-kop{display:flex;align-items:center;gap:14px;width:100%;min-height:72px;padding:var(--space-sm) var(--space-md);background:transparent;border:0;color:var(--ink);text-align:left;cursor:pointer;font-size:var(--t-base)}
 .tk-datum{width:48px;text-align:center;flex:none}
-.tk-datum b{display:block;font-family:var(--font-display);font-weight:700;font-size:28px;line-height:1}
-.tk-datum span{font-size:12px;color:var(--ink-2)} .tk-datum span:first-child{font-weight:600;color:var(--accent-tekst, var(--accent))}
+.tk-datum b{display:block;font-family:var(--font-display);font-weight:700;font-size:var(--t-4xl);line-height:1}
+.tk-datum span{font-size:var(--t-xs);color:var(--ink-2)} .tk-datum span:first-child{font-weight:600;color:var(--accent-tekst, var(--accent))}
 .tk-item-tekst{flex:1;min-width:0}
 .tk-item-meer{border-top:1px solid var(--hair);padding:var(--space-sm) var(--space-md) var(--space-md);display:flex;flex-direction:column;gap:var(--space-xs)}
 .tk-afgelast{text-decoration:line-through;color:var(--ink-2)}
-.tk-stand{font-family:var(--font-display);font-weight:700;font-size:40px;line-height:1;text-align:center}
+.tk-stand{font-family:var(--font-display);font-weight:700;font-size:var(--t-6xl);line-height:1;text-align:center}
 
 /* polls */
-.tk-optie{display:flex;flex-direction:column;gap:var(--space-xs);width:100%;min-height:56px;padding:var(--space-sm) 14px;background:var(--surface-2);border:1px solid var(--hair);border-radius:11px;color:var(--ink);text-align:left;cursor:pointer;font-size:15px}
+.tk-optie{display:flex;flex-direction:column;gap:var(--space-xs);width:100%;min-height:56px;padding:var(--space-sm) 14px;background:var(--surface-2);border:1px solid var(--hair);border-radius:var(--r-s);color:var(--ink);text-align:left;cursor:pointer;font-size:var(--t-base)}
 .tk-optie[aria-pressed="true"]{border-color:var(--accent-tekst, var(--accent));box-shadow:inset 0 0 0 1px var(--accent-tekst, var(--accent))}
 .tk-optie:disabled{cursor:default}
 .tk-optie-kop{display:flex;align-items:center;gap:10px}
 .tk-optie-kop > :first-child{flex:1;font-weight:600}
 .tk-optie-kop b{font-family:var(--font-display);font-size:22px;line-height:1}
-.tk-balk{display:block;height:6px;border-radius:999px;background:color-mix(in srgb, var(--ink) 12%, transparent);overflow:hidden}
-.tk-balk i{display:block;height:6px;border-radius:999px;background:var(--accent-vlak)}
-.tk-jouw{font-size:12px;font-weight:600;color:var(--accent-tekst, var(--accent))}
+.tk-balk{display:block;height:6px;border-radius:var(--r-pill);background:color-mix(in srgb, var(--ink) 12%, transparent);overflow:hidden}
+.tk-balk i{display:block;height:6px;border-radius:var(--r-pill);background:var(--accent-vlak)}
+.tk-jouw{font-size:var(--t-xs);font-weight:600;color:var(--accent-tekst, var(--accent))}
 
 /* spelers */
 .tk-shirts{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:var(--space-xs)}
-.tk-shirt{display:flex;flex-direction:column;align-items:center;gap:var(--space-2xs);min-width:0;font-size:12px}
-.tk-shirt b{width:40px;height:40px;border-radius:12px;background:var(--surface-2);border:1px solid var(--hair);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:20px}
+.tk-shirt{display:flex;flex-direction:column;align-items:center;gap:var(--space-2xs);min-width:0;font-size:var(--t-xs)}
+.tk-shirt b{width:40px;height:40px;border-radius:var(--radius);background:var(--surface-2);border:1px solid var(--hair);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:var(--t-2xl)}
 .tk-shirt span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tk-nr{width:52px;height:52px;border-radius:14px;background:var(--accent-vlak);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:28px;flex:none}
+.tk-nr{width:52px;height:52px;border-radius:var(--radius);background:var(--accent-vlak);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:var(--t-4xl);flex:none}
 
 /* thuis oefenen: video's */
 .tk-video-rij{display:flex;align-items:center;gap:var(--space-sm);min-height:56px;width:100%;text-align:left}
-.tk-video-kies, .tk-video-speel{padding:6px;border:1px solid var(--hair);border-radius:11px;background:var(--surface-2);color:var(--ink);font-size:15px;cursor:pointer}
-.tk-video-beeld{position:relative;width:72px;height:44px;border-radius:7px;overflow:hidden;flex:none;background:var(--zwart);display:block}
+.tk-video-kies, .tk-video-speel{padding:6px;border:1px solid var(--hair);border-radius:var(--r-s);background:var(--surface-2);color:var(--ink);font-size:var(--t-base);cursor:pointer}
+.tk-video-beeld{position:relative;width:72px;height:44px;border-radius:var(--r-xs);overflow:hidden;flex:none;background:var(--zwart);display:block}
 .tk-video-beeld img{width:100%;height:100%;object-fit:cover;display:block}
 .tk-video-beeld::after{content:"";position:absolute;left:50%;top:50%;margin:-7px 0 0 calc(var(--space-2xs) * -1);border-style:solid;border-width:7px 0 7px 11px;border-color:transparent transparent transparent var(--wit)}
-.tk-speler{background:var(--zwart);border-radius:12px;overflow:hidden;aspect-ratio:16/9;width:100%}
+.tk-speler{background:var(--zwart);border-radius:var(--radius);overflow:hidden;aspect-ratio:16/9;width:100%}
 .tk-speler iframe, .tk-speler video{display:block;width:100%;height:100%;border:0}
 
 /* blad onderaan (afmelden via WhatsApp, video afspelen) */
 .tk-blad-achter{position:fixed;inset:0;background:var(--waas, var(--ob-waas));display:flex;flex-direction:column;justify-content:flex-end;z-index:50}
-.tk-blad{background:var(--surface);border-radius:22px 22px 0 0;padding:20px var(--space-md) calc(var(--space-lg) + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:var(--space-sm);max-width:480px;width:100%;margin:0 auto}
+.tk-blad{background:var(--surface);border-radius:var(--r-l) var(--r-l) 0 0;padding:20px var(--space-md) calc(var(--space-lg) + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:var(--space-sm);max-width:480px;width:100%;margin:0 auto}
 .tk-blad.breed{max-width:760px}
 @media (min-width:960px){
   .tk-blad-achter{justify-content:center;padding:var(--space-lg)}
-  .tk-blad{border-radius:22px;padding:var(--space-lg)}
+  .tk-blad{border-radius:var(--r-l);padding:var(--space-lg)}
 }
-.tk-bericht{background:var(--surface-2);border-radius:11px;padding:14px}
-.tk-toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px var(--space-md);border-radius:999px;font-size:14px;font-weight:600;z-index:60;max-width:90%;text-align:center}
-.tk-3d{border-radius:12px;overflow:hidden;background:var(--surface-2)}
+.tk-bericht{background:var(--surface-2);border-radius:var(--r-s);padding:14px}
+.tk-toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px var(--space-md);border-radius:var(--r-pill);font-size:var(--t-md);font-weight:600;z-index:60;max-width:90%;text-align:center}
+.tk-3d{border-radius:var(--radius);overflow:hidden;background:var(--surface-2)}
 .tk-3d .s3d-knoppen{display:flex;flex-wrap:wrap;gap:var(--space-xs);padding:var(--space-xs)}
-.tk-3d .s3d-knoppen button{min-height:44px;padding:0 var(--space-sm);border-radius:9px;border:1px solid var(--hair);background:transparent;color:var(--ink);font-weight:600;cursor:pointer}
+.tk-3d .s3d-knoppen button{min-height:44px;padding:0 var(--space-sm);border-radius:var(--r-s);border:1px solid var(--hair);background:transparent;color:var(--ink);font-weight:600;cursor:pointer}
 .tk-3d .s3d-stage{height:300px;position:relative;overflow:hidden;background:radial-gradient(ellipse at center,color-mix(in srgb,var(--veld) 55%,var(--surface)) 0%,var(--bg) 75%)}
 .tk-3d .s3d-stage canvas{display:block;width:100%;height:100%}
 .tk-3d .s3d-wacht{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--ink-2)}
-.tk-3d .s3d-stap{padding:0 var(--space-sm) var(--space-sm);font-size:14px}
+.tk-3d .s3d-stap{padding:0 var(--space-sm) var(--space-sm);font-size:var(--t-md)}
 @media (prefers-reduced-motion: reduce){ .tk-sw::after, .tk-knop{transition:none} .tk-knop:active{transform:none} }
 
 /* [20261116p] nieuw van de trainer, teken op de tabs, stappen bij het aanmelden, opstelling op een veld */
@@ -195,37 +198,37 @@ select.tk-invoer{padding-right:var(--space-xs)}
 .tk-nieuw-bericht{display:flex;flex-direction:column;gap:var(--space-2xs)}
 .tk-nieuw-bericht + .tk-nieuw-bericht{border-top:1px solid var(--hair);padding-top:10px}
 .tk-ico-vak{position:relative;display:inline-flex}
-.tk-badge{position:absolute;top:-6px;right:-12px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--accent-vlak);color:var(--accent-ink);font-size:11px;font-weight:700;font-style:normal;line-height:18px;text-align:center}
+.tk-badge{position:absolute;top:-6px;right:-12px;min-width:18px;height:18px;padding:0 5px;border-radius:var(--r-pill);background:var(--accent-vlak);color:var(--accent-ink);font-size:var(--t-2xs);font-weight:700;font-style:normal;line-height:18px;text-align:center}
 .tk-met-knop{display:flex;gap:var(--space-xs);align-items:center}
 .tk-met-knop .tk-invoer{flex:1;min-width:0}
 .tk-met-knop .tk-knop{flex:none;min-height:46px}
 .tk-stappen{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-xs)}
-.tk-stappen li{display:flex;flex-direction:column;align-items:center;gap:var(--space-2xs);text-align:center;font-size:12px;line-height:1.25;color:var(--ink-2);min-width:0}
-.tk-stappen b{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid color-mix(in srgb, var(--ink) 38%, transparent);font-size:14px}
+.tk-stappen li{display:flex;flex-direction:column;align-items:center;gap:var(--space-2xs);text-align:center;font-size:var(--t-xs);line-height:1.25;color:var(--ink-2);min-width:0}
+.tk-stappen b{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid color-mix(in srgb, var(--ink) 38%, transparent);font-size:var(--t-md)}
 .tk-stappen li.nu{color:var(--ink);font-weight:600}
 .tk-stappen li.nu b{background:var(--accent-vlak);border-color:transparent;color:var(--accent-ink)}
 .tk-stappen li.klaar b{background:var(--ok);border-color:transparent;color:var(--ok-ink)}
 .tk-opstelling{display:flex;flex-direction:column;gap:var(--space-xs)}
-.tk-gras{position:relative;width:100%;max-width:420px;margin:0 auto;aspect-ratio:5/6;border-radius:12px;overflow:hidden;
+.tk-gras{position:relative;width:100%;max-width:420px;margin:0 auto;aspect-ratio:5/6;border-radius:var(--radius);overflow:hidden;
   background:repeating-linear-gradient(180deg, color-mix(in srgb, var(--veld) 100%, transparent) 0 12.5%, color-mix(in srgb, var(--veld) 86%, var(--zwart)) 12.5% 25%)}
-.tk-gras::before{content:"";position:absolute;inset:8px;border:2px solid var(--tk-kalk);border-radius:4px}
+.tk-gras::before{content:"";position:absolute;inset:8px;border:2px solid var(--tk-kalk);border-radius:var(--r-2xs)}
 .tk-gras::after{content:"";position:absolute;left:8px;right:8px;top:8px;height:0;border-top:2px solid var(--tk-kalk)}
 .tk-pos{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:var(--space-3xs);width:24%;z-index:1}
-.tk-pos b{width:32px;height:32px;border-radius:50%;background:var(--wit);color:var(--zwart);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:18px;line-height:1}
-.tk-pos span{max-width:100%;padding:1px 6px;border-radius:999px;background:var(--tk-naam-vlak);color:var(--wit);font-size:12px;font-weight:600;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tk-pos b{width:32px;height:32px;border-radius:50%;background:var(--wit);color:var(--zwart);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:var(--t-xl);line-height:1}
+.tk-pos span{max-width:100%;padding:1px 6px;border-radius:var(--r-pill);background:var(--tk-naam-vlak);color:var(--wit);font-size:var(--t-xs);font-weight:600;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tk-pos.eigen b{background:var(--accent-vlak);color:var(--accent-ink);box-shadow:0 0 0 2px var(--wit)}
 
 /* [20261116r] oefeningen van een training */
-.tk-oef{display:flex;align-items:center;gap:var(--space-sm);width:100%;min-height:52px;padding:var(--space-xs) var(--space-sm);background:var(--surface-2);border:1px solid var(--hair);border-radius:11px;color:var(--ink);font-size:15px;text-align:left}
+.tk-oef{display:flex;align-items:center;gap:var(--space-sm);width:100%;min-height:52px;padding:var(--space-xs) var(--space-sm);background:var(--surface-2);border:1px solid var(--hair);border-radius:var(--r-s);color:var(--ink);font-size:var(--t-base);text-align:left}
 button.tk-oef{cursor:pointer}
-button.tk-oef:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+button.tk-oef:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 
 /* platformcentrum: mogelijkheden van de teamkamer onder de hoofdschakelaar */
 .pc-tkopties{margin:var(--space-2xs) 0 var(--space-sm) var(--space-sm);padding-left:var(--space-sm);border-left:2px solid var(--hair)}
 
 /* ---------- trainingshulp [20261118a]: wie helpt bij de training, en zelf inschrijven ---------- */
 .tk-hulp{display:flex;flex-direction:column;gap:10px}
-.tk-hulp-ja{display:flex;align-items:center;gap:10px;background:color-mix(in srgb, var(--ok) 12%, var(--surface));border-radius:11px;padding:6px 6px 6px var(--space-sm);color:var(--ok);font-size:14px}
+.tk-hulp-ja{display:flex;align-items:center;gap:10px;background:color-mix(in srgb, var(--ok) 12%, var(--surface));border-radius:var(--r-s);padding:6px 6px 6px var(--space-sm);color:var(--ok);font-size:var(--t-md)}
 .tk-hulp-ja > span{flex:1;min-width:0}
 .tk-hulp-ja .tk-ico{flex-shrink:0}
 .tk-item-hulp{display:flex;align-items:center;justify-content:space-between;gap:var(--space-sm);padding:0 var(--space-sm) var(--space-sm) var(--space-md);min-height:44px}
