@@ -119,6 +119,7 @@ Paul gaf op 15-11 akkoord om WP2 t/m WP9 zelfstandig te maken. Eerlijk over wat 
 | Schakelaar App Check voor callables (`functions/appcheck.js`) en `docs/appcheck-afdwingen.md` | De console dwingt callables niet af; dat stond nergens in de code | Alle (beveiliging) |
 | Eén deploy-route (`tools/deploy-alles.ps1`, `tools/functies-lijst.mjs`, `docs/deploy-openstaand.md`) | Deploys stonden per release open in PORTEREN.md, sommige weken | Eindbaas; ouders en trainers wachten op de Teamkamer en Trainingshulp |
 | Concepten: opdracht voor een pentest en een DPIA | Gevraagd door Paul; beide zijn voorwaarde vóór dertig clubs en kunnen niet door Claude zelf worden afgerond | Eindbaas, clubs |
+| Huisstijl eenduidig: alle schermen terug op de tokens, `design.md` met de ontwerpafspraken (20261121d, afgerond in 20261121e) | Gevraagd door Paul; wat na de doorloop van 16-11 is toegevoegd of uit ASV'33 overgezet, week af van het systeem (83 van de 89 afwijkingen in de laatste 1.600 regels van `styles.css`) | Alle |
 
 
 ## Fable-verbruik
