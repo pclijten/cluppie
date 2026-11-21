@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
-const css = readFileSync(join(ROOT, 'styles.css'), 'utf8');
+/* Op Windows zet git regeleinden om naar CRLF; de test zoekt op '}\n'. Daarom hier altijd LF. */
+const css = readFileSync(join(ROOT, 'styles.css'), 'utf8').replace(/\r\n/g, '\n');
 let n = 0; const ok = (v, m) => { assert.ok(v, m); n++; };
 
 /* Bewust niet naast de zijbalk, met de reden. */
