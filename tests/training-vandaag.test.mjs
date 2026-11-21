@@ -24,7 +24,9 @@ ok(!isAangepast({ spelers: 14 }, 14) && isAangepast({ spelers: 13 }, 14) && isAa
 ok(WEERKEUZES.length === 4 && WEERKEUZES[0][1] === 'Gewoon', 'vier weerkeuzes');
 
 let vervangingen = 0, groepswijzigingen = 0, plannen = 0;
-for (const [cat, basisN, duur, thema] of [['JO11', 14, 75, 'Positiespel opbouw'], ['JO9', 12, 60, 'Scoren'], ['JO15', 16, 75, 'Omschakelen'], ['JO8', 10, 45, 'Technische vaardigheden'], ['MO13', 13, 75, 'Uitspelen 1:1']]){
+for (const [cat, basisN, duur, thema] of [['JO11', 14, 75, 'Positiespel opbouw'], ['JO9', 12, 60, 'Scoren'], ['JO15', 16, 75, 'Omschakelen'], ['JO8', 10, 45, 'Technische vaardigheden'], ['MO13', 13, 75, 'Uitspelen 1:1'],
+  /* [20261121a] een training met vormen die pas vanaf 7 of 8 spelers kunnen: zo blijft de test ook het vervangen raken */
+  ['JO17', 18, 75, 'Aanvallen met voorzet']]){
   const themas = new Set(V.flatMap(v => v.thema));
   const th = themas.has(thema) ? thema : [...themas][0];
   const { t, plan } = training(cat, basisN, duur, th, cat + duur);
