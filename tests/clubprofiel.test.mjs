@@ -202,7 +202,7 @@ const sm = rondesSamenvoegen([{ id: 'r1', naam: 'Winter', soort: 'snel', tot: '2
 assert.deepEqual(sm.lijst.map(r => [r.id, r.naam, r.tot, r.teams.join('+'), r.status]), [['r1', 'Winter', '2026-12-31', 't1', 'gesloten'], ['r0', 'Eigen ronde van de club', '2026-10-01', 't2', undefined], [sm.ids[1], 'Voorjaar', '2027-05-31', 't1+t2', 'open']]);
 assert.deepEqual([sm.ids[0], sm.lijst[2].seizoen, sm.lijst[2].gemaaktMs, sm.lijst[0].soort], ['r1', "2026/'27", 1000, 'volledig']);
 assert.deepEqual(rondesSamenvoegen(null, [], {}).lijst, []);
-/* [20261121b] hernoemen via de id, ander seizoen, weghalen, en datums die niet bestaan */
+/* [20261121c] hernoemen via de id, ander seizoen, weghalen, en datums die niet bestaan */
 assert.equal(sm.lijst[2].bron, 'clubprofiel', 'een nieuwe ronde draagt zijn herkomst');
 assert.deepEqual(schoonRondes([{ naam: 'Schrikkel', tot: '2026-02-31' }, { naam: 'Echt', van: '2026-02-01', tot: '2026-02-28', id: 'r9' }]), [{ naam: 'Echt', soort: 'volledig', van: '2026-02-01', tot: '2026-02-28', id: 'r9' }]);
 {
@@ -219,10 +219,10 @@ assert.deepEqual(schoonRondes([{ naam: 'Schrikkel', tot: '2026-02-31' }, { naam:
   assert.deepEqual([minder.weg, minder.blijft], [['rb'], ['Herfst', 'Van de club']]);
   assert.deepEqual(rondesSamenvoegen(twee, [], { nuMs: nu, vervallen: ['rb'] }).lijst.map(r => r.id), ['ra', 'rc', 'rd'], 'alles weghalen kan ook');
 }
-/* [20261121b] opnieuw inlezen: een beoordeeld onderwerp van hetzelfde document komt er niet in andere woorden bij */
+/* [20261121c] opnieuw inlezen: een beoordeeld onderwerp van hetzelfde document komt er niet in andere woorden bij */
 assert.deepEqual(nieuweBevindingen(profiel, [{ veld: 'bouw.indeling', waarde: 'De club kent drie bouwen: onder, midden en boven' }], d1, 4000, id), {}, 'al goedgekeurd uit dit document');
 assert.equal(Object.keys(nieuweBevindingen(profiel, [{ veld: 'bouw.indeling', waarde: 'De club kent drie bouwen: onder, midden en boven' }], { id: 'd9', naam: 'Ander.pdf' }, 4000, id)).length, 1, 'uit een ander document wel');
-/* [20261121b] een leeggemaakte bouwnaam wordt de standaard, geen lege tekst */
+/* [20261121c] een leeggemaakte bouwnaam wordt de standaard, geen lege tekst */
 assert.deepEqual(instelWijzigingen('bouw.indeling', { lijsten: { bouwen: { items: { midden: { naam: 'Pupillen' } } } } }, { ...Object.fromEntries(INSTELLEN['bouw.indeling'].map(d => [d.pad, d.standaard])), 'lijsten.bouwen.items.midden.naam': '' }),
   { wijzigingen: [['lijsten.bouwen.items.midden.naam', 'Middenbouw']] });
 assert.deepEqual(instelWijzigingen('rol.team', { rolNamen: { coach: 'Trainer' } }, { 'rolNamen.coach': '' }), { wijzigingen: [['rolNamen.coach', '']] }, 'een rolnaam leegmaken blijft kunnen');

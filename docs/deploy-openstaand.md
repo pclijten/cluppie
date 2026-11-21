@@ -31,9 +31,9 @@ Functions gaan vóór de rules, zoals `AVG.md` voorschrijft. Er wordt nooit een 
 | Teamkamer (ronde 1, 2 en 2b) | Ouders en spelers kunnen niet binnenkomen; cijfers van het eigen kind zijn voor niemand leesbaar | releases 20261116m, p, r |
 | Trainingshulp | Lijstjes › Trainingshulp en de open link worden door de rules geweigerd | release 20261118a |
 | Platform › Mails | Het scherm geeft een fout; mails gaan met de oude vaste teksten | release 20261116q |
-| Clubprofiel | Documenten inlezen, scans en voorstellen werken alleen als de drie functies live staan; de verbetering van 21-11 (citaat bij de speelwijze) zit in `vulSpeelstijlIn` | releases 20261120c t/m j, 20261121b |
+| Clubprofiel | Documenten inlezen, scans en voorstellen werken alleen als de drie functies live staan; de verbetering van 21-11 (citaat bij de speelwijze) zit in `vulSpeelstijlIn` | releases 20261120c t/m j, 20261121c |
 | Hulp-chat | Kent de nieuwste schermen niet (kennisbank in `functions/kennis.js`) | meerdere releases |
-| App Check voor callables | Zie `docs/appcheck-afdwingen.md`: de schakelaar staat in de code en gaat pas gelden na een deploy | release 20261121b |
+| App Check voor callables | Zie `docs/appcheck-afdwingen.md`: de schakelaar staat in de code en gaat pas gelden na een deploy | release 20261121c |
 
 ## Daarna nalopen
 

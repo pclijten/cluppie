@@ -212,7 +212,7 @@ export function instelWijzigingen(veldId, instellingen, ingevuld){
   for (const d of defs){
     const r = controleerInstelling(d, ingevuld[d.pad]);
     if (!r.ok) return { fout: r.fout };
-    /* [20261121b] een leeggemaakte naam in een lijst (bouwen) zou als lege tekst over de standaard heen komen:
+    /* [20261121c] een leeggemaakte naam in een lijst (bouwen) zou als lege tekst over de standaard heen komen:
        dan stond er in de hele app een bouw zonder naam. Leeg betekent daar: de standaard. */
     const w = r.waarde === '' && d.type === 'tekst' && d.standaard && d.pad.startsWith('lijsten.') ? d.standaard : r.waarde;
     nieuw[d.pad] = w;
@@ -267,7 +267,7 @@ export const regelsUit = s => (Array.isArray(s) ? s : String(s ?? '').split('\n'
    Een ronde: { naam, soort: 'volledig'|'snel', van, tot } met datums als JJJJ-MM-DD. Trainers zien een ronde
    vanaf de startdatum bovenaan hun team (evaluatierondes.js); vooruit klaarzetten kan dus zonder dat iemand iets ziet. */
 const DATUM = /^\d{4}-\d{2}-\d{2}$/;
-/* [20261121b] een datum die echt bestaat: 2026-02-31 heeft de goede vorm, maar is geen dag */
+/* [20261121c] een datum die echt bestaat: 2026-02-31 heeft de goede vorm, maar is geen dag */
 const echteDatum = s => { if (!DATUM.test(s)) return false; const d = new Date(s + 'T12:00:00Z'); return !isNaN(d) && d.toISOString().slice(0, 10) === s; };
 /* Een ronde die al in Cluppie staat houdt zijn `id` (uit gezet.rondes): zo is hernoemen bijwerken, geen tweede ronde. */
 export function schoonRondes(lijst){
@@ -288,7 +288,7 @@ export function seizoenVan(label, nuMs = Date.now()){
   return { start, label: m ? String(label) : `${start}/'${String(start + 1).slice(-2)}`, tekst: `augustus ${start} tot en met juni ${start + 1}` };
 }
 /* Rondes bij de bestaande rondes van de club voegen.
-   [20261121b] Een ronde wordt bijgewerkt als hij (1) dezelfde id heeft (eerder door dit onderwerp gezet: hernoemen
+   [20261121c] Een ronde wordt bijgewerkt als hij (1) dezelfde id heeft (eerder door dit onderwerp gezet: hernoemen
    werkt dan gewoon), of (2) dezelfde naam heeft in hetzelfde seizoen. Een ronde met dezelfde naam uit een ander
    seizoen blijft zoals hij was: dan komt er een nieuwe bij.
    `vervallen` = id's die dit onderwerp eerder zette en nu niet meer: die gaan weg als de ronde door het Clubprofiel
@@ -360,7 +360,7 @@ export function opTeRuimen(profiel, docId){
 export function nieuweBevindingen(profiel, items, doc, nuMs, maakId){
   const alle = bevLijst(profiel);
   const bestaand = new Set(alle.map(b => b.veld + '|' + b.docId + '|' + norm(b.waarde)));
-  /* [20261121b] De AI formuleert een tweede keer zelden letterlijk gelijk. Een onderwerp waarvan het antwoord uit dit
+  /* [20261121c] De AI formuleert een tweede keer zelden letterlijk gelijk. Een onderwerp waarvan het antwoord uit dit
      document al is goedgekeurd of afgewezen, slaan we daarom over; bij "overig" mogen er wel meer naast elkaar staan. */
   const beoordeeld = new Set(alle.filter(b => b.docId === doc.id && !b.handmatig && (b.oordeel !== 'open' || b.verwerkt)).map(b => b.veld));
   const uit = {};

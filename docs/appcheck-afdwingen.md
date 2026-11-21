@@ -6,7 +6,7 @@
 
 `PORTEREN.md` zei: "Enforce aan voor Firestore, Storage en Functions" in de console. Voor callables bestaat die knop niet. Een callable dwingt App Check alleen af als dat in de code staat (`enforceAppCheck`), en dat stond nergens. Had je in de console alles op Enforce gezet, dan waren de 57 callables (aansluiten met een code, uitnodigingen, AI, platformfuncties) gewoon open gebleven voor aanroepen zonder token.
 
-Sinds release 20261121b staat er één schakelaar: `functions/appcheck.js`, `AFDWINGEN`. Hij staat op `false`, dus er verandert nu niets. Getest: met de schakelaar aan weigert een callable een aanroep zonder token met "Unauthenticated".
+Sinds release 20261121c staat er één schakelaar: `functions/appcheck.js`, `AFDWINGEN`. Hij staat op `false`, dus er verandert nu niets. Getest: met de schakelaar aan weigert een callable een aanroep zonder token met "Unauthenticated".
 
 ## Wat App Check wel en niet doet
 

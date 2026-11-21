@@ -1,4 +1,4 @@
-/* ==================== BEWAARTERMIJNEN: VERTROKKEN SPELERS EN OUDE SEIZOENEN [20261121b] ====================
+/* ==================== BEWAARTERMIJNEN: VERTROKKEN SPELERS EN OUDE SEIZOENEN [20261121c] ====================
    PURE module (geen DOM, geen Firebase, geen imports). Rekent uit wat een club volgens haar eigen
    bewaartermijn mag opruimen. Het scherm en het wissen zelf staan in club-bewaartermijn.js.
    Getest in tests/bewaartermijn.test.mjs.

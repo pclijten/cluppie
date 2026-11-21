@@ -19,13 +19,13 @@
    zien ze gewoon in hun instellingen en onder Content.
 ==================================================================== */
 import { db, doc, getDoc, setDoc, updateDoc, deleteDoc, deleteField, serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { esc, meld } from './state.js?v=20261121b';
+import { esc, meld } from './state.js?v=20261121c';
 import { ico } from './icons.js?v=20261116t';
 import { leegSpeelstijl, schoonSp, vragenVoorAI, kandidatenSamenvoegen, zonderDocument, keuzeVan, telling, uitkomstVan, speelstijlManco, antwoordTekst, onderwerpVan,
   vraagOpId, speelstijlVragenTekst, speelwijzeRegels, vragenVoor, DEELN, LEEFTIJDEN, REFS } from './clubprofiel-speelstijl.js?v=20261120j';   /* [20261120j] speelwijze via de vragenlijst */
 import { VERSIE, MAX_DOCUMENT, FILTERS, GROEPEN, veldenVoorAI, veldOpId, hoofdstukOpId, documentId, docxTekst, schoonBevinding, schoonVoorstel, voorstelLeeg,
   opTeRuimen, nieuweBevindingen, overzicht, pastInFilter, mancos, vragenTekst, profielTekst, regelsUit, titelVan, contentDocs,
-  instelVelden, instelWaarde, instelWijzigingen, controleerInstelling, instelVeldenVoorAI, schoonRondes, rondesSamenvoegen, seizoenVan, inrichtingOverzicht, voorbeeldVoor, voorbeeldInrichting, bronnenVoorbeeld, zoekBron, zetInConcept } from './clubprofiel-logica.js?v=20261121b';
+  instelVelden, instelWaarde, instelWijzigingen, controleerInstelling, instelVeldenVoorAI, schoonRondes, rondesSamenvoegen, seizoenVan, inrichtingOverzicht, voorbeeldVoor, voorbeeldInrichting, bronnenVoorbeeld, zoekBron, zetInConcept } from './clubprofiel-logica.js?v=20261121c';
 
 const K = {};                 // clubId → toestand van het scherm
 let root = null, club = null;
@@ -33,13 +33,13 @@ const leeg = () => ({ v: VERSIE, documenten: {}, bevindingen: {}, tekstStatus: '
 function staat(id){
   if (!K[id]) K[id] = { profiel: null, laden: false, fout: '', hoofdstuk: 'documenten', filter: 'alles', wachtrij: [], bezig: false,
     concept: {}, bewerk: new Set(), druk: new Set(), nieuw: null, plak: false, zeker: null,
-    typ: { nieuw: '', plakNaam: '', plakTekst: '' },   /* [20261121b] wat getypt is in velden zonder concept: blijft staan als het scherm opnieuw wordt getekend */
+    typ: { nieuw: '', plakNaam: '', plakTekst: '' },   /* [20261121c] wat getypt is in velden zonder concept: blijft staan als het scherm opnieuw wordt getekend */
     clubDoc: null };
   return K[id];
 }
 const ref = id => doc(db, 'clubprofielen', id);
 const contentRef = (clubId, id) => doc(db, 'clubs', clubId, 'content', id);
-/* [20261121b] het seizoen van de club waarvoor de analyse loopt, niet van de club die nu toevallig open staat */
+/* [20261121c] het seizoen van de club waarvoor de analyse loopt, niet van de club die nu toevallig open staat */
 const seizoenTekst = (c = club) => { const z = seizoenVan(c && c.huidigSeizoen); return `${z.label} (${z.tekst})`; };
 let teller = 0;
 const maakId = () => 'b' + Date.now().toString(36) + (teller++).toString(36) + Math.random().toString(36).slice(2, 5);
@@ -88,7 +88,7 @@ async function schrijf(id, deel){
 async function vervang(id, paden){
   try { await updateDoc(ref(id), { bijgewerkt: serverTimestamp(), ...paden }); }
   catch (x){
-    /* [20261121b] een club zonder profieldocument (nog geen document ingelezen): eerst aanmaken, dan nog eens.
+    /* [20261121c] een club zonder profieldocument (nog geen document ingelezen): eerst aanmaken, dan nog eens.
        Zonder dit sloeg de vragenlijst Speelwijze bij een nieuwe club niets op. */
     if (x?.code !== 'not-found') throw x;
     await setDoc(ref(id), { v: VERSIE, clubId: id }, { merge: true });
@@ -117,7 +117,7 @@ async function beeldNaarTekst(canvas, clubId){
   if (data.length > 4200000) data = canvas.toDataURL('image/jpeg', 0.6);
   const vraag = () => httpsCallable(functions, 'leesClubscan', { timeout: 120000 })({ clubId, beeld: data.slice(data.indexOf(',') + 1) });
   let r;
-  /* [20261121b] één herkansing: een enkele pagina die mislukt (druk, time-out) brak anders het hele document af */
+  /* [20261121c] één herkansing: een enkele pagina die mislukt (druk, time-out) brak anders het hele document af */
   try { r = await vraag(); }
   catch (x){ if (['functions/permission-denied', 'functions/invalid-argument', 'functions/not-found', 'functions/unauthenticated'].includes(x?.code)) throw x; await new Promise(k => setTimeout(k, 2500)); r = await vraag(); }
   if (r?.data?.afgekapt) scanAfgekapt++;
@@ -139,11 +139,11 @@ async function fotoNaarTekst(file, clubId){
 async function leesBestand(file, clubId, voortgang = () => {}){
   const naam = file.name || '';
   if (/\.pdf$/i.test(naam) || file.type === 'application/pdf'){
-    const { laadPdfJs } = await import('./pdf-viewer.js?v=20261121b');
-    const { regelsUitTekstItems } = await import('./training-ai.js?v=20261121b');
+    const { laadPdfJs } = await import('./pdf-viewer.js?v=20261121c');
+    const { regelsUitTekstItems } = await import('./training-ai.js?v=20261121c');
     await laadPdfJs();
     const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
-    /* [20261121b] eerst van elke pagina de tekstlaag: zo weten we vooraf hoeveel pagina's een scan zijn, en
+    /* [20261121c] eerst van elke pagina de tekstlaag: zo weten we vooraf hoeveel pagina's een scan zijn, en
        stoppen we bij te veel scans vóór de eerste (betaalde) aanroep in plaats van na de zestigste */
     const teksten = [], scanNrs = [];
     for (let n = 1; n <= pdf.numPages; n++){
@@ -202,7 +202,7 @@ async function verwerk(id){
       toon('bezig', 'lezen…');
       const { tekst, paginas, scans, afgekapt } = item.file ? await leesBestand(item.file, id, stap => toon('bezig', stap)) : { tekst: item.tekst, paginas: null };
       item.file = null; item.tekst = null;
-      /* [20261121b] een scan levert elke keer net andere tekst op: de id van het document hangt dan aan het bestand, niet aan de tekstlengte */
+      /* [20261121c] een scan levert elke keer net andere tekst op: de id van het document hangt dan aan het bestand, niet aan de tekstlengte */
       const { gevonden: n, ssGevonden: ns } = await analyseer(id, item.naam, tekst, paginas, (klaar, totaal) => toon('bezig', `analyseren: ${klaar} van ${totaal} hoofdstukken klaar…`), scans && item.grootte ? 'b' + item.grootte : null);
       toon('klaar', `${n} onderwerp${n === 1 ? '' : 'en'} gevonden, ${ns} vra${ns === 1 ? 'ag' : 'gen'} over de speelwijze beantwoord${afgekapt ? `. Let op: van ${afgekapt} ingescande pagina${afgekapt === 1 ? ' is' : "'s is"} niet alle tekst gelezen` : ''}`);
     } catch (x){ console.error('[clubprofiel]', item.naam, x); toon('fout', foutTekst(x)); }
@@ -274,7 +274,7 @@ async function analyseer(id, naam, tekst, paginas, voortgang, vasteMaat = null){
 }
 
 /* ---------- het concept van één bevinding: wat er in het formulier staat ---------- */
-/* [20261121b] Meerdere onderwerpen delen een instelling (de rolnamen, de werkwijze, de domeinen). Het formulier
+/* [20261121c] Meerdere onderwerpen delen een instelling (de rolnamen, de werkwijze, de domeinen). Het formulier
    onthield voorheen bij het eerste tekenen de waarde die toen in Cluppie stond, en schreef die later terug: het ene
    onderwerp draaide zo terug wat het andere net had gezet. Daarom staat alleen `vast` wat dit antwoord zelf levert
    (uit het voorstel) of wat jij in het formulier hebt aangeraakt. Al het andere volgt bij elk gebruik wat er op dat
@@ -802,7 +802,7 @@ function htmlCluppie(st, h, v, b){
 /* ---------- acties ---------- */
 function invoer(e){
   const el = e.target, sleutel = el.dataset?.cpc, st = club && staat(club.id);
-  /* [20261121b] velden zonder concept: wat je typt blijft staan als het scherm opnieuw wordt getekend */
+  /* [20261121c] velden zonder concept: wat je typt blijft staan als het scherm opnieuw wordt getekend */
   if (st && el.matches?.('[data-cptekst]')){ st.typ.nieuw = el.value; return; }
   if (st && el.id === 'cpPlakNaam'){ st.typ.plakNaam = el.value; return; }
   if (st && el.id === 'cpPlakTekst'){ st.typ.plakTekst = el.value; return; }
@@ -836,7 +836,7 @@ async function zet(bevId, stil){
     const vervallen = (b.gezet?.rondes || []).map(r => r.id).filter(Boolean);
     if (rondes.length || vervallen.length){
       /* de rondes van de club vers lezen: de clubbeheerder kan er intussen zelf een hebben gemaakt.
-         [20261121b] Een ronde die dit onderwerp eerder zette wordt op id bijgewerkt (hernoemen maakt geen tweede),
+         [20261121c] Een ronde die dit onderwerp eerder zette wordt op id bijgewerkt (hernoemen maakt geen tweede),
          en een ronde die je hier weghaalt gaat ook bij de club weg zolang hij nog niet begonnen is. */
       const vers = (await getDoc(doc(db, 'clubs', clubId))).data() || {};
       const samen = rondesSamenvoegen(vers.evaluatieRondes, rondes, { teams: Object.keys(vers.teams || doel.teams || {}), seizoen: seizoenVan(vers.huidigSeizoen || doel.huidigSeizoen).label, vervallen });
@@ -846,7 +846,7 @@ async function zet(bevId, stil){
       rondeBlijft = samen.blijft;
     }
     for (const d of docs){
-      /* [20261121b] De clubbeheerder kan de tekst intussen hebben gepubliceerd of er tips en tags bij hebben gezet.
+      /* [20261121c] De clubbeheerder kan de tekst intussen hebben gepubliceerd of er tips en tags bij hebben gezet.
          Opnieuw zetten haalde de tekst dan weer offline (terug naar concept) en wiste die aanvullingen. Nu blijft
          wat gepubliceerd is gepubliceerd, en blijven tips en tags van de club staan. */
       let data = d.data;
@@ -888,7 +888,7 @@ async function zet(bevId, stil){
   if (TEL.klaar) synchroniseerStraks();
   return true;
 }
-/* [20261121b] Wat dit onderwerp in Cluppie heeft gezet weer weghalen: de tekst in de Clubwijzer, de gouden regels en
+/* [20261121c] Wat dit onderwerp in Cluppie heeft gezet weer weghalen: de tekst in de Clubwijzer, de gouden regels en
    de rondes die nog niet begonnen zijn. Instellingen blijven staan: wat er vóór het zetten stond is niet bewaard,
    dus terugzetten kan niet eerlijk. Het antwoord zelf staat daarna weer op "te beoordelen". */
 async function haalUitCluppie(bevId){

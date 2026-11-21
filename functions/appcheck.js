@@ -1,4 +1,4 @@
-/* ==================== APP CHECK AFDWINGEN [20261121b] ====================
+/* ==================== APP CHECK AFDWINGEN [20261121c] ====================
    App Check (reCAPTCHA Enterprise) staat in de app aan sinds 11-10-2026 en meet sindsdien alleen.
    Afdwingen gaat op twee plekken, en dat is makkelijk te missen:
      1. Firestore, Storage en Authentication: in de Firebase-console (App Check › APIs › Enforce).

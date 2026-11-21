@@ -504,7 +504,7 @@ if (DEMO_ROL){
   }
   if (DEMO_ROL === 'hjo'){ club.hoofdJeugd = { [COACH]: true }; club.hoofdJeugdInfo = { [COACH]: INFO }; uitTeam('demo-o11-2'); }
   if (DEMO_ROL === 'admin'){ club.admins = { [COACH]: true }; club.adminsInfo = { [COACH]: INFO }; uitTeam('demo-o11-2'); uitTeam('demo-o13-1'); }
-  /* [20261121b] voor Instellingen › Bewaartermijnen en opruimen: twee spelers die lang geleden zijn gearchiveerd
+  /* [20261121c] voor Instellingen › Bewaartermijnen en opruimen: twee spelers die lang geleden zijn gearchiveerd
      (één vertrokken, één overgezet), één die nog binnen de termijn valt, en gegevens uit een oud seizoen */
   if (DEMO_ROL === 'admin'){
     const T = 'demo-o11-1', OUD = "2022/'23";
