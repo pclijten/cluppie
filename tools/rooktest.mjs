@@ -27,7 +27,7 @@ if (!CHROME){ console.error('Chrome niet gevonden (zet CHROME_PATH)'); process.e
 const args = process.argv.slice(2);
 const DONKER = args.includes('--donker'), KORT = args.includes('--kort');
 const ALLEEN = (args.find(a => a.startsWith('--rol=')) || '').slice(6);
-const ROLLEN = ['los', 'coach', 'eigenbouw', 'bouw', 'trainco', 'hjo', 'admin'].filter(r => !ALLEEN || r === ALLEEN);
+const ROLLEN = ['los', 'coach', 'eigenbouw', 'bouw', 'trainco', 'hjo', 'admin', 'eindbaas'].filter(r => !ALLEEN || r === ALLEEN);
 const SCHERMEN = [{ naam: 'telefoon', width: 414, height: 896, isMobile: true, hasTouch: true }, { naam: 'laptop', width: 1440, height: 900, isMobile: false, hasTouch: false }];
 const wacht = ms => new Promise(r => setTimeout(r, ms));
 
@@ -111,6 +111,28 @@ for (const rol of ROLLEN){
     const start = await page.evaluate(meet);
     rijen.push({ rol, apparaat: sch.naam, scherm: 'start', ...start });
     if (start.tekens < 20) meld('leeg scherm', 'het startscherm heeft geen inhoud');
+
+    /* [20261121a] eindbaas: elk scherm van het Platformcentrum, en van één club elk tabblad (telefoon en laptop) */
+    if (rol === 'eindbaas' && !KORT){
+      const meetScherm = async naam => { waar.scherm = naam; await wacht(700); const m = await page.evaluate(meet); m.tekens = await page.evaluate(() => (document.querySelector('#pc-app .tc-hoofd')?.innerText || '').trim().length); rijen.push({ rol, apparaat: sch.naam, scherm: naam, ...m }); if (m.tekens < 20) meld('leeg scherm', naam); };
+      if (!(await page.$('#pc-app'))) meld('platformcentrum ontbreekt', 'de demo voor de eindbaas opent het centrum niet');
+      const schermen = await page.evaluate(() => [...new Set([...document.querySelectorAll('#pc-app .tc-nav [data-scherm]')].map(b => b.dataset.scherm))]);
+      for (const s of schermen){
+        await page.evaluate(x => document.querySelector(`#pc-app [data-pc="scherm"][data-scherm="${x}"]`)?.click(), s);
+        await meetScherm('platform:' + s);
+      }
+      await page.evaluate(() => document.querySelector('#pc-app [data-pc="scherm"][data-scherm="clubs"]')?.click()); await wacht(400);
+      const open = await page.evaluate(() => { const r = document.querySelector('#pc-app tr[data-pc="club"]'); if (!r) return false; r.click(); return true; });
+      if (!open) meld('geen club', 'de clubtabel is leeg');
+      else {
+        await wacht(600);
+        const tabs = await page.evaluate(() => [...document.querySelectorAll('#pc-app [data-pc="ladetab"][role="tab"]')].map(b => b.dataset.tab));
+        for (const t of tabs){
+          await page.evaluate(x => document.querySelector(`#pc-app [data-pc="ladetab"][role="tab"][data-tab="${x}"]`)?.click(), t);
+          await meetScherm('club:' + t);
+        }
+      }
+    }
 
     /* telefoon: elke tegel van het teamscherm openen en weer terug */
     if (sch.isMobile && !KORT){

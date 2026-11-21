@@ -479,9 +479,10 @@ const klaar = zetTrainingen().catch(e => console.warn('[demo] trainingen niet ge
    index.html?demo=<rol>      → dezelfde club, bekeken als één gebruikerstype:
      los | coach | eigenbouw | bouw | trainco | hjo | admin
    Alleen de rollen van de demo-trainer veranderen; de club, teams en spelers blijven gelijk.
+   index.html?demo=eindbaas   → het Platformcentrum met zes verzonnen clubs, één in elke fase van de uitrol ([20261121a], zie verderop).
    De demo kent geen toegangsregels: je ziet wat de app deze rol laat zien, niet wat de server toestaat. */
 export const DEMO_ROLLEN = { los: 'Trainer zonder club', coach: 'Coach', eigenbouw: 'Gekoppelde coach bouw', bouw: 'Bouwcoördinator',
-  trainco: 'Trainingscoördinator', hjo: 'Hoofd jeugdopleiding', admin: 'Clubbeheerder' };
+  trainco: 'Trainingscoördinator', hjo: 'Hoofd jeugdopleiding', admin: 'Clubbeheerder', eindbaas: 'Eindbaas (platform)' };
 const DEMO_ROL = (() => { try { const r = (new URLSearchParams(location.search).get('demo') || '').toLowerCase(); return DEMO_ROLLEN[r] ? r : ''; } catch (e) { return ''; } })();
 if (DEMO_ROL){
   const BEHEER = 'demo-beheer', club = { ...store.get(`clubs/${CLUB}`) };
@@ -510,6 +511,125 @@ if (DEMO_ROL){
     store.set('teams/demo-o11-2', t);
   }
   store.set(`clubs/${CLUB}`, club);
+}
+
+/* ==================== DEMO: EINDBAAS [20261121a] ====================
+   index.html?demo=eindbaas → het Platformcentrum met verzonnen clubs: één per fase van de uitrol, elk met een
+   andere inrichting (onderdelen, limieten, werkwijze, rollen), een aanmelding die op een besluit wacht en
+   drie trainers zonder club. Zo is het centrum te bekijken en te testen zonder echte gegevens.
+   De cijfers staan in platformstats/overzicht, in dezelfde vorm als functions/platform.js ze schrijft.
+   Wat in het echt via een functie loopt (instellingen bewaren, vernieuwen, goedkeuren) schrijft hier in het geheugen. */
+if (DEMO_ROL === 'eindbaas'){
+  const DAG = 864e5, nu = Date.now(), tsVoor = d => Timestamp.fromMillis(nu - d * DAG), isoVoor = d => new Date(nu - d * DAG).toISOString().slice(0, 10);
+  /* de demotrainer is hier alleen platformbeheerder: geen lid van de democlub en geen eigen team */
+  { const c = { ...store.get(`clubs/${CLUB}`) }; c.leden = {}; c.ledenInfo = {}; store.set(`clubs/${CLUB}`, c); }
+  for (const id of ['demo-o11-2', 'demo-o13-1']){ const t = { ...store.get(`teams/${id}`) }; t.leden = { ...t.leden }; t.ledenInfo = { ...t.ledenInfo }; delete t.leden[COACH]; delete t.ledenInfo[COACH]; t.leden['demo-c-' + id] = true; t.ledenInfo['demo-c-' + id] = { naam: 'Coach ' + (t.naam || '') }; store.set(`teams/${id}`, t); }
+  zetSeed('platform/instellingen', { beheerders: ['demo@cluppie.io'],
+    standaard: { trainingsmodule: true, seizoensplan: true, ai: false, aiLimiet: 100, maxVideoMB: 100 }, uitrol: { proefDagen: 14, slapendDagen: 21 },
+    soloAI: { aan: false, limiet: 20 }, teamkamerLos: false });
+
+  const mens = (id, naam) => ({ uid: id, naam });
+  /* per club: [id, naam, plaats, dagen oud, dagen sinds gebruik (null = nooit), teams, startlijst open, extra] */
+  const CLUBS = [
+    { id: 'demo-fc-testdorp', naam: 'FC Testdorp', plaats: 'Testdorp', oud: 120, stil: 0, teams: ['O8-1', 'O9-1', 'O10-1', 'O11-1', 'O11-2', 'O12-1', 'O13-1', 'O13-2', 'MO13-1', 'O15-1', 'O15-2', 'O17-1', 'MO17-1', 'O19-1'], zonderCoach: [], open: [],
+      coaches30: 21, leden: 26, wachtend: 0, kleur: '#1d4ed8', werkwijze: 'club', sl: { gekoppeld: true, fouten: 0, sync: 0 }, vo: true, aiMaand: 281,
+      pm: { trainingsmodule: true, seizoensplan: true, ai: true, aiLimiet: 300, scouting: true, teamkamer: true, teamkamerOpties: { namen: true, polls: true, berichten: true, agenda: true }, leren: true, maxVideoMB: 200 },
+      admins: [mens('t-a1', 'Anne de Boer'), mens('t-a2', 'Bram Visser')], hj: [mens('t-h1', 'Carla Smit')], bouw: { onder: [mens('t-b1', 'Daan Mulder')], midden: [mens('t-b2', 'Eva Bos')], boven: [mens('t-b3', 'Finn Dekker')] }, tc: [mens('t-t1', 'Gijs Meijer')],
+      rolNamen: { coordinator: 'TC-lid' }, jeugdRolNaam: 'Hoofd opleidingen', eigenBouwen: [{ id: 'eb-meiden', naam: 'Meiden', kleur: '#8b5cf6', teams: [], coaches: { 't-e1': true } }], eigenInfo: { 't-e1': { naam: 'Hanna Vos' } } },
+    { id: 'demo-sv-voorbeeld', naam: 'SV Voorbeeld', plaats: 'Voorbeeldstad', oud: 6, stil: 1, teams: ['O9-1', 'O10-1', 'O11-1', 'O12-1', 'O13-1', 'O14-1', 'O15-1', 'O17-1', 'O19-1'], zonderCoach: ['O14-1'], open: [],
+      coaches30: 9, leden: 11, wachtend: 1, kleur: '#15803d', werkwijze: 'vrij', sl: { gekoppeld: true, fouten: 1, sync: 0 }, vo: true, aiMaand: 0,
+      pm: { trainingsmodule: true, seizoensplan: true, ai: false, aiLimiet: 100, maxVideoMB: 100 },
+      admins: [mens('v-a1', 'Iris Jansen')], hj: [], bouw: { onder: [mens('v-b1', 'Joost Bakker')], midden: [], boven: [] }, tc: [] },
+    { id: 'demo-vv-de-proef', naam: 'VV De Proef', plaats: 'Proefburg', oud: 19, stil: 4, teams: ['O9-1', 'O11-1', 'O13-1', 'O15-1', 'O17-1', 'MO15-1'], zonderCoach: ['O15-1', 'O17-1', 'MO15-1'], open: ['coaches', 'privacy', 'vo'],
+      coaches30: 3, leden: 5, wachtend: 3, kleur: '', werkwijze: 'vrij', sl: { gekoppeld: true, fouten: 0, sync: 1 }, vo: false, aiMaand: 12,
+      pm: { trainingsmodule: true, seizoensplan: false, ai: true, aiLimiet: 50, pdfProfiel: { indeling: 'pagina', plaatjes: 'per-oefening', naam: 'vrij', overslaanEerste: true, overslaanWoorden: ['Legenda'], aanwijzing: '' }, maxVideoMB: 100 },
+      admins: [mens('p-a1', 'Koen Peters')], hj: [], bouw: { onder: [], midden: [], boven: [] }, tc: [] },
+    { id: 'demo-sc-nieuwland', naam: 'SC Nieuwland', plaats: 'Nieuwland', oud: 2, stil: null, teams: [], zonderCoach: [], open: ['uiterlijk', 'sportlink', 'teams', 'trainingen', 'coaches', 'privacy', 'vo'],
+      coaches30: 0, leden: 1, wachtend: 0, kleur: '', werkwijze: 'vrij', sl: { gekoppeld: false, fouten: 0, sync: null }, vo: false, aiMaand: 0,
+      pm: { trainingsmodule: true, seizoensplan: true, ai: false, aiLimiet: 100, maxVideoMB: 100 },
+      admins: [mens('n-a1', 'Lotte Hendriks')], hj: [], bouw: { onder: [], midden: [], boven: [] }, tc: [] },
+    { id: 'demo-rkvv-stilstand', naam: 'RKVV Stilstand', plaats: 'Stilstand', oud: 150, stil: 34, teams: ['O9-1', 'O10-1', 'O11-1', 'O12-1', 'O13-1', 'O14-1', 'O15-1', 'O16-1', 'O17-1', 'O19-1', 'MO13-1'], zonderCoach: [], open: [],
+      coaches30: 0, leden: 14, wachtend: 0, kleur: '#b45309', werkwijze: 'vrij', sl: { gekoppeld: true, fouten: 0, sync: 4 }, vo: true, aiMaand: 0, geenOndersteuning: true,
+      pm: { trainingsmodule: false, seizoensplan: false, ai: false, maxVideoMB: 50 },
+      admins: [mens('s-a1', 'Mark Willems')], hj: [mens('s-h1', 'Nina de Graaf')], bouw: { onder: [], midden: [mens('s-b1', 'Omar Koster')], boven: [] }, tc: [] },
+  ];
+  const signalenVan = k => {
+    const s = [];
+    if (k.teams > 0 && (k.stil == null || k.stil >= 21)) s.push({ niveau: 'rood', tekst: k.stil == null ? 'nog nooit gebruikt' : `${k.stil} dagen geen activiteit` });
+    else if (k.stil != null && k.stil >= 10) s.push({ niveau: 'oranje', tekst: `${k.stil} dagen geen activiteit` });
+    if (k.wachtend > 0) s.push({ niveau: k.wachtend >= 3 ? 'rood' : 'oranje', tekst: `${k.wachtend} coach${k.wachtend === 1 ? '' : 'es'} wacht${k.wachtend === 1 ? '' : 'en'} op goedkeuring` });
+    if (k.sl.gekoppeld && k.sl.fouten > 0) s.push({ niveau: 'oranje', tekst: `Sportlink: ${k.sl.fouten} team met fout` });
+    if (k.sl.gekoppeld && k.sl.sync >= 3) s.push({ niveau: 'rood', tekst: `Sportlink: ${k.sl.sync} dagen geen sync` });
+    if (!k.vo) s.push({ niveau: 'oranje', tekst: 'geen verwerkersovereenkomst' });
+    if (k.pm.ai && k.pm.aiLimiet > 0 && k.aiMaand >= k.pm.aiLimiet * 0.9) s.push({ niveau: 'oranje', tekst: `AI-limiet bijna op (${k.aiMaand}/${k.pm.aiLimiet})` });
+    return s;
+  };
+  const rijen = [];
+  for (const k of CLUBS){
+    const map = l => Object.fromEntries(l.map(m => [m.uid, true])), info = l => Object.fromEntries(l.map(m => [m.uid, { naam: m.naam }]));
+    const teamIds = k.teams.map(n => `${k.id}-${n.toLowerCase()}`);
+    const alleBouw = [...k.bouw.onder, ...k.bouw.midden, ...k.bouw.boven];
+    zetSeed(`clubs/${k.id}`, {
+      naam: k.naam, code: k.naam.replace(/[^A-Za-z]/g, '').slice(0, 6).toUpperCase(), plaats: k.plaats, huidigSeizoen: SEIZOEN, gemaakt: tsVoor(k.oud),
+      admins: map(k.admins), adminsInfo: info(k.admins), hoofdJeugd: map(k.hj), hoofdJeugdInfo: info(k.hj),
+      bouwCoordinatoren: { onder: map(k.bouw.onder), midden: map(k.bouw.midden), boven: map(k.bouw.boven) }, bouwCoordinatorenInfo: info(alleBouw),
+      trainingscoordinatoren: map(k.tc), trainingscoordinatorenInfo: info(k.tc),
+      leden: map(k.admins), ledenInfo: info(k.admins), teams: Object.fromEntries(teamIds.map(i => [i, true])),
+      ...(k.sl.gekoppeld ? { sportlinkClientId: 'demo', sportlinkClubcode: 'DEMO' + k.id.length } : {}),
+      ...(k.eigenBouwen ? { eigenBouwen: k.eigenBouwen, eigenBouwCoaches: Object.keys(k.eigenInfo), eigenBouwCoachesInfo: k.eigenInfo } : {}),
+      platformModules: k.pm,
+      instellingen: { v: 1, werkwijze: k.werkwijze, identiteit: k.kleur ? { kleur: k.kleur } : {}, locatie: { plaats: k.plaats },
+        ...(k.rolNamen ? { rolNamen: k.rolNamen } : {}), ...(k.jeugdRolNaam ? { jeugdRolNaam: k.jeugdRolNaam } : {}),
+        toegang: { ondersteuning: k.geenOndersteuning ? false : true },
+        privacy: { contactEmail: k.open.includes('privacy') ? '' : `privacy@${k.id.replace('demo-', '')}.voorbeeld`, ...(k.vo ? { verwerkersovereenkomst: { geaccepteerd: true, datum: tsVoor(k.oud - 1) } } : {}) } },
+    });
+    k.teams.forEach((n, i) => {
+      const heeftCoach = !k.zonderCoach.includes(n), uid = `${k.id}-c${i}`;
+      zetSeed(`teams/${teamIds[i]}`, { naam: n, club: k.id, clubNaam: k.naam, categorie: (n.startsWith('M') ? 'MO' : 'JO') + n.replace(/\D+(\d+).*/, '$1'), format: Number(n.replace(/\D+(\d+).*/, '$1')) <= 10 ? '6' : Number(n.replace(/\D+(\d+).*/, '$1')) <= 12 ? '8' : '11',
+        code: 'DEMO' + i, seizoen: SEIZOEN, gemaakt: tsVoor(k.oud), trainingsdagen: k.open.includes('trainingen') ? [] : [2, 4],
+        leden: heeftCoach ? { [uid]: true } : {}, ledenInfo: heeftCoach ? { [uid]: { naam: 'Coach ' + n } } : {} });
+    });
+    rijen.push({ id: k.id, naam: k.naam, plaats: k.plaats, teams: k.teams.length, leden: k.leden, admins: k.admins.length, wachtend: k.wachtend, gemaakt: nu - k.oud * DAG,
+      sessies30: k.coaches30 * 6, coaches30: k.coaches30, laatsteGebruik: k.stil == null ? null : isoVoor(k.stil),
+      sportlink: { gekoppeld: k.sl.gekoppeld, fouten: k.sl.fouten, laatsteSync: k.sl.sync == null ? null : isoVoor(k.sl.sync) },
+      ai: { aan: k.pm.ai === true, maand: k.aiMaand, limiet: k.pm.aiLimiet || 0 }, privacy: { vo: k.vo, contact: !k.open.includes('privacy'), akkoord: Math.max(0, k.leden - 2), totaal: k.leden },
+      startlijst: { gedaan: 7 - k.open.length, totaal: 7, open: k.open }, signalen: signalenVan(k), status: signalenVan(k).some(x => x.niveau === 'rood') ? 'rood' : signalenVan(k).length ? 'oranje' : 'groen', teamNamen: k.teams });
+  }
+  /* de democlub zelf doet ook mee, als een club die loopt */
+  { const c = { ...store.get(`clubs/${CLUB}`) }; c.gemaakt = tsVoor(200); c.platformModules = { trainingsmodule: true, seizoensplan: true, ai: false, aiLimiet: 100, maxVideoMB: 100 }; store.set(`clubs/${CLUB}`, c);
+    rijen.push({ id: CLUB, naam: CLUBNAAM, plaats: 'Utrecht', teams: TEAMS.length, leden: 9, admins: 1, wachtend: 0, gemaakt: nu - 200 * DAG, sessies30: 80, coaches30: 8, laatsteGebruik: isoVoor(0),
+      sportlink: { gekoppeld: true, fouten: 0, laatsteSync: isoVoor(0) }, ai: { aan: false, maand: 0, limiet: 100 }, privacy: { vo: true, contact: true, akkoord: 9, totaal: 9 },
+      startlijst: { gedaan: 7, totaal: 7, open: [] }, signalen: [], status: 'groen', teamNamen: TEAMS.map(t => t.naam) }); }
+  rijen.sort((a, b) => a.naam.localeCompare(b.naam));
+  /* trainers zonder club: één traint bij een club die al meedoet */
+  const los = [
+    { uid: 'los-1', naam: 'Pim Trainer', email: 'pim@voorbeeld.nl', aangemeld: nu - 3 * DAG, laatsteLogin: nu - 1 * DAG, status: 'eigen-team', nieuw: true, teamNaam: 'Testdorp O10-3',
+      teams: [{ id: 'los-team-1', naam: 'Testdorp O10-3', categorie: 'JO10', spelers: 9, eigenClub: { naam: 'F.C. Testdorp', plaats: 'Testdorp' } }] },
+    { uid: 'los-2', naam: 'Roos Trainer', email: 'roos@voorbeeld.nl', aangemeld: nu - 40 * DAG, laatsteLogin: nu - 2 * DAG, status: 'eigen-team', nieuw: false, teamNaam: 'Buurtteam O11',
+      teams: [{ id: 'los-team-2', naam: 'Buurtteam O11', categorie: 'JO11', spelers: 12, eigenClub: { naam: 'Buurtclub', plaats: 'Utrecht' } }] },
+    { uid: 'los-3', naam: 'Sem Starter', email: 'sem@voorbeeld.nl', aangemeld: nu - 1 * DAG, laatsteLogin: nu - 1 * DAG, status: 'nog-geen-team', nieuw: true, teamNaam: '', teams: [] },
+  ];
+  const som = f => rijen.reduce((n, k) => n + (f(k) || 0), 0);
+  const overzicht = () => ({ bijgewerkt: Timestamp.now(), clubs: rijen,
+    totalen: { clubs: rijen.length, actieveClubs: rijen.filter(k => k.laatsteGebruik && (nu - Date.parse(k.laatsteGebruik)) < 14 * DAG).length, coaches30: som(k => k.coaches30), teams: som(k => k.teams),
+      wachtend: som(k => k.wachtend), aiMaand: som(k => k.ai.maand), aiSolo: 0, individueel: los.length, individueelNieuw: los.filter(x => x.nieuw).length },
+    individueel: { totaal: los.length, nieuw7: 2, eigenTeam: 2, wachtOpClub: 0, nogGeenTeam: 1, lijst: los } });
+  zetSeed('platformstats/overzicht', overzicht());
+  zetSeed('clubAanmeldingen/demo-aanmelding-1', { status: 'nieuw', clubNaam: 'VV Aanmelding', plaats: 'Aanmeldingen', district: 'west1', aantalTeams: '11-20', contactNaam: 'Tess Aanvrager', contactEmail: 'tess@voorbeeld.nl',
+    rol: 'Jeugdvoorzitter', werkwijze: 'club', sportlinkClientId: 'demo', bericht: 'We willen na de winterstop beginnen met de onder- en middenbouw.', gemaakt: tsVoor(1), uid: 'demo-aanvrager' });
+  /* notities en wensen van de eindbaas bij één club, zodat het blok niet leeg is */
+  zetSeed('clubprofielen/demo-fc-testdorp', { v: 2, clubId: 'demo-fc-testdorp', documenten: {}, bevindingen: {},
+    maatwerk: { contact: 'Anne de Boer, jeugdvoorzitter', notitie: 'Begonnen met de onderbouw; de bovenbouw volgt na de winterstop.\nWil de eigen oefenstof (PDF) blijven gebruiken naast de bibliotheek.',
+      wensen: [{ id: 'w1', tekst: 'Scouting ook voor de O19 aanzetten', klaar: false, ms: nu - 2 * DAG }, { id: 'w2', tekst: 'Rolnaam TC-lid in plaats van bouwcoördinator', klaar: true, ms: nu - 20 * DAG }] } });
+  /* functies die het centrum aanroept: in de demo werken ze op het geheugen */
+  Object.assign(DEMO_ANTWOORD, {
+    platformOverzichtNu: () => { zetSeed('platformstats/overzicht', overzicht()); return { ok: true }; },
+    zetPlatformInstellingen: d => { const oud = store.get('platform/instellingen') || {}; store.set('platform/instellingen', { ...oud, ...d }); veranderd(); return { ...oud, ...d }; },
+    beoordeelClubAanmelding: d => { const a = store.get('clubAanmeldingen/' + d.id); if (a) store.set('clubAanmeldingen/' + d.id, { ...a, status: d.besluit === 'goedkeuren' ? 'goedgekeurd' : 'afgewezen' }); return { ok: true }; },
+    hernoemClubPlatform: d => { const c = store.get('clubs/' + d.clubId); if (c) store.set('clubs/' + d.clubId, { ...c, naam: d.naam, plaats: d.plaats }); const r = rijen.find(x => x.id === d.clubId); if (r){ r.naam = d.naam; r.plaats = d.plaats; } return { ok: true }; },
+    stelKoppelingVoor: d => ({ ok: true, clubNaam: (store.get('clubs/' + d.clubId) || {}).naam || '' }),
+    startOndersteuning: () => { const e = new Error('Meehelpen kan niet in de demo: het opent de club als beheerder'); e.code = 'demo/niet-beschikbaar'; throw e; },
+  });
 }
 
 /* ==================== DEMO: TEAMKAMER [20261116m] ====================

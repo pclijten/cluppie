@@ -4,10 +4,10 @@
    wat hierboven al in dit bestand staat. De zoekfunctionaliteit
    (#helpZoek) wordt door de hub (teams.js/koppelTeamTab) aangesloten,
    want die werkt direct op het gerenderde DOM-element. */
-import { esc } from './state.js?v=20261120k';
-import { beleidsplanNaam } from './clubconfig.js?v=20261120k';
-import { ROLKAARTEN } from './rolkaart.js?v=20261120k';
-import { onboardingHerstartBlok } from './onboarding.js?v=20261120k';
+import { esc } from './state.js?v=20261121a';
+import { beleidsplanNaam } from './clubconfig.js?v=20261121a';
+import { ROLKAARTEN } from './rolkaart.js?v=20261121a';
+import { onboardingHerstartBlok } from './onboarding.js?v=20261121a';
 
 export function htmlHandleiding(){
   return `<div class="hl">
@@ -68,7 +68,7 @@ export function htmlHandleiding(){
       <li><b>Coach.</b> Je ziet en beheert je eigen team: spelers, wedstrijden, aanwezigheid, beoordelingen en trainingen. Spelers van andere teams zie je niet.</li>
       ${[['bouw', 'Bouwcoördinator'], ['eigenbouw', 'Coach gekoppeld aan een bouw'], ['hjo', 'Hoofd jeugdopleiding'], ['trainco', 'Trainingscoördinator']].map(([k, naam]) =>
         `<li><b>${naam}.</b> ${esc(ROLKAARTEN[k].ziet)} ${esc(ROLKAARTEN[k].kan)} Niet: ${esc(ROLKAARTEN[k].kanNiet.charAt(0).toLowerCase() + ROLKAARTEN[k].kanNiet.slice(1))}</li>`).join('\n      ')}
-      <li><b>Clubbeheerder.</b> Richt de club in: teams, bouwen, coaches en rollen, Sportlink, instellingen en privacy. Ziet alle teams.</li>
+      <li><b>Clubbeheerder.</b> Richt de club in: teams, bouwen, coaches en rollen, Sportlink, instellingen en privacy. Ziet alle teams. Onder <b>Club › Mensen</b> staat per rol wie hem heeft en wijs je iemand aan.</li>
     </ul>
     <p>Krijg je een nieuwe rol, dan zie je één keer een korte kaart met wat er voor jou verandert.</p>
     </section>
