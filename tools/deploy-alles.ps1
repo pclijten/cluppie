@@ -1,6 +1,6 @@
 # Alles wat in de code staat live zetten: functions, de toegang voor callables, rules en indexen.
 # Vervangt de losse deploy-opdrachten die in PORTEREN.md per release open staan (Teamkamer, Trainingshulp,
-# Platform › Mails, Clubprofiel en ouder). Zie docs/deploy-openstaand.md voor wat dit oplost.
+# Platform > Mails, Clubprofiel en ouder). Zie docs/deploy-openstaand.md voor wat dit oplost.
 #
 # Starten vanuit de map Cluppie, op branch main, met een schone werkmap:
 #   powershell -ExecutionPolicy Bypass -File tools\deploy-alles.ps1
@@ -9,17 +9,18 @@
 # De tests in de emulator overslaan (alleen als ze net groen waren):
 #   powershell -ExecutionPolicy Bypass -File tools\deploy-alles.ps1 -ZonderEmulator
 #
+# Dit bestand bevat bewust alleen ASCII-tekens (Windows PowerShell 5.1 leest geen UTF-8 zonder BOM).
 # Het script stopt bij elke fout. Opnieuw starten is veilig: elke stap is herhaalbaar.
 # Volgorde (zoals AVG.md voorschrijft): eerst de functions, dan pas de rules.
 # Er wordt nooit een functie verwijderd, en hosting gaat via GitHub Pages (niet via dit script).
-# LET OP: dit script is geschreven door Claude en nog niet op een echte pc gedraaid. Begin met -Proef.
+# De proef (-Proef) is op 21-11-2026 op de pc van Paul gedraaid; de echte deploy nog niet.
 param([switch]$Proef, [switch]$ZonderEmulator)
 
 $ErrorActionPreference = 'Stop'
 $PROJECT = 'cluppie-ad329'
 $REGIO   = 'europe-west1'
 
-function Stap($n, $t){ Write-Host "`n=== Stap $n · $t ===" -ForegroundColor Cyan }
+function Stap($n, $t){ Write-Host "`n=== Stap $n - $t ===" -ForegroundColor Cyan }
 function Ok($t){ Write-Host "  OK  $t" -ForegroundColor Green }
 function Stop-Met($t){ Write-Host "`n  STOP: $t" -ForegroundColor Red; Write-Host "  Er is niets kapot: wat al gedeployed is blijft staan. Stuur deze uitvoer naar Claude." -ForegroundColor Yellow; exit 1 }
 function Run($cmd){
@@ -40,10 +41,13 @@ function Probeer($cmd){
 # ---------- 0. controles ----------
 Stap 0 'Controles'
 if (-not (Test-Path 'tools\functies-lijst.mjs') -or -not (Test-Path 'firestore.rules')){ Stop-Met 'start dit script vanuit de map Cluppie' }
-foreach ($p in 'gcloud','firebase','node','git','npm'){ if (-not (Get-Command $p -ErrorAction SilentlyContinue)){ Stop-Met "$p is niet geïnstalleerd of niet gevonden" } }
+foreach ($p in 'gcloud','firebase','node','git','npm'){ if (-not (Get-Command $p -ErrorAction SilentlyContinue)){ Stop-Met "$p is niet geinstalleerd of niet gevonden" } }
 $tak = (git branch --show-current).Trim()
 if ($tak -ne 'main'){ Stop-Met "je staat op branch '$tak'; live gaat alleen wat op main staat: git checkout main en git pull" }
-if ((git status --porcelain) -and -not $Proef){ Stop-Met 'er staan wijzigingen in de werkmap die niet gecommit zijn; deploy alleen wat op main staat' }
+# Alleen gewijzigde bestanden die git volgt tellen; losse mappen die niet in git staan (marketing, .claude) gaan niet mee met een deploy.
+if ((git status --porcelain --untracked-files=no) -and -not $Proef){ Stop-Met 'er staan gewijzigde bestanden in de werkmap die niet gecommit zijn; deploy alleen wat op main staat (git status laat zien welke)' }
+git fetch origin main 2>$null | Out-Null
+if ((git rev-parse HEAD).Trim() -ne (git rev-parse origin/main).Trim()){ Stop-Met 'je lokale main loopt niet gelijk met GitHub: eerst git pull' }
 Ok 'gcloud, firebase, node, git en npm gevonden, branch main'
 if ($Proef){ Write-Host '  PROEF: de commando''s hieronder worden getoond, niet uitgevoerd.' -ForegroundColor Yellow }
 

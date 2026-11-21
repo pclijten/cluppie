@@ -22,7 +22,7 @@ Het script doet, in deze volgorde:
 
 Functions gaan vóór de rules, zoals `AVG.md` voorschrijft. Er wordt nooit een functie verwijderd. Hosting loopt via GitHub Pages en zit hier niet in.
 
-**Het script is door Claude geschreven en niet op een echte pc gedraaid.** Begin daarom met `-Proef`. Stopt het halverwege, dan blijft staan wat al gedeployed is en kun je het opnieuw starten.
+**De proef (`-Proef`) is op 21-11-2026 op de pc van Paul gedraaid; de echte deploy nog niet.** Losse mappen die niet in git staan zitten niet in de weg; gewijzigde bestanden die git volgt wel. Stopt het halverwege, dan blijft staan wat al gedeployed is en kun je het opnieuw starten.
 
 ## Wat dit oplost
 
