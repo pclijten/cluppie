@@ -10,6 +10,9 @@ gelijk(rollenVoorKaart({ uid: U, coordinatorBouwen: [{ bouw: 'eb1', eigen: true 
 gelijk(rollenVoorKaart({ uid: U, leiding: { hoofdJeugd: { [U]: true } } }), ['hjo'], 'hoofd jeugd');
 gelijk(rollenVoorKaart({ uid: U, leiding: { hoofdJeugd: { ander: true } } }), [], 'hoofd jeugd van een ander telt niet');
 gelijk(rollenVoorKaart({ uid: U, traincoClubs: [{ id: 'c' }] }), ['trainco'], 'trainingscoördinator');
+gelijk(rollenVoorKaart({ uid: U, clubs: [{ id: 'c', admins: { [U]: true } }] }), ['admin'], 'clubbeheerder');
+gelijk(rollenVoorKaart({ uid: U, clubs: [{ id: 'c', admins: { ander: true } }] }), [], 'beheerder van een ander telt niet');
+gelijk(rollenVoorKaart({ uid: U, clubs: [{ admins: { [U]: true } }], traincoClubs: [{}] }), ['admin', 'trainco'], 'beheerder staat vooraan');
 gelijk(rollenVoorKaart({ uid: U, coordinatorBouwen: [{ bouw: 'onder' }, { bouw: 'eb', eigen: true }], leiding: { hoofdJeugd: { [U]: true } }, traincoClubs: [{}] }),
   ['bouw', 'eigenbouw', 'hjo', 'trainco'], 'meerdere rollen in vaste volgorde');
 for (const rol of Object.keys(ROLKAARTEN)){
@@ -19,4 +22,6 @@ for (const rol of Object.keys(ROLKAARTEN)){
 }
 assert.ok(htmlRolkaart('hjo', 'Technisch manager').includes('Je bent Technisch manager')); n++;
 assert.strictEqual(htmlRolkaart('onbekend'), ''); n++;
+for (const rol of ['admin', 'bouw', 'eigenbouw', 'trainco']){ assert.ok(htmlRolkaart(rol).includes('rkOpen'), rol + ': knop naar het eigen scherm'); n++; }
+assert.ok(!htmlRolkaart('hjo').includes('rkOpen'), 'hoofd jeugd: alleen Begrepen'); n++;
 console.log(`rolkaart: ${n} controles geslaagd`);
