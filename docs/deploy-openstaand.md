@@ -15,7 +15,7 @@ Dat toont wat er gaat gebeuren en voert niets uit. Klopt het, dan zonder `-Proef
 Het script doet, in deze volgorde:
 
 1. `npm test`, daarna `npm run test:rules` en `npm run test:storage` in de emulator. Bij rood stopt het vóór de eerste deploy.
-2. Leest uit de code welke functies er horen te zijn (`tools/functies-lijst.mjs`: nu 76, waarvan 57 callables).
+2. Leest uit de code welke functies er horen te zijn (`tools/functies-lijst.mjs`: nu 78, waarvan 59 callables).
 3. Deployt alle functions, acht per keer. Een functie waarvan de code niet veranderd is, slaat de Firebase-CLI in de regel over; dat is niet nagegaan voor deze versie van de CLI.
 4. Zet voor elke callable de invoker `allUsers` (de functie zelf controleert wie je bent). Zonder dit geeft de app een CORS-fout.
 5. Deployt de rules en indexen van Firestore en de rules van Storage.
@@ -34,6 +34,7 @@ Functions gaan vóór de rules, zoals `AVG.md` voorschrijft. Er wordt nooit een 
 | Clubprofiel | Documenten inlezen, scans en voorstellen werken alleen als de drie functies live staan; de verbetering van 21-11 (citaat bij de speelwijze) zit in `vulSpeelstijlIn` | releases 20261120c t/m j, 20261121c |
 | Hulp-chat | Kent de nieuwste schermen niet (kennisbank in `functions/kennis.js`) | meerdere releases |
 | App Check voor callables | Zie `docs/appcheck-afdwingen.md`: de schakelaar staat in de code en gaat pas gelden na een deploy | release 20261121c |
+| Kansen in het product | Zonder `herkenClub` ziet een trainer zonder club niet dat zijn club al meedoet; zonder `bewaarOpruimen` meldt het derde blok van het opruimscherm dat het nog niet beschikbaar is; zonder de nieuwe `chatHulp` krijgt de hulpchat de rol van de vrager niet mee en werkt hij niet voor trainers zonder club. Twee nieuwe callables: het script telt ze vanzelf mee en zet de invoker | release 20261122a |
 
 ## Daarna nalopen
 

@@ -23,13 +23,13 @@
 | **Coach, bouwcoördinator, hoofd jeugd** | Zien "Wie doet wat" zonder knoppen. De rolkaart heeft een knop naar het eigen scherm (bouw, trainingen). |
 | **Eindbaas** | Per club het tabblad Mensen (welke rollen bezet zijn), en `index.html?demo=eindbaas` om het centrum te bekijken. |
 
-Nog open uit de tabel hierboven: doorverwijzen als de club van een losse trainer al meedoet (vraagt een callable), en de pilot met een echte clubadmin.
+Nog open uit de tabel hierboven: de pilot met een echte clubadmin. Doorverwijzen als de club van een losse trainer al meedoet is gebouwd in 20261122a (functie `herkenClub`; werkt na de deploy).
 
 ## Voorstel in volgorde van opbrengst
 
 1. **Rolkaart bij eerste binnenkomst** voor bouwcoördinator, gekoppelde coach bouw, trainingscoördinator en hoofd jeugd: één kaart met drie regels ("Dit zie je", "Dit kun je", "Dit kun je niet") en een knop naar het belangrijkste scherm. Eén onderdeel, vier teksten. Vlag per gebruiker in `gebruikers/{uid}/meta/onboarding` (bestaat al voor de snelstart).
 2. **Welkom voor de uitgenodigde coach**: dezelfde kaart Eerste stappen, met stappen die passen bij een bestaand team. *Gebouwd en live in 20261116e, voor accounts jonger dan 30 dagen.*
-3. **Doorverwijzen als de club al meedoet** (losse trainer): een callable die op clubcode of naam en plaats alleen ja of nee teruggeeft, geen clubgegevens.
+3. **Doorverwijzen als de club al meedoet** (losse trainer): een callable die op clubcode of naam en plaats alleen ja of nee teruggeeft, geen clubgegevens. *Gebouwd in 20261122a: bij precies één treffer zet `herkenClub` het bestaande koppelvoorstel op het team; de trainer vraagt aan, de clubbeheerder keurt goed. Ook nieuw in die release: het hoofdstuk Jouw rol in de handleiding en startvragen per rol in de hulpchat (`public/js/hulp-rol.js`).*
 
 Teksten voor de rolkaarten (concept):
 

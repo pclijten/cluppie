@@ -4,14 +4,14 @@
    team-evaluatie-criteria.js; voorheen 8 categorieën) en het bijbehorende
    dashboard/geschiedenis, plus de "Stats"-tab die dit combineert met de
    spelersstatistieken uit wedstrijd.js. */
-import { beleidsplanNaam } from './clubconfig.js?v=20261121e';
+import { beleidsplanNaam } from './clubconfig.js?v=20261122a';
 import {
   db, collection, doc, addDoc, deleteDoc, updateDoc, deleteField
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, openModal, sluitModal, toon, modAan
-} from './state.js?v=20261121e';
-import { NIVEAUS, niveauKleur, TEAM_CATEGORIEEN, TEAM_TAGS, teamCategorie, SEIZOEN_FALLBACK } from './config.js?v=20261121e';
+} from './state.js?v=20261122a';
+import { NIVEAUS, niveauKleur, TEAM_CATEGORIEEN, TEAM_TAGS, teamCategorie, SEIZOEN_FALLBACK } from './config.js?v=20261122a';
 import {
   TE_GROEPEN, TE_NIV, TE_FOCUS_LADDER, TE_STEM, teDoelIco, teLeeftijd, teCriteriaVoor, teCriterium, teZichtbaar, teZinnen, teFaseLabel,
   teScores, teIsNieuw, teGem, teGroepWaarden, teCritGemiddelden, teLaagste, teKleur, teCijfer, teBlokVoorDatum,
@@ -19,11 +19,11 @@ import {
 } from './team-evaluatie-criteria.js?v=20261120a';
 import { ico } from './icons.js?v=20261116t';
 
-import { htmlStats } from './wedstrijd.js?v=20261121e';
-import { telGebruik } from './tracker.js?v=20261121e';
-import { themaOpDatum } from './seizoensplan-logica.js?v=20261121e';
-import { wedstrijdvraagNu } from './speelwijze.js?v=20261121e';
-import { onderdeelAan } from './onderdelen.js?v=20261121e';
+import { htmlStats } from './wedstrijd.js?v=20261122a';
+import { telGebruik } from './tracker.js?v=20261122a';
+import { themaOpDatum } from './seizoensplan-logica.js?v=20261122a';
+import { wedstrijdvraagNu } from './speelwijze.js?v=20261122a';
+import { onderdeelAan } from './onderdelen.js?v=20261122a';
 
 /* Kleine lokale kopie van de deelnemer-helper (ook aanwezig in teams-spelers.js)
    — bewust hier gedupliceerd i.p.v. een cross-module import voor één regel. */
@@ -429,7 +429,9 @@ export function htmlSeizoenFilter(){
    het teamevaluatie-dashboard woont op de Evaluatie-pagina (hub-tegel
    Wedstrijden → Evaluatie, samengesteld in teams.js). */
 export function htmlStatsTab(){
+  /* [20261122a] Jaaroverzicht: het seizoen van het team of van één speler op één blad, om aan de club te laten zien */
   return htmlSeizoenFilter() + htmlStats() + `
+    <button class="knop licht vol u-mt-md" id="statsJaaroverzicht">Jaaroverzicht</button>
     <button class="knop licht vol u-mt-md" id="statsExcelExport" >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 19V10"/><path d="M11 19V5"/><path d="M18 19v-7"/></svg> Exporteer naar Excel</button>`;
 }

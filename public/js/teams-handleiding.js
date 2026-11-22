@@ -4,10 +4,23 @@
    wat hierboven al in dit bestand staat. De zoekfunctionaliteit
    (#helpZoek) wordt door de hub (teams.js/koppelTeamTab) aangesloten,
    want die werkt direct op het gerenderde DOM-element. */
-import { esc } from './state.js?v=20261121e';
-import { beleidsplanNaam } from './clubconfig.js?v=20261121e';
-import { ROLKAARTEN } from './rolkaart.js?v=20261121e';
-import { onboardingHerstartBlok } from './onboarding.js?v=20261121e';
+import { esc } from './state.js?v=20261122a';
+import { beleidsplanNaam } from './clubconfig.js?v=20261122a';
+import { ROLKAARTEN, mijnRollen } from './rolkaart.js?v=20261122a';
+import { uitlegVoor, zoekTekst } from './hulp-rol.js?v=20261122a';
+
+/* [20261122a] Hoofdstuk "Jouw rol": uitleg per rol, de eigen rol bovenaan en gemarkeerd. Een coördinator
+   of beheerder vond tot nu toe vooral uitleg voor coaches. De teksten staan in hulp-rol.js. */
+function htmlJouwRol(){
+  return `<h4 class="hl-hoofdstuk" id="hlh-rol">Jouw rol</h4>
+    ${uitlegVoor(mijnRollen()).map(u => `<section class="hl-sec" data-zoek="${esc(zoekTekst(u))}">
+    <h3>${esc(u.titel)}${u.eigen ? ' <span class="hl-eigen">jouw rol</span>' : ''}</h3>
+    <p>${esc(u.intro)}</p>
+    <ul>${u.punten.map(([kop, tekst]) => `<li><b>${esc(kop)}</b> ${esc(tekst)}</li>`).join('')}</ul>
+    <div class="tip"><b>Niet:</b> ${esc(u.niet)}</div>
+    </section>`).join('\n    ')}`;
+}
+import { onboardingHerstartBlok } from './onboarding.js?v=20261122a';
 
 export function htmlHandleiding(){
   return `<div class="hl">
@@ -20,7 +33,7 @@ export function htmlHandleiding(){
     <div class="hl-geen" id="helpGeen" hidden>Geen onderdeel gevonden voor <b id="helpGeenTerm"></b>. Probeer een ander woord.</div>
 
     <div class="hl-hoofdstukken" id="helpHoofdstukken">
-      ${[['starten','Starten'],['plannen','Trainen & plannen'],['wedstrijddag','Op de wedstrijddag'],['club','Club & team beheren'],['beoordelen','Beoordelen & evalueren'],['tips','Tips & privacy']]
+      ${[['starten','Starten'],['rol','Jouw rol'],['plannen','Trainen & plannen'],['wedstrijddag','Op de wedstrijddag'],['club','Club & team beheren'],['beoordelen','Beoordelen & evalueren'],['tips','Tips & privacy']]
         .map(([id,naam]) => `<button data-hlh="${id}">${naam}</button>`).join('')}
     </div>
 
@@ -77,6 +90,8 @@ export function htmlHandleiding(){
     <h3>Zet de app op je beginscherm</h3>
     <p>Voor een echt app-gevoel: open het menu van je browser en kies <b>"Toevoegen aan beginscherm"</b>. Dan staat Cluppie als icoontje tussen je apps en open je hem met één tik, geen browser meer nodig.</p>
     </section>
+
+    ${htmlJouwRol()}
 
     <h4 class="hl-hoofdstuk" id="hlh-plannen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="12" cy="14.5" r="1.4" fill="currentColor" stroke="none"/></svg> Trainen &amp; plannen</h4>
     <section class="hl-sec" data-zoek="trainingen & video's onder het tabblad training vind je de oefenstof voor je team, gedeeld als pdf. onder video staan youtube-links met oefeningen of beelden. elke zondag worden hier de trainingen voor de komende week en eventuele video's klaargezet, kijk er dus aan het begin van de week even in. een rood stipje op het tabblad laat zien dat er iets nieuws is.">
@@ -384,9 +399,10 @@ export function htmlHandleiding(){
     <p>Onder <b>Wijzig opzet</b> in een wedstrijd pas je het format (6×6, 8×8, 9×9, 11×11, 4×4) en de formatie aan. Spelers blijven zoveel mogelijk op hun plek staan; slots die wegvallen worden netjes opgeschoond.</p>
     </section>
 
-    <section class="hl-sec" data-zoek="statistieken onder vind je het seizoensoverzicht: speeltijd, doelpunten, aanvoerdersbeurten, keeperbeurten en kaarten per speler. sorteert vanzelf op meeste speeltijd.">
+    <section class="hl-sec" data-zoek="statistieken onder vind je het seizoensoverzicht: speeltijd, doelpunten, aanvoerdersbeurten, keeperbeurten en kaarten per speler. sorteert vanzelf op meeste speeltijd. jaaroverzicht seizoen in cijfers team speler afdrukken pdf delen met de club samenvatting">
     <h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 19V10"/><path d="M11 19V5"/><path d="M18 19v-7"/></svg> Statistieken</h3>
     <p>Onder <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.2V12l3.4 2.2"/></svg> vind je het seizoensoverzicht: speeltijd, doelpunten, aanvoerdersbeurten, keeperbeurten en kaarten per speler. Sorteert vanzelf op meeste speeltijd.</p>
+    <p><b>Jaaroverzicht.</b> Onderaan Stats (op de laptop rechtsboven) staat de knop Jaaroverzicht. Je krijgt het seizoen van je team op één blad: wedstrijden, doelpunten, trainingen en opkomst, hoe eerlijk de speeltijd verdeeld is en hoeveel er geëvalueerd is. Er staan geen namen van spelers in. Met <b>Afdrukken of pdf</b> bewaar je het, met <b>Deel samenvatting</b> stuur je een korte tekst naar je club. Onder <b>Speler</b> maak je hetzelfde voor één speler, zonder notities; deel dat alleen binnen de club.</p>
     </section>
 
     <h4 class="hl-hoofdstuk" id="hlh-beoordelen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg> Beoordelen &amp; evalueren</h4>

@@ -4,14 +4,15 @@
    Gegevens: teams/{id}.eigenClub en gebruikers/{uid}/meta/onboarding.snelstart (alleen UI-vlaggen). */
 import { isFirestoreVastgelopen, toonHerlaadBalk } from './firestore-herstel.js?v=20261113a';
 import { db, collection, doc, addDoc, updateDoc, setDoc, getDoc, getDocs, serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, $, $$, esc, meld, teamCode, openModal, sluitModal } from './state.js?v=20261121e';
-import { CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, bouwVanCategorie, catLabel } from './config.js?v=20261121e';
+import { S, $, $$, esc, meld, teamCode, openModal, sluitModal } from './state.js?v=20261122a';
+import { CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, bouwVanCategorie, catLabel } from './config.js?v=20261122a';
 import {
   bouwEigenClub, valideerClub, valideerPlaats, standaardTeamNaam, categorieVoor, STANDAARD_CAT,
   eersteStappenStatus, toonEersteStappen, toonWelkomCoach, welkomCoachStatus, isNieuwAccount, toonClubTip,
-} from './snelstart-logica.js?v=20261116e';
-import { koppelClubSuggesties, normNaam } from './clubgids.js?v=20261121e';
-import { laadSoloAI } from './clubconfig.js?v=20261121e';
+  deelTekstClub, toonDeelClub, magClubHerkennen,
+} from './snelstart-logica.js?v=20261122a';
+import { koppelClubSuggesties, normNaam } from './clubgids.js?v=20261122a';
+import { laadSoloAI } from './clubconfig.js?v=20261122a';
 
 /* ---------- Plaats opzoeken (Open-Meteo, zonder sleutel) ---------- */
 async function zoekPlaats(q){
@@ -37,7 +38,7 @@ function htmlClubPlaats(prefix, club = '', plaats = ''){
 
 /* Geeft { lees() } terug; lees() valideert en geeft { ok, eigenClub } of toont een melding. */
 function koppelClubPlaats(root, prefix, begin = null){
-  const sel = { plaats: '', lat: null, lon: null, zonderWeer: false };
+  const sel = { plaats: '', lat: null, lon: null, zonderWeer: false, clubcode: '', clubNaam: '' };   /* [20261122a] clubcode uit de gids: daarmee herkent de server de club zeker */
   const inClub = root.querySelector('#' + prefix + 'Club'), inPlaats = root.querySelector('#' + prefix + 'Plaats');
   const knop = root.querySelector('#' + prefix + 'Zoek'), res = root.querySelector('#' + prefix + 'Res'), gek = root.querySelector('#' + prefix + 'Gekozen');
   const toonGekozen = () => {
@@ -69,7 +70,9 @@ function koppelClubPlaats(root, prefix, begin = null){
   };
   knop.onclick = zoek;
   /* [20261113b] Clubnaam uit de KNVB-gids: naam én plaats in één keer, en meteen de plaats opzoeken voor het weer */
+  if (begin && begin.clubcode){ sel.clubcode = begin.clubcode; sel.clubNaam = inClub.value.trim(); }
   koppelClubSuggesties(inClub, async c => {
+    sel.clubcode = c.code || ''; sel.clubNaam = c.naam || '';
     if (!c.plaats) { inPlaats.focus(); return; }
     inPlaats.value = c.plaats;
     res.innerHTML = '<p class="meta">Plaats opzoeken…</p>';
@@ -91,7 +94,7 @@ function koppelClubPlaats(root, prefix, begin = null){
         if (!p.ok){ meld(p.fout); inPlaats.focus(); return null; }
         await zoek(); meld('Kies je plaats in de lijst'); return null;
       }
-      const b = bouwEigenClub({ naam: c.naam, plaats: sel.plaats, lat: sel.lat, lon: sel.lon });
+      const b = bouwEigenClub({ naam: c.naam, plaats: sel.plaats, lat: sel.lat, lon: sel.lon, clubcode: sel.clubcode && normNaam(sel.clubNaam) === normNaam(c.naam) ? sel.clubcode : '' });
       if (!b.ok){ meld(b.fout); return null; }
       return b.eigenClub;
     },
@@ -131,12 +134,12 @@ export async function openSnelstart(){
         <li><b>Alles voor je team.</b> Presentie, wedstrijdverslag en ontwikkeling per speler, op je telefoon.</li>
       </ul>
       <p class="meta sn-tip">${soloAI
-        ? 'Eerlijk vooraf: zonder club werkt Cluppie niet met Sportlink en zijn er geen clubbrede plannen, omdat die via de club lopen. AI-hulp bij Training maken en de seizoensplanning heb je wel, met een maximum per maand. Sluit je club zich later aan, dan gaat je team mee.'
+        ? 'Eerlijk vooraf: zonder club werkt Cluppie niet met Sportlink en zijn er geen clubbrede plannen, omdat die via de club lopen. AI-hulp bij Training maken, de seizoensplanning en de hulpchat heb je wel, met een maximum per maand. Sluit je club zich later aan, dan gaat je team mee.'
         : 'Eerlijk vooraf: zonder club werkt Cluppie niet met Sportlink en heb je geen AI-hulp, omdat die via de club lopen (sleutel van de club, kosten en privacyafspraken). Al het andere staat open, en sluit je club zich later aan, dan gaat je team mee.'}</p>
       <button class="knop vol" id="ssVerder">Laten we beginnen</button>
       <button class="knop licht vol" id="ssRond" style="margin-top:8px">Liever eerst een rondleiding</button>`);
     $('#ssVerder').onclick = tekenStap2;
-    $('#ssRond').onclick = () => { sluitModal(); import('./onboarding.js?v=20261121e').then(m => m.startOnboarding(true)); };
+    $('#ssRond').onclick = () => { sluitModal(); import('./onboarding.js?v=20261122a').then(m => m.startOnboarding(true)); };
   };
 
   const tekenStap2 = () => {
@@ -157,7 +160,7 @@ export async function openSnelstart(){
       <p class="meta" id="ssKnvb" style="margin:8px 2px 14px"></p>
       <button class="knop vol" id="ssVerder">Verder</button>
       <button class="knop licht vol" id="ssTerug" style="margin-top:8px">Terug</button>`);
-    cp = koppelClubPlaats($('#ssCP'), 'ss', bewaar && bewaar.plaats ? { plaats: bewaar.plaats, lat: bewaar.lat, lon: bewaar.lon } : null);
+    cp = koppelClubPlaats($('#ssCP'), 'ss', bewaar && bewaar.plaats ? { plaats: bewaar.plaats, lat: bewaar.lat, lon: bewaar.lon, clubcode: bewaar.clubcode } : null);
     const werkBij = () => {
       st.cat = $('#ssCat').value; st.nr = $('#ssNr').value;
       if (!st.naamAangepast) $('#ssNaam').value = standaardTeamNaam(st.cat, catLabel(st.cat), st.nr);
@@ -196,7 +199,7 @@ export async function openSnelstart(){
         <div><dt>Wedstrijd</dt><dd>${esc(c.format)} tegen ${esc(c.format)}, ${c.periodes === 2 ? '2 helften' : '4 kwarten'} van ${String(c.duur).replace('.', ',')} min</dd></div>
       </dl>
       <div class="sn-wel-niet">
-        <div><b>Je hebt</b><ul><li>Opstelling en speeltijd</li><li>Presentie en verslagen</li><li>Training maken</li>${soloAI ? '<li>AI-hulp bij Training maken (maximum per maand)</li>' : ''}<li>Weer op je teamscherm${st.club.lat === null ? ' (alleen met een gekozen plaats)' : ''}</li></ul></div>
+        <div><b>Je hebt</b><ul><li>Opstelling en speeltijd</li><li>Presentie en verslagen</li><li>Training maken</li>${soloAI ? '<li>AI-hulp bij Training maken en de hulpchat (maximum per maand)</li>' : ''}<li>Weer op je teamscherm${st.club.lat === null ? ' (alleen met een gekozen plaats)' : ''}</li></ul></div>
         <div><b>Nog niet, want dat loopt via een club</b><ul class="sn-niet">
           <li><b>Sportlink-koppeling</b><span>Wedstrijden, uitslagen en de poule komen uit Sportlink. Toegang daartoe heeft alleen de club, met een eigen sleutel (Client ID).</span></li>
           ${soloAI ? '' : '<li><b>AI-hulp</b><span>AI kost geld per vraag en vraagt privacyafspraken. Die maakt Cluppie met de club, niet met losse trainers.</span></li>'}
@@ -230,7 +233,7 @@ export async function openSnelstart(){
           eigenClub: st.club, gemaakt: serverTimestamp(),
         });
         sluitModal();
-        import('./teams.js?v=20261121e').then(m => m.openTeam(ref.id));
+        import('./teams.js?v=20261122a').then(m => m.openTeam(ref.id));
       } catch (e){
         console.error(e); knop.disabled = false;
         if (isFirestoreVastgelopen(e)){ toonHerlaadBalk(); meld('De verbinding is vastgelopen. Herlaad de app en maak je team opnieuw aan.'); }
@@ -249,14 +252,15 @@ export function modalClubPlaats(){
     <p class="meta" style="margin:-4px 0 12px">Met je plaats zie ik het weer op je teamscherm.</p>
     <div id="ssCP2">${htmlClubPlaats('sc', e.naam || '', e.plaats || '')}</div>
     <button class="knop vol" id="scOk">Opslaan</button>`);
-  const cp = koppelClubPlaats($('#ssCP2'), 'sc', e.plaats ? { plaats: e.plaats, lat: e.lat, lon: e.lon } : null);
+  const cp = koppelClubPlaats($('#ssCP2'), 'sc', e.plaats ? { plaats: e.plaats, lat: e.lat, lon: e.lon, clubcode: e.clubcode } : null);
   $('#scOk').onclick = async () => {
     const eigenClub = await cp.lees(); if (!eigenClub) return;
     try {
       await updateDoc(doc(db, 'teams', t.id), { eigenClub });
       t.eigenClub = eigenClub;
+      vergeetHerkenning(t.id);   /* andere club ingevuld: opnieuw kijken of die al meedoet */
       sluitModal(); meld('Opgeslagen');
-      import('./teams.js?v=20261121e').then(m => m.renderTeam && m.renderTeam());
+      import('./teams.js?v=20261122a').then(m => m.renderTeam && m.renderTeam());
     } catch (err){ console.error(err); meld('Opslaan mislukt, probeer het nog eens'); }
   };
 }
@@ -300,7 +304,13 @@ export async function koppelEersteStappen(v, { zetTeamTab } = {}){
       ${status.stappen.map(s => `<button class="sn-stap ${s.klaar ? 'klaar' : ''} ${s.id === status.volgende ? 'nu' : ''}" data-ss-tab="${s.tab}">
         <span class="sn-vink" aria-hidden="true">${s.klaar ? '✓' : ''}</span><span class="sn-tekst"><b>${esc(s.titel)}</b><small>${esc(s.uitleg)}</small></span></button>`).join('')}
       <div class="sn-voet"><button class="sn-link" id="ssRondleiding">Liever een rondleiding?</button><button class="sn-link" id="ssVerberg">Verberg</button></div></section>`;
-  } else if (toonClubTip(team, { verborgen: !!vl.clubTipWeg })){
+  }
+  if (toonDeelClub(team, { verborgen: !!vl.deelClubWeg, status })){
+    html += `<section class="kaart sn-kaart"><div class="sn-kop"><b>Bevalt het? Vertel het je club</b></div>
+      <p class="meta" style="margin:0 0 10px">Stuur je jeugdcoördinator een kort bericht. De tekst staat klaar; je kunt hem nog aanpassen voor je hem verstuurt. Doet de club mee, dan gaat je team met alles erin mee.</p>
+      <div class="rij"><button class="knop vol" id="ssDeel">Stuur een bericht</button><button class="knop licht" id="ssDeelWeg">Niet nu</button></div></section>`;
+  }
+  if (!toonEersteStappen(team, { verborgen: !!vl.eersteStappenWeg, status }) && toonClubTip(team, { verborgen: !!vl.clubTipWeg })){
     html += `<section class="kaart sn-kaart"><div class="sn-kop"><b>Vul je club en plaats in</b></div>
       <p class="meta" style="margin:0 0 10px">Dan zie je het weer op je teamscherm en weet ik waar je speelt.</p>
       <div class="rij"><button class="knop vol" id="ssClubVul">Invullen</button><button class="knop licht" id="ssClubWeg">Later</button></div></section>`;
@@ -308,10 +318,46 @@ export async function koppelEersteStappen(v, { zetTeamTab } = {}){
   el.innerHTML = html;
   koppelKnoppen(el, team, teamId, () => koppelEersteStappen(v, { zetTeamTab }));
   el.querySelectorAll('[data-ss-tab]').forEach(b => b.onclick = () => zetTeamTab && zetTeamTab(b.dataset.ssTab));
-  const r = el.querySelector('#ssRondleiding'); if (r) r.onclick = () => import('./onboarding.js?v=20261121e').then(m => m.startOnboarding(true));
+  const r = el.querySelector('#ssRondleiding'); if (r) r.onclick = () => import('./onboarding.js?v=20261122a').then(m => m.startOnboarding(true));
   const w = el.querySelector('#ssVerberg'); if (w) w.onclick = async () => { el.innerHTML = ''; await zetVlag('eersteStappenWeg', true); };
   const cv = el.querySelector('#ssClubVul'); if (cv) cv.onclick = modalClubPlaats;
-  const cw = el.querySelector('#ssClubWeg'); if (cw) cw.onclick = async () => { el.innerHTML = ''; await zetVlag('clubTipWeg', true); };
+  const opnieuw = () => koppelEersteStappen(v, { zetTeamTab });
+  const cw = el.querySelector('#ssClubWeg'); if (cw) cw.onclick = async () => { await zetVlag('clubTipWeg', true); opnieuw(); };
+  const dl = el.querySelector('#ssDeel'); if (dl) dl.onclick = async () => { if (await deelMetClub()){ await zetVlag('deelClubWeg', true); opnieuw(); } };
+  const dw = el.querySelector('#ssDeelWeg'); if (dw) dw.onclick = async () => { await zetVlag('deelClubWeg', true); opnieuw(); };
+  herkenClub(team, teamId, opnieuw);
+}
+
+/* [20261122a] Het bericht voor de jeugdcoördinator: deelvenster van de telefoon, anders WhatsApp.
+   Geeft false terug als de trainer het deelvenster zelf sluit. */
+async function deelMetClub(){
+  const tekst = deelTekstClub();
+  import('./tracker.js?v=20261122a').then(m => m.telGebruik('deel_club')).catch(() => {});
+  if (navigator.share){
+    try { await navigator.share({ text: tekst }); return true; }
+    catch (e){ if (e && e.name === 'AbortError') return false; }
+  }
+  window.open('https://wa.me/?text=' + encodeURIComponent(tekst), '_blank', 'noopener');
+  return true;
+}
+
+/* [20261122a] Doet de club van deze trainer al mee? De server zoekt op clubcode, of op naam en plaats,
+   en zet bij precies één treffer een koppelvoorstel op het team; de kaart "… gebruikt Cluppie"
+   hierboven doet de rest. Hooguit één keer per week per team, en stil als de functie er (nog) niet is. */
+const herkenSleutel = teamId => 'cl_herken_' + teamId;
+function vergeetHerkenning(teamId){ try { localStorage.removeItem(herkenSleutel(teamId)); } catch (e) {} }
+async function herkenClub(team, teamId, opnieuw){
+  if (window.__cluppieDemo) return;
+  let laatstMs = 0;
+  try { laatstMs = Number(localStorage.getItem(herkenSleutel(teamId))) || 0; } catch (e) {}
+  if (!magClubHerkennen(team, { laatstMs })) return;
+  try { localStorage.setItem(herkenSleutel(teamId), String(Date.now())); } catch (e) {}
+  try {
+    const r = (await httpsCallable(functions, 'herkenClub')({ teamId })).data || {};
+    if (!r.doetMee || !S.team || S.teamId !== teamId || S.team.koppelVoorstel) return;
+    S.team.koppelVoorstel = { clubId: r.clubId || '-', clubNaam: r.clubNaam || '', status: 'open', via: 'herkend' };
+    opnieuw();
+  } catch (e){ console.warn('[herkenClub]', e && e.code); }
 }
 
 /* [20261116e] Welkom voor een coach die bij een clubteam komt. Zelfde opmaak als Eerste stappen. */
@@ -331,7 +377,7 @@ function koppelWelkomCoach(v, el, team, teamId, vl, { zetTeamTab } = {}){
       <span class="sn-vink" aria-hidden="true">${s.klaar ? '✓' : ''}</span><span class="sn-tekst"><b>${esc(s.titel)}</b><small>${esc(s.uitleg)}</small></span></button>`).join('')}
     <div class="sn-voet"><button class="sn-link" id="ssRondleiding">Liever een rondleiding?</button><button class="sn-link" id="ssVerberg">Verberg</button></div></section>`;
   el.querySelectorAll('[data-ss-tab]').forEach(b => b.onclick = () => zetTeamTab && zetTeamTab(b.dataset.ssTab));
-  const r = el.querySelector('#ssRondleiding'); if (r) r.onclick = () => import('./onboarding.js?v=20261121e').then(m => m.startOnboarding(true));
+  const r = el.querySelector('#ssRondleiding'); if (r) r.onclick = () => import('./onboarding.js?v=20261122a').then(m => m.startOnboarding(true));
   const w = el.querySelector('#ssVerberg'); if (w) w.onclick = async () => { el.innerHTML = ''; await zetVlag('welkomCoachWeg', true); };
 }
 

@@ -45,7 +45,7 @@ Nodig vóór deze stap, en niet door Fable te vervangen:
 - **Onafhankelijke pentest.** De opdracht om naar een tester te sturen ligt klaar als concept: `docs/pentest-opdracht.md`. De audit van november vond één kritieke fout die er maanden zat. Een tweede paar ogen is hier geen luxe.
 - **Juridische eindcontrole** en een DPIA (gegevens van minderjarigen op schaal). Concept voor de adviseur: `docs/juridisch/dpia-concept.md`.
 - **Kosten per club** bekend, zodat de prijs klopt.
-- **Bewaartermijnen** in de app: vertrokken spelers en oude seizoenen opruimen. Gebouwd op 21-11-2026 (Club › Instellingen › Bewaartermijnen en opruimen); nog te doen: met een echte club doorlopen, en de privé-rondebeoordelingen en de teamkamer laten meelopen.
+- **Bewaartermijnen** in de app: vertrokken spelers en oude seizoenen opruimen. Gebouwd op 21-11-2026 (Club › Instellingen › Bewaartermijnen en opruimen); sinds 22-11-2026 lopen ook de privé-rondebeoordelingen, de teamkamer en de aanmeldingen voor trainingshulp mee (functie `bewaarOpruimen`, na deploy); nog te doen: met een echte club doorlopen.
 
 Techniek om te bewaken: de nachtelijke taken (Sportlink-sync, gebruikscijfers) lopen over alle clubs; de limieten van Firestore-regels (1000 evaluaties per verzoek, zie de audit); het AI-budget.
 

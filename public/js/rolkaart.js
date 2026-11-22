@@ -8,7 +8,7 @@
 
    [20261121a] Ook voor de clubbeheerder (ook wie later als medebeheerder aansluit), en elke kaart heeft
    een knop naar het scherm waar die rol begint. In de handleiding staat dezelfde tekst onder "Rollen in de club". */
-import { S, esc, openModal, sluitModal } from './state.js?v=20261121e';
+import { S, esc, openModal, sluitModal } from './state.js?v=20261122a';
 import { db, doc, getDoc, setDoc } from './firebase.js?v=20261011g';
 
 export const ROLKAARTEN = {
@@ -60,6 +60,18 @@ export function rollenVoorKaart({ uid, coordinatorBouwen = [], traincoClubs = []
   return uit;
 }
 
+/* [20261122a] De rollen van wie nu ingelogd is, voor de handleiding en de hulpchat (hulp-rol.js):
+   de sturende rollen hierboven, plus 'coach' of 'solo' voor het team dat open staat (of, zonder
+   open team, voor de teams die je hebt). */
+export function mijnRollen(){
+  if (!S.user) return [];
+  const uit = rollenVoorKaart({ uid: S.user.uid, coordinatorBouwen: S.coordinatorBouwen || [], traincoClubs: S.traincoClubs || [], leiding: S._clubPlatform && S._clubPlatform.leiding, clubs: S.clubs || [] });
+  const t = S.team && S.teamId ? S.team : null;
+  if (t && t.leden && t.leden[S.user.uid]) uit.push(t.club ? 'coach' : 'solo');
+  else if (!t && (S.teams || []).length) uit.push((S.teams || []).some(x => x.club) ? 'coach' : 'solo');
+  return uit;
+}
+
 export function htmlRolkaart(rol, rolnaam){
   const k = ROLKAARTEN[rol]; if (!k) return '';
   const rij = (kop, tekst) => `<div class="rk-rij"><div class="rk-kop">${kop}</div><div class="rk-tekst">${esc(tekst)}</div></div>`;
@@ -101,13 +113,13 @@ export async function toonRolkaartZoNodig(){
 
 /* Het scherm waar de rol begint. Lukt het niet (bijv. de club is nog niet geladen), dan blijft de gebruiker waar hij is. */
 async function naarRol(rol){
-  if (rol === 'admin'){ const c = (S.clubs || []).find(x => x.admins && x.admins[S.user.uid]); if (c) (await import('./club.js?v=20261121e')).openClub(c.id); return; }
+  if (rol === 'admin'){ const c = (S.clubs || []).find(x => x.admins && x.admins[S.user.uid]); if (c) (await import('./club.js?v=20261122a')).openClub(c.id); return; }
   if (rol === 'bouw' || rol === 'eigenbouw'){
     const b = (S.coordinatorBouwen || []).find(x => x && !!x.eigen === (rol === 'eigenbouw'));
-    if (b) (await import('./bouw-hub.js?v=20261121e')).openBouwHub(b.clubId, b.bouw);
+    if (b) (await import('./bouw-hub.js?v=20261122a')).openBouwHub(b.clubId, b.bouw);
     return;
   }
-  if (rol === 'trainco'){ const c = (S.traincoClubs || [])[0]; if (c) (await import('./trainco.js?v=20261121e')).openVanuitApp(c.id); }
+  if (rol === 'trainco'){ const c = (S.traincoClubs || [])[0]; if (c) (await import('./trainco.js?v=20261122a')).openVanuitApp(c.id); }
 }
 
 /* Korte vertraging: de rollen komen binnen via losse listeners. */

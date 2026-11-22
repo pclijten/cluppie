@@ -5,20 +5,26 @@
    Standaard uit. Telling per trainer per maand in aiGebruikSolo/{uid}_{JJJJ-MM}
    (alleen via de Admin SDK; geen client-regels nodig).
 
-   Alleen voor functies die geen clubgegevens nodig hebben. Chat en wedstrijdverslag blijven
-   bij een club horen.                                                                     */
+   Alleen voor functies die geen clubgegevens nodig hebben. Het wedstrijdverslag blijft bij een
+   club horen.
+
+   [20261122a] Ook de hulpchat, met een eigen plafond: soloAI.chatLimiet (vragen per trainer per
+   maand, standaard 30), geteld in het veld `chat` van hetzelfde document. Zo eet een gesprek het
+   maximum voor Training maken niet op, en andersom.                                        */
 
 const STANDAARD_LIMIET = 20;
+const STANDAARD_CHAT = 30;
 
 function soloBeleid(platform){
   const s = (platform && platform.soloAI) || {};
-  const l = Number(s.limiet);
-  return { aan: s.aan === true, limiet: Number.isFinite(l) && l >= 0 ? Math.round(l) : STANDAARD_LIMIET };
+  const l = Number(s.limiet), c = Number(s.chatLimiet);
+  const chatGezet = s.chatLimiet !== undefined && s.chatLimiet !== null && s.chatLimiet !== '' && Number.isFinite(c) && c >= 0;
+  return { aan: s.aan === true, limiet: Number.isFinite(l) && l >= 0 ? Math.round(l) : STANDAARD_LIMIET, chatLimiet: chatGezet ? Math.round(c) : STANDAARD_CHAT };
 }
 
 /* Controleert team, lidmaatschap, schakelaar en maandlimiet; telt de aanroep.
    Geeft { clubId: null, teamId, rol: 'coach', solo: true } terug, zoals vereisAI. */
-async function vereisSoloAI({ db, request, HttpsError, FieldValue, nu = new Date() }){
+async function vereisSoloAI({ db, request, HttpsError, FieldValue, nu = new Date(), soort = 'ai' }){
   if (!request.auth) throw new HttpsError('unauthenticated', 'Log eerst in.');
   /* [20261115d] alleen met een bevestigd e-mailadres: anders is de limiet per trainer met wegwerpaccounts te omzeilen */
   if (request.auth.token?.email_verified !== true) throw new HttpsError('failed-precondition', 'Bevestig eerst je e-mailadres; daarna kun je AI gebruiken.');
@@ -33,10 +39,13 @@ async function vereisSoloAI({ db, request, HttpsError, FieldValue, nu = new Date
   if (!beleid.aan) throw new HttpsError('failed-precondition', 'AI staat uit voor trainers zonder club.');
   const maand = nu.toISOString().slice(0, 7);
   const ref = db.doc(`aiGebruikSolo/${uid}_${maand}`);
+  const chat = soort === 'chat', veld = chat ? 'chat' : 'aantal', max = chat ? beleid.chatLimiet : beleid.limiet;
   await db.runTransaction(async tx => {
-    const aantal = (await tx.get(ref)).data()?.aantal || 0;
-    if (aantal >= beleid.limiet) throw new HttpsError('resource-exhausted', 'Je maandlimiet voor AI is bereikt. Volgende maand kan het weer.');
-    tx.set(ref, { uid, maand, aantal: aantal + 1, bijgewerkt: FieldValue.serverTimestamp() }, { merge: true });
+    const aantal = (await tx.get(ref)).data()?.[veld] || 0;
+    if (aantal >= max) throw new HttpsError('resource-exhausted', chat
+      ? 'Je hebt deze maand het maximum aantal vragen aan de hulpchat bereikt. Volgende maand kan het weer; de handleiding staat onder Help.'
+      : 'Je maandlimiet voor AI is bereikt. Volgende maand kan het weer.');
+    tx.set(ref, { uid, maand, [veld]: aantal + 1, bijgewerkt: FieldValue.serverTimestamp() }, { merge: true });
   });
   return { clubId: null, teamId, rol: 'coach', solo: true };
 }
@@ -51,4 +60,4 @@ async function namenVanTeam(db, teamId){
   return [...namen].filter(n => n && String(n).trim().length > 1);
 }
 
-module.exports = { soloBeleid, vereisSoloAI, namenVanTeam, STANDAARD_LIMIET };
+module.exports = { soloBeleid, vereisSoloAI, namenVanTeam, STANDAARD_LIMIET, STANDAARD_CHAT };

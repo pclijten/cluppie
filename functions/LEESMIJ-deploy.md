@@ -20,6 +20,8 @@ Alle callables vereisen `clubId` in de payload; de server controleert lidmaatsch
 | `maakUitnodiging`, `trekUitnodigingIn`, `beoordeelAanvraag`, `wijzigRol`, `verwijderLid`, `bevestigPrivacy` | club-admin / volledige coach / ingelogd | onboarding en toegang, zie `AVG.md` |
 | `exporteerMijnGegevens`, `verwijderMijnAccount` | ingelogd | AVG inzage/wissen, zie `AVG.md` |
 | `bewaartermijnen` | schema | dagelijks 03:30, wist oude logins/gebruik/navpaden en verlopen deel-links |
+| `bewaarOpruimen` | clubbeheerder | [20261122a] callable; telt (en wist na bevestiging) beoordelingen uit evaluatierondes, oude mededelingen, polls en gezinsgegevens in de teamkamer en oude aanmeldingen voor trainingshulp. Zie `functions/bewaartermijn.js` |
+| `herkenClub` | coach van een team zonder club | [20261122a] callable; zoekt de ingevulde club (clubcode, of naam en plaats) en zet bij precies één treffer een koppelvoorstel op het team. Max 10 per 10 min |
 
 AI-functies pseudonimiseren invoer (`avg.js` → `scrubPII`). Deploy **eerst** deze functies, pas daarna de rules (zie `AVG.md`).
 

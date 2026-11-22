@@ -478,6 +478,49 @@ exports.vraagKoppelingAan = onCall({ region: REGIO, cors: true }, async (request
   return { ok: true, clubNaam: club.naam || v.clubNaam || '' };
 });
 
+/* ---------- [20261122a] herkennen dat de club van een losse trainer al meedoet ----------
+   Tot nu toe zette alleen de eindbaas een koppelvoorstel klaar (stap 1 hierboven), of een uitnodiging.
+   Nu vraagt de app het zelf: bij precies één club die past, komt het voorstel op het team en ziet de
+   trainer de kaart "… gebruikt Cluppie". Daarna loopt alles zoals het al liep: de trainer vraagt aan,
+   de clubbeheerder keurt goed.
+   Passen = dezelfde Sportlink-clubcode (gekozen uit de clubgids), of dezelfde naam en dezelfde plaats.
+   Alleen de naam is niet genoeg: er zijn meer clubs die "Rood Wit" heten. Past er meer dan één, dan
+   doen we niets. De functie zegt alleen ja of nee en de naam die de trainer zelf al invulde. */
+const normClub = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '');
+/* clubs = [{ id, naam, plaats, clubcode }] → de ene club die past, of null */
+function vindClub(eigenClub, clubs){
+  const e = eigenClub || {}, code = String(e.clubcode || '').trim().toUpperCase();
+  const naam = normClub(e.naam), plaats = normClub(e.plaats);
+  if (code){
+    const opCode = (clubs || []).filter(c => String(c.clubcode || '').toUpperCase() === code);
+    if (opCode.length === 1) return opCode[0];
+    if (opCode.length > 1) return null;
+  }
+  if (naam.length < 2 || plaats.length < 2) return null;
+  const opNaam = (clubs || []).filter(c => normClub(c.naam) === naam && normClub(c.plaats) === plaats);
+  return opNaam.length === 1 ? opNaam[0] : null;
+}
+exports.vindClub = vindClub;
+
+exports.herkenClub = onCall({ region: REGIO, cors: true }, async (request) => {
+  const db = getFirestore();
+  vereisIngelogd(request);
+  const uid = request.auth.uid, teamId = String(request.data?.teamId || '');
+  if (!teamId || teamId.includes('/')) throw new HttpsError('invalid-argument', 'Team ontbreekt.');
+  await rateLimit(db, `herken|${uid}`, 10, 600);
+  const tRef = db.doc(`teams/${teamId}`);
+  const team = (await tRef.get()).data();
+  if (!team) throw new HttpsError('not-found', 'Team bestaat niet.');
+  if (!team.leden?.[uid]) throw new HttpsError('permission-denied', 'Je bent geen coach van dit team.');
+  if (team.club || team.koppelVoorstel || !team.eigenClub) return { doetMee: false };
+  const q = db.collection('clubs');
+  const snap = await (typeof q.select === 'function' ? q.select('naam', 'instellingen.locatie.plaats', 'sportlinkClubcode') : q).get();
+  const club = vindClub(team.eigenClub, snap.docs.map(d => { const c = d.data() || {}; return { id: d.id, naam: c.naam || '', plaats: c.instellingen?.locatie?.plaats || '', clubcode: c.sportlinkClubcode || '' }; }));
+  if (!club) return { doetMee: false };
+  await tRef.update({ koppelVoorstel: { clubId: club.id, clubNaam: club.naam, status: 'open', via: 'herkend', tijd: FieldValue.serverTimestamp() } });
+  return { doetMee: true, clubId: club.id, clubNaam: club.naam };
+});
+
 /* ---------- [20261020a] ondersteuningsmodus voor de eindbaas ----------
    De eindbaas kan in precies één club tijdelijk als clubbeheerder werken (zie ondersteuningActief in
    firestore.rules). Start en stop komen in het toegangslog van de club. Een club kan het uitzetten via
