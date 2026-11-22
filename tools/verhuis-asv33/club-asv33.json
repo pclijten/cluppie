@@ -1,0 +1,10 @@
+{
+  "_uitleg": "Wat het verhuisscript (opdracht 'club') op het clubdocument van ASV'33 zet als het er nog niet staat. Bestaande keuzes blijven altijd staan. Daarna gewoon aan te passen in de app: Club > Instellingen (instellingen) en Platformcentrum > de club (platformModules). Training maken en Seizoensplanning staan uit omdat ASV'33 die niet had; aanzetten kan daar.",
+  "instellingen": {
+    "identiteit": { "afkorting": "ASV'33", "logo": "icons/asv-schild.png", "kleur": "#e2342f", "kompasNaam": "ASV-kompas", "beleidsplanNaam": "Jeugdbeleidsplan ASV'33" },
+    "locatie": { "plaats": "Aarle-Rixtel", "lat": 51.52, "lon": 5.62, "district": "zuid" },
+    "pedagogiek": { "formatie11": "4-3-3", "contentStandaard": true },
+    "toegang": { "goedkeuring": false, "standaardRol": "coach", "vasteCodes": true, "ondersteuning": true }
+  },
+  "platformModules": { "ai": true, "aiLimiet": null, "trainingsmodule": false, "seizoensplan": false, "maxVideoMB": 100 }
+}

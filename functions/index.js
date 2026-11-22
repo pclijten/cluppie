@@ -197,6 +197,8 @@ Object.assign(exports, require('./mail-beheer').maakFuncties({ isPlatformBeheerd
 exports.verstuurMail = require('./mail').verstuurMail;   // SMTP-verzending van `mail/{id}` (vervangt de Trigger Email-extensie)
 /* [20261011h] speler overzetten / seizoensovergang in één transactie (functions/overdracht.js) */
 exports.zetSpelerOver = require('./overdracht').zetSpelerOver;
+/* [20261122c] wie van het oude adres van een verhuisde club komt, is op cluppie.io meteen ingelogd. Zie functions/verhuizing.js. */
+exports.verhuisLogin = require('./verhuizing').verhuisLogin;
 /* [20261122a] bewaartermijnen: wat alleen de server mag wissen (beoordelingen uit evaluatierondes, teamkamer, trainingshulp) */
 exports.bewaarOpruimen = require('./bewaartermijn').bewaarOpruimen;
 /* [20261116m] Teamkamer: ouders en spelers (kopie, toegang, polls). Zie functions/teamkamer.js. */

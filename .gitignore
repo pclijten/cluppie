@@ -15,3 +15,6 @@ _to_delete/
 _fase1-backup/
 *.zip
 .env
+
+# verhuizing ASV33: lokale staat van het verhuisscript (bevat e-mailadressen)
+.verhuis/
