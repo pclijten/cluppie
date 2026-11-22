@@ -224,6 +224,7 @@ h3 { font-size: var(--text-title); line-height: 1.05; }
 
 /* ---------- 8 · join ---------- */
 .meedoen { padding-block: var(--section-gap) var(--section-gap-s); }
+.meedoen__prijs { margin-top: var(--space-md); max-width: 60ch; color: var(--color-ink-2); }
 .meedoen__grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--space-3xl); align-items: start; }
 .meedoen__foto { position: sticky; top: var(--space-3xl); aspect-ratio: 4 / 5; min-height: 560px; }
 .routes { margin-top: var(--space-2xl); }
