@@ -7,32 +7,32 @@ import {
 import { teamsOpId } from './teams-ophalen.js?v=20261011g';
 import {
   S, $, $$, esc, meld, nieuweCode, teamCode, clubAfkorting, openModal, sluitModal, toon, stopUnsubs, initialen, isBeheerder
-} from './state.js?v=20261122a';
-import { ACTIEF, DOC_CATEGORIEEN, docCategorieenAlle, CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, BOUWEN, bouwVanCategorie, bouwNaam, youtubeId, youtubeThumb, youtubeWatch, SEIZOEN_FALLBACK, GEBRUIK_CATEGORIEEN, gebruikEventLabel, catLabel } from './config.js?v=20261122a';
+} from './state.js?v=20261122b';
+import { ACTIEF, DOC_CATEGORIEEN, docCategorieenAlle, CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, BOUWEN, bouwVanCategorie, bouwNaam, youtubeId, youtubeThumb, youtubeWatch, SEIZOEN_FALLBACK, GEBRUIK_CATEGORIEEN, gebruikEventLabel, catLabel } from './config.js?v=20261122b';
 import { teltMee } from './opkomst.js?v=20260922c';
-import { htmlDiagramHerstel, koppelDiagramHerstel } from './training-herstel.js?v=20261122a';
+import { htmlDiagramHerstel, koppelDiagramHerstel } from './training-herstel.js?v=20261122b';
 import { uploadHulpHtml, uploadFout, UPLOAD_HULP } from './upload-hulp.js?v=20261113c';
-import { analyseWedstrijd } from './analyse.js?v=20261122a';
-import { htmlEigenBouwenBeheer, koppelEigenBouwenBeheer } from './eigen-bouwen.js?v=20261122a';
-import { htmlBouwIndeling, koppelBouwIndeling, standaardBouwVoorStof, bouwGroepen } from './bouw-indeling.js?v=20261122a';
-import { htmlClubJeugdplan, koppelClubJeugdplan } from './club-jeugdplan.js?v=20261122a';
-import { htmlClubSpeelstijl, koppelClubSpeelstijl } from './speelstijl.js?v=20261122a';
-import { rechtenVoor } from './seizoensplan-club.js?v=20261122a';
-import { clubEvaluatiesOphalen, htmlClubEvaluaties, koppelClubEvaluaties } from './club-evaluaties.js?v=20261122a';
-import { startClubContentListener, htmlClubContent, koppelClubContent } from './club-content.js?v=20261122a';
-import { htmlInzichtTabs, htmlInzichtTab, openRapport } from './club-inzicht.js?v=20261122a';
-import { telGebruik, telNav } from './tracker.js?v=20261122a';
+import { analyseWedstrijd } from './analyse.js?v=20261122b';
+import { htmlEigenBouwenBeheer, koppelEigenBouwenBeheer } from './eigen-bouwen.js?v=20261122b';
+import { htmlBouwIndeling, koppelBouwIndeling, standaardBouwVoorStof, bouwGroepen } from './bouw-indeling.js?v=20261122b';
+import { htmlClubJeugdplan, koppelClubJeugdplan } from './club-jeugdplan.js?v=20261122b';
+import { htmlClubSpeelstijl, koppelClubSpeelstijl } from './speelstijl.js?v=20261122b';
+import { rechtenVoor } from './seizoensplan-club.js?v=20261122b';
+import { clubEvaluatiesOphalen, htmlClubEvaluaties, koppelClubEvaluaties } from './club-evaluaties.js?v=20261122b';
+import { startClubContentListener, htmlClubContent, koppelClubContent } from './club-content.js?v=20261122b';
+import { htmlInzichtTabs, htmlInzichtTab, openRapport } from './club-inzicht.js?v=20261122b';
+import { telGebruik, telNav } from './tracker.js?v=20261122b';
 import { ico } from './icons.js?v=20261116t';
-import { INSTEL_TABS, INSTEL_BASIS, NIEUWE_TABS, htmlInstelNieuw, koppelInstelNieuw, htmlAlgemeenMelding, koppelAlgemeenMelding, modalNieuweClub } from './club-instellingen.js?v=20261122a';
-import { pasClubConfigToe, clubAfk, effectief, pdfProfielNu, pdfOmzettenAan } from './clubconfig.js?v=20261122a';
+import { INSTEL_TABS, INSTEL_BASIS, NIEUWE_TABS, htmlInstelNieuw, koppelInstelNieuw, htmlAlgemeenMelding, koppelAlgemeenMelding, modalNieuweClub } from './club-instellingen.js?v=20261122b';
+import { pasClubConfigToe, clubAfk, effectief, pdfProfielNu, pdfOmzettenAan } from './clubconfig.js?v=20261122b';
 import { startlijstStatus } from './startlijst.js?v=20261011d';
 import { teamSleutel as teamSleutelClub } from './sportlink-sleutel.js?v=20261011d';
-import { htmlTraincoKaart, koppelTraincoKaart } from './trainco-beheer.js?v=20261122a';
-import { htmlMensen, koppelMensen, htmlVervolg, koppelVervolg } from './club-mensen.js?v=20261122a';   /* [20261121a] wie doet wat, en het vervolg op Aan de slag */
-import { htmlTeamsBeheer, koppelTeamsBeheer, htmlTeamBeheer, koppelTeamBeheer, htmlCoaches, koppelCoaches, aandachtRedenen, groepen as beheerGroepen } from './club-beheer.js?v=20261122a';
-import { isBlokUpload, isZip, startBlokUpload, hervatBlokUpload, htmlPlannen, koppelPlannen, zichtbaarLabel, weekStartBijLabel, isoWeekNr, kortDatum as planKortDatum } from './training-plan.js?v=20261122a';
-import { initWachtrij, voegToeAanWachtrij, htmlUploadPaneel, htmlModelKeuze } from './upload-wachtrij.js?v=20261122a';
-import { rondesVan, voortgangOphalen, htmlEvalRondes, htmlRondeDetail, htmlRondeFormulier, koppelRondeFormulier, koppelRondeDetail, startConcept } from './evaluatierondes.js?v=20261122a';
+import { htmlTraincoKaart, koppelTraincoKaart } from './trainco-beheer.js?v=20261122b';
+import { htmlMensen, koppelMensen, htmlVervolg, koppelVervolg } from './club-mensen.js?v=20261122b';   /* [20261121a] wie doet wat, en het vervolg op Aan de slag */
+import { htmlTeamsBeheer, koppelTeamsBeheer, htmlTeamBeheer, koppelTeamBeheer, htmlCoaches, koppelCoaches, aandachtRedenen, groepen as beheerGroepen } from './club-beheer.js?v=20261122b';
+import { isBlokUpload, isZip, startBlokUpload, hervatBlokUpload, htmlPlannen, koppelPlannen, zichtbaarLabel, weekStartBijLabel, isoWeekNr, isoJaar, kortDatum as planKortDatum } from './training-plan.js?v=20261122b';
+import { initWachtrij, voegToeAanWachtrij, htmlUploadPaneel, htmlModelKeuze } from './upload-wachtrij.js?v=20261122b';
+import { rondesVan, voortgangOphalen, htmlEvalRondes, htmlRondeDetail, htmlRondeFormulier, koppelRondeFormulier, koppelRondeDetail, startConcept } from './evaluatierondes.js?v=20261122b';
 
 /* [20261013b] Uploadwachtrij: trainingen worden op de achtergrond verwerkt.
    De wachtrij leeft in upload-wachtrij.js; de schermen die hij nodig heeft
@@ -58,7 +58,7 @@ const DASH_OPKOMST_LAAG = () => ACTIEF.dashboard.opkomstLaag;
 
 /* openTeam en modalNieuwTeam komen uit teams.js; om kringverwijzing te
    vermijden importeren we ze lui binnen de functies die ze nodig hebben. */
-async function teamsModule(){ return await import('./teams.js?v=20261122a'); }
+async function teamsModule(){ return await import('./teams.js?v=20261122b'); }
 
 /* ==================== CLUB AANMAKEN ==================== */
 /* [20260929c] Aanmaken in vier stappen (club, uiterlijk, koppeling, startinhoud):
@@ -77,9 +77,9 @@ export function openClub(clubId){
     if (!snap.exists()){ verlaatClubView(); return; }
     const eersteKeer = !S.club || S.club.id !== snap.id;
     S.club = {id:snap.id, ...snap.data()};
-    if (eersteKeer && S.club.admins?.[S.user?.uid]) import('./toegang.js?v=20261122a').then(m => m.meldOpenAanvragen(clubId));
+    if (eersteKeer && S.club.admins?.[S.user?.uid]) import('./toegang.js?v=20261122b').then(m => m.meldOpenAanvragen(clubId));
     /* [20261020a] niet zelf beheerder van deze club: staat de ondersteuningsmodus van de eindbaas nog aan, dan komt de balk terug */
-    else if (eersteKeer) import('./ondersteuning.js?v=20261122a').then(m => m.herstelBalk()).catch(() => {});
+    else if (eersteKeer) import('./ondersteuning.js?v=20261122b').then(m => m.herstelBalk()).catch(() => {});
     pasClubConfigToe(S.club);      // [20260929c] club-instellingen → config.js, vóór het renderen
     renderClub();
   }, (err) => {
@@ -93,7 +93,7 @@ export function openClub(clubId){
 export function verlaatClubView(){
   stopUnsubs('club', 'clubContent');
   S.clubId = null; S.club = null;
-  import('./teams.js?v=20261122a').then(m => { m.renderTeams(); toon('teams'); });
+  import('./teams.js?v=20261122b').then(m => { m.renderTeams(); toon('teams'); });
 }
 
 async function clubTeamsOphalen(){
@@ -113,7 +113,7 @@ async function clubTeamsOphalen(){
 async function vulTrainingsgebruikTab(v){
   const bak = v.querySelector('#tgInzicht');
   if (!bak) return;
-  const m = await import('./club-trainingsgebruik.js?v=20261122a');
+  const m = await import('./club-trainingsgebruik.js?v=20261122b');
   m.vulTrainingsgebruik(bak, S.clubTeams || []);
 }
 
@@ -1155,8 +1155,8 @@ async function renderClub(opts = {}){
   // hub-tegels (en de banner) koppelen
   v.querySelectorAll('[data-club-open]').forEach(b => b.onclick = () => b.dataset.clubOpen === 'weekbrief' ? kiesWeekbrief(teams) : naarClubTab(b.dataset.clubOpen));
   /* [20261120e] Sportpark-tegel: los venster uit veldkaart.js (dynamisch geladen) */
-  v.querySelectorAll('[data-vk-sportpark]').forEach(b => b.onclick = () => import('./veldkaart.js?v=20261122a').then(m => m.openSportparkBeheer(S.clubId)));
-  { const bad = v.querySelector('[data-vk-badge]'); if (bad) import('./veldkaart.js?v=20261122a').then(m => m.vulMeldBadge(bad, S.clubId)); }
+  v.querySelectorAll('[data-vk-sportpark]').forEach(b => b.onclick = () => import('./veldkaart.js?v=20261122b').then(m => m.openSportparkBeheer(S.clubId)));
+  { const bad = v.querySelector('[data-vk-badge]'); if (bad) import('./veldkaart.js?v=20261122b').then(m => m.vulMeldBadge(bad, S.clubId)); }
   /* [20261121a] sprong vanuit "Wie doet wat" en "En daarna" naar de plek waar je het regelt */
   const naarActie = a => {
     if (a.startsWith('instellingen:')){ S._clubInstelTab = a.split(':')[1]; return naarClubTab('instel'); }
@@ -1202,7 +1202,7 @@ async function renderClub(opts = {}){
     teams, herteken: hertekenClub, openBeheer,
     nieuwTeam: async () => (await teamsModule()).modalNieuwTeam(S.clubId),
     importPdf: () => modalImporteerPDF(),
-    importSportlink: () => import('./club-sportlink-import.js?v=20261122a').then(m => m.modalTeamsUitSportlink(teams, () => renderClub())),
+    importSportlink: () => import('./club-sportlink-import.js?v=20261122b').then(m => m.modalTeamsUitSportlink(teams, () => renderClub())),
     alleLinks: () => modalAlleLinks(teams),
   });
   if (tab === 'teambeheer') koppelTeamBeheer(v, {
@@ -1710,14 +1710,36 @@ function htmlClubTrainingenDesk(teams, trainingen){
         return gi.length && gi.length === set.size && gi.every(id => set.has(id));
       });
     };
+    // [20261122a] groep met een paar teams eruit (vervangen door een andere training)
+    const bijnaGroepVan = ids => groepen.find(g => {
+      const gi = (g.teams || []).filter(id => teamById.has(id));
+      return ids.length && ids.length < gi.length && gi.length - ids.length <= 2 && ids.every(id => gi.includes(id));
+    });
+    const dubbel = dubbelKaart(trainingen);
+    const dubbelHtml = t => (dubbel.get(t.id) || []).length
+      ? `<button type="button" class="trd-dubbel" data-tbewerk="${t.id}" title="Dit team heeft op dezelfde plek nog een training. Klik om te kiezen welke blijft.">${ico('action-warning', 13)}Dubbel bij ${esc(dubbel.get(t.id).map(id => teamById.get(id)?.naam || '?').join(', '))}</button>` : '';
     const teamsHtml = t => {
       const ids = (t.teams || []);
       if (!ids.length) return '<span class="trd-leeg">geen team</span>';
       const g = groepVan(ids);
-      if (g) return `<span class="trd-tg groep">${esc(g.naam || ('Groep ' + g.id))}<span class="sep" aria-hidden="true"></span>${ids.length} team${ids.length===1?'':'s'}</span>`;
-      const namen = ids.map(id => teamById.get(id)?.naam || '?');
-      const zicht = namen.slice(0, 5).map(n => `<span class="trd-tg">${esc(n)}</span>`).join('');
-      return zicht + (namen.length > 5 ? `<span class="trd-tg" title="${esc(namen.slice(5).join(', '))}">+${namen.length - 5}</span>` : '');
+      if (g) return `<span class="trd-tg groep">${esc(g.naam || ('Groep ' + g.id))}<span class="sep" aria-hidden="true"></span>${ids.length} team${ids.length===1?'':'s'}</span>` + dubbelHtml(t);
+      const bg = bijnaGroepVan(ids);
+      if (bg){
+        const gi = (bg.teams || []).filter(id => teamById.has(id));
+        const zonder = gi.filter(id => !ids.includes(id)).map(id => teamById.get(id)?.naam || '?').join(', ');
+        return `<span class="trd-tg groep" title="Zonder ${esc(zonder)}: die ${gi.length - ids.length === 1 ? 'krijgt' : 'krijgen'} een andere training">${esc(bg.naam || ('Groep ' + bg.id))}<span class="sep" aria-hidden="true"></span>${ids.length} van ${gi.length}<span class="trd-zacht">zonder ${esc(zonder)}</span></span>` + dubbelHtml(t);
+      }
+      const vervangt = (t.vervangt && typeof t.vervangt === 'object') ? t.vervangt : {};
+      const tg = id => {
+        const n = teamById.get(id)?.naam || '?';
+        const oud = vervangt[id] ? trainingen.find(x => x.id === vervangt[id]) : null;
+        return oud
+          ? `<span class="trd-tg wissel" title="Krijgt deze training in plaats van ${esc(oud.titel || 'de eigen training')}">${ico('football-substitution', 12)}${esc(n)}<span class="trd-zacht">i.p.v. ${esc(trainingTeamsKort(oud, teams))}</span></span>`
+          : `<span class="trd-tg">${esc(n)}</span>`;
+      };
+      const zicht = ids.slice(0, 5).map(tg).join('');
+      const rest = ids.slice(5).map(id => teamById.get(id)?.naam || '?');
+      return zicht + (rest.length ? `<span class="trd-tg" title="${esc(rest.join(', '))}">+${rest.length}</span>` : '') + dubbelHtml(t);
     };
 
     const rij = t => {
@@ -1800,6 +1822,7 @@ function htmlClubTrainingen(teams, trainingen){
   }
 
   // Lijst: alle trainingen van de club, nieuw → oud zoals ze binnenkomen.
+  const dubbelM = dubbelKaart(trainingen);   // [20261122a]
   const lijst = trainingen.length ? trainingen.map(t => {
     const teamNamen = (t.teams||[]).map(tid => (teams.find(x => x.id === tid)?.naam) || '?').join(', ');
     const heeftAi = Array.isArray(t.oefeningen) && t.oefeningen.length;
@@ -1817,7 +1840,8 @@ function htmlClubTrainingen(teams, trainingen){
         <div class="t"><div class="t-titel">${esc(t.titel || t.bestandsnaam)}</div>
           ${toonBest ? `<div class="t-best">${esc(t.bestandsnaam)}</div>` : ''}
           <div class="t-meta">${esc(t.week || '')}${t.week?'<span class="sep" aria-hidden="true"></span>':''}${esc(teamNamen)}</div>
-          ${zichtbaarLabel(t) ? `<div class="bp-zv-badge">${esc(zichtbaarLabel(t))}</div>` : ''}</div>
+          ${zichtbaarLabel(t) ? `<div class="bp-zv-badge">${esc(zichtbaarLabel(t))}</div>` : ''}
+          ${(dubbelM.get(t.id) || []).length ? `<button type="button" class="trd-dubbel" data-tbewerk="${t.id}">${ico('action-warning', 13)}Dubbel bij ${esc(dubbelM.get(t.id).map(id => teams.find(x => x.id === id)?.naam || '?').join(', '))}</button>` : ''}</div>
         <div class="acties">
           <button data-tdownload="${esc(t.url || '')}" data-tid="${esc(t.id)}" title="Openen">↗</button>
           ${tekstKnop}
@@ -2547,7 +2571,7 @@ function koppelClubTab(v, tab, teams, trainingen, videos, documenten){
       const t = trainingen.find(x => x.id === b.dataset.tid);
       if (!t || !(t.oefeningen || []).length) { meld('Deze training heeft geen PDF om te openen'); return; }
       const datum = t.gemaakt?.seconds ? new Date(t.gemaakt.seconds*1000).toLocaleDateString('nl-NL',{day:'numeric',month:'short'}) : '';
-      import('./training-bewerken.js?v=20261122a').then(({ openTrainingBewerken }) => openTrainingBewerken({
+      import('./training-bewerken.js?v=20261122b').then(({ openTrainingBewerken }) => openTrainingBewerken({
         trainingId: t.id, titel: t.titel || t.bestandsnaam || 'Training',
         meta: [t.week, datum].filter(Boolean).join(' · '),
         oefeningen: t.oefeningen || [], paginas: t.paginas || [],
@@ -2557,14 +2581,14 @@ function koppelClubTab(v, tab, teams, trainingen, videos, documenten){
     v.querySelectorAll('[data-tnotities]').forEach(b => b.onclick = async () => {
       const t = trainingen.find(x => x.id === b.dataset.tnotities);
       if (!t) return;
-      const { openBeheerNotities } = await import('./training-notities-beheer.js?v=20261122a');
+      const { openBeheerNotities } = await import('./training-notities-beheer.js?v=20261122b');
       openBeheerNotities({ trainingId: t.id, titel: t.titel || t.bestandsnaam || 'Training', oefeningen: t.oefeningen || [] });
     });
     v.querySelectorAll('[data-ttekst]').forEach(b => b.onclick = async () => {
       const t = trainingen.find(x => x.id === b.dataset.ttekst);
       if (!t) return;
       const datum = t.gemaakt?.seconds ? new Date(t.gemaakt.seconds*1000).toLocaleDateString('nl-NL',{day:'numeric',month:'short'}) : '';
-      const { openTrainingBewerken } = await import('./training-bewerken.js?v=20261122a');
+      const { openTrainingBewerken } = await import('./training-bewerken.js?v=20261122b');
       openTrainingBewerken({
         trainingId: t.id,
         titel: t.titel || t.bestandsnaam || 'Training',
@@ -2774,10 +2798,10 @@ function koppelClubTab(v, tab, teams, trainingen, videos, documenten){
     if (slAlles) slAlles.onclick = () => { S._clubSlAlles = !S._clubSlAlles; hertekenClub(); };
     v.querySelectorAll('[data-sl-koppel]').forEach(b => b.onclick = () => { S._cbTeam = b.dataset.slKoppel; S._cbUitnodig = null; naarClubTab('teambeheer'); });
     /* [20261121c] bewaartermijnen: vertrokken spelers en oude seizoenen opruimen (club-bewaartermijn.js) */
-    v.querySelector('#btnBewaartermijn')?.addEventListener('click', () => import('./club-bewaartermijn.js?v=20261122a').then(m => m.modalBewaartermijn(teams)));
+    v.querySelector('#btnBewaartermijn')?.addEventListener('click', () => import('./club-bewaartermijn.js?v=20261122b').then(m => m.modalBewaartermijn(teams)));
     import('./bewaartermijn-logica.js?v=20261122a').then(m => { const el = v.querySelector('#bewaarRegel'); const b = S.club?.instellingen?.privacy?.bewaar; if (el) el.textContent = b ? m.laatstTekst(b.laatst) + '.' : 'Nog geen bewaartermijn gekozen.'; }).catch(() => {});
     v.querySelector('#btnSeizoensovergang')?.addEventListener('click', () =>
-      import('./club-seizoen.js?v=20261122a').then(m => m.modalSeizoensovergang(teams, () => renderClub())));
+      import('./club-seizoen.js?v=20261122b').then(m => m.modalSeizoensovergang(teams, () => renderClub())));
     const nieuwSeizoenBtn = v.querySelector('#btnNieuwSeizoen');
     if (nieuwSeizoenBtn) nieuwSeizoenBtn.onclick = () => modalNieuwSeizoen();
     const migreerBtn = v.querySelector('#migreerSeizoen');
@@ -2838,7 +2862,7 @@ function koppelClubTab(v, tab, teams, trainingen, videos, documenten){
     if (testBtn) testBtn.onclick = async () => {
       const uit = v.querySelector('#slTestUit'), id = (v.querySelector('#clientIdInput').value || '').trim();
       testBtn.disabled = true; uit.innerHTML = '<div class="sl-laden"><span class="sl-spin"></span>Sportlink vragen…</div>';
-      const { zoekClubInSportlink, htmlClubVondst, verkleinSportlinkLogo } = await import('./sportlink-clubinfo.js?v=20261122a');
+      const { zoekClubInSportlink, htmlClubVondst, verkleinSportlinkLogo } = await import('./sportlink-clubinfo.js?v=20261122b');
       try {
         const info = await zoekClubInSportlink(id, S.clubId);
         const logo = info.gevonden ? (S.club.instellingen?.identiteit?.logo || await verkleinSportlinkLogo(info.logo)) : '';
@@ -2875,7 +2899,7 @@ function koppelClubTab(v, tab, teams, trainingen, videos, documenten){
 /* ==================== UITNODIGEN ==================== */
 export function modalUitnodig(team){
   /* [AVG] persoonlijke, verlopende uitnodigingen i.p.v. de vaste teamlink (zie toegang.js) */
-  import('./toegang.js?v=20261122a').then(m => m.modalUitnodigNieuw(team));
+  import('./toegang.js?v=20261122b').then(m => m.modalUitnodigNieuw(team));
 }
 
 function modalAlleLinks(teams){
@@ -3400,7 +3424,7 @@ async function startTrainingVerwerking(file, meta){
     rest.map(t=>`<div>${t}</div>`).join('');
 
   try {
-    const ai = await import('./training-ai.js?v=20261122a');
+    const ai = await import('./training-ai.js?v=20261122b');
 
     toonVerwerk(stap([], 'PDF inlezen…', ['Diagrammen opslaan','Oefeningen structureren','Controleren']));
     const profiel = pdfProfielNu();   // [20261114a] PDF-profiel van de club
@@ -3560,7 +3584,7 @@ function toonPreview(file, meta, ctx){
   $$('#trOpnieuw').forEach(b => b.onclick = () => startTrainingHerstructureer(file, meta, ctx));
   $$('#trTekst').forEach(b => b.onclick = async () => {
     ctx.doelen = leesDoelen();   // typwijzigingen bewaren over het herteken heen
-    const { openTrainingBewerken } = await import('./training-bewerken.js?v=20261122a');
+    const { openTrainingBewerken } = await import('./training-bewerken.js?v=20261122b');
     openTrainingBewerken({
       titel: meta.titel || file.name,
       meta: meta.week || '',
@@ -3582,7 +3606,7 @@ async function startTrainingHerstructureer(file, meta, ctx){
   const mod = $('.modal'); if (!mod) return;
   zetTrainingModalInhoud('Opnieuw genereren', `<div class="tr-verwerk"><div class="tr-spin"></div><p>De AI probeert de opmaak nog een keer.</p></div>`);
   try {
-    const ai = await import('./training-ai.js?v=20261122a');
+    const ai = await import('./training-ai.js?v=20261122b');
     // Ook de diagrammen opnieuw uitlezen én overschrijven: zo herstelt "opnieuw
     // genereren" ook een fout diagram (bv. een logo/avatar dat als veld doorkwam),
     // niet alleen de tekst-layout. uploadDiagrammen schrijft naar dezelfde paden
@@ -3640,6 +3664,93 @@ function toonAlleenPdfKeuze(file, meta, ctx, boodschap){
   $('#trOpnieuw2').onclick = () => startTrainingHerstructureer(file, meta, ctx);
 }
 
+/* ==================== TRAINING VAN ANDERE GROEP (vervangen) ====================
+   [20261122a] Een team krijgt af en toe de training van een andere groep. Heeft
+   het team in dezelfde week al dezelfde training (zelfde trainingsnummer) van
+   zijn eigen groep, dan neemt de nieuwe training die plek over: het team gaat
+   uit de teams-lijst van de oude training. Op de nieuwe training onthoudt
+   `vervangt: { teamId: oudeTrainingId }` wat er vervangen is, voor het label in
+   de lijst en om het later terug te kunnen draaien. */
+
+/* "2026-48-1" (jaar-week-trainingnr), of null als we het niet zeker weten. */
+function trainingSlot(t){
+  if (!t) return null;
+  let jaar, wk;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(t.weekStart || '')){
+    wk = isoWeekNr(t.weekStart); jaar = isoJaar(t.weekStart);
+  } else {
+    const m = String(t.week || '').match(/(\d{1,2})/) || String(t.titel || '').match(/week\s*(\d{1,2})/i);
+    const g = t.gemaakt?.seconds ? new Date(t.gemaakt.seconds * 1000) : null;
+    if (!m || !g) return null;
+    wk = +m[1]; jaar = g.getFullYear();
+    const gw = isoWeek(g);
+    if (wk < gw - 26) jaar++; else if (wk > gw + 26) jaar--;
+  }
+  const nr = Number(t.trainingNr) || Number((String(t.titel || '').match(/training\s*(\d+)/i) || [])[1]) || 0;
+  if (!wk || !nr) return null;
+  return `${jaar}-${wk}-${nr}`;
+}
+
+/* Andere trainingen die voor teamId op dezelfde plek staan als t. */
+function slotConflicten(t, teamIds, trainingen){
+  const slot = trainingSlot(t);
+  if (!slot) return [];
+  const uit = [];
+  for (const tid of teamIds){
+    for (const o of trainingen){
+      if (o.id === t.id || !(o.teams || []).includes(tid)) continue;
+      if (trainingSlot(o) === slot) uit.push({ teamId: tid, training: o });
+    }
+  }
+  return uit;
+}
+
+/* Is dit de 'gewone' training van het team: de teams vormen (bijna) een
+   trainingsgroep waar het team in zit? */
+function isEigenGroepTraining(t, teamId){
+  const ids = new Set(t.teams || []);
+  return trainingsGroepen().some(g => (g.teams || []).includes(teamId)
+    && (t.teams || []).every(id => (g.teams || []).includes(id)) && ids.size >= Math.max(1, (g.teams || []).length - 2));
+}
+
+/* Per training: teams die er op dezelfde plek nog een training naast hebben.
+   Het label komt bij de afwijkende training (niet de eigen-groeptraining);
+   is dat niet te zeggen, dan bij allebei. */
+function dubbelKaart(trainingen){
+  const per = new Map();
+  for (const t of trainingen){
+    const slot = trainingSlot(t); if (!slot) continue;
+    for (const tid of (t.teams || [])){
+      const k = slot + '|' + tid;
+      if (!per.has(k)) per.set(k, []);
+      per.get(k).push(t);
+    }
+  }
+  const uit = new Map();
+  for (const [k, lijst] of per){
+    if (lijst.length < 2) continue;
+    const tid = k.split('|')[1];
+    const afwijkend = lijst.filter(t => !isEigenGroepTraining(t, tid));
+    const label = afwijkend.length && afwijkend.length < lijst.length ? afwijkend : lijst;
+    for (const t of label){
+      if (!uit.has(t.id)) uit.set(t.id, []);
+      if (!uit.get(t.id).includes(tid)) uit.get(t.id).push(tid);
+    }
+  }
+  return uit;
+}
+
+/* Korte naam voor de teams van een training: "Groep D" of de teamnamen. */
+function trainingTeamsKort(t, teams){
+  const ids = t.teams || [];
+  const g = trainingsGroepen().find(x => {
+    const gi = (x.teams || []).filter(id => teams.some(tm => tm.id === id));
+    return gi.length && ids.length && ids.every(id => gi.includes(id)) && ids.length >= gi.length - 2;
+  });
+  if (g) return g.naam || ('Groep ' + g.id);
+  return ids.slice(0, 3).map(id => teams.find(tm => tm.id === id)?.naam || '?').join(', ') + (ids.length > 3 ? ' +' + (ids.length - 3) : '');
+}
+
 /* Toewijzing (titel, week, teams) van een bestaande training achteraf aanpassen
    — zonder het PDF-bestand opnieuw te uploaden. */
 function modalBewerkTraining(t, teams){
@@ -3680,9 +3791,37 @@ function modalBewerkTraining(t, teams){
         <button class="knop licht klein" id="mTbAlle">Alle teams</button>
         <button class="knop licht klein" id="mTbGeen">Geen</button>
       </div>
+      <div id="mTbVervang"></div>
     </div>
     <button class="knop vol" id="mTbOk">Wijzigingen opslaan</button>`);
-  const sync = () => $$('#mTbTeams label').forEach(l => l.classList.toggle('aan', l.querySelector('input').checked));
+  // [20261122a] teams die op dezelfde plek al een training van een andere groep hebben
+  const alleTr = S.clubTrainingen || [];
+  const keuzes = new Map();   // "teamId|trainingId" → 'vervang' | 'beide'
+  const tekenVervang = () => {
+    const bak = $('#mTbVervang'); if (!bak) return;
+    const aan = $$('#mTbTeams input').filter(c => c.checked).map(c => c.dataset.tid);
+    const conf = slotConflicten(t, aan, alleTr);
+    if (!conf.length){ bak.innerHTML = ''; return; }
+    const nr = (trainingSlot(t) || '').split('-')[2];
+    const vandaag = new Date(); vandaag.setHours(0,0,0,0);
+    bak.innerHTML = `<div class="tr-vervang">
+      <div class="tr-vervang-kop">${ico('action-warning', 16)}<span>${conf.length === 1 ? 'Een team heeft' : 'Teams hebben'} deze week al training ${esc(nr)} van een andere groep</span></div>
+      <ul>${conf.map(c => {
+        const k = c.teamId + '|' + c.training.id;
+        if (!keuzes.has(k)) keuzes.set(k, 'vervang');
+        const kz = keuzes.get(k);
+        const naam = teams.find(x => x.id === c.teamId)?.naam || '?';
+        return `<li><span><b>${esc(naam)}</b><small>heeft al "${esc(c.training.titel || c.training.bestandsnaam || 'Training')}" van ${esc(trainingTeamsKort(c.training, teams))}</small></span>
+          <span class="tr-vervang-keuze" data-vk="${esc(k)}"><button type="button" data-k="vervang" class="${kz === 'vervang' ? 'aan' : ''}">Vervangen</button><button type="button" data-k="beide" class="${kz === 'beide' ? 'aan' : ''}">Allebei houden</button></span></li>`;
+      }).join('')}</ul>
+      <p class="bp-hint">Vervangen: het team krijgt alleen deze training, de andere teams houden hun eigen training. Aantekeningen die een coach al bij de oude training maakte, blijven bewaard maar zijn dan niet meer zichtbaar.</p>
+    </div>`;
+    bak.querySelectorAll('[data-vk] button').forEach(b => b.onclick = () => {
+      keuzes.set(b.parentElement.dataset.vk, b.dataset.k); tekenVervang();
+    });
+  };
+  const sync = () => { $$('#mTbTeams label').forEach(l => l.classList.toggle('aan', l.querySelector('input').checked)); tekenVervang(); };
+  tekenVervang();
   $$('#mTbTeams input').forEach(c => c.onchange = sync);
   $('#mTbAlle').onclick = () => { $$('#mTbTeams input').forEach(c => c.checked = true); sync(); };
   $('#mTbGeen').onclick = () => { $$('#mTbTeams input').forEach(c => c.checked = false); sync(); };
@@ -3707,14 +3846,46 @@ function modalBewerkTraining(t, teams){
     const doelen = mTbLeesDoelen();   // lezen vóór sluitModal — daarna is de DOM weg
     // [20261013g] zichtbaarheidsdatum ook vóór sluitModal lezen (leeg = meteen)
     const zicht = ($('#mTbZicht')?.value || '').trim();
+    // [20261122c] vervangen/terugzetten bepalen vóór sluitModal (uit ASV'33 PR #103)
+    const vervangNu = slotConflicten(t, gekozen, alleTr).filter(c => keuzes.get(c.teamId + '|' + c.training.id) !== 'beide');
+    const oudVervangt = (t.vervangt && typeof t.vervangt === 'object') ? t.vervangt : {};
+    const terug = Object.entries(oudVervangt).filter(([tid]) => !gekozen.includes(tid))
+      .map(([tid, oid]) => ({ teamId: tid, training: alleTr.find(x => x.id === oid) })).filter(x => x.training);
+    let terugJa = false;
+    if (terug.length){
+      const namen = terug.map(x => teams.find(tm => tm.id === x.teamId)?.naam || '?').join(', ');
+      terugJa = confirm(`${namen} weer de oorspronkelijke training geven (${terug.map(x => x.training.titel || 'training').join(', ')})?`);
+    }
     sluitModal();
     try {
       // [20261116o] weeklabel en weekStart horen bij elkaar: wie het weeknummer met de hand aanpast,
       // verhuist de training ook echt. Voorheen bleef weekStart staan en stond hij bij coaches in de oude week.
       const nieuweStart = ingepland ? weekStartBijLabel(week, t.weekStart) : null;
-      await updateDoc(doc(db,'trainingen',t.id), {teams: gekozen, titel, week, doelen, zichtbaarVanaf: zicht || null,
+      const vervangt = { ...oudVervangt };
+      for (const tid of Object.keys(vervangt)) if (!gekozen.includes(tid)) delete vervangt[tid];
+      const batch = writeBatch(db);
+      // per oude training de nieuwe teamlijst opbouwen (één training kan meerdere teams verliezen/terugkrijgen)
+      const nieuweTeams = new Map();
+      const teamsVan = o => nieuweTeams.get(o.id) || [...(o.teams || [])];
+      for (const c of vervangNu){
+        nieuweTeams.set(c.training.id, teamsVan(c.training).filter(id => id !== c.teamId));
+        vervangt[c.teamId] = c.training.id;
+      }
+      if (terugJa) for (const x of terug){
+        const l = teamsVan(x.training); if (!l.includes(x.teamId)) l.push(x.teamId);
+        nieuweTeams.set(x.training.id, l);
+      }
+      for (const [oid, l] of nieuweTeams) batch.update(doc(db,'trainingen',oid), { teams: l });
+      batch.update(doc(db,'trainingen',t.id), {teams: gekozen, titel, week, doelen, zichtbaarVanaf: zicht || null,
+        vervangt: Object.keys(vervangt).length ? vervangt : deleteField(),
         ...(nieuweStart && nieuweStart !== t.weekStart ? { weekStart: nieuweStart } : {})});
-      meld('Training bijgewerkt'); renderClub();
+      await batch.commit();
+      // lokale lijst meteen bijwerken zodat de labels kloppen zonder herladen
+      for (const [oid, l] of nieuweTeams){ const o = alleTr.find(x => x.id === oid); if (o) o.teams = l; }
+      Object.assign(t, { teams: gekozen, titel, week, doelen, zichtbaarVanaf: zicht || null });
+      if (Object.keys(vervangt).length) t.vervangt = vervangt; else delete t.vervangt;
+      meld(vervangNu.length ? `Training bijgewerkt, ${vervangNu.length === 1 ? 'training vervangen' : vervangNu.length + ' trainingen vervangen'}` : 'Training bijgewerkt');
+      renderClub();
     } catch(e){
       console.error(e); meld('Opslaan mislukt: ' + (e.code || e.message));
     }
@@ -4200,7 +4371,7 @@ function koppelClientIdUitleg(v){
     catch(e){ if (navigator.share) navigator.share({ text: t }).catch(() => {}); else meld('Kopiëren lukt niet op dit apparaat'); }
   };
   const imp = v.querySelector('#slTeamsImport');
-  if (imp) imp.onclick = () => import('./club-sportlink-import.js?v=20261122a').then(m => m.modalTeamsUitSportlink(S.clubTeams || [], () => renderClub()));
+  if (imp) imp.onclick = () => import('./club-sportlink-import.js?v=20261122b').then(m => m.modalTeamsUitSportlink(S.clubTeams || [], () => renderClub()));
 }
 
 /* Kaart "Aan de slag" op de club-hub (alleen beheerders, tot alles klaar of weggeklikt). */
@@ -4232,7 +4403,7 @@ function koppelStartlijst(v, teams){
     const a = b.dataset.startlijst, stap = b.dataset.stap;
     if (a === 'vo') return modalVerwerkersovereenkomst();
     if (a.startsWith('instellingen:')){ S._clubInstelTab = a.split(':')[1]; return naarClubTab('instel'); }
-    if (stap === 'teams' && S.club.sportlinkClientId) return import('./club-sportlink-import.js?v=20261122a').then(m => m.modalTeamsUitSportlink(teams, () => renderClub()));
+    if (stap === 'teams' && S.club.sportlinkClientId) return import('./club-sportlink-import.js?v=20261122b').then(m => m.modalTeamsUitSportlink(teams, () => renderClub()));
     naarClubTab(a);
   });
 }
@@ -4274,7 +4445,7 @@ export function modalVerwerkersovereenkomst(){
 /* [20261011d] Weekbrief: kies hele club of één bouw. */
 function kiesWeekbrief(teams){
   const groepen = BOUWEN.map(b => ({ id: b.id, naam: b.naam, teams: teams.filter(t => (t.bouw || bouwVanCategorie(t.categorie)) === b.id) })).filter(g => g.teams.length);
-  const open = (lijst, naam) => import('./club-weekbrief.js?v=20261122a').then(m => m.openWeekbrief(lijst, naam));
+  const open = (lijst, naam) => import('./club-weekbrief.js?v=20261122b').then(m => m.openWeekbrief(lijst, naam));
   if (groepen.length <= 1) return open(teams, S.club.naam);
   openModal(`<h2>Weekbrief</h2>
     <button class="lijst-item" data-wb="__club"><div class="li-tekst"><div class="titel">Hele club</div><div class="meta">${teams.length} teams</div></div><span class="pijl">›</span></button>
@@ -4285,4 +4456,4 @@ function kiesWeekbrief(teams){
   });
 }
 
-function laadVergelijk(v){ import('./club-vergelijk.js?v=20261122a').then(m => m.vulVergelijk(v, hertekenClub)); }
+function laadVergelijk(v){ import('./club-vergelijk.js?v=20261122b').then(m => m.vulVergelijk(v, hertekenClub)); }
