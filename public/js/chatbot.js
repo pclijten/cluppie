@@ -19,10 +19,12 @@
    ============================================================================ */
 
 import { functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, terugLaag, terugLaagWeg } from './state.js?v=20261121e';
-import { telGebruik } from './tracker.js?v=20261121e';
-import { aiAan } from './clubconfig.js?v=20261121e';
-import { startOnboarding, startOnboardingHoofdstuk, heeftOnboardingHoofdstuk } from './onboarding.js?v=20261121e';
+import { S, esc, terugLaag, terugLaagWeg } from './state.js?v=20261122a';
+import { telGebruik } from './tracker.js?v=20261122a';
+import { aiAan } from './clubconfig.js?v=20261122a';
+import { startOnboarding, startOnboardingHoofdstuk, heeftOnboardingHoofdstuk } from './onboarding.js?v=20261122a';
+import { mijnRollen } from './rolkaart.js?v=20261122a';
+import { startVragen } from './hulp-rol.js?v=20261122a';
 
 /* Sessiegeschiedenis — leeft alleen zolang de app open is. */
 let berichten = [];   // [{role:'user'|'assistant', content:'...'}]
@@ -30,13 +32,10 @@ let bezig = false;
 
 const chatHulp = () => httpsCallable(functions, 'chatHulp');
 
-/* Startvragen (chips) — puur app-gericht. */
-const START_CHIPS = [
-  'Hoe maak ik een opstelling?',
-  'Hoe nodig ik een coach uit?',
-  'Waar staan de trainingen?',
-  'Hoe beoordeel ik een speler?',
-];
+/* [20261122a] Startvragen (chips) per rol: een coördinator of beheerder krijgt vragen over zijn eigen
+   schermen, niet die van een coach. De lijsten staan in hulp-rol.js. */
+const isLos = () => !!(S.team && S.teamId && !S.team.club);
+const rollenNu = () => isLos() ? ['solo'] : mijnRollen();
 
 export function initChatbot(){
   if (document.getElementById('cbAchter')) return;
@@ -92,7 +91,7 @@ function openChat(){
   // eerste keer: welkom + startchips
   if (!berichten.length && !lijf.children.length){
     bot('Hoi! Ik beantwoord vragen over het <b>gebruik van Cluppie</b>. Waar kan ik je mee helpen?');
-    toonChips(START_CHIPS);
+    toonChips(startVragen(rollenNu(), { inTeam: !!S.teamId }));
   }
   achter.classList.add('open');
   /* Hardware-terug sluit de hulpchat (z-index 5000, boven alles). */
@@ -151,7 +150,9 @@ async function verstuur(vraag){
 
   try {
     if (!aiAan()) throw new Error('AI uitgeschakeld voor deze club');
-    const res = await chatHulp()({ clubId: S.clubId || S.team?.club || null, berichten });
+    /* een team zonder club vraagt via het team (eigen plafond per maand), de rest via de club */
+    const doel = isLos() ? { teamId: S.teamId } : { clubId: S.clubId || S.team?.club || null };
+    const res = await chatHulp()({ ...doel, berichten, rollen: rollenNu() });
     tik(false);
     const ruw = res?.data?.antwoord || 'Sorry, ik heb hier geen antwoord op.';
     // De Cloud Function kan aan het eind een verwijzing naar een rondleiding-

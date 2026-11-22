@@ -240,7 +240,7 @@ async function bouwPlatformOverzicht(db = getFirestore(), nuMs = Date.now()){
   } catch (e){ console.error('[platformOverzicht] individuele coaches', e.message || e); }
   /* [20261111b] AI-gebruik van trainers zonder club deze maand (alleen een telling) */
   let aiSolo = 0;
-  try { (await db.collection('aiGebruikSolo').where('maand', '==', new Date(nuMs).toISOString().slice(0, 7)).get()).docs.forEach(d => { aiSolo += Number(d.data().aantal) || 0; }); }
+  try { (await db.collection('aiGebruikSolo').where('maand', '==', new Date(nuMs).toISOString().slice(0, 7)).get()).docs.forEach(d => { aiSolo += (Number(d.data().aantal) || 0) + (Number(d.data().chat) || 0); }); }
   catch (e){ console.warn('[platformOverzicht] aiGebruikSolo', e.message || e); }
   const volgorde = { rood: 0, oranje: 1, groen: 2 };
   lijst.sort((a, b) => (volgorde[a.status] - volgorde[b.status]) || String(a.naam).localeCompare(String(b.naam)));
@@ -269,7 +269,7 @@ async function bouwPlatformOverzicht(db = getFirestore(), nuMs = Date.now()){
 
 /* ---- [20261111b] platform/instellingen: alleen via deze callable (de regels laten de client niet schrijven) ----
    PURE (getest): valideert en geeft alleen de bekende velden terug; ontbrekende delen blijven ongemoeid.
-     soloAI    { aan, limiet }                               AI voor trainers zonder club
+     soloAI    { aan, limiet, chatLimiet? }                  AI voor trainers zonder club
      standaard { trainingsmodule, seizoensplan, ai, aiLimiet, maxVideoMB }   onderdelen voor nieuwe clubs
      uitrol    { proefDagen, slapendDagen }                  fases in het platformcentrum          */
 function geheel(v, min, max){ const n = Math.round(Number(v)); return Number.isFinite(n) && n >= min && n <= max ? n : null; }
@@ -279,6 +279,12 @@ function schoonPlatformInstellingen(d = {}){
     const limiet = geheel(d.soloAI.limiet, 0, 1000);
     if (limiet === null) fout('Kies een AI-limiet per trainer tussen 0 en 1000.');
     uit.soloAI = { aan: d.soloAI.aan === true, limiet };
+    /* [20261122a] eigen plafond voor de hulpchat; niet meegestuurd = laten zoals het is */
+    if (d.soloAI.chatLimiet !== undefined && d.soloAI.chatLimiet !== null && d.soloAI.chatLimiet !== ''){
+      const chatLimiet = geheel(d.soloAI.chatLimiet, 0, 1000);
+      if (chatLimiet === null) fout('Kies een maximum voor de hulpchat tussen 0 en 1000.');
+      uit.soloAI.chatLimiet = chatLimiet;
+    }
   }
   if (d.teamkamerLos !== undefined) uit.teamkamerLos = d.teamkamerLos === true;   /* [20261116m] teamkamer voor trainers zonder club */
   if (d.teamkamerLosOpties && typeof d.teamkamerLosOpties === 'object'){            /* per mogelijkheid, alleen bekende sleutels */

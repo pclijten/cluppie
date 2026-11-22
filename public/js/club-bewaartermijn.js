@@ -12,21 +12,24 @@
    Wat er bij een oud seizoen weggaat: wedstrijden, aanwezigheid, beoordelingen en teamevaluaties met dat
    seizoenslabel. Documenten zonder label blijven staan (eerst "Oude data zonder seizoen labelen").
 
-   Niet vanuit de app te wissen (rules): privé-rondebeoordelingen (alleen de schrijver zelf) en de
-   gezinsdocumenten van de teamkamer (alleen de server). Dat staat in het scherm en in AVG.md.
+   [20261122a] Derde blok: wat de app zelf niet mag wissen (rules) en dus via de server gaat, functie
+   bewaarOpruimen in functions/bewaartermijn.js: beoordelingen uit evaluatierondes (alleen de schrijver
+   mag ze wissen), en uit de teamkamer de mededelingen en gesloten polls van vorige seizoenen, de
+   gegevens van gezinnen waarvan de speler weg is en oude aanmeldingen voor trainingshulp. Zelfde
+   werkwijze: eerst tellen, dan bevestigen. Staat de functie nog niet live, dan zegt het scherm dat.
 
-   De twee acties staan los van elkaar. Na elke actie wordt opnieuw gezocht, zodat de tweede nooit een
+   De drie acties staan los van elkaar. Na elke actie wordt opnieuw gezocht, zodat de tweede nooit een
    document bijwerkt dat de eerste net heeft gewist.
    Rekenregels: bewaartermijn-logica.js (getest). Schrijven: alles onder teams/{id}/… mag de clubbeheerder
    volgens de bestaande rules (magSchrijven); de keuze en "laatst opgeruimd" staan in
    clubs/{id}.instellingen.privacy.bewaar. */
-import { S, esc, meld, openModal } from './state.js?v=20261121e';
-import { db, collection, doc, getDocs, writeBatch } from './firebase.js?v=20261011g';
+import { S, esc, meld, openModal } from './state.js?v=20261122a';
+import { db, collection, doc, getDocs, writeBatch, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { ico } from './icons.js?v=20261116t';
-import { SEIZOEN_FALLBACK } from './config.js?v=20261121e';
-import { bewaar } from './club-instellingen.js?v=20261121e';
+import { SEIZOEN_FALLBACK } from './config.js?v=20261122a';
+import { bewaar } from './club-instellingen.js?v=20261122a';
 import { STANDAARD, KEUZES_SPELERS, KEUZES_SEIZOENEN, SEIZOEN_COLLECTIES, schoonBewaar, sorteerSpelers, seizoenVerlopen, seizoenStart, oudsteBewaard,
-  presentieZonder, datumNL, seizoenLabel, tellingTekst, laatstTekst } from './bewaartermijn-logica.js?v=20261121c';
+  presentieZonder, datumNL, seizoenLabel, tellingTekst, laatstTekst } from './bewaartermijn-logica.js?v=20261122a';
 
 const B = { keuze: null, scan: null, bezig: '', fout: '', teams: [] };
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -85,8 +88,47 @@ function htmlScan(){
          <p class="cb-uitleg" style="margin:var(--space-xs) 0 0">Ook van spelers die nog bij de club spelen: hun ontwikkeling uit deze seizoenen is daarna niet meer terug te zien.</p>`
       : `<p class="cb-uitleg" style="margin:0">${k.seizoenen ? 'Geen gegevens uit seizoenen buiten de termijn.' : 'Je bewaart alle seizoenen.'}${s.zonderLabel ? ` ${s.zonderLabel} document${s.zonderLabel === 1 ? ' heeft' : 'en hebben'} geen seizoen en ${s.zonderLabel === 1 ? 'blijft' : 'blijven'} staan: gebruik eerst "Oude data zonder seizoen labelen".` : ''}</p>`,
       'bwWisSeizoenen', `Wis ${nDoc} document${nDoc === 1 ? '' : 'en'} uit oude seizoenen`, 'bwVinkSeizoenen')}
-    <p class="cb-uitleg">Niet vanuit dit scherm te wissen: privé-beoordelingen uit evaluatierondes (dat kan alleen wie ze schreef) en wat ouders in de teamkamer zien (dat verloopt vanzelf met hun toegang).</p>
+    ${htmlServer(blok)}
     <button class="knop licht vol" id="bwOpnieuw" ${B.bezig ? 'disabled' : ''}>Opnieuw zoeken</button>`;
+}
+
+/* [20261122a] Evaluatierondes en teamkamer: de server telt en wist. s.server = het antwoord, of { fout }. */
+const meerv = (n, een, veel) => `${n} ${n === 1 ? een : veel}`;
+function htmlServer(blok){
+  const r = B.scan.server;
+  if (!r || r.fout) return `<div class="cb-kaart"><div class="cb-kaart-kop">${ico('action-warning', 18)}<b>Evaluatierondes en teamkamer</b></div>
+    <p class="cb-uitleg" style="margin:0">${esc(r && r.fout === 'recht' ? 'Alleen een clubbeheerder kan dit opruimen.' : 'Dit deel is nog niet beschikbaar: de functie hiervoor staat nog niet live. De twee blokken hierboven werken wel.')}</p></div>`;
+  const delen = [
+    r.prive.oud ? `${meerv(r.prive.oud, 'beoordeling', 'beoordelingen')} uit evaluatierondes van seizoenen buiten de termijn` : '',
+    r.prive.wees ? `${meerv(r.prive.wees, 'beoordeling', 'beoordelingen')} uit evaluatierondes van spelers die al gewist zijn` : '',
+    r.kamer.berichten ? `${meerv(r.kamer.berichten, 'mededeling', 'mededelingen')} in de teamkamer van vóór dit seizoen` : '',
+    r.kamer.polls ? `${meerv(r.kamer.polls, 'gesloten poll', 'gesloten polls')} van vóór dit seizoen, met de stemmen` : '',
+    r.kamer.gezinnen ? `teamkamer-gegevens van ${meerv(r.kamer.gezinnen, 'speler', 'spelers')} die niet meer in het team ${r.kamer.gezinnen === 1 ? 'staat' : 'staan'}` : '',
+    r.hulp ? `${meerv(r.hulp, 'aanmelding', 'aanmeldingen')} voor trainingshulp van vóór dit seizoen` : '',
+  ].filter(Boolean);
+  return blok('Evaluatierondes en teamkamer', r.totaal, r.totaal
+    ? `<ul class="cb-uitleg" style="margin:0;padding-left:var(--space-md)">${delen.map(d => `<li>${esc(d)}</li>`).join('')}</ul>
+       <p class="cb-uitleg" style="margin:var(--space-xs) 0 0">Open polls en alles van dit seizoen blijven staan. De lijsten voor trainingshulp zelf ook.</p>`
+    : '<p class="cb-uitleg" style="margin:0">Niets op te ruimen in de evaluatierondes en de teamkamer.</p>',
+    'bwWisServer', `Wis deze ${r.totaal} gegevens`, 'bwVinkServer');
+}
+async function vraagServer(wis){
+  try { return (await httpsCallable(functions, 'bewaarOpruimen')({ clubId: S.clubId, wis: wis === true })).data || { fout: 'weg' }; }
+  catch (x){
+    console.warn('[bewaartermijn] server', x.code || x.message);
+    return { fout: x.code === 'functions/permission-denied' ? 'recht' : 'weg' };
+  }
+}
+async function wisServer(){
+  const s = B.scan; if (!s || !s.server || !s.server.totaal || B.bezig) return;
+  B.bezig = 'Bezig…'; B.fout = ''; herteken();
+  const r = await vraagServer(true);
+  if (r.fout || !r.gewist){
+    B.bezig = ''; B.fout = 'Opruimen van evaluatierondes en teamkamer is niet gelukt. Er is niets gewist; probeer het later opnieuw.'; herteken(); return;
+  }
+  await legVast(0, 0, r.totaal);
+  meld(`${r.totaal} gegevens uit evaluatierondes en teamkamer gewist`);
+  B.bezig = ''; B.scan = null; await zoek();
 }
 
 function koppel(){
@@ -100,7 +142,7 @@ function koppel(){
   });
   m$('bwZoek')?.addEventListener('click', zoek);
   m$('bwOpnieuw')?.addEventListener('click', zoek);
-  for (const [vink, knop, doe] of [['bwVinkSpelers', 'bwWisSpelers', wisSpelers], ['bwVinkSeizoenen', 'bwWisSeizoenen', wisSeizoenen]]){
+  for (const [vink, knop, doe] of [['bwVinkSpelers', 'bwWisSpelers', wisSpelers], ['bwVinkSeizoenen', 'bwWisSeizoenen', wisSeizoenen], ['bwVinkServer', 'bwWisServer', wisServer]]){
     m$(vink)?.addEventListener('change', e => { const k = m$(knop); if (k) k.disabled = !e.target.checked || !!B.bezig; });
     m$(knop)?.addEventListener('click', doe);
   }
@@ -112,7 +154,7 @@ async function zoek(){
   const clubId = S.clubId, k = B.keuze, nu = vandaag();
   B.fout = ''; B.scan = null;
   const scan = { spelers: [], later: [], zonderDatum: 0, spelerTeams: 0, beoordelingen: 0, presentie: 0, wisBeoordelingen: [], presentiePatches: [],
-    docs: [], perSeizoen: new Map(), zonderLabel: 0 };
+    docs: [], perSeizoen: new Map(), zonderLabel: 0, server: null };
   try {
     let i = 0;
     for (const t of B.teams){
@@ -143,6 +185,9 @@ async function zoek(){
       }
     }
     scan.later.sort((a, b) => a.vanaf.localeCompare(b.vanaf));
+    B.bezig = 'Evaluatierondes en teamkamer tellen…'; herteken();
+    scan.server = await vraagServer(false);
+    if (S.clubId !== clubId) return;
     B.scan = scan;
   } catch (x){
     console.error('[bewaartermijn] zoeken', x);
@@ -163,9 +208,9 @@ async function inBatches(stappen, voortgang){
   return klaar;
 }
 /* Wanneer en hoeveel: voor de verantwoording van de club. Twee keer wissen binnen een uur telt als één keer opruimen. */
-async function legVast(spelers, documenten){
+async function legVast(spelers, documenten, overig = 0){
   const oud = opgeslagen()?.laatst || {}, recent = Date.now() - (Number(oud.ms) || 0) < 3600000;
-  const laatst = { ms: Date.now(), door: S.user?.uid || '', spelers: (recent ? Number(oud.spelers) || 0 : 0) + spelers, documenten: (recent ? Number(oud.documenten) || 0 : 0) + documenten };
+  const laatst = { ms: Date.now(), door: S.user?.uid || '', spelers: (recent ? Number(oud.spelers) || 0 : 0) + spelers, documenten: (recent ? Number(oud.documenten) || 0 : 0) + documenten, overig: (recent ? Number(oud.overig) || 0 : 0) + overig };
   try { await bewaar([['privacy.bewaar', { ...B.keuze, laatst }]]); }
   catch (x){ console.warn('[bewaartermijn] vastleggen', x.code || x.message); }
 }

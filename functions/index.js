@@ -59,7 +59,7 @@ const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const admin = require('firebase-admin');
-const { KENNIS_TEKST } = require('./kennis');
+const { KENNIS_TEKST, rolRegel } = require('./kennis');
 const { foutVanAntwoord, verbruikRegel } = require('./ai-fout');
 const avg = require('./avg');
 const toegang = require('./toegang');
@@ -69,7 +69,7 @@ Object.assign(exports, { uitnodigingInfo: toegang.uitnodigingInfo, sluitAan: toe
   trekUitnodigingIn: toegang.trekUitnodigingIn, beoordeelAanvraag: toegang.beoordeelAanvraag, wijzigRol: toegang.wijzigRol,
   verwijderLid: toegang.verwijderLid, bevestigPrivacy: toegang.bevestigPrivacy, privacyOverzicht: toegang.privacyOverzicht, codeBezet: avg.codeBezet,
   startOndersteuning: toegang.startOndersteuning, stopOndersteuning: toegang.stopOndersteuning,
-  stelKoppelingVoor: toegang.stelKoppelingVoor, vraagKoppelingAan: toegang.vraagKoppelingAan,
+  stelKoppelingVoor: toegang.stelKoppelingVoor, vraagKoppelingAan: toegang.vraagKoppelingAan, herkenClub: toegang.herkenClub,
   exporteerMijnGegevens: avg.exporteerMijnGegevens, verwijderMijnAccount: avg.verwijderMijnAccount, bewaartermijnen: avg.bewaartermijnen });
 
 if (!admin.apps.length) admin.initializeApp();
@@ -169,9 +169,9 @@ async function vereisAI(request, rollen = null, onderdeel = null){
    platform/instellingen.soloAI). Zonder clubId en met teamId → functions/solo-ai.js. Alleen gebruikt
    door functies die geen clubgegevens nodig hebben (Training maken, Seizoensplanning, doelregel). */
 const soloAI = require('./solo-ai');
-async function vereisAIOfSolo(request, rollen = null, onderdeel = null){
+async function vereisAIOfSolo(request, rollen = null, onderdeel = null, soort = 'ai'){
   if (!String(request.data?.clubId || '').trim() && String(request.data?.teamId || '').trim())
-    return soloAI.vereisSoloAI({ db: getFirestore(), request, HttpsError, FieldValue });
+    return soloAI.vereisSoloAI({ db: getFirestore(), request, HttpsError, FieldValue, soort });
   return vereisAI(request, rollen, onderdeel);
 }
 
@@ -197,6 +197,8 @@ Object.assign(exports, require('./mail-beheer').maakFuncties({ isPlatformBeheerd
 exports.verstuurMail = require('./mail').verstuurMail;   // SMTP-verzending van `mail/{id}` (vervangt de Trigger Email-extensie)
 /* [20261011h] speler overzetten / seizoensovergang in één transactie (functions/overdracht.js) */
 exports.zetSpelerOver = require('./overdracht').zetSpelerOver;
+/* [20261122a] bewaartermijnen: wat alleen de server mag wissen (beoordelingen uit evaluatierondes, teamkamer, trainingshulp) */
+exports.bewaarOpruimen = require('./bewaartermijn').bewaarOpruimen;
 /* [20261116m] Teamkamer: ouders en spelers (kopie, toegang, polls). Zie functions/teamkamer.js. */
 Object.assign(exports, require('./teamkamer').functies);
 
@@ -245,7 +247,8 @@ async function claude({ apiKey, system, messages, maxTokens = 700, temperature =
 
 const HULP_SYSTEEM = `Je bent "Cluppie-hulp", de vriendelijke ingebouwde assistent van Cluppie —
 een web-app waarmee jeugdvoetbalcoaches de opstelling maken, wissels en speeltijd bijhouden,
-de wedstrijd loggen, spelers beoordelen en trainingen delen.
+de wedstrijd loggen, spelers beoordelen en trainingen delen, en waarmee coördinatoren, het hoofd
+jeugdopleiding en de clubbeheerder de jeugdopleiding van de club volgen en inrichten.
 
 Je BEANTWOORDT ALLEEN vragen over het GEBRUIK van de app. Gebruik uitsluitend de
 onderstaande kennisbank. Verzin geen knoppen, schermen of functies die er niet in staan.
@@ -275,8 +278,9 @@ ${KENNIS_TEKST}`;
 exports.chatHulp = onCall(
   { region: REGIO, secrets: [ANTHROPIC_API_KEY], cors: true },
   async (request) => {
-    const { clubId, rol } = await vereisAI(request);
-    const namen = await namenVoorScrub(clubId, request.auth.uid, rol);
+    /* [20261122a] ook voor een trainer zonder club (teamId zonder clubId), met een eigen plafond per maand */
+    const r = await vereisAIOfSolo(request, null, null, 'chat');
+    const namen = r.solo ? await soloAI.namenVanTeam(getFirestore(), r.teamId) : await namenVoorScrub(r.clubId, request.auth.uid, r.rol);
 
     const berichten = Array.isArray(request.data?.berichten) ? request.data.berichten : [];
     if (!berichten.length){
@@ -294,8 +298,10 @@ exports.chatHulp = onCall(
     }
 
     // Systeemblok met cache_control → wordt hergebruikt over vragen heen (goedkoper).
+    // [20261122a] Daarna één korte regel met de rol van de vrager; die valt buiten het gecachte blok.
     const system = [
       { type: 'text', text: HULP_SYSTEEM, cache_control: { type: 'ephemeral' } },
+      { type: 'text', text: rolRegel(request.data?.rollen, { solo: r.solo === true, rol: r.rol }) },
     ];
 
     const antwoord = await claude({

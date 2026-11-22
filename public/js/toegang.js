@@ -12,10 +12,10 @@ import {
   auth, db, functions, httpsCallable,
   collection, doc, getDoc, getDocs, query, where
 } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261121e';
+import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261122a';
 import { stuurVerificatieMail } from './verificatie.js?v=20261020e';
-import { bewaar } from './club-instellingen.js?v=20261121e';
-import { effectief } from './clubconfig.js?v=20261121e';
+import { bewaar } from './club-instellingen.js?v=20261122a';
+import { effectief } from './clubconfig.js?v=20261122a';
 
 export const PRIVACY_VERSIE = '2026-10';
 const roep = (naam, data) => httpsCallable(functions, naam)(data || {}).then(r => r.data);
@@ -264,7 +264,7 @@ export async function koppelToegang(v, herteken){
     <button class="knop vol klein" id="pvOpslaan" style="margin-top:10px">Opslaan</button>`);
 
   /* --- log --- */
-  const LOGTXT = { aanvraag: 'vroeg toegang aan', aangesloten: 'sloot aan', goedgekeurd: 'goedgekeurd', afgewezen: 'afgewezen', verwijderd: 'uitgeschreven', rol_gewijzigd: 'rol gewijzigd', uitnodiging_gemaakt: 'uitnodiging gemaakt', uitnodiging_ingetrokken: 'uitnodiging ingetrokken', ondersteuning_start: 'begon met ondersteunen', ondersteuning_stop: 'stopte met ondersteunen' };
+  const LOGTXT = { aanvraag: 'vroeg toegang aan', aangesloten: 'sloot aan', goedgekeurd: 'goedgekeurd', afgewezen: 'afgewezen', verwijderd: 'uitgeschreven', rol_gewijzigd: 'rol gewijzigd', uitnodiging_gemaakt: 'uitnodiging gemaakt', uitnodiging_ingetrokken: 'uitnodiging ingetrokken', ondersteuning_start: 'begon met ondersteunen', ondersteuning_stop: 'stopte met ondersteunen', bewaartermijn_opgeruimd: 'ruimde op volgens de bewaartermijn' };
   const html6 = kaart('Toegangslog', logs.length ? logs.sort((a, b) => (b.tijd?.seconds || 0) - (a.tijd?.seconds || 0)).slice(0, 30).map(l => `
     <div style="${rijStijl};font-size:calc(12.5px * var(--fs))"><span style="color:var(--ink-2);min-width:52px">${datumKort(l.tijd)}</span>
     <span><b>${esc(l.naam || l.doorNaam || '—')}</b> ${esc(LOGTXT[l.gebeurtenis] || l.gebeurtenis)}${l.naam && l.doorNaam && l.gebeurtenis !== 'aanvraag' && l.gebeurtenis !== 'aangesloten' ? ` <span style="color:var(--ink-2)">door ${esc(l.doorNaam)}</span>` : ''}${l.details ? ` <span style="color:var(--ink-2)">(${esc(l.details)})</span>` : ''}</span></div>`).join('')
@@ -307,7 +307,7 @@ export async function koppelToegang(v, herteken){
     klaar(() => roep('verwijderLid', { clubId, uid: b.dataset.lidWeg }), b, 'Uitgeschreven');
   });
 
-  q('#pvVoLees')?.addEventListener('click', () => import('./club.js?v=20261121e').then(m => m.modalVerwerkersovereenkomst()));
+  q('#pvVoLees')?.addEventListener('click', () => import('./club.js?v=20261122a').then(m => m.modalVerwerkersovereenkomst()));
   q('#pvOpslaan').onclick = (e) => klaar(async () => {
     const wijz = [
       ['privacy.contactNaam', q('#pvNaam').value.trim()], ['privacy.contactEmail', q('#pvMail').value.trim()],

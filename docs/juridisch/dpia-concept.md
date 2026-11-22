@@ -58,7 +58,7 @@ Wat Cluppie kan doen, in volgorde van belang:
 2. Tweestapsverificatie voor platform- en clubbeheerders.
 3. Een knop voor de clubbeheerder om bij een verzoek van een ouder de gegevens van één speler in te zien en te wissen.
 4. Een korte richtlijn bij notities en leerpunten: geen gezondheid, geen thuissituatie.
-5. Privé-rondebeoordelingen laten meelopen met de bewaartermijn (vraagt een functie aan de serverkant).
+5. Privé-rondebeoordelingen laten meelopen met de bewaartermijn. *Gebouwd op 22-11-2026 (functie `bewaarOpruimen`, nog niet live): de clubbeheerder wist ze samen met oude gegevens uit de teamkamer, na een telling en een bevestiging. Te beoordelen blijft of dit vanzelf moet gebeuren.*
 6. De privacyverklaring aanvullen en ouders bereiken via de club.
 7. Vervanging van de platformbeheerder regelen.
 

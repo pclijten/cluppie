@@ -63,9 +63,35 @@ const throws = async (f, code, m) => { try { await f(); ok(false, m + ' (geen fo
   await T.beoordeelAanvraag(req('adm', { clubId: 'c1', uid: 'ruben', soort: 'team', besluit: 'af' }));
   ok(store.get('teams/solo2').koppelVoorstel.status === 'afgewezen' && !store.get('teams/solo2').club, 'afgewezen: team blijft los');
 
+  /* 3b. [20261122a] de club van een losse trainer herkennen */
+  ok(T.vindClub({ naam: 'S.V. Brakel', plaats: 'Brakel' }, [{ id: 'a', naam: 'SV Brakel', plaats: 'Brakel' }]).id === 'a', 'zelfde naam en plaats, anders geschreven');
+  ok(T.vindClub({ naam: 'SV Brakel', plaats: 'Bakel' }, [{ id: 'a', naam: 'SV Brakel', plaats: 'Brakel' }]) === null, 'andere plaats: geen treffer');
+  ok(T.vindClub({ naam: 'SV Brakel', plaats: '' }, [{ id: 'a', naam: 'SV Brakel', plaats: 'Brakel' }]) === null, 'alleen de naam is niet genoeg');
+  ok(T.vindClub({ naam: 'Rood Wit', plaats: 'Dorp' }, [{ id: 'a', naam: 'Rood Wit', plaats: 'Dorp' }, { id: 'b', naam: 'Rood-Wit', plaats: 'Dorp' }]) === null, 'twee treffers: niets doen');
+  ok(T.vindClub({ naam: 'Heel anders', plaats: 'Elders', clubcode: 'bbkz12x' }, [{ id: 'a', naam: 'SV Brakel', plaats: 'Brakel', clubcode: 'BBKZ12X' }]).id === 'a', 'clubcode gaat voor naam');
+  ok(T.vindClub(null, [{ id: 'a', naam: 'SV Brakel', plaats: 'Brakel' }]) === null && T.vindClub({ naam: 'x', plaats: 'y' }, null) === null, 'lege invoer');
+  store.set('clubs/c1', { ...store.get('clubs/c1'), instellingen: { locatie: { plaats: 'Brakel' } }, sportlinkClubcode: 'BBKZ12X' });
+  store.set('clubs/c2', { naam: 'VV Elders', admins: {}, instellingen: { locatie: { plaats: 'Elders' } } });
+  store.set('teams/los1', { naam: 'JO11-1', leden: { kim: true }, eigenClub: { naam: 'sv brakel', plaats: 'Brakel' } });
+  store.set('teams/los2', { naam: 'JO9-1', leden: { kim: true }, eigenClub: { naam: 'FC Nergens', plaats: 'Nergens' } });
+  store.set('teams/los3', { naam: 'JO8-1', leden: { kim: true }, eigenClub: { naam: 'Brakel', plaats: 'Brakel', clubcode: 'BBKZ12X' } });
+  await throws(() => T.herkenClub(req('vreemd', { teamId: 'los1' })), 'permission-denied', 'herkennen: alleen een coach van het team');
+  await throws(() => T.herkenClub(req('kim', { teamId: 'bestaatniet' })), 'not-found', 'herkennen: onbekend team');
+  const h1 = await T.herkenClub(req('kim', { teamId: 'los1' }));
+  ok(h1.doetMee === true && h1.clubNaam === 'SV Brakel', 'club herkend op naam en plaats');
+  const kvH = store.get('teams/los1').koppelVoorstel;
+  ok(kvH && kvH.clubId === 'c1' && kvH.status === 'open' && kvH.via === 'herkend', 'voorstel staat open op het team, via herkend');
+  ok((await T.herkenClub(req('kim', { teamId: 'los1' }))).doetMee === false, 'tweede keer: er staat al een voorstel, niets nieuws');
+  ok((await T.herkenClub(req('kim', { teamId: 'los2' }))).doetMee === false && !store.get('teams/los2').koppelVoorstel, 'onbekende club: geen voorstel');
+  ok((await T.herkenClub(req('kim', { teamId: 'los3' }))).doetMee === true, 'club herkend op clubcode');
+  ok((await T.herkenClub(req('x', { teamId: 'clubteam' }))).doetMee === false, 'team met club: niets');
+  await T.vraagKoppelingAan(req('kim', { teamId: 'los1' }));
+  ok(store.get('aanvragen/c1_kim_team')?.teamId === 'los1', 'na herkennen loopt de aanvraag zoals altijd');
+
   /* 4. AI zonder club */
   const solo = (uid, teamId) => SOLO.vereisSoloAI({ db, request: req(uid, { teamId }), HttpsError, FieldValue, nu: new Date('2026-11-11T10:00:00Z') });
   ok(SOLO.soloBeleid(undefined).aan === false && SOLO.soloBeleid({}).limiet === 20, 'standaard uit, limiet 20');
+  ok(SOLO.soloBeleid({}).chatLimiet === 30 && SOLO.soloBeleid({ soloAI: { chatLimiet: 0 } }).chatLimiet === 0 && SOLO.soloBeleid({ soloAI: { chatLimiet: null } }).chatLimiet === 30, 'hulpchat: standaard 30, 0 mag, leeg is de standaard');
   await throws(() => solo('ruben', 'solo2'), 'failed-precondition', 'AI uit: geweigerd');
   store.set('platform/instellingen', { soloAI: { aan: true, limiet: 2 } });
   await throws(() => solo('vreemd', 'solo2'), 'permission-denied', 'geen coach: geweigerd');
@@ -75,6 +101,17 @@ const throws = async (f, code, m) => { try { await f(); ok(false, m + ' (geen fo
   await solo('ruben', 'solo2');
   ok(store.get('aiGebruikSolo/ruben_2026-11').aantal === 2, 'geteld per trainer per maand');
   await throws(() => solo('ruben', 'solo2'), 'resource-exhausted', 'limiet bereikt');
+  /* [20261122a] de hulpchat telt apart, met een eigen plafond */
+  const chat = uid => SOLO.vereisSoloAI({ db, request: req(uid, { teamId: 'solo2' }), HttpsError, FieldValue, nu: new Date('2026-11-11T10:00:00Z'), soort: 'chat' });
+  store.set('platform/instellingen', { soloAI: { aan: true, limiet: 2, chatLimiet: 3 } });
+  ok((await chat('ruben')).solo === true, 'hulpchat mag, ook als het maximum voor Training maken bereikt is');
+  await chat('ruben'); await chat('ruben');
+  ok(store.get('aiGebruikSolo/ruben_2026-11').chat === 3 && store.get('aiGebruikSolo/ruben_2026-11').aantal === 2, 'vragen apart geteld');
+  await throws(() => chat('ruben'), 'resource-exhausted', 'plafond van de hulpchat bereikt');
+  store.set('platform/instellingen', { soloAI: { aan: false, limiet: 2, chatLimiet: 3 } });
+  await throws(() => chat('ruben'), 'failed-precondition', 'schakelaar uit: ook geen hulpchat');
+  store.set('platform/instellingen', { soloAI: { aan: true, limiet: 2 } });
+  ok(P.schoonPlatformInstellingen({ soloAI: { aan: true, limiet: 20, chatLimiet: '40' } }).soloAI.chatLimiet === 40 && !('chatLimiet' in P.schoonPlatformInstellingen({ soloAI: { aan: true, limiet: 20 } }).soloAI), 'plafond van de hulpchat geschoond; niet meegestuurd blijft zoals het was');
   const namen = await SOLO.namenVanTeam(db, 'solo');
   ok(namen.includes('Mila') && namen.includes('Tess Jansen') && namen.includes('Sanne'), 'namen van spelers en coaches voor de scrub');
 

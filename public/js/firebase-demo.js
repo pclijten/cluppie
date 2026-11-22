@@ -238,7 +238,15 @@ export const functions = { region: 'demo' };
 const DEMO_ANTWOORD = {
   sluitAan: () => ({ ok: true }), aggregeerGebruik: () => ({ ok: true }), leerSignaal: () => ({ ok: true }),
   sportlinkSyncNu: () => ({ teams: 8, gematcht: 8, wedstrijden: 40, totaalWedstrijden: 40 }),
+  /* [20261122a] opruimen van evaluatierondes en teamkamer: één keer iets te wissen, daarna niets meer */
+  bewaarOpruimen: (d) => {
+    const leeg = { prive: { oud: 0, wees: 0 }, kamer: { berichten: 0, polls: 0, gezinnen: 0 }, hulp: 0, totaal: 0, gewist: false };
+    if (DEMO_OPGERUIMD) return leeg;
+    if (d.wis) DEMO_OPGERUIMD = true;
+    return { prive: { oud: 6, wees: 2 }, kamer: { berichten: 9, polls: 4, gezinnen: 1 }, hulp: 12, totaal: 34, gewist: d.wis === true };
+  },
 };
+let DEMO_OPGERUIMD = false;
 export function httpsCallable(_f, naam){
   return DEMO_ANTWOORD[naam] ? async (d) => ({ data: DEMO_ANTWOORD[naam](d || {}) }) : nietInDemo('Deze functie (' + naam + ')');
 }

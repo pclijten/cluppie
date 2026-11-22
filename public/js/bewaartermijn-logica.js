@@ -107,10 +107,12 @@ export const seizoenLabel = start => `${start}/'${String(start + 1).slice(-2)}`;
 export function tellingTekst(tellingen){
   return SEIZOEN_COLLECTIES.map(([id, een, veel]) => { const n = (tellingen && tellingen[id]) || 0; return n ? `${n} ${n === 1 ? een : veel}` : ''; }).filter(Boolean).join(', ');
 }
-/* Eén regel voor Instellingen: wanneer is er voor het laatst opgeruimd? laatst = { ms, spelers, documenten }. */
+/* Eén regel voor Instellingen: wanneer is er voor het laatst opgeruimd? laatst = { ms, spelers, documenten, overig }.
+   [20261122a] overig = wat de server wiste: beoordelingen uit evaluatierondes, teamkamer en trainingshulp. */
 export function laatstTekst(laatst){
   if (!laatst || !Number(laatst.ms)) return 'Nog niet opgeruimd';
   const d = new Date(Number(laatst.ms)), iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const wat = [laatst.spelers ? `${laatst.spelers} speler${laatst.spelers === 1 ? '' : 's'}` : '', laatst.documenten ? `${laatst.documenten} document${laatst.documenten === 1 ? '' : 'en'} uit oude seizoenen` : ''].filter(Boolean).join(' en ');
+  const wat = [laatst.spelers ? `${laatst.spelers} speler${laatst.spelers === 1 ? '' : 's'}` : '', laatst.documenten ? `${laatst.documenten} document${laatst.documenten === 1 ? '' : 'en'} uit oude seizoenen` : '',
+    laatst.overig ? `${laatst.overig} uit evaluatierondes en teamkamer` : ''].filter(Boolean).join(', ').replace(/, ([^,]*)$/, ' en $1');
   return `Laatst opgeruimd op ${datumNL(iso)}${wat ? `: ${wat}` : ''}`;
 }

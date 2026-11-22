@@ -129,3 +129,29 @@ export function toonWelkomCoach(team, uid, { verborgen = false, nieuw = false, s
 export function toonClubTip(team, { verborgen = false } = {}){
   return !!team && !team.club && !team.eigenClub && !verborgen;
 }
+
+/* ---------- [20261122a] Deelknop: stuur je jeugdcoördinator een bericht ----------
+   Voor een trainer zonder club die de app echt gebruikt (minstens twee eerste stappen gedaan).
+   Niet als zijn club al herkend is: dan staat de kaart "… gebruikt Cluppie" er (koppelVoorstel).
+   De tekst is die uit marketing/verkoopteksten.md, deel 1. Verandert het aanbod, pas dan beide aan. */
+export const DEEL_URL = 'https://www.cluppie.io';
+export function deelTekstClub(){
+  return 'Hoi, ik gebruik sinds kort Cluppie voor mijn team. Ik maak er de opstelling in, het houdt de speeltijd per speler bij en ik haal er mijn trainingen uit. '
+    + 'Het werkt ook voor de hele club: één seizoensplan per bouw, teams en wedstrijden uit Sportlink, en als een trainer stopt blijft alles bewaard. '
+    + 'Clubs die nu beginnen gebruiken het een half jaar gratis. Wil je er eens naar kijken? ' + DEEL_URL;
+}
+export function toonDeelClub(team, { verborgen = false, status = null } = {}){
+  if (!team || team.club || verborgen) return false;
+  if (team.koppelVoorstel && team.koppelVoorstel.clubId) return false;
+  return !!status && status.gedaan >= 2;
+}
+
+/* ---------- [20261122a] Herkennen dat de club al meedoet ----------
+   De server (functie herkenClub) zoekt de club; hier alleen: wanneer vragen we het? Een team zonder
+   club, met een ingevulde club, zonder voorstel, en hooguit één keer per week per team. */
+export const HERKEN_DAGEN = 7;
+export function magClubHerkennen(team, { laatstMs = 0, nu = Date.now() } = {}){
+  if (!team || team.club || !team.eigenClub || !team.eigenClub.naam) return false;
+  if (team.koppelVoorstel) return false;
+  return !(Number(laatstMs) > 0 && nu - Number(laatstMs) < HERKEN_DAGEN * 86400000);
+}
