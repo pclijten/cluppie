@@ -2,6 +2,8 @@
 
 21-11-2026. In `PORTEREN.md` staan per release losse deploy-opdrachten open, sommige weken oud (Teamkamer, Trainingshulp, Platform › Mails, Clubprofiel, kennisbank van de hulp-chat). Vanuit de werkomgeving van Claude is niet te zien wat er echt live staat, en deployen kan daar niet. Dit document vervangt het zoeken in PORTEREN.md door één route.
 
+> **Bijgewerkt 22-11-2026.** De functions hoeven niet meer via dit script: de workflow `.github/workflows/deploy-functions.yml` deployt ze bij elke push naar `main` die `functions/` raakt, en de laatste run (22-11, na PR #95) zette alle functies op de stand van `main`, inclusief de nieuwe `herkenClub` en `bewaarOpruimen`. Waar de tabel hieronder zegt dat iets niet werkt zonder functions, is dat deel al live. Wat dit script nog echt nodig maakt: de invoker `allUsers` voor nieuwe callables (stap 4) en de rules en indexen (stap 5). Stap 3 doet geen kwaad: het deployt dezelfde code nog een keer.
+
 ## De route
 
 Op je pc, in de map Cluppie, op `main` met een schone werkmap:
