@@ -22,7 +22,9 @@ Het script doet, in deze volgorde:
 
 Functions gaan vóór de rules, zoals `AVG.md` voorschrijft. Er wordt nooit een functie verwijderd. Hosting loopt via GitHub Pages en zit hier niet in.
 
-**De proef (`-Proef`) is op 21-11-2026 op de pc van Paul gedraaid; de echte deploy nog niet.** Losse mappen die niet in git staan zitten niet in de weg; gewijzigde bestanden die git volgt wel. Stopt het halverwege, dan blijft staan wat al gedeployed is en kun je het opnieuw starten.
+Op Windows bleef na de emulatortests soms een java-emulator draaien die de poorten (8080, 8085, 9150, 9151) bezet hield, waardoor de volgende run vastliep met 'port taken'. Het script stopt nu zelf zulke achtergebleven emulators vóór en na elke emulatortest.
+
+**De proef (`-Proef`) is op 21-11-2026 op de pc van Paul gedraaid. De echte deploy is op 22-11-2026 helemaal doorgelopen: tests groen, 78 functies in 10 groepen, 59 callables met invoker `allUsers`, rules en indexen van Firestore en Storage live (main op b78b3ff).** Losse mappen die niet in git staan zitten niet in de weg; gewijzigde bestanden die git volgt wel. Stopt het halverwege, dan blijft staan wat al gedeployed is en kun je het opnieuw starten.
 
 ## Wat dit oplost
 
