@@ -13,7 +13,7 @@
 # Het script stopt bij elke fout. Opnieuw starten is veilig: elke stap is herhaalbaar.
 # Volgorde (zoals AVG.md voorschrijft): eerst de functions, dan pas de rules.
 # Er wordt nooit een functie verwijderd, en hosting gaat via GitHub Pages (niet via dit script).
-# De proef (-Proef) is op 21-11-2026 op de pc van Paul gedraaid; de echte deploy nog niet.
+# De proef (-Proef) is op 21-11-2026 op de pc van Paul gedraaid, de echte deploy op 22-11-2026 (alles OK).
 param([switch]$Proef, [switch]$ZonderEmulator)
 
 $ErrorActionPreference = 'Stop'
@@ -36,6 +36,21 @@ function Probeer($cmd){
   try { Invoke-Expression "$cmd 2>&1" | Out-Null; $ok = ($LASTEXITCODE -eq 0) } catch { $ok = $false }
   $ErrorActionPreference = $oud
   return $ok
+}
+
+# Op Windows blijft na 'firebase emulators:exec' soms de java-emulator draaien; die houdt dan de poorten
+# bezet en de volgende testrun faalt met 'port taken'. Dit stopt alleen java-processen op de emulatorpoorten
+# uit firebase.json en firebase.test.json.
+$EMULATORPOORTEN = 8080, 8085, 9150, 9151, 9195, 4400, 4405, 4500, 4505
+function Ruim-Emulators {
+  try { $con = @(Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $EMULATORPOORTEN -contains $_.LocalPort }) } catch { return }
+  foreach ($procId in ($con | Select-Object -ExpandProperty OwningProcess -Unique)){
+    $p = Get-Process -Id $procId -ErrorAction SilentlyContinue
+    if ($p -and $p.ProcessName -eq 'java'){
+      if ($Proef){ Write-Host "  (zou achtergebleven emulator stoppen: pid $procId)" -ForegroundColor DarkGray }
+      else { Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue; Write-Host "  achtergebleven emulator gestopt (pid $procId)" -ForegroundColor DarkGray }
+    }
+  }
 }
 
 # ---------- 0. controles ----------
@@ -69,8 +84,11 @@ Stap 2 'Tests (logica, daarna rules in de emulator)'
 Run 'npm test'
 if ($ZonderEmulator){ Write-Host '  Emulatortests overgeslagen (-ZonderEmulator).' -ForegroundColor Yellow }
 else {
+  Ruim-Emulators
   Run 'npm run test:rules'
+  Ruim-Emulators
   Run 'npm run test:storage'
+  Ruim-Emulators
 }
 Ok 'tests groen'
 
