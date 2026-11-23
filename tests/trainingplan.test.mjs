@@ -57,4 +57,65 @@ assert.equal(P.weekStartBijLabel('wk 2', '2026-12-21'), '2027-01-11');          
 assert.equal(P.weekStartBijLabel('Week 45', '2026-11-02'), '2026-11-02');          // zelfde week: blijft staan
 assert.equal(P.weekStartBijLabel('Blok 2, passen', '2026-11-02'), '2026-11-02');   // geen weeknummer: blijft staan
 assert.equal(P.weekStartBijLabel('Week 46', ''), null);                            // niet ingepland: geen weekStart
+/* [20261123a] Plannen: een week verslepen. De stand komt uit de trainingen zelf (weekStart). */
+{
+  const reeks = rijen => rijen.map(([ws, bw, nr = 1], i) => ({ id: 't' + i, weekStart: ws, blokWeek: bw, trainingNr: nr }));
+  // week 48 = blokweek 9 (twee trainingen), week 49 = 10, week 50 = 11
+  const R = reeks([['2026-11-23', 9], ['2026-11-23', 9, 2], ['2026-11-30', 10], ['2026-12-07', 11]]);
+  const st = P.planStand(R);
+  assert.deepEqual([...st.keys()], ['2026-11-23', '2026-11-30', '2026-12-07']);
+  assert.equal(st.get('2026-11-23').n, 2);
+  assert.deepEqual([...st.get('2026-11-23').bws], [9]);
+  assert.equal(P.planStand(reeks([['2026-11-25', 9]])).has('2026-11-23'), true, 'een weekStart midden in de week telt bij de maandag');
+  assert.equal(P.planStand([{ id: 'x', weekStart: '', blokWeek: 1 }]).size, 0, 'zonder weekStart geen plek');
+
+  // hele reeks twee weken naar voren: alles erna schuift evenveel mee
+  let r = P.rekenSleep(R, [], '2026-11-23', '2026-11-09', 'rest');
+  assert.deepEqual([...r.zet], [['2026-11-23', '2026-11-09'], ['2026-11-30', '2026-11-16'], ['2026-12-07', '2026-11-23']]);
+  assert.equal(r.botsing, null);
+  assert.equal(r.eerste, '2026-11-09');
+  // alleen deze week
+  r = P.rekenSleep(R, [], '2026-11-30', '2026-12-14', 'een');
+  assert.deepEqual([...r.zet], [['2026-11-30', '2026-12-14']]);
+  // bezette week = wisselen, wat de keuze ook is
+  r = P.rekenSleep(R, [], '2026-11-30', '2026-12-07', 'rest');
+  assert.deepEqual([...r.zet], [['2026-11-30', '2026-12-07'], ['2026-12-07', '2026-11-30']]);
+  assert.equal(r.botsing, null);
+  // over een eerdere week heen springen: alles erna meenemen botst, alleen deze week niet
+  r = P.rekenSleep(R, [], '2026-11-30', '2026-11-16', 'rest');
+  assert.equal(r.botsing, '2026-11-23');
+  assert.equal(P.rekenSleep(R, [], '2026-11-30', '2026-11-16', 'een').botsing, null);
+
+  // vrije weken tellen niet als plek: wat meeschuift springt over de vakantie
+  const V = reeks([['2026-11-30', 10], ['2026-12-07', 11], ['2026-12-28', 12]]);
+  const vakantie = ['2026-12-14', '2026-12-21'];
+  r = P.rekenSleep(V, vakantie, '2026-11-30', '2026-11-23', 'rest');
+  assert.deepEqual([...r.zet], [['2026-11-30', '2026-11-23'], ['2026-12-07', '2026-11-30'], ['2026-12-28', '2026-12-07']]);
+  assert.deepEqual(r.vrij, [], 'vrije weken buiten de reeks vervallen');
+  // slepen naar een vrije week: die is daarna niet meer vrij
+  r = P.rekenSleep(V, vakantie, '2026-12-07', '2026-12-14', 'een');
+  assert.deepEqual([...r.zet], [['2026-12-07', '2026-12-14']]);
+  assert.deepEqual(r.vrij, ['2026-12-21']);
+
+  // tikken: week vrij, alles vanaf daar één plek op (over de vakantie heen)
+  r = P.rekenVrij(V, vakantie, '2026-12-07');
+  assert.equal(r.wordtVrij, true);
+  assert.deepEqual([...r.zet], [['2026-12-07', '2026-12-28'], ['2026-12-28', '2027-01-04']]);
+  assert.deepEqual(r.vrij, ['2026-12-07', '2026-12-14', '2026-12-21']);
+  // en terugzetten: alles erna één plek terug
+  const N = reeks([['2026-11-30', 10], ['2026-12-28', 11], ['2027-01-04', 12]]);
+  r = P.rekenVrij(N, ['2026-12-07', '2026-12-14', '2026-12-21'], '2026-12-07');
+  assert.equal(r.wordtVrij, false);
+  assert.deepEqual([...r.zet], [['2026-12-28', '2026-12-07'], ['2027-01-04', '2026-12-28']]);
+  assert.deepEqual(r.vrij, ['2026-12-14', '2026-12-21']);
+
+  // de strook: drie lege weken ervoor, twee erna, elke week met trainingen is op te pakken
+  const metPlan = R.map(t => ({ ...t, teams: ['a'], plan: { id: 'p1', naam: 'Blok 2', zichtbaar: 'vr', vrij: [] } }));
+  const html = P.htmlPlannen(metPlan, [{ id: 'a', naam: 'O10-1' }]);
+  assert.equal((html.match(/class="bp-wk /g) || []).length, 3 + 3 + 2);
+  assert.equal((html.match(/data-bp-pak/g) || []).length, 3);
+  assert.match(html, /data-bp-m="2026-11-02"/);
+  assert.match(html, /wk 48 t\/m 50/);
+  assert.doesNotMatch(html, / disabled/, 'lege weken zijn een plek om naartoe te slepen, dus niet uitgeschakeld');
+}
 console.log('trainingplan: alles groen');
