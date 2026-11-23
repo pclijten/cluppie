@@ -16,44 +16,45 @@
    Cijfers op kaarten: niveau 1–5 → 40 + (n−1) × 14 (Aandacht 40 … Uitblinker 96),
    afgeleid uit de laatste volledige beoordeling. Alleen zichtbaar voor coaches.
 ========================================================================== */
-import { S, $, esc, speler, modAan, meld } from './state.js?v=20261122a';
+import { S, $, esc, speler, modAan, meld } from './state.js?v=20261122c';
 import { db, doc, setDoc, addDoc, updateDoc, deleteDoc, collection, serverTimestamp } from './firebase.js?v=20261011g';
 import { SKILLS, NIVEAUS, niveauKleur, LEERCURVE, leercurveRelevant, bouwSlots, periodeNrs, isoWeek,
-  TEAM_CATEGORIEEN, TEAM_TAGS, AFWEZIG_REDENEN, afwezigRedenInfo, SEIZOEN_FALLBACK, POSITIE_GROEPEN } from './config.js?v=20261122a';
-import { analyseWedstrijd, speeltijdReserve, kwartGespeeld } from './analyse.js?v=20261122a';
+  TEAM_CATEGORIEEN, TEAM_TAGS, AFWEZIG_REDENEN, afwezigRedenInfo, SEIZOEN_FALLBACK, POSITIE_GROEPEN } from './config.js?v=20261122c';
+import { analyseWedstrijd, speeltijdReserve, kwartGespeeld } from './analyse.js?v=20261122c';
 import { teltMee } from './opkomst.js?v=20260922c';
 import { vastOp, vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
-import { themaOpDatum } from './seizoensplan-logica.js?v=20261122a';
-import { htmlDraadVoorTraining, wedstrijdvraagNu } from './speelwijze.js?v=20261122a';
-import { onderdeelAan } from './onderdelen.js?v=20261122a';
-import { magUitlenen } from './uitleen-rechten.js?v=20261122a';
+import { themaOpDatum } from './seizoensplan-logica.js?v=20261122c';
+import { htmlDraadVoorTraining, wedstrijdvraagNu } from './speelwijze.js?v=20261122c';
+import { onderdeelAan } from './onderdelen.js?v=20261122c';
+import { magUitlenen } from './uitleen-rechten.js?v=20261122c';
 import { leenOmschrijving, leenActief, spelersOpTraining, effectieveSelectie } from './uitleen-regels.js?v=20261113b';
 import { ico } from './icons.js?v=20261116t';
 import { logTrainingGeopend } from './training-log.js?v=20261113b';
-import { beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261122a';
-import { renderTeam, zetTeamTab, modalTeamEvaluatie, planningItems } from './teams.js?v=20261122a';
-import { plekPillenHtml } from './veldkaart.js?v=20261122a';
-import { evaluatieOpen, presWedstrijdKeuzes, htmlWedstrijdInfo, koppelWedstrijdInfo } from './teams-hub.js?v=20261122a';
+import { beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261122c';
+import { renderTeam, zetTeamTab, modalTeamEvaluatie, planningItems } from './teams.js?v=20261122c';
+import { plekPillenHtml } from './veldkaart.js?v=20261122c';
+import { evaluatieOpen, presWedstrijdKeuzes, htmlWedstrijdInfo, koppelWedstrijdInfo } from './teams-hub.js?v=20261122c';
 import { TE_GROEPEN, TE_NIV, TE_FOCUS_LADDER, TE_STEM, teDoelIco, teVervolg, teLeeftijd, teCriteriaVoor, teZinnen, teScores, teIsNieuw, teGroepWaarden,
   teCritGemiddelden, teKleur, teCijfer, teWedRadar } from './team-evaluatie-criteria.js?v=20261120a';
-import { htmlSpelerRadar, domeinWaardenEcht, leeftijdTeam } from './beoordeling-volledig.js?v=20261122a';
+import { htmlSpelerRadar, domeinWaardenEcht, leeftijdTeam } from './beoordeling-volledig.js?v=20261122c';
 import { isAfgelast, telMee, soortPill, statusBadge } from './wedstrijd-status.js?v=20261116t';
-import { spelerStats, meestGespeeldePosities } from './teams-spelers.js?v=20261122a';
-import { bewaarTeamEvaluatie } from './teams-evaluatie.js?v=20261122a';
-import { trainingenPerWeek } from './teams-training.js?v=20261122a';
-import { oefHtml } from './training-weergave.js?v=20261122a';
-import { vandaagVan, opWijziging as opVandaag } from './training-vandaag.js?v=20261122a';
-import { rondesVoorTeam, rondeTelling, datumKort } from './evaluatierondes.js?v=20261122a';
-import { laadPdfJs } from './pdf-viewer.js?v=20261122a';
-import { ongelezenBerichten } from './berichten.js?v=20261122a';
-import { contentVoorThema } from './content.js?v=20261122a';
-import { heeftElftallen, elftalFilter, filterOpElftal, hoortBijElftal, elftalSpeler, elftalPillen, elftalPillWedstrijd, modalElftalToewijzen } from './elftallen.js?v=20261122a';
+import { spelerStats, meestGespeeldePosities } from './teams-spelers.js?v=20261122c';
+import { bewaarTeamEvaluatie } from './teams-evaluatie.js?v=20261122c';
+import { trainingenPerWeek } from './teams-training.js?v=20261122c';
+import { oefHtml } from './training-weergave.js?v=20261122c';
+import { vandaagVan, opWijziging as opVandaag } from './training-vandaag.js?v=20261122c';
+import { rondesVoorTeam, rondeTelling, datumKort } from './evaluatierondes.js?v=20261122c';
+import { laadPdfJs } from './pdf-viewer.js?v=20261122c';
+import { ongelezenBerichten } from './berichten.js?v=20261122c';
+import { contentVoorThema } from './content.js?v=20261122c';
+import { heeftElftallen, elftalFilter, filterOpElftal, hoortBijElftal, elftalSpeler, elftalPillen, elftalPillWedstrijd, modalElftalToewijzen } from './elftallen.js?v=20261122c';
 
 const TABS = new Set(['hub', 'spelers', 'wedstrijden', 'presentietraining', 'leerlijnoverzicht', 'evaluatie', 'stats', 'documenten', 'planning']);
 let klassiekTab = null;          // tabblad waarvoor de coach "Gewone weergave" koos
 let klassiekProfiel = null;      // speler-id waarvoor het volledige (oude) profiel open staat
 let laatsteSig = '';
 let selWedstrijd = null, selTraining = null, selThema = null, spFilter = 'Alle';
+let selStofId = null;   // [20261122b] oefenstof die vanaf het dashboard gekozen is
 let meekijk = false;           // [20261119c] htmlMeekijk tekent alleen-lezen: geen Evalueren-knop
 let spPositie = { pid:null, pos:'' };
 let selDoc = null, evSel = null, evConcept = null, awOpen = null, planMaand = null, planFilter = 'alles';
@@ -65,7 +66,8 @@ let selDoc = null, evSel = null, evConcept = null, awOpen = null, planMaand = nu
 const LEEG_ANALYSE = { tijd:{}, keeper:{}, lijn:{}, kwarten:0, matchduur:0 };
 function analyse(w){ try { return analyseWedstrijd(w); } catch(e){ return LEEG_ANALYSE; } }
 const isDesk = () => document.documentElement.classList.contains('desk');
-const vandaagISO = () => new Date().toISOString().slice(0, 10);
+/* [20261121a] lokale datum (toISOString is UTC: tussen 0 en 1 uur 's nachts gaf dat nog gisteren) */
+const vandaagISO = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
 const cijfer = n => Math.round(40 + (n - 1) * 14);
 const gem = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
 const voornaam = p => (p?.naam || '').trim().split(' ')[0] || 'Speler';
@@ -143,6 +145,13 @@ function gespeeld(w){
   return w.datum === vandaagISO() && analyse(w).kwarten > 0;   // vandaag al begonnen
 }
 /* [20261012a] afgelaste wedstrijden tellen niet als komend (ze staan apart in de lijst) */
+/* [20261121a] Dashboard: een wedstrijd van vandaag blijft staan tot de dag voorbij is,
+   ook als hij al begonnen of gespeeld is. Pas morgen schuift de volgende door. */
+function dashboardWedstrijd(){
+  const vandaag = S.wedstrijden.filter(w => w.datum === vandaagISO())
+    .sort((a, b) => (a.aftrap || '').localeCompare(b.aftrap || ''));
+  return vandaag.find(w => !gespeeld(w)) || vandaag[vandaag.length - 1] || komende()[0] || null;
+}
 /* [20261012g] "Uit Sportlink" alleen als de club een Sportlink-koppeling heeft */
 function slSpelersKnop(){
   const club = (S.clubs || []).find(c => c.id === S.team?.club) || S.club;
@@ -174,6 +183,8 @@ function kwartenKlaar(w){
 function weekNrUit(t){ const m = String(t || '').match(/\b([1-9]|[1-4]\d|5[0-3])\b/); return m ? parseInt(m[1], 10) : null; }
 function oefenstofTeam(){ return (S.trainingen || []).filter(t => (t.teams || []).includes(S.teamId)); }
 /* [20261113b] zelfde weekindeling als Trainingen (weekStart/datum gaan voor de weektekst) */
+/* [20261122b] trainingsnummer uit het veld of de titel ("Week 47 - training 2") */
+function trNr(t){ return Number(t.trainingNr) || Number((String(t.titel || '').match(/training\s*(\d+)/i) || [])[1]) || 0; }
 function oefenstofWeek(week = isoWeek()){
   const { komend, eerder } = trainingenPerWeek();
   const g = [...komend, ...eerder].find(x => x.weekNr === week && (x.isHuidig || week !== isoWeek()));
@@ -184,22 +195,21 @@ async function openOefenstof(id, opts = {}){
   const datum = t.gemaakt?.seconds ? new Date(t.gemaakt.seconds * 1000).toLocaleDateString('nl-NL', { day:'numeric', month:'short' }) : '';
   const titel = t.titel || t.bestandsnaam || 'Training';
   const meta = [t.week, datum].filter(Boolean).join(', ');
-  const origineel = async () => { const { openPdfViewer } = await import('./pdf-viewer.js?v=20261122a'); openPdfViewer({ url: t.url, titel, meta }); };
+  const origineel = async () => { const { openPdfViewer } = await import('./pdf-viewer.js?v=20261122c'); openPdfViewer({ url: t.url, titel, meta }); };
   if (Array.isArray(t.oefeningen) && t.oefeningen.length){
-    const { openTrainingWeergave } = await import('./training-weergave.js?v=20261122a');
+    const { openTrainingWeergave } = await import('./training-weergave.js?v=20261122c');
     openTrainingWeergave({ titel, meta, oefeningen: t.oefeningen, diagramUrls: t.diagramUrls || {},
       onOrigineel: t.url ? origineel : null, trainingId: id, oefeningVideos: t.oefeningVideos || {},
       oefeningTactiek: t.oefeningTactiek || {}, trainingClub: t.club || null, teamId: S.teamId,
       teamNaam: S.team?.naam || '', clubNaam: S.team?.clubNaam || '', draadHtml: htmlDraadVoorTraining(t),
       vandaag: S.teamId && (t.teams || []).includes(S.teamId) ? t : null, start: !!opts.start });
   } else if (t.url) await origineel();
-  logTrainingGeopend(S.teamId, id);
-  if (!S.trainingenGelezen?.[id]){ try { await setDoc(doc(db, 'gebruikers', S.user.uid, 'gelezen', id), { tijd: serverTimestamp() }); } catch(e){} }
+  await markeerStofGeopend(id);
 }
 function stofRij(t){
   const nieuw = !S.trainingenGelezen?.[t.id];
   const ai = Array.isArray(t.oefeningen) && t.oefeningen.length;
-  return `<button class="dk-stof" data-dk="stof" data-id="${esc(t.id)}"><span class="dk-stof-ico">${ai ? ico('training-exercise', 20) : 'PDF'}</span>
+  return `<button class="dk-stof" data-dk="stofdag" data-id="${esc(t.id)}"><span class="dk-stof-ico">${ai ? ico('training-exercise', 20) : 'PDF'}</span>
     <span class="dk-stof-tekst"><b>${esc(t.titel || t.bestandsnaam || 'Training')}</b><small>${esc([t.week, ai ? t.oefeningen.length + ' oefeningen' : 'PDF'].filter(Boolean).join(', '))}</small></span>
     ${nieuw ? '<span class="dk-pill rood">nieuw</span>' : ''}</button>`;
 }
@@ -227,7 +237,12 @@ function oefenstofVoorDatum(iso){
   const dagen = (Array.isArray(S.team?.trainingsdagen) ? S.team.trainingsdagen : []).slice().sort();
   const dag = ((new Date(iso + 'T12:00').getDay() + 6) % 7) + 1;
   const idx = Math.max(0, dagen.indexOf(dag));
-  return lijst[Math.min(idx, lijst.length - 1)];
+  return lijst.find(t => trNr(t) === idx + 1) || lijst[Math.min(idx, lijst.length - 1)];
+}
+/* [20261122b] geopend: telling (trainingsgebruik) en 'gelezen' bijwerken */
+async function markeerStofGeopend(id){
+  logTrainingGeopend(S.teamId, id);
+  if (!S.trainingenGelezen?.[id]){ try { await setDoc(doc(db, 'gebruikers', S.user.uid, 'gelezen', id), { tijd: serverTimestamp() }); } catch(e){} }
 }
 
 /* ---------- mini-veld ---------- */
@@ -246,14 +261,16 @@ function miniVeld(w, metKaart = false){
 
 /* ==================== DASHBOARD (hub) ==================== */
 function htmlDashboard(){
-  const w = komende()[0] || null;
+  const w = dashboardWedstrijd();
+  const klaarVandaag = !!w && gespeeld(w);           // [20261121a] vandaag al begonnen/gespeeld
+  const st = klaarVandaag ? stand(w) : null;
   const stats = Object.fromEntries(S.spelers.map(p => [p.id, statsVan(p.id)]));
   const pctLijst = S.spelers.filter(p => stats[p.id].pctSpeeltijd != null)
     .sort((a, b) => stats[a.id].pctSpeeltijd - stats[b.id].pctSpeeltijd);  /* [20260928h] alle spelers; het blok scrolt */
   const ses = sessies().slice(0, 8).reverse();
   const opkSp = [...S.spelers].sort((a, b) => (Number(a.nummer) || 99) - (Number(b.nummer) || 99)).slice(0, 10);
   const stof = oefenstofWeek();
-  const taken = takenLijst(w);
+  const taken = takenLijst(klaarVandaag ? null : w);
   const kk = w ? kwartenKlaar(w) : null;
   const titel = w ? `${datumMooi(w.datum, { weekday:'long' })} ${w.thuis ? 'thuis tegen' : 'uit bij'}` : 'Geen wedstrijd gepland';
   const tegen = w ? (w.tegenstander || '').replace(/\s+(J|M)O\d+.*$/i, '') || w.tegenstander : '';
@@ -261,16 +278,16 @@ function htmlDashboard(){
   const dagen = w ? (() => { const v = new Date(); v.setHours(0, 0, 0, 0); const d = new Date(w.datum + 'T00:00:00'); return Math.max(0, Math.round((d - v) / 86400000)); })() : 0;
 
   return `<div class="dk-scherm dk-dash">
-    ${kop('Dashboard', `${heeftElftallen() ? knop('Selectie 1e + 2e', 'tab', '', 'stats-bars').replace('data-dk="tab"', 'data-dk="tab" data-tab="stats"') : ''}${knop('Presentie vandaag', 'presentie', '', 'attendance-present')}${w ? knop('Voorbereiding', 'voorbereiding', '', 'match-opponent').replace('data-dk="voorbereiding"', `data-dk="voorbereiding" data-id="${esc(w.id)}"`) : ''}${w ? knop('Start wedstrijd', 'openw', 'rood', 'training-start').replace('data-dk="openw"', `data-dk="openw" data-id="${esc(w.id)}"`) : knop('Nieuwe wedstrijd', 'nieuwew', 'rood', 'action-add')}`)}
+    ${kop('Dashboard', `${heeftElftallen() ? knop('Selectie 1e + 2e', 'tab', '', 'stats-bars').replace('data-dk="tab"', 'data-dk="tab" data-tab="stats"') : ''}${knop('Presentie vandaag', 'presentie', '', 'attendance-present')}${w ? knop('Voorbereiding', 'voorbereiding', '', 'match-opponent').replace('data-dk="voorbereiding"', `data-dk="voorbereiding" data-id="${esc(w.id)}"`) : ''}${w ? knop(klaarVandaag ? 'Open wedstrijd' : 'Start wedstrijd', 'openw', 'rood', klaarVandaag ? 'football-lineup' : 'training-start').replace('data-dk="openw"', `data-dk="openw" data-id="${esc(w.id)}"`) : knop('Nieuwe wedstrijd', 'nieuwew', 'rood', 'action-add')}`)}
     <div class="dk-dash-body"><div class="dk-spook">${w ? esc(String(Number(w.datum.slice(8, 10)))) : new Date().getDate()}</div>
       <div class="dk-hallo"><div><h1 class="dk-groot">${esc(titel)} ${tegen ? `<span class="dk-omlijnd">${esc(tegen)}</span>` : ''}</h1>
-        <p>${w ? `Nog ${dagen === 0 ? 'vandaag' : dagen === 1 ? '1 dag' : dagen + ' dagen'}. De opstelling staat voor ${kk.klaar} van de ${kk.totaal} ${kk.totaal === 2 ? 'helften' : 'periodes'} klaar.` : 'Voeg een wedstrijd toe of wacht op de volgende Sportlink-sync.'}</p></div></div>
+        <p>${klaarVandaag ? `Vandaag gespeeld${(w.goals || []).length ? `, stand ${st.links}-${st.rechts}` : ''}. De volgende wedstrijd verschijnt hier morgen.` : w ? `Nog ${dagen === 0 ? 'vandaag' : dagen === 1 ? '1 dag' : dagen + ' dagen'}. De opstelling staat voor ${kk.klaar} van de ${kk.totaal} ${kk.totaal === 2 ? 'helften' : 'periodes'} klaar.` : 'Voeg een wedstrijd toe of wacht op de volgende Sportlink-sync.'}</p></div></div>
       ${S.team && !S.team.club ? '<div id="ssKaart" class="dk-ss"></div>' : ''}
       ${w ? `<div class="dk-blok dk-wed">
-        <div><h3>${ico('planning-calendar', 18)}Volgende wedstrijd</h3>
+        <div><h3>${ico('planning-calendar', 18)}${klaarVandaag ? 'Wedstrijd van vandaag' : 'Volgende wedstrijd'}</h3>
           <div class="dk-vs">${esc(S.team.naam)}<span>tegen</span><span class="dk-omlijnd">${esc(w.tegenstander || '')}</span></div>
           <div class="dk-pills"><span class="dk-pill">${esc(datumMooi(w.datum, { weekday:'short', day:'numeric', month:'short' }))}${w.aftrap ? ', ' + esc(w.aftrap) : ''}</span><span class="dk-pill">${w.thuis ? 'Thuis' : 'Uit'}</span>${w.format ? `<span class="dk-pill">${esc(w.format)} tegen ${esc(w.format)}</span>` : ''}${plekPillenHtml(w, 'dk-pill')}</div>
-          <div class="dk-aftel" data-dk-aftel="${aftrapMs(w)}"></div>
+          ${klaarVandaag ? '' : `<div class="dk-aftel" data-dk-aftel="${aftrapMs(w)}"></div>`}
           <div class="dk-rij-knoppen">${knop('Voorbereiding', 'voorbereiding', '', 'match-opponent').replace('data-dk="voorbereiding"', `data-dk="voorbereiding" data-id="${esc(w.id)}"`)}</div></div>
         <button class="dk-veld-knop" data-dk="openw" data-id="${esc(w.id)}" title="Wedstrijd openen">${miniVeld(w)}</button>
       </div>` : ''}
@@ -677,7 +694,8 @@ function htmlTrainingen(){
   const gekozen = selTraining?.startsWith('tr:') ? items.find(x => 'tr:' + x.t.id === selTraining) : null;
   const datum = gekozen ? gekozen.iso : selTraining?.startsWith('dt:') ? selTraining.slice(3) : '';
   selTrainingDatum = datum;
-  const stof = gekozen ? gekozen.t : (datum ? oefenstofVoorDatum(datum) : null);
+  const gekozenStof = selStofId ? oefenstofTeam().find(x => x.id === selStofId) : null;   // [20261122b]
+  const stof = gekozenStof || (gekozen ? gekozen.t : (datum ? oefenstofVoorDatum(datum) : null));
   const sessie = datum ? sessieOp(datum) : null;
   /* [20261116l] balk Vandaag: de oefeningen zoals ze vandaag zijn (aantal spelers en weer), en de balk zelf */
   const tv = stof && Array.isArray(stof.oefeningen) && stof.oefeningen.length && (stof.teams || []).includes(S.teamId) ? vandaagVan(stof) : null;
@@ -1017,55 +1035,67 @@ async function actie(b){
   const a = b.dataset.dk, id = b.dataset.id;
   if (a === 'klassiek'){ klassiekTab = S.teamTab; if (S.teamTab === 'spelers' && S._beoordeelProfiel) klassiekProfiel = S._beoordeelProfiel; renderTeam(); return; }
   if (a === 'tab'){ S._beoordeelProfiel = null; zetTeamTab(b.dataset.tab); return; }
-  if (a === 'openw'){ const m = await import('./wedstrijd.js?v=20261122a'); m.openWedstrijd(id); return; }
+  if (a === 'openw'){ const m = await import('./wedstrijd.js?v=20261122c'); m.openWedstrijd(id); return; }
   /* Wedstrijdvoorbereiding (Sportlink, uitslagen, locatie, weer, plan) ook op desktop;
      opent daar als paneel van rechts, de zijbalk blijft zichtbaar (ASV'33 PR #78). */
-  if (a === 'voorbereiding'){ const m = await import('./wedstrijd-voorbereiding.js?v=20261122a'); m.openVoorbereiding(id, { zetTeamTab }); return; }
-  if (a === 'nieuwew'){ const m = await import('./wedstrijd.js?v=20261122a'); m.modalNieuweWedstrijd(); return; }
+  if (a === 'voorbereiding'){ const m = await import('./wedstrijd-voorbereiding.js?v=20261122c'); m.openVoorbereiding(id, { zetTeamTab }); return; }
+  if (a === 'nieuwew'){ const m = await import('./wedstrijd.js?v=20261122c'); m.modalNieuweWedstrijd(); return; }
   if (a === 'evalueer'){ modalTeamEvaluatie(id); return; }
-  if (a === 'presentie'){ const m = await import('./teams-training.js?v=20261122a'); m.modalPresentie(); return; }
-  if (a === 'presentieander'){ const m = await import('./teams-training.js?v=20261122a'); m.modalPresentie(null, { startAnder:true }); return; }
-  if (a === 'presentiewijzig'){ const s = (S.presentie || []).find(x => x.id === id); const m = await import('./teams-training.js?v=20261122a'); m.modalPresentie(s || null); return; }
+  if (a === 'presentie'){ const m = await import('./teams-training.js?v=20261122c'); m.modalPresentie(); return; }
+  if (a === 'presentieander'){ const m = await import('./teams-training.js?v=20261122c'); m.modalPresentie(null, { startAnder:true }); return; }
+  if (a === 'presentiewijzig'){ const s = (S.presentie || []).find(x => x.id === id); const m = await import('./teams-training.js?v=20261122c'); m.modalPresentie(s || null); return; }
   if (a === 'stof'){ openOefenstof(id); return; }
+  /* [20261122b] dashboard: oefenstof openen in het Trainingen-scherm (zijbalk blijft), niet volledig scherm */
+  if (a === 'stofdag'){
+    const t = oefenstofTeam().find(x => x.id === id); if (!t) return;
+    const { komend, eerder } = trainingenPerWeek();
+    const inLijst = [...komend, ...eerder].some(g => g.items.some(x => x.t.id === id));
+    if (inLijst){ selTraining = 'tr:' + id; selStofId = null; }
+    else selStofId = id;
+    awOpen = null;
+    zetTeamTab('presentietraining');
+    markeerStofGeopend(id);
+    return;
+  }
   if (a === 'stofstart'){ openOefenstof(id, { start: true }); return; }
   if (a === 'stofuitzet'){   /* [20261120k] alle vakken in één plaatje, met de training zoals hij vandaag is */
     const t = S.trainingen.find(x => x.id === id); if (!t) return;
     const lijst = (t.teams || []).includes(S.teamId) ? vandaagVan(t).oefeningen : (t.oefeningen || []);
-    const [TL, B, TV] = await Promise.all([import('./training-tijdlijn.js?v=20261122a'), import('./bibliotheek.js?v=20261121b'), import('./training-vandaag.js?v=20261122a')]);
+    const [TL, B, TV] = await Promise.all([import('./training-tijdlijn.js?v=20261122c'), import('./bibliotheek.js?v=20261121b'), import('./training-vandaag.js?v=20261122c')]);
     TL.openUitzet(TL.tijdlijnInfo(lijst, B.vormOpId, TV.startTijd(t, S.teamId)));
     return;
   }
   if (a === 'profiel'){ klassiekProfiel = null; S._beoordeelProfiel = id; if (S.teamTab !== 'spelers') zetTeamTab('spelers'); else renderTeam(); return; }
   if (a === 'terugsel'){ S._dkModus = null; S._beoordeelProfiel = null; renderTeam(); return; }
   if (a === 'volprofiel'){ klassiekProfiel = S._beoordeelProfiel; renderTeam(); return; }
-  if (a === 'ronde'){ const m = await import('./teams-spelers.js?v=20261122a'); m.startRondeFlow(b.dataset.id); return; }
-  if (a === 'beoordeel'){ const m = await import('./teams-spelers.js?v=20261122a'); m.modalVolledigeBeoordeling(S._beoordeelProfiel); return; }
-  if (a === 'leerpunt'){ const m = await import('./teams-spelers.js?v=20261122a'); m.modalLeerpunt(S._beoordeelProfiel); return; }
-  if (a === 'lpthema'){ const m = await import('./teams-spelers.js?v=20261122a'); m.modalLeerpunt(id, selThema); return; }
-  if (a === 'snelronde'){ const m = await import('./teams-spelers.js?v=20261122a'); m.startSnelRonde(); return; }
-  if (a === 'slspelers'){ const m = await import('./teams-spelers.js?v=20261122a'); m.modalSpelersUitSportlink(); return; }
-  if (a === 'nieuwsp'){ const m = await import('./teams-spelers.js?v=20261122a'); m.modalSpeler(null); return; }
+  if (a === 'ronde'){ const m = await import('./teams-spelers.js?v=20261122c'); m.startRondeFlow(b.dataset.id); return; }
+  if (a === 'beoordeel'){ const m = await import('./teams-spelers.js?v=20261122c'); m.modalVolledigeBeoordeling(S._beoordeelProfiel); return; }
+  if (a === 'leerpunt'){ const m = await import('./teams-spelers.js?v=20261122c'); m.modalLeerpunt(S._beoordeelProfiel); return; }
+  if (a === 'lpthema'){ const m = await import('./teams-spelers.js?v=20261122c'); m.modalLeerpunt(id, selThema); return; }
+  if (a === 'snelronde'){ const m = await import('./teams-spelers.js?v=20261122c'); m.startSnelRonde(); return; }
+  if (a === 'slspelers'){ const m = await import('./teams-spelers.js?v=20261122c'); m.modalSpelersUitSportlink(); return; }
+  if (a === 'nieuwsp'){ const m = await import('./teams-spelers.js?v=20261122c'); m.modalSpeler(null); return; }
   if (a === 'filter'){ spFilter = b.dataset.f; renderTeam(); return; }
   if (a === 'elftal'){ S._elftalFilter = b.dataset.f; renderTeam(); return; }
   if (a === 'elftaltoew'){ modalElftalToewijzen(renderTeam); return; }
-  if (a === 'jaaroverzicht'){ import('./jaaroverzicht.js?v=20261122a').then(m => m.openJaaroverzicht()); return; }
+  if (a === 'jaaroverzicht'){ import('./jaaroverzicht.js?v=20261122c').then(m => m.openJaaroverzicht()); return; }
   if (a === 'selw'){ selWedstrijd = id; renderTeam(); return; }
-  if (a === 'seltr'){ selTraining = id; awOpen = null; renderTeam(); if (id.startsWith('tr:')) markeerGelezen(id.slice(3)); return; }
+  if (a === 'seltr'){ selTraining = id; selStofId = null; awOpen = null; renderTeam(); if (id.startsWith('tr:')) markeerGelezen(id.slice(3)); return; }
   if (a === 'treerder'){ trEerderOpen = !trEerderOpen; renderTeam(); return; }
   if (a === 'traanpassen'){ S._tmVoorinvul = { datum: b.dataset.datum, vervangt: id, themaHand: false }; zetTeamTab('trainingsmodule'); return; }
   if (a === 'selth'){ selThema = LEERCURVE[Number(b.dataset.i)]?.thema || selThema; renderTeam(); return; }
   /* [20260923a] */
   if (a === 'openprofiel'){ S._dkModus = null; S._beoordeelProfiel = id; S._profielTab = 'overzicht'; if (S.teamTab !== 'spelers') zetTeamTab('spelers'); else renderTeam(); return; }
   if (a === 'evmodus'){ S._dkModus = 'evaluatie'; S._beoordeelProfiel = S._beoordeelProfiel || eersteSpeler(); renderTeam(); return; }
-  if (a === 'snel'){ const m = await import('./teams-spelers.js?v=20261122a'); m.modalSnelBeoordeling(S._beoordeelProfiel); return; }
-  if (a === 'evopen'){ const bo = S.beoordelingen.find(x => x.id === id); if (!bo) return; const m = await import('./teams-spelers.js?v=20261122a');
+  if (a === 'snel'){ const m = await import('./teams-spelers.js?v=20261122c'); m.modalSnelBeoordeling(S._beoordeelProfiel); return; }
+  if (a === 'evopen'){ const bo = S.beoordelingen.find(x => x.id === id); if (!bo) return; const m = await import('./teams-spelers.js?v=20261122c');
     if (bo.soort === 'snel') m.modalSnelBeoordeling(bo.spelerId, bo); else m.modalVolledigeBeoordeling(bo.spelerId, bo); return; }
   if (a === 'awopen'){ awOpen = awOpen === id ? null : id; renderTeam(); return; }
   if (a === 'awzet'){ const pid = id, reden = b.dataset.r || null; awOpen = null;
     try { await zetPresentie(selTrainingDatum, pid, reden); meld(reden ? `${voornaam(speler(pid))} afgemeld` : `${voornaam(speler(pid))} weer aanwezig`); }
     catch(e){ meld('Opslaan mislukt: ' + (e.code || e.message)); }
     renderTeam(); return; }
-  if (a === 'stofpdf'){ const t = S.trainingen.find(x => x.id === id); if (!t?.url) return; const { openPdfViewer } = await import('./pdf-viewer.js?v=20261122a'); openPdfViewer({ url: t.url, titel: t.titel || 'Training', meta: t.week || '' }); return; }
+  if (a === 'stofpdf'){ const t = S.trainingen.find(x => x.id === id); if (!t?.url) return; const { openPdfViewer } = await import('./pdf-viewer.js?v=20261122c'); openPdfViewer({ url: t.url, titel: t.titel || 'Training', meta: t.week || '' }); return; }
   if (a === 'evsel'){ evSel = id; renderTeam(); return; }
   if (a === 'evopen'){ if (evSel) modalTeamEvaluatie(evSel); return; }
   if (a === 'sppos'){ spPositie.pos = spPositie.pos === b.dataset.pos && !b.textContent.startsWith('Overnemen') ? '' : b.dataset.pos;
@@ -1074,8 +1104,8 @@ async function actie(b){
     if ($('#dkSpNaam')){ $('#dkSpNaam').value = bewaard.naam ?? ''; $('#dkSpNr').value = bewaard.nr ?? ''; $('#dkSpAchter').value = bewaard.achter ?? ''; $('#dkSpNotitie').value = bewaard.notitie ?? ''; }
     return; }
   if (a === 'spopslaan'){ await bewaarSpelerDesk(); return; }
-  if (a === 'spuitleen'){ const m = await import('./teams-spelers.js?v=20261122a'); m.modalUitlenen(S._beoordeelProfiel); return; }
-  if (a === 'spterug'){ const m = await import('./teams-spelers.js?v=20261122a'); await m.trekUitleningIn(id); renderTeam(); return; }
+  if (a === 'spuitleen'){ const m = await import('./teams-spelers.js?v=20261122c'); m.modalUitlenen(S._beoordeelProfiel); return; }
+  if (a === 'spterug'){ const m = await import('./teams-spelers.js?v=20261122c'); await m.trekUitleningIn(id); renderTeam(); return; }
   if (a === 'sphis'){ S._dkModus = null; S._profielTab = 'historie'; renderTeam(); return; }
   if (a === 'spweg'){ const p = speler(S._beoordeelProfiel); if (!p) return;
     if (p._ingeleend) return meld('Een ingeleende speler kun je niet verwijderen, zet hem terug naar het bronteam');
@@ -1087,17 +1117,17 @@ async function actie(b){
     if (!d) planMaand = vandaagISO().slice(0, 7);
     else { const [j, m] = planMaand.split('-').map(Number); const x = new Date(j, m - 1 + d, 1, 12); planMaand = x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0'); }
     renderTeam(); return; }
-  if (a === 'eigendag'){ const m = await import('./teams-training.js?v=20261122a'); m.modalEigenDag(); return; }
+  if (a === 'eigendag'){ const m = await import('./teams-training.js?v=20261122c'); m.modalEigenDag(); return; }
   if (a === 'plandag'){ const { datum, bron, doc: did } = b.dataset;
     if (bron === 'club'){ const it = planningItems().find(x => x.datum === datum && x.bron === 'club' && x.label === b.dataset.label); if (it?.url) window.open(it.url, '_blank', 'noopener'); return; }
-    if (bron === 'wedstrijd' && did){ const m = await import('./wedstrijd.js?v=20261122a'); m.openWedstrijd(did); return; }
+    if (bron === 'wedstrijd' && did){ const m = await import('./wedstrijd.js?v=20261122c'); m.openWedstrijd(did); return; }
     if (bron === 'training'){ selTraining = 'dt:' + datum; zetTeamTab('presentietraining'); return; }
     if (bron === 'lijst' && did){ S._lijstOpen = did; S._ljFilter = 'alle'; S._ljToonEerder = false; zetTeamTab('lijst'); return; }
     if (bron === 'club'){ const it = planningItems().find(x => x.datum === datum && x.bron === 'club' && x.label === b.dataset.label); if (it?.url) window.open(it.url, '_blank', 'noopener'); return; }
     const it = planningItems().find(x => x.datum === datum && x.bron === bron);
-    if (it){ const m = await import('./teams-training.js?v=20261122a'); m.modalPlanDag(it); } return; }
+    if (it){ const m = await import('./teams-training.js?v=20261122c'); m.modalPlanDag(it); } return; }
   if (a === 'seldoc'){ selDoc = id; renderTeam(); markeerGelezen(id); return; }
-  if (a === 'docgroot'){ const d = (S.documenten || []).find(x => x.id === id); if (!d?.url) return; const { openPdfViewer } = await import('./pdf-viewer.js?v=20261122a'); openPdfViewer({ url: d.url, titel: d.titel || 'Document', meta: '' }); markeerGelezen(id); return; }
+  if (a === 'docgroot'){ const d = (S.documenten || []).find(x => x.id === id); if (!d?.url) return; const { openPdfViewer } = await import('./pdf-viewer.js?v=20261122c'); openPdfViewer({ url: d.url, titel: d.titel || 'Document', meta: '' }); markeerGelezen(id); return; }
 }
 function eersteSpeler(){ return [...S.spelers].sort((a, b) => (Number(a.nummer) || 99) - (Number(b.nummer) || 99))[0]?.id || null; }
 async function markeerGelezen(id){ if (!id || S.trainingenGelezen?.[id]) return; try { await setDoc(doc(db, 'gebruikers', S.user.uid, 'gelezen', id), { tijd: serverTimestamp() }); } catch(e){} }
@@ -1111,7 +1141,7 @@ function koppel(v){
   tikAftel();
   tekenPdfs(v);
   /* [20261110] Eerste stappen voor een team zonder club, ook op de desktop (zelfde kaart als op de telefoon) */
-  if (v.querySelector('#ssKaart')) import('./snelstart.js?v=20261122a').then(m => m.koppelEersteStappen(v, { zetTeamTab })).catch(() => {});
+  if (v.querySelector('#ssKaart')) import('./snelstart.js?v=20261122c').then(m => m.koppelEersteStappen(v, { zetTeamTab })).catch(() => {});
 }
 
 /* aftelklok (1× per seconde, alleen zolang het element bestaat) */
