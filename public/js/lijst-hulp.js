@@ -30,10 +30,10 @@
    Dit bestand importeert niet uit teams-lijsten.js (geen circulaire import):
    teams-lijsten.js roept de functies hieronder aan en geeft renderTeam mee. */
 import { db, doc, collection, setDoc, addDoc, updateDoc, deleteDoc, deleteField, getDocs, writeBatch, onSnapshot } from './firebase.js?v=20261011g';
-import { S, $, $$, esc, meld, openModal, sluitModal } from './state.js?v=20261124b';
-import { SEIZOEN_FALLBACK } from './config.js?v=20261124b';
+import { S, $, $$, esc, meld, openModal, sluitModal } from './state.js?v=20261124c';
+import { SEIZOEN_FALLBACK } from './config.js?v=20261124c';
 import { ico } from './icons.js?v=20261116t';
-import { momentenVanTeam, DAGEN_LANG, DAGEN_KORT } from './trainingsmomenten.js?v=20261124b';
+import { momentenVanTeam, DAGEN_LANG, DAGEN_KORT } from './trainingsmomenten.js?v=20261124c';
 import { teamkamerMag, optiesVan, KAMER_URL } from './kamer-logica.js?v=20261118a';
 
 const MAX_HELPERS = 6;
