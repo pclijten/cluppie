@@ -224,3 +224,50 @@ export function kleedkamersVoorstel(plekken, standaard = 6){
   const lijst = nrs.size ? [...nrs].sort((a, b) => a - b).slice(0, 40) : Array.from({ length: standaard }, (_, i) => i + 1);
   return lijst.map(n => ({ id: `k${n}`, naam: `Kleedkamer ${n}` }));
 }
+
+/* ---------- tekenen op de luchtfoto [20261124v] ----------
+   Wat de club zelf op de kaart van het sportpark zet. Een vlak heeft een midden (lat, lon) en een maat
+   in meters (b oost-west, h noord-zuid); een punt alleen een plek. */
+export const SOORTEN = {
+  parkeren:    { naam: 'Parkeren',         kort: 'P',  vlak: true,  kleur: '#3b82c4' },
+  fietsen:     { naam: 'Fietsenstalling',  kort: 'F',  vlak: true,  kleur: '#16a3a3' },
+  kantine:     { naam: 'Kantine',          kort: 'K',  vlak: true,  kleur: '#d08a1e' },
+  kleedkamers: { naam: 'Kleedkamers',      kort: 'KK', vlak: true,  kleur: '#8e5cc4' },
+  materiaal:   { naam: 'Materiaalhok',     kort: 'M',  vlak: true,  kleur: '#6b7280' },
+  tribune:     { naam: 'Tribune',          kort: 'T',  vlak: true,  kleur: '#c0532b' },
+  ingang:      { naam: 'Ingang',           kort: 'I',  vlak: false, kleur: '#2f9e63' },
+  aed:         { naam: 'AED',              kort: '+',  vlak: false, kleur: '#d63a32' },
+  overig:      { naam: 'Overig',           kort: '•',  vlak: false, kleur: '#4b5563' },
+};
+export const MAX_OBJECTEN = 60;
+export function schoonObject(o, i = 0){
+  if (!o || typeof o !== 'object' || !SOORTEN[o.soort]) return null;
+  const lat = Number(o.lat), lon = Number(o.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
+  const id = /^[A-Za-z0-9_-]{1,20}$/.test(String(o.id || '')) ? String(o.id) : `o${i + 1}`;
+  const naam = String(o.naam || '').trim().slice(0, 40) || SOORTEN[o.soort].naam;
+  const r = (v, n) => Math.round(v * 10 ** n) / 10 ** n;
+  const uit = { id, soort: o.soort, naam, lat: r(lat, 7), lon: r(lon, 7) };
+  if (SOORTEN[o.soort].vlak){
+    const b = Number(o.b), h = Number(o.h);
+    if (!(b >= 2 && b <= 500 && h >= 2 && h <= 500)) return null;
+    uit.b = r(b, 1); uit.h = r(h, 1);
+  }
+  return uit;
+}
+export function schoonObjecten(lijst){
+  const ids = new Set(), uit = [];
+  for (const [i, o] of (Array.isArray(lijst) ? lijst : []).entries()){
+    const s = schoonObject(o, i);
+    if (s && !ids.has(s.id) && uit.length < MAX_OBJECTEN){ ids.add(s.id); uit.push(s); }
+  }
+  return uit;
+}
+/* Meters tussen twee punten (x oost, y zuid) en terug: genoeg voor een sportpark. */
+export const meterTussen = (a, b) => ({ x: (b.lon - a.lon) * 111320 * Math.cos(a.lat * Math.PI / 180), y: -(b.lat - a.lat) * 110540 });
+export const verschuif = (p, dx, dy) => ({ lat: p.lat - dy / 110540, lon: p.lon + dx / (111320 * Math.cos(p.lat * Math.PI / 180)) });
+/* Een vlak uit twee hoeken (zoals je het op de kaart trekt). */
+export function vlakUitHoeken(a, b){
+  const d = meterTussen(a, b);
+  return { lat: (a.lat + b.lat) / 2, lon: (a.lon + b.lon) / 2, b: Math.abs(d.x), h: Math.abs(d.y) };
+}

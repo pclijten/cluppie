@@ -108,3 +108,18 @@ gelijk(V.kleedkamersVoorstel([{ soort: 'kleedkamer', naam: 'Kleedkamers 1–4' }
 gelijk(V.kleedkamersVoorstel([], 3).map(k => k.naam), ['Kleedkamer 1', 'Kleedkamer 2', 'Kleedkamer 3']);
 
 console.log(`veldplanner: ${n} controles geslaagd`);
+
+/* tekenen op de luchtfoto */
+{
+  let m = 0; const ok2 = (v, t) => { assert.ok(v, t); m++; }, gelijk2 = (a, b, t) => { assert.deepEqual(a, b, t); m++; };
+  gelijk2(V.schoonObject({ id: 'o1', soort: 'parkeren', naam: ' P1 ', lat: 52.1, lon: 5.1, b: 40, h: 20.04 }), { id: 'o1', soort: 'parkeren', naam: 'P1', lat: 52.1, lon: 5.1, b: 40, h: 20 });
+  gelijk2(V.schoonObject({ id: 'o2', soort: 'aed', lat: 52.1, lon: 5.1, b: 40 }), { id: 'o2', soort: 'aed', naam: 'AED', lat: 52.1, lon: 5.1 }, 'punt zonder maat');
+  gelijk2(V.schoonObject({ soort: 'raket', lat: 1, lon: 1 }), null, 'onbekende soort');
+  gelijk2(V.schoonObject({ soort: 'kantine', lat: 52, lon: 5, b: 1, h: 10 }), null, 'vlak te klein');
+  gelijk2(V.schoonObject({ soort: 'kantine', lat: 'x', lon: 5, b: 10, h: 10 }), null);
+  gelijk2(V.schoonObjecten(Array.from({ length: 80 }, (_, i) => ({ id: 'o' + i, soort: 'ingang', lat: 52, lon: 5 }))).length, V.MAX_OBJECTEN);
+  const a = { lat: 52.1, lon: 5.1 }, b = V.verschuif(a, 40, 20), v = V.vlakUitHoeken(a, b);
+  ok2(Math.abs(v.b - 40) < .01 && Math.abs(v.h - 20) < .01, 'vlak uit twee hoeken: 40 x 20 m');
+  const d = V.meterTussen(a, b); ok2(Math.abs(d.x - 40) < .01 && Math.abs(d.y - 20) < .01);
+  console.log(`veldplanner kaart: ${m} controles geslaagd`);
+}

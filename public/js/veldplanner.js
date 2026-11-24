@@ -37,7 +37,7 @@ import { momentenVanTeam } from './trainingsmomenten.js?v=20261123a';
 import { STANDAARD_VAKKEN, NODIG, MAAT_NAAM, KK_VOOR, KK_NA, MAX_EIGEN, naarMin, naarTijd, overlapt, rondKwartier,
   vakkenVan, vakUit, deelVan, deelTekst, meters, banenVan, stukken, maatVanCategorie, duurVanCategorie,
   zoekVrijVak, vrijeKleedkamers, stapel, controleer, nogInTePlannen, schoonRooster, schoonKleedkamers, schoonVak,
-  kleedkamersVoorstel } from './veldplanner-logica.js?v=20261124v';
+  kleedkamersVoorstel, SOORTEN, MAX_OBJECTEN, schoonObjecten, meterTussen, verschuif, vlakUitHoeken } from './veldplanner-logica.js?v=20261124v';
 
 const DAGEN = ['', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag', 'Zondag'];
 const DAGK = ['', 'ma', 'di', 'wo', 'do', 'vr', 'za', 'zo'];
@@ -55,7 +55,8 @@ export async function openVeldplanner(clubId){
   const el = laag();
   el.innerHTML = `<div class="vp-app"><div class="vp-leeg">${ico('action-loading', 20)} Veldplanner laden…</div></div>`;
   P = { clubId, el, dag: vandaagDag(), sel: null, hist: [], blokken: [], velden: [], teams: [], inst: { kleedkamers: [], velden: {} },
-        bewaar: null, staat: 'opgeslagen', venster: null, px: 2, park: null };
+        bewaar: null, staat: 'opgeslagen', venster: null, px: 2, park: null,
+        weergave: 'tijdlijn', tekenen: false, tool: 'kies', objSel: null, kaartPos: null, kaart: null };
   try {
     const [park, inst, rooster] = await Promise.all([
       getDoc(doc(db, 'clubs', clubId, 'sportparken', 'eigen')),
@@ -67,7 +68,7 @@ export async function openVeldplanner(clubId){
       .sort((a, b) => a.naam.localeCompare(b.naam, 'nl', { numeric: true }));
     const i = inst.exists() ? inst.data() : {};
     P.instBestaat = inst.exists();
-    P.inst = { kleedkamers: i.kleedkamers ? schoonKleedkamers(i.kleedkamers) : kleedkamersVoorstel(P.park?.plekken), velden: i.velden && typeof i.velden === 'object' ? i.velden : {} };
+    P.inst = { kleedkamers: i.kleedkamers ? schoonKleedkamers(i.kleedkamers) : kleedkamersVoorstel(P.park?.plekken), velden: i.velden && typeof i.velden === 'object' ? i.velden : {}, objecten: schoonObjecten(i.objecten) };
     P.blokken = schoonRooster(rooster.exists() ? rooster.data().blokken : []);
   } catch (e){
     console.error('[veldplanner] laden', e);
@@ -94,9 +95,9 @@ function laag(){
     document.addEventListener('keydown', e => {
       if (!P || e.key !== 'Escape') return;
       e.stopPropagation();
-      if (P.venster) sluitVenster(); else if (P.sel){ P.sel = null; teken(); } else sluitVeldplanner();
+      if (P.venster) sluitVenster(); else if (P.objSel){ P.objSel = null; tekenKaartZij(); P.kaart?.tekenLagen(); } else if (P.sel){ P.sel = null; teken(); } else sluitVeldplanner();
     }, true);
-    window.addEventListener('resize', () => { if (P && !P.venster) teken(); });
+    window.addEventListener('resize', () => { if (P && !P.venster && P.weergave !== 'kaart') teken(); });
   }
   el.classList.add('toon');
   document.documentElement.classList.add('vp-open');
@@ -159,7 +160,7 @@ async function bewaarNu(){
       const i = p.inst.velden[v.id]; if (!i) continue;
       velden[v.id] = { licht: i.licht !== false, vakken: (i.vakken || []).map(schoonVak).filter(Boolean).slice(0, MAX_EIGEN) };
     }
-    klus.push(setDoc(doc(db, 'clubs', p.clubId, 'veldplanner', 'instellingen'), { kleedkamers: schoonKleedkamers(p.inst.kleedkamers), velden, bijgewerktMs: Date.now() }));
+    klus.push(setDoc(doc(db, 'clubs', p.clubId, 'veldplanner', 'instellingen'), { kleedkamers: schoonKleedkamers(p.inst.kleedkamers), velden, objecten: schoonObjecten(p.inst.objecten), bijgewerktMs: Date.now() }));
     p.instGewijzigd = false;
   }
   try { await Promise.all(klus); p.staat = 'opgeslagen'; p.om = new Date(); }
@@ -197,11 +198,12 @@ function teken(){
       <div class="vp-titel"><small>${esc(S.club?.naam || 'Club')}</small><h1>Veldplanner</h1></div>
       <span class="vp-concept">Concept · nog niet naar de teams</span><span class="vp-staat" aria-live="polite">${esc(staatTekst())}</span>
       <div class="vp-acties">
+        <div class="segment vp-segment" role="group" aria-label="Weergave"><button type="button" data-weergave="tijdlijn" aria-pressed="${P.weergave === 'tijdlijn'}">Tijdlijn</button><button type="button" data-weergave="kaart" aria-pressed="${P.weergave === 'kaart'}">Kaart</button></div>
         <button type="button" class="knop licht klein" data-vp="ongedaan" ${P.hist.length ? '' : 'disabled'}>Ongedaan</button>
         <button type="button" class="knop licht klein" data-vp="kleedkamers">Kleedkamers (${P.inst.kleedkamers.length})</button>
       </div>
     </header>
-    ${P.velden.length ? `${htmlDagen(c)}
+    ${P.weergave === 'kaart' ? htmlKaart() : P.velden.length ? `${htmlDagen(c)}
     <div class="vp-grid">
       ${htmlZijbalk()}
       <section class="vp-paneel vp-tl" aria-label="Tijdlijn ${DAGEN[P.dag]}">
@@ -215,6 +217,7 @@ function teken(){
   const sc = P.el.querySelector('.vp-tl-scroll'); if (sc) sc.scrollLeft = scrollL;
   const app = P.el.querySelector('.vp-app'); if (app) app.scrollTop = scrollT;
   koppel();
+  if (P.weergave === 'kaart') maakKaart();
 }
 function htmlGeenVelden(){
   return `<div class="vp-leeg"><h2>Eerst de velden</h2><p>De Veldplanner gebruikt de velden van jullie eigen sportpark. Teken ze eerst in bij Sportparken; daarna verschijnen ze hier vanzelf.</p>
@@ -385,6 +388,7 @@ function koppel(){
     if (a === 'weg') return weg(P.sel);
     if (a === 'sportpark'){ const c = P.clubId; sluitVeldplanner(); return import('./veldkaart.js?v=20261123a').then(m => m.openSportparkBeheer(c)); }
   });
+  el.querySelectorAll('[data-weergave]').forEach(k => k.onclick = () => { P.weergave = k.dataset.weergave; P.sel = null; P.objSel = null; teken(); });
   el.querySelectorAll('[data-dag]').forEach(k => k.onclick = () => { P.dag = +k.dataset.dag; P.sel = null; teken(); });
   el.querySelectorAll('[data-licht]').forEach(k => k.onclick = () => {
     bewaarStap(); const id = k.dataset.licht; P.inst.velden[id] = { ...instVan(id), licht: !lichtVan(id) }; P.instGewijzigd = true; planBewaar(); teken();
@@ -507,6 +511,164 @@ function sleepTeam(e, k){
     if (doel) nieuwBlok(t.id, doel.veld, doel.start);
   };
   k.addEventListener('pointermove', mv); k.addEventListener('pointerup', op); k.addEventListener('pointercancel', op);
+}
+
+/* ---------- kaart: luchtfoto met velden en eigen tekeningen [20261124v] ----------
+   De luchtfoto en het schuiven en zoomen komen uit de veldkaart (Kaart in veldkaart.js). De velden en de
+   plekken van de veldkaart staan erop ter oriëntatie; wat de club hier tekent (parkeren, kantine, AED …)
+   staat in veldplanner/instellingen.objecten. Vlakken trek je met de muis of een vinger, punten tik je aan. */
+function htmlKaart(){
+  if (P.park?.lat == null) return `<div class="vp-leeg"><h2>Eerst het sportpark</h2><p>Zet het eigen sportpark eerst op de kaart bij Sportparken. Daarna kun je hier tekenen.</p>
+    <button type="button" class="knop fluo" data-vp="sportpark">Naar Sportparken</button></div>`;
+  return `<div class="vp-kaartgrid">
+    <section class="vp-paneel vp-kaartpaneel" aria-label="Kaart van het sportpark">
+      <div class="vp-paneel-kop"><h2>${esc(P.park.naam || 'Sportpark')}</h2>
+        <button type="button" class="knop ${P.tekenen ? 'fluo' : 'licht'} klein" data-tekenen aria-pressed="${P.tekenen}">${P.tekenen ? 'Klaar met tekenen' : 'Tekenen'}</button></div>
+      <div id="vpKaart" class="vk-kaart vp-kaart${P.tekenen && P.tool !== 'kies' ? ' kruis' : ''}"></div>
+      <p class="vp-zacht vp-bron">Velden en de losse plekken komen uit Sportparken; wat je hier tekent staat in de Veldplanner.</p>
+    </section>
+    <aside class="vp-paneel vp-kaartzij" aria-label="Tekenen">${htmlKaartZij()}</aside></div>`;
+}
+function htmlKaartZij(){
+  const o = P.inst.objecten.find(x => x.id === P.objSel), d = o && SOORTEN[o.soort];
+  const lijst = P.inst.objecten.map(x => `<button type="button" class="vp-objregel${x.id === P.objSel ? ' aan' : ''}" data-objkies="${esc(x.id)}">
+    <i style="--sk:${SOORTEN[x.soort].kleur}">${esc(SOORTEN[x.soort].kort)}</i><span>${esc(x.naam)}</span><small>${x.b ? `${Math.round(x.b)} × ${Math.round(x.h)} m` : 'punt'}</small></button>`).join('');
+  return `<div class="vp-paneel-kop"><h2>${P.tekenen ? 'Tekenen' : 'Op de kaart'}</h2><span class="vp-zacht">${P.inst.objecten.length}</span></div>
+    ${P.tekenen ? `<div class="vp-tools" role="group" aria-label="Wat teken je">
+      <button type="button" class="vp-tool${P.tool === 'kies' ? ' aan' : ''}" data-tool="kies" aria-pressed="${P.tool === 'kies'}">Aanwijzen</button>
+      ${Object.entries(SOORTEN).map(([k, x]) => `<button type="button" class="vp-tool${P.tool === k ? ' aan' : ''}" data-tool="${k}" aria-pressed="${P.tool === k}"><i style="--sk:${x.kleur}">${esc(x.kort)}</i>${esc(x.naam)}</button>`).join('')}</div>
+      <p class="vp-zacht">${P.tool === 'kies' ? 'Tik iets aan om het te kiezen; sleep om te verplaatsen, of aan het hoekje voor de maat. Sleep op een lege plek om de kaart te schuiven.'
+        : SOORTEN[P.tool].vlak ? `Sleep op de kaart om ${SOORTEN[P.tool].naam.toLowerCase()} te tekenen.` : `Tik op de kaart waar ${SOORTEN[P.tool].naam === 'AED' ? 'de AED hangt' : 'het ' + SOORTEN[P.tool].naam.toLowerCase() + ' is'}.`}${P.inst.objecten.length >= MAX_OBJECTEN ? ` Maximaal ${MAX_OBJECTEN} tekeningen.` : ''}</p>`
+      : '<p class="vp-zacht">Parkeren, de kantine, de AED en meer. Klik op Tekenen om iets toe te voegen of te wijzigen.</p>'}
+    ${o && P.tekenen ? `<div class="vp-objdetail"><label class="vp-label" for="vpONaam">${esc(d.naam)}${o.b ? ` · ${Math.round(o.b)} × ${Math.round(o.h)} m` : ''}</label>
+      <div class="vp-rij2"><input class="invoer" id="vpONaam" value="${esc(o.naam)}" maxlength="40"><button type="button" class="knop gevaar klein" data-objweg>Verwijder</button></div></div>` : ''}
+    <div class="vp-objlijst">${lijst || '<p class="vp-zacht">Nog niets getekend.</p>'}</div>`;
+}
+function tekenKaartZij(){
+  const z = P?.el.querySelector('.vp-kaartzij'); if (!z) return;
+  z.innerHTML = htmlKaartZij();
+  const og = P.el.querySelector('[data-vp="ongedaan"]'); if (og) og.disabled = !P.hist.length;
+  P.el.querySelector('#vpKaart')?.classList.toggle('kruis', P.tekenen && P.tool !== 'kies');
+  z.querySelectorAll('[data-tool]').forEach(k => k.onclick = () => { P.tool = k.dataset.tool; P.objSel = null; tekenKaartZij(); P.kaart?.tekenLagen(); });
+  z.querySelectorAll('[data-objkies]').forEach(k => k.onclick = () => {
+    P.objSel = k.dataset.objkies; const o = P.inst.objecten.find(x => x.id === P.objSel);
+    if (o && P.kaart) P.kaart.centreer({ lat: o.lat, lon: o.lon });
+    tekenKaartZij(); P.kaart?.tekenLagen();
+  });
+  const naam = z.querySelector('#vpONaam');
+  if (naam){
+    let eerst = true;
+    naam.oninput = () => { const o = P.inst.objecten.find(x => x.id === P.objSel); if (!o) return;
+      if (eerst){ bewaarStap(); eerst = false; } o.naam = naam.value.slice(0, 40); P.instGewijzigd = true; planBewaar(); P.kaart?.tekenLagen();
+      const r = z.querySelector(`[data-objkies="${o.id}"] span`); if (r) r.textContent = o.naam; };
+  }
+  z.querySelector('[data-objweg]')?.addEventListener('click', () => {
+    bewaarStap(); P.inst.objecten = P.inst.objecten.filter(x => x.id !== P.objSel); P.objSel = null;
+    P.instGewijzigd = true; planBewaar(); tekenKaartZij(); P.kaart?.tekenLagen();
+  });
+}
+function lagenKaart(k){
+  const uit = [];
+  for (const v of P.park?.velden || []){
+    if (v.lat == null) continue;
+    const p = k.px(v.lat, v.lon);
+    if (!v.lengte){ uit.push(`<div class="vk-stip" style="left:${p.x}px;top:${p.y}px"><span>${esc(v.naam || 'Veld')}</span></div>`); continue; }
+    uit.push(`<div class="vk-veld" style="left:${p.x}px;top:${p.y}px;width:${k.m2px(v.lengte)}px;height:${k.m2px(v.breedte)}px;transform:translate(-50%,-50%) rotate(${v.hoek || 0}deg)">
+      <i class="vk-l-rand"></i><i class="vk-l-mid"></i><i class="vk-l-cirkel"></i><span class="vk-veld-naam" style="transform:rotate(${-(v.hoek || 0)}deg)">${esc(v.naam || 'Veld')}</span></div>`);
+  }
+  for (const pl of P.park?.plekken || []){
+    if (pl.lat == null) continue;
+    const p = k.px(pl.lat, pl.lon);
+    uit.push(`<div class="vp-oudplek" style="left:${p.x}px;top:${p.y}px">${esc(pl.naam || 'Plek')}</div>`);
+  }
+  for (const o of P.inst.objecten){
+    const d = SOORTEN[o.soort], p = k.px(o.lat, o.lon), aan = o.id === P.objSel;
+    if (d.vlak){
+      const w = k.m2px(o.b), h = k.m2px(o.h);
+      uit.push(`<div class="vp-obj vlak${aan ? ' aan' : ''}" style="--sk:${d.kleur};left:${p.x - w / 2}px;top:${p.y - h / 2}px;width:${w}px;height:${h}px">
+        <span><i>${esc(d.kort)}</i>${w > 50 ? esc(o.naam) : ''}</span>${aan && P.tekenen ? '<b class="vp-objgreep"></b>' : ''}</div>`);
+    } else uit.push(`<div class="vp-obj punt${aan ? ' aan' : ''}" style="--sk:${d.kleur};left:${p.x}px;top:${p.y}px"><i>${esc(d.kort)}</i><span>${esc(o.naam)}</span></div>`);
+  }
+  if (P.nieuwVlak){
+    const a = k.px(P.nieuwVlak.a.lat, P.nieuwVlak.a.lon), b = k.px(P.nieuwVlak.b.lat, P.nieuwVlak.b.lon);
+    uit.push(`<div class="vp-obj vlak nieuw" style="--sk:${SOORTEN[P.tool]?.kleur || '#fff'};left:${Math.min(a.x, b.x)}px;top:${Math.min(a.y, b.y)}px;width:${Math.abs(b.x - a.x)}px;height:${Math.abs(b.y - a.y)}px"></div>`);
+  }
+  return uit.join('');
+}
+/* Wat ligt er onder de vinger? Eerst het hoekje van het gekozen vlak, dan punten, dan vlakken (kleinste eerst). */
+function raak(k, x, y){
+  const sel = P.inst.objecten.find(o => o.id === P.objSel);
+  if (sel?.b){ const p = k.px(sel.lat, sel.lon), w = k.m2px(sel.b), h = k.m2px(sel.h);
+    if (Math.hypot(x - (p.x + w / 2), y - (p.y + h / 2)) < 16) return { o: sel, maat: true }; }
+  for (const o of [...P.inst.objecten].reverse()) if (!o.b){ const p = k.px(o.lat, o.lon); if (Math.hypot(x - p.x, y - p.y) < 16) return { o }; }
+  const vlakken = P.inst.objecten.filter(o => o.b).sort((a, b) => a.b * a.h - b.b * b.h);
+  for (const o of vlakken){ const p = k.px(o.lat, o.lon), w = k.m2px(o.b) / 2, h = k.m2px(o.h) / 2;
+    if (Math.abs(x - p.x) <= Math.max(w, 8) && Math.abs(y - p.y) <= Math.max(h, 8)) return { o }; }
+  return null;
+}
+async function maakKaart(){
+  const el = P.el.querySelector('#vpKaart'); if (!el) return;
+  const { Kaart } = await import('./veldkaart.js?v=20261123a');
+  if (!P || !el.isConnected) return;
+  const pos = P.kaartPos || { lat: P.park.lat, lon: P.park.lon, z: Math.min(19, P.park.zoom || 18) };
+  const rel = e => { const r = el.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  const k = new Kaart(el, { lat: pos.lat, lon: pos.lon, z: pos.z, interactief: true, lagen: lagenKaart,
+    grijp: (e, kaart) => {
+      if (!P.tekenen) return null;
+      const q = rel(e), h = P.tool === 'kies' || !SOORTEN[P.tool]?.vlak ? raak(kaart, q.x, q.y) : null, start = kaart.ll(q.x, q.y);
+      if (h){
+        const o = h.o, oud = { ...o };
+        const hoek = verschuif(o, -o.b / 2 || 0, -o.h / 2 || 0);      // linksboven blijft staan bij de maat
+        let eerste = true;
+        return {
+          move: ll => {
+            if (eerste){ bewaarStap(); eerste = false; P.objSel = o.id; }
+            if (h.maat){ Object.assign(o, vlakUitHoeken({ lat: hoek.lat, lon: hoek.lon }, ll)); o.b = Math.max(2, o.b); o.h = Math.max(2, o.h); }
+            else { const d = meterTussen(start, ll), n = verschuif(oud, d.x, d.y); o.lat = n.lat; o.lon = n.lon; }
+            kaart.tekenLagen();
+          },
+          eind: bewogen => { P.objSel = o.id; if (bewogen){ P.instGewijzigd = true; planBewaar(); } tekenKaartZij(); kaart.tekenLagen(); },
+        };
+      }
+      if (SOORTEN[P.tool]?.vlak && P.inst.objecten.length < MAX_OBJECTEN){
+        P.nieuwVlak = { a: start, b: start };
+        return {
+          move: ll => { P.nieuwVlak.b = ll; kaart.tekenLagen(); },
+          eind: () => {
+            const v = vlakUitHoeken(P.nieuwVlak.a, P.nieuwVlak.b); P.nieuwVlak = null;
+            if (v.b < 2 || v.h < 2){ kaart.tekenLagen(); return meld('Sleep een groter vlak, minstens 2 bij 2 meter.'); }
+            voegObject({ soort: P.tool, ...v });
+          },
+        };
+      }
+      return null;
+    },
+    onTik: ll => {
+      if (!P.tekenen) return;
+      if (P.tool === 'kies'){ if (P.objSel){ P.objSel = null; tekenKaartZij(); k.tekenLagen(); } return; }
+      if (!SOORTEN[P.tool].vlak && P.inst.objecten.length < MAX_OBJECTEN) voegObject({ soort: P.tool, lat: ll.lat, lon: ll.lon });
+    } });
+  P.kaart = k;
+  const bewaarPos = () => { P.kaartPos = { lat: k.lat, lon: k.lon, z: k.z }; };
+  el.addEventListener('pointerup', bewaarPos); el.addEventListener('wheel', bewaarPos, { passive: true });
+  el.addEventListener('click', e => { if (e.target.closest('[data-vk-z]')) bewaarPos(); });
+  if (!P.kaartPos && (P.park.velden || []).some(v => v.lat != null)) k.pasIn((P.park.velden || []).filter(v => v.lat != null), 40);
+  tekenKaartZij();
+  P.el.querySelector('[data-tekenen]').onclick = () => {
+    P.tekenen = !P.tekenen; P.objSel = null; P.tool = 'kies';
+    const b = P.el.querySelector('[data-tekenen]'); b.textContent = P.tekenen ? 'Klaar met tekenen' : 'Tekenen';
+    b.classList.toggle('fluo', P.tekenen); b.classList.toggle('licht', !P.tekenen); b.setAttribute('aria-pressed', P.tekenen);
+    tekenKaartZij(); k.tekenLagen();
+  };
+}
+function voegObject(o){
+  const nrs = P.inst.objecten.map(x => parseInt((x.id.match(/\d+/) || [0])[0], 10));
+  const nieuw = { id: `o${Math.max(0, ...nrs) + 1}`, naam: SOORTEN[o.soort].naam, ...o };
+  if (!SOORTEN[o.soort].vlak){ delete nieuw.b; delete nieuw.h; }
+  bewaarStap(); P.inst.objecten.push(nieuw); P.objSel = nieuw.id; P.instGewijzigd = true; planBewaar();
+  tekenKaartZij(); P.kaart?.tekenLagen();
+  P.el.querySelector('#vpONaam')?.select();
+  meld(`${SOORTEN[o.soort].naam} getekend. Geef het eventueel een naam.`);
 }
 
 /* ---------- vensters ---------- */
@@ -779,7 +941,36 @@ html.vp-open{overflow:hidden}
 .vp-iveld .ivak-m{font-size:9px;fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.5);stroke-width:1.5px;pointer-events:none}
 .vp-iveld .igreep{fill:#fff;stroke:#cc2620;stroke-width:2;cursor:nwse-resize}
 .vp-iveld .ivak-nieuw{fill:rgba(204,38,32,.3);stroke:#fff;stroke-width:2;stroke-dasharray:5 4;pointer-events:none}
+.vp-segment button{padding:6px 12px;border-radius:var(--r-s);font-size:var(--t-sm);color:var(--ink-2);min-height:32px}
+.vp-segment button[aria-pressed="true"]{background:var(--card);color:var(--ink);font-weight:600;box-shadow:var(--shadow)}
+.vp-kaartgrid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:var(--space-sm);align-items:start}
+.vp-kaart{height:min(70dvh,640px);min-height:320px}
+.vp-kaart.kruis{cursor:crosshair}
+.vp-bron{font-size:var(--t-2xs);margin-top:6px}
+.vp-tools{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.vp-tool{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:var(--r-pill);background:var(--surface-2);border:1.5px solid var(--hair);font-size:var(--t-xs);color:var(--ink);min-height:36px}
+.vp-tool.aan{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--surface-2));font-weight:600}
+.vp-tool i,.vp-objregel i{font-style:normal;display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 4px;border-radius:10px;background:var(--sk);color:#fff;font-size:10px;font-weight:700}
+.vp-objdetail{margin:var(--space-xs) 0}
+.vp-objlijst{display:flex;flex-direction:column;gap:4px;margin-top:var(--space-xs)}
+.vp-objregel{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--r-s);background:var(--surface-2);color:var(--ink);text-align:left;min-height:40px;border:1.5px solid transparent}
+.vp-objregel.aan{border-color:var(--info)}
+.vp-objregel span{flex:1;font-size:var(--t-sm)}
+.vp-objregel small{font-size:var(--t-2xs);color:var(--ink-2)}
+.vp-obj{position:absolute;pointer-events:none}
+.vp-obj.vlak{border:2px solid var(--sk);background:color-mix(in srgb,var(--sk) 35%,transparent);border-radius:4px;display:flex;align-items:flex-start;justify-content:flex-start}
+.vp-obj.vlak.aan{border-color:#fff;box-shadow:0 0 0 2px var(--sk)}
+.vp-obj.vlak.nieuw{border-style:dashed}
+.vp-obj.vlak span{display:inline-flex;align-items:center;gap:4px;margin:3px;padding:1px 6px 1px 1px;border-radius:9px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;font-weight:600;white-space:nowrap;max-width:calc(100% - 6px);overflow:hidden}
+.vp-obj i{font-style:normal;display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 3px;border-radius:9px;background:var(--sk);color:#fff;font-size:10px;font-weight:700}
+.vp-obj.punt{transform:translate(-9px,-9px);display:flex;align-items:center;gap:4px}
+.vp-obj.punt span{background:rgba(0,0,0,.55);color:#fff;font-size:10px;font-weight:600;padding:1px 6px;border-radius:8px;white-space:nowrap}
+.vp-obj.punt.aan i{box-shadow:0 0 0 3px #fff}
+.vp-objgreep{position:absolute;right:-8px;bottom:-8px;width:14px;height:14px;border-radius:3px;background:#fff;border:2px solid var(--sk)}
+.vp-oudplek{position:absolute;transform:translate(-50%,-50%);font-size:9px;color:#fff;background:rgba(0,0,0,.4);padding:1px 5px;border-radius:6px;white-space:nowrap;pointer-events:none}
 @media (max-width:1099px){
+  .vp-kaartgrid{grid-template-columns:1fr}
+  .vp-kaart{height:min(60dvh,480px)}
   .vp-grid{grid-template-columns:1fr}
   .vp-tl{order:1}.vp-rechts{order:2}.vp-zij{order:3}
   .vp-groep{display:flex;flex-wrap:wrap;gap:6px;align-items:center}

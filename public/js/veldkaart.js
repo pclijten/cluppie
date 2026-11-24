@@ -336,7 +336,7 @@ function koppelZoek(root, onKies){
 /* ==================== KAART (eigen kleine tegelviewer) ==================== */
 const I_MIJ = svgI('<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>', 22);
 const _kaarten = new Set();
-class Kaart {
+export class Kaart {   /* [20261124v] ook gebruikt door de Veldplanner (kaart met eigen tekeningen) */
   constructor(el, o){
     Object.assign(this, { el, lat:o.lat, lon:o.lon, z:o.z || 17, interactief:!!o.interactief, onTik:o.onTik || null,
       lagen:o.lagen || (() => ''), grijp:o.grijp || null, mij:null, _watch:null });
