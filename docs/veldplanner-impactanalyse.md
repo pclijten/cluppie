@@ -145,3 +145,7 @@ Rules-proeven in `tests/audit-rules.test.mjs` per rol: mag wat moet, mag niet wa
 4. Bericht aan teams bij een wijziging: automatisch of per keer kiezen? (advies: standaard aan, uit te zetten bij publiceren)
 
 Na akkoord maak ik een **interactieve mockup** (HTML met echte drag & drop, fictieve club met 4 velden, 8 kleedkamers en 30 teams) om te proberen in de browser: dagtijdlijn, zijbalk, kleedkamerstrook, controles, Publiceren-overzicht, en de Nu-kaart van de coach.
+
+## Stand release 1 (24-11-2026)
+
+Gebouwd op de branch van PR #102, achter de schakelaar van de eindbaas (`clubs/{id}.platformModules.veldplanner`, standaard uit). Afwijking van het plan hierboven: kleedkamers, licht en eigen vakken staan niet op `sportparken/eigen` maar in `clubs/{id}/veldplanner/instellingen`, omdat de veldkaart bij opslaan de hele lijst velden herschrijft en eigen vakken dan zou weggooien. De velden zelf (id en naam) komen nog steeds uit de veldkaart. Het rooster staat in `clubs/{id}/veldroosters/basis`. Tekenen op de luchtfoto (parkeren, kantine, AED) zit nog niet in release 1; de veldkaart kent al plekken als punt, vlakken komen bij de kaart in release 4.

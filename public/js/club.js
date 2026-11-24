@@ -886,6 +886,8 @@ function htmlClubHub(teams){
     clubTegel('coaches', 'Mensen', 'team-coach'),   /* [20261121a] heette Coaches: nu alle rollen op één plek */
     /* [20261120e] Sportpark: velden op de luchtfoto + meldingen (veldkaart.js) */
     ...(admin ? [`<button class="hub-tegel" data-vk-sportpark><span class="hub-badge warn" data-vk-badge hidden></span>${ico('match-location', 40)}<span class="hub-tnaam">Sportparken</span></button>`] : []),
+    /* [20261124v] Veldplanner: alleen als de eindbaas hem voor deze club aanzet (platformModules.veldplanner) */
+    ...(admin && S.club?.platformModules?.veldplanner === true ? [`<button class="hub-tegel" data-vp-open>${ico('planning-week', 40)}<span class="hub-tnaam">Veldplanner</span></button>`] : []),
   ]]);
   secties.push(['Materiaal', [
     clubTegel('trainingen', 'Trainingen', 'training-cones'),
@@ -1156,6 +1158,7 @@ async function renderClub(opts = {}){
   v.querySelectorAll('[data-club-open]').forEach(b => b.onclick = () => b.dataset.clubOpen === 'weekbrief' ? kiesWeekbrief(teams) : naarClubTab(b.dataset.clubOpen));
   /* [20261120e] Sportpark-tegel: los venster uit veldkaart.js (dynamisch geladen) */
   v.querySelectorAll('[data-vk-sportpark]').forEach(b => b.onclick = () => import('./veldkaart.js?v=20261123a').then(m => m.openSportparkBeheer(S.clubId)));
+  v.querySelectorAll('[data-vp-open]').forEach(b => b.onclick = () => import('./veldplanner.js?v=20261124v').then(m => m.openVeldplanner(S.clubId)));
   { const bad = v.querySelector('[data-vk-badge]'); if (bad) import('./veldkaart.js?v=20261123a').then(m => m.vulMeldBadge(bad, S.clubId)); }
   /* [20261121a] sprong vanuit "Wie doet wat" en "En daarna" naar de plek waar je het regelt */
   const naarActie = a => {

@@ -7,14 +7,14 @@ let n = 0; const ok = (v, m) => { assert.ok(v, m); n++; }, gelijk = (a, b, m) =>
 const toegestaan = (club, sl) => { const v = club?.platformModules?.[sl]; return v === true || v === false ? v : club?.oud === true; };
 const STD = { trainingsmodule: true, seizoensplan: true, ai: false, aiLimiet: 100, maxVideoMB: 100 };
 const std = M.standaardWaarden(STD);
-gelijk(std, { trainingsmodule: true, seizoensplan: true, ai: false, scouting: false, teamkamer: false, leren: false, pdfOmzetten: false, aiLimiet: 100, maxVideoMB: 100 });
+gelijk(std, { trainingsmodule: true, seizoensplan: true, ai: false, scouting: false, teamkamer: false, leren: false, veldplanner: false, pdfOmzetten: false, aiLimiet: 100, maxVideoMB: 100 });
 gelijk(M.standaardWaarden(null).maxVideoMB, 100, 'zonder standaard: video 100 MB');
 gelijk(M.standaardWaarden({ aiLimiet: '' }).aiLimiet, null);
 
 /* waarden van een club */
 const club = pm => ({ id: 'c', naam: 'VV Test', platformModules: pm });
 gelijk(M.waardenVan(club({ trainingsmodule: true, ai: true, aiLimiet: 300, maxVideoMB: 200 }), toegestaan),
-  { trainingsmodule: true, seizoensplan: false, ai: true, scouting: false, teamkamer: false, leren: false, pdfOmzetten: false, aiLimiet: 300, maxVideoMB: 200 });
+  { trainingsmodule: true, seizoensplan: false, ai: true, scouting: false, teamkamer: false, leren: false, veldplanner: false, pdfOmzetten: false, aiLimiet: 300, maxVideoMB: 200 });
 gelijk(M.waardenVan({ oud: true }, toegestaan).trainingsmodule, true, 'oude club zonder opgeslagen waarde');
 gelijk(M.waardenVan(club({ maxVideoMB: 900 }), toegestaan).maxVideoMB, 100, 'ongeldige videogrootte valt terug');
 gelijk(M.waardenVan(null, toegestaan).aiLimiet, null);

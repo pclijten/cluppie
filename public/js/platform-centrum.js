@@ -419,6 +419,7 @@ function ladeOnderdelen(c){
     ${sw('scouting', 'Scouting eerste elftal', 'AI-rapport over de tegenstander. Kost per rapport.', pm.scouting === true)}
     ${sw('teamkamer', 'Teamkamer', 'Ouders kijken mee bij het team van hun kind. Hoofdschakelaar: uit is alles uit. Eerst de functions en rules deployen.', pm.teamkamer === true)}
     ${pm.teamkamer === true ? tkOptiesHtml(pm.teamkamerOpties, 'tkoptie') : ''}
+    ${sw('veldplanner', 'Veldplanner', 'Clubbeheer verdeelt de teams over velden, tijden en kleedkamers. Eerst de rules deployen.', pm.veldplanner === true)}
     ${sw('leren', 'Leren van gebruik', 'Cluppie leert van hoe trainers deze club de app gebruiken.', pm.leren === true)}
     ${getal('maxVideoMB', 'Video max (MB)', 'Tussen 5 en 300', Number(pm.maxVideoMB) > 0 ? pm.maxVideoMB : 100, 'min="5" max="300"')}`;
 }
