@@ -1,4 +1,11 @@
 import { S } from './state.js?v=20261123a';
+import { sportProfiel, STANDAARD_SPORT } from './sporten.js?v=20261124a';
+
+/* [20261124a] De standaardwaarden die bij de sport horen komen uit het sportprofiel
+   (sport-voetbal.js). Hier een losse kopie, zodat clubconfig.js ze in plaats kan
+   aanpassen zonder het profiel te raken. */
+const SPORT = sportProfiel(STANDAARD_SPORT);
+const kopie = x => JSON.parse(JSON.stringify(x));
 
 /* ==================== CLUB-CONFIGURATIE (actieve laag) ====================
    [20260929c] Alles in dit bestand is de STANDAARD. Per club kan een beheerder
@@ -14,8 +21,8 @@ import { S } from './state.js?v=20261123a';
    Dit bestand importeert clubconfig.js bewust NIET (dan een cirkel): clubconfig
    importeert dit bestand en schrijft erin. */
 export const ACTIEF_STANDAARD = Object.freeze({
-  tijdstraf: Object.freeze({ pupilSec: 300, jeugdSec: 600, jeugdVanaf: 16 }),   // KNVB: 5 min t/m O15, daarna 10
-  bouwGrenzen: Object.freeze({ onderTm: 11, middenTm: 15 }),                    // Onder t/m O11, Midden t/m O15, rest Boven
+  tijdstraf: Object.freeze({ ...SPORT.tijdstraf }),                            // uit het sportprofiel
+  bouwGrenzen: Object.freeze({ ...SPORT.bouwGrenzen }),                        // uit het sportprofiel
   formatie11: '',                    // leeg = geen club-uitgangspunt tonen (bijv. '4-3-3')
   kalender: Object.freeze({ district: 'zuid', seizoen: "2026/'27", bron: 'standaard' }),
   dashboard: Object.freeze({ dagenInactief: 14, opkomstLaag: 50 }),
@@ -36,34 +43,8 @@ export const ALLE_LIJSTEN = {};
    Bron: KNVB wedstrijdvormen & speeltijden (knvb.nl)
    Pupillen spelen officieel 2 helften met een time-out halverwege
    elke helft — in de praktijk dus 4 kwarten. Junioren/senioren: 2 helften. */
-export const CATEGORIEEN = {
-  'JO7':  {format:'4',  periodes:4, duur:10,   knvb:'4 tegen 4, geen keeper, 2×20 min'},
-  'JO8':  {format:'6',  periodes:4, duur:10,   knvb:'6 tegen 6, 2×20 min, time-out per helft'},
-  'JO9':  {format:'6',  periodes:4, duur:10,   knvb:'6 tegen 6, 2×20 min, time-out per helft'},
-  'JO10': {format:'6',  periodes:4, duur:12.5, knvb:'6 tegen 6, 2×25 min, time-out per helft'},
-  'JO11': {format:'8',  periodes:4, duur:15,   knvb:'8 tegen 8, 2×30 min, time-out per helft'},
-  'JO12': {format:'8',  periodes:4, duur:15,   knvb:'8 tegen 8, 2×30 min, time-out per helft'},
-  'JO13': {format:'11', periodes:2, duur:30,   knvb:'11 tegen 11, 2×30 min'},
-  'JO14': {format:'11', periodes:2, duur:35,   knvb:'11 tegen 11, 2×35 min'},
-  'JO15': {format:'11', periodes:2, duur:35,   knvb:'11 tegen 11, 2×35 min'},
-  'JO16': {format:'11', periodes:2, duur:40,   knvb:'11 tegen 11, 2×40 min'},
-  'JO17': {format:'11', periodes:2, duur:40,   knvb:'11 tegen 11, 2×40 min'},
-  'JO19': {format:'11', periodes:2, duur:45,   knvb:'11 tegen 11, 2×45 min'},
-  'Senioren': {format:'11', periodes:2, duur:45, knvb:'11 tegen 11, 2×45 min'},
-};
-export const CATEGORIEEN_MEIDEN = {
-  'MO7':  {format:'4',  periodes:4, duur:10,   knvb:'4 tegen 4, geen keeper, 2×20 min'},
-  'MO8':  {format:'6',  periodes:4, duur:10,   knvb:'6 tegen 6, 2×20 min, time-out per helft'},
-  'MO9':  {format:'6',  periodes:4, duur:10,   knvb:'6 tegen 6, 2×20 min, time-out per helft'},
-  'MO10': {format:'6',  periodes:4, duur:12.5, knvb:'6 tegen 6, 2×25 min, time-out per helft'},
-  'MO11': {format:'8',  periodes:4, duur:15,   knvb:'8 tegen 8, 2×30 min, time-out per helft'},
-  'MO12': {format:'8',  periodes:4, duur:15,   knvb:'8 tegen 8, 2×30 min, time-out per helft'},
-  'MO13': {format:'9',  periodes:2, duur:30,   knvb:'9 tegen 9, 2×30 min'},
-  'MO15': {format:'9',  periodes:2, duur:35,   knvb:'9 tegen 9, 2×35 min'},
-  'MO17': {format:'9',  periodes:2, duur:40,   knvb:'9 tegen 9, 2×40 min'},
-  'MO20': {format:'9',  periodes:2, duur:45,   knvb:'9 tegen 9, 2×45 min'},
-  'Vrouwen': {format:'11', periodes:2, duur:45, knvb:'11 tegen 11, 2×45 min'},
-};
+export const CATEGORIEEN = kopie(SPORT.categorieen);
+export const CATEGORIEEN_MEIDEN = kopie(SPORT.categorieenMeiden);
 /* Ook een categorie die de club inmiddels uit het aanbod heeft gehaald blijft
    opzoekbaar (bestaande teams en wedstrijden verwijzen ernaar). */
 export function catInfo(naam){
@@ -116,61 +97,8 @@ export function periodeOmschrijving(w, nr = S.kwart){
 /* ==================== FORMATIES ==================== */
 /* [x%, y%, lijn]  — keeper wordt automatisch toegevoegd op (50, 90),
    behalve bij 4 tegen 4 (JO7): daar speelt niemand op doel. */
-export const FORMATIES = {
-  '4': {
-    '1-2-1': [[50,76,'V'],[24,50,'M'],[76,50,'M'],[50,24,'A']],
-    '2-2':   [[30,68,'V'],[70,68,'V'],[30,32,'A'],[70,32,'A']],
-    '1-1-2': [[50,76,'V'],[50,50,'M'],[30,26,'A'],[70,26,'A']],
-  },
-  '5': {
-    '1-2-1': [[50,73,'V'],[30,49,'M'],[70,49,'M'],[50,24,'A']],
-    '2-2':   [[30,70,'V'],[70,70,'V'],[30,26,'A'],[70,26,'A']],
-    '2-1-1': [[30,70,'V'],[70,70,'V'],[50,47,'M'],[50,23,'A']],
-  },
-  '6': {
-    '2-1-2': [[30,72,'V'],[70,72,'V'],[50,49,'M'],[30,26,'A'],[70,26,'A']],
-    '1-2-2': [[50,73,'V'],[30,49,'M'],[70,49,'M'],[30,26,'A'],[70,26,'A']],
-    '2-2-1': [[30,72,'V'],[70,72,'V'],[30,47,'M'],[70,47,'M'],[50,24,'A']],
-    '1-3-1': [[50,73,'V'],[20,49,'M'],[50,46,'M'],[80,49,'M'],[50,24,'A']],
-    '3-1-1': [[22,72,'V'],[50,75,'V'],[78,72,'V'],[50,48,'M'],[50,24,'A']],
-  },
-  '7': {
-    '2-2-2': [[28,73,'V'],[72,73,'V'],[28,48,'M'],[72,48,'M'],[28,23,'A'],[72,23,'A']],
-    '3-2-1': [[20,73,'V'],[50,76,'V'],[80,73,'V'],[32,47,'M'],[68,47,'M'],[50,23,'A']],
-    '1-3-2': [[50,75,'V'],[20,49,'M'],[50,46,'M'],[80,49,'M'],[32,23,'A'],[68,23,'A']],
-  },
-  '8': {
-    '3-3-1': [[22,73,'V'],[50,76,'V'],[78,73,'V'],[22,48,'M'],[50,45,'M'],[78,48,'M'],[50,23,'A']],
-    '3-1-3': [[22,73,'V'],[50,76,'V'],[78,73,'V'],[50,49,'M'],[22,24,'A'],[50,21,'A'],[78,24,'A']],
-    '2-3-2': [[32,74,'V'],[68,74,'V'],[20,48,'M'],[50,45,'M'],[80,48,'M'],[32,23,'A'],[68,23,'A']],
-    '3-2-2': [[22,73,'V'],[50,76,'V'],[78,73,'V'],[32,47,'M'],[68,47,'M'],[32,23,'A'],[68,23,'A']],
-    '2-4-1': [[32,74,'V'],[68,74,'V'],[14,48,'M'],[38,45,'M'],[62,45,'M'],[86,48,'M'],[50,23,'A']],
-    '1-3-3': [[50,75,'V'],[22,49,'M'],[50,46,'M'],[78,49,'M'],[22,24,'A'],[50,21,'A'],[78,24,'A']],
-    '1-4-2': [[50,75,'V'],[14,49,'M'],[38,46,'M'],[62,46,'M'],[86,49,'M'],[32,23,'A'],[68,23,'A']],
-  },
-  '9': {
-    '3-3-2': [[22,74,'V'],[50,77,'V'],[78,74,'V'],[22,49,'M'],[50,46,'M'],[78,49,'M'],[32,23,'A'],[68,23,'A']],
-    '3-2-3': [[22,74,'V'],[50,77,'V'],[78,74,'V'],[32,48,'M'],[68,48,'M'],[20,24,'A'],[50,21,'A'],[80,24,'A']],
-    '2-4-2': [[32,75,'V'],[68,75,'V'],[14,49,'M'],[38,46,'M'],[62,46,'M'],[86,49,'M'],[32,23,'A'],[68,23,'A']],
-    '4-3-1': [[14,73,'V'],[38,77,'V'],[62,77,'V'],[86,73,'V'],[25,47,'M'],[50,44,'M'],[75,47,'M'],[50,21,'A']],
-  },
-  '10': {
-    '3-3-3': [[20,74,'V'],[50,77,'V'],[80,74,'V'],[20,49,'M'],[50,46,'M'],[80,49,'M'],[20,23,'A'],[50,20,'A'],[80,23,'A']],
-    '4-3-2': [[12,73,'V'],[37,76,'V'],[63,76,'V'],[88,73,'V'],[25,48,'M'],[50,45,'M'],[75,48,'M'],[35,22,'A'],[65,22,'A']],
-    '3-4-2': [[20,74,'V'],[50,77,'V'],[80,74,'V'],[14,49,'M'],[38,46,'M'],[62,46,'M'],[86,49,'M'],[35,22,'A'],[65,22,'A']],
-  },
-  '11': {
-    '4-3-3': [[14,75,'V'],[38,78,'V'],[62,78,'V'],[86,75,'V'],[27,52,'M'],[50,48,'M'],[73,52,'M'],[19,25,'A'],[50,21,'A'],[81,25,'A']],
-    '4-4-2': [[14,75,'V'],[38,78,'V'],[62,78,'V'],[86,75,'V'],[14,49,'M'],[38,46,'M'],[62,46,'M'],[86,49,'M'],[35,23,'A'],[65,23,'A']],
-    '3-4-3': [[25,76,'V'],[50,78,'V'],[75,76,'V'],[14,49,'M'],[38,46,'M'],[62,46,'M'],[86,49,'M'],[19,25,'A'],[50,21,'A'],[81,25,'A']],
-    '4-2-3-1': [[14,77,'V'],[38,80,'V'],[62,80,'V'],[86,77,'V'],[36,58,'M'],[64,58,'M'],[20,38,'M'],[50,35,'M'],[80,38,'M'],[50,17,'A']],
-    '4-2-1-3': [[14,77,'V'],[38,80,'V'],[62,80,'V'],[86,77,'V'],[36,57,'M'],[64,57,'M'],[50,38,'M'],[20,20,'A'],[50,16,'A'],[80,20,'A']],
-    '4-1-4-1': [[14,77,'V'],[38,80,'V'],[62,80,'V'],[86,77,'V'],[50,60,'M'],[14,40,'M'],[38,37,'M'],[62,37,'M'],[86,40,'M'],[50,17,'A']],
-    '3-5-2': [[25,77,'V'],[50,79,'V'],[75,77,'V'],[10,46,'M'],[32,48,'M'],[50,52,'M'],[68,48,'M'],[90,46,'M'],[35,21,'A'],[65,21,'A']],
-    '5-3-2': [[10,72,'V'],[30,78,'V'],[50,80,'V'],[70,78,'V'],[90,72,'V'],[27,48,'M'],[50,45,'M'],[73,48,'M'],[35,21,'A'],[65,21,'A']],
-  },
-};
-export const LIJN_NAAM = {K:'Keeper', V:'Verdediging', M:'Middenveld', A:'Aanval'};
+export const FORMATIES = kopie(SPORT.formaties);
+export const LIJN_NAAM = kopie(SPORT.lijnNaam);
 
 /* ---- Eigen (zelfgemaakte) formaties ----------------------------------------
    Een coach kan per team een eigen linieverdeling opgeven, bv. '4-2-1-3'.
@@ -262,11 +190,7 @@ export const slotLijn = id => id[0];
    Leidt uit lijn (K/V/M/A) + horizontale positie (x%) de meest gebruikelijke
    KNVB-benaming af: links (<35%), midden (35–65%), rechts (>65%). Werkt
    generiek voor elke formatie/format, zonder per formatie te hoeven hardcoden. */
-const ZONE_NAAM = {
-  V: {links:'Linksback', midden:'Centrale verdediger', rechts:'Rechtsback'},
-  M: {links:'Linksmidden', midden:'Centrale middenvelder', rechts:'Rechtsmidden'},
-  A: {links:'Linksbuiten', midden:'Spits', rechts:'Rechtsbuiten'},
-};
+const ZONE_NAAM = kopie(SPORT.zoneNaam);
 function zone(x){ return x < 35 ? 'links' : x > 65 ? 'rechts' : 'midden'; }
 export function positieNaam(lijn, x){
   if (lijn === 'K') return 'Keeper';
@@ -277,12 +201,7 @@ export function slotPositieNaam(format, formatie, slotId){
   return slot ? positieNaam(slot.lijn, slot.x) : null;
 }
 /* Volledige, gegroepeerde lijst voor de voorkeurspositie-kiezer in het spelerprofiel. */
-export const POSITIE_GROEPEN = [
-  {lijn:'K', naam:'Keeper', posities:['Keeper']},
-  {lijn:'V', naam:'Verdediging', posities:['Linksback','Centrale verdediger','Rechtsback']},
-  {lijn:'M', naam:'Middenveld', posities:['Linksmidden','Centrale middenvelder','Rechtsmidden']},
-  {lijn:'A', naam:'Aanval', posities:['Linksbuiten','Spits','Rechtsbuiten']},
-];
+export const POSITIE_GROEPEN = kopie(SPORT.positieGroepen);
 
 /* ==================== BOUW-INDELING (voor trainingen) ====================
    Standaard (per club aan te passen via ACTIEF.bouwGrenzen en de bouwnamen):
@@ -342,7 +261,7 @@ export function youtubeWatch(id){ return `https://www.youtube.com/watch?v=${id}`
    Districten Zuid I en II. Zaterdagdatum per speelweek (ISO).
    t: wd=wedstrijddag, beker, inhaal, vrij. l=label, n=opmerking (optioneel).
    pup=O7-O12, jun=O13-O19, sen=Senioren/Vrouwen, mei=Meiden MO13-MO20. */
-export const KNVB_SEIZOEN = "2026/'27";
+export const KNVB_SEIZOEN = SPORT.kalenderSeizoen;
 /* Label van de kalender die de club gebruikt (kan een eigen import zijn). */
 export function knvbSeizoenLabel(){ return ACTIEF.kalender?.seizoen || KNVB_SEIZOEN; }
 
@@ -355,185 +274,7 @@ export function knvbSeizoenLabel(){ return ACTIEF.kalender?.seizoen || KNVB_SEIZ
    seizoen van zo'n club vast te leggen. Los van KNVB_SEIZOEN hierboven, dat
    alleen de KNVB-speeldagenkalender labelt. */
 export const SEIZOEN_FALLBACK = "2025/'26";
-export const KNVB_KALENDER = {
-  pup: [
-    {d:'2026-08-16',t:'vrij',l:'Vrij',n:'Schoolvakanties N t/m 16 aug'},
-    {d:'2026-08-23',t:'vrij',l:'Vrij',n:'Schoolvakanties Z t/m 23 aug.'},
-    {d:'2026-08-30',t:'wd',l:'Fase 1, start',n:'Schoolvakanties M t/m 30 aug.'},
-    {d:'2026-09-06',t:'wd',l:'Fase 1'},
-    {d:'2026-09-13',t:'wd',l:'Fase 1'},
-    {d:'2026-09-20',t:'wd',l:'Fase 1'},
-    {d:'2026-09-27',t:'wd',l:'Fase 1'},
-    {d:'2026-10-04',t:'wd',l:'Fase 1'},
-    {d:'2026-10-11',t:'wd',l:'Fase 1',n:'Herfstvakantie N: 10-18 okt'},
-    {d:'2026-10-18',t:'vrij',l:'Vrij',n:'Herfstvakantie alle regio\'s'},
-    {d:'2026-10-25',t:'vrij',l:'Vrij',n:'Herfstvakantie M-Z: 17-25 okt'},
-    {d:'2026-10-31',t:'wd',l:'Fase 2, start'},
-    {d:'2026-11-08',t:'wd',l:'Fase 2'},
-    {d:'2026-11-15',t:'wd',l:'Fase 2'},
-    {d:'2026-11-22',t:'wd',l:'Fase 2'},
-    {d:'2026-11-29',t:'wd',l:'Fase 2'},
-    {d:'2026-12-06',t:'wd',l:'Fase 2'},
-    {d:'2026-12-13',t:'wd',l:'Fase 2'},
-    {d:'2026-12-20',t:'vrij',l:'Vrij',n:'Kerstvakantie 19 dec.-3 jan.'},
-    {d:'2027-01-10',t:'vrij',l:'Vrij'},
-    {d:'2027-01-17',t:'vrij',l:'Vrij'},
-    {d:'2027-01-24',t:'wd',l:'Fase 3, start'},
-    {d:'2027-01-31',t:'wd',l:'Fase 3'},
-    {d:'2027-02-07',t:'vrij',l:'Vrij',n:'Carnavalsweekend'},
-    {d:'2027-02-14',t:'vrij',l:'Vrij',n:'Vrj.vak. Z: 13-21 feb.'},
-    {d:'2027-02-21',t:'wd',l:'Fase 3',n:'Vrj.vak. alle regio\'s'},
-    {d:'2027-02-28',t:'wd',l:'Fase 3',n:'Vrj.vak. N-M: 20-28 feb'},
-    {d:'2027-03-07',t:'wd',l:'Fase 3'},
-    {d:'2027-03-14',t:'wd',l:'Fase 3'},
-    {d:'2027-03-21',t:'wd',l:'Fase 3'},
-    {d:'2027-03-27',t:'vrij',l:'Vrij',n:'Paaszaterdag'},
-    {d:'2027-03-29',t:'vrij',l:'Vrij',n:'2e Paasdag'},
-    {d:'2027-04-04',t:'wd',l:'Fase 4, start'},
-    {d:'2027-04-11',t:'wd',l:'Fase 4'},
-    {d:'2027-04-18',t:'wd',l:'Fase 4'},
-    {d:'2027-04-25',t:'vrij',l:'Vrij',n:'Meivakantie 24 apr.-2 mei'},
-    {d:'2027-05-02',t:'vrij',l:'Vrij',n:'Meivakantie 24 apr.-2 mei'},
-    {d:'2027-05-06',t:'vrij',l:'Vrij',n:'Hemelvaartsdag'},
-    {d:'2027-05-09',t:'vrij',l:'Vrij'},
-    {d:'2027-05-15',t:'vrij',l:'Vrij'},
-    {d:'2027-05-23',t:'wd',l:'Fase 4'},
-    {d:'2027-05-30',t:'wd',l:'Fase 4'},
-    {d:'2027-06-06',t:'vrij',l:'Vrij',n:'Finales Districtsbeker'}
-  ],
-  jun: [
-    {d:'2026-08-16',t:'vrij',l:'Vrij',n:'Schoolvakanties N t/m 16 aug'},
-    {d:'2026-08-23',t:'vrij',l:'Vrij',n:'Schoolvakanties Z t/m 23 aug.'},
-    {d:'2026-08-30',t:'beker',l:'Beker',n:'Schoolvakanties M t/m 30 aug.'},
-    {d:'2026-09-06',t:'beker',l:'Beker'},
-    {d:'2026-09-13',t:'beker',l:'Beker'},
-    {d:'2026-09-20',t:'wd',l:'Wedstrijddag najaar'},
-    {d:'2026-09-27',t:'wd',l:'Wedstrijddag najaar'},
-    {d:'2026-10-04',t:'wd',l:'Wedstrijddag najaar'},
-    {d:'2026-10-11',t:'wd',l:'Wedstrijddag najaar',n:'Herfstvakantie N: 10-18 okt'},
-    {d:'2026-10-18',t:'inhaal',l:'Inhaal / Beker',n:'Herfstvakantie alle regio\'s'},
-    {d:'2026-10-25',t:'wd',l:'Wedstrijddag najaar',n:'Herfstvakantie M-Z: 17-25 okt'},
-    {d:'2026-10-31',t:'wd',l:'Wedstrijddag najaar'},
-    {d:'2026-11-08',t:'wd',l:'Wedstrijddag najaar'},
-    {d:'2026-11-15',t:'wd',l:'Wedstrijddag najaar'},
-    {d:'2026-11-22',t:'wd',l:'Wedstrijddag najaar'},
-    {d:'2026-11-29',t:'wd',l:'Wedstrijddag najaar'},
-    {d:'2026-12-06',t:'wd',l:'Wedstrijddag najaar'},
-    {d:'2026-12-13',t:'inhaal',l:'Inhaal / Beker'},
-    {d:'2026-12-20',t:'inhaal',l:'Inhaal / Beker',n:'Kerstvakantie 19 dec.-3 jan.'},
-    {d:'2027-01-10',t:'vrij',l:'Vrij'},
-    {d:'2027-01-17',t:'beker',l:'Beker'},
-    {d:'2027-01-24',t:'wd',l:'Wedstrijddag voorjaar'},
-    {d:'2027-01-31',t:'wd',l:'Wedstrijddag voorjaar'},
-    {d:'2027-02-07',t:'vrij',l:'Vrij',n:'Carnavalsweekend'},
-    {d:'2027-02-14',t:'inhaal',l:'Inhaal / Beker',n:'Vrj.vak. Z: 13-21 feb.'},
-    {d:'2027-02-21',t:'inhaal',l:'Inhaal / Beker',n:'Vrj.vak. alle regio\'s'},
-    {d:'2027-02-28',t:'wd',l:'Wedstrijddag voorjaar',n:'Vrj.vak. N-M: 20-28 feb'},
-    {d:'2027-03-07',t:'wd',l:'Wedstrijddag voorjaar'},
-    {d:'2027-03-14',t:'wd',l:'Wedstrijddag voorjaar'},
-    {d:'2027-03-21',t:'wd',l:'Wedstrijddag voorjaar'},
-    {d:'2027-03-27',t:'inhaal',l:'Inhaal / Beker',n:'Paaszaterdag'},
-    {d:'2027-03-29',t:'inhaal',l:'Inhaal / Beker',n:'2e Paasdag'},
-    {d:'2027-04-04',t:'wd',l:'Wedstrijddag voorjaar'},
-    {d:'2027-04-11',t:'wd',l:'Wedstrijddag voorjaar'},
-    {d:'2027-04-18',t:'wd',l:'Wedstrijddag voorjaar'},
-    {d:'2027-04-25',t:'inhaal',l:'Inhaal / Beker',n:'Meivakantie 24 apr.-2 mei'},
-    {d:'2027-05-02',t:'inhaal',l:'Inhaal / Beker',n:'Meivakantie 24 apr.-2 mei'},
-    {d:'2027-05-06',t:'vrij',l:'Vrij',n:'Hemelvaartsdag'},
-    {d:'2027-05-09',t:'wd',l:'Wedstrijddag voorjaar'},
-    {d:'2027-05-15',t:'inhaal',l:'Inhaal / Beker'},
-    {d:'2027-05-23',t:'wd',l:'Wedstrijddag voorjaar'}
-  ],
-  sen: [
-    {d:'2026-08-16',t:'vrij',l:'Vrij',n:'Schoolvakanties N t/m 16 aug'},
-    {d:'2026-08-23',t:'vrij',l:'Vrij',n:'Schoolvakanties Z t/m 23 aug.'},
-    {d:'2026-08-30',t:'beker',l:'Beker',n:'Schoolvakanties M t/m 30 aug.'},
-    {d:'2026-09-06',t:'beker',l:'Beker'},
-    {d:'2026-09-13',t:'beker',l:'Beker'},
-    {d:'2026-09-20',t:'wd',l:'Wedstrijddag'},
-    {d:'2026-09-27',t:'wd',l:'Wedstrijddag'},
-    {d:'2026-10-04',t:'wd',l:'Wedstrijddag'},
-    {d:'2026-10-11',t:'wd',l:'Wedstrijddag',n:'Herfstvakantie N: 10-18 okt'},
-    {d:'2026-10-18',t:'inhaal',l:'Inhaal / Beker',n:'Herfstvakantie alle regio\'s'},
-    {d:'2026-10-25',t:'wd',l:'Wedstrijddag',n:'Herfstvakantie M-Z: 17-25 okt'},
-    {d:'2026-10-31',t:'wd',l:'Wedstrijddag'},
-    {d:'2026-11-08',t:'wd',l:'Wedstrijddag'},
-    {d:'2026-11-15',t:'wd',l:'Wedstrijddag'},
-    {d:'2026-11-22',t:'inhaal',l:'Inhaal / Beker'},
-    {d:'2026-11-29',t:'wd',l:'Wedstrijddag'},
-    {d:'2026-12-06',t:'wd',l:'Wedstrijddag'},
-    {d:'2026-12-13',t:'inhaal',l:'Inhaal / Beker'},
-    {d:'2026-12-20',t:'inhaal',l:'Inhaal / Beker',n:'Kerstvakantie 19 dec.-3 jan.'},
-    {d:'2027-01-10',t:'inhaal',l:'Inhaal / Beker'},
-    {d:'2027-01-17',t:'inhaal',l:'Inhaal / Beker'},
-    {d:'2027-01-24',t:'wd',l:'Wedstrijddag'},
-    {d:'2027-01-31',t:'wd',l:'Wedstrijddag'},
-    {d:'2027-02-07',t:'vrij',l:'Vrij',n:'Carnavalsweekend'},
-    {d:'2027-02-14',t:'inhaal',l:'Inhaal / Beker',n:'Vrj.vak. Z: 13-21 feb.'},
-    {d:'2027-02-21',t:'wd',l:'Wedstrijddag',n:'Vrj.vak. alle regio\'s'},
-    {d:'2027-02-28',t:'wd',l:'Wedstrijddag',n:'Vrj.vak. N-M: 20-28 feb'},
-    {d:'2027-03-07',t:'wd',l:'Wedstrijddag'},
-    {d:'2027-03-11',t:'beker',l:'Beker'},
-    {d:'2027-03-14',t:'wd',l:'Wedstrijddag'},
-    {d:'2027-03-21',t:'wd',l:'Wedstrijddag'},
-    {d:'2027-03-27',t:'inhaal',l:'Inhaal / Beker',n:'Paaszaterdag'},
-    {d:'2027-03-29',t:'inhaal',l:'Inhaal / Beker',n:'2e Paasdag'},
-    {d:'2027-04-04',t:'wd',l:'Wedstrijddag'},
-    {d:'2027-04-11',t:'wd',l:'Wedstrijddag'},
-    {d:'2027-04-18',t:'wd',l:'Wedstrijddag'},
-    {d:'2027-04-25',t:'inhaal',l:'Inhaal / Beker',n:'Meivakantie 24 apr.-2 mei'},
-    {d:'2027-05-02',t:'inhaal',l:'Inhaal / Beker',n:'Meivakantie 24 apr.-2 mei'},
-    {d:'2027-05-06',t:'beker',l:'Beker',n:'Hemelvaartsdag'},
-    {d:'2027-05-09',t:'wd',l:'Wedstrijddag'},
-    {d:'2027-05-15',t:'vrij',l:'Vrij'},
-    {d:'2027-05-23',t:'wd',l:'Wedstrijddag'}
-  ],
-  mei: [
-    {d:'2026-08-16',t:'vrij',l:'Vrij',n:'Schoolvakanties N t/m 16 aug'},
-    {d:'2026-08-23',t:'vrij',l:'Vrij',n:'Schoolvakanties Z t/m 23 aug.'},
-    {d:'2026-08-30',t:'wd',l:'Fase 1, start',n:'Schoolvakanties M t/m 30 aug.'},
-    {d:'2026-09-06',t:'wd',l:'Fase 1'},
-    {d:'2026-09-13',t:'wd',l:'Fase 1'},
-    {d:'2026-09-20',t:'wd',l:'Fase 1'},
-    {d:'2026-09-27',t:'wd',l:'Fase 1'},
-    {d:'2026-10-04',t:'wd',l:'Fase 1'},
-    {d:'2026-10-11',t:'wd',l:'Fase 1',n:'Herfstvakantie N: 10-18 okt'},
-    {d:'2026-10-18',t:'inhaal',l:'Inhaal',n:'Herfstvakantie alle regio\'s'},
-    {d:'2026-10-25',t:'inhaal',l:'Inhaal',n:'Herfstvakantie M-Z: 17-25 okt'},
-    {d:'2026-10-31',t:'wd',l:'Div Fase 2 - Hfdkl F2'},
-    {d:'2026-11-08',t:'wd',l:'Div Fase 2 - Hfdkl F2'},
-    {d:'2026-11-15',t:'wd',l:'Div Fase 2 - Hfdkl F2'},
-    {d:'2026-11-22',t:'wd',l:'Div Fase 2 - Hfdkl F2'},
-    {d:'2026-11-29',t:'wd',l:'Div Fase 2 - Hfdkl F2'},
-    {d:'2026-12-06',t:'wd',l:'Div Fase 2 - Hfdkl F2'},
-    {d:'2026-12-13',t:'wd',l:'Div Fase 2 - Hfdkl F2'},
-    {d:'2026-12-20',t:'inhaal',l:'Inhaal',n:'Kerstvakantie 19 dec.-3 jan.'},
-    {d:'2027-01-10',t:'vrij',l:'Vrij'},
-    {d:'2027-01-17',t:'vrij',l:'Vrij'},
-    {d:'2027-01-24',t:'wd',l:'Div Fase 2 - Hfdkl F3'},
-    {d:'2027-01-31',t:'wd',l:'Div Fase 2 - Hfdkl F3'},
-    {d:'2027-02-07',t:'vrij',l:'Vrij',n:'Carnavalsweekend'},
-    {d:'2027-02-14',t:'inhaal',l:'Inhaal',n:'Vrj.vak. Z: 13-21 feb.'},
-    {d:'2027-02-21',t:'wd',l:'Div Inhaal - Hfdkl F3',n:'Vrj.vak. alle regio\'s'},
-    {d:'2027-02-28',t:'wd',l:'Div Fase 2 - Hfdkl F3',n:'Vrj.vak. N-M: 20-28 feb'},
-    {d:'2027-03-07',t:'wd',l:'Div Fase 2 - Hfdkl F3'},
-    {d:'2027-03-14',t:'wd',l:'Div Fase 2 - Hfdkl F3'},
-    {d:'2027-03-21',t:'wd',l:'Div Fase 2 - Hfdkl F3'},
-    {d:'2027-03-27',t:'inhaal',l:'Inhaal',n:'Paaszaterdag'},
-    {d:'2027-03-29',t:'vrij',l:'Vrij',n:'2e Paasdag'},
-    {d:'2027-04-04',t:'wd',l:'Div Fase 2 - Hfdkl F3'},
-    {d:'2027-04-11',t:'wd',l:'Div Fase 2 - Hfdkl F3'},
-    {d:'2027-04-18',t:'wd',l:'Div Fase 2 - Hfdkl F3'},
-    {d:'2027-04-25',t:'inhaal',l:'Inhaal',n:'Meivakantie 24 apr.-2 mei'},
-    {d:'2027-05-02',t:'inhaal',l:'Inhaal',n:'Meivakantie 24 apr.-2 mei'},
-    {d:'2027-05-06',t:'vrij',l:'Vrij',n:'Hemelvaartsdag'},
-    {d:'2027-05-09',t:'wd',l:'Div Fase 2 - Hfdkl F3'},
-    {d:'2027-05-15',t:'wd',l:'Div Inhaal - Hfdkl F3'},
-    {d:'2027-05-23',t:'wd',l:'Div Fase 2 - Hfdkl F3'},
-    {d:'2027-05-30',t:'wd',l:'Hfdkl Fase 3'},
-    {d:'2027-06-06',t:'wd',l:'Final League',n:'Finales Districtsbeker'}
-  ],
-};
+export const KNVB_KALENDER = kopie(SPORT.kalender);
 
 /* map een team-categorie naar de juiste KNVB-kolom */
 export function kalenderKolomVoorCategorie(categorie){
@@ -597,22 +338,7 @@ export function tipsDomein(id){ return skillDomein(id); }
    De bewerkbare tekst (achtergrond + tips per thema) staat NIET meer hier,
    maar in de Firestore-collectie 'content' — zie content.js:contentVoorThema().
    Alle thema's blijven altijd kiesbaar; de leeftijdsrelevante worden gemarkeerd. */
-export const LEERCURVE = [
-  {thema:"Teamsport en plezier", vanaf:6, domein:"GE"},
-  {thema:"Technische vaardigheden", vanaf:6, domein:"TE"},
-  {thema:"Uitspelen 1:1", vanaf:8, domein:"TE"},
-  {thema:"Scoren", vanaf:8, domein:"TE"},
-  {thema:"Positiespel opbouw", vanaf:8, domein:"TA"},
-  {thema:"Dieptespel opbouw", vanaf:8, domein:"TA"},
-  {thema:"Storen en veroveren", vanaf:10, domein:"TA"},
-  {thema:"Verdedigen dieptespel", vanaf:10, domein:"TA"},
-  {thema:"Verdedigen 1:1", vanaf:10, domein:"TE"},
-  {thema:"Voorkomen van doelpunten", vanaf:10, domein:"TA"},
-  {thema:"Aanvallen met voorzet", vanaf:11, domein:"TA"},
-  {thema:"Verdedigen van voorzet", vanaf:11, domein:"TA"},
-  {thema:"Omschakelen balwinst", vanaf:14, domein:"TA"},
-  {thema:"Omschakelen balverlies", vanaf:14, domein:"TA"},
-];
+export const LEERCURVE = kopie(SPORT.leercurve);
 
 /* Vind een leercurve-thema op naam, bijv. voor het openen van het infoscherm
    vanuit een string (adviesCat.leercurve, een gekozen leerpunt-tekst, etc). */
@@ -657,39 +383,14 @@ export function kompasIndexVoorWeek(aantal, week = isoWeek()){
 /* Formatie-uitgangspunt van de club (§3.2): 1:4:3:3, omschakelend naar 1:3:4:3 bij balbezit.
    Dit is de oorspronkelijke standaardwaarde. Nieuwe code gebruikt clubFormatie11():
    die geeft de instelling van de actieve club, of '' als die er geen heeft. */
-export const CLUB_FORMATIE_11 = '4-3-3';
+export const CLUB_FORMATIE_11 = SPORT.formatie11;
 export function clubFormatie11(){ return ACTIEF.formatie11 || ''; }
 
 /* ==================== WEDSTRIJDDOEL-SUGGESTIES (§3.1 t/m §3.4) ====================
    Korte, concrete voorbeelden per leeftijdsband, aansluitend op de leercurve (§3.3),
    de gouden regels (§3.1) en de gewenste speelwijze (§3.2). Puur als inspiratie bij
    het invullen van het vrije 🎯 Wedstrijddoel-veld — nooit verplicht, altijd overschrijfbaar. */
-export const DOEL_SUGGESTIES_BANDEN = [
-  {tot:9,  teksten:[
-    'Iedereen probeert minstens 1x een 1-tegen-1',
-    'Na balverovering meteen naar het doel dribbelen',
-    'Een actie proberen met het zwakke been',
-    'Iedereen minstens 1x een doelpoging',
-  ]},
-  {tot:12, teksten:[
-    'Bij balbezit rustig opbouwen van achteruit',
-    'Direct druk zetten binnen 5 seconden na balverlies',
-    'Voorkomen dat de tegenstander je 1-tegen-1 passeert',
-    'Positiespel: steeds een passlijn aanbieden',
-  ]},
-  {tot:15, teksten:[
-    'Voorzetten geven vanaf de zijkant',
-    'Snel omschakelen bij balwinst: meteen vooruit denken',
-    'Tegenstander naar de zijlijn dwingen bij verdedigen',
-    'Bewust omschakelen bij balverlies: direct terugzakken of aftroeven',
-  ]},
-  {tot:99, teksten:[
-    'Bij balbezit een verdediger laten inschuiven naar het middenveld',
-    'Compact blijven staan: linies dicht bij elkaar',
-    'Constant coachen van je medespelers',
-    'Bewust balverlies voorkomen in de opbouw',
-  ]},
-];
+export const DOEL_SUGGESTIES_BANDEN = kopie(SPORT.doelSuggesties);
 /* geeft 3 roterende suggesties terug, passend bij de categorie van het team. */
 export function doelSuggesties(categorie, n = 3){
   const lft = leeftijdVanCategorie(categorie);
