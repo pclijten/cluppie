@@ -42,7 +42,7 @@ import { spelerStats, meestGespeeldePosities } from './teams-spelers.js?v=202611
 import { bewaarTeamEvaluatie } from './teams-evaluatie.js?v=20261123a';
 import { trainingenPerWeek } from './teams-training.js?v=20261123a';
 import { oefHtml } from './training-weergave.js?v=20261123a';
-import { vandaagVan, opWijziging as opVandaag } from './training-vandaag.js?v=20261123a';
+import { vandaagVan, opWijziging as opVandaag } from './training-vandaag.js?v=20261124a';
 import { rondesVoorTeam, rondeTelling, datumKort } from './evaluatierondes.js?v=20261123a';
 import { laadPdfJs } from './pdf-viewer.js?v=20261123a';
 import { ongelezenBerichten } from './berichten.js?v=20261123a';
@@ -1061,7 +1061,7 @@ async function actie(b){
   if (a === 'stofuitzet'){   /* [20261120k] alle vakken in één plaatje, met de training zoals hij vandaag is */
     const t = S.trainingen.find(x => x.id === id); if (!t) return;
     const lijst = (t.teams || []).includes(S.teamId) ? vandaagVan(t).oefeningen : (t.oefeningen || []);
-    const [TL, B, TV] = await Promise.all([import('./training-tijdlijn.js?v=20261123a'), import('./bibliotheek.js?v=20261121b'), import('./training-vandaag.js?v=20261123a')]);
+    const [TL, B, TV] = await Promise.all([import('./training-tijdlijn.js?v=20261123a'), import('./bibliotheek.js?v=20261121b'), import('./training-vandaag.js?v=20261124a')]);
     TL.openUitzet(TL.tijdlijnInfo(lijst, B.vormOpId, TV.startTijd(t, S.teamId)));
     return;
   }

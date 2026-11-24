@@ -271,7 +271,7 @@ export async function openTrainingWeergave({ titel, meta, oefeningen, diagramUrl
 
   let TV = null;
   if (vandaag && teamId){
-    try { TV = await import('./training-vandaag.js?v=20261123a'); } catch (e){ TV = null; }
+    try { TV = await import('./training-vandaag.js?v=20261124a'); } catch (e){ TV = null; }
     if (el._beurt !== beurt) return;
   }
   /* [20261120k] de tijdlijn: fase, duur en veld komen uit de vorm in de bibliotheek (als die er is) */

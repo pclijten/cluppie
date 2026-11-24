@@ -84,11 +84,15 @@ ok(!rp.kan && !rp.aangepast && rp.oefeningen === pdf.oefeningen && rp.eigen === 
 const tips = tipsVoorEigen({ spelers: 11, weer: 'regen' }, 12);
 ok(tips.length === 3 && tips[0][0] === 'Oneven aantal' && tips[2][0] === 'Regen', 'tips voor een eigen training');
 ok(tipsVoorEigen({ spelers: 12 }, 12).length === 0, 'geen tips zonder aanpassing');
+/* [20261124a] een eigen training krijgt geen balk Vandaag en geen tipskaart; een training uit de bibliotheek wel */
+const { htmlVandaag } = await import('../public/js/training-vandaag.js');
+ok(htmlVandaag(pdf, 't1', rp, { spelers: 11, weer: 'regen' }) === '' && htmlVandaag(pdf, 't1', pasAan(pdf, null, { vormen: V }), null) === '', 'eigen training: geen balk Vandaag');
 /* gemengd: één oefening uit de bibliotheek, één eigen */
 const { t: tg } = training('JO11', 14, 75, [...new Set(V.flatMap(v => v.thema))][0], 'gemengd');
 const gemengd = { ...tg, oefeningen: [tg.oefeningen[0], pdf.oefeningen[0], ...tg.oefeningen.slice(1)] };
 const rg = pasAan(gemengd, { spelers: 9 }, { vormen: V, categorie: 'JO11' });
 ok(rg.kan && rg.aangepast && rg.eigen === 1 && rg.oefeningen[1] === pdf.oefeningen[0], 'eigen oefening tussen de andere blijft staan');
+ok(/Vandaag/.test(htmlVandaag(gemengd, 't1', rg, { spelers: 9 })) && /Aangepast voor vandaag/.test(htmlVandaag(gemengd, 't1', rg, { spelers: 9 })), 'gemengde training houdt de balk Vandaag');
 
 /* indeling in woorden */
 ok(indelingTekst({ groepen: 3, groepGrootte: 4, wissel: 0, _spelers: 11 }) === '3 groepen van 3 of 4', indelingTekst({ groepen: 3, groepGrootte: 4, wissel: 0, _spelers: 11 }));
