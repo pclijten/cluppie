@@ -21,7 +21,7 @@ import { speelwijzeNu } from './speelwijze.js?v=20261123a';
 import { weerLocatie } from './clubconfig.js?v=20261123a';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
 import { momentenVanTeam } from './trainingsmomenten.js?v=20261123a';
-import { pasAan, schoonKeuze, isAangepast, tipsVoorEigen, weerVoorstel, WEERKEUZES, MIN_SPELERS, MAX_SPELERS } from './training-vandaag-logica.js?v=20261123a';
+import { pasAan, schoonKeuze, isAangepast, weerVoorstel, WEERKEUZES, MIN_SPELERS, MAX_SPELERS } from './training-vandaag-logica.js?v=20261123a';
 
 const K = new Map();            /* 'team|training' → { keuze (of null), geladen } */
 const W = new Map();            /* 'lat,lon|datum|uur' → { voorstel } of 'bezig' */
@@ -119,8 +119,11 @@ function weerbericht(t, teamId){
 const WEERNAAM = Object.fromEntries(WEERKEUZES);
 const vinkje = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16 9.5"/></svg>';
 
-/* Html van de balk en de kaart eronder. res = uitkomst van pasAan, voorstellen = { presentie, weer }. PUUR (voor de test). */
+/* Html van de balk en de kaart eronder. res = uitkomst van pasAan, voorstellen = { presentie, weer }. PUUR (voor de test).
+   [20261124a] Een training zonder één oefening uit de bibliotheek (eigen PDF of eigen tekst) kan Cluppie niet aanpassen:
+   dan geen balk en geen tipskaart, de training staat er gewoon zoals hij is (wens Paul 24-11-2026). */
 export function htmlVandaag(t, teamId, res, keuze, voorstellen = {}){
+  if (!res.kan) return '';
   const k = schoonKeuze(keuze), n = res.spelers, weer = res.weer || '';
   const aangepast = isAangepast(k, res.gepland);
   const vp = voorstellen.presentie, vw = voorstellen.weer;
@@ -130,19 +133,13 @@ export function htmlVandaag(t, teamId, res, keuze, voorstellen = {}){
   if (vw && vw.onweer) regels.push(`<div class="tv-voorstel let-op"><span><b>Let op:</b> om ${esc(vw.tijd)} wordt onweer verwacht. Train dan niet buiten.</span></div>`);
   if (vw && vw.weer && vw.weer !== weer) regels.push(`<div class="tv-voorstel"><span><b>Weerbericht ${esc(vw.tijd)}:</b> ${esc(vw.tekst)}. Voorstel: ${esc(WEERNAAM[vw.weer])}</span><button type="button" class="knop klein licht" data-tv="neem-weer" data-w="${esc(vw.weer)}">Neem over</button></div>`);
   const balk = `<div class="tv-kaart${aangepast ? ' aan' : ''}">
-      <div class="tv-kop"><b>Vandaag</b><span>${res.kan ? `Gepland voor ${res.gepland} spelers, gewoon weer` : 'Training uit een eigen bestand'}</span></div>
+      <div class="tv-kop"><b>Vandaag</b><span>Gepland voor ${res.gepland} spelers, gewoon weer</span></div>
       <div class="tv-rij"><span class="tv-l">Spelers</span><div class="tv-stap"><button type="button" data-tv="min" aria-label="Eén speler minder"${n <= MIN_SPELERS ? ' disabled' : ''}>−</button><b aria-live="polite">${n}</b><button type="button" data-tv="plus" aria-label="Eén speler meer"${n >= MAX_SPELERS ? ' disabled' : ''}>+</button></div></div>
       <div class="tv-rij tv-rij-weer"><span class="tv-l">Weer</span><div class="tv-weer" role="group" aria-label="Weer">${WEERKEUZES.map(([w, naam]) => `<button type="button" data-tv="weer" data-w="${esc(w)}" aria-pressed="${weer === w}">${esc(naam)}</button>`).join('')}</div></div>
       ${regels.length ? `<div class="tv-voorstellen">${regels.join('')}</div>` : ''}
     </div>`;
   let onder = '';
-  if (!res.kan && aangepast){
-    const tips = tipsVoorEigen(k, res.gepland);
-    onder = `<div class="tv-kaart tv-eigen"><div class="tv-titel">Deze training past Cluppie niet zelf aan</div>
-      <p>De oefeningen komen niet uit de bibliotheek. Zo pas je hem zelf aan voor ${n} spelers${weer ? ' en ' + esc(WEERNAAM[weer].toLowerCase()) + ' weer' : ''}:</p>
-      ${tips.map(([kop, tekst]) => `<p><b>${esc(kop)}:</b> ${esc(tekst)}</p>`).join('')}
-      <button type="button" class="knop vol licht" data-tv="terug">Terug naar het plan</button></div>`;
-  } else if (res.aangepast){
+  if (res.aangepast){
     const delen = [...(n !== res.gepland ? [`${n} spelers`] : []), ...(weer ? [WEERNAAM[weer].toLowerCase()] : [])];
     const w = res.wijzigingen;
     onder = `<div class="tv-kaart tv-aangepast"><div class="tv-status"><span class="tv-vink">${vinkje}</span><div><div class="tv-titel">Aangepast voor vandaag</div><div class="tv-sub">${esc(delen.join(' · '))} · ${w.length} ${w.length === 1 ? 'wijziging' : 'wijzigingen'}</div></div></div>
@@ -150,7 +147,7 @@ export function htmlVandaag(t, teamId, res, keuze, voorstellen = {}){
       ${res.weerMelding ? `<div class="tv-wijz"><span class="tv-label weer">${esc(WEERNAAM[weer])}</span><span>${esc(res.weerMelding.replace(/^[^:]+:\s*/, '').replace(/^./, c => c.toUpperCase()))}</span></div>` : ''}
       <p class="tv-noot">Thema, leerdoel en coachwoorden blijven gelijk${res.eigen ? `. ${res.eigen} ${res.eigen === 1 ? 'oefening komt' : 'oefeningen komen'} niet uit de bibliotheek en ${res.eigen === 1 ? 'blijft' : 'blijven'} zoals ${res.eigen === 1 ? 'hij is' : 'ze zijn'}` : ''}. De totale duur blijft gelijk.</p>
       <button type="button" class="knop vol licht" data-tv="terug">Terug naar het plan</button></div>`;
-  } else if (res.kan){
+  } else {
     onder = '<p class="tv-uitleg">Zo staat de training in het plan. Verander het aantal spelers of het weer en de training past zich meteen aan.</p>';
   }
   return `<div class="tv" data-tv-team="${esc(teamId)}" data-tv-training="${esc(t.id)}">${balk}${onder}</div>`;

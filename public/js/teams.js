@@ -64,7 +64,7 @@ import {
 } from './teams-hub.js?v=20261123a';
 import { koppelNu } from './nu-scherm.js?v=20261123a';
 import { vandaagLokaal, leenActief } from './uitleen-regels.js?v=20261113b';
-import { htmlHandleiding } from './teams-handleiding.js?v=20261123a';
+import { htmlHandleiding } from './teams-handleiding.js?v=20261124a';
 import { koppelElftalFilter, modalElftalToewijzen, elftalPillWedstrijd } from './elftallen.js?v=20261123a';
 import { isAfgelast, telMee, soortPill, statusBadge, plekKort, markeerGezien } from './wedstrijd-status.js?v=20261116t';
 import {

@@ -164,7 +164,7 @@ export function htmlHandleiding(){
       <li><b>Terug naar het plan</b> zet de training weer zoals hij gepland was. Het plan zelf wordt nooit overschreven, ook niet dat van de club.</li>
       <li>Je medecoaches van het team zien dezelfde aanpassing. Er worden alleen aantallen bewaard, geen namen.</li>
     </ul>
-    <div class="tip">Een training uit een eigen PDF past Cluppie niet zelf aan: je krijgt dan tips voor dit aantal en dit weer. Wil je een heel andere training voor die dag, gebruik dan <b>Andere training maken</b> (als Training maken voor jou aan staat).</div>
+    <div class="tip">Een training uit een eigen PDF (zonder oefeningen uit de bibliotheek) past Cluppie niet zelf aan: daar staat de balk Vandaag dus niet bij. Wil je een heel andere training voor die dag, gebruik dan <b>Andere training maken</b> (als Training maken voor jou aan staat).</div>
     </section>
 
     <section class="hl-sec" data-zoek="oefenkaart lezen zo zie je dat het lukt waarom dit werkt kijk en grijp in zie je doe dan tel mee richtpunt spelers aan zet regie differentiatie coachmomenten doel succes ingrijpen aanpassen te makkelijk te moeilijk tellen meten kopballen koppen knvb advies">
