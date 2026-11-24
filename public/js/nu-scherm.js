@@ -14,15 +14,15 @@
    teams-training.js, de wedstrijdpresentie in de hub en de wedstrijd zelf.
    Geen locatie/GPS: dat vraagt toestemming en hoort niet ongevraagd in de app.
    Wel de wedstrijdplek: sportpark met routelink (uit), veld en kleedkamer. */
-import { S, esc } from './state.js?v=20261124a';
+import { S, esc } from './state.js?v=20261124b';
 import { ico } from './icons.js?v=20261116t';
-import { afwezigRedenInfo, isoWeek } from './config.js?v=20261124a';
+import { afwezigRedenInfo, isoWeek } from './config.js?v=20261124b';
 import { bepaalNu, evenementen, kiesDaarna, losseEvenementen } from './nu-context.js?v=20261122c';
-import { momentenVanTeam } from './trainingsmomenten.js?v=20261124a';
+import { momentenVanTeam } from './trainingsmomenten.js?v=20261124b';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
 import { effectieveSelectie, spelersOpWedstrijd, spelersOpTraining } from './uitleen-regels.js?v=20261113b';
-import { doelTeksten, samenvattingNu, haalSamenvatting } from './doel-samenvatting.js?v=20261124a';
-import { veldPilHtml } from './veldkaart.js?v=20261124a';
+import { doelTeksten, samenvattingNu, haalSamenvatting } from './doel-samenvatting.js?v=20261124b';
+import { veldPilHtml } from './veldkaart.js?v=20261124b';
 import { kiesUitgelicht, gezienNu, gezienGeladen, laadGezien, markeerGezien } from './video-uitgelicht.js?v=20261124a';
 
 const p2 = n => String(n).padStart(2, '0');
@@ -391,7 +391,7 @@ function dagItem(r, nu){
 
 /* ---------- Uitgelichte video (uitleg per blok) [20261124a] ----------
    Een video die de clubbeheerder uitlicht staat groot boven de Nu-kaart tot de coach hem één
-   keer geopend heeft. Daarna (of na "Later") blijft er een kleine regel onder de kaart staan. */
+   keer geopend heeft. Daarna (of na "Later") staat hij alleen nog bij Video's. */
 function uitlegHtml(){
   let k;
   try {
@@ -407,9 +407,8 @@ function uitlegHtml(){
       </button>
       <button type="button" class="nu-uitleg-later" data-nu-uitleg-later="${esc(k.nieuw.id)}" aria-label="Later bekijken" title="Later">&times;</button>
     </div>` : '';
-  const onder = k.terug.length ? `<div class="nu-uitleg-terug">${k.terug.map(v =>
-      `<button type="button" class="nu-uitleg-klein" data-nu-uitleg="${esc(v.id)}">${ico('training-video', 16)}<span>${esc(v.titel || 'Video')}</span></button>`).join('')}</div>` : '';
-  return { boven, onder };
+  /* [20261124b] geen knopje meer onder de kaart (wens Paul): terugvinden gaat via Video's */
+  return { boven, onder: '' };
 }
 
 /* ---------- publiek ---------- */
@@ -491,16 +490,16 @@ export function koppelNu(v, ctx){
     const pt = ev.target.closest('[data-nu-pres-training]');
     if (pt){
       const datum = pt.dataset.nuPresTraining, rec = S.presentie.find(p => p.datum === datum) || null;
-      const m = await import('./teams-training.js?v=20261124a');
+      const m = await import('./teams-training.js?v=20261124b');
       m.modalPresentie(rec, rec ? {} : { datum });
       return;
     }
     const pw = ev.target.closest('[data-nu-pres-wedstrijd]');
     if (pw){ S._presWedstrijdId = pw.dataset.nuPresWedstrijd; ctx.zetTeamTab('preswedstrijd'); return; }
     const vb = ev.target.closest('[data-nu-voorbereiding]');
-    if (vb){ const m = await import('./wedstrijd-voorbereiding.js?v=20261124a'); m.openVoorbereiding(vb.dataset.nuVoorbereiding, ctx); return; }
+    if (vb){ const m = await import('./wedstrijd-voorbereiding.js?v=20261124b'); m.openVoorbereiding(vb.dataset.nuVoorbereiding, ctx); return; }
     const w = ev.target.closest('[data-nu-wedstrijd]');
-    if (w){ const m = await import('./wedstrijd.js?v=20261124a'); m.openWedstrijd(w.dataset.nuWedstrijd); return; }
+    if (w){ const m = await import('./wedstrijd.js?v=20261124b'); m.openWedstrijd(w.dataset.nuWedstrijd); return; }
     const tr = ev.target.closest('[data-nu-training]');
     if (tr){
       const gelukt = ctx.openTraining ? await ctx.openTraining(tr.dataset.nuTraining) : false;
