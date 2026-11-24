@@ -37,6 +37,16 @@ Gemeten op `main` (d19c87a) met een zoektelling op voetbaltermen (keeper, KNVB, 
 
 In totaal 87 bestanden met minstens één treffer. Het goede nieuws: `config.js` en `clubconfig.js` zijn al ontworpen als één plek waar standaardwaarden staan die per club in plaats worden aangepast (live-binding). Een sportprofiel past precies in die laag.
 
+## Drie lagen (indeling van Paul, 24-11-2026)
+
+Uitgangspunt: een onderdeel wordt niet als geheel aan een laag toegewezen, maar gesplitst in een **mechanisme** (schermen en logica, één keer gebouwd) en **inhoud** (per sport gevuld). Zo blijven clubvisie, speelwijze en beoordelen één onderdeel in de code.
+
+| Laag | Wat erin zit |
+|---|---|
+| **Basis** (sportonafhankelijk) | Clubs, rollen en rechten (coach, bouwcoördinator, trainingscoördinator, hoofd jeugd, clubadmin, eindbaas), onboarding, platformcentrum en Meehelpen. Teams, spelers, opkomst, vaste afmeldingen, uitlenen. Teamkamer, berichten, weekbrief, mails. Opbouw van seizoensplan en jaarkalender, trainingsmomenten, agenda. Documenten, video's, uploads. Evaluatierondes, de vijf domeinen, Inzicht, jaaroverzicht. Het mechanisme voor eerlijke speeltijd (klok, wie speelt hoe lang). Het mechanisme voor clubvisie, kompas, speelwijze als rode draad en beoordelen. AI-infrastructuur en limieten, privacy, bewaartermijnen, design, PWA. |
+| **Sport** (per sport een profiel) | Leeftijdscategorieën en spelvormen, en daarmee de bouwgrenzen. Wedstrijdregels: periodes, wissels, keeper, straffen, en wat speeltijd telt (minuten, of sets/punten bij volleybal). Veld voor tactiekbord, trainingsvormen en 3D; formaties en posities. Leercurvethema's en beoordelingscriteria. Standaardinhoud voor visie en speelwijze. Oefenstof en bibliotheek, AI-kennis en prompts. Ledenbron (Sportlink of anders), bondskalender en district, woorden (bond, elftal, buitenspel). Overige standaardinstellingen die met de sport te maken hebben. |
+| **Club** (bestaat al) | Wat een club nu in Instellingen aanpast: naam, kleur, logo, eigen lijsten, eigen visie, speelstijl en beleidsplan, drempels. Ligt over de sportstandaard heen. |
+
 ## Ontwerp in het kort
 
 **Een sportprofiel is een vaste set standaardwaarden per sport**, die onder de clubinstellingen ligt:
@@ -112,7 +122,7 @@ Geen hockey-inhoud, geen ledenkoppeling met LISA of een andere bond, geen omnisp
 
 ## Beslissingen voor Paul
 
-1. **Visie:** akkoord met "app voor jeugdcoaches en clubs in teamsporten, begonnen bij voetbal"? Zonder deze keuze bouw ik alleen stap 1 (onzichtbare refactor).
+1. **Visie:** akkoord (24-11-2026): "app voor jeugdcoaches en clubs in teamsporten, begonnen bij voetbal", met de drie lagen hierboven.
 2. **Wie zet de sport:** alleen de eindbaas (voorstel), of ook de clubadmin bij aanmelden?
 3. **Omvang nu:** alleen stap 1 en 2 (de basis, onzichtbaar), of door tot en met stap 7?
 4. **Mockup (P3):** voor stap 2 en 3 is een mockup nodig van Instellingen (sport tonen), Platform › Clubs (sport zetten) en het aanmelden van een losse trainer (sport kiezen). Akkoord om die te maken?
