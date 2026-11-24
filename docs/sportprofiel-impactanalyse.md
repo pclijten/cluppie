@@ -81,9 +81,14 @@ Inhoud van een profiel (alles wat nu als voetbal in `config.js` staat):
 
 **Bibliotheek en inhoud:** de 326 uitgewerkte oefeningen, `content/seed.json` en de leercurveteksten krijgen een `sport`-veld (ontbreekt = voetbal). Een club ziet alleen oefenstof van de eigen sport. Voor een nieuwe sport begint de bibliotheek leeg tot de eindbaas (of een pilotclub) inhoud toevoegt.
 
+## Stand
+
+- 24-11-2026: **stap 1 gebouwd** op de branch, niet gemerged. `public/js/sport-voetbal.js` (diep bevroren profiel) en `public/js/sporten.js` (register, `sportProfiel(id)`, onbekend = voetbal). `config.js` maakt er losse kopieën van; namen en vormen van alle exports zijn gelijk. Bewijs: alle 72 exports van `config.js` vóór en na vergeleken (gelijk, ook de functies), `npm test` groen met nieuwe `tests/sportprofiel.test.mjs` (24 controles), rooktest (157 schermen, 8 rollen) gelijk aan `main`.
+- Mockups voor stap 2 en 3 (P3): `docs/mockups/sportprofiel/`.
+
 ## Aanpak in kleine releases
 
-1. **Voetbalprofiel uit `config.js` halen (pure refactor).** Nieuw bestand `public/js/sporten/voetbal.js` met alle voetbalwaarden; `config.js` vult zich daaruit. Geen wijziging voor gebruikers. Bewijs: `npm test`, `npm run test:rook` (109 schermen, zeven rollen) en een vergelijking van alle exports vóór en na.
+1. **Voetbalprofiel uit `config.js` halen (pure refactor).** Nieuw bestand `public/js/sport-voetbal.js` (met een register in `public/js/sporten.js`) met alle voetbalwaarden; `config.js` vult zich daaruit. Geen wijziging voor gebruikers. Bewijs: `npm test`, `npm run test:rook` (109 schermen, zeven rollen) en een vergelijking van alle exports vóór en na.
 2. **Sport-veld lezen.** `clubconfig.js` kiest het profiel op basis van `clubs/{id}.sport` of `teams/{id}.sport` voordat de clubinstellingen erop gaan. Rules: `sport` alleen door de eindbaas; proeven in `tests/audit-rules.test.mjs` (clubadmin mag niet, eindbaas wel, losse trainer bij aanmaken wel).
 3. **Woorden uit het profiel.** Teksten met KNVB, elftal, keeper en buitenspel via een kleine vertaalfunctie (`sportWoord('bond')`). Begint bij de schermen die een coach het meest ziet: Nu, wedstrijd, opstelling.
 4. **Veld uit het profiel.** Tactiekbord, trainingsvorm-svg, 3D en veldkaart lezen maten en lijnen uit het profiel.
@@ -113,7 +118,7 @@ Testaccounts: de vaste fictieve set per rol blijft voetbal; voor de rooktest kom
 
 - **Speeltijd en wissels.** Het meest gebruikte en meest gevoelige stuk. Elke wijziging in `wedstrijd.js`/`analyse.js` krijgt eerst tests met vaste voetbalwedstrijden die vóór en na precies gelijk moeten uitkomen.
 - **Live-binding.** `config.js` wordt nu in plaats aangepast door `clubconfig.js`. Het profiel moet op dezelfde manier werken (eerst profiel, dan club), anders zien modules oude waarden.
-- **Cache en versies.** Nieuwe module onder `public/js/sporten/` valt onder `tools/versie.mjs` en `CACHE_VERSIE`; meenemen in de release.
+- **Cache en versies.** Nieuwe modules staan bewust direct in `public/js/`, zodat `tools/versie.mjs` en `tools/importcheck.mjs` ze meenemen; `CACHE_VERSIE` ophogen in de release.
 - **Omnisportclubs.** Een club met voetbal én hockey past niet in `clubs/{id}.sport`. Advies: nu niet ondersteunen; later kan `teams/{id}.sport` binnen een club afwijken.
 - **Pedagogische kern.** De vijf domeinen blijven; de veertien thema's niet. Zonder goed gevulde leercurve is Cluppie voor een andere sport "een teamapp" en verliest het wat het onderscheidt. Daarom geen tweede sport zonder pilotclub die de inhoud mee vult.
 
