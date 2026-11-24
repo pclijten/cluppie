@@ -46,6 +46,9 @@ service cloud.firestore {
        (nooit spelers, wedstrijden, berichten of documenten). De rechtenbron is clubs/{id}.trainingscoordinatoren.<uid>;
        alleen een clubbeheerder zet die, via de Cloud Function beoordeelAanvraag of rechtstreeks in het clubdocument. */
     function isTraincoVanClub(c) { return echt() && clubBestaat(c) && club(c).get('trainingscoordinatoren', {}).get(uid(), false) == true; }
+    /* [20261124v] Veldplanner: de eindbaas zet hem per club aan (clubs/{id}.platformModules.veldplanner) */
+    function veldplannerAan(c) { return club(c).get('platformModules', {}).get('veldplanner', false) == true; }
+    function isVeldplanner(c) { return isClubAdmin(c) || isTraincoVanClub(c); }
     function isHoofdJeugd(c) { return echt() && clubBestaat(c) && club(c).get('hoofdJeugd', {}).get(uid(), false) == true; }
     function isJeugdPlanner(c) { return isClubAdmin(c) || isHoofdJeugd(c); }
     function isSpeelstijlDeelnemer(c) { return isJeugdPlanner(c) || isCoordinatorVanBouw(c, 'onder') || isCoordinatorVanBouw(c, 'midden') || isCoordinatorVanBouw(c, 'boven'); }
@@ -234,6 +237,19 @@ service cloud.firestore {
       match /sportparken/{parkId} {
         allow read: if isClubLid(clubId);
         allow write: if isClubAdmin(clubId);
+      }
+      /* [20261124v] Veldplanner (release 1, nog niets naar de teams): roosters in concept en de instellingen
+         (kleedkamers, eigen vakken per veld, licht). Clubbeheer en de trainingscoördinator; schrijven alleen als
+         de eindbaas de Veldplanner voor deze club heeft aangezet. Er staan geen spelersgegevens in. */
+      match /veldroosters/{roosterId} {
+        allow read: if isVeldplanner(clubId);
+        allow create, update: if isVeldplanner(clubId) && veldplannerAan(clubId)
+          && request.resource.data.blokken is list && request.resource.data.blokken.size() <= 400;
+        allow delete: if isVeldplanner(clubId) && veldplannerAan(clubId);
+      }
+      match /veldplanner/{docId} {
+        allow read: if isVeldplanner(clubId);
+        allow write: if isVeldplanner(clubId) && veldplannerAan(clubId) && docId == 'instellingen';
       }
       /* Een coach meldt dat een veld niet klopt; clubbeheer leest en handelt af. */
       match /veldmeldingen/{meldingId} {

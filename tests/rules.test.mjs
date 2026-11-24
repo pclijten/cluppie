@@ -695,6 +695,28 @@ test('veldkaart: de club leest sportparken, de clubbeheerder beheert ze; een coa
   await assertSucceeds(updateDoc(doc(a, 'clubs/A/veldmeldingen/m1'), { status: 'opgelost', opgelostMs: nu }));
   await assertSucceeds(deleteDoc(doc(a, 'clubs/A/veldmeldingen/m1')));
 });
+/* ---------- [20261124v] veldplanner: roosters en instellingen, alleen als de eindbaas hem aanzet ---------- */
+test('veldplanner: clubbeheer en trainingscoördinator plannen, alleen met de schakelaar van de eindbaas aan', async () => {
+  const a = als('adminA'), tc = als('tcA'), c = als('coachA');
+  await env.withSecurityRulesDisabled(async ctx => { await updateDoc(doc(ctx.firestore(), 'clubs/A'), { trainingscoordinatoren: { tcA: true } }); });
+  const rooster = { naam: 'Basisrooster', status: 'concept', blokken: [{ id: 'b1', team: 't1', dag: 2, start: 1095, eind: 1170, veld: 'v1', vak: 'a', kk: ['k1'] }], bijgewerktMs: nu };
+  await assertFails(setDoc(doc(a, 'clubs/A/veldroosters/basis'), rooster));                                         // schakelaar nog uit
+  await assertFails(updateDoc(doc(a, 'clubs/A'), { 'platformModules.veldplanner': true }));                         // clubbeheer zet hem niet zelf aan
+  await env.withSecurityRulesDisabled(async ctx => { await updateDoc(doc(ctx.firestore(), 'clubs/A'), { platformModules: { veldplanner: true } }); });
+  await assertSucceeds(setDoc(doc(a, 'clubs/A/veldroosters/basis'), rooster));
+  await assertSucceeds(updateDoc(doc(tc, 'clubs/A/veldroosters/basis'), { blokken: [] }));                          // trainingscoördinator plant mee
+  await assertSucceeds(getDoc(doc(tc, 'clubs/A/veldroosters/basis')));
+  await assertSucceeds(setDoc(doc(a, 'clubs/A/veldplanner/instellingen'), { kleedkamers: [{ id: 'k1', naam: 'Kleedkamer 1' }], velden: {} }));
+  await assertFails(setDoc(doc(a, 'clubs/A/veldplanner/iets'), { x: 1 }));                                          // alleen het instellingendocument
+  await assertFails(getDoc(doc(c, 'clubs/A/veldroosters/basis')));                                                  // coach ziet het concept niet
+  await assertFails(setDoc(doc(c, 'clubs/A/veldroosters/basis'), rooster));
+  await assertFails(getDoc(doc(als('adminB'), 'clubs/A/veldroosters/basis')));                                      // andere club
+  await assertFails(setDoc(doc(a, 'clubs/A/veldroosters/groot'), { ...rooster, blokken: Array.from({ length: 401 }, (_, i) => ({ id: 'b' + i })) }));
+  await assertFails(setDoc(doc(a, 'clubs/A/veldroosters/kapot'), { naam: 'zonder blokken' }));
+  await env.withSecurityRulesDisabled(async ctx => { await updateDoc(doc(ctx.firestore(), 'clubs/A'), { platformModules: { veldplanner: false } }); });
+  await assertFails(updateDoc(doc(a, 'clubs/A/veldroosters/basis'), { blokken: [] }));                              // weer uit: alleen nog lezen
+  await assertSucceeds(getDoc(doc(a, 'clubs/A/veldroosters/basis')));
+});
 test('toernooitje: het eigen team leest en schrijft, een ander team en een andere club niet', async () => {
   const t = { naam: 'Vrijdagtoernooi', status: 'opzet', gemaaktMs: nu };
   await assertSucceeds(setDoc(doc(als('coachA'), 'teams/t1/toernooitjes/x1'), t));

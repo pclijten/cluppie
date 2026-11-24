@@ -47,10 +47,10 @@
      clubnaam   OpenStreetMap Nominatim (alleen de zoektekst, bij Zoek)
    Geen GPS of locatie van de gebruiker. */
 import { db, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, collection, getDocs, query, where, serverTimestamp, storage, sRef, uploadBytes, getDownloadURL } from './firebase.js?v=20261011g';
-import { S, esc, meld, isBeheerder } from './state.js?v=20261123a';
+import { S, esc, meld, isBeheerder } from './state.js?v=20261124v';
 import { ico } from './icons.js?v=20261116t';
-import { telGebruik } from './tracker.js?v=20261123a';
-import { catInfo } from './config.js?v=20261123a';
+import { telGebruik } from './tracker.js?v=20261124v';
+import { catInfo } from './config.js?v=20261124v';
 
 /* ---------- kaartwiskunde (web-mercator, tegels van 256 px) ---------- */
 const TS = 256, ZMIN = 15, ZMAX = 20;
@@ -336,7 +336,7 @@ function koppelZoek(root, onKies){
 /* ==================== KAART (eigen kleine tegelviewer) ==================== */
 const I_MIJ = svgI('<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>', 22);
 const _kaarten = new Set();
-class Kaart {
+export class Kaart {   /* [20261124v] ook gebruikt door de Veldplanner (kaart met eigen tekeningen) */
   constructor(el, o){
     Object.assign(this, { el, lat:o.lat, lon:o.lon, z:o.z || 17, interactief:!!o.interactief, onTik:o.onTik || null,
       lagen:o.lagen || (() => ''), grijp:o.grijp || null, mij:null, _watch:null });
