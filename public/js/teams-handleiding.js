@@ -4,9 +4,9 @@
    wat hierboven al in dit bestand staat. De zoekfunctionaliteit
    (#helpZoek) wordt door de hub (teams.js/koppelTeamTab) aangesloten,
    want die werkt direct op het gerenderde DOM-element. */
-import { esc } from './state.js?v=20261124b';
-import { beleidsplanNaam } from './clubconfig.js?v=20261124b';
-import { ROLKAARTEN, mijnRollen } from './rolkaart.js?v=20261124b';
+import { esc } from './state.js?v=20261124c';
+import { beleidsplanNaam } from './clubconfig.js?v=20261124c';
+import { ROLKAARTEN, mijnRollen } from './rolkaart.js?v=20261124c';
 import { uitlegVoor, zoekTekst } from './hulp-rol.js?v=20261122a';
 
 /* [20261122a] Hoofdstuk "Jouw rol": uitleg per rol, de eigen rol bovenaan en gemarkeerd. Een coördinator
@@ -20,7 +20,7 @@ function htmlJouwRol(){
     <div class="tip"><b>Niet:</b> ${esc(u.niet)}</div>
     </section>`).join('\n    ')}`;
 }
-import { onboardingHerstartBlok } from './onboarding.js?v=20261124b';
+import { onboardingHerstartBlok } from './onboarding.js?v=20261124c';
 
 export function htmlHandleiding(){
   return `<div class="hl">
@@ -491,6 +491,7 @@ export function htmlHandleiding(){
       <li>Beoordelingen en leerpunten zijn <b>coach-only</b>: spelers en ouders zien deze niet.</li>
       <li>Verwijder je een speler, dan worden zijn gegevens (inclusief beoordelingen en leerpunten) verwijderd.</li>
     </ul>
+    <p><b>Video’s:</b> de clubbeheerder kan zien welke trainers een video hebben geopend en wanneer, bijvoorbeeld om te weten of de uitleg van een nieuw blok is aangekomen. Er wordt niet bijgehouden of je de video uitkijkt.</p>
     <div class="tip">Deel gegevens uit spelersprofielen niet buiten het technisch kader. Heb je vragen over privacy binnen de club? Stem af met je hoofdcoach of clubbeheerder.</div>
 
     

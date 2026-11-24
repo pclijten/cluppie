@@ -8,19 +8,19 @@ import {
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, speler, initialen, openModal, sluitModal, toon, isBeheerder
-} from './state.js?v=20261124b';
-import { telGebruik } from './tracker.js?v=20261124b';
-import { voorbeeldTeamcode } from './clubconfig.js?v=20261124b';
+} from './state.js?v=20261124c';
+import { telGebruik } from './tracker.js?v=20261124c';
+import { voorbeeldTeamcode } from './clubconfig.js?v=20261124c';
 import { ico } from './icons.js?v=20261116t';
 
 import {
   CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, youtubeId, youtubeThumb, youtubeWatch,
   SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo, isoWeek,
   catLabel,
-} from './config.js?v=20261124b';
-import { onderdeelAan } from './onderdelen.js?v=20261124b';
-import { htmlKompas } from './teams-leerlijn.js?v=20261124b';
-import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261124b';
+} from './config.js?v=20261124c';
+import { onderdeelAan } from './onderdelen.js?v=20261124c';
+import { htmlKompas } from './teams-leerlijn.js?v=20261124c';
+import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261124c';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
 import { spelersOpTraining } from './uitleen-regels.js?v=20261113b';
 import {
@@ -593,7 +593,7 @@ function videoRijHtml(vid, nr){
     ? `<img src="${esc(youtubeThumb(id))}" alt="" loading="lazy"><span class="play">▶</span>`
     : `<span class="play">▶</span>${upload ? '<span class="u-t-2xs u-fw-7" style="position:absolute;bottom:2px;right:3px;letter-spacing:.5px;color:var(--wit);background:color-mix(in srgb, var(--zwart) 55%, transparent);padding:1px var(--space-2xs);border-radius:var(--r-2xs);line-height:1">MP4</span>' : ''}`;
   return `
-    <div class="video-rij" data-open-video="${esc(href)}" data-video-type="${upload ? 'upload' : 'youtube'}" data-video-titel="${esc(vid.titel || 'Video')}" style="cursor:pointer">
+    <div class="video-rij" data-open-video="${esc(href)}" data-video-id="${esc(vid.id || '')}" data-video-type="${upload ? 'upload' : 'youtube'}" data-video-titel="${esc(vid.titel || 'Video')}" style="cursor:pointer">
       <div class="thumb">${thumbInner}<span class="tv-nr">${nr}</span></div>
       <div class="v"><div class="v-titel">${esc(vid.titel || 'Video')}</div>
         <div class="v-meta">${vid.clubNaam ? esc(vid.clubNaam) : (upload ? 'Eigen video' : 'YouTube')}</div></div>
