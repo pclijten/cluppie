@@ -133,7 +133,7 @@ svg{flex:none}
 .rij-lab .kop{font-size:var(--t-xl)}
 .rij-lab small{font-size:var(--t-2xs);color:var(--ink-2);display:flex;align-items:center;gap:4px}
 .rij-lab .geenlicht{color:var(--warn)}
-.baan{position:relative;flex:1;height:calc(var(--lh) * 4)}
+.baan{position:relative;flex:1;height:112px}
 .baan .lijn{position:absolute;left:0;right:0;border-top:1px dashed var(--line-d)}
 .baan .lijn.half{border-top:1px solid var(--hair)}
 .baan .kwartier{position:absolute;top:0;bottom:0;border-left:1px solid var(--line-d)}
@@ -268,6 +268,33 @@ tr.bouwrij td{background:var(--surface-2);font-weight:700;color:var(--ink-2);pad
 .tel .bub{background:rgba(109,179,255,.12);border:1px solid rgba(109,179,255,.35);border-radius:14px;padding:10px 12px;font-size:12px}
 .tel .bub b{display:block;margin-bottom:3px;color:#6db3ff}
 
+.indeling-knop{margin-top:2px;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--hair);background:var(--surface-2);border-radius:var(--r-xs);padding:3px 6px;cursor:pointer;font-size:var(--t-2xs);font-weight:600;color:var(--ink-2);max-width:100%;white-space:nowrap;overflow:hidden}
+.indeling-knop:hover{color:var(--ink);border-color:color-mix(in srgb,var(--ink) 25%,transparent)}
+.blok.vervolg{justify-content:center;opacity:.92}
+.blok.vervolg .t{font-size:var(--t-xs);opacity:.75}
+.kveld{cursor:pointer}
+.kveld:hover > rect:first-child,.kveld:focus-visible > rect:first-child{stroke:var(--ink);stroke-width:1.2}
+.kveldnaam{font-family:var(--font-display);font-weight:700;fill:var(--ink)}
+.ksub{font-family:var(--font-body);font-weight:500;fill:var(--ink-2)}
+.klabel{font-family:var(--font-display);font-weight:700;fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.5);stroke-width:1.2px}
+.klabel.klein{font-family:var(--font-body);font-weight:600;stroke-width:.9px}
+.kklabel{fill:var(--ink)}
+.kaart.foto .kveldnaam{fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.6);stroke-width:1.4px}
+.kaart.foto .ksub,.kaart.foto .kklabel{fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.6);stroke-width:1px}
+.kvak{pointer-events:none}
+.iveld{width:100%;height:auto;display:block;border-radius:var(--r-s);touch-action:none;user-select:none}
+.icel{fill:rgba(255,255,255,.04);stroke:rgba(255,255,255,.55);stroke-width:1.2;stroke-dasharray:5 4;cursor:crosshair}
+.icel:hover{fill:rgba(255,255,255,.12)}
+.icel.aan{fill:color-mix(in srgb,var(--accent) 45%,transparent);stroke:#fff;stroke-dasharray:none}
+.ihl{fill:color-mix(in srgb,var(--info) 35%,transparent);stroke:var(--info);stroke-width:2.5;pointer-events:none}
+.vaklijst{display:flex;flex-wrap:wrap;gap:6px}
+.vakchip{display:inline-flex;align-items:center;gap:6px;padding:4px 4px 4px 10px;border-radius:var(--r-pill);background:var(--surface-2);border:1px solid var(--hair);font-size:var(--t-xs);cursor:pointer}
+.vakchip.aan{border-color:var(--info);background:color-mix(in srgb,var(--info) 14%,var(--surface-2))}
+.vakchip small{color:var(--ink-2)}
+.vakchip button{border:0;background:transparent;cursor:pointer;color:var(--ink-2);display:grid;place-items:center;width:24px;height:24px;border-radius:50%}
+.vakchip button:hover{background:var(--surface);color:var(--ink)}
+.vakchip:not(:has(button)){padding-right:10px}
+.nieuwvak{padding:10px 12px;border-radius:var(--r-s);background:color-mix(in srgb,var(--accent) 8%,var(--surface-2))}
 .notitie{font-size:var(--t-2xs);color:var(--ink-2);margin-top:18px;line-height:1.5;max-width:900px}
 .verberg-smal{display:inline}
 @media (max-width:1180px){
@@ -281,6 +308,7 @@ tr.bouwrij td{background:var(--surface-2);font-weight:700;color:var(--ink-2);pad
   .zij .groep{padding:0;min-width:200px}
   .week{grid-template-columns:repeat(5,minmax(64px,1fr));overflow-x:auto}
   .heat{display:none}
+  .dagk .r1 .meta{display:none}
   .titel h1{font-size:var(--t-3xl)}
   .verberg-smal{display:none}
   .blok,.chip{touch-action:auto}
@@ -323,27 +351,52 @@ const DAG_START = tm('16:30'), DAG_EIND = tm('22:30'), STAP = 15;
 const KK_VOOR = 15, KK_NA = 20, ONDER_TOT = tm('19:30'), DONKER = tm('17:00');
 const DAGEN = ['', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag'];
 const DAGK = ['', 'Ma', 'Di', 'Wo', 'Do', 'Vr'];
+/* Een veld is een raster van kolommen (langs de lengte) x rijen (over de breedte). Een vak is een rechthoek van
+   cellen met een eigen naam. Standaard: heel, halven en kwarten; de club kan eigen indelingen maken (derden,
+   zessen, keepershoeken, ...). Botsingen rekenen per cel, dus elke indeling werkt. */
+function vakkenStandaard(K, R){
+  const v = [{ id:'h', naam:'Heel veld', kort:'', c0:0, c1:K - 1, r0:0, r1:R - 1 }];
+  if (K % 2 === 0){ const h = K / 2;
+    v.push({ id:'a', naam:'Half a', kort:'a', c0:0, c1:h - 1, r0:0, r1:R - 1 }, { id:'b', naam:'Half b', kort:'b', c0:h, c1:K - 1, r0:0, r1:R - 1 });
+    if (R % 2 === 0){ const rh = R / 2;
+      v.push({ id:'av', naam:'Kwart a voor', kort:'a voor', c0:0, c1:h - 1, r0:0, r1:rh - 1 }, { id:'aa', naam:'Kwart a achter', kort:'a achter', c0:0, c1:h - 1, r0:rh, r1:R - 1 },
+             { id:'bv', naam:'Kwart b voor', kort:'b voor', c0:h, c1:K - 1, r0:0, r1:rh - 1 }, { id:'ba', naam:'Kwart b achter', kort:'b achter', c0:h, c1:K - 1, r0:rh, r1:R - 1 }); } }
+  return v;
+}
+const SJABLONEN = {
+  standaard: { naam:'Heel, halven, kwarten', K:2, R:2, vakken:() => vakkenStandaard(2, 2) },
+  derden:    { naam:'Derden', K:3, R:1, vakken:() => [{ id:'h', naam:'Heel veld', kort:'', c0:0, c1:2, r0:0, r1:0 },
+      ...[0,1,2].map(i => ({ id:'d' + (i + 1), naam:`Derde ${i + 1}`, kort:`derde ${i + 1}`, c0:i, c1:i, r0:0, r1:0 })),
+      { id:'d12', naam:'Derde 1 en 2', kort:'derde 1+2', c0:0, c1:1, r0:0, r1:0 }, { id:'d23', naam:'Derde 2 en 3', kort:'derde 2+3', c0:1, c1:2, r0:0, r1:0 }] },
+  zessen:    { naam:'Zessen', K:3, R:2, vakken:() => [{ id:'h', naam:'Heel veld', kort:'', c0:0, c1:2, r0:0, r1:1 },
+      ...[0,1,2].map(i => ({ id:'d' + (i + 1), naam:`Derde ${i + 1}`, kort:`derde ${i + 1}`, c0:i, c1:i, r0:0, r1:1 })),
+      ...[0,1,2].flatMap(i => [0,1].map(r => ({ id:`z${i + 1}${r ? 'a' : 'v'}`, naam:`Zesde ${i + 1} ${r ? 'achter' : 'voor'}`, kort:`${i + 1} ${r ? 'achter' : 'voor'}`, c0:i, c1:i, r0:r, r1:r })))] },
+  achtsten:  { naam:'Halven, kwarten en achtsten', K:4, R:2, vakken:() => [...vakkenStandaard(4, 2),
+      ...[0,1,2,3].flatMap(i => [0,1].map(r => ({ id:`e${i + 1}${r ? 'a' : 'v'}`, naam:`Achtste ${i + 1} ${r ? 'achter' : 'voor'}`, kort:`${i + 1} ${r ? 'achter' : 'voor'}`, c0:i, c1:i, r0:r, r1:r })))] },
+};
 const VELDEN = [
-  { id:'v1', naam:'Veld 1', ondergrond:'Kunstgras', licht:true },
-  { id:'v2', naam:'Veld 2', ondergrond:'Kunstgras', licht:true },
-  { id:'v3', naam:'Veld 3', ondergrond:'Gras', licht:true },
-  { id:'v4', naam:'Veld 4', ondergrond:'Gras', licht:false },
+  { id:'v1', naam:'Veld 1', ondergrond:'Kunstgras', licht:true, sjabloon:'standaard', K:2, R:2, vakken:vakkenStandaard(2, 2) },
+  { id:'v2', naam:'Veld 2', ondergrond:'Kunstgras', licht:true, sjabloon:'standaard', K:2, R:2, vakken:vakkenStandaard(2, 2) },
+  { id:'v3', naam:'Veld 3', ondergrond:'Gras', licht:true, sjabloon:'derden', K:3, R:1, vakken:SJABLONEN.derden.vakken() },
+  { id:'v4', naam:'Veld 4', ondergrond:'Gras', licht:false, sjabloon:'eigen', K:4, R:2, vakken:[...vakkenStandaard(4, 2),
+      { id:'k1', naam:'Keepershoek links', kort:'keepershoek links', c0:0, c1:0, r0:0, r1:1, eigen:true },
+      { id:'k2', naam:'Keepershoek rechts', kort:'keepershoek rechts', c0:3, c1:3, r0:0, r1:1, eigen:true }] },
 ];
 const VELD = Object.fromEntries(VELDEN.map(v => [v.id, v]));
 const KKS = [1, 2, 3, 4, 5, 6, 7, 8];
 const BOUW = { onder:{ naam:'Onderbouw', c:'--b-onder' }, midden:{ naam:'Middenbouw', c:'--b-midden' }, boven:{ naam:'Bovenbouw', c:'--b-boven' } };
 const MAAT_NAAM = { kwart:'kwart veld', half:'half veld', heel:'heel veld' };
-const MAAT_RANG = { kwart:1, half:2, heel:3 };
-/* banen in een veld: 0 a voor, 1 a achter, 2 b voor, 3 b achter */
-const DEEL = {
-  h:{ lanes:[0,1,2,3], maat:'heel', naam:'heel' },
-  a:{ lanes:[0,1], maat:'half', naam:'a' }, b:{ lanes:[2,3], maat:'half', naam:'b' },
-  av:{ lanes:[0], maat:'kwart', naam:'a voor' }, aa:{ lanes:[1], maat:'kwart', naam:'a achter' },
-  bv:{ lanes:[2], maat:'kwart', naam:'b voor' }, ba:{ lanes:[3], maat:'kwart', naam:'b achter' },
-};
-const DELEN_VAN = { heel:['h'], half:['a','b'], kwart:['av','aa','bv','ba'] };
-const deelVanLane = (maat, lane) => maat === 'heel' ? 'h' : maat === 'half' ? (lane < 2 ? 'a' : 'b') : ['av','aa','bv','ba'][lane];
-const plekTekst = b => `${VELD[b.veld].naam}${b.deel === 'h' ? '' : ' ' + DEEL[b.deel].naam}`;
+const NODIG = { kwart:.25, half:.5, heel:1 };
+const vakVan = (veld, id) => VELD[veld].vakken.find(x => x.id === id) || VELD[veld].vakken[0];
+/* cellen als baan-nummers: kolom voor kolom, binnen een kolom van voor naar achter */
+const cellen = (veld, id) => { const v = VELD[veld], k = vakVan(veld, id), uit = [];
+  for (let c = k.c0; c <= k.c1; c++) for (let r = k.r0; r <= k.r1; r++) uit.push(c * v.R + r); return uit; };
+const deelVan = (veld, id) => { const v = VELD[veld], k = vakVan(veld, id); return (k.c1 - k.c0 + 1) * (k.r1 - k.r0 + 1) / (v.K * v.R); };
+const pct = f => f === 1 ? 'heel veld' : f === .5 ? 'half veld' : f === .25 ? 'kwart veld' : `${Math.round(f * 100)}% van het veld`;
+/* vakken die groot genoeg zijn, de best passende eerst */
+const passend = (veld, nodig) => VELD[veld].vakken.filter(k => deelVan(veld, k.id) >= nodig - 1e-6)
+  .sort((a, b) => deelVan(veld, a.id) - deelVan(veld, b.id));
+const plekTekst = b => { const k = vakVan(b.veld, b.deel); return `${VELD[b.veld].naam}${k.kort ? ' ' + k.kort : ''}`; };
 
 const TEAMS = {};
 function team(naam, lft, maat, per, trainers, extra = {}){
@@ -380,7 +433,7 @@ const START = [
   B('JO13-1',3,'19:15','v1','a',1), B('JO14-1',3,'19:15','v1','b',2), B('MO15-1',3,'19:15','v2','a',3), B('JO15-2',3,'19:15','v2','b',4),
   B('JO19-1',3,'20:45','v2','h',5), B('JO17-2',3,'20:45','v1','a',6),
   B('JO9-2',4,'17:00','v1','av',1), B('JO10-2',4,'17:00','v1','b',3), B('MO10-1',4,'18:15','v1','a',4), B('JO11-2',4,'18:15','v1','b',5),
-  B('JO11-3',4,'19:00','v3','a',6), B('JO12-1',4,'18:15','v2','a',7), B('JO12-2',4,'18:15','v2','b',8),
+  B('JO11-3',4,'19:00','v3','d12',6), B('JO12-1',4,'18:15','v2','a',7), B('JO12-2',4,'18:15','v2','b',8),
   B('MO13-1',4,'19:30','v1','a',1), B('JO16-1',4,'19:30','v1','b',2), B('JO17-1',4,'19:30','v2','h',3),
   B('MO17-1',4,'21:00','v1','a',4), B('JO19-2',4,'21:00','v1','b',5),
   B('JO13-2',5,'18:00','v1','a',1),
@@ -389,8 +442,8 @@ const START = [
 const sleutel = b => `${b.dag}|${b.start}|${b.eind}|${b.veld}|${b.deel}|${b.kk.join(',')}`;
 const GEPUBLICEERD = START.filter(b => !(b.team === 'JO13-2' && b.dag === 5)).map(b => {
   const c = { ...b, kk:[...b.kk] };
-  if (b.team === 'JO11-3' && b.dag === 4){ c.start = tm('18:15'); c.eind = c.start + 75; c.veld = 'v3'; c.kk = [6]; }
-  if (b.team === 'JO12-2' && b.dag === 2){ c.start = tm('18:15'); c.eind = c.start + 75; c.veld = 'v3'; c.deel = 'b'; c.kk = [8]; }
+  if (b.team === 'JO11-3' && b.dag === 4){ c.start = tm('18:15'); c.eind = c.start + 75; c.veld = 'v3'; c.deel = 'd12'; c.kk = [6]; }
+  if (b.team === 'JO12-2' && b.dag === 2){ c.start = tm('18:15'); c.eind = c.start + 75; c.veld = 'v3'; c.deel = 'd3'; c.kk = [8]; }
   return c;
 });
 
@@ -399,11 +452,11 @@ const S = {
   blokken: START.map(b => ({ ...b, kk:[...b.kk] })),
   gepubliceerd: GEPUBLICEERD,
   gepubliceerdOm: 'vrijdag 21 november, 21:40',
-  dag: 2, view: 'tijdlijn', sel: null, geschiedenis: [], dagwijz: [], kaartTijd: tm('18:30'), venster: null, toast: null, smal: false,
+  dag: 2, view: 'tijdlijn', sel: null, geschiedenis: [], dagwijz: [], kaartTijd: tm('18:30'), kaartModus: 'foto', venster: null, toast: null, smal: false,
 };
-const kloon = () => JSON.stringify(S.blokken);
+const kloon = () => JSON.stringify({ b: S.blokken, v: VELDEN.map(v => ({ id:v.id, sjabloon:v.sjabloon, K:v.K, R:v.R, vakken:v.vakken })) });
 function bewaar(){ S.geschiedenis.push(kloon()); if (S.geschiedenis.length > 60) S.geschiedenis.shift(); }
-function ongedaan(){ const v = S.geschiedenis.pop(); if (!v) return; S.blokken = JSON.parse(v); if (S.sel && !S.blokken.some(b => b.id === S.sel)) S.sel = null; teken(); meld('Laatste stap ongedaan gemaakt'); }
+function ongedaan(){ const v = S.geschiedenis.pop(); if (!v) return; const o = JSON.parse(v); S.blokken = o.b; o.v.forEach(x => Object.assign(VELD[x.id], x)); if (S.sel && !S.blokken.some(b => b.id === S.sel)) S.sel = null; teken(); meld('Laatste stap ongedaan gemaakt'); }
 const blok = id => S.blokken.find(b => b.id === id);
 const bc = t => `var(${BOUW[TEAMS[t].bouw].c})`;
 const overlap = (a1, a2, b1, b2) => a1 < b2 && b1 < a2;
@@ -419,7 +472,7 @@ function controleer(lijst = S.blokken){
     for (let i = 0; i < dag.length; i++) for (let j = i + 1; j < dag.length; j++){
       const a = dag[i], b = dag[j];
       const tijd = overlap(a.start, a.eind, b.start, b.eind);
-      if (tijd && a.veld === b.veld && DEEL[a.deel].lanes.some(l => DEEL[b.deel].lanes.includes(l)))
+      if (tijd && a.veld === b.veld && cellen(a.veld, a.deel).some(l => cellen(b.veld, b.deel).includes(l)))
         voeg('fout', d, [a.id, b.id], `${a.team} en ${b.team} staan tegelijk op ${VELD[a.veld].naam} (${tt(Math.max(a.start, b.start))}).`);
       const [a1, a2] = kkVan(a), [b1, b2] = kkVan(b), samen = a.kk.filter(k => b.kk.includes(k));
       if (samen.length && overlap(a1, a2, b1, b2))
@@ -433,7 +486,7 @@ function controleer(lijst = S.blokken){
       const t = TEAMS[b.team];
       if (t.bouw === 'onder' && b.eind > ONDER_TOT) voeg('warn', d, [b.id], `${b.team} (onderbouw) traint tot ${tt(b.eind)}. Advies: uiterlijk ${tt(ONDER_TOT)} klaar.`);
       if (!VELD[b.veld].licht && b.eind > DONKER) voeg('warn', d, [b.id], `${VELD[b.veld].naam} heeft geen licht, ${b.team} traint tot ${tt(b.eind)}. In de winter is het om 17:00 donker.`, { soort:'licht', id:b.id });
-      if (MAAT_RANG[DEEL[b.deel].maat] < MAAT_RANG[t.maat]) voeg('warn', d, [b.id], `${b.team} heeft een ${MAAT_NAAM[t.maat]} nodig en staat op een ${MAAT_NAAM[DEEL[b.deel].maat]}.`);
+      if (deelVan(b.veld, b.deel) < NODIG[t.maat] - 1e-6) voeg('warn', d, [b.id], `${b.team} heeft een ${MAAT_NAAM[t.maat]} nodig en staat op ${vakVan(b.veld, b.deel).naam.toLowerCase()} (${pct(deelVan(b.veld, b.deel))}).`);
       if (!b.kk.length) voeg('warn', d, [b.id], `${b.team} heeft nog geen kleedkamer.`, { soort:'kk', id:b.id });
     });
   }
@@ -443,7 +496,7 @@ const nogNodig = () => Object.values(TEAMS).map(t => ({ t, n: S.blokken.filter(b
   .filter(x => x.n + x.v < x.t.per);
 
 function veldVrij(dag, veld, deel, start, eind, behalve, lijst = S.blokken){
-  return !lijst.some(b => b.id !== behalve && b.dag === dag && b.veld === veld && overlap(start, eind, b.start, b.eind) && DEEL[b.deel].lanes.some(l => DEEL[deel].lanes.includes(l)));
+  return !lijst.some(b => b.id !== behalve && b.dag === dag && b.veld === veld && overlap(start, eind, b.start, b.eind) && cellen(veld, b.deel).some(l => cellen(veld, deel).includes(l)));
 }
 function vrijeKk(dag, start, eind, behalve, lijst = S.blokken){
   const bezet = new Set(lijst.filter(b => b.id !== behalve && b.dag === dag && overlap(start - KK_VOOR, eind + KK_NA, b.start - KK_VOOR, b.eind + KK_NA)).flatMap(b => b.kk));
@@ -489,7 +542,7 @@ function vulAan(){
         if (t.bouw === 'onder' && e > ONDER_TOT) break;
         for (const v of VELDEN){
           if (!v.licht && e > DONKER) continue;
-          const deel = DELEN_VAN[t.maat].find(dl => veldVrij(d, v.id, dl, s, e, null, lijst));
+          const deel = passend(v.id, NODIG[t.maat]).map(k => k.id).find(dl => veldVrij(d, v.id, dl, s, e, null, lijst));
           if (!deel) continue;
           const trainerVrij = !lijst.some(b => b.dag === d && overlap(s, e, b.start, b.eind) && TEAMS[b.team].trainers.some(x => t.trainers.includes(x)));
           if (!trainerVrij) continue;
@@ -549,7 +602,7 @@ function teken(){
     </div>
     ${htmlRechts(c, fouten, waarsch)}
   </div>
-  <p class="notitie">Mockup voor akkoord (P3). Fictieve club, teams en trainers. Slepen werkt met muis, aanraking (tablet) en toetsenbord: kies een blok met Tab, verschuif met de pijltjes, Delete haalt het uit het rooster. Op de telefoon tik je een blok aan en kies je waar het heen gaat. In Cluppie komt de kaart van het eigen sportpark (luchtfoto uit de veldkaart) in plaats van de tekening.</p>`;
+  <p class="notitie">Mockup voor akkoord (P3). Veldindeling: knop onder elke veldnaam, of tik op een veld in de kaart. Fictieve club, teams en trainers. Slepen werkt met muis, aanraking (tablet) en toetsenbord: kies een blok met Tab, verschuif met de pijltjes, Delete haalt het uit het rooster. Op de telefoon tik je een blok aan en kies je waar het heen gaat. De luchtfoto is hier nagemaakt (een artifact mag geen foto's van buiten laden); in Cluppie komt de echte luchtfoto van het eigen sportpark uit de veldkaart (PDOK).</p>`;
   koppel();
 }
 
@@ -559,8 +612,8 @@ function htmlWeek(c){
     const f = c.lijst.filter(x => x.dag === d && x.soort === 'fout').length, wn = c.lijst.filter(x => x.dag === d && x.soort === 'warn').length;
     const heat = [];
     for (let t = DAG_START; t < DAG_EIND; t += STAP){
-      const lanes = bl.filter(b => b.start <= t && b.eind > t).reduce((s, b) => s + DEEL[b.deel].lanes.length, 0);
-      heat.push(Math.min(1, lanes / (VELDEN.length * 4)));
+      const bezet = bl.filter(b => b.start <= t && b.eind > t).reduce((s, b) => s + deelVan(b.veld, b.deel), 0);
+      heat.push(Math.min(1, bezet / VELDEN.length));
     }
     const dw = S.dagwijz.filter(x => x.weekdag === d);
     return `<button type="button" class="dagk" data-dag="${d}" aria-pressed="${S.dag === d}">
@@ -606,12 +659,12 @@ function htmlTijdlijn(c, w){
   const dagBl = S.blokken.filter(b => b.dag === S.dag);
   const rijen = VELDEN.map(v => `<div class="rij">
     <div class="rij-lab"><span class="kop">${v.naam}</span><small>${v.ondergrond}</small>
-      <small class="${v.licht ? '' : 'geenlicht'}">${ic(v.licht ? 'licht' : 'geenlicht', 12)}${v.licht ? 'Licht' : 'Geen licht'}</small></div>
+      <small class="${v.licht ? '' : 'geenlicht'}">${ic(v.licht ? 'licht' : 'geenlicht', 12)}${v.licht ? 'Licht' : 'Geen licht'}</small>
+      <button type="button" class="indeling-knop" data-indeling="${v.id}" title="Veldindeling van ${v.naam}">${miniVeld(v)}<span>${{ standaard:'Standaard', eigen:'Eigen', derden:'Derden', zessen:'Zessen', achtsten:'Achtsten' }[v.sjabloon]}</span></button></div>
     <div class="baan" data-veld="${v.id}">
       ${raster.join('')}
       ${v.licht ? '' : `<i class="donker" style="left:${xVan(DONKER)}px" title="Donker zonder licht"></i>`}
-      <i class="lijn" style="top:${LH}px"></i><i class="lijn half" style="top:${LH * 2}px"></i><i class="lijn" style="top:${LH * 3}px"></i>
-      ${['a voor','a achter','b voor','b achter'].map((n, i) => `<span class="lane-lab" style="top:${i * LH + 2}px">${n}</span>`).join('')}
+      ${baanLijnen(v)}
       ${dagBl.filter(b => b.veld === v.id).map(b => htmlBlok(b, c.status[b.id], gew.has(b.id))).join('')}
     </div></div>`).join('');
   const kk = KKS.map(k => `<div class="kk-rij"><div class="kk-lab"><span class="kk-chip" data-kk="${k}" title="Sleep naar een team">${ic('deur', 12)}Kleedkamer ${k}</span></div>
@@ -634,17 +687,40 @@ function htmlTijdlijn(c, w){
       <span><i style="background:var(--info);width:8px;height:8px;border-radius:50%"></i>Gewijzigd sinds publiceren</span></div>
   </section>`;
 }
+/* hoogte van een baan: een veldrij is altijd RIJ_H hoog, verdeeld over zijn cellen */
+const RIJ_H = 112;
+const baanH = v => RIJ_H / (v.K * v.R);
+const looptjes = ls => { const r = []; [...ls].sort((a, b) => a - b).forEach(l => { const z = r[r.length - 1]; z && z[1] === l - 1 ? z[1] = l : r.push([l, l]); }); return r; };
+function baanLijnen(v){
+  const h = baanH(v), uit = [];
+  for (let i = 1; i < v.K * v.R; i++) uit.push(`<i class="lijn${i % v.R === 0 ? ' half' : ''}" style="top:${i * h}px"></i>`);
+  if (h >= 13) for (let c = 0; c < v.K; c++) for (let r = 0; r < v.R; r++){
+    const naam = v.K === 2 && v.R === 2 ? ['a voor','a achter','b voor','b achter'][c * 2 + r] : v.R === 1 ? `${c + 1}` : `${c + 1} ${r === 0 ? 'voor' : r === v.R - 1 ? 'achter' : 'midden'}`;
+    uit.push(`<span class="lane-lab" style="top:${(c * v.R + r) * h + 2}px">${naam}</span>`); }
+  return uit.join('');
+}
+function miniVeld(v, b = 22){
+  const w = b * 1.5, cw = w / v.K, rh = b / v.R, l = [];
+  for (let c = 1; c < v.K; c++) l.push(`<path d="M${c * cw} 0v${b}"/>`);
+  for (let r = 1; r < v.R; r++) l.push(`<path d="M0 ${r * rh}h${w}"/>`);
+  return `<svg width="${w}" height="${b}" viewBox="-1 -1 ${w + 2} ${b + 2}" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1"><rect width="${w}" height="${b}" rx="1.5"/><g stroke-dasharray="2 1.5">${l.join('')}</g></svg>`;
+}
 function htmlBlok(b, st, gewijzigd){
-  const lanes = DEEL[b.deel].lanes, l0 = lanes[0], n = lanes.length;
+  const v = VELD[b.veld], h = baanH(v), runs = looptjes(cellen(b.veld, b.deel));
   const w = xVan(b.eind) - xVan(b.start);
   const kort = w < 90;
-  return `<div class="blok${n === 1 ? ' een' : ''}${st === 'botsing' ? ' botsing' : st === 'waarsch' ? ' waarsch' : ''}${b.voorstel ? ' voorstel' : ''}${gewijzigd ? ' gewijzigd' : ''}${S.sel === b.id ? ' gekozen' : ''}"
+  const klas = `${st === 'botsing' ? ' botsing' : st === 'waarsch' ? ' waarsch' : ''}${b.voorstel ? ' voorstel' : ''}${gewijzigd ? ' gewijzigd' : ''}${S.sel === b.id ? ' gekozen' : ''}`;
+  return runs.map(([l0, l1], i) => {
+    const hoog = (l1 - l0 + 1) * h, een = hoog < 40;
+    const stijl = `--bc:${bc(b.team)};left:${xVan(b.start) + 1}px;width:${w - 2}px;top:${l0 * h + 1}px;height:${hoog - 2}px`;
+    if (i > 0) return `<div class="blok vervolg${klas}" data-id="${b.id}" aria-hidden="true" style="${stijl}"><span class="t">${b.team}</span></div>`;
+    return `<div class="blok${een ? ' een' : ''}${klas}"
     tabindex="0" role="button" data-id="${b.id}" aria-label="${b.team}, ${tt(b.start)} tot ${tt(b.eind)}, ${plekTekst(b)}${b.kk.length ? ', kleedkamer ' + b.kk.join(' en ') : ''}"
-    style="--bc:${bc(b.team)};left:${xVan(b.start) + 1}px;width:${w - 2}px;top:${l0 * LH + 1}px;height:${n * LH - 2}px">
+    style="${stijl}">
     <span class="t">${b.team}</span>
-    ${n === 1 ? `<span class="s num">${tt(b.start)}${kort ? '' : '–' + tt(b.eind)}${b.kk.length && !kort ? ` · ${ic('deur', 10)}${b.kk.join(',')}` : ''}</span>` : `<span class="s num">${tt(b.start)}–${tt(b.eind)}${b.kk.length ? ` · ${ic('deur', 10)}${b.kk.join(',')}` : ''}</span>`}
+    ${een ? `<span class="s num">${tt(b.start)}${kort ? '' : '–' + tt(b.eind)}${b.kk.length && !kort ? ` · ${ic('deur', 10)}${b.kk.join(',')}` : ''}</span>` : `<span class="s num">${tt(b.start)}–${tt(b.eind)}${b.kk.length ? ` · ${ic('deur', 10)}${b.kk.join(',')}` : ''}</span>`}
     <span class="greep" data-greep="1" aria-hidden="true"></span>
-  </div>`;
+  </div>`; }).join('');
 }
 
 function htmlPerTeam(w){
@@ -663,53 +739,190 @@ function htmlPerTeam(w){
     </tbody></table></div></section>`;
 }
 
+/* ---------- kaart: luchtfoto of getekend ---------- */
+const POS = { v1:[20, 22], v2:[145, 22], v3:[20, 110], v4:[145, 110] }, VW = 105, VH = 68;
+let fotoCache = null;
+function luchtfoto(){
+  /* In Cluppie: de echte luchtfoto (PDOK) uit de veldkaart. Een artifact mag geen foto's van buiten laden,
+     dus hier een nagemaakte luchtfoto van een fictief sportpark. */
+  if (fotoCache) return fotoCache;
+  const Z = 4, c = document.createElement('canvas'); c.width = 330 * Z; c.height = 196 * Z;
+  const g = c.getContext('2d'); g.scale(Z, Z);
+  let zaad = 7; const rnd = () => (zaad = (zaad * 16807) % 2147483647) / 2147483647;
+  g.fillStyle = '#58703a'; g.fillRect(0, 0, 330, 196);
+  for (let i = 0; i < 2600; i++){ g.fillStyle = ['#4f6833','#647d42','#5a6f37','#6b7f45','#4a5f30'][i % 5]; g.globalAlpha = .35; g.fillRect(rnd() * 330, rnd() * 196, 1 + rnd() * 3, 1 + rnd() * 3); }
+  g.globalAlpha = 1;
+  /* weg en parkeerplaats */
+  g.fillStyle = '#55585a'; g.fillRect(0, 182, 330, 14); g.fillStyle = '#d9d6cc'; for (let x = 4; x < 330; x += 14) g.fillRect(x, 188.6, 7, .7);
+  g.fillStyle = '#6a6d6f'; g.fillRect(262, 150, 68, 30);
+  g.strokeStyle = 'rgba(255,255,255,.6)'; g.lineWidth = .4; for (let x = 265; x < 328; x += 6){ g.beginPath(); g.moveTo(x, 151); g.lineTo(x, 159); g.moveTo(x, 171); g.lineTo(x, 179); g.stroke(); }
+  const auto = ['#c9ccd1','#2b2f36','#8a1f1f','#e8e8e8','#36506e','#9aa0a6'];
+  for (let x = 266; x < 326; x += 6) if (rnd() > .3){ g.fillStyle = auto[Math.floor(rnd() * auto.length)]; g.fillRect(x - 2, 152 + rnd(), 4, 6.5); }
+  for (let x = 266; x < 326; x += 6) if (rnd() > .45){ g.fillStyle = auto[Math.floor(rnd() * auto.length)]; g.fillRect(x - 2, 172 + rnd(), 4, 6.5); }
+  /* paden */
+  g.fillStyle = '#b9b2a2'; g.fillRect(127, 14, 16, 168); g.fillRect(14, 92, 248, 14); g.fillRect(143, 140, 119, 8);
+  /* bomen langs de rand */
+  const boom = (x, y, r) => { g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.arc(x + r * .5, y + r * .5, r, 0, 7); g.fill();
+    g.fillStyle = ['#2f4a23','#36542a','#2a4220'][Math.floor(rnd() * 3)]; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+    g.fillStyle = 'rgba(120,160,80,.25)'; g.beginPath(); g.arc(x - r * .3, y - r * .3, r * .5, 0, 7); g.fill(); };
+  for (let x = 4; x < 262; x += 7 + rnd() * 4) boom(x, 5 + rnd() * 4, 3 + rnd() * 2.5);
+  for (let y = 16; y < 178; y += 7 + rnd() * 4) boom(5 + rnd() * 3, y, 3 + rnd() * 2.5);
+  for (let y = 16; y < 140; y += 8 + rnd() * 4) boom(325 - rnd() * 3, y, 3 + rnd() * 2);
+  /* velden */
+  VELDEN.forEach(v => {
+    const [x, y] = POS[v.id], kunst = v.ondergrond === 'Kunstgras';
+    g.fillStyle = kunst ? '#3c7f43' : '#6c9a46'; g.fillRect(x - 3, y - 3, VW + 6, VH + 6);
+    for (let i = 0; i < 10; i++){ g.fillStyle = i % 2 ? (kunst ? '#3a7a40' : '#5f8d3d') : (kunst ? '#408746' : '#73a34c'); g.fillRect(x + i * VW / 10, y, VW / 10, VH); }
+    if (!kunst){ for (let i = 0; i < 90; i++){ g.fillStyle = 'rgba(150,130,80,.18)'; g.fillRect(x + rnd() * VW, y + rnd() * VH, 1.2, 1.2); }
+      [[x + 8, y + VH / 2], [x + VW - 8, y + VH / 2], [x + VW / 2, y + VH / 2]].forEach(([a, b]) => { g.fillStyle = 'rgba(140,115,70,.35)'; g.beginPath(); g.ellipse(a, b, 6, 9, 0, 0, 7); g.fill(); }); }
+    g.strokeStyle = 'rgba(255,255,255,.85)'; g.lineWidth = .45;
+    g.strokeRect(x + 2, y + 2, VW - 4, VH - 4);
+    g.beginPath(); g.moveTo(x + VW / 2, y + 2); g.lineTo(x + VW / 2, y + VH - 2); g.stroke();
+    g.beginPath(); g.arc(x + VW / 2, y + VH / 2, 8.5, 0, 7); g.stroke();
+    g.strokeRect(x + 2, y + VH / 2 - 18, 15, 36); g.strokeRect(x + VW - 17, y + VH / 2 - 18, 15, 36);
+    g.strokeRect(x + 2, y + VH / 2 - 8, 5, 16); g.strokeRect(x + VW - 7, y + VH / 2 - 8, 5, 16);
+    if (v.licht) [[x - 4, y - 4], [x + VW / 2, y - 5], [x + VW + 4, y - 4], [x - 4, y + VH + 4], [x + VW / 2, y + VH + 5], [x + VW + 4, y + VH + 4]].forEach(([a, b]) => {
+      g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 1; g.beginPath(); g.moveTo(a, b); g.lineTo(a + 7, b + 7); g.stroke();
+      g.fillStyle = '#d8d8d0'; g.beginPath(); g.arc(a, b, 1.1, 0, 7); g.fill(); });
+  });
+  /* clubgebouw */
+  g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(270, 24, 54, 122);
+  g.fillStyle = '#7d6a5c'; g.fillRect(266, 20, 54, 122); g.fillStyle = '#8f7b6b'; g.fillRect(266, 20, 27, 122);
+  g.strokeStyle = 'rgba(0,0,0,.25)'; g.lineWidth = .5; g.beginPath(); g.moveTo(293, 20); g.lineTo(293, 142); g.stroke();
+  g.fillStyle = '#a7a39a'; g.fillRect(276, 60, 8, 6); g.fillRect(300, 100, 10, 7);
+  fotoCache = c.toDataURL('image/jpeg', .86);
+  return fotoCache;
+}
 function htmlKaart(){
-  const t = S.kaartTijd;
+  const t = S.kaartTijd, foto = S.kaartModus === 'foto';
   const actief = S.blokken.filter(b => b.dag === S.dag && b.start <= t && b.eind > t);
-  /* velden 2 x 2, 105 x 68 m, plus clubgebouw met kleedkamers */
-  const pos = { v1:[20, 20], v2:[145, 20], v3:[20, 108], v4:[145, 108] };
-  const W = 105, H = 68;
-  const kwart = [[0,0],[0,1],[1,0],[1,1]]; /* lane -> [kolom, rij] : a=links, b=rechts, voor=boven */
   const veldSvg = VELDEN.map(v => {
-    const [x, y] = pos[v.id];
-    const deelVlakken = actief.filter(b => b.veld === v.id).map(b => {
-      const ls = DEEL[b.deel].lanes;
-      const cols = ls.map(l => kwart[l][0]), rows = ls.map(l => kwart[l][1]);
-      const cx = Math.min(...cols), cw = Math.max(...cols) - cx + 1, ry = Math.min(...rows), rh = Math.max(...rows) - ry + 1;
-      const px = x + cx * W / 2, py = y + ry * H / 2, pw = cw * W / 2, ph = rh * H / 2;
-      return `<g><rect x="${px + 1}" y="${py + 1}" width="${pw - 2}" height="${ph - 2}" rx="2" style="fill:${bc(b.team)};stroke:${bc(b.team)}" fill-opacity=".55" stroke-width="1"/>
-        <text x="${px + pw / 2}" y="${py + ph / 2 + 3}" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="${pw > 60 ? 13 : 10}" fill="#fff">${b.team}</text></g>`;
+    const [x, y] = POS[v.id], cw = VW / v.K, rh = VH / v.R;
+    const strepen = foto ? '' : Array.from({ length: 10 }, (_, i) => `<rect x="${x + i * VW / 10}" y="${y}" width="${VW / 10}" height="${VH}" style="fill:${i % 2 ? 'var(--veld-2)' : 'var(--veld)'}"/>`).join('');
+    const raster = [];
+    for (let c = 1; c < v.K; c++) raster.push(`<path d="M${x + c * cw} ${y}v${VH}"/>`);
+    for (let r = 1; r < v.R; r++) raster.push(`<path d="M${x} ${y + r * rh}h${VW}"/>`);
+    const vlakken = actief.filter(b => b.veld === v.id).map(b => {
+      const k = vakVan(b.veld, b.deel);
+      const px = x + k.c0 * cw, py = y + k.r0 * rh, pw = (k.c1 - k.c0 + 1) * cw, ph = (k.r1 - k.r0 + 1) * rh;
+      const groot = pw > 40 && ph > 24;
+      return `<g class="kvak"><rect x="${px + 1.2}" y="${py + 1.2}" width="${pw - 2.4}" height="${ph - 2.4}" rx="3" style="fill:${bc(b.team)};stroke:${foto ? '#fff' : bc(b.team)}" fill-opacity="${foto ? .5 : .78}" stroke-width="${foto ? .8 : 1}"/>
+        <text x="${px + pw / 2}" y="${py + ph / 2 + (groot ? 0 : 2)}" text-anchor="middle" class="klabel" font-size="${groot ? 8.5 : 6.5}">${b.team}</text>
+        ${groot ? `<text x="${px + pw / 2}" y="${py + ph / 2 + 7}" text-anchor="middle" class="klabel klein" font-size="4.6">${tt(b.start)}–${tt(b.eind)} · kk ${b.kk.join(',') || '–'}</text>` : ''}</g>`;
     }).join('');
     const donker = !v.licht && t >= DONKER;
-    return `<g>
-      <rect x="${x}" y="${y}" width="${W}" height="${H}" rx="2" style="fill:var(--veld)"/>
-      <g fill="none" style="stroke:var(--kalk)" stroke-width=".8"><rect x="${x + 3}" y="${y + 3}" width="${W - 6}" height="${H - 6}"/><path d="M${x + W / 2} ${y + 3}v${H - 6}"/><circle cx="${x + W / 2}" cy="${y + H / 2}" r="8"/>
-      <rect x="${x + 3}" y="${y + H / 2 - 18}" width="15" height="36"/><rect x="${x + W - 18}" y="${y + H / 2 - 18}" width="15" height="36"/></g>
-      ${deelVlakken}
-      ${donker ? `<rect x="${x}" y="${y}" width="${W}" height="${H}" rx="2" fill="#000" fill-opacity=".55"/><text x="${x + W / 2}" y="${y + H / 2 + 4}" text-anchor="middle" font-size="9" fill="#fff">Donker, geen licht</text>` : ''}
-      <text x="${x + 2}" y="${y - 4}" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="11" style="fill:var(--ink)">${v.naam.toUpperCase()}</text>
+    return `<g class="kveld" data-indeling="${v.id}" role="button" tabindex="0" aria-label="Indeling van ${v.naam}">
+      ${foto ? `<rect x="${x}" y="${y}" width="${VW}" height="${VH}" fill="transparent"/>` : `<rect x="${x - 3}" y="${y - 3}" width="${VW + 6}" height="${VH + 6}" rx="4" style="fill:var(--veld)"/>${strepen}
+      <g fill="none" style="stroke:var(--kalk)" stroke-width=".8"><rect x="${x + 2}" y="${y + 2}" width="${VW - 4}" height="${VH - 4}"/><path d="M${x + VW / 2} ${y + 2}v${VH - 4}"/><circle cx="${x + VW / 2}" cy="${y + VH / 2}" r="8.5"/>
+      <rect x="${x + 2}" y="${y + VH / 2 - 18}" width="15" height="36"/><rect x="${x + VW - 17}" y="${y + VH / 2 - 18}" width="15" height="36"/></g>`}
+      <g fill="none" stroke="${foto ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.4)'}" stroke-width=".6" stroke-dasharray="2.5 2">${raster.join('')}</g>
+      ${vlakken}
+      ${donker ? `<rect x="${x}" y="${y}" width="${VW}" height="${VH}" rx="2" fill="#000" fill-opacity=".6"/><text x="${x + VW / 2}" y="${y + VH / 2 + 3}" text-anchor="middle" font-size="6" fill="#fff">Donker, geen licht</text>` : ''}
+      <text x="${x}" y="${y - 5}" class="kveldnaam" font-size="7.5">${v.naam.toUpperCase()}<tspan class="ksub" font-size="5" dx="4">${v.ondergrond.toLowerCase()} · ${v.sjabloon === 'standaard' ? 'standaard indeling' : v.sjabloon === 'eigen' ? 'eigen indeling' : SJABLONEN[v.sjabloon].naam.toLowerCase()}</tspan></text>
     </g>`;
   }).join('');
   const kkSvg = KKS.map((k, i) => {
     const b = S.blokken.find(x => x.dag === S.dag && x.kk.includes(k) && x.start - KK_VOOR <= t && x.eind + KK_NA > t);
-    const x = 272 + (i % 2) * 22, y = 34 + Math.floor(i / 2) * 26;
-    return `<rect x="${x}" y="${y}" width="20" height="24" rx="2" style="fill:${b ? bc(b.team) : 'var(--surface-2)'};stroke:var(--hair)" fill-opacity="${b ? .7 : 1}"/>
-      <text x="${x + 10}" y="${y + 15}" text-anchor="middle" font-size="9" font-weight="700" style="fill:var(--ink)">${k}</text>`;
+    const x = 270 + (i % 2) * 24, y = 36 + Math.floor(i / 2) * 26;
+    return `<g><rect x="${x}" y="${y}" width="22" height="23" rx="3" style="fill:${b ? bc(b.team) : foto ? 'rgba(20,20,20,.45)' : 'var(--surface-2)'};stroke:${foto ? 'rgba(255,255,255,.7)' : 'var(--hair)'}" fill-opacity="${b ? .85 : 1}"/>
+      <text x="${x + 11}" y="${y + 10}" text-anchor="middle" font-size="6.5" font-weight="700" class="kklabel">${k}</text>
+      ${b ? `<text x="${x + 11}" y="${y + 18.5}" text-anchor="middle" font-size="4" class="kklabel">${b.team}</text>` : ''}</g>`;
   }).join('');
-  return `<section class="paneel kaart"><div class="paneel-kop"><h2 class="kop">Sportpark · ${DAGEN[S.dag]}</h2><span class="zacht" style="font-size:var(--t-xs)">${actief.length} teams op het veld</span></div>
+  return `<section class="paneel kaart${foto ? ' foto' : ''}"><div class="paneel-kop"><h2 class="kop">Sportpark · ${DAGEN[S.dag]}</h2>
+      <div class="segment" role="group" aria-label="Kaartweergave">
+        <button type="button" data-kmodus="foto" aria-pressed="${foto}">Luchtfoto</button><button type="button" data-kmodus="tekening" aria-pressed="${!foto}">Getekend</button></div></div>
     <div class="kaartwrap">
       <div class="schuif"><button type="button" class="knop" id="speel" aria-label="Speel de dag af">${ic(speelt ? 'pauze' : 'speel')}</button>
         <span class="kop num" aria-live="polite">${tt(t)}</span>
-        <input type="range" id="tijdschuif" min="${DAG_START}" max="${DAG_EIND - STAP}" step="${STAP}" value="${t}" aria-label="Tijdstip"></div>
+        <input type="range" id="tijdschuif" min="${DAG_START}" max="${DAG_EIND - STAP}" step="${STAP}" value="${t}" aria-label="Tijdstip">
+        <span class="zacht" style="font-size:var(--t-xs)">${actief.length} teams op het veld</span></div>
       <svg viewBox="0 0 330 196" role="img" aria-label="Sportpark met bezette velden om ${tt(t)}">
-        <rect width="330" height="196" style="fill:color-mix(in srgb,var(--veld) 35%,var(--surface))"/>
+        ${foto ? `<image href="${luchtfoto()}" x="0" y="0" width="330" height="196" preserveAspectRatio="none"/>` : `<rect width="330" height="196" style="fill:color-mix(in srgb,var(--veld) 22%,var(--surface))"/>
+          <rect x="127" y="14" width="16" height="168" style="fill:var(--surface-2)"/><rect x="14" y="94" width="248" height="12" style="fill:var(--surface-2)"/>`}
         ${veldSvg}
-        <rect x="266" y="20" width="54" height="140" rx="4" style="fill:var(--surface);stroke:var(--hair)"/>
-        <text x="293" y="30" text-anchor="middle" font-size="8" font-weight="600" style="fill:var(--ink-2)">Kleedkamers</text>
+        ${foto ? '' : `<rect x="264" y="20" width="56" height="124" rx="6" style="fill:var(--surface);stroke:var(--hair)"/>`}
+        <text x="292" y="30" text-anchor="middle" font-size="5.5" font-weight="700" class="kveldnaam">KLEEDKAMERS</text>
         ${kkSvg}
-        <text x="293" y="174" text-anchor="middle" font-size="8" style="fill:var(--ink-2)">Clubgebouw</text>
+        <text x="${foto ? 326 : 292}" y="${foto ? 193 : 154}" text-anchor="${foto ? 'end' : 'middle'}" font-size="4.5" class="ksub">${foto ? 'Nagemaakte luchtfoto · in Cluppie de echte (PDOK)' : 'Clubgebouw'}</text>
       </svg>
+      <p class="zacht" style="margin:0;font-size:var(--t-xs)">Tik op een veld om de indeling te wijzigen. De stippellijnen tonen hoe elk veld is ingedeeld.</p>
     </div></section>`;
+}
+
+/* ---------- veldindeling maken ---------- */
+function vensterIndeling(veldId){
+  const V = VELD[veldId];
+  const ed = { K:V.K, R:V.R, sjabloon:V.sjabloon, vakken:JSON.parse(JSON.stringify(V.vakken)), sel:null, hl:null, teller:1 };
+  const W = 315, H = 204;
+  const zetSjabloon = k => { const sj = SJABLONEN[k]; ed.K = sj.K; ed.R = sj.R; ed.vakken = sj.vakken(); ed.sjabloon = k; ed.sel = null; };
+  const zetRaster = (K, R) => { ed.K = K; ed.R = R; ed.vakken = vakkenStandaard(K, R); ed.sjabloon = 'eigen'; ed.sel = null;
+    if (K % 2) ed.vakken.push(...Array.from({ length:K }, (_, i) => ({ id:'k' + (i + 1), naam:`Deel ${i + 1}`, kort:`deel ${i + 1}`, c0:i, c1:i, r0:0, r1:R - 1 }))); };
+  const frac = k => (k.c1 - k.c0 + 1) * (k.r1 - k.r0 + 1) / (ed.K * ed.R);
+  const render = () => {
+    const cw = W / ed.K, rh = H / ed.R, cel = [];
+    for (let c = 0; c < ed.K; c++) for (let r = 0; r < ed.R; r++){
+      const in_ = ed.sel && c >= Math.min(ed.sel.c0, ed.sel.c1) && c <= Math.max(ed.sel.c0, ed.sel.c1) && r >= Math.min(ed.sel.r0, ed.sel.r1) && r <= Math.max(ed.sel.r0, ed.sel.r1);
+      cel.push(`<rect class="icel${in_ ? ' aan' : ''}" data-c="${c}" data-r="${r}" x="${c * cw + 1}" y="${r * rh + 1}" width="${cw - 2}" height="${rh - 2}" rx="4"/>`); }
+    const hl = ed.hl && ed.vakken.find(k => k.id === ed.hl);
+    const sel = ed.sel && { c0:Math.min(ed.sel.c0, ed.sel.c1), c1:Math.max(ed.sel.c0, ed.sel.c1), r0:Math.min(ed.sel.r0, ed.sel.r1), r1:Math.max(ed.sel.r0, ed.sel.r1) };
+    venster(`<h2 class="kop">Indeling van ${V.naam}</h2>
+      <p class="zacht" style="margin:0">Kies een sjabloon of maak eigen vakken: sleep over de vakjes van het veld. Een team kan elk vak krijgen dat groot genoeg is.</p>
+      <div><span class="veld-label">Sjabloon</span><div class="keus">${Object.entries(SJABLONEN).map(([k, sj]) => `<button type="button" data-sj="${k}" aria-pressed="${ed.sjabloon === k}">${sj.naam}</button>`).join('')}</div></div>
+      <div class="tijden" style="flex-wrap:wrap;gap:12px">
+        <span><span class="veld-label">Stukken in de lengte</span><span class="segment">${[1,2,3,4,5,6].map(n => `<button type="button" data-k="${n}" aria-pressed="${ed.K === n}">${n}</button>`).join('')}</span></span>
+        <span><span class="veld-label">In de breedte</span><span class="segment">${[1,2,3].map(n => `<button type="button" data-r="${n}" aria-pressed="${ed.R === n}">${n}</button>`).join('')}</span></span></div>
+      <svg class="iveld" viewBox="-6 -6 ${W + 12} ${H + 12}" role="img" aria-label="Veld met ${ed.K * ed.R} vakjes">
+        <rect x="-6" y="-6" width="${W + 12}" height="${H + 12}" rx="8" style="fill:var(--veld)"/>
+        ${Array.from({ length:10 }, (_, i) => `<rect x="${i * W / 10}" y="0" width="${W / 10}" height="${H}" style="fill:${i % 2 ? 'var(--veld-2)' : 'var(--veld)'}"/>`).join('')}
+        <g fill="none" style="stroke:var(--kalk)" stroke-width="1.6"><rect x="0" y="0" width="${W}" height="${H}"/><path d="M${W / 2} 0v${H}"/><circle cx="${W / 2}" cy="${H / 2}" r="26"/>
+          <rect x="0" y="${H / 2 - 54}" width="45" height="108"/><rect x="${W - 45}" y="${H / 2 - 54}" width="45" height="108"/></g>
+        ${cel.join('')}
+        ${hl ? `<rect x="${hl.c0 * cw + 3}" y="${hl.r0 * rh + 3}" width="${(hl.c1 - hl.c0 + 1) * cw - 6}" height="${(hl.r1 - hl.r0 + 1) * rh - 6}" rx="6" class="ihl"/>` : ''}
+      </svg>
+      ${sel ? `<div class="nieuwvak"><label class="veld-label" for="i-naam">Nieuw vak · ${pct((sel.c1 - sel.c0 + 1) * (sel.r1 - sel.r0 + 1) / (ed.K * ed.R))}</label>
+        <div class="tijden"><input class="invoer" id="i-naam" value="${ed.naam || ''}" placeholder="Bijv. Keepershoek of Pannakooi"><button type="button" class="knop fluo" id="i-voeg">Toevoegen</button></div></div>` : ''}
+      <div><span class="veld-label">Vakken op dit veld (${ed.vakken.length})</span>
+        <div class="vaklijst">${ed.vakken.map(k => `<span class="vakchip${ed.hl === k.id ? ' aan' : ''}" data-hl="${k.id}"><b>${k.naam}</b><small>${pct(frac(k))}</small>${k.id === 'h' ? '' : `<button type="button" data-weg="${k.id}" aria-label="Verwijder ${k.naam}">${ic('x', 12)}</button>`}</span>`).join('')}</div></div>
+      <p class="zacht" style="margin:0;font-size:var(--t-xs)">Trainingen op dit veld gaan bij opslaan mee naar het vak dat het best past.</p>
+      <div class="voet"><button type="button" class="knop" id="v-sluit">Annuleren</button><button type="button" class="knop fluo" id="v-ok">Opslaan</button></div>`);
+    laag.querySelectorAll('[data-sj]').forEach(x => x.onclick = () => { zetSjabloon(x.dataset.sj); render(); });
+    laag.querySelectorAll('[data-k]').forEach(x => x.onclick = () => { zetRaster(+x.dataset.k, ed.R); render(); });
+    laag.querySelectorAll('[data-r]').forEach(x => x.onclick = () => { zetRaster(ed.K, +x.dataset.r); render(); });
+    laag.querySelectorAll('[data-hl]').forEach(x => x.onclick = e => { if (e.target.closest('[data-weg]')) return; ed.hl = ed.hl === x.dataset.hl ? null : x.dataset.hl; render(); });
+    laag.querySelectorAll('[data-weg]').forEach(x => x.onclick = () => { ed.vakken = ed.vakken.filter(k => k.id !== x.dataset.weg); ed.sjabloon = 'eigen'; ed.hl = null; render(); });
+    const svg = laag.querySelector('.iveld');
+    let bezig = false;
+    const celOnder = e => { const el = document.elementFromPoint(e.clientX, e.clientY); return el && el.classList.contains('icel') ? { c:+el.dataset.c, r:+el.dataset.r } : null; };
+    const kleur = () => svg.querySelectorAll('.icel').forEach(el => { const c = +el.dataset.c, r = +el.dataset.r;
+      el.classList.toggle('aan', !!ed.sel && c >= Math.min(ed.sel.c0, ed.sel.c1) && c <= Math.max(ed.sel.c0, ed.sel.c1) && r >= Math.min(ed.sel.r0, ed.sel.r1) && r <= Math.max(ed.sel.r0, ed.sel.r1)); });
+    svg.addEventListener('pointerdown', e => { const c = celOnder(e); if (!c) return; e.preventDefault(); bezig = true; ed.hl = null; ed.sel = { c0:c.c, c1:c.c, r0:c.r, r1:c.r }; kleur(); });
+    svg.addEventListener('pointermove', e => { if (!bezig) return; const c = celOnder(e); if (c){ ed.sel.c1 = c.c; ed.sel.r1 = c.r; kleur(); } });
+    const klaar = () => { if (!bezig) return; bezig = false; ed.naam = `Eigen vak ${ed.teller}`; render(); laag.querySelector('#i-naam')?.select(); };
+    svg.addEventListener('pointerup', klaar); svg.addEventListener('pointerleave', klaar);
+    const voeg = laag.querySelector('#i-voeg');
+    voeg && (voeg.onclick = () => { const n = laag.querySelector('#i-naam').value.trim() || `Eigen vak ${ed.teller}`;
+      ed.vakken.push({ id:'x' + Date.now().toString(36) + ed.teller, naam:n, kort:n.toLowerCase(), c0:Math.min(ed.sel.c0, ed.sel.c1), c1:Math.max(ed.sel.c0, ed.sel.c1), r0:Math.min(ed.sel.r0, ed.sel.r1), r1:Math.max(ed.sel.r0, ed.sel.r1), eigen:true });
+      ed.teller++; ed.sel = null; ed.sjabloon = 'eigen'; render(); });
+    laag.querySelector('#v-sluit').onclick = sluitV;
+    laag.querySelector('#v-ok').onclick = () => {
+      bewaar();
+      const op = S.blokken.filter(b => b.veld === V.id).map(b => ({ b, f: deelVan(V.id, b.deel), c: vakVan(V.id, b.deel) }));
+      Object.assign(V, { K:ed.K, R:ed.R, vakken:ed.vakken, sjabloon:ed.sjabloon });
+      let verzet = 0;
+      op.forEach(({ b, f, c }) => {
+        const zelfde = V.vakken.find(k => k.id === b.deel && Math.abs(deelVan(V.id, k.id) - f) < 1e-6);
+        if (zelfde) return;
+                const vrij = id => veldVrij(b.dag, V.id, id, b.start, b.eind, b.id);
+        const kies = passend(V.id, f).map(k => k.id).find(vrij)
+          || [...V.vakken].sort((p, q) => deelVan(V.id, q.id) - deelVan(V.id, p.id)).map(k => k.id).find(vrij)
+          || (passend(V.id, f)[0] || V.vakken[0]).id;
+        b.deel = kies; verzet++;
+      });
+      sluitV(); teken();
+      meld(`${V.naam}: ${V.vakken.length} vakken opgeslagen.${verzet ? ` ${verzet} ${verzet === 1 ? 'training is' : 'trainingen zijn'} naar een passend vak gezet.` : ''}`);
+    };
+  };
+  render();
 }
 
 function htmlRechts(c, fouten, waarsch){
@@ -749,8 +962,8 @@ function htmlDetail(b, c){
       <div><label class="veld-label" for="d-veld">Veld</label>
         <select class="invoer" id="d-veld">${VELDEN.map(v => `<option value="${v.id}"${v.id === b.veld ? ' selected' : ''}>${v.naam} · ${v.ondergrond}${v.licht ? '' : ' · geen licht'}</option>`).join('')}</select>
         <div class="keus" style="margin-top:6px" role="group" aria-label="Deel van het veld">
-          ${Object.entries(DEEL).map(([k, d]) => { const vrij = veldVrij(b.dag, b.veld, k, b.start, b.eind, b.id);
-            return `<button type="button" data-deel="${k}" aria-pressed="${b.deel === k}" ${!vrij && b.deel !== k ? 'style="opacity:.55"' : ''}>${d.maat === 'heel' ? 'Heel veld' : d.maat === 'half' ? 'Half ' + d.naam : 'Kwart ' + d.naam}${!vrij && b.deel !== k ? ' · bezet' : ''}</button>`; }).join('')}
+          ${VELD[b.veld].vakken.map(k => { const vrij = veldVrij(b.dag, b.veld, k.id, b.start, b.eind, b.id);
+            return `<button type="button" data-deel="${k.id}" aria-pressed="${b.deel === k.id}" ${!vrij && b.deel !== k.id ? 'style="opacity:.55"' : ''}>${k.naam}${!vrij && b.deel !== k.id ? ' · bezet' : ''}</button>`; }).join('')}
         </div></div>
       <div><span class="veld-label">Kleedkamer</span>
         <div class="kkgrid" role="group" aria-label="Kleedkamer">${KKS.map(k => { const bez = kkBezetter(b.dag, k, b);
@@ -809,7 +1022,7 @@ function vensterDag(){
     return getroffen.map(b => {
       let naar = null;
       for (const v of VELDEN){ if (v.id === st.veld || (!v.licht && b.eind > DONKER)) continue;
-        const dl = DELEN_VAN[DEEL[b.deel].maat].find(x => veldVrij(wd, v.id, x, b.start, b.eind, b.id, anderen));
+        const dl = passend(v.id, deelVan(b.veld, b.deel)).map(k => k.id).find(x => veldVrij(wd, v.id, x, b.start, b.eind, b.id, anderen));
         if (dl){ naar = { veld: v.id, deel: dl }; anderen.push({ ...b, veld:v.id, deel:dl, id:'tmp' + b.id }); break; } }
       return { b, naar, soort: st.keuze[b.id] || (naar ? 'verplaatst' : 'vervalt') };
     });
@@ -822,7 +1035,7 @@ function vensterDag(){
       <div><span class="veld-label">Wat is er aan de hand?</span><div class="keus">${VELDEN.map(v => `<button type="button" data-vd="${v.id}" aria-pressed="${v.id === st.veld}">${v.naam} afgekeurd</button>`).join('')}</div></div>
       <div><span class="veld-label">Voorstel voor ${lbl(d)}</span>
       ${p.length ? `<ul class="wlijst">${p.map(x => `<li><span class="t">${x.b.team}</span><span style="flex:1;min-width:160px" class="num">${tt(x.b.start)}–${tt(x.b.eind)} · ${plekTekst(x.b)}<br>
-        ${x.soort === 'verplaatst' && x.naar ? `<b>Naar ${VELD[x.naar.veld].naam}${x.naar.deel === 'h' ? '' : ' ' + DEEL[x.naar.deel].naam}</b>` : `<b style="color:var(--warn)">Vervalt</b>`}</span>
+        ${x.soort === 'verplaatst' && x.naar ? `<b>Naar ${plekTekst(x.naar)}</b>` : `<b style="color:var(--warn)">Vervalt</b>`}</span>
         <span class="segment" role="group" aria-label="Keuze ${x.b.team}"><button type="button" data-k="${x.b.id}|verplaatst" aria-pressed="${x.soort === 'verplaatst'}" ${x.naar ? '' : 'disabled'}>Verplaats</button><button type="button" data-k="${x.b.id}|vervalt" aria-pressed="${x.soort === 'vervalt'}">Vervalt</button></span></li>`).join('')}</ul>`
         : `<p class="zacht" style="margin:0">Op ${lbl(d)} traint niemand op ${VELD[st.veld].naam}.</p>`}</div>
       <label class="schakel"><input type="checkbox" checked id="dw-ber"><span><b>Bericht naar de teams die het raakt</b><br><span class="zacht">Zij zien op de Nu-kaart: ${(() => { const e = p.find(q => q.soort === 'verplaatst' && q.naar); return e ? `“Vandaag op ${VELD[e.naar.veld].naam} in plaats van ${VELD[st.veld].naam}”` : '“Deze training gaat niet door”'; })()}.</span></span></label>
@@ -844,9 +1057,7 @@ function vensterDag(){
 
 function vensterTel(b){
   const w = wijzigingen()[b.team];
-  const deel = DEEL[b.deel], ls = deel.lanes, kw = [[0,0],[0,1],[1,0],[1,1]];
-  const cols = ls.map(l => kw[l][0]), rows = ls.map(l => kw[l][1]);
-  const cx = Math.min(...cols), cw = Math.max(...cols) - cx + 1, ry = Math.min(...rows), rh = Math.max(...rows) - ry + 1;
+  const vk = vakVan(b.veld, b.deel), V = VELD[b.veld];
   venster(`<h2 class="kop">Zo ziet ${b.team} het</h2>
     <div class="tel" aria-label="Voorbeeld telefoon">
       <div class="appkop"><span class="kop">${b.team}</span><span style="font-size:11px;color:#8b95a1">Nu</span></div>
@@ -856,8 +1067,8 @@ function vensterTel(b){
         <span class="grootuur num">${tt(b.start)}–${tt(b.eind)}</span>
         <div class="rg"><svg width="64" height="42" viewBox="0 0 64 42" aria-hidden="true"><rect width="64" height="42" rx="3" fill="#16361f"/>
           <g fill="none" stroke="rgba(255,255,255,.35)"><rect x="2" y="2" width="60" height="38"/><path d="M32 2v38"/><circle cx="32" cy="21" r="5"/></g>
-          <rect x="${2 + cx * 30}" y="${2 + ry * 19}" width="${cw * 30}" height="${rh * 19}" fill="#f25a53" fill-opacity=".75"/></svg>
-          <span><b>${plekTekst(b)}</b><small>${deel.maat === 'heel' ? 'Heel veld' : deel.maat === 'half' ? 'Half veld' : 'Kwart veld'} · tik voor de kaart</small></span></div>
+          <rect x="${2 + vk.c0 * 60 / V.K}" y="${2 + vk.r0 * 38 / V.R}" width="${(vk.c1 - vk.c0 + 1) * 60 / V.K}" height="${(vk.r1 - vk.r0 + 1) * 38 / V.R}" fill="#f25a53" fill-opacity=".75"/></svg>
+          <span><b>${plekTekst(b)}</b><small>${vk.naam} · tik voor de kaart</small></span></div>
         <div class="rg"><span style="width:64px;display:grid;place-items:center">${ic('deur', 22)}</span>
           <span><b>${b.kk.length ? 'Kleedkamer ' + b.kk.join(' en ') : 'Kleedkamer volgt'}</b><small>Open vanaf ${tt(b.start - KK_VOOR)}</small></span></div>
         <div class="slot"><span>Ingepland door de club</span><a href="#" onclick="return false">Wijziging vragen</a></div>
@@ -894,8 +1105,9 @@ function koppel(){
   $$('[data-fix]').forEach(b => b.onclick = () => { const m = lijst[+b.dataset.fix], bl = blok(m.fix.id);
     bewaar();
     if (m.fix.soort === 'kk'){ const vrij = vrijeKk(bl.dag, bl.start, bl.eind, bl.id); if (vrij.length){ bl.kk = [vrij[0]]; meld(`${bl.team} krijgt kleedkamer ${vrij[0]}.`); } else meld('Geen kleedkamer vrij op dat moment.'); }
-    else { const v = VELDEN.find(v => v.licht && v.id !== bl.veld && DELEN_VAN[TEAMS[bl.team].maat].some(d => veldVrij(bl.dag, v.id, d, bl.start, bl.eind, bl.id)));
-      if (v){ bl.deel = DELEN_VAN[TEAMS[bl.team].maat].find(d => veldVrij(bl.dag, v.id, d, bl.start, bl.eind, bl.id)); bl.veld = v.id; meld(`${bl.team} gaat naar ${v.naam}.`); } else meld('Geen veld met licht vrij op dat moment.'); }
+    else { const nodig = deelVan(bl.veld, bl.deel), vrijVak = v => passend(v.id, nodig).find(k => veldVrij(bl.dag, v.id, k.id, bl.start, bl.eind, bl.id));
+      const v = VELDEN.find(v => v.licht && v.id !== bl.veld && vrijVak(v));
+      if (v){ bl.deel = vrijVak(v).id; bl.veld = v.id; meld(`${bl.team} gaat naar ${v.naam}.`); } else meld('Geen veld met licht vrij op dat moment.'); }
     teken(); });
 
   /* detail */
@@ -906,7 +1118,7 @@ function koppel(){
     $('#d-dag').onchange = e => { wijzig(b => b.dag = +e.target.value); S.dag = sel.dag; teken(); };
     $('#d-start').onchange = e => wijzig(b => { const duur = b.eind - b.start; b.start = +e.target.value; b.eind = Math.min(DAG_EIND, b.start + duur); });
     $('#d-eind').onchange = e => wijzig(b => b.eind = +e.target.value);
-    $('#d-veld').onchange = e => wijzig(b => b.veld = e.target.value);
+    $('#d-veld').onchange = e => wijzig(b => { const oud = deelVan(b.veld, b.deel); b.veld = e.target.value; const kies = passend(b.veld, oud); b.deel = (kies.find(k => veldVrij(b.dag, b.veld, k.id, b.start, b.eind, b.id)) || kies[0] || VELD[b.veld].vakken[0]).id; });
     $$('[data-deel]').forEach(x => x.onclick = () => wijzig(b => b.deel = x.dataset.deel));
     $$('[data-kkzet]').forEach(x => x.onclick = () => wijzig(b => { const k = +x.dataset.kkzet; b.kk = b.kk.includes(k) ? b.kk.filter(y => y !== k) : [...b.kk, k].sort((p, q) => p - q); }));
     $('#d-tel').onclick = () => vensterTel(sel);
@@ -925,6 +1137,8 @@ function koppel(){
       if (S.kaartTijd >= DAG_EIND - STAP) S.kaartTijd = DAG_START;
       speelt = setInterval(() => { S.kaartTijd += STAP; if (S.kaartTijd >= DAG_EIND - STAP){ clearInterval(speelt); speelt = null; } if (S.view !== 'kaart'){ clearInterval(speelt); speelt = null; return; } teken(); }, 450); teken(); }; }
 
+  $$('[data-kmodus]').forEach(b => b.onclick = () => { S.kaartModus = b.dataset.kmodus; teken(); });
+  $$('[data-indeling]').forEach(b => { b.onclick = () => vensterIndeling(b.dataset.indeling); b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); vensterIndeling(b.dataset.indeling); } }; });
   /* tijdlijn: slepen, toetsenbord, peillijn */
   $$('.blok').forEach(el => {
     el.addEventListener('pointerdown', e => startSleep(e, { soort: e.target.dataset.greep ? 'maat' : 'blok', id: el.dataset.id, el }));
@@ -950,7 +1164,7 @@ function plaatsSnel(teamId){
   const t = TEAMS[teamId];
   for (let s = t.bouw === 'onder' ? tm('17:00') : tm('18:00'); s + t.duur <= DAG_EIND; s += STAP) for (const v of VELDEN){
     if (!v.licht && s + t.duur > DONKER) continue;
-    const dl = DELEN_VAN[t.maat].find(d => veldVrij(S.dag, v.id, d, s, s + t.duur));
+    const dl = passend(v.id, NODIG[t.maat]).map(k => k.id).find(d => veldVrij(S.dag, v.id, d, s, s + t.duur));
     if (dl){ bewaar(); const kk = vrijeKk(S.dag, s, s + t.duur); const nb = { id:'b' + (++teller), team:teamId, dag:S.dag, start:s, eind:s + t.duur, veld:v.id, deel:dl, kk: kk.length ? [kk[0]] : [] };
       S.blokken.push(nb); S.sel = nb.id; teken(); app.querySelector(`.blok[data-id="${nb.id}"]`)?.focus(); meld(`${teamId} staat op ${DAGEN[S.dag].toLowerCase()} ${tt(s)}, ${plekTekst(nb)}.`); return; }
   }
@@ -968,7 +1182,7 @@ function toets(e, id){
   if (pijl[0]){ const duur = b.eind - b.start; b.start = Math.max(DAG_START, Math.min(DAG_EIND - duur, b.start + pijl[0])); b.eind = b.start + duur; }
   else {
     /* omhoog/omlaag: volgend deel binnen het veld, daarna het volgende veld */
-    const plekken = VELDEN.flatMap(v => DELEN_VAN[DEEL[b.deel].maat].map(d => [v.id, d]));
+    const f = deelVan(b.veld, b.deel); const plekken = VELDEN.flatMap(v => { const z = v.vakken.filter(k => Math.abs(deelVan(v.id, k.id) - f) < 1e-6); return (z.length ? z : passend(v.id, f).slice(0, 1)).map(k => [v.id, k.id]); });
     const i = plekken.findIndex(p => p[0] === b.veld && p[1] === b.deel);
     const n = plekken[Math.max(0, Math.min(plekken.length - 1, i + pijl[1]))]; b.veld = n[0]; b.deel = n[1];
   }
@@ -1006,9 +1220,13 @@ function doel(e){
   for (const b of banen){ const r = b.getBoundingClientRect(); if (e.clientY >= r.top - 6 && e.clientY <= r.bottom + 6 && e.clientX >= r.left - 40 && e.clientX <= r.right + 20){ baan = b; break; } }
   if (!baan) return null;
   const r = baan.getBoundingClientRect();
-  const lane = Math.max(0, Math.min(3, Math.floor((e.clientY - r.top) / LH)));
-  const maat = sleep.b ? DEEL[sleep.b.deel].maat : t.maat;
-  const deel = deelVanLane(maat, lane);
+  const V = VELD[baan.dataset.veld], L = V.K * V.R;
+  const lane = Math.max(0, Math.min(L - 1, Math.floor((e.clientY - r.top) / baanH(V))));
+  const doelDeel = sleep.b ? deelVan(sleep.b.veld, sleep.b.deel) : NODIG[t.maat];
+  const bevat = V.vakken.filter(k => cellen(V.id, k.id).includes(lane));
+  const kies = bevat.filter(k => deelVan(V.id, k.id) >= doelDeel - 1e-6).sort((a, b) => deelVan(V.id, a.id) - deelVan(V.id, b.id))[0]
+    || bevat.sort((a, b) => deelVan(V.id, b.id) - deelVan(V.id, a.id))[0];
+  const deel = kies.id;
   let start = DAG_START + Math.round((e.clientX - r.left - sleep.grab) / slotW) * STAP;
   start = Math.max(DAG_START, Math.min(DAG_EIND - sleep.duur, start));
   return { baan, veld: baan.dataset.veld, deel, start, eind: start + sleep.duur, t };
@@ -1020,7 +1238,7 @@ function beoordeel(d, id){
   if (d.t.bouw === 'onder' && d.eind > ONDER_TOT) w.push('laat voor onderbouw');
   if (!VELD[d.veld].licht && d.eind > DONKER) w.push('geen licht');
   if (S.blokken.some(b => b.id !== id && b.dag === S.dag && overlap(d.start, d.eind, b.start, b.eind) && TEAMS[b.team].trainers.some(x => d.t.trainers.includes(x)) && b.team !== d.t.id)) w.push('trainer dubbel');
-  if (MAAT_RANG[DEEL[d.deel].maat] < MAAT_RANG[d.t.maat]) w.push('veld te klein');
+  if (deelVan(d.veld, d.deel) < NODIG[d.t.maat] - 1e-6) w.push('vak te klein');
   return w.length ? { klas: 'warn', tekst: w.join(', ') } : { klas: '', tekst: 'Past' };
 }
 function beweeg(e){
@@ -1057,13 +1275,14 @@ function beweeg(e){
   if (!d){ zweef(`${naam}: sleep naar een veld`, e.clientX, e.clientY); return; }
   const oordeel = beoordeel(d, sleep.b?.id);
   sleep.doel = d;
-  const ls = DEEL[d.deel].lanes;
-  const sp = document.createElement('div');
-  sp.className = `spook ${oordeel.klas}`;
-  sp.style.cssText = `left:${xVan(d.start)}px;width:${xVan(d.eind) - xVan(d.start)}px;top:${ls[0] * LH}px;height:${ls.length * LH}px`;
-  sp.textContent = `${tt(d.start)}–${tt(d.eind)}`;
-  d.baan.appendChild(sp);
-  zweef(`<b>${naam}</b> · ${VELD[d.veld].naam}${d.deel === 'h' ? '' : ' ' + DEEL[d.deel].naam} · ${tt(d.start)}<br>${oordeel.klas === 'fout' ? '✕ ' : oordeel.klas === 'warn' ? '! ' : '✓ '}${oordeel.tekst}`, e.clientX, e.clientY);
+  const hV = baanH(VELD[d.veld]);
+  looptjes(cellen(d.veld, d.deel)).forEach(([l0, l1], i) => {
+    const sp = document.createElement('div');
+    sp.className = `spook ${oordeel.klas}`;
+    sp.style.cssText = `left:${xVan(d.start)}px;width:${xVan(d.eind) - xVan(d.start)}px;top:${l0 * hV}px;height:${(l1 - l0 + 1) * hV}px`;
+    if (!i) sp.textContent = `${tt(d.start)}–${tt(d.eind)}`;
+    d.baan.appendChild(sp); });
+  zweef(`<b>${naam}</b> · ${plekTekst(d)} · ${tt(d.start)}<br>${oordeel.klas === 'fout' ? '✕ ' : oordeel.klas === 'warn' ? '! ' : '✓ '}${oordeel.tekst}`, e.clientX, e.clientY);
 }
 function los(e){
   window.removeEventListener('pointermove', beweeg);

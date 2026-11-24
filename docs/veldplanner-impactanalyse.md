@@ -50,6 +50,8 @@ clubs/{clubId}/veldwijzigingen/{datum}       (nieuw: uitzonderingen voor één d
 ```
 
 - **Veldtypen blijven generiek** (afstemming met het sportprofiel, PR #100): een veld is een "ruimte" met een `soort` en een indeling in delen. Voetbal kent heel/half/kwart; hockey of een zaal kan later een andere indeling krijgen zonder de planner te veranderen. Botsingen worden gerekend in "deel-eenheden" (een kwart = 1, half = 2, heel = 4).
+- **Eigen veldindeling** (wens Paul, 24-11): een veld is een raster (stukken in de lengte × in de breedte) met benoemde vakken. Sjablonen: heel/halven/kwarten (standaard), derden, zessen, achtsten; daarnaast tekent de club zelf vakken (bijv. keepershoek, pannakooi). Opslag: `velden[].raster {k, r}` en `velden[].vakken [{id, naam, c0, c1, r0, r1}]` op `sportparken/eigen`. Botsingen rekenen per cel; een team krijgt het kleinste vak dat groot genoeg is.
+- **Kaart**: luchtfoto van het eigen sportpark (PDOK, zoals de veldkaart) met een knop naar een getekende weergave.
 - **Eén document per rooster**: 60 teams × 3 trainingen × ~150 bytes ≈ 30 KB, ruim binnen de grens van 1 MB. Eén document = één keer lezen en geen halve stand bij gelijktijdig werken.
 - **Seizoen en winter**: een club kan een tweede rooster maken (bijv. kunstgras in de winter) met een eigen periode; het juiste rooster geldt op basis van de datum.
 
