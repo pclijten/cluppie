@@ -91,6 +91,7 @@ Inhoud van een profiel (alles wat nu als voetbal in `config.js` staat):
 6. **Bibliotheek en AI per sport.** `sport`-veld op oefeningen en content, filter in de bibliotheek, sport in de AI-prompts.
 7. **Ledenbron.** Sportlink alleen tonen als het profiel dat zegt; csv-import als tweede bron.
 8. **Hockeyprofiel** als eerste tweede sport, pas na stap 1 t/m 7, met een pilotclub.
+9. **Algemene landingspagina met sportkeuze** (idee Paul, 24-11-2026): de bezoeker kiest eerst de sport en komt dan bij de ingang voor die sport (trainer of club). De gekozen sport gaat mee naar het aanmelden. Valt onder WP8, poort P5.
 
 Stap 1 en 2 zijn voor gebruikers onzichtbaar. Na stap 2 is er een natuurlijk stoppunt: de basis ligt er, en elke volgende stap kan wachten tot er een tweede sport komt.
 
@@ -123,6 +124,6 @@ Geen hockey-inhoud, geen ledenkoppeling met LISA of een andere bond, geen omnisp
 ## Beslissingen voor Paul
 
 1. **Visie:** akkoord (24-11-2026): "app voor jeugdcoaches en clubs in teamsporten, begonnen bij voetbal", met de drie lagen hierboven.
-2. **Wie zet de sport:** alleen de eindbaas (voorstel), of ook de clubadmin bij aanmelden?
+2. **Wie zet de sport:** besloten 24-11-2026: gekozen bij het aanmelden (losse trainer zelf, club via het aanmeldformulier), daarna alleen te wijzigen door de eindbaas.
 3. **Omvang nu:** alleen stap 1 en 2 (de basis, onzichtbaar), of door tot en met stap 7?
 4. **Mockup (P3):** voor stap 2 en 3 is een mockup nodig van Instellingen (sport tonen), Platform › Clubs (sport zetten) en het aanmelden van een losse trainer (sport kiezen). Akkoord om die te maken?
