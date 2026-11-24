@@ -55,6 +55,7 @@ Paul gaf op 15-11 akkoord om WP2 t/m WP9 zelfstandig te maken. Eerlijk over wat 
 | WP7 Juridisch | Vier concepten en een lijst aanvullingen op de privacyverklaring. | `docs/juridisch/` | Jurist. Niets is gepubliceerd. |
 | WP8 Marketing | Positie tegenover Rinus, Spond, TeamSnap en Touchline Studio; twee boodschappen; prijsmodel zonder bedragen; Gebouwd en live: demo per rol (20261116b) en de landingspagina met twee ingangen en een blok over privacy (20261116c). Verkoopmateriaal in `marketing/` (20261116g): één A4 voor besturen (pdf), verkoopteksten en een stappenkaart. | `docs/wp8-marketing.md`, `marketing/` | Paul leest de teksten na en vult in wat tussen haken staat; prijsmodel en bedragen. Niets is verstuurd. |
 | WP9 Uitrol | Plan per fase met wat er klaar moet zijn. | `docs/wp9-uitrolplan.md` | Uitvoeren; contact met clubs doet Paul. |
+| Sportprofiel (andere sporten) | Impactanalyse 24-11-2026: voetbal als eerste profiel in een sportlaag onder de clubinstellingen, daarna hockey als pilot. Geen code. | `docs/sportprofiel-impactanalyse.md` | P2: besluit Paul over visie, wie de sport zet en omvang; dan mockup. |
 
 **Demo per rol staat er.** Daarmee kunnen nu: de ontwerpmeting per rol (WP5), rooktests vóór het splitsen van `teams.js` (WP2) en de verkoop (WP8). De demo kent geen toegangsregels en geen eindbaas-rol.
 
