@@ -26,10 +26,12 @@ import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, add
   serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261125x';
 import { ico } from './icons.js?v=20261116t';
-import { SJABLONEN, sjabloonVan } from './activiteit-sjablonen.js?v=20261125m';
-import * as L from './activiteiten-logica.js?v=20261125v';
+import { SJABLONEN, sjabloonVan } from './activiteit-sjablonen.js?v=20261125w';
+import * as L from './activiteiten-logica.js?v=20261125w';
 import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261125x';
 import * as TN from './activiteit-toernooi.js?v=20261125x';
+import * as CS from './clubschermen.js?v=20261125x';
+import * as VB from './vrijwilligers.js?v=20261125x';
 
 let A = null;
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -40,6 +42,9 @@ const isAdmin = () => !!(S.club?.admins?.[uid()]) || isPlatformBeheerder();
 const tabAan = (a, id) => id === 'toernooi' ? (a.tabs?.toernooi ?? /toernooi/i.test(`${a.type || ''} ${a.sjabloon || ''}`)) === true : a.tabs?.[id] !== false;
 const tnCtx = () => ({ act: A.act, actNu: () => A?.act, actId: A.id, clubId: A.clubId, el: A.el, kopieer: kopieKlembord, waLink, zet, herteken: () => hertekenZacht(), venster: html => { A.venster = html; teken(); }, sluitVenster,
   download, bestandsnaam, printen, csvLees: L.csvLees });
+/* Clubbrede onderdelen naast de activiteiten: de kantine-tv met sponsoren en de vrijwilligersbank. */
+const extraCtx = () => ({ clubId: A.clubId, herteken: () => { if (A?.extra) hertekenZacht(); }, kop: (titel, sub) => kop(titel, sub), kopieer: kopieKlembord, waLink, download, printen,
+  venster: html => { A.venster = html; teken(); }, sluitVenster, opgeslagen: toonOpgeslagen });
 const aiAan = () => S.club?.platformModules?.ai === true;
 const actRef = id => doc(db, 'clubs', A.clubId, 'activiteiten', id);
 const deelLink = id => `${location.origin}${location.pathname.replace(/[^/]*$/, '')}?act=${encodeURIComponent(id)}`;
@@ -63,7 +68,7 @@ export async function openActiviteiten(clubId, actId = ''){
 }
 export function sluitActiviteiten(){
   if (!A) return;
-  sluitDatumkiezer(); stopSubs(); clearInterval(A.liveTik);
+  sluitDatumkiezer(); stopSubs(); clearInterval(A.liveTik); CS.resetSchermen(); VB.resetVrijwilligers();
   A.el.classList.remove('toon'); A.el.innerHTML = '';
   document.documentElement.classList.remove('ac-open');
   A = null;
@@ -77,7 +82,7 @@ function laag(){
     document.addEventListener('keydown', e => {
       if (!A || e.key !== 'Escape') return;
       e.stopPropagation();
-      if (A.venster) sluitVenster(); else if (A.live){ A.live = false; clearInterval(A.liveTik); teken(); } else if (A.id) terugNaarLijst(); else sluitActiviteiten();
+      if (A.venster) sluitVenster(); else if (A.live){ A.live = false; clearInterval(A.liveTik); teken(); } else if (A.id) terugNaarLijst(); else if (A.extra){ A.extra = ''; teken(); } else sluitActiviteiten();
     }, true);
     el.addEventListener('click', klik);
     koppelDatumkiezer(el, () => ({ stip: s => (A?.lijst || []).filter(x => x.datum === s && x.id !== A.id).map(x => x.naam).join(', ') }));
@@ -96,7 +101,7 @@ function laag(){
   document.documentElement.classList.add('ac-open');
   return el;
 }
-const actiefVeld = () => { const a = document.activeElement; return a && A?.el.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) ? a : null; };
+const actiefVeld = () => { const a = document.activeElement; return a && A?.el.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && !/^(checkbox|radio|file|color)$/.test(a.type || '') ? a : null; };
 function stopSubs(){ (A?.subs || []).forEach(f => { try { f(); } catch { /* al weg */ } }); if (A) A.subs = []; }
 
 async function laadLijst(){
@@ -137,6 +142,7 @@ async function zet(patch, { stil = false } = {}){
     await updateDoc(actRef(A.id), { ...patch, bijgewerktMs: Date.now(), bijgewerktDoor: uid() });
     if (Object.keys(patch).some(k => AGENDA_VELDEN.includes(k.split('.')[0]))) syncAgenda();
     if (A.act?.toernooi?.liveId && Object.keys(patch).some(k => ['toernooi', 'naam', 'datum', 'locatie', 'planB'].includes(k.split('.')[0]))) TN.planLive(tnCtx());
+    if (A.act?.toernooi?.inschrijfId && Object.keys(patch).some(k => ['toernooi', 'naam', 'datum', 'start', 'locatie'].includes(k.split('.')[0]))) TN.planInschrijf(tnCtx());
     if (Object.keys(patch).some(k => ['naam', 'datum', 'start', 'locatie'].includes(k)) && A.act?.deelId)
       setDoc(doc(db, 'activiteitDeel', A.act.deelId), { titel: patch.naam ?? A.act.naam, datum: patch.datum ?? A.act.datum, start: patch.start ?? A.act.start ?? '', locatie: patch.locatie ?? A.act.locatie ?? '' }, { merge: true }).catch(() => {});
     if (!stil) toonOpgeslagen();
@@ -162,11 +168,11 @@ function teken(){
   if (!A) return;
   const scroll = A.el.querySelector('.ac-app')?.scrollTop || 0;
   if (A.live && A.act) A.el.innerHTML = htmlLive();
-  else A.el.innerHTML = `<div class="ac-app">${A.id ? (A.act ? htmlAct() : `<div class="ac-leeg">${ico('action-loading', 20)} Laden…</div>`) : htmlLijst()}</div>${A.venster ? `<div class="ac-venster" data-ac="venster-achter"><div class="ac-blad" role="dialog" aria-modal="true">${A.venster}</div></div>` : ''}`;
+  else A.el.innerHTML = `<div class="ac-app">${A.id ? (A.act ? htmlAct() : `<div class="ac-leeg">${ico('action-loading', 20)} Laden…</div>`) : A.extra === 'schermen' ? CS.htmlSchermen(extraCtx()) : A.extra === 'vrijwilligers' ? VB.htmlVrijwilligers(extraCtx()) : htmlLijst()}</div>${A.venster ? `<div class="ac-venster" data-ac="venster-achter"><div class="ac-blad" role="dialog" aria-modal="true">${typeof A.venster === 'function' ? A.venster() : A.venster}</div></div>` : ''}`;
   const app = A.el.querySelector('.ac-app'); if (app) app.scrollTop = scroll;
 }
 function kop(titel, sub, acties = ''){
-  return `<header class="ac-kop"><button class="ac-terug" data-ac="${A.id ? 'terug' : 'sluit'}" aria-label="Terug">‹</button>
+  return `<header class="ac-kop"><button class="ac-terug" data-ac="${A.id ? 'terug' : A.extra ? 'extra-terug' : 'sluit'}" aria-label="Terug">‹</button>
     <div class="ac-titel"><small>${esc(sub)}</small><h1>${esc(titel)}</h1></div><span class="ac-staat" data-staat aria-live="polite"></span>${acties}</header>`;
 }
 
@@ -184,6 +190,8 @@ function htmlLijst(){
   };
   return `${kop('Activiteiten', S.club?.naam || '', `<button class="knop vol" data-ac="nieuw">${ico('action-add', 18)} Nieuwe activiteit</button>`)}
     <p class="ac-zacht">Organiseer clubactiviteiten met een draaiboek dat terugplant vanaf de datum, vrijwilligersdiensten met een open link en een live dagprogramma. ${isAdmin() ? '' : 'Je ziet de activiteiten waarvan je in het comité zit.'}</p>
+    ${isAdmin() ? `<div class="ac-extra"><button class="ac-extra-k" data-ac="extra" data-id="vrijwilligers">${ico('team-members', 22)}<span><b>Vrijwilligers</b><small>Waar zoekt de club mensen voor? Taken met een vaste omschrijving en een open aanmeldpagina.</small></span></button>
+      <button class="ac-extra-k" data-ac="extra" data-id="schermen">${ico('communication-announcement', 22)}<span><b>Kantine-tv en sponsoren</b><small>Het programma van vandaag op de tv in de kantine, met de sponsoren van dit seizoen.</small></span></button></div>` : ''}
     ${komend.length ? `<h2 class="ac-h2">Komend</h2><div class="ac-kaarten">${komend.map(kaart).join('')}</div>` : `<div class="ac-paneel ac-midden"><p>Nog geen activiteiten.</p>${isAdmin() ? '<button class="knop vol" data-ac="nieuw">Begin met een draaiboek</button>' : ''}</div>`}
     ${geweest.length ? `<h2 class="ac-h2">Geweest</h2><div class="ac-kaarten">${geweest.slice().reverse().map(kaart).join('')}</div>` : ''}
     ${isAdmin() ? `<h2 class="ac-h2">Draaiboeken van de club</h2>
@@ -604,12 +612,16 @@ async function klik(e){
   const tk = t.closest('[data-taak]'); if (tk) return vensterTaak(tk.dataset.taak);
   const ex = t.closest('[data-exp]'); if (ex) return exporteer(ex.dataset.exp);
   const tn = t.closest('[data-tn]'); if (tn && A.act){ if (tn.disabled) return; return TN.klikToernooi(tnCtx(), tn); }
+  const cs = t.closest('[data-cs]'); if (cs && A.extra === 'schermen'){ if (cs.disabled) return; return CS.klikSchermen(extraCtx(), cs); }
+  const vb = t.closest('[data-vb]'); if (vb && A.extra === 'vrijwilligers'){ if (vb.disabled) return; return VB.klikVrijwilligers(extraCtx(), vb); }
   if (t.classList.contains('ac-venster')) return sluitVenster();
   const b = t.closest('[data-ac]'); if (!b) return;
   const ac = b.dataset.ac, id = b.dataset.id, a = A.act;
   switch (ac){
     case 'sluit': return sluitActiviteiten();
     case 'terug': return terugNaarLijst();
+    case 'extra': if (!isAdmin()) return meld('Alleen de clubbeheerder.'); A.extra = id; A.venster = null; teken(); A.el.querySelector('.ac-app')?.scrollTo(0, 0); return;
+    case 'extra-terug': A.extra = ''; A.venster = null; return teken();
     case 'venster-dicht': return sluitVenster();
     case 'nieuw': return isAdmin() ? vensterNieuw() : meld('Alleen de clubbeheerder maakt nieuwe activiteiten.');
     case 'nieuw-sj': { const sj = sjabloonVan(id) || A.sjablonen.find(s => s.id === id); return sj && vensterGegevens({ soort: 'sjabloon', sj }); }
@@ -701,6 +713,8 @@ async function wijzig(e){
   if (!A) return;
   const t = e.target;
   if (A.act && await TN.wijzigToernooi(tnCtx(), t)) return;
+  if (A.extra === 'schermen' && await CS.wijzigSchermen(extraCtx(), t)) return;
+  if (A.extra === 'vrijwilligers' && await VB.wijzigVrijwilligers(extraCtx(), t)) return;
   if (t.matches('[data-ac-bestand]')) return leesBestand(t);
   if (t.matches('[data-kies="lid"]')){
     const u = t.value; if (!u) return;
@@ -764,6 +778,7 @@ async function verwijder(){
     }
     await deleteDoc(doc(db, 'clubs', A.clubId, 'activiteitenAgenda', id)).catch(() => {});
     if (A.act?.toernooi?.liveId) await deleteDoc(doc(db, 'toernooiLive', A.act.toernooi.liveId)).catch(() => {});
+    if (A.act?.toernooi?.inschrijfId) await TN.wisInschrijven(A.act.toernooi.inschrijfId);
     await deleteDoc(actRef(id));
     A.venster = null; meld('Verwijderd');
   } catch (e){ console.error('[activiteiten] verwijderen', e); meld('Verwijderen mislukt.'); }
@@ -1002,6 +1017,11 @@ textarea.ac-in{resize:vertical}
   .ac-titel h1{font-size:var(--t-2xl)}
   .ac-kop .knop{padding-inline:10px}
   .ac-staat{display:none}
-}${TN.TOERNOOI_CSS}`;
+}
+.ac-extra{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin:4px 0 6px}
+.ac-extra-k{display:flex;gap:12px;align-items:flex-start;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--hair);border-radius:var(--r-m,14px);padding:12px 14px;font:inherit;cursor:pointer;min-height:64px}
+.ac-extra-k:hover{border-color:var(--accent)}.ac-extra-k svg{flex-shrink:0;color:var(--accent);margin-top:2px}
+.ac-extra-k span{display:flex;flex-direction:column;gap:2px}.ac-extra-k small{color:var(--ink-2);font-size:var(--t-sm,14px)}
+${TN.TOERNOOI_CSS}${CS.SCHERM_CSS}${VB.VRIJWILLIGERS_CSS}`;
   document.head.appendChild(s);
 }

@@ -24,6 +24,12 @@ const _hulpId = _zoek.get('hulp');
 const _actId = _zoek.get('act');
 /* [20261125u] Toernooi live (?live=<id>, met &tv=1 voor een tv-scherm): iedereen volgt schema en standen. Zie js/live-boot.js. */
 const _liveId = _zoek.get('live');
+/* [20261125w] Toernooi inschrijven (?inschrijf=<id>): een gastclub, school of bedrijf schrijft zonder account een team in. Zie js/inschrijf-boot.js. */
+const _insId = _zoek.get('inschrijf');
+/* [20261125w] Kantine-tv (?scherm=<id>): programma van vandaag, sponsoren en eigen schermen van de club. Zie js/scherm-boot.js. */
+const _schermId = _zoek.get('scherm');
+/* [20261125w] Vrijwilligersbank (?taken=<id>): openstaande taken van de club, aanmelden zonder account. Zie js/taken-boot.js. */
+const _takenId = _zoek.get('taken');
 if (_deelId){
   document.getElementById('opstart')?.remove();
   import('./deel-boot.js?v=20261125x').then(m => m.bootDeelPagina(_deelId));
@@ -32,10 +38,19 @@ if (_deelId){
   import('./hulp-boot.js?v=20261118b').then(m => m.bootHulpPagina(_hulpId));
 } else if (_actId){
   document.getElementById('opstart')?.remove();
-  import('./activiteit-boot.js?v=20261125v').then(m => m.bootActiviteitPagina(_actId));
+  import('./activiteit-boot.js?v=20261125w').then(m => m.bootActiviteitPagina(_actId));
 } else if (_liveId){
   document.getElementById('opstart')?.remove();
-  import('./live-boot.js?v=20261125v').then(m => m.bootLivePagina(_liveId, { tv: _zoek.get('tv') === '1' }));
+  import('./live-boot.js?v=20261125w').then(m => m.bootLivePagina(_liveId, { tv: _zoek.get('tv') === '1' }));
+} else if (_insId){
+  document.getElementById('opstart')?.remove();
+  import('./inschrijf-boot.js?v=20261125w').then(m => m.bootInschrijfPagina(_insId));
+} else if (_schermId){
+  document.getElementById('opstart')?.remove();
+  import('./scherm-boot.js?v=20261125w').then(m => m.bootSchermPagina(_schermId));
+} else if (_takenId){
+  document.getElementById('opstart')?.remove();
+  import('./taken-boot.js?v=20261125w').then(m => m.bootTakenPagina(_takenId));
 } else {
 
 /* club.js is alleen nodig voor club-admins die het clubdashboard openen —
@@ -146,4 +161,4 @@ onAuthStateChanged(auth, async user => {
   }
 });
 
-} // einde van de normale (niet-?deel=, niet-?hulp=, niet-?act=, niet-?live=) boot-tak
+} // einde van de normale (niet-?deel=, niet-?hulp=, niet-?act=, niet-?live=, niet-?inschrijf=, niet-?scherm=, niet-?taken=) boot-tak
