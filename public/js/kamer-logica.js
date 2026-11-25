@@ -34,16 +34,19 @@ export const komend = (items, vandaag) => sorteerAgenda(items).filter(i => i.dat
 export const geweest = (items, vandaag) => sorteerAgenda(items).filter(i => i.datum < vandaag).reverse();
 export function itemTitel(i){
   if (i.soort === 'training') return 'Training';
+  if (i.soort === 'activiteit') return i.titel || 'Clubactiviteit';   /* [20261125x] Activiteiten van de club */
   const t = i.tegenstander || 'tegenstander nog onbekend';
   return i.thuis ? `Wedstrijd, thuis tegen ${t}` : `Wedstrijd, uit bij ${t}`;
 }
 export function itemSub(i){
   if (i.afgelast) return 'Afgelast';
   if (i.soort === 'training') return i.tijd ? (i.eind ? `${i.tijd} tot ${i.eind}` : i.tijd) : 'Tijd volgt';
+  if (i.soort === 'activiteit') return [i.planB ? 'Plan B' : '', i.tijd ? (i.eind ? `${i.tijd} tot ${i.eind}` : i.tijd) : '', i.plek].filter(Boolean).join(', ') || 'Clubactiviteit';
   return [i.verzamel && `Verzamelen ${i.verzamel}`, i.tijd && `aftrap ${i.tijd}`].filter(Boolean).join(', ') || 'Tijd volgt';
 }
 /* "12 van 14" als de selectie bekend is, anders alleen hoeveel er afwezig zijn */
 export function itemTelling(i, aantal){
+  if (i.soort === 'activiteit') return 'Club';
   const af = (i.afwezig || []).length;
   if (i.erbij) return `${i.erbij} erbij`;
   if (aantal) return `${Math.max(0, aantal - af)} van ${aantal}`;

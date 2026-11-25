@@ -376,7 +376,7 @@ function daarnaItem(e, nu){
    één tik opent de Planning. */
 const DAG_BADGE = { vrij: 'VRIJ', beker: 'BEKER', inhaal: 'INHAAL', eigen: 'EIGEN DAG', club: 'CLUB' };
 function dagItem(r, nu){
-  const it = r.item, type = it.bron === 'club' ? 'club' : (DAG_BADGE[it.type] ? it.type : 'eigen');
+  const it = r.item, type = (it.bron === 'club' || it.bron === 'activiteit') ? 'club' : (DAG_BADGE[it.type] ? it.type : 'eigen');
   const vrij = type === 'vrij';
   const titel = vrij && (!it.label || it.label === 'Vrij') ? 'Geen wedstrijd' : (it.label || (type === 'club' ? 'Clubactiviteit' : 'Eigen dag'));
   const sub = it.opmerking || (vrij ? 'Vrij weekend (KNVB)' : (type === 'eigen' || type === 'club') ? '' : 'Nog geen wedstrijd ingelezen');

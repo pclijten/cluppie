@@ -120,7 +120,8 @@ async function bouwKamer(db, teamId, opties = {}){
     const nieuw = L.projectTrainingen(team, presentie, vandaag, 28, plannen);
     ws.docs.forEach(d => { const p = L.projectWedstrijd(d.data(), i, vandaag); if (p) nieuw['w_' + d.id] = p; });
     const oud = await kRef.collection('agenda').get();
-    oud.docs.filter(d => !nieuw[d.id]).forEach(d => acties.push((b) => b.delete(d.ref)));
+    /* [20261125x] a_<id> = clubactiviteit; die schrijft kamerActiviteit, niet deze herbouw */
+    oud.docs.filter(d => !nieuw[d.id] && !d.id.startsWith('a_')).forEach(d => acties.push((b) => b.delete(d.ref)));
     Object.entries(nieuw).forEach(([id, doc]) => acties.push((b) => b.set(kRef.collection('agenda').doc(id), doc)));
     agenda = Object.keys(nieuw).length;
   }
@@ -207,6 +208,26 @@ const kamerAanlevering = onDocumentWritten({ document: 'teams/{teamId}/kamerBehe
   const db = getFirestore();
   if (!(await kamerAan(db, event.params.teamId))) return;
   await bouwKamer(db, event.params.teamId, { agenda: event.params.docId === 'trainingen' });
+});
+
+/* [20261125x] Activiteiten van de club in de agenda van ouders (clubs/{clubId}/activiteitenAgenda/{actId}).
+   Alleen bij teams van deze club waar de teamkamer aan staat, en alleen als het comité "ook in de Teamkamer"
+   aanzette. Wat erin staat: naam, datum, tijd, plek, plan B en de vrijwilligerslink. Geen namen. */
+const kamerActiviteit = onDocumentWritten({ document: 'clubs/{clubId}/activiteitenAgenda/{actId}', region: REGIO }, async (event) => {
+  const { clubId, actId } = event.params, db = getFirestore();
+  const voor = event.data.before.data(), na = event.data.after.data();
+  const teamsNa = na && na.kamer === true && na.status !== 'geannuleerd' && /^\d{4}-\d{2}-\d{2}$/.test(String(na.datum || '')) ? (Array.isArray(na.teams) ? na.teams : []) : [];
+  const alle = [...new Set([...(Array.isArray(voor?.teams) ? voor.teams : []), ...teamsNa])].filter(t => typeof t === 'string' && t).slice(0, 150);
+  const tekst = (v, n) => String(v || '').replace(/\s+/g, ' ').trim().slice(0, n);
+  const link = /^https:\/\/(www\.)?cluppie\.io\/[^\s]*$/.test(String(na?.link || '')) ? na.link : '';
+  for (const teamId of alle){
+    const ref = db.doc(`teamkamer/${teamId}/agenda/a_${actId}`);
+    const team = (await db.doc(`teams/${teamId}`).get()).data();
+    const hoort = team && team.club === clubId && teamsNa.includes(teamId) && await kamerAan(db, teamId);
+    if (hoort) await ref.set({ soort: 'activiteit', datum: na.datum, titel: tekst(na.naam, 80), tijd: tekst(na.start, 5), eind: tekst(na.eind, 5), plek: tekst(na.locatie, 80),
+      tekst: String(na.omschrijving || '').slice(0, 600), planB: tekst(na.planB, 600), link });
+    else await ref.delete().catch(() => {});
+  }
 });
 
 /* ---------- polls: tellen en beurten ---------- */
@@ -500,7 +521,7 @@ async function exportUid(db, uid){
 }
 
 module.exports = {
-  functies: { kamerAanlevering, kamerTeam, kamerClub, kamerPlatform, kamerSpeler, kamerWedstrijd, kamerPresentie, kamerStem, kamerPoll, kamerLinkInfo, maakKamerLink, vraagKamerToegang,
+  functies: { kamerAanlevering, kamerActiviteit, kamerTeam, kamerClub, kamerPlatform, kamerSpeler, kamerWedstrijd, kamerPresentie, kamerStem, kamerPoll, kamerLinkInfo, maakKamerLink, vraagKamerToegang,
     beoordeelKamerAanvraag, trekKamerToegangIn, maakKindCode, wisselKindCode, stopKindToegang, kamerVerberg, kamerVerleng, kamerVervers, kamerNacht },
   bouwKamer, telPoll, nacht, magBeheren, verwijderUid, exportUid,
 };

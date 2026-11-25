@@ -241,3 +241,15 @@ Release 1 is al bruikbaar zonder de rest: een comité kan het draaiboek beheren 
 - Inzetrooster/Shiftplanner voor sportclubs: https://inzetrooster.nl/posts/396-get-your-sports-club-off-to-a-flying-start-with-shiftplanner
 
 (PheedLoop en Zoho zijn leveranciersblogs; hun claims over functies zijn reclame, de opsomming van problemen komt overeen met de andere bronnen.)
+
+## Stand van de bouw (25-11-2026)
+
+Alle releases zijn gebouwd op deze branch, achter de schakelaar `platformModules.activiteiten` (standaard uit; de eindbaas zet hem per club aan in het Platformcentrum).
+
+- **Comité-deel** (`activiteiten.js`, `activiteiten-logica.js`, `activiteit-sjablonen.js`): lijst, 9 draaiboeken, tabs Overzicht, Draaiboek (lijst, bord, tijdlijn, CSV inlezen), Dagprogramma (plan A/B, live met vertraging), Comité, Vrijwilligers, Deelnemers, Locatie en spullen, Communicatie, Budget, Documenten, Evaluatie (clubgeheugen, eigen clubdraaiboek, kopie voor volgend jaar). Export: PDF (draaiboek, rooster), CSV's, agenda (ICS), JSON.
+- **Vrijwilligerslink** (`activiteit-boot.js`, `index.html?act=<id>`): inschrijven zonder account, alleen voornamen.
+- **Teams**: Planning toont de activiteit, coach maakt met één knop een deelnemerslijstje (`activiteiten-team.js`).
+- **Teamkamer**: trigger `kamerActiviteit` zet de activiteit in de agenda van ouders (alleen als het comité dat aanzet).
+- **AI-concept**: callable `activiteitConceptAI` (alleen als AI én Activiteiten aan staan, zonder namen).
+
+Live zetten (door Paul): `tools/deploy-alles.ps1` (Firestore-regels + functies `kamerActiviteit` en `activiteitConceptAI`), daarna versie ophogen met `tools/versie.mjs`.

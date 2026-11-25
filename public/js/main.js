@@ -20,12 +20,17 @@ const _deelId = _zoek.get('deel');
    account in als helper bij een training. Zelfde losse opzet als ?deel=,
    zie js/hulp-boot.js. */
 const _hulpId = _zoek.get('hulp');
+/* [20261125x] Activiteiten (?act=<id>): vrijwilligers schrijven zich zonder account in voor een dienst. Zie js/activiteit-boot.js. */
+const _actId = _zoek.get('act');
 if (_deelId){
   document.getElementById('opstart')?.remove();
   import('./deel-boot.js?v=20261124c').then(m => m.bootDeelPagina(_deelId));
 } else if (_hulpId){
   document.getElementById('opstart')?.remove();
   import('./hulp-boot.js?v=20261118b').then(m => m.bootHulpPagina(_hulpId));
+} else if (_actId){
+  document.getElementById('opstart')?.remove();
+  import('./activiteit-boot.js?v=20261125x').then(m => m.bootActiviteitPagina(_actId));
 } else {
 
 /* club.js is alleen nodig voor club-admins die het clubdashboard openen —
@@ -136,4 +141,4 @@ onAuthStateChanged(auth, async user => {
   }
 });
 
-} // einde van de normale (niet-?deel=, niet-?hulp=) boot-tak
+} // einde van de normale (niet-?deel=, niet-?hulp=, niet-?act=) boot-tak

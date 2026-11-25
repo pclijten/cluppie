@@ -889,6 +889,9 @@ function htmlClubHub(teams){
     ...(admin ? [`<button class="hub-tegel" data-vk-sportpark><span class="hub-badge warn" data-vk-badge hidden></span>${ico('match-location', 40)}<span class="hub-tnaam">Sportparken</span></button>`] : []),
     /* [20261124v] Veldplanner: alleen als de eindbaas hem voor deze club aanzet (platformModules.veldplanner) */
     ...(admin && S.club?.platformModules?.veldplanner === true ? [`<button class="hub-tegel" data-vp-open>${ico('planning-week', 40)}<span class="hub-tnaam">Veldplanner</span></button>`] : []),
+    /* [20261125x] Activiteiten (organisatiecomité): alleen als de eindbaas hem aanzet (platformModules.activiteiten).
+       Ook voor niet-beheerders: een comitélid ziet daar de eigen activiteiten. */
+    ...(S.club?.platformModules?.activiteiten === true ? [`<button class="hub-tegel" data-ac-open>${ico('planning-event', 40)}<span class="hub-tnaam">Activiteiten</span></button>`] : []),
   ]]);
   secties.push(['Materiaal', [
     clubTegel('trainingen', 'Trainingen', 'training-cones'),
@@ -1160,6 +1163,7 @@ async function renderClub(opts = {}){
   /* [20261120e] Sportpark-tegel: los venster uit veldkaart.js (dynamisch geladen) */
   v.querySelectorAll('[data-vk-sportpark]').forEach(b => b.onclick = () => import('./veldkaart.js?v=20261124c').then(m => m.openSportparkBeheer(S.clubId)));
   v.querySelectorAll('[data-vp-open]').forEach(b => b.onclick = () => import('./veldplanner.js?v=20261124c').then(m => m.openVeldplanner(S.clubId)));
+  v.querySelectorAll('[data-ac-open]').forEach(b => b.onclick = () => import('./activiteiten.js?v=20261125x').then(m => m.openActiviteiten(S.clubId)));
   { const bad = v.querySelector('[data-vk-badge]'); if (bad) import('./veldkaart.js?v=20261124c').then(m => m.vulMeldBadge(bad, S.clubId)); }
   /* [20261121a] sprong vanuit "Wie doet wat" en "En daarna" naar de plek waar je het regelt */
   const naarActie = a => {

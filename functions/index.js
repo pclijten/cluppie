@@ -318,6 +318,49 @@ exports.chatHulp = onCall(
   }
 );
 
+/* ---------- 2a2. ACTIVITEITEN: CONCEPT-DRAAIBOEK [20261125x] ====================
+   Het comité beschrijft een activiteit in een paar zinnen; Claude maakt een concept-draaiboek in de vorm van
+   een sjabloon (public/js/activiteit-sjablonen.js). De app maakt het daarna schoon (activiteiten-logica.js
+   schoonConcept) en het comité past het aan. Alleen de omschrijving gaat mee, geen namen of clubgegevens. */
+const CONCEPT_SYSTEEM = `Je helpt een vrijwillig organisatiecomité van een Nederlandse amateurvoetbalclub (jeugd) een clubactiviteit
+te organiseren. Je maakt een concept-draaiboek. Schrijf in gewoon, kort Nederlands.
+
+Geef ALLEEN één JSON-object terug, zonder uitleg en zonder codeblok, met deze velden:
+{"naam": string, "omschrijving": string (1-2 zinnen), "start": "HH:MM", "eind": "HH:MM",
+ "rollen": [string, ...] (3-6 comitérollen),
+ "taken": [{"t": taak, "d": dagen vóór de activiteit (geheel getal; 0 = de dag zelf, negatief = erna), "rol": een van de rollen, "tip": korte tip of ""}] (10-25 taken, van ver vooraf tot evaluatie erna),
+ "programma": [{"tijd": "HH:MM", "duur": minuten, "wat": string, "waar": string, "wie": rol}] (dagprogramma, inclusief opbouw en opruimen),
+ "planB": {"tekst": wat te doen bij slecht weer of tegenvallers},
+ "diensten": [{"naam": string, "start": "HH:MM", "eind": "HH:MM", "plek": string, "nodig": aantal}] (vrijwilligersdiensten),
+ "materiaal": [{"naam": string, "aantal": getal of null}],
+ "berichten": [{"d": dagen vooraf, "titel": string, "tekst": string met {naam} {datum} {tijd} {locatie} {link} waar handig, "kanaal": "teams"|"ouders"|"whatsapp"}] (2-4 berichten),
+ "budget": [{"naam": string, "soort": "uit"|"in", "begroot": bedrag in euro}],
+ "checks": [string, ...] (veiligheid, privacy van kinderen, vergunningen; 3-8 punten)}
+Wees realistisch voor een amateurclub met vrijwilligers. Noem nooit namen van personen.`;
+
+exports.activiteitConceptAI = onCall(
+  { region: REGIO, secrets: [ANTHROPIC_API_KEY], cors: true, timeoutSeconds: 120 },
+  async (request) => {
+    const { clubId, rol } = await vereisAI(request);
+    const club = (await getFirestore().doc(PADEN.club(clubId)).get()).data() || {};
+    if (club.platformModules?.activiteiten !== true) throw new HttpsError('failed-precondition', 'Activiteiten staat niet aan voor deze club.');
+    const namen = await namenVoorScrub(clubId, request.auth.uid, rol);
+    const omschrijving = scrubPII(String(request.data?.omschrijving || '').slice(0, 600), namen).trim();
+    if (omschrijving.length < 10) throw new HttpsError('invalid-argument', 'Beschrijf de activiteit in een paar zinnen.');
+    const { tekst } = await claude({
+      apiKey: ANTHROPIC_API_KEY.value(),
+      system: [{ type: 'text', text: CONCEPT_SYSTEEM, cache_control: { type: 'ephemeral' } }],
+      messages: [{ role: 'user', content: `De activiteit: ${omschrijving}` }],
+      maxTokens: 4000, temperature: 0.4, metaTerug: true,
+    });
+    const begin = tekst.indexOf('{'), eind = tekst.lastIndexOf('}');
+    let concept = null;
+    try { concept = JSON.parse(tekst.slice(begin, eind + 1)); } catch { concept = null; }
+    if (!concept || typeof concept !== 'object') throw new HttpsError('internal', 'Het concept kwam niet goed terug. Probeer het opnieuw.');
+    return { concept };
+  }
+);
+
 /* ---------- 2b. AI-WEDSTRIJDVERSLAG ==================== */
 
 const VERSLAG_SYSTEEM = `Je schrijft korte, levendige wedstrijdverslagen voor een jeugdvoetbalteam,

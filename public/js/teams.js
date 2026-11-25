@@ -17,6 +17,7 @@ import { kompasTips, startContentListener } from './content.js?v=20261124c';
 import { pasClubConfigToe, clubAfk, weerLocatie, weerSleutel, logoImg, logoImgVoorDoc, primaireClubId, voorbeeldTeamcode, laadPlatformConfig, laadSoloAI } from './clubconfig.js?v=20261124c';
 import { rolNaam as clubRolNaam } from './rolnamen.js?v=20261120c';   /* [20261120c] eigen rolnamen van de club */
 import { ico } from './icons.js?v=20261116t';
+import { luisterActiviteiten, activiteitPlanningItems, openActiviteitVoorTeam } from './activiteiten-team.js?v=20261125x';   /* [20261125x] clubactiviteiten in de Planning */
 
 import { analyseWedstrijd } from './analyse.js?v=20261124c';
 import { telGebruik, telNav } from './tracker.js?v=20261124c';
@@ -962,7 +963,7 @@ export function openTeam(teamId, beginTab = 'hub', opties = {}){
   S._presentieOpen = new Set();
   S._presentieToonAlles = new Set();
   S.uitleningenUit = []; S.uitleningenIn = [];   // leeg starten: nieuwe listeners vullen deze per team
-  stopUnsubs('team','spelers','wedstrijden','presentie','planning','poule','beoordelingen','beoordelingenPrive','teamevaluaties','seizoen','sjablonen','uitleningen','uitleningenIn','lijsten','toernooitjes');
+  stopUnsubs('team','spelers','wedstrijden','presentie','planning','poule','activiteiten','beoordelingen','beoordelingenPrive','teamevaluaties','seizoen','sjablonen','uitleningen','uitleningenIn','lijsten','toernooitjes');
   const luisterfout = (naam) => (err) => {
     console.error(`[Cluppie] Listener "${naam}" kon niet lezen (teamId=${teamId}):`, err.code, err.message);
     /* assistenten hebben bewust geen toegang tot beoordelingen/presentie: geen foutmelding */
@@ -988,6 +989,11 @@ export function openTeam(teamId, beginTab = 'hub', opties = {}){
     }
     if (S.team.club && !S.unsub.uitleningen) startUitleningenListener(teamId);
     if (S.team.club && !S.unsub.seizoen) startSeizoenListener(teamId);
+    /* [20261125x] clubactiviteiten waar dit team aan meedoet (Activiteiten › Deelnemers) */
+    if (S.team.club && !S.unsub.activiteiten) S.unsub.activiteiten = luisterActiviteiten(teamId, S.team.club, () => {
+      if (S.teamId !== teamId || S.wedstrijdId) return;
+      if (S.teamTab === 'planning') renderTeam(); else if (S.teamTab === 'hub') S._nuVervers?.();
+    });
     if (S.team.club) zorgClubLidmaatschap(S.team.club);
     if (!S.team.club) S.huidigSeizoen = SEIZOEN_FALLBACK; // los team zonder club: geen seizoenbeheer
     /* [20261111b] los team: mag AI (platform/instellingen.soloAI)? Eén keer lezen, daarna het team opnieuw tekenen */
@@ -1279,7 +1285,7 @@ function herbouwSpelers(){
 }
 
 export function verlaatTeamView(){
-  stopUnsubs('team','spelers','wedstrijden','presentie','planning','poule','beoordelingen','beoordelingenPrive','uitleningen','uitleningenIn','teamevaluaties','seizoen','sjablonen','lijsten','toernooitjes');
+  stopUnsubs('team','spelers','wedstrijden','presentie','planning','poule','activiteiten','beoordelingen','beoordelingenPrive','uitleningen','uitleningenIn','teamevaluaties','seizoen','sjablonen','lijsten','toernooitjes');
   S._teamTabStack = [];
   resetTeamkamer();
   S.teamId = null; S.team = null; S.spelers = []; S._eigenSpelers = []; S._gearchiveerd = []; S.wedstrijden = []; S.planning = [];
@@ -1861,6 +1867,8 @@ export function planningItems(){
       tijd: a.tijd || '',   // [20261117c] voor de volgorde binnen een dag op het startscherm
     });
   }
+  // [20261125x] clubactiviteiten (Activiteiten) waar dit team aan meedoet
+  try { items.push(...activiteitPlanningItems()); } catch(e){ console.warn('[Cluppie] activiteiten planning', e); }
   // [20260924a] lijstjes met een datum (bv. toernooi-aanwezigheid)
   try { items.push(...lijstPlanningItems()); } catch(e){ console.warn('[Cluppie] lijst-items planning', e); }
   // [20261114] openbare clubactiviteiten uit Sportlink (ALV, clubavonden, ...)
@@ -2402,6 +2410,7 @@ function koppelTeamTab(v, tab){
         if (lid) openLijst(lid, zetTeamTab);
         return;
       }
+      if (bron === 'activiteit'){ openActiviteitVoorTeam(b.dataset.plandoc, { openLijst, zetTeamTab }); return; }
       if (bron === 'club'){
         const it = planningItems().find(x => x.datum === datum && x.bron === 'club' && x.label === b.dataset.planlabel);
         if (it?.url) window.open(it.url, '_blank', 'noopener');

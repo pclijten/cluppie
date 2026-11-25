@@ -48,6 +48,12 @@ service cloud.firestore {
     function isTraincoVanClub(c) { return echt() && clubBestaat(c) && club(c).get('trainingscoordinatoren', {}).get(uid(), false) == true; }
     /* [20261124v] Veldplanner: de eindbaas zet hem per club aan (clubs/{id}.platformModules.veldplanner) */
     function veldplannerAan(c) { return club(c).get('platformModules', {}).get('veldplanner', false) == true; }
+    /* [20261125x] Activiteiten (organisatiecomité): de eindbaas zet het per club aan (clubs/{id}.platformModules.activiteiten).
+       Comité = clubleden die de clubbeheerder in activiteiten/{id}.comiteUids zet. */
+    function activiteitenAan(c) { return clubBestaat(c) && club(c).get('platformModules', {}).get('activiteiten', false) == true; }
+    function activiteit(c, a) { return get(/databases/$(database)/documents/clubs/$(c)/activiteiten/$(a)).data; }
+    function isComite(c, a) { return isClubLid(c) && exists(/databases/$(database)/documents/clubs/$(c)/activiteiten/$(a)) && uid() in activiteit(c, a).get('comiteUids', []); }
+    function magActiviteit(c, a) { return activiteitenAan(c) && (isClubAdmin(c) || isComite(c, a)); }
     function isVeldplanner(c) { return isClubAdmin(c) || isTraincoVanClub(c); }
     function isHoofdJeugd(c) { return echt() && clubBestaat(c) && club(c).get('hoofdJeugd', {}).get(uid(), false) == true; }
     function isJeugdPlanner(c) { return isClubAdmin(c) || isHoofdJeugd(c); }
@@ -246,6 +252,33 @@ service cloud.firestore {
         allow create, update: if isVeldplanner(clubId) && veldplannerAan(clubId)
           && request.resource.data.blokken is list && request.resource.data.blokken.size() <= 400;
         allow delete: if isVeldplanner(clubId) && veldplannerAan(clubId);
+      }
+      /* [20261125x] Activiteiten. Geen spelersgegevens: namen van comitéleden (volwassenen) en een begroting.
+         - lezen: clubbeheer, of een comitélid van deze activiteit;
+         - aanmaken en verwijderen: clubbeheer (met de schakelaar aan);
+         - wijzigen: clubbeheer, of het comité; alleen clubbeheer bepaalt wie in het comité zit (comiteUids). */
+      match /activiteiten/{actId} {
+        allow read: if isClubAdmin(clubId) || (isClubLid(clubId) && uid() in resource.data.get('comiteUids', []));
+        allow create: if isClubAdmin(clubId) && activiteitenAan(clubId)
+          && request.resource.data.naam is string && request.resource.data.naam.size() > 0 && request.resource.data.naam.size() <= 120
+          && request.resource.data.get('comiteUids', []) is list && request.resource.data.get('comiteUids', []).size() <= 40;
+        allow update: if activiteitenAan(clubId)
+          && request.resource.data.naam is string && request.resource.data.naam.size() > 0 && request.resource.data.naam.size() <= 120
+          && request.resource.data.get('comiteUids', []) is list && request.resource.data.get('comiteUids', []).size() <= 40
+          && (isClubAdmin(clubId)
+              || (isClubLid(clubId) && uid() in resource.data.get('comiteUids', [])
+                  && request.resource.data.get('comiteUids', []) == resource.data.get('comiteUids', [])));
+        allow delete: if isClubAdmin(clubId) && activiteitenAan(clubId);
+      }
+      /* wat de teams zien (Planning, Teamkamer via de Cloud Function): naam, datum, tijd, locatie, link. Geen budget of comité. */
+      match /activiteitenAgenda/{actId} {
+        allow read: if isClubLid(clubId);
+        allow write: if magActiviteit(clubId, actId);
+      }
+      /* eigen draaiboeken van de club (zonder namen of datums) */
+      match /activiteitSjablonen/{sjId} {
+        allow read: if isClubLid(clubId);
+        allow write: if isClubAdmin(clubId) && activiteitenAan(clubId);
       }
       match /veldplanner/{docId} {
         allow read: if isVeldplanner(clubId);
@@ -683,6 +716,40 @@ service cloud.firestore {
         allow update: if false;
         /* weghalen: de eigen aanmelding, of de staf elke aanmelding */
         allow delete: if ingelogd() && (resource.data.uid == uid() || staf());
+      }
+    }
+    /* [20261125x] Activiteiten: vrijwilligersdiensten met een open link (?act=<id>, activiteit-boot.js).
+       Zelfde opzet als hulpDeel: wie de link heeft (ook anoniem) leest de diensten en voornamen en maakt per
+       dienst één eigen aanmelding. Het comité van de activiteit beheert alles. Geen kinderen, geen telefoonnummers. */
+    match /activiteitDeel/{deelId} {
+      function actBeheer(d) { return d.get('club', null) is string && d.get('actId', null) is string && magActiviteit(d.club, d.actId); }
+      allow get: if ingelogd() && (resource.data.get('open', false) == true || actBeheer(resource.data));
+      allow list: if false;
+      allow create: if echt() && actBeheer(request.resource.data) && request.resource.data.diensten is map && request.resource.data.diensten.size() <= 60;
+      allow update: if echt() && actBeheer(resource.data)
+        && request.resource.data.get('club', null) == resource.data.get('club', null)
+        && request.resource.data.get('actId', null) == resource.data.get('actId', null)
+        && request.resource.data.diensten is map && request.resource.data.diensten.size() <= 60;
+      allow delete: if echt() && actBeheer(resource.data);
+
+      match /aanmeldingen/{aanmId} {
+        function deel() { return get(/databases/$(database)/documents/activiteitDeel/$(deelId)).data; }
+        function beheer() { return echt() && actBeheer(deel()); }
+        allow read: if ingelogd() && (deel().get('open', false) == true || beheer());
+        /* aanmaken: alleen de vijf velden, op eigen uid, een voornaam van hooguit 24 tekens, bij een bestaande dienst.
+           - via de link: alleen als die open staat, onder het vaste id <uid>_<dienst> (één keer per dienst per toestel);
+           - het comité: met een automatisch id. Vol of niet controleert de app. */
+        allow create: if ingelogd()
+          && request.resource.data.keys().hasOnly(['uid', 'dienst', 'naam', 'ms', 'door'])
+          && request.resource.data.uid == uid()
+          && request.resource.data.naam is string && request.resource.data.naam.size() > 0 && request.resource.data.naam.size() <= 24
+          && request.resource.data.ms is number
+          && request.resource.data.dienst is string && request.resource.data.dienst in deel().diensten
+          && ((request.resource.data.door == 'link' && deel().get('open', false) == true && aanmId == uid() + '_' + request.resource.data.dienst)
+              || (request.resource.data.door == 'comite' && beheer()));
+        /* op de dag: het comité vinkt aan wie er is (alleen dat veld) */
+        allow update: if beheer() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['aanwezig']) && request.resource.data.aanwezig is bool;
+        allow delete: if ingelogd() && (resource.data.uid == uid() || beheer());
       }
     }
     /* clubprofiel: wat de platformbeheerder uit de documenten van een club heeft gehaald

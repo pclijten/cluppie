@@ -180,7 +180,7 @@ export function kiesDaarna({ nu, hoofd, events, losse, planning, wedstrijdDatums
   const dag = (planning || [])
     .filter(it => it && it.datum >= vandaag && it.datum <= eind)
     /* [20261117c] ook clubactiviteiten (bron 'club') tellen als bijzondere dag */
-    .filter(it => it.bron === 'eigen' || it.bron === 'club' || (it.bron === 'knvb' && BIJZONDER.includes(it.type)))
+    .filter(it => it.bron === 'eigen' || it.bron === 'club' || it.bron === 'activiteit' || (it.bron === 'knvb' && BIJZONDER.includes(it.type)))   /* [20261125x] en Activiteiten */
     .filter(it => it.bron !== 'knvb' || !(datums.has(it.datum) || datums.has(it.knvbDatum)))
     .sort((a, b) => a.datum.localeCompare(b.datum))[0];
   if (dag) gekozen.set({ type: 'dag', id: 'dag-' + dag.datum, datum: dag.datum, item: dag }, 2);

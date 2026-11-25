@@ -1123,6 +1123,7 @@ async function actie(b){
     if (bron === 'wedstrijd' && did){ const m = await import('./wedstrijd.js?v=20261124c'); m.openWedstrijd(did); return; }
     if (bron === 'training'){ selTraining = 'dt:' + datum; zetTeamTab('presentietraining'); return; }
     if (bron === 'lijst' && did){ S._lijstOpen = did; S._ljFilter = 'alle'; S._ljToonEerder = false; zetTeamTab('lijst'); return; }
+    if (bron === 'activiteit' && did){ const m = await import('./activiteiten-team.js?v=20261125x'); m.openActiviteitVoorTeam(did, { openLijst: (lid) => { S._lijstOpen = lid; S._ljFilter = 'alle'; S._ljToonEerder = false; zetTeamTab('lijst'); } }); return; }
     if (bron === 'club'){ const it = planningItems().find(x => x.datum === datum && x.bron === 'club' && x.label === b.dataset.label); if (it?.url) window.open(it.url, '_blank', 'noopener'); return; }
     const it = planningItems().find(x => x.datum === datum && x.bron === bron);
     if (it){ const m = await import('./teams-training.js?v=20261124c'); m.modalPlanDag(it); } return; }
