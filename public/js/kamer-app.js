@@ -9,7 +9,7 @@
      bericht klaar, Cluppie verstuurt en bewaart niets. */
 import { auth, db, functions, httpsCallable, signInAnonymously, signOut, onAuthStateChanged, signInWithEmailAndPassword,
   createUserWithEmailAndPassword, sendEmailVerification, collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, where, onSnapshot } from './firebase.js?v=20261011g';
-import * as K from './kamer-logica.js?v=20261118a';
+import * as K from './kamer-logica.js?v=20261125m';
 
 const wortel = document.getElementById('tk');
 const qs = new URLSearchParams(location.search);

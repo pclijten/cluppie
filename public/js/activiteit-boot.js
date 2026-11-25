@@ -7,7 +7,7 @@
    aanmeldingen lezen, per dienst één eigen aanmelding maken of weghalen. Niets anders van de club.
    Wie wat mag: firestore.rules, blok activiteitDeel. Alleen voornamen, geen telefoonnummers. */
 import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, collection, setDoc, deleteDoc, onSnapshot } from './firebase.js?v=20261011g';
-import { NAAM_MAX, telDiensten, botstMet, datumLang, schoneNaam, ics } from './activiteiten-logica.js?v=20261125x';
+import { NAAM_MAX, telDiensten, botstMet, datumLang, schoneNaam, ics } from './activiteiten-logica.js?v=20261125m';
 
 const NAAM_SLEUTEL = 'cluppieHulpNaam';            /* zelfde als Trainingshulp: je vult je naam één keer in */
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

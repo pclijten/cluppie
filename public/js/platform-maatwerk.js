@@ -14,15 +14,15 @@
    notities naar clubprofielen/{id}.maatwerk (rules: alleen de platformbeheerder).
    platform-centrum.js geeft bij init() zijn toestand P en zijn teken() mee. */
 import { db, doc, getDoc, setDoc, serverTimestamp } from './firebase.js?v=20261011g';
-import { esc, meld } from './state.js?v=20261124c';
+import { esc, meld } from './state.js?v=20261125m';
 import { ico } from './icons.js?v=20261116t';
-import { BOUWEN } from './config.js?v=20261124c';
-import { platformToegestaan, modulesVoorNieuweClub } from './onderdelen.js?v=20261124c';
+import { BOUWEN } from './config.js?v=20261125m';
+import { platformToegestaan, modulesVoorNieuweClub } from './onderdelen.js?v=20261125m';
 import { ROLLEN as ROLNAMEN, eigenRolNaam, rolNaam } from './rolnamen.js?v=20261120c';
 import { isStandaard as pdfIsStandaard, schoonProfiel as pdfSchoon } from './pdf-profiel.js?v=20261115e';
 import { FASE_NAAM } from './platform-logica.js?v=20261111a';
 import { ONDERDELEN, SCHAKELAARS, onderdeelOpId, waardenVan, standaardWaarden, patchNaar, patchTekst, controleerGetal, maatwerkRijen, filterMaatwerk, tellingPerOnderdeel,
-  maatwerkOverzicht, schoonMaatwerk, wensErbij, wensZet, wensWeg, wensenGesorteerd, NOTITIE_MAX, WENS_MAX } from './maatwerk-logica.js?v=20261124v';
+  maatwerkOverzicht, schoonMaatwerk, wensErbij, wensZet, wensWeg, wensenGesorteerd, NOTITIE_MAX, WENS_MAX } from './maatwerk-logica.js?v=20261125m';
 import { rolBezetting, bezettingRegel } from './rollen-bezetting.js?v=20261121a';
 
 let P = null, teken = () => {}, laadTeams = () => {};

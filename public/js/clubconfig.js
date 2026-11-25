@@ -28,10 +28,10 @@
 
    Een club-document zonder instellingen.v krijgt de neutrale standaard totdat de
    beheerder de waarden in Instellingen "vastlegt". */
-import { S, clubAfkorting } from './state.js?v=20261124c';
-import * as C from './config.js?v=20261124c';
+import { S, clubAfkorting } from './state.js?v=20261125m';
+import * as C from './config.js?v=20261125m';
 import { db, doc, getDoc } from './firebase.js?v=20261011g';
-import { zetContentClub } from './content.js?v=20261124c';
+import { zetContentClub } from './content.js?v=20261125m';
 import { weerVanTeam } from './snelstart-logica.js?v=20261122a';
 import { schoonProfiel as schoonPdfProfiel } from './pdf-profiel.js?v=20261115e';
 
@@ -217,7 +217,7 @@ export function pasClubConfigToe(club){
     leiding: { admins: club.admins || {}, hoofdJeugd: club.hoofdJeugd || {}, bouwCoordinatoren: club.bouwCoordinatoren || {},
       eigenBouwen: Array.isArray(club.eigenBouwen) ? club.eigenBouwen : [] } };
   /* [20261116b] eenmalige uitleg voor het hoofd jeugdopleiding (rolkaart.js) */
-  if (S.user && club.hoofdJeugd && club.hoofdJeugd[S.user.uid] === true) import('./rolkaart.js?v=20261124c').then(m => m.planRolkaart()).catch(() => {});
+  if (S.user && club.hoofdJeugd && club.hoofdJeugd[S.user.uid] === true) import('./rolkaart.js?v=20261125m').then(m => m.planRolkaart()).catch(() => {});
   /* [20261021] maximale videogrootte: alleen de eindbaas (platformModules.maxVideoMB); buiten de handtekening zoals S._clubPlatform */
   { const pv = Number(club.platformModules && club.platformModules.maxVideoMB);
     C.ACTIEF.maxVideoMB = pv > 0 ? pv : C.ACTIEF_STANDAARD.maxVideoMB; }
