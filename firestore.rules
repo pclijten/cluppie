@@ -12,7 +12,10 @@ service cloud.firestore {
     function uid() { return request.auth.uid; }
     function wijzigt(sleutels) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(sleutels); }
     /* [20261125x] sportprofiel: de sporten die de app kent (public/js/sporten.js). Ontbreekt het veld, dan is het voetbal. */
-    function geldigeSport(d) { return d.get('sport', 'voetbal') in ['voetbal']; }
+    /* [20261126c] de sporten van de app (public/js/sporten.js, functions/sport.js); de eindbaas zet elke sport op een club */
+    function geldigeSport(d) { return d.get('sport', 'voetbal') in ['voetbal', 'hockey', 'volleybal', 'korfbal']; }
+    /* sporten waarmee een trainer zonder club zelf begint (open); de rest is nog een pilot via een club */
+    function openSport(d) { return d.get('sport', 'voetbal') in ['voetbal']; }
     function sportGelijk() { return request.resource.data.get('sport', null) == resource.data.get('sport', null); }
 
     /* ---------- platform ---------- */
@@ -380,7 +383,7 @@ service cloud.firestore {
       /* [20261115d] de anonieme deel-link leest het teamdocument niet meer (namen van coaches, vaste afmeldingen) */
       /* [20261125x] sport: alleen een team zonder club kiest zelf (een clubteam volgt de club), en alleen een bekende sport */
       allow create: if echt()
-        && (!('sport' in request.resource.data) || (request.resource.data.get('club', null) == null && geldigeSport(request.resource.data)))
+        && (!('sport' in request.resource.data) || (request.resource.data.get('club', null) == null && openSport(request.resource.data)))
         && (
         (request.resource.data.leden.get(uid(), false) == true
           && (request.resource.data.get('club', null) == null

@@ -12,6 +12,7 @@ export const VOETBAL = vries({
   icoon: 'football-pitch',
   /* [20261126b] eigen oefenstof, seizoensplannen en beoordelingscriteria aanwezig (stap 6); een sport zonder
      inhoud krijgt Training maken en Seizoensplanning pas als die inhoud er is */
+  open: true,           /* [20261126c] iedereen kan met voetbal beginnen */
   inhoud: true,
   /* [20261126c] ledenbron (stap 7): 'sportlink' = koppeling met Sportlink Club.Dataservice; anders teams uit een lijst */
   ledenbron: 'sportlink',
