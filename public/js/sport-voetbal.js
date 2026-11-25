@@ -20,6 +20,19 @@ export const VOETBAL = vries({
     bord: { dwars: [50], cirkel: 24, vakken: [{ id: 'zestien', b: 56, h: 13, vorm: 'rechthoek' }, { id: 'vijf', b: 28, h: 5.5, vorm: 'rechthoek' }] },
     kaart: { cirkel: 18 },
   },
+  /* [20261126a] wedstrijdregels (stap 5): spelvormen zonder keeper, naam van de periodes, kaarten.
+     Een kaart met duur 'tijdstraf' krijgt de tijdstraf van de leeftijd (tijdstraf hierboven). */
+  wedstrijd: {
+    zonderKeeper: ['4'],
+    periodeNaam: { 2: 'Helft', 4: 'Kwart' }, periodeKort: { 2: 'H', 4: 'K' },
+    kaarten: [
+      { type: 'geel', naam: 'gele kaart', knop: 'Geel' },
+      { type: 'tijd', naam: 'tijdstraf', knop: 'Tijdstraf', duur: 'tijdstraf' },
+      { type: 'rood', naam: 'rode kaart', knop: 'Rood', eruit: true },
+    ],
+    tweedeGeelRood: true,
+    kaartUitleg: 'een gele kaart is een waarschuwing. Bij een tweede gele in dezelfde wedstrijd volgt rood. In de B-categorie geldt een tijdstrafregeling: {min} minuten voor deze leeftijd{wie}.',
+  },
   woorden: { bond: 'KNVB', ledenbron: 'Sportlink', keeper: 'keeper', elftal: 'elftal', buitenspel: 'buitenspel' },
   /* Regels die per club instelbaar zijn (ACTIEF in config.js). KNVB: tijdstraf 5 min t/m O15, daarna 10. */
   tijdstraf: { pupilSec: 300, jeugdSec: 600, jeugdVanaf: 16 },

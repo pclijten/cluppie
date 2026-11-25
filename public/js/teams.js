@@ -14,8 +14,7 @@ import {
   catLabel,
 } from './config.js?v=20261125z';
 import { kompasTips, startContentListener } from './content.js?v=20261125z';
-import { pasClubConfigToe, clubAfk, weerLocatie, weerSleutel, logoImg, logoImgVoorDoc, primaireClubId, voorbeeldTeamcode, laadPlatformConfig, laadSoloAI } from './clubconfig.js?v=20261125z';
-import { zetActieveSport } from './sporten.js?v=20261125z';   /* [20261125y] sportprofiel stap 3 */
+import { pasClubConfigToe, pasSportToe, clubAfk, weerLocatie, weerSleutel, logoImg, logoImgVoorDoc, primaireClubId, voorbeeldTeamcode, laadPlatformConfig, laadSoloAI } from './clubconfig.js?v=20261125z';
 import { rolNaam as clubRolNaam } from './rolnamen.js?v=20261120c';   /* [20261120c] eigen rolnamen van de club */
 import { ico } from './icons.js?v=20261116t';
 import { luisterActiviteiten, activiteitPlanningItems, openActiviteitVoorTeam } from './activiteiten-team.js?v=20261125z';   /* [20261125x] clubactiviteiten in de Planning */
@@ -1128,7 +1127,7 @@ export function openTeam(teamId, beginTab = 'hub', opties = {}){
    "Nieuw seizoen starten" gebruikt) valt terug op SEIZOEN_FALLBACK. */
 function startSeizoenListener(teamId){
   const clubId = S.team?.club;
-  if (!clubId){ zetActieveSport(S.team?.sport); S.huidigSeizoen = SEIZOEN_FALLBACK; S._clubRondes = []; return; }   /* [20261125y] team zonder club: eigen sport */
+  if (!clubId){ pasSportToe(S.team?.sport); S.huidigSeizoen = SEIZOEN_FALLBACK; S._clubRondes = []; return; }   /* [20261125y] team zonder club: eigen sport */
   if (S.unsub.seizoen){ S.unsub.seizoen(); delete S.unsub.seizoen; }
   S.unsub.seizoen = onSnapshot(doc(db,'clubs',clubId), snap => {
     const d = snap.data();

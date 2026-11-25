@@ -6715,6 +6715,7 @@ html.desk .s3d-stage{height:380px}
 .kaartje { display: inline-block; width: .62em; height: .86em; border-radius: var(--r-2xs); vertical-align: -.12em; }
 .kaartje.geel { background: var(--kaart-geel); }
 .kaartje.rood { background: var(--kaart-rood); }
+.kaartje.groen { background: #2e9e4f; }   /* [20261126a] hockey */
 .aanvoerder-a { font-weight: 700; }
 .vast-ico { display: inline-flex; vertical-align: -.15em; color: var(--ink-2); }
 
