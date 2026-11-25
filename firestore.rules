@@ -721,6 +721,21 @@ service cloud.firestore {
     /* [20261125x] Activiteiten: vrijwilligersdiensten met een open link (?act=<id>, activiteit-boot.js).
        Zelfde opzet als hulpDeel: wie de link heeft (ook anoniem) leest de diensten en voornamen en maakt per
        dienst één eigen aanmelding. Het comité van de activiteit beheert alles. Geen kinderen, geen telefoonnummers. */
+    /* [20261125n] Live pagina van een toernooi (Activiteiten › Toernooi › Live): schema, uitslagen, stand en mededelingen
+       voor iedereen met de link of QR-code (anoniem ingelogd, ?live=<id>). Geen spelersnamen. Niet op te sommen;
+       schrijven alleen het comité van die activiteit. */
+    match /toernooiLive/{liveId} {
+      function liveBeheer(d) { return d.get('club', null) is string && d.get('actId', null) is string && magActiviteit(d.club, d.actId); }
+      allow get: if ingelogd() && (resource.data.get('open', false) == true || liveBeheer(resource.data));
+      allow list: if false;
+      allow create: if echt() && liveBeheer(request.resource.data)
+        && request.resource.data.get('schema', []) is list && request.resource.data.get('schema', []).size() <= 900;
+      allow update: if echt() && liveBeheer(resource.data)
+        && request.resource.data.get('club', null) == resource.data.get('club', null)
+        && request.resource.data.get('actId', null) == resource.data.get('actId', null)
+        && request.resource.data.get('schema', []) is list && request.resource.data.get('schema', []).size() <= 900;
+      allow delete: if echt() && liveBeheer(resource.data);
+    }
     match /activiteitDeel/{deelId} {
       function actBeheer(d) { return d.get('club', null) is string && d.get('actId', null) is string && magActiviteit(d.club, d.actId); }
       allow get: if ingelogd() && (resource.data.get('open', false) == true || actBeheer(resource.data));

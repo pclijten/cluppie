@@ -24,12 +24,12 @@
    Rekenwerk, export en import: activiteiten-logica.js (getest). Sjablonen: activiteit-sjablonen.js. */
 import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, deleteField, query, where, onSnapshot,
   serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261125t';
+import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261125u';
 import { ico } from './icons.js?v=20261116t';
 import { SJABLONEN, sjabloonVan } from './activiteit-sjablonen.js?v=20261125m';
-import * as L from './activiteiten-logica.js?v=20261125t';
-import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261125t';
-import * as TN from './activiteit-toernooi.js?v=20261125t';
+import * as L from './activiteiten-logica.js?v=20261125u';
+import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261125u';
+import * as TN from './activiteit-toernooi.js?v=20261125u';
 
 let A = null;
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -38,7 +38,7 @@ const uid = () => S.user?.uid || '';
 const isAdmin = () => !!(S.club?.admins?.[uid()]) || isPlatformBeheerder();
 /* Toernooi staat standaard alleen aan bij een toernooi-draaiboek; de rest standaard aan. */
 const tabAan = (a, id) => id === 'toernooi' ? (a.tabs?.toernooi ?? /toernooi/i.test(`${a.type || ''} ${a.sjabloon || ''}`)) === true : a.tabs?.[id] !== false;
-const tnCtx = () => ({ act: A.act, clubId: A.clubId, el: A.el, zet, herteken: () => hertekenZacht(), venster: html => { A.venster = html; teken(); }, sluitVenster,
+const tnCtx = () => ({ act: A.act, actNu: () => A?.act, actId: A.id, clubId: A.clubId, el: A.el, kopieer: kopieKlembord, waLink, zet, herteken: () => hertekenZacht(), venster: html => { A.venster = html; teken(); }, sluitVenster,
   download, bestandsnaam, printen, csvLees: L.csvLees });
 const aiAan = () => S.club?.platformModules?.ai === true;
 const actRef = id => doc(db, 'clubs', A.clubId, 'activiteiten', id);
@@ -132,6 +132,7 @@ async function zet(patch, { stil = false } = {}){
   try {
     await updateDoc(actRef(A.id), { ...patch, bijgewerktMs: Date.now(), bijgewerktDoor: uid() });
     if (Object.keys(patch).some(k => AGENDA_VELDEN.includes(k.split('.')[0]))) syncAgenda();
+    if (A.act?.toernooi?.liveId && Object.keys(patch).some(k => ['toernooi', 'naam', 'datum', 'locatie', 'planB'].includes(k.split('.')[0]))) TN.planLive(tnCtx());
     if (Object.keys(patch).some(k => ['naam', 'datum', 'start', 'locatie'].includes(k)) && A.act?.deelId)
       setDoc(doc(db, 'activiteitDeel', A.act.deelId), { titel: patch.naam ?? A.act.naam, datum: patch.datum ?? A.act.datum, start: patch.start ?? A.act.start ?? '', locatie: patch.locatie ?? A.act.locatie ?? '' }, { merge: true }).catch(() => {});
     if (!stil) toonOpgeslagen();
@@ -681,7 +682,7 @@ async function klik(e){
     case 'kopieer': return kopieKlembord(b.dataset.tekst);
     case 'teams-alle': return zet({ teams: (S.clubTeams || []).filter(x => x && x.id && !x.gearchiveerd).map(x => x.id).slice(0, L.MAX.teams) });
     case 'teams-geen': return zet({ teams: [] });
-    case 'veldplanner': return import('./veldplanner.js?v=20261125t').then(m => m.openVeldplanner(A.clubId));
+    case 'veldplanner': return import('./veldplanner.js?v=20261125u').then(m => m.openVeldplanner(A.clubId));
     case 'aflasten': return vensterAflasten();
     case 'aflasten-ja': return aflasten();
     case 'bericht-plaats': return plaatsBericht(id);
@@ -758,6 +759,7 @@ async function verwijder(){
       await deleteDoc(doc(db, 'activiteitDeel', deelId));
     }
     await deleteDoc(doc(db, 'clubs', A.clubId, 'activiteitenAgenda', id)).catch(() => {});
+    if (A.act?.toernooi?.liveId) await deleteDoc(doc(db, 'toernooiLive', A.act.toernooi.liveId)).catch(() => {});
     await deleteDoc(actRef(id));
     A.venster = null; meld('Verwijderd');
   } catch (e){ console.error('[activiteiten] verwijderen', e); meld('Verwijderen mislukt.'); }

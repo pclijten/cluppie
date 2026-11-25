@@ -24,17 +24,17 @@
    Opgeroepen vanuit wedstrijd.js (openOpstellingAdvies). Opslaan en hertekenen
    gebeurt via de callback van wedstrijd.js, zodat er één schrijfpad blijft. */
 import { db, doc, updateDoc } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal, spelerNaam, spelerNr } from './state.js?v=20261125t';
+import { S, esc, meld, openModal, sluitModal, spelerNaam, spelerNr } from './state.js?v=20261125u';
 import {
   bouwSlots, positieNaam, formatieNamen, isToernooi,
   POSITIE_GROEPEN, afwezigRedenInfo
-} from './config.js?v=20261125t';
-import { analyseWedstrijd, speeltijdReserve } from './analyse.js?v=20261125t';
+} from './config.js?v=20261125u';
+import { analyseWedstrijd, speeltijdReserve } from './analyse.js?v=20261125u';
 import { opkomstVoor, MIN_OPKOMST_TRAININGEN } from './opkomst.js?v=20260922c';
 import { spelersOpWedstrijd } from './uitleen-regels.js?v=20261113b';
 import { TE_GROEPEN, teScores, teLaagste, teLeeftijd } from './team-evaluatie-criteria.js?v=20261120a';
 import { ico } from './icons.js?v=20261116t';
-import { telGebruik } from './tracker.js?v=20261125t';
+import { telGebruik } from './tracker.js?v=20261125u';
 
 const VERSIE = 1;
 const svg = (d, n = 16, w = 1.8) => `<svg width="${n}" height="${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${d}</svg>`;

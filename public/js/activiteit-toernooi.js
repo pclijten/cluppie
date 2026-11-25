@@ -10,13 +10,13 @@
 
    Opslag: veld `toernooi` in de activiteit (zie toernooi-logica.js). Geen rules-wijziging nodig.
    Dit bestand krijgt alles van activiteiten.js via ctx en importeert dat bestand niet. */
-import { db, doc, collection, getDoc, getDocs, deleteField } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261125t';
+import { db, doc, collection, getDoc, getDocs, setDoc, deleteField } from './firebase.js?v=20261011g';
+import { S, esc, meld } from './state.js?v=20261125u';
 import { ico } from './icons.js?v=20261116t';
-import * as T from './toernooi-logica.js?v=20261125t';
+import * as T from './toernooi-logica.js?v=20261125u';
 
 const opt = (w, t, sel) => `<option value="${esc(w)}"${sel ? ' selected' : ''}>${esc(t)}</option>`;
-const SUB = [['opzet', 'Opzet'], ['spelers', 'Spelers'], ['teams', 'Teams'], ['schema', 'Schema'], ['kk', 'Kleedkamers'], ['uitslagen', 'Uitslagen']];
+const SUB = [['opzet', 'Opzet'], ['spelers', 'Spelers'], ['teams', 'Teams'], ['schema', 'Schema'], ['kk', 'Kleedkamers'], ['uitslagen', 'Uitslagen'], ['live', 'Live']];
 const st = { sub: 'opzet', zoek: '', gekozen: '', teamFilter: '', club: null, clubLaden: null, voorstel: null };
 
 /* ---------- clubgegevens (velden, kleedkamers, trainingen) ---------- */
@@ -39,7 +39,7 @@ async function laadClub(clubId){
 export function htmlToernooi(ctx){
   const a = ctx.act, t = a.toernooi || {};
   if (!st.club && !st.clubLaden) laadClub(ctx.clubId).then(() => ctx.herteken());
-  const inhoud = { opzet: htmlOpzet, spelers: htmlSpelers, teams: htmlTeams, schema: htmlSchema, kk: htmlKk, uitslagen: htmlUitslagen }[st.sub] || htmlOpzet;
+  const inhoud = { opzet: htmlOpzet, spelers: htmlSpelers, teams: htmlTeams, schema: htmlSchema, kk: htmlKk, uitslagen: htmlUitslagen, live: htmlLive }[st.sub] || htmlOpzet;
   const nT = Object.keys(t.teams || {}).length, nS = Object.keys(t.spelers || {}).length, nW = (t.schema || []).length;
   return `<div class="ac-balkje"><div class="ac-schakel tn-sub">${SUB.map(([id, n]) => `<button class="${st.sub === id ? 'aan' : ''}" data-tn="sub" data-id="${id}">${n}</button>`).join('')}</div></div>
     <p class="ac-zacht">${[`${Object.keys(t.velden || {}).length} ${Object.keys(t.velden || {}).length === 1 ? 'veld' : 'velden'}`, `${nS} spelers`, `${nT} teams`, nW ? `${nW} wedstrijden, ${T.gespeeld(t)} gespeeld` : 'nog geen schema'].join(' · ')}</p>
@@ -84,7 +84,7 @@ function htmlSpelers(ctx, a, t){
   const groepen = new Map(); for (const s of lijst){ const k = s.bron || 'Zonder team'; if (!groepen.has(k)) groepen.set(k, []); groepen.get(k).push(s); }
   return `<div class="ac-paneel"><h3>Spelers inlezen</h3><p class="ac-zacht">Uit de teams in Cluppie, uit een inschrijflijst (CSV, of plakken uit Excel) of één voor één. Alleen naam, geboortejaar, geslacht en team.</p>
       <div class="ac-acties"><button class="knop licht klein" data-tn="imp-teams">${ico('team-group', 16)} Uit Cluppie-teams</button>
-        <label class="knop licht klein">${ico('admin-file', 16)} CSV-bestand<input type="file" accept=".csv,.txt,text/csv" data-tn-bestand hidden></label>
+        <label class="knop licht klein">${ico('admin-file', 16)} Excel of CSV<input type="file" accept=".csv,.txt,.xlsx,text/csv" data-tn-bestand hidden></label>
         <button class="knop licht klein" data-tn="imp-plak">Plakken uit Excel</button><button class="knop licht klein" data-tn="speler-nieuw">${ico('action-add', 16)} Speler</button></div></div>
     <div class="ac-paneel"><h3>${sp.length} spelers${vrij ? ` <small class="ac-zacht">· ${vrij} zonder team</small>` : ''}</h3><div class="ac-rij">
         <input class="ac-in ac-groei" type="search" data-tn-zoek value="${esc(st.zoek)}" placeholder="Zoeken">${sp.length ? '<button class="knop licht klein" data-tn="spelers-weg">Alles weg</button>' : ''}</div>
@@ -105,13 +105,20 @@ function htmlTeams(ctx, a, t){
       <div class="ac-chips">${Object.entries(T.GROEP_OP).map(([k, n]) => `<label class="ac-chip ${o.groepOp.includes(k) ? 'aan' : ''}"><input type="checkbox" data-tn-groep="${k}" ${o.groepOp.includes(k) ? 'checked' : ''}> ${esc(n)}</label>`).join('')}</div>
       <div class="tn-rij"><label>Spelers per team ${getal('grootte', o.grootte, 'min="2" max="18"')}</label><label class="ac-schak"><input type="checkbox" data-tn-pp checked> Per groep een poule</label></div>
       <div class="ac-acties"><button class="knop vol klein" data-tn="voorstel" ${nVrij ? '' : 'disabled'}>Voorstel maken</button></div></div>
+    <div class="ac-paneel"><h3>Verenigingen</h3><p class="ac-zacht">Voeg de clubs toe die meedoen en geef ze teams. Gastteams hebben geen spelerslijst nodig.</p>
+      ${T.gesorteerd(t.clubs).map(c => { const n = teams.filter(tm => tm.club === c.id).length;
+        return `<div class="ac-rij tn-clubrij">${veld(`clubs.${c.id}.naam`, c.naam, { klasse: 'ac-groei vet' })}<span class="ac-zacht">${n} ${n === 1 ? 'team' : 'teams'}</span>
+          <select class="ac-in smal" data-tn-clubteam="${esc(c.id)}" aria-label="Team toevoegen">${opt('', '+ team in poule…')}${poules.map(p => opt(p.id, p.naam)).join('')}${opt('-', 'zonder poule')}</select>
+          <button class="ac-x" data-tn="club-weg" data-id="${esc(c.id)}" aria-label="Vereniging weg">✕</button></div>`; }).join('') || '<p class="ac-zacht">Nog geen verenigingen.</p>'}
+      <div class="ac-acties"><button class="knop licht klein" data-tn="club-nieuw">${ico('action-add', 16)} Vereniging</button><button class="knop licht klein" data-tn="teams-plak">Lijst plakken (vereniging, team, poule)</button></div></div>
     ${fout.length ? `<div class="ac-melding">${ico('action-warning', 18)} <span><b>${fout.length} ${fout.length === 1 ? 'speler past' : 'spelers passen'} niet bij de regels van hun team.</b> Zie de rode teams hieronder.</span></div>` : ''}
     ${teams.map(tm => {
       const sp = Object.entries(t.spelers || {}).filter(([, s]) => s.tt === tm.id).map(([id, s]) => ({ id, ...s })).sort((x, y) => String(x.naam).localeCompare(String(y.naam), 'nl'));
       const e = tm.eisen || {}, bron = new Set(e.bron || []);
       const fouten = sp.filter(s => T.magInTeam(s, tm).length);
-      return `<details class="ac-paneel tn-team ${fouten.length ? 'tn-fout' : ''}" style="--pk:${esc(kleurPoule(t, tm.poule))}"><summary><span class="tn-stip"></span><b>${esc(tm.naam)}</b><span class="ac-zacht">${esc(t.poules?.[tm.poule]?.naam || 'geen poule')} · ${sp.length} spelers${tm.gast ? ' · gastteam' : ''} · ${esc(T.eisTekst(e))}</span></summary>
+      return `<details class="ac-paneel tn-team ${fouten.length ? 'tn-fout' : ''}" style="--pk:${esc(kleurPoule(t, tm.poule))}"><summary><span class="tn-stip"></span><b>${esc(tm.naam)}</b><span class="ac-zacht">${esc(t.poules?.[tm.poule]?.naam || 'geen poule')} · ${tm.gast ? 'gastteam' : sp.length + ' spelers'}${t.clubs?.[tm.club] ? ' · ' + esc(t.clubs[tm.club].naam) : ''} · ${esc(T.eisTekst(e))}</span></summary>
         <div class="ac-rij2"><span><label class="ac-label">Naam</label>${veld(`teams.${tm.id}.naam`, tm.naam)}</span><span><label class="ac-label">Poule</label><select class="ac-in" data-veld="toernooi.teams.${esc(tm.id)}.poule">${opt('', '— geen —')}${poules.map(p => opt(p.id, p.naam, tm.poule === p.id)).join('')}</select></span></div>
+        ${Object.keys(t.clubs || {}).length ? `<label class="ac-label">Vereniging</label><select class="ac-in" data-veld="toernooi.teams.${esc(tm.id)}.club">${opt('', '— geen —')}${T.gesorteerd(t.clubs).map(c => opt(c.id, c.naam, tm.club === c.id)).join('')}</select>` : ''}
         <label class="ac-label">Wie mag in dit team?</label>
         <div class="tn-rij"><select class="ac-in smal" data-veld="toernooi.teams.${esc(tm.id)}.eisen.geslacht">${Object.entries(T.GESLACHT).map(([k, n]) => opt(k, k ? `Alleen ${n.toLowerCase()}` : 'Jongens en meisjes', (e.geslacht || '') === k)).join('')}</select>
           <label>Geboren van ${veld(`teams.${tm.id}.eisen.van`, e.van ?? '', { type: 'number', klasse: 'getal', ph: 'jaar', extra: 'data-num min="1950" max="2099"' })}</label><label>tot en met ${veld(`teams.${tm.id}.eisen.tot`, e.tot ?? '', { type: 'number', klasse: 'getal', ph: 'jaar', extra: 'data-num min="1950" max="2099"' })}</label></div>
@@ -275,6 +282,57 @@ export async function klikToernooi(ctx, b){
       if (r.fout){ ctx.herteken(); return meld(r.fout); }
       return zet({ 'toernooi.schema': r.schema });
     }
+    case 'club-nieuw': return zet({ [`toernooi.clubs.${T.nieuwId('c')}`]: { naam: Object.keys(t.clubs || {}).length ? 'Nieuwe vereniging' : (S.club?.naam || 'Onze club'), volg: T.volgende(t.clubs) } });
+    case 'club-weg': {
+      const n = Object.values(t.teams || {}).filter(tm => tm.club === id).length;
+      if (n && !confirm(`Vereniging weghalen met ${n} ${n === 1 ? 'team' : 'teams'}? Het schema moet daarna opnieuw.`)) return;
+      const patch = { [`toernooi.clubs.${id}`]: deleteField() };
+      for (const [tid, tm] of Object.entries(t.teams || {})) if (tm.club === id){ patch[`toernooi.teams.${tid}`] = deleteField(); for (const [sid, sp] of Object.entries(t.spelers || {})) if (sp.tt === tid) patch[`toernooi.spelers.${sid}.tt`] = ''; }
+      return zet(patch);
+    }
+    case 'teams-plak': return ctx.venster(`<h2>Verenigingen en teams plakken</h2><p class="ac-zacht">Eén team per regel: vereniging, team en poule (uit Excel, of met puntkomma's). Team en poule mogen leeg blijven.</p>
+      <textarea class="ac-in" rows="10" data-tn-plak placeholder="SV Venray;JO11-1;Poule A&#10;Volharding;JO11-2;Poule A"></textarea>
+      <div class="ac-acties"><button class="knop licht" data-ac="venster-dicht">Annuleren</button><span class="ac-groei"></span><button class="knop vol" data-tn="teams-plak-lees">Toevoegen</button></div>`);
+    case 'teams-plak-lees': {
+      const lijst = T.teamsUitRijen(ctx.csvLees(b.closest('.ac-blad')?.querySelector('[data-tn-plak]')?.value || ''));
+      ctx.sluitVenster();
+      if (!lijst.length) return meld('Geen regels gevonden.');
+      const patch = {}, clubId = {}, pouleId = {}; let vc = T.volgende(t.clubs), vp = T.volgende(t.poules), vt = T.volgende(t.teams), np = Object.keys(t.poules || {}).length;
+      for (const [cid, c] of Object.entries(t.clubs || {})) clubId[String(c.naam).toLowerCase()] = cid;
+      for (const [pid, p] of Object.entries(t.poules || {})) pouleId[String(p.naam).toLowerCase()] = pid;
+      const al = new Set(Object.values(t.teams || {}).map(tm => String(tm.naam).toLowerCase()));
+      let n = 0;
+      for (const x of lijst.slice(0, T.MAX.teams)){
+        const ck = x.club.toLowerCase(), pk = x.poule.toLowerCase();
+        if (!clubId[ck]){ clubId[ck] = T.nieuwId('c'); patch[`toernooi.clubs.${clubId[ck]}`] = { naam: x.club, volg: vc++ }; }
+        if (pk && !pouleId[pk]){ pouleId[pk] = T.nieuwId('p'); patch[`toernooi.poules.${pouleId[pk]}`] = { naam: x.poule, kleur: T.KLEUREN[np++ % T.KLEUREN.length], volg: vp++, velden: [] }; }
+        const naam = x.team === x.club || x.team.toLowerCase().includes(ck) ? x.team : `${x.club} ${x.team}`;
+        if (al.has(naam.toLowerCase())) continue; al.add(naam.toLowerCase());
+        patch[`toernooi.teams.${T.nieuwId('t')}`] = { naam: naam.slice(0, 40), poule: pouleId[pk] || '', club: clubId[ck], volg: vt++, gast: true, eisen: {} }; n++;
+      }
+      await zet(patch); return meld(`${n} teams toegevoegd`);
+    }
+    case 'live-aan': {
+      const lid = t.liveId || T.liveId();
+      try { await setDoc(doc(db, 'toernooiLive', lid), { club: ctx.clubId, actId: ctx.actId, open: true, ...T.liveKopie(a, { clubNaam: S.club?.naam || '' }), bijgewerktMs: Date.now() }); }
+      catch (e){ console.error('[toernooi] live', e); return meld(e?.code === 'permission-denied' ? 'De live pagina kan nog niet aan: de regels zijn nog niet gepubliceerd.' : 'Aanzetten mislukt.'); }
+      await zet({ 'toernooi.liveId': lid, 'toernooi.live': true }); return meld('De live pagina staat aan');
+    }
+    case 'live-uit': {
+      if (!confirm('Live pagina uitzetten? De link en de QR-code werken dan niet meer.')) return;
+      try { await setDoc(doc(db, 'toernooiLive', t.liveId), { open: false, bijgewerktMs: Date.now() }, { merge: true }); } catch { return meld('Uitzetten mislukt.'); }
+      return zet({ 'toernooi.live': false });
+    }
+    case 'live-kopieer': return ctx.kopieer(liveLink(t.liveId, b.dataset.tv === '1'), 'Link gekopieerd');
+    case 'qr-print': return ctx.printen(`<div style="text-align:center"><h1>${esc(a.naam)}</h1><p class="sub">Scan voor het speelschema, de uitslagen en de stand</p><div style="width:90mm;margin:8mm auto">${st.qrSvg || ''}</div><p>${esc(liveLink(t.liveId))}</p></div>`);
+    case 'med-stuur': {
+      const inp = ctx.el.querySelector('[data-tn-med]'), tekst = String(inp?.value || '').replace(/\s+/g, ' ').trim().slice(0, 280);
+      if (!tekst) return meld('Typ eerst een mededeling.');
+      if (Object.keys(t.mededelingen || {}).length >= T.MAX_MEDEDELINGEN) return meld('Haal eerst een oude mededeling weg.');
+      inp.value = '';
+      await zet({ [`toernooi.mededelingen.${T.nieuwId('m')}`]: { tekst, ms: Date.now() } }); return meld(t.live ? 'Mededeling staat op de live pagina' : 'Mededeling bewaard');
+    }
+    case 'med-weg': return zet({ [`toernooi.mededelingen.${id}`]: deleteField() });
     case 'kk-nieuw': return zet({ [`toernooi.kk.${T.nieuwId('k')}`]: { naam: `Kleedkamer ${Object.keys(t.kk || {}).length + 1}`, plekken: 2, volg: T.volgende(t.kk) } });
     case 'kk-club': {
       const club = await laadClub(ctx.clubId), patch = {}; let v = T.volgende(t.kk);
@@ -315,8 +373,13 @@ export async function wijzigToernooi(ctx, el){
   const a = ctx.act, t = a.toernooi || {};
   if (el.matches('[data-tn-bestand]')){
     const f = el.files?.[0]; el.value = ''; if (!f) return true;
-    if (/\.xlsx?$/i.test(f.name)){ meld('Sla het Excel-bestand eerst op als CSV, of kopieer en plak de rijen.'); return true; }
     if (f.size > 2 * 1024 * 1024){ meld('Dit bestand is te groot (max 2 MB).'); return true; }
+    if (/\.xls$/i.test(f.name)){ meld('Sla het bestand op als .xlsx of .csv, of kopieer en plak de rijen.'); return true; }
+    if (/\.xlsx$/i.test(f.name)){
+      try { const rijen = await excelRijen(f), r = T.spelersUitRijen(rijen, { datum: a.datum }); if (!r.spelers.length) meld(r.fouten[0] || 'Geen spelers gevonden.'); else await voegToe(ctx, r.spelers); }
+      catch (e){ console.error('[toernooi] excel', e); meld('Het Excel-bestand kon niet gelezen worden. Probeer CSV of plakken.'); }
+      return true;
+    }
     await importeer(ctx, await f.text()); return true;
   }
   if (el.matches('[data-tn-pveld]')){
@@ -336,6 +399,12 @@ export async function wijzigToernooi(ctx, el){
   if (el.matches('[data-tn-erbij]')){
     if (el.value) await ctx.zet({ [`toernooi.spelers.${el.value}.tt`]: el.dataset.tnErbij }); return true;
   }
+  if (el.matches('[data-tn-clubteam]')){
+    const cid = el.dataset.tnClubteam, pid = el.value; if (!pid) return true;
+    const club = t.clubs?.[cid], n = Object.values(t.teams || {}).filter(tm => tm.club === cid).length;
+    await ctx.zet({ [`toernooi.teams.${T.nieuwId('t')}`]: { naam: `${club?.naam || 'Team'}${n ? ' ' + (n + 1) : ''}`.slice(0, 40), poule: pid === '-' ? '' : pid, club: cid, volg: T.volgende(t.teams), gast: true, eisen: {} } });
+    return true;
+  }
   if (el.matches('[data-tn-filter]')){ st.teamFilter = el.value; ctx.herteken(); return true; }
   if (el.matches('[data-tn-pp]')) return true;
   return false;
@@ -347,7 +416,58 @@ export function invoerToernooi(ctx, el){
   invoerToernooi._t = setTimeout(() => { ctx.herteken(); const z = ctx.el.querySelector('[data-tn-zoek]'); if (z){ z.focus(); z.setSelectionRange(z.value.length, z.value.length); } }, 250);
   return true;
 }
-export function resetToernooi(){ st.sub = 'opzet'; st.zoek = ''; st.gekozen = ''; st.teamFilter = ''; st.waarsch = null; st.club = null; st.clubLaden = null; }
+export function resetToernooi(){ st.sub = 'opzet'; st.zoek = ''; st.gekozen = ''; st.teamFilter = ''; st.waarsch = null; st.club = null; st.clubLaden = null; st.qrVoor = ''; st.qrSvg = ''; }
+
+/* Excel (.xlsx) lezen met de meegeleverde ExcelJS (zelfde bestand als de export van Evaluaties). */
+let _excel = null;
+function laadScript(src, test){
+  if (test()) return Promise.resolve();
+  return new Promise((ok, mis) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => mis(new Error('laden mislukt: ' + src)); document.head.appendChild(s); });
+}
+async function excelRijen(bestand){
+  await (_excel ||= laadScript('vendor/exceljs.min.js', () => !!window.ExcelJS).catch(e => { _excel = null; throw e; }));
+  const wb = new window.ExcelJS.Workbook(); await wb.xlsx.load(await bestand.arrayBuffer());
+  const ws = wb.worksheets[0], rijen = [];
+  ws?.eachRow(rij => { const r = []; rij.eachCell({ includeEmpty: true }, (cel, k) => { const v = cel.value; r[k - 1] = v instanceof Date ? v.toISOString().slice(0, 10) : v && typeof v === 'object' ? String(v.text ?? v.result ?? '') : String(v ?? ''); }); rijen.push(Array.from(r, x => x ?? '')); });
+  return rijen;
+}
+
+/* ---------- live pagina, QR en mededelingen ---------- */
+export const liveLink = (id, tv) => `${location.origin}${location.pathname.replace(/[^/]*$/, '')}?live=${encodeURIComponent(id)}${tv ? '&tv=1' : ''}`;
+let _qr = null;
+async function qrSvg(tekst){
+  await (_qr ||= laadScript('vendor/qrcode.js', () => typeof window.qrcode === 'function').catch(e => { _qr = null; throw e; }));
+  const q = window.qrcode(0, 'M'); q.addData(tekst); q.make();
+  return q.createSvgTag({ cellSize: 6, margin: 12, scalable: true });
+}
+function htmlLive(ctx, a, t){
+  const aan = t.live === true && t.liveId, link = aan ? liveLink(t.liveId) : '';
+  if (aan && st.qrVoor !== t.liveId){ st.qrVoor = t.liveId; st.qrSvg = ''; qrSvg(link).then(svg => { st.qrSvg = svg; ctx.herteken(); }).catch(() => { st.qrSvg = ''; }); }
+  const med = T.mededelingen(t);
+  return `<div class="ac-paneel"><h3>Live pagina</h3><p class="ac-zacht">Iedereen met de link of de QR-code ziet het speelschema, de uitslagen, de stand, de kleedkamers en je mededelingen. Zonder account, en zonder namen van spelers. De pagina werkt zichzelf bij.</p>
+      ${aan ? `<div class="tn-live"><div class="tn-qr">${st.qrSvg || '<span class="ac-zacht">QR-code maken…</span>'}</div>
+          <div class="tn-live-t"><input class="ac-in" readonly value="${esc(link)}" aria-label="Link naar de live pagina" onfocus="this.select()">
+            <div class="ac-acties"><button class="knop vol klein" data-tn="live-kopieer">Link kopiëren</button><a class="knop licht klein" href="${esc(ctx.waLink(`${a.naam}: volg het schema en de stand live op ${link}`))}" target="_blank" rel="noopener">WhatsApp</a>
+              <a class="knop licht klein" href="${esc(link)}" target="_blank" rel="noopener">Openen</a><button class="knop licht klein" data-tn="qr-print">QR-poster printen</button></div>
+            <p class="ac-zacht"><b>Op tv of beamer:</b> open de tv-weergave in de kantine. Grote letters, wisselt vanzelf tussen wedstrijden en standen.</p>
+            <div class="ac-acties"><a class="knop licht klein" href="${esc(liveLink(t.liveId, true))}" target="_blank" rel="noopener">Tv-weergave openen</a><button class="knop licht klein" data-tn="live-kopieer" data-tv="1">Tv-link kopiëren</button><span class="ac-groei"></span><button class="knop licht klein" data-tn="live-uit">Live uitzetten</button></div></div></div>`
+        : `<div class="ac-acties"><button class="knop vol" data-tn="live-aan">Live pagina aanzetten</button></div>${t.liveId ? '<p class="ac-zacht">De live pagina staat uit. Aanzetten geeft dezelfde link en QR-code als eerst.</p>' : ''}`}</div>
+    <div class="ac-paneel"><h3>Mededelingen</h3><p class="ac-zacht">Bijvoorbeeld: "Finales beginnen 10 minuten later" of "Prijsuitreiking om 12:30 in de kantine". Staat meteen bovenaan de live pagina en loopt mee op tv.</p>
+      <div class="ac-rij"><input class="ac-in ac-groei" data-tn-med maxlength="280" placeholder="Typ een mededeling"><button class="knop vol klein" data-tn="med-stuur">Plaatsen</button></div>
+      ${med.map(m => `<div class="ac-rij"><span class="ac-tijd">${esc(new Date(m.ms).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }))}</span><span class="ac-groei">${esc(m.tekst)}</span><button class="ac-x" data-tn="med-weg" data-id="${esc(m.id)}" aria-label="Weg">✕</button></div>`).join('') || '<p class="ac-zacht">Nog geen mededelingen.</p>'}
+      <p class="ac-zacht">Coaches van eigen teams bereik je ook via de tab Communicatie (Berichten en WhatsApp).</p></div>`;
+}
+/* Na elke wijziging aan het toernooi de live-kopie bijwerken (kort gebundeld). */
+let _liveT = null;
+export function planLive(ctx){
+  clearTimeout(_liveT);
+  _liveT = setTimeout(async () => {
+    const a = ctx.actNu(), t = a?.toernooi;
+    if (!t || t.live !== true || !t.liveId) return;
+    try { await setDoc(doc(db, 'toernooiLive', t.liveId), { club: ctx.clubId, actId: ctx.actId, open: true, ...T.liveKopie(a, { clubNaam: S.club?.naam || '' }), bijgewerktMs: Date.now() }); }
+    catch (e){ console.warn('[toernooi] live bijwerken', e); }
+  }, 600);
+}
 
 /* ---------- export ---------- */
 export function exportKnoppen(a){
@@ -380,6 +500,8 @@ function printHtml(a){
 
 /* ---------- stijl ---------- */
 export const TOERNOOI_CSS = `
+.tn-clubrij{flex-wrap:wrap}
+@media (max-width:600px){.tn-clubrij>.ac-in:first-child{flex:1 1 100%}.tn-clubrij>select{flex:1 1 0;min-width:0}}
 .tn-sub{flex-wrap:wrap}
 .tn-rij{display:flex;flex-wrap:wrap;gap:var(--space-xs) var(--space-sm);align-items:flex-end}
 .tn-rij > label{display:flex;flex-direction:column;gap:2px;font-size:var(--t-xs);color:var(--ink-2)}
@@ -414,6 +536,10 @@ export const TOERNOOI_CSS = `
 .tn-stand{width:100%;border-collapse:collapse;font-size:var(--t-sm)}
 .tn-stand th,.tn-stand td{padding:4px 6px;border-bottom:1px solid var(--hair);text-align:center}
 .tn-stand td:nth-child(2),.tn-stand th:nth-child(2){text-align:left}
+.tn-live{display:flex;gap:var(--space-md);align-items:flex-start;flex-wrap:wrap}
+.tn-qr{width:180px;flex-shrink:0;background:#fff;border-radius:12px;padding:6px;min-height:180px;display:flex;align-items:center;justify-content:center}
+.tn-qr svg{width:100%;height:auto;display:block}
+.tn-live-t{flex:1 1 260px;display:flex;flex-direction:column;gap:8px;min-width:0}
 @media (max-width:720px){
   .tn-twee{grid-template-columns:1fr}
   .tn-uit{grid-template-columns:minmax(0,1fr) 48px 8px 48px minmax(0,1fr)}

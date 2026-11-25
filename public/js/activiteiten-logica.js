@@ -241,6 +241,9 @@ export function kopie(act, opts = {}){
     seizoen: seizoenVan(datum), gemaaktDoor: opts.door || '', gemaaktMs: opts.nu || Date.now(), bijgewerktMs: opts.nu || Date.now(),
   };
   delete uit.id;
+  uit.vraag = false; uit.vraagTot = '';
+  /* toernooi: de opzet (tijden, velden, kleedkamers, poules, verenigingen) gaat mee; spelers, teams, schema, uitslagen en de live-link niet */
+  if (uit.toernooi){ const { spelers, teams, schema, uitslag, mededelingen, liveId, live, gepland, ...opzet } = uit.toernooi; uit.toernooi = opzet; }
   if (opts.zonderMensen){ uit.comite = {}; uit.comiteUids = []; uit.taken = Object.fromEntries(Object.entries(uit.taken).map(([id, t]) => [id, { ...t, eigenaar: '' }])); }
   return uit;
 }
@@ -354,6 +357,7 @@ export function ics(act, { id = 'act', programma = false, url = '', nu = Date.no
 export function jsonExport(act, { diensten = null, aanmeldingen = [] } = {}){
   const a = JSON.parse(JSON.stringify(act));
   delete a.comiteUids;
+  if (a.toernooi){ delete a.toernooi.liveId; delete a.toernooi.live; }
   for (const l of Object.values(a.comite || {})) delete l.uid;
   return JSON.stringify({ soort: 'cluppie-activiteit', versie: 1, activiteit: a, diensten: diensten || {}, aanmeldingen: (aanmeldingen || []).map(x => ({ dienst: x.dienst, naam: x.naam })) }, null, 2);
 }

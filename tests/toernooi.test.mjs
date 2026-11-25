@@ -99,4 +99,19 @@ ok(T.csvStand({ ...t, schema, uitslag }).split('\r\n').length === 10, 'csv stand
 ok(T.csvTeams({ ...t, schema, spelers: { s: { naam: 'Anna', tt: 'a0', jaar: 2015 } } }).includes('Anna'), 'csv teams');
 ok(T.schoonSpeler({ naam: 'x'.repeat(80), jaar: '1800', geslacht: 'q' }).naam.length === 48, 'schoon speler');
 
+// verenigingen en live
+gelijk(T.teamsUitRijen([['Vereniging', 'Team', 'Poule'], ['SV Venray', 'JO11-1', 'A'], ['Volharding', '', ''], ['', 'x', '']]), [{ club: 'SV Venray', team: 'JO11-1', poule: 'A' }, { club: 'Volharding', team: 'Volharding', poule: '' }], 'teams plakken');
+const act = { naam: 'Kerst', datum: '2026-12-19', locatie: 'Sportpark', toernooi: { ...t, schema, uitslag: { ...uitslag, w9: { a: '', b: 2 } }, clubs: { c1: { naam: 'SV Venray' } }, teams: { ...teams, a0: { ...teams.a0, club: 'c1' } },
+  kk: { k1: { naam: 'K1', plekken: 9 } }, spelers: { s: { naam: 'Geheim Kind', tt: 'a0' } }, mededelingen: { m1: { tekst: 'Pauze', ms: 1 }, m2: { tekst: 'Finale op veld 1', ms: 2 }, m3: { tekst: '' } } } };
+const lv = T.liveKopie(act, { clubNaam: 'Club' });
+ok(!JSON.stringify(lv).includes('Geheim'), 'live: geen spelers');
+ok(lv.teams.a0.club === 'SV Venray' && lv.teams.a0.kk === 'K1' && lv.veldjes.length === 2 && lv.schema.length === schema.length, 'live: teams, veldjes, schema');
+ok(Object.keys(lv.uitslag).length === 2 && lv.mededelingen[0].tekst === 'Finale op veld 1' && lv.mededelingen.length === 2, 'live: uitslagen en mededelingen nieuwste eerst');
+ok(T.stand(lv, schema[0].p).find(r => r.id === schema[0].a).pnt === 3, 'stand werkt op de live-kopie');
+const ns = T.nuEnStraks(lv, T.naarMin('09:05'));
+ok(ns.nuT === '09:00' && ns.straksT === '09:12' && ns.nu.length === 2 && ns.begonnen && !ns.klaar, 'nu en straks');
+ok(T.nuEnStraks(lv, T.naarMin('08:00')).nuT === '' && T.nuEnStraks(lv, T.naarMin('08:00')).straksT === '09:00' && T.nuEnStraks(lv, T.naarMin('23:00')).klaar, 'voor en na');
+ok(/^[a-z2-9]{20}$/.test(T.liveId()) && T.liveId() !== T.liveId(), 'live-id');
+ok(T.csvTeams(act.toernooi).includes('SV Venray'), 'csv met vereniging');
+
 console.log(`toernooi: ${n} controles geslaagd`);
