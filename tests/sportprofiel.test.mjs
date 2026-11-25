@@ -31,7 +31,7 @@ assert.deepEqual({ ...C.ACTIEF_STANDAARD.bouwGrenzen }, { ...VOETBAL.bouwGrenzen
 ok(sportVan(null, null) === 'voetbal' && sportVan({}, null) === 'voetbal' && sportVan(null, {}) === 'voetbal', 'zonder veld: voetbal');
 ok(sportVan({ sport: 'voetbal' }, { sport: 'curling' }) === 'voetbal', 'clubteam volgt de club');
 ok(sportVan(null, { sport: 'curling' }) === 'voetbal' && sportVan({ sport: 'curling' }) === 'voetbal', 'onbekende sport: voetbal');
-ok(sportNaam('voetbal') === 'Voetbal' && meerdereSporten() === false, 'naam en nog maar één sport');
+ok(sportNaam('voetbal') === 'Voetbal' && meerdereSporten() === true, 'naam; voetbal en hockey open [20261126f]');
 
 /* [20261125y] stap 3: woorden uit het profiel van de actieve sport */
 ok(actieveSport() === 'voetbal' && sportWoord('bond') === 'KNVB' && sportWoord('ledenbron') === 'Sportlink', 'woorden voetbal');

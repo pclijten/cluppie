@@ -15,7 +15,7 @@ service cloud.firestore {
     /* [20261126c] de sporten van de app (public/js/sporten.js, functions/sport.js); de eindbaas zet elke sport op een club */
     function geldigeSport(d) { return d.get('sport', 'voetbal') in ['voetbal', 'hockey', 'volleybal', 'korfbal']; }
     /* sporten waarmee een trainer zonder club zelf begint (open); de rest is nog een pilot via een club */
-    function openSport(d) { return d.get('sport', 'voetbal') in ['voetbal']; }
+    function openSport(d) { return d.get('sport', 'voetbal') in ['voetbal', 'hockey']; }
     function sportGelijk() { return request.resource.data.get('sport', null) == resource.data.get('sport', null); }
 
     /* ---------- platform ---------- */

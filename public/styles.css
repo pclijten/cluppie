@@ -7734,6 +7734,7 @@ html.desk .dk-ss .sn-kop,html.desk .dk-ss .sn-balk,html.desk .dk-ss .sn-voet,htm
 @media (prefers-reduced-motion:reduce){ .hub-sheet, .hub-sheet-achter{ transition:none; } }
 
 /* ==================== [20261113b] CLUBNAAM-SUGGESTIES (snelstart, club aanmelden) ==================== */
+.cg-sugg[hidden]{ display:none; }   /* [20261126f] lege lijst stond als dun kader onder het veld */
 .cg-sugg{ margin-top:var(--space-2xs); display:flex; flex-direction:column; gap:var(--space-3xs); padding:var(--space-2xs); border-radius:var(--radius); background:var(--surface-2); border:1px solid var(--line-d); max-height:320px; overflow-y:auto; }
 .cg-item{ display:flex; align-items:baseline; justify-content:space-between; gap:var(--space-sm); width:100%; min-height:44px; padding:var(--space-xs) var(--space-sm); border-radius:var(--r-s); text-align:left; color:var(--ink); }
 .cg-item b{ font-weight:600; font-size:var(--t-md); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

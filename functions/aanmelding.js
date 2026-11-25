@@ -64,6 +64,7 @@ function eenmaligeTekst(soort, invoer){
 }
 
 /* PURE: controle van het aanmeldformulier (getest). Geeft { fout } of { data }. */
+const OPEN_SPORTEN = ['voetbal', 'hockey'];   /* [20261126f] gelijk aan open: true in public/js/sport-*.js en openSport() in de rules */
 const LOGO_MAX = 160000;   // verkleind door verwerkLogo in de app (≈120 kB), met marge
 function controleerAanmelding(d = {}){
   const data = {
@@ -73,6 +74,8 @@ function controleerAanmelding(d = {}){
     /* werkwijze trainingen: 'vrij' (trainers zelfstandig) of 'club' (club stuurt); onbekend = club */
     werkwijze: d.werkwijze === 'vrij' ? 'vrij' : 'club',
   };
+  /* [20261126f] sport van de club; alleen open sporten, onbekend of leeg = voetbal (dan geen veld) */
+  if (OPEN_SPORTEN.includes(d.sport) && d.sport !== 'voetbal') data.sport = d.sport;
   /* [20261012a] optioneel, uit Sportlink; ongeldige waarden vallen stil weg */
   const cid = tekst(d.sportlinkClientId, 40), code = tekst(d.sportlinkClubcode, 20).toUpperCase();
   if (/^[A-Za-z0-9]{6,40}$/.test(cid)) data.sportlinkClientId = cid;
@@ -142,6 +145,7 @@ const beoordeelClubAanmelding = onCall({ region: REGIO, cors: true }, async (req
     platformModules: require('./onderdelen').modulesVoorNieuweClub(standaard),
     ...(a.sportlinkClientId ? { sportlinkClientId: a.sportlinkClientId } : {}),
     ...(a.sportlinkClubcode ? { sportlinkClubcode: a.sportlinkClubcode } : {}),
+    ...(OPEN_SPORTEN.includes(a.sport) && a.sport !== 'voetbal' ? { sport: a.sport } : {}),   /* [20261126f] */
     admins: { [a.uid]: true }, adminsInfo: { [a.uid]: { naam } }, leden: { [a.uid]: true },
     teams: {}, huidigSeizoen: seizoenVoorDatum(),
     instellingen: {
@@ -210,4 +214,4 @@ const meldNieuweAanvraag = onDocumentCreated({ document: 'aanvragen/{id}', regio
 let naGoedkeuring = null;
 const zetNaGoedkeuring = fn => { naGoedkeuring = fn; };
 
-module.exports = { meldClubAan, beoordeelClubAanmelding, meldNieuweAanvraag, controleerAanmelding, afkVoorstel, zetNaGoedkeuring, neemLosseTeamsMee };
+module.exports = { OPEN_SPORTEN, meldClubAan, beoordeelClubAanmelding, meldNieuweAanvraag, controleerAanmelding, afkVoorstel, zetNaGoedkeuring, neemLosseTeamsMee };

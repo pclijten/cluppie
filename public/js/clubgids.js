@@ -8,7 +8,7 @@
    De zoekfuncties zijn PURE en getest (tests/clubgids.test.mjs). */
 
 import { db, collection, getDocs } from './firebase.js?v=20261011g';
-import { S } from './state.js?v=20261126e';
+import { S } from './state.js?v=20261126f';
 
 export async function laadClubgids(){
   if (Array.isArray(S._clubgids)) return S._clubgids;
@@ -96,7 +96,7 @@ export function koppelClubSuggesties(invoer, kies){
   const esc = t => String(t || '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
   const sluit = () => { lijst.hidden = true; sel = -1; };
   const teken = () => {
-    if (!items.length){ sluit(); return; }
+    if (!items.length || invoer.dataset.cgUit){ sluit(); return; }   /* [20261126f] cgUit: geen KNVB-clubs bij een andere sport */
     lijst.innerHTML = items.map((c, i) => `<button type="button" role="option" class="cg-item${i === sel ? ' sel' : ''}" data-i="${i}"><b>${esc(c.naam)}</b><small>${esc(c.plaats || c.accommodatie || '')}</small></button>`).join('')
       + '<p class="cg-noot">Uit de KNVB-gegevens van clubs die met Cluppie werken. Staat je club er niet bij? Typ de naam gewoon in.</p>';
     lijst.hidden = false;
