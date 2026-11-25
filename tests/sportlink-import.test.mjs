@@ -1,6 +1,6 @@
 // Vertaling Sportlink-teamnaam → Cluppie-team.  Draaien: node --import ./tests/hulp/stub-loader.mjs tests/sportlink-import.test.mjs
 import assert from 'node:assert/strict';
-const { teamVoorstel, voorvoegselUit } = await import('../public/js/club-sportlink-import.js');
+const { teamVoorstel, voorvoegselUit, lijstUitTekst } = await import('../public/js/club-sportlink-import.js');
 const { catLabel } = await import('../public/js/config.js');
 const C = 'SV Voorbeeld', A = 'SVV';
 const v = n => teamVoorstel(n, C, A);
@@ -31,5 +31,9 @@ assert.equal(teamVoorstel(lijst[1], 'Aarle-Rixtel', '', vv).naam, 'MO13-1');
 assert.equal(teamVoorstel(lijst[2], 'Aarle-Rixtel', '', vv).naam, 'Eerste elftal');
 assert.equal(voorvoegselUit(['Eén team']), '');
 assert.equal(teamVoorstel("ASV'33 Walking Football", '', '', vv).naam, 'Walking Football');
+
+/* [20261126c] teams uit een lijst (sport zonder Sportlink): één naam per regel, kop en dubbelen eruit, eerste kolom */
+assert.deepEqual(lijstUitTekst('Teamnaam\nJO11-1\n\n jo11-1 \nMO12-2;MO12\n"Dames 1",x'), [{ teamnaam: 'JO11-1' }, { teamnaam: 'MO12-2' }, { teamnaam: 'Dames 1' }]);
+assert.deepEqual(lijstUitTekst(''), []);
 
 console.log('teamVoorstel: alle controles geslaagd');

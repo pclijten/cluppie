@@ -23,7 +23,7 @@ import { startClubContentListener, htmlClubContent, koppelClubContent } from './
 import { htmlInzichtTabs, htmlInzichtTab, openRapport } from './club-inzicht.js?v=20261126a';
 import { telGebruik, telNav } from './tracker.js?v=20261126a';
 import { ico } from './icons.js?v=20261116t';
-import { sportProfiel, sportVan } from './sporten.js?v=20261126a';
+import { sportProfiel, sportVan, heeftSportlink, sportWoord } from './sporten.js?v=20261126a';
 import { INSTEL_TABS, INSTEL_BASIS, NIEUWE_TABS, htmlInstelNieuw, koppelInstelNieuw, htmlAlgemeenMelding, koppelAlgemeenMelding, modalNieuweClub } from './club-instellingen.js?v=20261126a';
 import { pasClubConfigToe, clubAfk, effectief, pdfProfielNu, pdfOmzettenAan } from './clubconfig.js?v=20261126a';
 import { startlijstStatus } from './startlijst.js?v=20261011d';
@@ -2259,7 +2259,8 @@ function htmlClubInstel(teams = [], syncStatus = {}){
   const sub = S._clubInstelTab || 'algemeen';
   /* [20261011d] basis vooraan; geavanceerde tabbladen achter een schakelaar (open als je er al bent) */
   const meer = S._instelMeer || !INSTEL_BASIS.has(sub);
-  const knop = ([id, n]) => `<button class="${sub === id ? 'actief' : ''}" data-instel-tab="${id}">${n}</button>`;
+  /* [20261126c] zonder Sportlink (ledenbron uit het sportprofiel) heet dit tabblad Teams importeren */
+  const knop = ([id, n]) => `<button class="${sub === id ? 'actief' : ''}" data-instel-tab="${id}">${id === 'sportlink' && !heeftSportlink() ? 'Teams importeren' : n}</button>`;
   const seg = `<div class="segment cb-instel-seg">${INSTEL_TABS.filter(([id]) => INSTEL_BASIS.has(id)).map(knop).join('')}
       <button class="cb-instel-meer ${meer ? 'open' : ''}" id="instelMeer">Geavanceerd ${meer ? '▴' : '▾'}</button></div>
     ${meer ? `<div class="segment cb-instel-seg cb-instel-adv">${INSTEL_TABS.filter(([id]) => !INSTEL_BASIS.has(id)).map(knop).join('')}</div>` : ''}`;
@@ -2314,6 +2315,14 @@ function htmlClubInstel(teams = [], syncStatus = {}){
       </div>`;
   }
 
+  else if (sub === 'sportlink' && !heeftSportlink()){
+    /* [20261126c] Sportprofiel stap 7: deze sport werkt niet met Sportlink; teams komen uit een lijst */
+    inhoud = `<div class="kaart cb-kaart">
+        <h3>Teams uit een lijst</h3>
+        <p class="cb-uitleg">${esc(sportProfiel(sportVan(S.club)).naam)} werkt met ${esc(sportWoord('ledenbron'))}, waar Cluppie (nog) geen koppeling mee heeft. Plak de teamnamen uit jullie ledenadministratie, dan maakt Cluppie de teams in één keer aan, in de juiste bouw.</p>
+        <button class="knop licht klein" id="tlTeamsImport" style="margin-top:10px">${ico('football-competition',16)} Teams uit een lijst aanmaken</button>
+      </div>`;
+  }
   else if (sub === 'sportlink'){
     const syncTijd = (ts) => {
       if (!ts) return '';
@@ -4436,6 +4445,8 @@ function koppelClientIdUitleg(v){
     try { await navigator.clipboard.writeText(t); meld('Bericht gekopieerd'); }
     catch(e){ if (navigator.share) navigator.share({ text: t }).catch(() => {}); else meld('Kopiëren lukt niet op dit apparaat'); }
   };
+  const tl = v.querySelector('#tlTeamsImport');   /* [20261126c] teams uit een lijst (sport zonder Sportlink) */
+  if (tl) tl.onclick = () => import('./club-sportlink-import.js?v=20261126a').then(m => m.modalTeamsUitLijst(S.clubTeams || [], () => renderClub()));
   const imp = v.querySelector('#slTeamsImport');
   if (imp) imp.onclick = () => import('./club-sportlink-import.js?v=20261126a').then(m => m.modalTeamsUitSportlink(S.clubTeams || [], () => renderClub()));
 }

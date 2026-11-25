@@ -60,9 +60,10 @@ function valideerBlokken(blokken, weken, toegestaan){
   return som === weken;
 }
 
+const { voorSport } = require('./sport');   /* [20261126b] sportprofiel stap 6 */
 function maak({ onCall, HttpsError, secrets, REGIO, vereisAI, claude, apiKey, scrubPII }){
   const personaliseerTraining = onCall({ region: REGIO, secrets, cors: true, timeoutSeconds: 60 }, async (request) => {
-    await vereisAI(request, null, 'trainingsmodule');
+    const sport = ((await vereisAI(request, null, 'trainingsmodule')) || {}).sport;   /* [20261126b] sport in de opdracht */
     const p = request.data?.profiel || {};
     const onderdelen = (Array.isArray(request.data?.onderdelen) ? request.data.onderdelen : []).slice(0, 6).map(o => ({
       slot: tekst(o?.slot, 20), minuten: Math.max(0, Math.min(90, Number(o?.minuten) || 0)), naam: tekst(o?.naam, 80), doel: scrubPII(tekst(o?.doel, 240)),
@@ -71,7 +72,7 @@ function maak({ onCall, HttpsError, secrets, REGIO, vereisAI, claude, apiKey, sc
     const profiel = { categorie: tekst(p.categorie, 12), aantalSpelers: Math.max(0, Math.min(40, Number(p.aantalSpelers) || 0)), niveau: Math.max(1, Math.min(3, Number(p.niveau) || 2)),
       duur: Math.max(0, Math.min(120, Number(p.duur) || 0)), thema: tekst(p.thema, 60), blokFase: tekst(p.blokFase, 12) };
     const stijl = request.data?.stijl === 'ontdekkend' ? 'ontdekkend' : 'punten';
-    const { tekst: rauw } = await claude({ apiKey: apiKey(), system: [{ type: 'text', text: TRAINING_SYSTEEM, cache_control: { type: 'ephemeral' } }],
+    const { tekst: rauw } = await claude({ apiKey: apiKey(), system: [{ type: 'text', text: voorSport(TRAINING_SYSTEEM, sport), cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: JSON.stringify({ profiel, stijl, onderdelen }) }], maxTokens: 1500, temperature: 0.4, metaTerug: true });
     const json = leesJson(rauw);
     const slots = new Set(onderdelen.map(o => o.slot));
@@ -86,7 +87,7 @@ function maak({ onCall, HttpsError, secrets, REGIO, vereisAI, claude, apiKey, sc
   });
 
   const seizoensVoorstel = onCall({ region: REGIO, secrets, cors: true, timeoutSeconds: 60 }, async (request) => {
-    await vereisAI(request, null, 'seizoensplan');
+    const sport = ((await vereisAI(request, null, 'seizoensplan')) || {}).sport;   /* [20261126b] sport in de opdracht */
     const modus = request.data?.modus;
     if (modus === 'jaarplan'){
       const d = request.data;
@@ -97,7 +98,7 @@ function maak({ onCall, HttpsError, secrets, REGIO, vereisAI, claude, apiKey, sc
       const toegestaan = new Set(toegestaneThemas);
       const invoer = { categorie: tekst(d.categorie, 12), bouw: tekst(d.bouw, 10), model: tekst(d.model, 60), accent: lijst(d.accent, 40, 2),
         weken, toegestaneThemas, voorkeursvolgorde: lijst(d.voorkeursvolgorde, 60, 20), niveau: tekst(d.niveau, 20) };
-      const { tekst: rauw } = await claude({ apiKey: apiKey(), system: [{ type: 'text', text: JAAR_SYSTEEM, cache_control: { type: 'ephemeral' } }],
+      const { tekst: rauw } = await claude({ apiKey: apiKey(), system: [{ type: 'text', text: voorSport(JAAR_SYSTEEM, sport), cache_control: { type: 'ephemeral' } }],
         messages: [{ role: 'user', content: JSON.stringify(invoer) }], maxTokens: 2000, temperature: 0.3, metaTerug: true });
       const blokken = (leesJson(rauw)?.blokken || []).map(b => ({ thema: tekst(b?.thema, 60), weken: Number(b?.weken), waarom: scrubPII(tekst(b?.waarom, 300)) }));
       if (!valideerBlokken(blokken, weken, toegestaan)) throw new HttpsError('internal', 'Het AI-voorstel voldeed niet aan de controles.');
@@ -111,7 +112,7 @@ function maak({ onCall, HttpsError, secrets, REGIO, vereisAI, claude, apiKey, sc
       }
       const invoer = { titel: tekst(v.titel, 160), thema: tekst(v.thema, 60), soort: tekst(v.soort, 20), feiten, gevolg: tekst(v.gevolg, 240) };
       if (!invoer.titel) throw new HttpsError('invalid-argument', 'Geen voorstel ontvangen.');
-      const { tekst: rauw } = await claude({ apiKey: apiKey(), system: [{ type: 'text', text: UITLEG_SYSTEEM, cache_control: { type: 'ephemeral' } }],
+      const { tekst: rauw } = await claude({ apiKey: apiKey(), system: [{ type: 'text', text: voorSport(UITLEG_SYSTEEM, sport), cache_control: { type: 'ephemeral' } }],
         messages: [{ role: 'user', content: JSON.stringify(invoer) }], maxTokens: 400, temperature: 0.3, metaTerug: true });
       const uitleg = scrubPII(tekst(leesJson(rauw)?.uitleg, 600));
       if (!uitleg) throw new HttpsError('internal', 'De uitleg kon niet gelezen worden.');

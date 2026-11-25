@@ -10,6 +10,7 @@
    Pure functies (voegSamen, valideerVorm, rij/kolommen voor Excel) zijn getest in
    tests/bibliotheek.test.mjs. Impactanalyse: claude/trainingsbibliotheek-beheer-impactanalyse.md. */
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261121b';
+import { SPORTEN, STANDAARD_SPORT, actieveSport } from './sporten.js?v=20261126a';   /* [20261126b] oefenstof per sport */
 
 export const BASIS = BIBLIOTHEEK.vormen;
 export const BASIS_VERSIE = BIBLIOTHEEK.versie;
@@ -106,6 +107,7 @@ export const KOLOMMEN = [
   /* [20261116i] uitwerking per oefening */
   ['kijkEnGrijpIn', v => alsDanTekst(v.alsDan)], ['telMee', 'meet'], ['spelersAanZet', 'regie'], ['waarom', 'inzicht'],
   ['principes', v => (v.principes || []).join(', ')],
+  ['sport', v => vormSport(v)],   /* [20261126b] sportprofiel stap 6 */
 ];
 export const LIJSTVELDEN = ['organisatie', 'regels', 'coachpunten', 'coachvragen', 'makkelijker', 'moeilijker', 'letOp', 'lukt'];
 /* Kijk en grijp in: één regel per paar, "wat je ziet → wat je doet". */
@@ -140,6 +142,7 @@ export function vormUitRij(r, oud = {}){
   if (r.overigMateriaal != null){ const x = lijst(r.overigMateriaal); if (x.length || v.materiaalExtra) v.materiaalExtra = x; }
   if (r.kijkEnGrijpIn != null) v.alsDan = alsDanUitTekst(r.kijkEnGrijpIn);
   for (const [kol, k] of [['telMee', 'meet'], ['spelersAanZet', 'regie'], ['waarom', 'inzicht']]) if (r[kol] != null){ const w = String(r[kol]).trim(); if (w || v[k]) v[k] = w; }
+  if (r.sport != null && String(r.sport).trim()){ const sp = String(r.sport).trim().toLowerCase(); if (SPORTEN[sp] && sp !== STANDAARD_SPORT) v.sport = sp; else if (sp === STANDAARD_SPORT) delete v.sport; }
   if (r.principes != null) v.principes = String(r.principes).split(',').map(s => s.trim()).filter(Boolean);
   if (r.spelvormen != null) v.varianten = lijst(r.spelvormen).map(x => { const i = x.indexOf(':'); return i > 0 ? { naam: x.slice(0, i).trim(), uitleg: x.slice(i + 1).trim() } : { naam: x, uitleg: '' }; });
   if (!Array.isArray(v.domeinen)) v.domeinen = [];
@@ -169,7 +172,9 @@ const staat = () => (globalThis.__cluppieBieb ||= { overlays: {}, geladen: false
 export function zetOverlays(overlays){ const s = staat(); s.overlays = overlays || {}; s.geladen = true; s.alle = null; }
 export function alleVormen(){ const s = staat(); return s.alle || (s.alle = voegSamen(BASIS, s.overlays)); }
 /* Wat de planner mag kiezen: zonder uitgezette vormen. */
-export function vormen(){ return alleVormen().filter(v => v._status !== 'uit'); }
+/* [20261126b] alleen de oefenstof van de sport van het team (zonder veld: voetbal) */
+export const vormSport = v => (v && SPORTEN[v.sport] ? v.sport : STANDAARD_SPORT);
+export function vormen(){ const sp = actieveSport(); return alleVormen().filter(v => v._status !== 'uit' && vormSport(v) === sp); }
 /* Opzoeken op id, ook als de vorm uitstaat (bewaarde trainingen blijven openen). */
 export function vormOpId(id){ return alleVormen().find(v => v.id === id) || null; }
 export function bibliotheekGeladen(){ return staat().geladen; }

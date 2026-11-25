@@ -47,7 +47,7 @@ async function vereisSoloAI({ db, request, HttpsError, FieldValue, nu = new Date
       : 'Je maandlimiet voor AI is bereikt. Volgende maand kan het weer.');
     tx.set(ref, { uid, maand, [veld]: aantal + 1, bijgewerkt: FieldValue.serverTimestamp() }, { merge: true });
   });
-  return { clubId: null, teamId, rol: 'coach', solo: true };
+  return { clubId: null, teamId, rol: 'coach', solo: true, sport: require('./sport').sportVan(team.sport) };   /* [20261126b] */
 }
 
 /* Namen om uit AI-invoer te halen voor een los team: voornaam/achternaam van de spelers en de coaches. */

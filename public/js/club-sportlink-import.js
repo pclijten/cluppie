@@ -93,6 +93,30 @@ export async function modalTeamsUitSportlink(bestaandeTeams = [], naKlaar){
     return;
   }
 
+  kiesTeams(lijst, { titel: 'Teams uit Sportlink', uitleg: 'Vink aan welke teams je wilt aanmaken. Ze worden meteen aan Sportlink gekoppeld en in de juiste bouw gezet. Naam en categorie kun je hier nog aanpassen.', bron: 'sportlink-import' }, bestaandeTeams, naKlaar);
+}
+
+/* [20261126c] Sportprofiel stap 7: een club zonder Sportlink (bijv. hockey, ledenbron LISA) maakt haar teams
+   aan uit een lijst: één teamnaam per regel, geplakt uit de ledenadministratie of een csv/Excel-kolom. */
+export function lijstUitTekst(tekst){
+  const gezien = new Set();
+  return String(tekst || '').split(/\r?\n/).map(r => r.split(/[;,\t]/)[0].trim().replace(/^"|"$/g, '')).filter(Boolean)
+    .filter(n => !/^(team|teamnaam|naam)$/i.test(n)).filter(n => !gezien.has(n.toLowerCase()) && gezien.add(n.toLowerCase())).slice(0, 200)
+    .map(teamnaam => ({ teamnaam }));
+}
+export function modalTeamsUitLijst(bestaandeTeams = [], naKlaar){
+  openModal(`<h2>Teams uit een lijst</h2>
+    <p class="cb-uitleg" style="margin:0 0 10px">Plak de teamnamen uit jullie ledenadministratie, één per regel (bijv. <i>JO11-1</i> of <i>Dames 1</i>). Uit een csv- of Excel-bestand: kopieer de kolom met teamnamen.</p>
+    <textarea class="invoer" id="tlTekst" rows="8" placeholder="JO11-1&#10;MO12-2&#10;Heren 1"></textarea>
+    <button class="knop vol" id="tlVerder" style="margin-top:10px">Verder</button>`);
+  document.getElementById('tlVerder').onclick = () => {
+    const lijst = lijstUitTekst(document.getElementById('tlTekst').value);
+    if (!lijst.length) return meld('Plak eerst één of meer teamnamen');
+    kiesTeams(lijst, { titel: 'Teams uit een lijst', uitleg: 'Vink aan welke teams je wilt aanmaken. Ze komen meteen in de juiste bouw. Naam en categorie kun je hier nog aanpassen.', bron: 'lijst-import' }, bestaandeTeams, naKlaar);
+  };
+}
+
+function kiesTeams(lijst, opt, bestaandeTeams, naKlaar){
   const clubNaam = S.club.naam || '', afk = clubAfk(S.club);
   const bestaandSleutel = new Set(bestaandeTeams.map(t => teamSleutel(t.sportlinkNaam || t.naam, clubNaam, afk)));
   const voorvoegsel = voorvoegselUit(lijst.map(t => t.teamnaam));
@@ -104,8 +128,8 @@ export async function modalTeamsUitSportlink(bestaandeTeams = [], naKlaar){
 
   const teken = () => {
     const n = rijen.filter(r => r.aan && !r.bestaat).length;
-    openModal(`<h2>Teams uit Sportlink</h2>
-      <p class="cb-uitleg" style="margin:0 0 10px">Vink aan welke teams je wilt aanmaken. Ze worden meteen aan Sportlink gekoppeld en in de juiste bouw gezet. Naam en categorie kun je hier nog aanpassen.</p>
+    openModal(`<h2>${esc(opt.titel)}</h2>
+      <p class="cb-uitleg" style="margin:0 0 10px">${esc(opt.uitleg)}</p>
       <div class="rij" style="margin-bottom:8px"><button class="knop licht klein" id="slImpAlles">Alles aan</button><button class="knop licht klein" id="slImpNiets">Alles uit</button></div>
       <div class="sli-lijst">${rijen.map(r => `
         <label class="sli-rij ${r.bestaat ? 'bestaat' : ''}">
@@ -126,12 +150,12 @@ export async function modalTeamsUitSportlink(bestaandeTeams = [], naKlaar){
     });
     document.getElementById('slImpAlles').onclick = () => { rijen.forEach(r => { if (!r.bestaat) r.aan = true; }); teken(); };
     document.getElementById('slImpNiets').onclick = () => { rijen.forEach(r => { r.aan = false; }); teken(); };
-    document.getElementById('slImpOk').onclick = () => maakTeams(rijen.filter(r => r.aan && !r.bestaat), bestaandeTeams, naKlaar);
+    document.getElementById('slImpOk').onclick = () => maakTeams(rijen.filter(r => r.aan && !r.bestaat), bestaandeTeams, naKlaar, opt.bron);
   };
   teken();
 }
 
-async function maakTeams(gekozen, bestaandeTeams, naKlaar){
+async function maakTeams(gekozen, bestaandeTeams, naKlaar, bron = 'sportlink-import'){
   const zonderCat = gekozen.filter(r => !r.categorie || !r.naam.trim());
   if (zonderCat.length) return meld(`Kies een naam en categorie voor ${zonderCat.map(r => r.sl.teamnaam).slice(0, 3).join(', ')}`);
   const knop = document.getElementById('slImpOk'); if (knop){ knop.disabled = true; knop.textContent = 'Bezig…'; }
@@ -146,8 +170,8 @@ async function maakTeams(gekozen, bestaandeTeams, naKlaar){
       batch.set(ref, {
         naam: r.naam.trim(), categorie: r.categorie, geslacht: r.geslacht, format: catInfo(r.categorie).format,
         bouw: bouwVanCategorie(r.categorie), code, club: S.clubId, clubNaam: S.club.naam || '',
-        leden: {}, ledenInfo: {}, sportlinkNaam: r.sl.teamnaam, ...(r.sl.teamcode ? { sportlinkTeamcode: String(r.sl.teamcode) } : {}),
-        bron: 'sportlink-import', gemaakt: serverTimestamp(),
+        leden: {}, ledenInfo: {}, ...(bron === 'sportlink-import' ? { sportlinkNaam: r.sl.teamnaam } : {}), ...(r.sl.teamcode ? { sportlinkTeamcode: String(r.sl.teamcode) } : {}),
+        bron, gemaakt: serverTimestamp(),
       });
       clubTeams['teams.' + ref.id] = true;
     }

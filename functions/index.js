@@ -162,6 +162,7 @@ async function vereisAI(request, rollen = null, onderdeel = null){
       tx.set(ref, { aantal: aantal + 1, bijgewerkt: FieldValue.serverTimestamp() }, { merge: true });
     });
   }
+  r.sport = require('./sport').sportVan(club.sport);   /* [20261126b] sport van de club, voor de AI-opdracht */
   return r;
 }
 
@@ -169,6 +170,7 @@ async function vereisAI(request, rollen = null, onderdeel = null){
    platform/instellingen.soloAI). Zonder clubId en met teamId → functions/solo-ai.js. Alleen gebruikt
    door functies die geen clubgegevens nodig hebben (Training maken, Seizoensplanning, doelregel). */
 const soloAI = require('./solo-ai');
+const { voorSport } = require('./sport');   /* [20261126b] sportprofiel stap 6 */
 async function vereisAIOfSolo(request, rollen = null, onderdeel = null, soort = 'ai'){
   if (!String(request.data?.clubId || '').trim() && String(request.data?.teamId || '').trim())
     return soloAI.vereisSoloAI({ db: getFirestore(), request, HttpsError, FieldValue, soort });
@@ -303,7 +305,7 @@ exports.chatHulp = onCall(
     // Systeemblok met cache_control → wordt hergebruikt over vragen heen (goedkoper).
     // [20261122a] Daarna één korte regel met de rol van de vrager; die valt buiten het gecachte blok.
     const system = [
-      { type: 'text', text: HULP_SYSTEEM, cache_control: { type: 'ephemeral' } },
+      { type: 'text', text: voorSport(HULP_SYSTEEM, r.sport), cache_control: { type: 'ephemeral' } },
       { type: 'text', text: rolRegel(request.data?.rollen, { solo: r.solo === true, rol: r.rol }) },
     ];
 
@@ -342,7 +344,7 @@ Wees realistisch voor een amateurclub met vrijwilligers. Noem nooit namen van pe
 exports.activiteitConceptAI = onCall(
   { region: REGIO, secrets: [ANTHROPIC_API_KEY], cors: true, timeoutSeconds: 120 },
   async (request) => {
-    const { clubId, rol } = await vereisAI(request);
+    const { clubId, rol, sport } = await vereisAI(request);
     const club = (await getFirestore().doc(PADEN.club(clubId)).get()).data() || {};
     if (club.platformModules?.activiteiten !== true) throw new HttpsError('failed-precondition', 'Activiteiten staat niet aan voor deze club.');
     const namen = await namenVoorScrub(clubId, request.auth.uid, rol);
@@ -350,7 +352,7 @@ exports.activiteitConceptAI = onCall(
     if (omschrijving.length < 10) throw new HttpsError('invalid-argument', 'Beschrijf de activiteit in een paar zinnen.');
     const { tekst } = await claude({
       apiKey: ANTHROPIC_API_KEY.value(),
-      system: [{ type: 'text', text: CONCEPT_SYSTEEM, cache_control: { type: 'ephemeral' } }],
+      system: [{ type: 'text', text: voorSport(CONCEPT_SYSTEEM, sport), cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: `De activiteit: ${omschrijving}` }],
       maxTokens: 4000, temperature: 0.4, metaTerug: true,
     });
@@ -385,7 +387,7 @@ Regels:
 exports.genereerVerslagAI = onCall(
   { region: REGIO, secrets: [ANTHROPIC_API_KEY], cors: true },
   async (request) => {
-    const { clubId: vClub, rol: vRol } = await vereisAI(request);
+    const { clubId: vClub, rol: vRol, sport: vSport } = await vereisAI(request);
     const vNamen = await namenVoorScrub(vClub, request.auth.uid, vRol);
 
     const d = request.data?.data;
@@ -429,7 +431,7 @@ exports.genereerVerslagAI = onCall(
       JSON.stringify(feiten, null, 2);
 
     const system = [
-      { type: 'text', text: VERSLAG_SYSTEEM, cache_control: { type: 'ephemeral' } },
+      { type: 'text', text: voorSport(VERSLAG_SYSTEEM, vSport), cache_control: { type: 'ephemeral' } },
     ];
 
     const verslag = await claude({
@@ -522,7 +524,7 @@ exports.structureerTraining = onCall(
     const PDF = require('./pdf-profiel');
     let profiel;
     /* [20261115d] ook namen van spelers en coaches uit de PDF-tekst halen, niet alleen e-mail en telefoon */
-    let tNamen = [];
+    let tNamen = [], tSport = 'voetbal';   /* [20261126b] sport van de club */
     if (request.data?.proef === true){
       if (!(await require('./platform').isPlatformBeheerder(request))) throw new HttpsError('permission-denied', 'Proberen kan alleen de platformbeheerder.');
       profiel = PDF.schoonProfiel(request.data?.profiel);
@@ -531,6 +533,7 @@ exports.structureerTraining = onCall(
       tNamen = await namenVoorScrub(r.clubId, request.auth.uid, r.rol);
       const db = getFirestore();
       const club = (await db.doc(PADEN.club(r.clubId)).get()).data() || {};
+      tSport = club.sport;
       const beleid = PDF.pdfBeleid(club, require('./onderdelen').aiVanClub(club));
       if (!beleid.aan) throw new HttpsError('failed-precondition', 'PDF omzetten staat niet aan voor deze club.');
       if (beleid.viaAI) await vereisAI(request);
@@ -582,7 +585,7 @@ exports.structureerTraining = onCall(
       schoon.map(p => `--- PAGINA ${p.pagina} ---\n${scrubPII(p.tekst, tNamen)}`).join('\n\n');
 
     const system = [
-      { type: 'text', text: TRAINING_SYSTEEM, cache_control: { type: 'ephemeral' } },
+      { type: 'text', text: voorSport(TRAINING_SYSTEEM, tSport), cache_control: { type: 'ephemeral' } },
       ...(extraPrompt ? [{ type: 'text', text: extraPrompt }] : []),
     ];
 
@@ -674,7 +677,7 @@ exports.samenvatHotspot = onCall(
   { region: REGIO, secrets: [ANTHROPIC_API_KEY], cors: true },
   async (request) => {
     // Alleen beheerders/coördinatoren van de club (was: vast e-mailadres).
-    const { clubId, rol } = await vereisAI(request, BEHEER_ROLLEN);
+    const { clubId, rol, sport: hSport } = await vereisAI(request, BEHEER_ROLLEN);
     const namen = await namenVoorScrub(clubId, request.auth.uid, rol);
 
     const regelTekst = scrubPII(String(request.data?.regelTekst || '').slice(0, 500), namen);
@@ -694,7 +697,7 @@ exports.samenvatHotspot = onCall(
 
     // Systeemblok met cache_control → hergebruikt over aanroepen heen (goedkoper).
     const system = [
-      { type: 'text', text: HOTSPOT_SYSTEEM, cache_control: { type: 'ephemeral' } },
+      { type: 'text', text: voorSport(HOTSPOT_SYSTEEM, hSport), cache_control: { type: 'ephemeral' } },
     ];
 
     const samenvatting = await claude({
@@ -733,7 +736,7 @@ exports.vatDoelenSamen = onCall(
     const namen = r.solo ? await soloAI.namenVanTeam(getFirestore(), r.teamId) : await namenVoorScrub(r.clubId, request.auth.uid, r.rol);
     const tekst = schoonSamenvatting(await claude({
       apiKey: ANTHROPIC_API_KEY.value(),
-      system: [{ type: 'text', text: DOELEN_SYSTEEM }],
+      system: [{ type: 'text', text: voorSport(DOELEN_SYSTEEM, r.sport) }],
       messages: [{ role: 'user', content: doelen.map(d => '- ' + scrubPII(d, namen)).join('\n') }],
       maxTokens: 80, temperature: 0.2,
     }));
@@ -768,7 +771,7 @@ UITVOER — uitsluitend geldige JSON, geen uitleg of markdown:
 exports.analyseerBeleidsplan = onCall(
   { region: REGIO, secrets: [ANTHROPIC_API_KEY], cors: true },
   async (request) => {
-    const { clubId } = await vereisAI(request, ['club_admin']);
+    const { clubId, sport: bSport } = await vereisAI(request, ['club_admin']);
     const tekst = String(request.data?.tekst || '').replace(/\s+\n/g, '\n').trim().slice(0, 14000);
     if (tekst.length < 80) throw new HttpsError('invalid-argument', 'Te weinig tekst om te analyseren.');
     const themas = Array.isArray(request.data?.themas)
@@ -776,7 +779,7 @@ exports.analyseerBeleidsplan = onCall(
     const vraag = `Toegestane thema's voor "leercurve": ${themas.join(' | ') || '(geen opgegeven)'}\n\n--- STUK UIT HET BELEIDSPLAN ---\n${tekst}`;
     const { tekst: rauw, stopReason } = await claude({
       apiKey: ANTHROPIC_API_KEY.value(),
-      system: [{ type: 'text', text: BELEIDSPLAN_SYSTEEM, cache_control: { type: 'ephemeral' } }],
+      system: [{ type: 'text', text: voorSport(BELEIDSPLAN_SYSTEEM, bSport), cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: vraag }],
       maxTokens: 4096, temperature: 0.2, metaTerug: true,
     });
