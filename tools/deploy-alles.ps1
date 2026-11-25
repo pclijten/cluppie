@@ -8,13 +8,19 @@
 #   powershell -ExecutionPolicy Bypass -File tools\deploy-alles.ps1 -Proef
 # De tests in de emulator overslaan (alleen als ze net groen waren):
 #   powershell -ExecutionPolicy Bypass -File tools\deploy-alles.ps1 -ZonderEmulator
+# Alleen rules en indexen (de functions zet GitHub al live na elke merge; geen nieuwe callables):
+#   powershell -ExecutionPolicy Bypass -File tools\deploy-alles.ps1 -AlleenRules
+#
+# Let op: na een merge met wijzigingen in functions/ deployt GitHub (workflow Deploy Cloud Functions)
+# de functions zelf. Draait die nog, dan botsen de twee (HTTP 409, 'Failed to list functions').
+# Stap 4 probeert daarom elke groep tot drie keer, met een minuut wachten ertussen.
 #
 # Dit bestand bevat bewust alleen ASCII-tekens (Windows PowerShell 5.1 leest geen UTF-8 zonder BOM).
 # Het script stopt bij elke fout. Opnieuw starten is veilig: elke stap is herhaalbaar.
 # Volgorde (zoals AVG.md voorschrijft): eerst de functions, dan pas de rules.
 # Er wordt nooit een functie verwijderd, en hosting gaat via GitHub Pages (niet via dit script).
 # De proef (-Proef) is op 21-11-2026 op de pc van Paul gedraaid, de echte deploy op 22-11-2026 (alles OK).
-param([switch]$Proef, [switch]$ZonderEmulator)
+param([switch]$Proef, [switch]$ZonderEmulator, [switch]$AlleenRules)
 
 $ErrorActionPreference = 'Stop'
 $PROJECT = 'cluppie-ad329'
@@ -29,6 +35,22 @@ function Run($cmd){
   $global:LASTEXITCODE = 0
   Invoke-Expression $cmd
   if ($LASTEXITCODE -ne 0){ Stop-Met "dit commando faalde (code $LASTEXITCODE)" }
+}
+# [20261125] Voor functions: Google weigert soms tijdelijk (409 'unable to queue', 'Failed to list functions'),
+# vooral als de GitHub-workflow tegelijk deployt. Dan een minuut wachten en opnieuw; pas na drie keer stoppen.
+function RunMetHerkansing($cmd, $pogingen = 3){
+  Write-Host "  > $cmd" -ForegroundColor DarkGray
+  if ($Proef){ return }
+  for ($p = 1; $p -le $pogingen; $p++){
+    $global:LASTEXITCODE = 0
+    Invoke-Expression $cmd
+    if ($LASTEXITCODE -eq 0){ return }
+    if ($p -lt $pogingen){
+      Write-Host "  poging $p mislukt (code $LASTEXITCODE); over 60 seconden opnieuw. Draait er op GitHub nog 'Deploy Cloud Functions'? Dan is dit normaal." -ForegroundColor Yellow
+      Start-Sleep -Seconds 60
+    }
+  }
+  Stop-Met "dit commando faalde $pogingen keer (code $LASTEXITCODE). Kijk op GitHub > Actions of 'Deploy Cloud Functions' nog loopt; wacht tot die klaar is en start opnieuw"
 }
 function Probeer($cmd){
   $global:LASTEXITCODE = 0
@@ -92,6 +114,9 @@ else {
 }
 Ok 'tests groen'
 
+if ($AlleenRules){
+  Write-Host '  -AlleenRules: stap 3, 4 en 5 overgeslagen (functions en toegang blijven zoals ze zijn).' -ForegroundColor Yellow
+} else {
 # ---------- 3. de lijst uit de code ----------
 Stap 3 'Functies uit de code lezen'
 $groepen   = @(node tools/functies-lijst.mjs --groepen=8)
@@ -105,7 +130,7 @@ $i = 0
 foreach ($g in $groepen){
   $i++
   Write-Host "  groep $i van $($groepen.Count)" -ForegroundColor DarkGray
-  Run "firebase deploy --only $g --project $PROJECT"
+  RunMetHerkansing "firebase deploy --only $g --project $PROJECT"
 }
 Ok 'alle functions staan op de versie van main'
 
@@ -115,10 +140,11 @@ foreach ($c in $callables){
   Run "gcloud run services add-iam-policy-binding $c --region=$REGIO --member=allUsers --role=roles/run.invoker --project=$PROJECT --quiet"
 }
 Ok 'elke callable is aan te roepen vanuit de app'
+}
 
 # ---------- 6. rules en indexen ----------
 Stap 6 'Rules en indexen (Firestore en Storage)'
-Run "firebase deploy --only firestore:rules,firestore:indexes,storage --project $PROJECT"
+RunMetHerkansing "firebase deploy --only firestore:rules,firestore:indexes,storage --project $PROJECT"
 Ok 'rules en indexen staan op de versie van main'
 
 # ---------- klaar ----------
