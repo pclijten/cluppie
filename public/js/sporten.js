@@ -1,10 +1,14 @@
 /* ==================== SPORTPROFIELEN ====================
    [20261124a] Register van de sportprofielen. Nu alleen voetbal; een club of team
    zonder sport is voetbal. Zie docs/sportprofiel-impactanalyse.md. */
-import { VOETBAL } from './sport-voetbal.js?v=20261126b';
+import { HOCKEY } from './sport-hockey.js?v=20261126e';
+import { VOLLEYBAL } from './sport-volleybal.js?v=20261126e';
+import { KORFBAL } from './sport-korfbal.js?v=20261126e';
+import { VOETBAL } from './sport-voetbal.js?v=20261126e';
 
 export const STANDAARD_SPORT = 'voetbal';
-export const SPORTEN = Object.freeze({ voetbal: VOETBAL });
+/* [20261126c] de vier grootste teamsporten; een sport met open: false is een pilot (alleen de eindbaas zet hem) */
+export const SPORTEN = Object.freeze({ voetbal: VOETBAL, hockey: HOCKEY, volleybal: VOLLEYBAL, korfbal: KORFBAL });
 /* Het profiel voor een sport-id; onbekend of leeg geeft het standaardprofiel. */
 export function sportProfiel(id){ return SPORTEN[id] || SPORTEN[STANDAARD_SPORT]; }
 
@@ -16,7 +20,9 @@ export function sportVan(club, team){
 }
 export const sportNaam = id => sportProfiel(id).naam;
 /* Meer dan één sport: pas dan tonen we een keuze aan de trainer (mockup 3). */
-export const meerdereSporten = () => Object.keys(SPORTEN).length > 1;
+/* [20261126c] sporten waarmee een trainer of club zelf kan beginnen (open), de rest is een pilot */
+export const openSporten = () => Object.values(SPORTEN).filter(p => p.open !== false);
+export const meerdereSporten = () => openSporten().length > 1;
 
 /* [20261125y] Stap 3: de sport van het team dat nu open staat. clubconfig.js zet hem bij het laden
    van de club, teams.js bij een team zonder club. Tot dan het standaardprofiel. */

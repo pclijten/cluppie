@@ -292,6 +292,8 @@ zetSeed(`clubs/${CLUB}`, {
   bouwCoordinatorenInfo: { onder: { [COACH]: INFO }, midden: { [COACH]: INFO }, boven: { [COACH]: INFO } },
   trainingscoordinatoren: { [COACH]: true }, trainingscoordinatorenInfo: { [COACH]: INFO },
   ledenInfo: { [COACH]: INFO }, gemaakt: TS, sportlinkClientId: 'demo', sportlinkClubcode: 'DEMO123',
+  /* [20261126c] ?demo=<rol>&sport=hockey (of volleybal, korfbal): de democlub in een andere sport, voor de rooktest en om te laten zien */
+  ...(() => { try { const s = new URLSearchParams(location.search).get('sport'); return ['hockey', 'volleybal', 'korfbal'].includes(s) ? { sport: s } : {}; } catch (e) { return {}; } })(),
   instellingen: { identiteit: { kleur: '#E20613' }, privacy: { contactEmail: 'privacy@cluppie.io', verwerkersovereenkomst: { geaccepteerd: true, datum: TS } } },
 });
 

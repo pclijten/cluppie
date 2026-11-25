@@ -208,6 +208,11 @@ test('proeven per gebruikerstype', async () => {
   await proef(96, 'bouwcoördinator', 'zet een sport op een team van de eigen bouw', 'weigeren', () => updateDoc(doc(als('bouw'), 'teams/o11'), { sport: 'voetbal' }));
   await proef(97, 'losse trainer', 'wijzigt de naam van het eigen team (sport blijft gelijk)', 'toestaan', () => updateDoc(doc(als('los'), 'teams/los'), { naam: 'Buurtteam O10 groen' }));
   await proef(98, 'losse trainer', 'wijzigt de naam van het eigen team met een sport (sport blijft gelijk)', 'toestaan', () => updateDoc(doc(als('los'), 'teams/los-sport'), { naam: 'Buurt O9 groen' }));
+  /* [20261126c] vier sporten: de eindbaas zet elke sport op een club; een losse trainer alleen een open sport (hockey e.a. zijn nog pilot) */
+  await proef(99, 'eindbaas', 'zet een club op hockey', 'toestaan', () => updateDoc(doc(als('paul', EINDBAAS), 'clubs/test-fc'), { sport: 'hockey' }));
+  await proef(100, 'eindbaas', 'zet een club op korfbal', 'toestaan', () => updateDoc(doc(als('paul', EINDBAAS), 'clubs/test-fc'), { sport: 'korfbal' }));
+  await proef(101, 'losse trainer', 'maakt een hockeyteam zonder club (pilot)', 'weigeren', () => setDoc(doc(als('los'), 'teams/los-hockey'), { naam: 'Buurt O9', leden: { los: true }, sport: 'hockey' }));
+  await proef(102, 'clubadmin', 'zet de eigen club op volleybal', 'weigeren', () => updateDoc(doc(als('admin'), 'clubs/test-fc'), { sport: 'volleybal' }));
   /* als laatste: verwijderen maakt het team onbruikbaar voor de andere proeven */
   await proef(7, 'coach', 'verwijdert het eigen clubteam', 'weigeren', () => deleteDoc(doc(als('coach'), 'teams/o11')));
   const fout = uitkomsten.filter(u => !u.klopt).map(u => `${u.nr} ${u.rol}: ${u.wat} -> ${u.uit}`);

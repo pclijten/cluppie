@@ -25,6 +25,8 @@ const CHROME = [process.env.CHROME_PATH, 'C:/Program Files/Google/Chrome/Applica
 if (!CHROME){ console.error('Chrome niet gevonden (zet CHROME_PATH)'); process.exit(2); }
 
 const args = process.argv.slice(2);
+/* [20261126c] ROOK_SPORT=hockey (of volleybal, korfbal): dezelfde rondgang met de democlub in die sport */
+const SPORT = process.env.ROOK_SPORT ? `&sport=${encodeURIComponent(process.env.ROOK_SPORT)}` : '';
 const DONKER = args.includes('--donker'), KORT = args.includes('--kort');
 const ALLEEN = (args.find(a => a.startsWith('--rol=')) || '').slice(6);
 const ROLLEN = ['los', 'coach', 'eigenbouw', 'bouw', 'trainco', 'hjo', 'admin', 'eindbaas'].filter(r => !ALLEEN || r === ALLEEN);
@@ -102,7 +104,7 @@ for (const rol of ROLLEN){
     page.on('requestfailed', r => { if (r.url().startsWith(BASIS)) meld('aanvraag mislukt', r.url().replace(BASIS, '')); });
     page.on('response', r => { if (r.url().startsWith(BASIS) && r.status() >= 400) meld('http ' + r.status(), r.url().replace(BASIS, '')); });
 
-    await page.goto(`${BASIS}/index.html?demo=${rol}`, { waitUntil: 'networkidle2', timeout: 60000 });
+    await page.goto(`${BASIS}/index.html?demo=${rol}${SPORT}`, { waitUntil: 'networkidle2', timeout: 60000 });
     await wacht(2500);
     /* de rolkaart (eenmalige uitleg) sluiten zodat hij de meting niet afdekt; hij telt wel mee als scherm */
     const kaart = await page.$('#rkBegrepen');
@@ -153,7 +155,7 @@ for (const rol of ROLLEN){
         if (m.tekens < 20) meld('leeg scherm', tab);
         const terug = await page.$('#naarTeams');
         if (terug){ await terug.click(); await wacht(500); }
-        if (!(await page.$('#hubAllesKnop'))){ await page.goto(`${BASIS}/index.html?demo=${rol}`, { waitUntil: 'networkidle2' }); await wacht(1500); const k2 = await page.$('#rkBegrepen'); if (k2){ await k2.click(); await wacht(300); } }
+        if (!(await page.$('#hubAllesKnop'))){ await page.goto(`${BASIS}/index.html?demo=${rol}${SPORT}`, { waitUntil: 'networkidle2' }); await wacht(1500); const k2 = await page.$('#rkBegrepen'); if (k2){ await k2.click(); await wacht(300); } }
       }
     }
     await ctx.close();
