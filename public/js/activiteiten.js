@@ -96,7 +96,7 @@ function laag(){
   document.documentElement.classList.add('ac-open');
   return el;
 }
-const actiefVeld = () => { const a = document.activeElement; return a && A?.el.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) ? a : null; };
+const actiefVeld = () => { const a = document.activeElement; return a && A?.el.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && !/^(checkbox|radio|file|color)$/.test(a.type || '') ? a : null; };
 function stopSubs(){ (A?.subs || []).forEach(f => { try { f(); } catch { /* al weg */ } }); if (A) A.subs = []; }
 
 async function laadLijst(){
@@ -137,6 +137,7 @@ async function zet(patch, { stil = false } = {}){
     await updateDoc(actRef(A.id), { ...patch, bijgewerktMs: Date.now(), bijgewerktDoor: uid() });
     if (Object.keys(patch).some(k => AGENDA_VELDEN.includes(k.split('.')[0]))) syncAgenda();
     if (A.act?.toernooi?.liveId && Object.keys(patch).some(k => ['toernooi', 'naam', 'datum', 'locatie', 'planB'].includes(k.split('.')[0]))) TN.planLive(tnCtx());
+    if (A.act?.toernooi?.inschrijfId && Object.keys(patch).some(k => ['toernooi', 'naam', 'datum', 'start', 'locatie'].includes(k.split('.')[0]))) TN.planInschrijf(tnCtx());
     if (Object.keys(patch).some(k => ['naam', 'datum', 'start', 'locatie'].includes(k)) && A.act?.deelId)
       setDoc(doc(db, 'activiteitDeel', A.act.deelId), { titel: patch.naam ?? A.act.naam, datum: patch.datum ?? A.act.datum, start: patch.start ?? A.act.start ?? '', locatie: patch.locatie ?? A.act.locatie ?? '' }, { merge: true }).catch(() => {});
     if (!stil) toonOpgeslagen();
@@ -764,6 +765,7 @@ async function verwijder(){
     }
     await deleteDoc(doc(db, 'clubs', A.clubId, 'activiteitenAgenda', id)).catch(() => {});
     if (A.act?.toernooi?.liveId) await deleteDoc(doc(db, 'toernooiLive', A.act.toernooi.liveId)).catch(() => {});
+    if (A.act?.toernooi?.inschrijfId) await TN.wisInschrijven(A.act.toernooi.inschrijfId);
     await deleteDoc(actRef(id));
     A.venster = null; meld('Verwijderd');
   } catch (e){ console.error('[activiteiten] verwijderen', e); meld('Verwijderen mislukt.'); }

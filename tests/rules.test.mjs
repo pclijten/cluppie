@@ -772,6 +772,39 @@ test('toernooi live: iedereen met de link leest, alleen het comité schrijft, di
   await assertSucceeds(getDoc(doc(coach, 'toernooiLive/l1')));
   await assertSucceeds(deleteDoc(doc(a, 'toernooiLive/l1')));
 });
+test('toernooi inschrijven: open link, contactgegevens alleen voor comité en inschrijver', async () => {
+  const a = als('adminA'), coach = als('coachA'), gast = anoniem('anon1'), ander = anoniem('anon2');
+  await env.withSecurityRulesDisabled(async ctx => {
+    const db = ctx.firestore();
+    await updateDoc(doc(db, 'clubs/A'), { platformModules: { activiteiten: true } });
+    await setDoc(doc(db, 'clubs/A/activiteiten/k1'), { naam: 'Kersttoernooi', comiteUids: ['coachA'] });
+  });
+  const ins = { club: 'A', actId: 'k1', open: true, naam: 'Kersttoernooi', cats: { c1: { naam: 'O11', max: 8, prijs: 25, bezet: 0 } } };
+  await assertFails(setDoc(doc(als('coordA'), 'toernooiInschrijf/i1'), ins));                                             // geen comité
+  await assertFails(setDoc(doc(gast, 'toernooiInschrijf/i1'), ins));
+  await assertSucceeds(setDoc(doc(coach, 'toernooiInschrijf/i1'), ins));
+  await assertSucceeds(getDoc(doc(gast, 'toernooiInschrijf/i1')));
+  await assertFails(getDocs(collection(gast, 'toernooiInschrijf')));
+  const aanm = { uid: 'anon1', club: 'SV Venray', team: 'JO11-1', cat: 'c1', contact: 'Jan', email: 'jan@voorbeeld.nl', tel: '0612345678', opm: '', ms: nu, status: 'nieuw' };
+  await assertSucceeds(setDoc(doc(gast, 'toernooiInschrijf/i1/aanmeldingen/anon1_0'), aanm));
+  await assertFails(setDoc(doc(gast, 'toernooiInschrijf/i1/aanmeldingen/anders'), aanm));                                 // vast id
+  await assertFails(setDoc(doc(gast, 'toernooiInschrijf/i1/aanmeldingen/anon1_10'), aanm));                               // hooguit tien
+  await assertFails(setDoc(doc(gast, 'toernooiInschrijf/i1/aanmeldingen/anon1_1'), { ...aanm, cat: 'c9' }));              // categorie bestaat niet
+  await assertFails(setDoc(doc(gast, 'toernooiInschrijf/i1/aanmeldingen/anon1_1'), { ...aanm, status: 'toegelaten' }));   // laat zichzelf niet toe
+  await assertFails(setDoc(doc(gast, 'toernooiInschrijf/i1/aanmeldingen/anon1_1'), { ...aanm, betaald: true }));
+  await assertFails(setDoc(doc(ander, 'toernooiInschrijf/i1/aanmeldingen/anon2_0'), aanm));                               // niet op andermans uid
+  await assertFails(getDoc(doc(ander, 'toernooiInschrijf/i1/aanmeldingen/anon1_0')));                                     // een ander leest geen contactgegevens
+  await assertFails(getDocs(collection(ander, 'toernooiInschrijf/i1/aanmeldingen')));
+  await assertSucceeds(getDoc(doc(gast, 'toernooiInschrijf/i1/aanmeldingen/anon1_0')));
+  await assertSucceeds(getDocs(query(collection(gast, 'toernooiInschrijf/i1/aanmeldingen'), where('uid', '==', 'anon1'))));
+  await assertSucceeds(getDocs(collection(coach, 'toernooiInschrijf/i1/aanmeldingen')));
+  await assertFails(updateDoc(doc(gast, 'toernooiInschrijf/i1/aanmeldingen/anon1_0'), { status: 'toegelaten' }));
+  await assertSucceeds(updateDoc(doc(coach, 'toernooiInschrijf/i1/aanmeldingen/anon1_0'), { status: 'toegelaten', teamId: 't1', betaald: true }));
+  await assertFails(updateDoc(doc(coach, 'toernooiInschrijf/i1/aanmeldingen/anon1_0'), { email: 'ander@voorbeeld.nl' })); // comité past de inschrijving niet aan
+  await assertSucceeds(setDoc(doc(coach, 'toernooiInschrijf/i1'), { open: false }, { merge: true }));
+  await assertFails(setDoc(doc(gast, 'toernooiInschrijf/i1/aanmeldingen/anon1_2'), aanm));                                // dicht
+  await assertSucceeds(deleteDoc(doc(gast, 'toernooiInschrijf/i1/aanmeldingen/anon1_0')));                                // zelf intrekken
+});
 test('activiteiten: vrijwilligers schrijven zich via de open link in, alleen een voornaam en één keer per dienst', async () => {
   const a = als('adminA'), coach = als('coachA'), ouder = anoniem('anon1'), ander = anoniem('anon2');
   await env.withSecurityRulesDisabled(async ctx => {

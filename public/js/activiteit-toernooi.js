@@ -10,13 +10,13 @@
 
    Opslag: veld `toernooi` in de activiteit (zie toernooi-logica.js). Geen rules-wijziging nodig.
    Dit bestand krijgt alles van activiteiten.js via ctx en importeert dat bestand niet. */
-import { db, doc, collection, getDoc, getDocs, setDoc, deleteField } from './firebase.js?v=20261011g';
+import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, deleteField } from './firebase.js?v=20261011g';
 import { S, esc, meld } from './state.js?v=20261125v';
 import { ico } from './icons.js?v=20261116t';
 import * as T from './toernooi-logica.js?v=20261125v';
 
 const opt = (w, t, sel) => `<option value="${esc(w)}"${sel ? ' selected' : ''}>${esc(t)}</option>`;
-const SUB = [['opzet', 'Opzet'], ['spelers', 'Spelers'], ['teams', 'Teams'], ['schema', 'Schema'], ['kk', 'Kleedkamers'], ['uitslagen', 'Uitslagen'], ['live', 'Live']];
+const SUB = [['opzet', 'Opzet'], ['inschrijven', 'Inschrijven'], ['spelers', 'Spelers'], ['teams', 'Teams'], ['schema', 'Schema'], ['kk', 'Kleedkamers'], ['uitslagen', 'Uitslagen'], ['live', 'Live']];
 const st = { sub: 'opzet', zoek: '', gekozen: '', teamFilter: '', club: null, clubLaden: null, voorstel: null };
 
 /* ---------- clubgegevens (velden, kleedkamers, trainingen) ---------- */
@@ -39,7 +39,7 @@ async function laadClub(clubId){
 export function htmlToernooi(ctx){
   const a = ctx.act, t = a.toernooi || {};
   if (!st.club && !st.clubLaden) laadClub(ctx.clubId).then(() => ctx.herteken());
-  const inhoud = { opzet: htmlOpzet, spelers: htmlSpelers, teams: htmlTeams, schema: htmlSchema, kk: htmlKk, uitslagen: htmlUitslagen, live: htmlLive }[st.sub] || htmlOpzet;
+  const inhoud = { opzet: htmlOpzet, spelers: htmlSpelers, teams: htmlTeams, schema: htmlSchema, kk: htmlKk, uitslagen: htmlUitslagen, live: htmlLive, inschrijven: htmlInschrijven }[st.sub] || htmlOpzet;
   const nT = Object.keys(t.teams || {}).length, nS = Object.keys(t.spelers || {}).length, nW = (t.schema || []).length;
   return `<div class="ac-balkje"><div class="ac-schakel tn-sub">${SUB.map(([id, n]) => `<button class="${st.sub === id ? 'aan' : ''}" data-tn="sub" data-id="${id}">${n}</button>`).join('')}</div></div>
     <p class="ac-zacht">${[`${Object.keys(t.velden || {}).length} ${Object.keys(t.velden || {}).length === 1 ? 'veld' : 'velden'}`, `${nS} spelers`, `${nT} teams`, nW ? `${nW} wedstrijden, ${T.gespeeld(t)} gespeeld` : 'nog geen schema'].join(' · ')}</p>
@@ -57,7 +57,9 @@ function htmlOpzet(ctx, a, t){
   const nogClub = (club?.velden || []).filter(v => !velden.some(x => x.clubVeld === v.id));
   const eind = (t.schema || []).length ? T.planSchema(t).eind : '';
   const conflicten = club && a.datum ? T.veldConflicten(club.blokken, { datum: a.datum, van: o.start, tot: eind || T.naarTijd(T.naarMin(o.start) + 240), velden: velden.map(v => v.clubVeld).filter(Boolean) }) : [];
-  return `<div class="ac-paneel"><h3>Tijden</h3>
+  return `<div class="ac-paneel"><h3>Wie doen er mee</h3><p class="ac-zacht">Bepaalt de woorden in de planner, op de inschrijfpagina en op de live pagina. Kies Scholen voor een schooltoernooi en Bedrijven voor een bedrijventoernooi.</p>
+      <select class="ac-in" data-veld="toernooi.deelnemers" aria-label="Wie doen er mee">${Object.entries(T.SOORTEN).map(([k, x]) => opt(k, x.naam, T.soort(t) === k)).join('')}</select></div>
+    <div class="ac-paneel"><h3>Tijden</h3>
       <div class="tn-rij"><label>Eerste wedstrijd ${veld('start', o.start, { type: 'time' })}</label><label>Speeltijd (min) ${getal('duur', o.duur, 'min="4" max="90"')}</label><label>Wisseltijd (min) ${getal('wissel', o.wissel, 'min="0" max="30"')}</label></div>
       <label class="ac-schak"><input type="checkbox" data-veld="toernooi.rust" data-bool ${o.rust ? 'checked' : ''}> <span><b>Rust tussen wedstrijden</b><small class="ac-zacht"> Een team speelt liefst niet twee keer achter elkaar.</small></span></label></div>
     <div class="ac-paneel"><h3>Velden</h3><p class="ac-zacht">Splits een veld in twee of vier veldjes voor de kleintjes. Elk veldje speelt tegelijk.</p>
@@ -98,19 +100,19 @@ function htmlSpelers(ctx, a, t){
 }
 
 function htmlTeams(ctx, a, t){
-  const teams = T.gesorteerd(t.teams), poules = T.gesorteerd(t.poules), o = T.opzet(t);
+  const teams = T.gesorteerd(t.teams), poules = T.gesorteerd(t.poules), o = T.opzet(t), SO = T.soortTekst(t);
   const bronnen = [...new Set(Object.values(t.spelers || {}).map(s => s.bron).filter(Boolean))].sort((x, y) => x.localeCompare(y, 'nl', { numeric: true }));
   const fout = T.controleerTeams(t), nVrij = Object.values(t.spelers || {}).filter(s => !s.tt).length;
   return `<div class="ac-paneel"><h3>${ico('action-magic', 18)} Voorstel maken</h3><p class="ac-zacht">Cluppie deelt de spelers ${nVrij ? `zonder team (${nVrij})` : ''} in groepen en maakt teams van ongeveer gelijke grootte en leeftijd. Je ziet het voorstel eerst.</p>
       <div class="ac-chips">${Object.entries(T.GROEP_OP).map(([k, n]) => `<label class="ac-chip ${o.groepOp.includes(k) ? 'aan' : ''}"><input type="checkbox" data-tn-groep="${k}" ${o.groepOp.includes(k) ? 'checked' : ''}> ${esc(n)}</label>`).join('')}</div>
       <div class="tn-rij"><label>Spelers per team ${getal('grootte', o.grootte, 'min="2" max="18"')}</label><label class="ac-schak"><input type="checkbox" data-tn-pp checked> Per groep een poule</label></div>
       <div class="ac-acties"><button class="knop vol klein" data-tn="voorstel" ${nVrij ? '' : 'disabled'}>Voorstel maken</button></div></div>
-    <div class="ac-paneel"><h3>Verenigingen</h3><p class="ac-zacht">Voeg de clubs toe die meedoen en geef ze teams. Gastteams hebben geen spelerslijst nodig.</p>
+    <div class="ac-paneel"><h3>${esc(SO.naam.split(' (')[0])}</h3><p class="ac-zacht">Voeg de ${esc(SO.meer)} toe die meedoen en geef ze teams. Gastteams hebben geen spelerslijst nodig. Met Inschrijven melden ze zichzelf aan.</p>
       ${T.gesorteerd(t.clubs).map(c => { const n = teams.filter(tm => tm.club === c.id).length;
         return `<div class="ac-rij tn-clubrij">${veld(`clubs.${c.id}.naam`, c.naam, { klasse: 'ac-groei vet' })}<span class="ac-zacht">${n} ${n === 1 ? 'team' : 'teams'}</span>
           <select class="ac-in smal" data-tn-clubteam="${esc(c.id)}" aria-label="Team toevoegen">${opt('', '+ team in poule…')}${poules.map(p => opt(p.id, p.naam)).join('')}${opt('-', 'zonder poule')}</select>
-          <button class="ac-x" data-tn="club-weg" data-id="${esc(c.id)}" aria-label="Vereniging weg">✕</button></div>`; }).join('') || '<p class="ac-zacht">Nog geen verenigingen.</p>'}
-      <div class="ac-acties"><button class="knop licht klein" data-tn="club-nieuw">${ico('action-add', 16)} Vereniging</button><button class="knop licht klein" data-tn="teams-plak">Lijst plakken (vereniging, team, poule)</button></div></div>
+          <button class="ac-x" data-tn="club-weg" data-id="${esc(c.id)}" aria-label="Weg">✕</button></div>`; }).join('') || `<p class="ac-zacht">Nog geen ${esc(SO.meer)}.</p>`}
+      <div class="ac-acties"><button class="knop licht klein" data-tn="club-nieuw">${ico('action-add', 16)} ${esc(SO.Een)}</button><button class="knop licht klein" data-tn="teams-plak">Lijst plakken (${esc(SO.een)}, team, poule)</button></div></div>
     ${fout.length ? `<div class="ac-melding">${ico('action-warning', 18)} <span><b>${fout.length} ${fout.length === 1 ? 'speler past' : 'spelers passen'} niet bij de regels van hun team.</b> Zie de rode teams hieronder.</span></div>` : ''}
     ${teams.map(tm => {
       const sp = Object.entries(t.spelers || {}).filter(([, s]) => s.tt === tm.id).map(([id, s]) => ({ id, ...s })).sort((x, y) => String(x.naam).localeCompare(String(y.naam), 'nl'));
@@ -118,7 +120,7 @@ function htmlTeams(ctx, a, t){
       const fouten = sp.filter(s => T.magInTeam(s, tm).length);
       return `<details class="ac-paneel tn-team ${fouten.length ? 'tn-fout' : ''}" style="--pk:${esc(kleurPoule(t, tm.poule))}"><summary><span class="tn-stip"></span><b>${esc(tm.naam)}</b><span class="ac-zacht">${esc(t.poules?.[tm.poule]?.naam || 'geen poule')} · ${tm.gast ? 'gastteam' : sp.length + ' spelers'}${t.clubs?.[tm.club] ? ' · ' + esc(t.clubs[tm.club].naam) : ''} · ${esc(T.eisTekst(e))}</span></summary>
         <div class="ac-rij2"><span><label class="ac-label">Naam</label>${veld(`teams.${tm.id}.naam`, tm.naam)}</span><span><label class="ac-label">Poule</label><select class="ac-in" data-veld="toernooi.teams.${esc(tm.id)}.poule">${opt('', '— geen —')}${poules.map(p => opt(p.id, p.naam, tm.poule === p.id)).join('')}</select></span></div>
-        ${Object.keys(t.clubs || {}).length ? `<label class="ac-label">Vereniging</label><select class="ac-in" data-veld="toernooi.teams.${esc(tm.id)}.club">${opt('', '— geen —')}${T.gesorteerd(t.clubs).map(c => opt(c.id, c.naam, tm.club === c.id)).join('')}</select>` : ''}
+        ${Object.keys(t.clubs || {}).length ? `<label class="ac-label">${esc(SO.Een)}</label><select class="ac-in" data-veld="toernooi.teams.${esc(tm.id)}.club">${opt('', '— geen —')}${T.gesorteerd(t.clubs).map(c => opt(c.id, c.naam, tm.club === c.id)).join('')}</select>` : ''}
         <label class="ac-label">Wie mag in dit team?</label>
         <div class="tn-rij"><select class="ac-in smal" data-veld="toernooi.teams.${esc(tm.id)}.eisen.geslacht">${Object.entries(T.GESLACHT).map(([k, n]) => opt(k, k ? `Alleen ${n.toLowerCase()}` : 'Jongens en meisjes', (e.geslacht || '') === k)).join('')}</select>
           <label>Geboren van ${veld(`teams.${tm.id}.eisen.van`, e.van ?? '', { type: 'number', klasse: 'getal', ph: 'jaar', extra: 'data-num min="1950" max="2099"' })}</label><label>tot en met ${veld(`teams.${tm.id}.eisen.tot`, e.tot ?? '', { type: 'number', klasse: 'getal', ph: 'jaar', extra: 'data-num min="1950" max="2099"' })}</label></div>
@@ -282,7 +284,7 @@ export async function klikToernooi(ctx, b){
       if (r.fout){ ctx.herteken(); return meld(r.fout); }
       return zet({ 'toernooi.schema': r.schema });
     }
-    case 'club-nieuw': return zet({ [`toernooi.clubs.${T.nieuwId('c')}`]: { naam: Object.keys(t.clubs || {}).length ? 'Nieuwe vereniging' : (S.club?.naam || 'Onze club'), volg: T.volgende(t.clubs) } });
+    case 'club-nieuw': return zet({ [`toernooi.clubs.${T.nieuwId('c')}`]: { naam: Object.keys(t.clubs || {}).length || T.soort(t) !== 'vereniging' ? `Nieuwe ${T.soortTekst(t).een}` : (S.club?.naam || 'Onze club'), volg: T.volgende(t.clubs) } });
     case 'club-weg': {
       const n = Object.values(t.teams || {}).filter(tm => tm.club === id).length;
       if (n && !confirm(`Vereniging weghalen met ${n} ${n === 1 ? 'team' : 'teams'}? Het schema moet daarna opnieuw.`)) return;
@@ -312,6 +314,30 @@ export async function klikToernooi(ctx, b){
       }
       await zet(patch); return meld(`${n} teams toegevoegd`);
     }
+    case 'ins-aan': {
+      if (!T.inschrijfCats(t).length) return meld('Maak eerst een categorie.');
+      const iid = t.inschrijfId || T.liveId();
+      try { await setDoc(doc(db, 'toernooiInschrijf', iid), { club: ctx.clubId, actId: ctx.actId, open: true, ...T.inschrijfKopie(a, { clubNaam: S.club?.naam || '', bezet: T.bezetPerCat(ins.id === iid ? ins.lijst || [] : []) }), bijgewerktMs: Date.now() }); }
+      catch (e){ console.error('[toernooi] inschrijven', e); return meld(e?.code === 'permission-denied' ? 'Inschrijven kan nog niet aan: de regels zijn nog niet gepubliceerd.' : 'Openzetten mislukt.'); }
+      await zet({ 'toernooi.inschrijfId': iid, 'toernooi.inschrijf.open': true }); return meld('Inschrijven staat open. Deel de link!');
+    }
+    case 'ins-uit': {
+      if (!confirm('Inschrijven sluiten? De link laat dan zien dat inschrijven niet meer kan. De inschrijvingen blijven staan.')) return;
+      try { await setDoc(doc(db, 'toernooiInschrijf', t.inschrijfId), { open: false, bijgewerktMs: Date.now() }, { merge: true }); } catch { return meld('Sluiten mislukt.'); }
+      return zet({ 'toernooi.inschrijf.open': false });
+    }
+    case 'ins-kopieer': return ctx.kopieer(inschrijfLink(t.inschrijfId), 'Link gekopieerd');
+    case 'cat-nieuw': return zet({ [`toernooi.inschrijf.cats.${T.nieuwId('g')}`]: { naam: `Categorie ${Object.keys(t.inschrijf?.cats || {}).length + 1}`, max: 0, prijs: 0, poule: '', volg: T.volgende(t.inschrijf?.cats) } });
+    case 'cats-poules': { const patch = {}, heeft = new Set(T.inschrijfCats(t).map(c => c.poule)); let v = T.volgende(t.inschrijf?.cats);
+      for (const p of T.gesorteerd(t.poules)) if (!heeft.has(p.id)) patch[`toernooi.inschrijf.cats.${T.nieuwId('g')}`] = { naam: p.naam, max: 0, prijs: 0, poule: p.id, volg: v++ };
+      return Object.keys(patch).length ? zet(patch) : meld('Elke poule heeft al een categorie.'); }
+    case 'cat-weg': { const n = (ins.lijst || []).filter(x => x.cat === id).length;
+      if (n && !confirm(`Bij deze categorie ${n === 1 ? 'staat 1 inschrijving' : `staan ${n} inschrijvingen`}. Toch weghalen?`)) return;
+      return zet({ [`toernooi.inschrijf.cats.${id}`]: deleteField() }); }
+    case 'ins-status': return zetInschrijfStatus(ctx, t, id, b.dataset.naar);
+    case 'ins-weg': { const x = (ins.lijst || []).find(y => y.id === id); if (!x || !confirm(`Inschrijving van ${x.club} weghalen? Dit kan niet terug.`)) return;
+      try { await deleteDoc(doc(db, 'toernooiInschrijf', t.inschrijfId, 'aanmeldingen', id)); } catch { meld('Weghalen mislukt.'); } return; }
+    case 'ins-csv': return ctx.download(ctx.bestandsnaam('csv', 'inschrijvingen'), T.csvInschrijvingen(ins.lijst || [], t), 'text/csv;charset=utf-8');
     case 'live-aan': {
       const lid = t.liveId || T.liveId();
       try { await setDoc(doc(db, 'toernooiLive', lid), { club: ctx.clubId, actId: ctx.actId, open: true, ...T.liveKopie(a, { clubNaam: S.club?.naam || '' }), bijgewerktMs: Date.now() }); }
@@ -375,6 +401,10 @@ async function importeer(ctx, tekst){
 
 export async function wijzigToernooi(ctx, el){
   const a = ctx.act, t = a.toernooi || {};
+  if (el.matches('[data-tn-betaald]')){
+    try { await updateDoc(doc(db, 'toernooiInschrijf', t.inschrijfId, 'aanmeldingen', el.dataset.tnBetaald), { betaald: el.checked }); } catch { meld('Opslaan mislukt.'); }
+    return true;
+  }
   if (el.matches('[data-tn-plaatje]')){
     const f = el.files?.[0], sid = el.dataset.tnPlaatje; el.value = ''; if (!f || !t.schermen?.[sid]) return true;
     if (!/^image\//.test(f.type) || f.size > 12 * 1024 * 1024){ meld('Kies een afbeelding (jpg of png, max 12 MB).'); return true; }
@@ -427,7 +457,7 @@ export function invoerToernooi(ctx, el){
   invoerToernooi._t = setTimeout(() => { ctx.herteken(); const z = ctx.el.querySelector('[data-tn-zoek]'); if (z){ z.focus(); z.setSelectionRange(z.value.length, z.value.length); } }, 250);
   return true;
 }
-export function resetToernooi(){ st.sub = 'opzet'; st.zoek = ''; st.gekozen = ''; st.teamFilter = ''; st.waarsch = null; st.club = null; st.clubLaden = null; st.qrVoor = ''; st.qrSvg = ''; }
+export function resetToernooi(){ st.sub = 'opzet'; st.zoek = ''; st.gekozen = ''; st.teamFilter = ''; st.waarsch = null; st.club = null; st.clubLaden = null; st.qrVoor = ''; st.qrSvg = ''; ins.stop?.(); ins.stop = null; ins.id = ''; ins.lijst = null; ins.qrVoor = ''; ins.qr = ''; }
 
 /* Excel (.xlsx) lezen met de meegeleverde ExcelJS (zelfde bestand als de export van Evaluaties). */
 let _excel = null;
@@ -441,6 +471,100 @@ async function excelRijen(bestand){
   const ws = wb.worksheets[0], rijen = [];
   ws?.eachRow(rij => { const r = []; rij.eachCell({ includeEmpty: true }, (cel, k) => { const v = cel.value; r[k - 1] = v instanceof Date ? v.toISOString().slice(0, 10) : v && typeof v === 'object' ? String(v.text ?? v.result ?? '') : String(v ?? ''); }); rijen.push(Array.from(r, x => x ?? '')); });
   return rijen;
+}
+
+
+/* ---------- online inschrijven [20261125w] ---------- */
+export const inschrijfLink = id => `${location.origin}${location.pathname.replace(/[^/]*$/, '')}?inschrijf=${encodeURIComponent(id)}`;
+const ins = { id: '', lijst: null, stop: null, qrVoor: '', qr: '' };
+function volgInschrijvingen(ctx, id){
+  if (ins.id === id) return;
+  ins.stop?.(); ins.stop = null; ins.id = id; ins.lijst = null;
+  if (!id) return;
+  ins.stop = onSnapshot(collection(db, 'toernooiInschrijf', id, 'aanmeldingen'), s => { ins.lijst = s.docs.map(d => ({ id: d.id, ...d.data() })); planInschrijf(ctx); ctx.herteken(); },
+    e => { console.warn('[toernooi] inschrijvingen', e); ins.lijst = []; ctx.herteken(); });
+}
+/* De openbare kopie (zonder contactgegevens) bijwerken, met hoeveel plekken er per categorie bezet zijn. */
+let _insT = null;
+export function planInschrijf(ctx){
+  const t0 = ctx.actNu()?.toernooi;
+  if (!t0?.inschrijfId || t0.inschrijf?.open !== true) return;
+  if (ins.id !== t0.inschrijfId || ins.lijst === null) return volgInschrijvingen(ctx, t0.inschrijfId);
+  clearTimeout(_insT);
+  _insT = setTimeout(async () => {
+    const a = ctx.actNu(), t = a?.toernooi;
+    if (!t?.inschrijfId || t.inschrijf?.open !== true || ins.id !== t.inschrijfId) return;
+    try { await setDoc(doc(db, 'toernooiInschrijf', t.inschrijfId), { club: ctx.clubId, actId: ctx.actId, open: true, ...T.inschrijfKopie(a, { clubNaam: S.club?.naam || '', bezet: T.bezetPerCat(ins.lijst || []) }), bijgewerktMs: Date.now() }); }
+    catch (e){ console.warn('[toernooi] inschrijfpagina bijwerken', e); }
+  }, 600);
+}
+function htmlInschrijven(ctx, a, t){
+  const i = t.inschrijf || {}, aan = i.open === true && !!t.inschrijfId, cats = T.inschrijfCats(t), SO = T.soortTekst(t), poules = T.gesorteerd(t.poules);
+  if (t.inschrijfId) volgInschrijvingen(ctx, t.inschrijfId);
+  const link = t.inschrijfId ? inschrijfLink(t.inschrijfId) : '';
+  if (aan && ins.qrVoor !== t.inschrijfId){ ins.qrVoor = t.inschrijfId; ins.qr = ''; qrSvg(link).then(svg => { ins.qr = svg; ctx.herteken(); }).catch(() => {}); }
+  const lijst = [...(ins.lijst || [])].sort((x, y) => (y.ms || 0) - (x.ms || 0)), bezet = T.bezetPerCat(lijst), tot = T.inschrijfTotaal(lijst, t), catVan = Object.fromEntries(cats.map(c => [c.id, c]));
+  const mails = [...new Set(lijst.filter(x => x.status !== 'afgewezen').map(x => x.email).filter(Boolean))];
+  const v = (pad, w, o) => veld(`inschrijf.${pad}`, w, o);
+  return `<div class="ac-paneel"><h3>Online inschrijven</h3><p class="ac-zacht">${esc(SO.naam.split(' (')[0])} schrijven zelf hun teams in via een link, zonder account. Jij laat ze toe en ze staan meteen bij Teams, in de goede poule. De contactgegevens ziet alleen het comité.</p>
+      ${aan ? `<div class="tn-live"><div class="tn-qr">${ins.qr || '<span class="ac-zacht">QR-code maken…</span>'}</div>
+          <div class="tn-live-t"><input class="ac-in" readonly value="${esc(link)}" aria-label="Link naar de inschrijfpagina" onfocus="this.select()">
+            <div class="ac-acties"><button class="knop vol klein" data-tn="ins-kopieer">Link kopiëren</button><a class="knop licht klein" href="${esc(ctx.waLink(`Schrijf je in voor ${a.naam}: ${link}`))}" target="_blank" rel="noopener">WhatsApp</a>
+              <a class="knop licht klein" href="mailto:?subject=${encodeURIComponent('Uitnodiging ' + (a.naam || 'toernooi'))}&body=${encodeURIComponent(`Beste sportvrienden,\n\nGraag nodigen we jullie uit voor ${a.naam}${a.datum ? ' op ' + new Date(a.datum + 'T12:00').toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : ''}.\nInschrijven kan hier: ${link}\n\nMet sportieve groet,\n${S.club?.naam || ''}`)}">Uitnodiging mailen</a>
+              <a class="knop licht klein" href="${esc(link)}" target="_blank" rel="noopener">Openen</a><span class="ac-groei"></span><button class="knop licht klein" data-tn="ins-uit">Inschrijven sluiten</button></div></div></div>`
+        : `<div class="ac-acties"><button class="knop vol" data-tn="ins-aan" ${cats.length ? '' : 'disabled'}>Inschrijven openzetten</button></div><p class="ac-zacht">${cats.length ? (t.inschrijfId ? 'De inschrijving staat dicht. Openzetten geeft dezelfde link als eerst.' : 'Je krijgt een link en een QR-code om te delen.') : 'Maak hieronder eerst minstens één categorie.'}</p>`}</div>
+    <div class="ac-paneel"><h3>Categorieën</h3><p class="ac-zacht">Waar kan een team zich voor inschrijven? Meestal een leeftijdsgroep of niveau. Koppel een poule, dan komt een toegelaten team daar vanzelf in. Maximum 0 is onbeperkt, inschrijfgeld 0 is gratis.</p>
+      ${cats.map(c => `<div class="ac-rij tn-catrij">${v(`cats.${c.id}.naam`, c.naam, { klasse: 'ac-groei vet', extra: 'maxlength="40"' })}
+          <label class="tn-mini">Max ${v(`cats.${c.id}.max`, c.max, { type: 'number', klasse: 'getal', extra: 'data-num inputmode="numeric" min="0" max="200"' })}</label>
+          <label class="tn-mini">€ ${v(`cats.${c.id}.prijs`, c.prijs || '', { type: 'number', klasse: 'getal', ph: '0', extra: 'data-num inputmode="decimal" min="0" max="9999" step="0.5"' })}</label>
+          <select class="ac-in smal" data-veld="toernooi.inschrijf.cats.${esc(c.id)}.poule" aria-label="Poule">${opt('', 'geen poule', !c.poule)}${poules.map(p => opt(p.id, p.naam, c.poule === p.id)).join('')}</select>
+          <span class="ac-zacht">${bezet[c.id] || 0}${c.max ? ' / ' + c.max : ''}</span><button class="ac-x" data-tn="cat-weg" data-id="${esc(c.id)}" aria-label="Categorie weg">✕</button></div>`).join('') || '<p class="ac-zacht">Nog geen categorieën.</p>'}
+      <div class="ac-acties"><button class="knop licht klein" data-tn="cat-nieuw" ${cats.length >= T.MAX_CATS ? 'disabled' : ''}>${ico('action-add', 16)} Categorie</button>${poules.some(p => !cats.some(c => c.poule === p.id)) ? '<button class="knop licht klein" data-tn="cats-poules">Uit de poules</button>' : ''}</div></div>
+    <div class="ac-paneel"><h3>Op de inschrijfpagina</h3>
+      <div class="ac-rij2"><span><label class="ac-label">Inschrijven kan tot en met</label>${v('tot', i.tot || '', { type: 'date' })}</span><span><label class="ac-label">Contactpersoon (zichtbaar)</label>${v('contact', i.contact || '', { ph: 'bv. Karin, toernooicommissie', extra: 'maxlength="60"' })}</span></div>
+      <label class="ac-label">E-mail voor vragen (zichtbaar)</label>${v('contactMail', i.contactMail || '', { type: 'email', ph: 'toernooi@jouwclub.nl', extra: 'maxlength="120"' })}
+      <label class="ac-label">Welkomsttekst</label><textarea class="ac-in" data-veld="toernooi.inschrijf.tekst" rows="3" maxlength="600" placeholder="Bijvoorbeeld: speelvorm, wat teams krijgen (lunch, medaille), parkeren.">${esc(i.tekst || '')}</textarea>
+      <label class="ac-label">Zo betaal je (staat op de bevestiging)</label><textarea class="ac-in" data-veld="toernooi.inschrijf.betaal" rows="2" maxlength="400" placeholder="Bijvoorbeeld: maak het inschrijfgeld over op NL00 BANK 0000 0000 00 t.n.v. de club, met de teamnaam erbij.">${esc(i.betaal || '')}</textarea>
+      <label class="ac-label">Betaallink (Tikkie of betaalverzoek van je bank, mag leeg)</label>${v('betaalLink', i.betaalLink || '', { ph: 'https://…', extra: 'maxlength="200" inputmode="url"' })}</div>
+    <div class="ac-paneel"><h3>Inschrijvingen ${lijst.length ? `<small class="ac-zacht">· ${tot.n}${tot.nieuw ? `, ${tot.nieuw} nieuw` : ''}</small>` : ''}</h3>
+      ${!t.inschrijfId ? '<p class="ac-zacht">Zet het inschrijven open om inschrijvingen te ontvangen.</p>' : ins.lijst === null ? '<p class="ac-zacht">Laden…</p>' : !lijst.length ? '<p class="ac-zacht">Nog geen inschrijvingen.</p>' : `
+        <p class="ac-zacht">${tot.toegelaten} toegelaten${tot.verwacht ? ` · inschrijfgeld ${T.euro(tot.betaald)} van ${T.euro(tot.verwacht)} binnen` : ''}</p>
+        ${lijst.map(x => { const c = catVan[x.cat], stt = T.INSCHRIJF_STATUS[x.status] ? x.status : 'nieuw';
+          return `<div class="tn-ins ${stt}"><div class="ac-rij"><b class="ac-groei">${esc(x.club)}${x.team && x.team !== x.club ? ` · ${esc(x.team)}` : ''}</b><span class="tn-st ${stt}">${esc(T.INSCHRIJF_STATUS[stt])}</span></div>
+            <p class="ac-zacht">${esc(c?.naam || 'categorie vervallen')}${c?.prijs ? ' · ' + T.euro(c.prijs) : ''} · ${esc(x.contact || '')} · <a href="mailto:${esc(x.email || '')}">${esc(x.email || '')}</a>${x.tel ? ` · <a href="tel:${esc(x.tel)}">${esc(x.tel)}</a>` : ''}${x.ms ? ' · ' + new Date(x.ms).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) : ''}</p>
+            ${x.opm ? `<p class="tn-opm">${esc(x.opm)}</p>` : ''}
+            <div class="ac-acties">${stt !== 'toegelaten' ? `<button class="knop vol klein" data-tn="ins-status" data-id="${esc(x.id)}" data-naar="toegelaten">Toelaten</button>` : ''}${stt !== 'wachtlijst' ? `<button class="knop licht klein" data-tn="ins-status" data-id="${esc(x.id)}" data-naar="wachtlijst">Wachtlijst</button>` : ''}${stt !== 'afgewezen' ? `<button class="knop licht klein" data-tn="ins-status" data-id="${esc(x.id)}" data-naar="afgewezen">Afwijzen</button>` : ''}
+              ${c?.prijs ? `<label class="ac-schak"><input type="checkbox" data-tn-betaald="${esc(x.id)}" ${x.betaald ? 'checked' : ''}> Betaald</label>` : ''}<span class="ac-groei"></span><button class="ac-x" data-tn="ins-weg" data-id="${esc(x.id)}" aria-label="Inschrijving weg">✕</button></div></div>`; }).join('')}
+        <div class="ac-acties"><button class="knop licht klein" data-tn="ins-csv">${ico('admin-file', 16)} Lijst als CSV</button>${mails.length ? `<a class="knop licht klein" href="mailto:?bcc=${encodeURIComponent(mails.join(','))}&subject=${encodeURIComponent(a.naam || 'Toernooi')}">Mail alle contactpersonen (${mails.length})</a>` : ''}</div>`}</div>`;
+}
+/* Bij het verwijderen van de activiteit: de inschrijfpagina en alle inschrijvingen (contactgegevens) weg. */
+export async function wisInschrijven(id){
+  try { const s = await getDocs(collection(db, 'toernooiInschrijf', id, 'aanmeldingen')); await Promise.all(s.docs.map(d => deleteDoc(d.ref))); await deleteDoc(doc(db, 'toernooiInschrijf', id)); }
+  catch (e){ console.warn('[toernooi] inschrijvingen wissen', e); }
+}
+/* Een inschrijving toelaten: de vereniging (of school, bedrijf) en het team komen in de planner, in de poule van de categorie. */
+async function zetInschrijfStatus(ctx, t, id, naar){
+  const x = (ins.lijst || []).find(y => y.id === id); if (!x || !t.inschrijfId) return;
+  const ref = doc(db, 'toernooiInschrijf', t.inschrijfId, 'aanmeldingen', id), bestaat = x.teamId && t.teams?.[x.teamId];
+  try {
+    if (naar === 'toegelaten'){
+      let teamId = bestaat ? x.teamId : '';
+      if (!teamId){
+        if (Object.keys(t.teams || {}).length >= T.MAX.teams) return meld('Het maximum aantal teams is bereikt.');
+        const cat = T.inschrijfCats(t).find(c => c.id === x.cat), patch = {};
+        let cid = Object.entries(t.clubs || {}).find(([, c]) => String(c?.naam || '').trim().toLowerCase() === String(x.club || '').trim().toLowerCase())?.[0];
+        if (!cid){ cid = T.nieuwId('c'); patch[`toernooi.clubs.${cid}`] = { naam: String(x.club || '').slice(0, 60), volg: T.volgende(t.clubs) }; }
+        const tn = String(x.team || ''), cn = String(x.club || ''), naam = (!tn || tn.toLowerCase() === cn.toLowerCase() ? cn : tn.toLowerCase().includes(cn.toLowerCase()) ? tn : `${cn} ${tn}`).slice(0, 40);
+        teamId = T.nieuwId('t');
+        patch[`toernooi.teams.${teamId}`] = { naam, poule: cat?.poule || '', club: cid, volg: T.volgende(t.teams), gast: true, eisen: {}, inschrijving: id };
+        await ctx.zet(patch);
+      }
+      await updateDoc(ref, { status: 'toegelaten', teamId });
+      return meld((t.schema || []).length ? 'Toegelaten. Maak het schema opnieuw om het team in te plannen.' : 'Toegelaten, het team staat bij Teams');
+    }
+    if (bestaat && confirm(`${t.teams[x.teamId].naam} ook uit de planner halen?${(t.schema || []).length ? ' Het schema moet daarna opnieuw.' : ''}`)) await ctx.zet({ [`toernooi.teams.${x.teamId}`]: deleteField() });
+    await updateDoc(ref, { status: naar });
+  } catch (e){ console.error('[toernooi] inschrijving', e); meld('Opslaan mislukt.'); }
 }
 
 /* ---------- live pagina, QR en mededelingen ---------- */
@@ -532,6 +656,12 @@ function printHtml(a){
 
 /* ---------- stijl ---------- */
 export const TOERNOOI_CSS = `
+.tn-catrij{flex-wrap:wrap}.tn-mini{display:flex;align-items:center;gap:4px;font-size:var(--t-sm,14px);color:var(--ink-2)}
+.tn-ins{padding:10px 0;border-top:1px solid var(--hair);display:flex;flex-direction:column;gap:4px}.tn-ins p{margin:0}.tn-ins.afgewezen{opacity:.6}
+.tn-ins .ac-acties{flex-wrap:wrap;align-items:center}
+.tn-st{font-size:var(--t-xs,12px);font-weight:700;padding:3px 10px;border-radius:999px;background:var(--surface-2,var(--hair));color:var(--ink)}
+.tn-st.nieuw{background:color-mix(in srgb,var(--warn,#f59e0b) 30%,var(--card))}.tn-st.toegelaten{background:color-mix(in srgb,var(--ok,#16a34a) 28%,var(--card))}
+.tn-opm{font-style:italic;font-size:var(--t-sm,14px)}
 .tn-scherm{display:flex;gap:var(--space-md);align-items:flex-start;padding:10px 0;border-top:1px solid var(--hair)}
 .tn-plaatje{width:96px;height:72px;flex-shrink:0;border-radius:10px;background:#fff;border:1.5px dashed var(--hair);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;color:#667;font-size:var(--t-xs,12px)}
 .tn-plaatje img{max-width:100%;max-height:100%;object-fit:contain;display:block}

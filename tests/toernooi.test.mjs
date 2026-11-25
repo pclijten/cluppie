@@ -123,4 +123,22 @@ ok(sch[2].link === '' && sch[2].img === '', 'onveilige link en plaatje geweigerd
 ok(!T.plaatjeOk('data:image/png;base64,' + 'A'.repeat(T.MAX_PLAATJE)) && T.veiligeLink('http://x.nl/a b') === '', 'te groot plaatje en link met spatie');
 ok(T.liveKopie({ toernooi: { schermen: { a: { soort: 'sponsor', titel: 'Bakker Jan' } } } }).schermen[0].soort === 'sponsor' && T.schermen({ schermen: { c: { titel: '' } } }, { leeg: true }).length === 1, 'schermen in de live-kopie');
 
+/* wie doen er mee en online inschrijven */
+ok(T.soort({}) === 'vereniging' && T.soort({ deelnemers: 'school' }) === 'school' && T.soort({ deelnemers: 'x' }) === 'vereniging' && T.soortTekst({ deelnemers: 'bedrijf' }).meer === 'bedrijven', 'soort deelnemers');
+const tIns = { deelnemers: 'school', poules: { p1: { naam: 'A' } }, inschrijf: { open: true, tot: '2026-12-01', tekst: ' Welkom ', contactMail: 'geen-mail', betaalLink: 'tikkie.me/x', cats: { a: { naam: 'Groep 7/8', max: 2, prijs: '12,5', poule: 'p1', volg: 2 }, b: { naam: '', max: -3, prijs: 'x', poule: 'weg', volg: 1 } } } };
+const cats = T.inschrijfCats(tIns);
+ok(cats.length === 2 && cats[0].id === 'b' && cats[0].naam === 'Categorie' && cats[0].max === 0 && cats[0].prijs === 0 && cats[0].poule === '' && cats[1].prijs === 12.5 && cats[1].poule === 'p1', 'categorieën opgeschoond');
+const ik = T.inschrijfKopie({ naam: 'Schooltoernooi', datum: '2026-12-16', toernooi: tIns }, { clubNaam: 'SV Demo', bezet: { a: 2 } });
+ok(ik.soort === 'school' && ik.tekst === 'Welkom' && ik.contactMail === '' && ik.betaalLink === 'https://tikkie.me/x' && ik.cats.a.bezet === 2 && !('email' in ik), 'openbare kopie zonder contactgegevens');
+ok(T.catVol(ik.cats.a) && !T.catVol(ik.cats.b) && T.inschrijvingDicht(ik, '2026-12-02') && !T.inschrijvingDicht(ik, '2026-12-01'), 'vol en gesloten');
+ok(T.schoneInschrijving({ club: '', cat: 'a' }, ik.cats).veld === 'club' && T.schoneInschrijving({ club: 'X', cat: 'z' }, ik.cats).veld === 'cat' && T.schoneInschrijving({ club: 'X', cat: 'a', contact: 'Jan', email: 'jan' }, ik.cats).veld === 'email', 'inschrijving: verplichte velden');
+const si = T.schoneInschrijving({ club: ' De  Regenboog ', cat: 'a', contact: 'Tom', email: 'tom@school.nl', tel: '06-12 34<script>', opm: 'x'.repeat(400) }, ik.cats);
+ok(si.ok && si.data.club === 'De Regenboog' && si.data.team === 'De Regenboog' && si.data.tel === '06-12 34' && si.data.opm.length === 300, 'inschrijving opgeschoond');
+const lijstIns = [{ cat: 'a', status: 'toegelaten', betaald: true, club: 'A', email: 'a@a.nl', ms: 2 }, { cat: 'a', status: 'toegelaten', club: 'B', ms: 1 }, { cat: 'a', status: 'afgewezen', club: 'C' }, { cat: 'b', status: 'nieuw', club: 'D' }, { cat: 'a', status: 'wachtlijst', club: 'E' }];
+ok(T.bezetPerCat(lijstIns).a === 2 && T.bezetPerCat(lijstIns).b === 1, 'bezet per categorie');
+const tot = T.inschrijfTotaal(lijstIns, tIns);
+ok(tot.n === 5 && tot.nieuw === 1 && tot.toegelaten === 2 && tot.verwacht === 25 && tot.betaald === 12.5, 'totaal inschrijfgeld');
+ok(T.csvInschrijvingen(lijstIns, tIns).split('\r\n')[0].includes('School;Team;Categorie') && T.csvInschrijvingen(lijstIns, tIns).split('\r\n')[1].startsWith('B;'), 'csv inschrijvingen');
+ok(T.euro(15) === '€ 15,-' && T.euro(12.5) === '€ 12,50' && T.bedrag('1e9') === 0, 'bedragen');
+
 console.log(`toernooi: ${n} controles geslaagd`);

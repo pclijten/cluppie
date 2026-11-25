@@ -310,7 +310,7 @@ export function csvSchema(t = {}){
 }
 export function csvTeams(t = {}){
   const kk = planKleedkamers(t).kk, kn = id => t.kk?.[id]?.naam || '';
-  return csv(['Team', 'Vereniging', 'Poule', 'Kleedkamer', 'Speler', 'Geboortejaar', 'Geslacht', 'Eigen team'],
+  return csv(['Team', soortTekst(t).Een, 'Poule', 'Kleedkamer', 'Speler', 'Geboortejaar', 'Geslacht', 'Eigen team'],
     gesorteerd(t.teams).flatMap(tm => {
       const sp = Object.values(t.spelers || {}).filter(s => s.tt === tm.id);
       const basis = [tm.naam, t.clubs?.[tm.club]?.naam || '', t.poules?.[tm.poule]?.naam || '', kn(tm.kk || kk[tm.id])];
@@ -369,4 +369,64 @@ export function nuEnStraks(live = {}, nuMin){
   const straksT = tijden.find(x => naarMin(x) > nuMin) || '';
   const van = x => (live.schema || []).filter(w => w.t === x);
   return { nuT, straksT, nu: nuT ? van(nuT) : [], straks: straksT ? van(straksT) : [], klaar: tijden.length > 0 && nuMin >= naarMin(tijden[tijden.length - 1]) + duur, begonnen: tijden.length > 0 && nuMin >= naarMin(tijden[0]) };
+}
+
+/* ---------- wie doen er mee: verenigingen, scholen, bedrijven of vrije teams [20261125w] ---------- */
+export const SOORTEN = {
+  vereniging: { naam: 'Verenigingen', een: 'vereniging', Een: 'Vereniging', meer: 'verenigingen', team: 'team', vb: 'bv. SV Voorbeeld', teamVb: 'bv. JO11-1' },
+  school: { naam: 'Scholen', een: 'school', Een: 'School', meer: 'scholen', team: 'groep of klas', vb: 'bv. De Regenboog', teamVb: 'bv. groep 7a' },
+  bedrijf: { naam: 'Bedrijven', een: 'bedrijf', Een: 'Bedrijf', meer: 'bedrijven', team: 'team', vb: 'bv. Bakkerij Jansen', teamVb: 'bv. Team Magazijn' },
+  vrij: { naam: 'Vrije teams (straat, buurt, vrienden)', een: 'groep', Een: 'Groep', meer: 'groepen', team: 'team', vb: 'bv. Kerkstraat', teamVb: 'bv. De Kanjers' },
+};
+export const soort = t => SOORTEN[t?.deelnemers] ? t.deelnemers : 'vereniging';
+export const soortTekst = t => SOORTEN[soort(t)];
+
+/* ---------- online inschrijven [20261125w] ----------
+   Het comité zet per categorie (leeftijd of niveau) het maximum en het inschrijfgeld. Gastclubs, scholen of bedrijven
+   schrijven zelf een team in via de open link (?inschrijf=<id>, inschrijf-boot.js). De openbare kopie bevat geen
+   contactgegevens; die staan alleen in de aanmeldingen, die alleen het comité en de inschrijver zelf lezen. */
+export const MAX_CATS = 24, MAX_INSCHRIJF = 400;
+export const INSCHRIJF_STATUS = { nieuw: 'Nieuw', toegelaten: 'Toegelaten', wachtlijst: 'Wachtlijst', afgewezen: 'Afgewezen' };
+export const bedrag = v => { const n = Math.round(Number(String(v ?? '').replace(',', '.')) * 100) / 100; return Number.isFinite(n) && n > 0 && n < 10000 ? n : 0; };
+export const euro = n => '€ ' + Number(n || 0).toFixed(2).replace('.', ',').replace(/,00$/, ',-');
+export function inschrijfCats(t){
+  return gesorteerd(t?.inschrijf?.cats).map(c => ({ id: c.id, naam: tekst(c.naam, 40) || 'Categorie', max: getal(c.max, 0, 0, 200), prijs: bedrag(c.prijs), poule: t?.poules?.[c.poule] ? c.poule : '', volg: c.volg ?? 0 })).slice(0, MAX_CATS);
+}
+/* bezet per categorie: iedereen behalve afgewezen en wachtlijst telt mee */
+export function bezetPerCat(aanmeldingen = []){
+  const uit = {};
+  for (const a of aanmeldingen) if (a && a.cat && !['afgewezen', 'wachtlijst'].includes(a.status)) uit[a.cat] = (uit[a.cat] || 0) + 1;
+  return uit;
+}
+export function inschrijfKopie(act = {}, { clubNaam = '', bezet = {} } = {}){
+  const t = act.toernooi || {}, i = t.inschrijf || {};
+  return {
+    naam: tekst(act.naam, 80), datum: act.datum || '', start: act.start || '', locatie: tekst(act.locatie, 80), clubNaam: tekst(clubNaam, 80), soort: soort(t),
+    tekst: String(i.tekst ?? '').trim().slice(0, 600), tot: /^\d{4}-\d{2}-\d{2}$/.test(i.tot || '') ? i.tot : '',
+    contact: tekst(i.contact, 60), contactMail: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(i.contactMail || '').trim()) ? String(i.contactMail).trim().slice(0, 120) : '',
+    betaal: String(i.betaal ?? '').trim().slice(0, 400), betaalLink: veiligeLink(i.betaalLink),
+    cats: Object.fromEntries(inschrijfCats(t).map(c => [c.id, { naam: c.naam, max: c.max, prijs: c.prijs, bezet: Math.max(0, Number(bezet[c.id]) || 0), volg: c.volg }])),
+  };
+}
+export const inschrijvingDicht = (d, vandaag) => !!(d?.tot && vandaag && vandaag > d.tot);
+export const catVol = c => !!(c && c.max > 0 && (c.bezet || 0) >= c.max);
+/* Wat iemand op de inschrijfpagina invult: opschonen en controleren. Geeft { ok, data } of { fout, veld }. */
+export function schoneInschrijving(v = {}, cats = {}){
+  const d = { club: tekst(v.club, 60), team: tekst(v.team, 40), cat: String(v.cat || ''), contact: tekst(v.contact, 60), email: String(v.email || '').trim().slice(0, 120), tel: String(v.tel || '').replace(/[^\d+ ()-]/g, '').trim().slice(0, 20), opm: String(v.opm ?? '').replace(/\s+/g, ' ').trim().slice(0, 300) };
+  if (!d.club) return { fout: 'Vul de naam in.', veld: 'club' };
+  if (!cats[d.cat]) return { fout: 'Kies een categorie.', veld: 'cat' };
+  if (!d.contact) return { fout: 'Vul in wie de contactpersoon is.', veld: 'contact' };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) return { fout: 'Vul een geldig e-mailadres in.', veld: 'email' };
+  if (!d.team) d.team = d.club.slice(0, 40);
+  return { ok: true, data: d };
+}
+export function csvInschrijvingen(lijst = [], t = {}){
+  const cats = Object.fromEntries(inschrijfCats(t).map(c => [c.id, c])), S = soortTekst(t);
+  return csv([S.Een, 'Team', 'Categorie', 'Contactpersoon', 'E-mail', 'Telefoon', 'Opmerking', 'Status', 'Inschrijfgeld', 'Betaald', 'Ingeschreven op'],
+    [...lijst].sort((a, b) => (a.ms || 0) - (b.ms || 0)).map(a => [a.club, a.team, cats[a.cat]?.naam || '', a.contact, a.email, a.tel || '', a.opm || '', INSCHRIJF_STATUS[a.status] || 'Nieuw', cats[a.cat]?.prijs || 0, a.betaald ? 'ja' : 'nee', a.ms ? new Date(a.ms).toISOString().slice(0, 10) : '']));
+}
+export function inschrijfTotaal(lijst = [], t = {}){
+  const cats = Object.fromEntries(inschrijfCats(t).map(c => [c.id, c])), mee = lijst.filter(a => a.status === 'toegelaten');
+  return { n: lijst.length, nieuw: lijst.filter(a => !a.status || a.status === 'nieuw').length, toegelaten: mee.length,
+    verwacht: mee.reduce((s, a) => s + (cats[a.cat]?.prijs || 0), 0), betaald: mee.filter(a => a.betaald).reduce((s, a) => s + (cats[a.cat]?.prijs || 0), 0) };
 }

@@ -213,6 +213,7 @@ export function vanSjabloon(sj, opts = {}){
     checks: naarMap(sj.checks, 'c', c => ({ titel: tekst(typeof c === 'string' ? c : c.titel, 160), klaar: false })),
     dienstenSjabloon: (sj.diensten || []).map(d => ({ naam: tekst(d.naam, 40), start: isTijd(d.start) ? d.start : '', eind: isTijd(d.eind) ? d.eind : '', plek: tekst(d.plek || '', 40), nodig: Math.max(0, Number(d.nodig) || 0) })),
     teams: [], agenda: false, kamer: false, deelnemers: { verwacht: null, notitie: '' },
+    ...(['school', 'bedrijf', 'vrij'].includes(sj.deelnemers) ? { toernooi: { deelnemers: sj.deelnemers } } : {}),
     deelId: '', evaluatie: { goed: '', beter: '', tips: {} },
     seizoen: seizoenVan(datum), gemaaktDoor: opts.door || '', gemaaktMs: opts.nu || Date.now(), bijgewerktMs: opts.nu || Date.now(),
   };
@@ -243,7 +244,7 @@ export function kopie(act, opts = {}){
   delete uit.id;
   uit.vraag = false; uit.vraagTot = '';
   /* toernooi: de opzet (tijden, velden, kleedkamers, poules, verenigingen) gaat mee; spelers, teams, schema, uitslagen en de live-link niet */
-  if (uit.toernooi){ const { spelers, teams, schema, uitslag, mededelingen, liveId, live, gepland, ...opzet } = uit.toernooi; uit.toernooi = opzet; }
+  if (uit.toernooi){ const { spelers, teams, schema, uitslag, mededelingen, liveId, live, gepland, inschrijfId, ...opzet } = uit.toernooi; uit.toernooi = opzet; if (opzet.inschrijf) uit.toernooi.inschrijf = { ...opzet.inschrijf, open: false, tot: '' }; }
   if (opts.zonderMensen){ uit.comite = {}; uit.comiteUids = []; uit.taken = Object.fromEntries(Object.entries(uit.taken).map(([id, t]) => [id, { ...t, eigenaar: '' }])); }
   return uit;
 }
@@ -357,7 +358,7 @@ export function ics(act, { id = 'act', programma = false, url = '', nu = Date.no
 export function jsonExport(act, { diensten = null, aanmeldingen = [] } = {}){
   const a = JSON.parse(JSON.stringify(act));
   delete a.comiteUids;
-  if (a.toernooi){ delete a.toernooi.liveId; delete a.toernooi.live; }
+  if (a.toernooi){ delete a.toernooi.liveId; delete a.toernooi.live; delete a.toernooi.inschrijfId; }
   for (const l of Object.values(a.comite || {})) delete l.uid;
   return JSON.stringify({ soort: 'cluppie-activiteit', versie: 1, activiteit: a, diensten: diensten || {}, aanmeldingen: (aanmeldingen || []).map(x => ({ dienst: x.dienst, naam: x.naam })) }, null, 2);
 }

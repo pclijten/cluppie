@@ -24,6 +24,8 @@ const _hulpId = _zoek.get('hulp');
 const _actId = _zoek.get('act');
 /* [20261125u] Toernooi live (?live=<id>, met &tv=1 voor een tv-scherm): iedereen volgt schema en standen. Zie js/live-boot.js. */
 const _liveId = _zoek.get('live');
+/* [20261125w] Toernooi inschrijven (?inschrijf=<id>): een gastclub, school of bedrijf schrijft zonder account een team in. Zie js/inschrijf-boot.js. */
+const _insId = _zoek.get('inschrijf');
 if (_deelId){
   document.getElementById('opstart')?.remove();
   import('./deel-boot.js?v=20261125v').then(m => m.bootDeelPagina(_deelId));
@@ -36,6 +38,9 @@ if (_deelId){
 } else if (_liveId){
   document.getElementById('opstart')?.remove();
   import('./live-boot.js?v=20261125v').then(m => m.bootLivePagina(_liveId, { tv: _zoek.get('tv') === '1' }));
+} else if (_insId){
+  document.getElementById('opstart')?.remove();
+  import('./inschrijf-boot.js?v=20261125v').then(m => m.bootInschrijfPagina(_insId));
 } else {
 
 /* club.js is alleen nodig voor club-admins die het clubdashboard openen —
@@ -146,4 +151,4 @@ onAuthStateChanged(auth, async user => {
   }
 });
 
-} // einde van de normale (niet-?deel=, niet-?hulp=, niet-?act=, niet-?live=) boot-tak
+} // einde van de normale (niet-?deel=, niet-?hulp=, niet-?act=, niet-?live=, niet-?inschrijf=) boot-tak
