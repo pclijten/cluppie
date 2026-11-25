@@ -339,12 +339,20 @@ function schoonSpeelstijlDoc(d = {}){
   };
 }
 
+const { voorSport, sportVan } = require('./sport');   /* [20261126b] sportprofiel stap 6 */
 function maak({ onCall, HttpsError, secrets, REGIO, claude, apiKey, isPlatformBeheerder, db, vraag = vraagModel }){
   const eindbaas = async (request) => {
     if (!(await isPlatformBeheerder(request))) throw new HttpsError('permission-denied', 'Dit kan alleen de platformbeheerder.');
     const clubId = tekst(request.data && request.data.clubId, 80);
     if (!clubId || (db && !(await db().doc('clubs/' + clubId).get()).exists)) throw new HttpsError('not-found', 'Deze club bestaat niet.');
     return clubId;
+  };
+  /* [20261126b] eindbaas-check plus de sport van de club, voor de AI-opdracht */
+  const eindbaasSport = async (request) => {
+    const clubId = await eindbaas(request);
+    if (!db) return 'voetbal';
+    const snap = await db().doc('clubs/' + clubId).get();
+    return sportVan(snap && typeof snap.data === 'function' ? (snap.data() || {}).sport : undefined);
   };
   const uitkomst = ({ tekst: rauw, stopReason }, teVeel) => {
     if (stopReason === 'refusal') throw new HttpsError('failed-precondition', 'De AI heeft deze tekst niet willen verwerken.');
@@ -359,7 +367,7 @@ function maak({ onCall, HttpsError, secrets, REGIO, claude, apiKey, isPlatformBe
   const analyseerClubdocument = onCall(
     { region: REGIO, secrets, cors: true, timeoutSeconds: 540, memory: '1GiB', maxInstances: 6 },
     async (request) => {
-      await eindbaas(request);
+      const sport = await eindbaasSport(request);
       const d = request.data || {};
       const bron = String(d.tekst || '').replace(/\r/g, '').replace(/[ \t]+\n/g, '\n').trim();
       if (bron.length < 80) throw new HttpsError('invalid-argument', 'Te weinig tekst om te analyseren.');
@@ -368,7 +376,7 @@ function maak({ onCall, HttpsError, secrets, REGIO, claude, apiKey, isPlatformBe
       if (!hoofdstukken.length) throw new HttpsError('invalid-argument', 'De hoofdstukken ontbreken.');
       const r = await vraag({
         apiKey: apiKey(), HttpsError, schema: ANALYSE_SCHEMA, maxTokens: 20000, effort: 'high',
-        system: [{ type: 'text', text: INSTRUCTIE }],
+        system: [{ type: 'text', text: voorSport(INSTRUCTIE, sport) }],
         messages: [{ role: 'user', content: [
           { type: 'text', text: `DOCUMENT: ${tekst(d.documentNaam, 120) || 'zonder naam'}\n\n${bron}`, cache_control: { type: 'ephemeral' } },
           { type: 'text', text: veldenTekst(hoofdstukken, tekst(d.seizoen, 80)) + '\n\nGeef de bevindingen voor deze velden.' },
@@ -385,7 +393,7 @@ function maak({ onCall, HttpsError, secrets, REGIO, claude, apiKey, isPlatformBe
   const stelClubinstellingenVoor = onCall(
     { region: REGIO, secrets, cors: true, timeoutSeconds: 180, maxInstances: 6 },
     async (request) => {
-      await eindbaas(request);
+      const sport = await eindbaasSport(request);
       const d = request.data || {};
       const veld = { tekst: d.wilTekst !== false, regels: d.wilRegels === true, rondes: d.wilRondes === true, instellingen: schoonInstelVelden(d.velden) };
       const antwoorden = (Array.isArray(d.antwoorden) ? d.antwoorden : []).slice(0, 12).map(x => alinea(x, 1500)).filter(Boolean);
@@ -394,7 +402,7 @@ function maak({ onCall, HttpsError, secrets, REGIO, claude, apiKey, isPlatformBe
         + (veld.instellingen.length ? 'Instellingen bij dit onderwerp:\n' + veld.instellingen.map(instelRegel).join('\n') + '\n' : 'Bij dit onderwerp horen geen instellingen.\n')
         + `\nAntwoord van de club:\n${antwoorden.map(a => '- ' + a).join('\n')}`;
       const r = await vraag({ apiKey: apiKey(), HttpsError, schema: VOORSTEL_SCHEMA, maxTokens: 4000, effort: 'medium',
-        system: [{ type: 'text', text: VOORSTEL_INSTRUCTIE, cache_control: { type: 'ephemeral' } }], messages: [{ role: 'user', content: opdracht }] });
+        system: [{ type: 'text', text: voorSport(VOORSTEL_INSTRUCTIE, sport), cache_control: { type: 'ephemeral' } }], messages: [{ role: 'user', content: opdracht }] });
       const v = schoonVoorstel(uitkomst(r, 'Het voorstel werd te lang.'), veld);
       return { ...v, waarden: v.instellingen };
     }
@@ -422,7 +430,7 @@ function maak({ onCall, HttpsError, secrets, REGIO, claude, apiKey, isPlatformBe
   const vulSpeelstijlIn = onCall(
     { region: REGIO, secrets, cors: true, timeoutSeconds: 540, memory: '1GiB', maxInstances: 6 },
     async (request) => {
-      await eindbaas(request);
+      const sport = await eindbaasSport(request);
       const d = request.data || {};
       const bron = String(d.tekst || '').replace(/\r/g, '').replace(/[ \t]+\n/g, '\n').trim();
       if (bron.length < 80) throw new HttpsError('invalid-argument', 'Te weinig tekst om te analyseren.');
@@ -431,7 +439,7 @@ function maak({ onCall, HttpsError, secrets, REGIO, claude, apiKey, isPlatformBe
       if (!vragen.length) throw new HttpsError('invalid-argument', 'De vragen ontbreken.');
       const r = await vraag({
         apiKey: apiKey(), HttpsError, schema: SPEELSTIJL_SCHEMA, maxTokens: 12000, effort: 'high',
-        system: [{ type: 'text', text: SPEELSTIJL_INSTRUCTIE }],
+        system: [{ type: 'text', text: voorSport(SPEELSTIJL_INSTRUCTIE, sport) }],
         messages: [{ role: 'user', content: [
           { type: 'text', text: `DOCUMENT: ${tekst(d.documentNaam, 120) || 'zonder naam'}\n\n${bron}`, cache_control: { type: 'ephemeral' } },
           { type: 'text', text: vragenTekst(vragen, LEEFTIJDEN) + '\n\nBeantwoord de vragen waarop het document een duidelijk antwoord geeft.' },

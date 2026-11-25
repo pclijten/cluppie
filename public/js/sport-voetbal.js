@@ -10,6 +10,11 @@ export const VOETBAL = vries({
   id: 'voetbal',
   naam: 'Voetbal',
   icoon: 'football-pitch',
+  /* [20261126b] eigen oefenstof, seizoensplannen en beoordelingscriteria aanwezig (stap 6); een sport zonder
+     inhoud krijgt Training maken en Seizoensplanning pas als die inhoud er is */
+  inhoud: true,
+  /* [20261126c] ledenbron (stap 7): 'sportlink' = koppeling met Sportlink Club.Dataservice; anders teams uit een lijst */
+  ledenbron: 'sportlink',
   /* [20261125y] woorden die per sport verschillen (stap 3); sportWoord() in sporten.js leest ze */
   /* [20261125z] veld (stap 4). Maten in meters; het tactiekbord tekent in procenten van het bord
      (breedte × lengte, staand): dwarslijnen op een hoogte, een middencirkel (breedte in % van het bord)
