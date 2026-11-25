@@ -26,7 +26,7 @@ import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261126c';
 import { trainingenVanPlan, planVoorTeam } from './seizoensplan-club.js?v=20261126c';
 import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261126c';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261121b';
-import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261126c';
+import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261126b';
 import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261126c';
 import {
   MODELLEN, ACCENTEN, maakSeizoensplan, weekKalender, herreken, standaardVrij, maandagVan, beschikbareThemas, themaVolgorde,

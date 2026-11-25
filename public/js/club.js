@@ -23,7 +23,7 @@ import { startClubContentListener, htmlClubContent, koppelClubContent } from './
 import { htmlInzichtTabs, htmlInzichtTab, openRapport } from './club-inzicht.js?v=20261126c';
 import { telGebruik, telNav } from './tracker.js?v=20261126c';
 import { ico } from './icons.js?v=20261116t';
-import { sportProfiel, sportVan, heeftSportlink, sportWoord } from './sporten.js?v=20261126c';
+import { sportProfiel, sportVan, heeftSportlink, sportWoord } from './sporten.js?v=20261126b';
 import { INSTEL_TABS, INSTEL_BASIS, NIEUWE_TABS, htmlInstelNieuw, koppelInstelNieuw, htmlAlgemeenMelding, koppelAlgemeenMelding, modalNieuweClub } from './club-instellingen.js?v=20261126c';
 import { pasClubConfigToe, clubAfk, effectief, pdfProfielNu, pdfOmzettenAan } from './clubconfig.js?v=20261126c';
 import { startlijstStatus } from './startlijst.js?v=20261011d';

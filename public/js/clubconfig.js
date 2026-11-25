@@ -30,7 +30,7 @@
    beheerder de waarden in Instellingen "vastlegt". */
 import { S, clubAfkorting } from './state.js?v=20261126c';
 import * as C from './config.js?v=20261126c';
-import { zetActieveSport, actieveSport, sportProfiel, SPORTEN, STANDAARD_SPORT } from './sporten.js?v=20261126c';   /* [20261125y] sportprofiel stap 3 */
+import { zetActieveSport, actieveSport, sportProfiel, SPORTEN, STANDAARD_SPORT } from './sporten.js?v=20261126b';   /* [20261125y] sportprofiel stap 3 */
 import { db, doc, getDoc } from './firebase.js?v=20261011g';
 import { zetContentClub } from './content.js?v=20261126c';
 import { weerVanTeam } from './snelstart-logica.js?v=20261122a';

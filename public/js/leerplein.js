@@ -21,7 +21,7 @@ import { esc, spelerNr, bewaakTerug, vangnetStilTerugAlsNodig, terugLaag } from 
 import { LEERCURVE, bouwSlots } from './config.js?v=20261126c';
 import { LEERINHOUD } from './leerinhoud.js?v=20261110a';
 import { telNav } from './tracker.js?v=20261126c';
-import { sportVeld } from './sporten.js?v=20261126c';   /* [20261125z] veld uit het sportprofiel */
+import { sportVeld } from './sporten.js?v=20261126b';   /* [20261125z] veld uit het sportprofiel */
 
 const NS = 'http://www.w3.org/2000/svg';
 

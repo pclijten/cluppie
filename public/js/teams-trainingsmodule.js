@@ -23,7 +23,7 @@ import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } fr
 import { aiAan, aiDoel } from './clubconfig.js?v=20261126c';
 import { ico } from './icons.js?v=20261116t';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261121b';
-import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261126c';
+import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261126b';
 import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, kiesDuur, SLOT_NAAM, groepsindeling, opbouwVoor, WEER } from './trainingsplanner.js?v=20261126c';
 import { MATERIAAL, MATERIAAL_NAAM, PRESETS, presetVan, VELDEN, schoonContext, behoefte, haalbaar, valtAf, tipTekst } from './trainingscontext-logica.js?v=20261019a';
 import { htmlZevenVelden, STANDAARD_OPEN } from './oefenkaart.js?v=20261121b';
