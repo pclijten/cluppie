@@ -1,7 +1,7 @@
 /* ==================== SPORTPROFIELEN ====================
    [20261124a] Register van de sportprofielen. Nu alleen voetbal; een club of team
    zonder sport is voetbal. Zie docs/sportprofiel-impactanalyse.md. */
-import { VOETBAL } from './sport-voetbal.js?v=20261125z';
+import { VOETBAL } from './sport-voetbal.js?v=20261126a';
 
 export const STANDAARD_SPORT = 'voetbal';
 export const SPORTEN = Object.freeze({ voetbal: VOETBAL });
@@ -44,3 +44,15 @@ export function bordLijnenHtml(veld = sportVeld()){
   }
   return uit.join('\n        ');
 }
+
+/* [20261126a] Stap 5: wedstrijdregels van de actieve sport. */
+const WEDSTRIJD_STANDAARD = { zonderKeeper: [], periodeNaam: { 2: 'Helft', 4: 'Kwart' }, periodeKort: { 2: 'H', 4: 'K' }, kaarten: [], tweedeGeelRood: false, kaartUitleg: '' };
+export const sportWedstrijd = () => ({ ...WEDSTRIJD_STANDAARD, ...(sportProfiel(actief).wedstrijd || {}) });
+/* Speelt deze spelvorm zonder keeper? (voetbal: 4 tegen 4) */
+export const zonderKeeper = format => sportWedstrijd().zonderKeeper.includes(String(format));
+/* Naam van een periode bij dit aantal periodes; 'alle' wint (volleybal: Set). */
+export function periodeNaamVoor(aantal){ const pn = sportWedstrijd().periodeNaam; return pn.alle || (aantal === 2 ? pn[2] : pn[4]); }
+export function periodeKortVoor(aantal){ const pk = sportWedstrijd().periodeKort; return pk.alle || (aantal === 2 ? pk[2] : pk[4]); }
+/* De kaarten van deze sport; een kaart die een andere sport kent maar deze niet, valt terug op zijn eigen naam. */
+export const sportKaarten = () => sportWedstrijd().kaarten;
+export const kaartDef = type => sportKaarten().find(k => k.type === type) || null;

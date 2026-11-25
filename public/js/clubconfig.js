@@ -28,11 +28,11 @@
 
    Een club-document zonder instellingen.v krijgt de neutrale standaard totdat de
    beheerder de waarden in Instellingen "vastlegt". */
-import { S, clubAfkorting } from './state.js?v=20261125z';
-import * as C from './config.js?v=20261125z';
-import { zetActieveSport } from './sporten.js?v=20261125z';   /* [20261125y] sportprofiel stap 3 */
+import { S, clubAfkorting } from './state.js?v=20261126a';
+import * as C from './config.js?v=20261126a';
+import { zetActieveSport, actieveSport, sportProfiel, SPORTEN, STANDAARD_SPORT } from './sporten.js?v=20261126a';   /* [20261125y] sportprofiel stap 3 */
 import { db, doc, getDoc } from './firebase.js?v=20261011g';
-import { zetContentClub } from './content.js?v=20261125z';
+import { zetContentClub } from './content.js?v=20261126a';
 import { weerVanTeam } from './snelstart-logica.js?v=20261122a';
 import { schoonProfiel as schoonPdfProfiel } from './pdf-profiel.js?v=20261115e';
 
@@ -205,10 +205,25 @@ try {
 export function huidigeClubId(){ return HUIDIG ? HUIDIG.clubId : null; }
 export function cfg(){ return HUIDIG ? HUIDIG.eff : diep(NEUTRAAL, {}); }
 
+/* [20261126a] Sport wisselen (stap 5): de standaard van de sport in config.js en in ORIG zetten.
+   Alleen bij een andere sport dan nu; daarna worden de clubinstellingen opnieuw toegepast. */
+let _sport = STANDAARD_SPORT;
+export function pasSportToe(id){
+  const nieuw = SPORTEN[id] ? id : STANDAARD_SPORT;
+  zetActieveSport(nieuw);
+  if (nieuw === _sport) return false;
+  _sport = nieuw;
+  C.laadSportStandaard(nieuw);
+  const P = sportProfiel(nieuw);
+  ORIG.catJ = klon(P.categorieen); ORIG.catM = klon(P.categorieenMeiden); ORIG.leercurve = klon(P.leercurve);
+  ORIG.kalender = klon(P.kalender); ORIG.doelBanden = klon(P.doelSuggesties);
+  _sig = null;
+  return true;
+}
 /* Zet alles terug op de standaard en legt de club-aanpassingen erover. */
 export function pasClubConfigToe(club){
   if (!club || !club.id) return;
-  zetActieveSport(club.sport);   /* [20261125y] sportprofiel: een clubteam volgt de sport van de club */
+  pasSportToe(club.sport);   /* [20261126a] sportprofiel: een clubteam volgt de sport van de club; eerst sport, dan club */
   const eff = effectief(club);
   const sig = club.id + '|' + (club.naam || '') + '|' + (club.huidigSeizoen || '') + '|' + JSON.stringify(eff);
   LOGO_CACHE[club.id] = veiligUrl(eff.identiteit.logo) || CLUPPIE_LOGO;
@@ -219,7 +234,7 @@ export function pasClubConfigToe(club){
     leiding: { admins: club.admins || {}, hoofdJeugd: club.hoofdJeugd || {}, bouwCoordinatoren: club.bouwCoordinatoren || {},
       eigenBouwen: Array.isArray(club.eigenBouwen) ? club.eigenBouwen : [] } };
   /* [20261116b] eenmalige uitleg voor het hoofd jeugdopleiding (rolkaart.js) */
-  if (S.user && club.hoofdJeugd && club.hoofdJeugd[S.user.uid] === true) import('./rolkaart.js?v=20261125z').then(m => m.planRolkaart()).catch(() => {});
+  if (S.user && club.hoofdJeugd && club.hoofdJeugd[S.user.uid] === true) import('./rolkaart.js?v=20261126a').then(m => m.planRolkaart()).catch(() => {});
   /* [20261021] maximale videogrootte: alleen de eindbaas (platformModules.maxVideoMB); buiten de handtekening zoals S._clubPlatform */
   { const pv = Number(club.platformModules && club.platformModules.maxVideoMB);
     C.ACTIEF.maxVideoMB = pv > 0 ? pv : C.ACTIEF_STANDAARD.maxVideoMB; }
@@ -275,8 +290,9 @@ export function pasClubConfigToe(club){
 
   /* regels */
   const R = eff.regels || {};
-  Object.assign(C.ACTIEF.tijdstraf, C.ACTIEF_STANDAARD.tijdstraf, R.tijdstraf || {});
-  Object.assign(C.ACTIEF.bouwGrenzen, C.ACTIEF_STANDAARD.bouwGrenzen, R.bouwGrenzen || {});
+  const SP = sportProfiel(actieveSport());   /* [20261126a] standaardregels van de sport */
+  Object.assign(C.ACTIEF.tijdstraf, SP.tijdstraf, R.tijdstraf || {});
+  Object.assign(C.ACTIEF.bouwGrenzen, SP.bouwGrenzen, R.bouwGrenzen || {});
   Object.assign(C.ACTIEF.dashboard, C.ACTIEF_STANDAARD.dashboard, R.dashboard || {});
   C.ACTIEF.formatie11 = String((eff.pedagogiek && eff.pedagogiek.formatie11) || '').trim();
 
