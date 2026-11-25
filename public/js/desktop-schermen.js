@@ -279,18 +279,22 @@ function htmlDashboard(){
 
   return `<div class="dk-scherm dk-dash">
     ${kop('Dashboard', `${heeftElftallen() ? knop('Selectie 1e + 2e', 'tab', '', 'stats-bars').replace('data-dk="tab"', 'data-dk="tab" data-tab="stats"') : ''}${knop('Presentie vandaag', 'presentie', '', 'attendance-present')}${w ? knop('Voorbereiding', 'voorbereiding', '', 'match-opponent').replace('data-dk="voorbereiding"', `data-dk="voorbereiding" data-id="${esc(w.id)}"`) : ''}${w ? knop(klaarVandaag ? 'Open wedstrijd' : 'Start wedstrijd', 'openw', 'rood', klaarVandaag ? 'football-lineup' : 'training-start').replace('data-dk="openw"', `data-dk="openw" data-id="${esc(w.id)}"`) : knop('Nieuwe wedstrijd', 'nieuwew', 'rood', 'action-add')}`)}
-    <div class="dk-dash-body"><div class="dk-spook">${w ? esc(String(Number(w.datum.slice(8, 10)))) : new Date().getDate()}</div>
-      <div class="dk-hallo"><div><h1 class="dk-groot">${esc(titel)} ${tegen ? `<span class="dk-omlijnd">${esc(tegen)}</span>` : ''}</h1>
-        <p>${klaarVandaag ? `Vandaag gespeeld${(w.goals || []).length ? `, stand ${st.links}-${st.rechts}` : ''}. De volgende wedstrijd verschijnt hier morgen.` : w ? `Nog ${dagen === 0 ? 'vandaag' : dagen === 1 ? '1 dag' : dagen + ' dagen'}. De opstelling staat voor ${kk.klaar} van de ${kk.totaal} ${kk.totaal === 2 ? 'helften' : 'periodes'} klaar.` : 'Voeg een wedstrijd toe of wacht op de volgende Sportlink-sync.'}</p></div></div>
+    <div class="dk-dash-body">
+      <section class="dk-bord ${w ? '' : 'zonder-veld'}">
+        <div class="dk-bord-raster" aria-hidden="true"></div>
+        <svg class="dk-bord-lijnen" viewBox="0 0 1100 360" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+          <circle class="lijn" cx="470" cy="300" r="190"/><line class="lijn" x1="0" y1="420" x2="640" y2="-40"/><path class="loop" d="M 40 345 Q 300 300 520 205"/>
+        </svg>
+        <div class="dk-bord-links">
+          ${w ? `<div class="dk-pills"><span class="dk-pill">${klaarVandaag ? 'Wedstrijd van vandaag' : 'Volgende wedstrijd'}</span><span class="dk-pill">${esc(datumMooi(w.datum, { weekday:'short', day:'numeric', month:'short' }))}${w.aftrap ? ', ' + esc(w.aftrap) : ''}</span><span class="dk-pill">${w.thuis ? 'Thuis' : 'Uit'}</span>${w.format ? `<span class="dk-pill">${esc(w.format)} tegen ${esc(w.format)}</span>` : ''}${plekPillenHtml(w, 'dk-pill')}</div>` : ''}
+          <h1 class="dk-groot">${esc(titel)} ${tegen ? `<span class="dk-omlijnd">${esc(tegen)}</span>` : ''}</h1>
+          <p>${klaarVandaag ? `Vandaag gespeeld${(w.goals || []).length ? `, stand ${st.links}-${st.rechts}` : ''}. De volgende wedstrijd verschijnt hier morgen.` : w ? `<b>Nog ${dagen === 0 ? 'vandaag' : dagen === 1 ? '1 dag' : dagen + ' dagen'}.</b> De opstelling staat voor ${kk.klaar} van de ${kk.totaal} ${kk.totaal === 2 ? 'helften' : 'periodes'} klaar.` : 'Voeg een wedstrijd toe of wacht op de volgende Sportlink-sync.'}</p>
+          ${w ? `<div class="dk-bord-onder">${klaarVandaag ? '' : `<div class="dk-aftel" data-dk-aftel="${aftrapMs(w)}"></div>`}
+            ${knop('Voorbereiding', 'voorbereiding', 'dk-bord-knop', 'match-opponent').replace('data-dk="voorbereiding"', `data-dk="voorbereiding" data-id="${esc(w.id)}"`)}</div>` : ''}
+        </div>
+        ${w ? `<button class="dk-veld-knop" data-dk="openw" data-id="${esc(w.id)}" title="Wedstrijd openen"><span class="dk-veld-label">Opstelling <b>${periodeNrs(w).length === 2 ? 'eerste helft' : 'periode 1'}</b> · ${kk.klaar} van ${kk.totaal} klaar</span>${miniVeld(w)}</button>` : ''}
+      </section>
       ${S.team && !S.team.club ? '<div id="ssKaart" class="dk-ss"></div>' : ''}
-      ${w ? `<div class="dk-blok dk-wed">
-        <div><h3>${ico('planning-calendar', 18)}${klaarVandaag ? 'Wedstrijd van vandaag' : 'Volgende wedstrijd'}</h3>
-          <div class="dk-vs">${esc(S.team.naam)}<span>tegen</span><span class="dk-omlijnd">${esc(w.tegenstander || '')}</span></div>
-          <div class="dk-pills"><span class="dk-pill">${esc(datumMooi(w.datum, { weekday:'short', day:'numeric', month:'short' }))}${w.aftrap ? ', ' + esc(w.aftrap) : ''}</span><span class="dk-pill">${w.thuis ? 'Thuis' : 'Uit'}</span>${w.format ? `<span class="dk-pill">${esc(w.format)} tegen ${esc(w.format)}</span>` : ''}${plekPillenHtml(w, 'dk-pill')}</div>
-          ${klaarVandaag ? '' : `<div class="dk-aftel" data-dk-aftel="${aftrapMs(w)}"></div>`}
-          <div class="dk-rij-knoppen">${knop('Voorbereiding', 'voorbereiding', '', 'match-opponent').replace('data-dk="voorbereiding"', `data-dk="voorbereiding" data-id="${esc(w.id)}"`)}</div></div>
-        <button class="dk-veld-knop" data-dk="openw" data-id="${esc(w.id)}" title="Wedstrijd openen">${miniVeld(w)}</button>
-      </div>` : ''}
       <div class="dk-blok dk-speel"><h3>${ico('stats-bars', 18)}Speeltijd tot nu toe<span>minst gespeeld eerst</span></h3>
         ${pctLijst.length ? `<div class="dk-speel-lijst" tabindex="0" aria-label="Speeltijd per speler">${pctLijst.map(p => sbBalk(voornaam(p), stats[p.id])).join('')}</div>` + SB_LEGENDA : '<p class="dk-leeg">Nog geen gespeelde wedstrijden met een selectie.</p>'}</div>
       <div class="dk-blok dk-opk"><h3>${ico('attendance-overview', 18)}Opkomst training<span>laatste ${ses.length}</span></h3>
