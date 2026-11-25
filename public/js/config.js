@@ -1,4 +1,4 @@
-import { S } from './state.js?v=20261125z';
+import { S } from './state.js?v=20261126a';
 import { sportProfiel, STANDAARD_SPORT } from './sporten.js?v=20261125z';
 
 /* [20261124a] De standaardwaarden die bij de sport horen komen uit het sportprofiel
