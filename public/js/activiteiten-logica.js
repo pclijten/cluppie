@@ -23,7 +23,7 @@
    datum, open, diensten:{ [id]: { naam, start, eind, plek, nodig, volg } } } met de aanmeldingen eronder. */
 
 export const TABS = [
-  ['overzicht', 'Overzicht'], ['taken', 'Draaiboek'], ['programma', 'Dagprogramma'], ['mensen', 'Comité'],
+  ['overzicht', 'Overzicht'], ['taken', 'Draaiboek'], ['programma', 'Dagprogramma'], ['toernooi', 'Toernooi'], ['mensen', 'Comité'],
   ['vrijwilligers', 'Vrijwilligers'], ['deelnemers', 'Deelnemers'], ['locatie', 'Locatie en spullen'],
   ['communicatie', 'Communicatie'], ['budget', 'Budget'], ['documenten', 'Documenten'], ['evaluatie', 'Evaluatie'],
 ];
@@ -376,7 +376,8 @@ export const jsonSjabloon = sj => JSON.stringify({ soort: 'cluppie-sjabloon', ve
 export function csvLees(invoer){
   const s = String(invoer || '').replace(/^\ufeff/, '');
   const eerste = s.split(/\r?\n/)[0] || '';
-  const sep = (eerste.match(/;/g) || []).length >= (eerste.match(/,/g) || []).length ? ';' : (eerste.includes('\t') ? '\t' : ',');
+  const tel = t => eerste.split(t).length - 1;
+  const sep = tel('\t') > Math.max(tel(';'), tel(',')) ? '\t' : tel(';') >= tel(',') ? ';' : ',';
   const rijen = []; let rij = [], cel = '', q = false;
   for (let i = 0; i < s.length; i++){
     const c = s[i];
@@ -423,7 +424,8 @@ export function takenUitCsv(invoer, datum = ''){
 export function agendaKopie(act, { clubNaam = '', link = '' } = {}){
   return { naam: tekst(act.naam, 80), datum: act.datum || '', start: act.start || '', eind: act.eind || '', locatie: tekst(act.locatie || '', 80),
     omschrijving: lang(act.omschrijving || '', 600), teams: (act.teams || []).slice(0, MAX.teams), kamer: act.kamer === true,
-    status: act.status || 'gepland', planB: act.planB?.actief === true ? lang(act.planB.tekst || '', 600) : '', deelId: act.deelId || '', link, clubNaam: tekst(clubNaam, 80) };
+    status: act.status || 'gepland', planB: act.planB?.actief === true ? lang(act.planB.tekst || '', 600) : '', deelId: act.deelId || '', link, clubNaam: tekst(clubNaam, 80),
+    vraag: act.vraag === true, vraagTot: isIso(act.vraagTot) ? act.vraagTot : '', seizoen: act.seizoen || '' };
 }
 export function schoneNaam(v){ return String(v ?? '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, NAAM_MAX).trim(); }
 /* De dienst die iemand al heeft op het moment van deze dienst (geen dubbele inschrijving tegelijk) */

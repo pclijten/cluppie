@@ -228,7 +228,58 @@ const kamerActiviteit = onDocumentWritten({ document: 'clubs/{clubId}/activiteit
       tekst: String(na.omschrijving || '').slice(0, 600), planB: tekst(na.planB, 600), link });
     else await ref.delete().catch(() => {});
   }
+  await vraagDeelnemers(db, clubId, actId, voor, na);
 });
+
+/* [20261125n] Activiteiten › Deelnemers › "Vraag wie meedoet": per meedoend team een deelnemerslijstje
+   (teams/{teamId}/lijsten/act_{actId}) en, als de Teamkamer en polls aan staan, een poll voor ouders
+   (teamkamer/{teamId}/polls/act_{actId}). Antwoorden uit de poll komen in het lijstje (kamerStem).
+   Een bestaand lijstje wordt nooit overschreven (de coach kan al hebben ingevuld); valt een team af of gaat
+   de vraag uit, dan sluiten we de poll en blijft het lijstje staan. */
+const DAG_MS = 86400000;
+async function vraagDeelnemers(db, clubId, actId, voor, na){
+  const geldig = na && na.vraag === true && na.status !== 'geannuleerd' && /^\d{4}-\d{2}-\d{2}$/.test(String(na.datum || ''));
+  const teamsNa = geldig && Array.isArray(na.teams) ? na.teams : [];
+  const alle = [...new Set([...(voor?.vraag === true && Array.isArray(voor?.teams) ? voor.teams : []), ...teamsNa])].filter(t => typeof t === 'string' && t).slice(0, 150);
+  const tekst = (v, n) => String(v || '').replace(/\s+/g, ' ').trim().slice(0, n);
+  for (const teamId of alle){
+    const lijstRef = db.doc(`teams/${teamId}/lijsten/act_${actId}`), pollRef = db.doc(`teamkamer/${teamId}/polls/act_${actId}`);
+    const team = (await db.doc(`teams/${teamId}`).get()).data();
+    const doe = team && team.club === clubId && teamsNa.includes(teamId);
+    if (!doe){
+      const p = await pollRef.get();
+      if (p.exists && p.data().status === 'open') await pollRef.update({ status: 'gesloten' }).catch(() => {});
+      continue;
+    }
+    const naam = tekst(na.naam, 60) || 'Clubactiviteit', datum = na.datum, tijd = tekst(na.start, 5);
+    const l = await lijstRef.get();
+    if (!l.exists) await lijstRef.set({ naam, sjabloon: 'aanwezig', rijen: 'spelers',
+      kolommen: [{ id: 'mee', naam: 'Doet mee', type: 'check' }, { id: 'opm', naam: 'Opmerking', type: 'tekst', optioneel: true }],
+      waarden: {}, inPlanning: false, gearchiveerd: false, datum, ...(tijd ? { tijd } : {}), activiteit: actId, seizoen: tekst(na.seizoen, 12),
+      gemaaktDoor: 'activiteit', gemaaktMs: Date.now(), bijgewerktMs: Date.now() });
+    else if (l.data().naam !== naam || l.data().datum !== datum) await lijstRef.update({ naam, datum, bijgewerktMs: Date.now() });
+    const kamer = await kamerAan(db, teamId);
+    if (!kamer || kamer.mag?.polls !== true) continue;
+    const tot = /^\d{4}-\d{2}-\d{2}$/.test(String(na.vraagTot || '')) && na.vraagTot <= datum ? na.vraagTot : new Date(Date.parse(datum + 'T12:00:00Z') - 3 * DAG_MS).toISOString().slice(0, 10);
+    const dag = new Date(datum + 'T12:00:00Z').toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Amsterdam' });
+    const vraag = `Doet je kind mee aan ${naam} op ${dag}${tijd ? ' (' + tijd + ')' : ''}?`.slice(0, 140);
+    const p = await pollRef.get();
+    if (!p.exists) await pollRef.set({ vraag, opties: [{ id: 'o1', tekst: 'Ja, doet mee' }, { id: 'o2', tekst: 'Nee, deze keer niet' }], soort: 'vrij', meer: false, namen: true, spelers: false,
+      status: 'open', wedstrijdId: null, wedstrijdDatum: null, nodig: null, sluitDatum: tot, sluitOp: Timestamp.fromDate(new Date(tot + 'T19:00:00Z')),
+      activiteitId: actId, gemaaktDoor: 'activiteit', gemaaktMs: Date.now() });
+    else if (p.data().vraag !== vraag || p.data().sluitDatum !== tot || p.data().status !== 'open')
+      await pollRef.update({ vraag, sluitDatum: tot, sluitOp: Timestamp.fromDate(new Date(tot + 'T19:00:00Z')), status: 'open' });
+  }
+}
+/* Een stem op een activiteit-poll komt als Doet mee ✓/✗ in het deelnemerslijstje van de coach. */
+async function stemNaarLijst(db, teamId, pollId, spelerId, stem){
+  if (!/^act_/.test(pollId)) return;
+  const lijstRef = db.doc(`teams/${teamId}/lijsten/${pollId}`);
+  if (!(await lijstRef.get()).exists) return;
+  const k = Array.isArray(stem?.keuzes) ? stem.keuzes : [];
+  const w = k.includes('o1') ? true : k.includes('o2') ? false : null;
+  await lijstRef.update({ [`waarden.${spelerId}.mee`]: w === null ? FieldValue.delete() : w, bijgewerktMs: Date.now() }).catch(() => {});
+}
 
 /* ---------- polls: tellen en beurten ---------- */
 async function telPoll(db, teamId, pollId){
@@ -244,7 +295,9 @@ async function telPoll(db, teamId, pollId){
   await ref.update({ telling: t.telling, gestemd: t.gestemd, wie: t.wie || FieldValue.delete(), geteldMs });
 }
 const kamerStem = onDocumentWritten({ document: 'teamkamer/{teamId}/polls/{pollId}/stemmen/{spelerId}', region: REGIO }, async (event) => {
-  await telPoll(getFirestore(), event.params.teamId, event.params.pollId);
+  const db = getFirestore();
+  await telPoll(db, event.params.teamId, event.params.pollId);
+  await stemNaarLijst(db, event.params.teamId, event.params.pollId, event.params.spelerId, event.data.after.data());
 });
 const pollSleutel = (p) => (p ? JSON.stringify([p.namen === true, p.meer === true, (p.opties || []).map(o => o && o.id)]) : 'geen');
 const kamerPoll = onDocumentWritten({ document: 'teamkamer/{teamId}/polls/{pollId}', region: REGIO }, async (event) => {

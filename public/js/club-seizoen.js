@@ -12,8 +12,8 @@
    PURE helpers (getest in tests/seizoen.test.mjs): volgendeCategorie, standaardBestemming. */
 
 import { db, doc, getDocs, collection, updateDoc, deleteField } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261125m';
-import { verhuisSpelersSeizoen } from './teams-spelers.js?v=20261125m';
+import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261125t';
+import { verhuisSpelersSeizoen } from './teams-spelers.js?v=20261125t';
 
 const BLIJFT = '__blijft', WEG = '__weg';
 

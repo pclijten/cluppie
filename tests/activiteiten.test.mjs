@@ -111,7 +111,7 @@ gelijk(A.schoneNaam('  <b>Anna</b>  de   Vries-van der Heijden '), 'bAnna/b de V
 
 /* agenda-kopie: geen budget of comité */
 const ak = A.agendaKopie({ ...vorig, teams: ['t1'], kamer: true, deelId: 'dd' }, { clubNaam: 'Club', link: 'L' });
-gelijk(Object.keys(ak).sort(), ['clubNaam', 'datum', 'deelId', 'eind', 'kamer', 'link', 'locatie', 'naam', 'omschrijving', 'planB', 'start', 'status', 'teams']);
+gelijk(Object.keys(ak).sort(), ['clubNaam', 'datum', 'deelId', 'eind', 'kamer', 'link', 'locatie', 'naam', 'omschrijving', 'planB', 'seizoen', 'start', 'status', 'teams', 'vraag', 'vraagTot']);
 
 /* AI-concept schoonmaken */
 gelijk(A.schoonConcept({ naam: 'X', taken: [] }), null);
