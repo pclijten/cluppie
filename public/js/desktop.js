@@ -13,19 +13,19 @@
    de DOM (MutationObserver op #app) om te weten welk scherm actief is.
    Stijl: blok "DESKTOP-SCHIL" achteraan in styles.css (html.desk).
 ========================================================================== */
-import { S, $, esc, modAan, isBeheerder, isPlatformBeheerder, stopUnsubs, meld, sluitModal } from './state.js?v=20261125v';
+import { S, $, esc, modAan, isBeheerder, isPlatformBeheerder, stopUnsubs, meld, sluitModal } from './state.js?v=20261125w';
 import { teamkamerMag } from './kamer-logica.js?v=20261125m';
 import { ico } from './icons.js?v=20261116t';
-import { logoImg, primaireClubId } from './clubconfig.js?v=20261125v';
+import { logoImg, primaireClubId } from './clubconfig.js?v=20261125w';
 import { rolNaam as clubRolNaam } from './rolnamen.js?v=20261120c';   /* [20261120c] eigen rolnamen van de club */
-import { BOUWEN, catLabel } from './config.js?v=20261125v';
-import { openTeam, zetTeamTab, verlaatTeamView, updatesInfo, renderTeam } from './teams.js?v=20261125v';
-import { initSchermen, ruimOp } from './desktop-schermen.js?v=20261125v';
-import { openBouw, bouwTeams, bouwHuidig, zetHerteken, bouwIsSelectie } from './desktop-bouw.js?v=20261125v';
-import { ongelezenBerichten } from './berichten.js?v=20261125v';
-import { evaluatieOpen } from './teams-hub.js?v=20261125v';
-import { onderdeelAan } from './onderdelen.js?v=20261125v';
-import { telNav } from './tracker.js?v=20261125v';
+import { BOUWEN, catLabel } from './config.js?v=20261125w';
+import { openTeam, zetTeamTab, verlaatTeamView, updatesInfo, renderTeam } from './teams.js?v=20261125w';
+import { initSchermen, ruimOp } from './desktop-schermen.js?v=20261125w';
+import { openBouw, bouwTeams, bouwHuidig, zetHerteken, bouwIsSelectie } from './desktop-bouw.js?v=20261125w';
+import { ongelezenBerichten } from './berichten.js?v=20261125w';
+import { evaluatieOpen } from './teams-hub.js?v=20261125w';
+import { onderdeelAan } from './onderdelen.js?v=20261125w';
+import { telNav } from './tracker.js?v=20261125w';
 
 const K_KLEIN = 'cluppie_zijbalk_klein';
 let openBouwSleutel = null, openBouwTeam = null;
@@ -59,9 +59,9 @@ function rolNaam(){
    loopt onze vervolgstap gegarandeerd ná die render. */
 async function sluitOpenWedstrijd(){
   if (huidigeView() !== 'wedstrijd' && !S.wedstrijdId) return;
-  const w = await import('./wedstrijd.js?v=20261125v');
+  const w = await import('./wedstrijd.js?v=20261125w');
   w.sluitWedstrijd();
-  await import('./teams.js?v=20261125v');
+  await import('./teams.js?v=20261125w');
   await new Promise(r => requestAnimationFrame(() => r()));
 }
 /* Club-view verlaten zónder terug te springen naar het teamoverzicht
@@ -77,7 +77,7 @@ async function gaNaarTab(tab, opties = {}){
   telNav('desk:' + tab, 'zijbalk');
   const view = huidigeView();
   if (view === 'wedstrijd'){
-    const w = await import('./wedstrijd.js?v=20261125v');
+    const w = await import('./wedstrijd.js?v=20261125w');
     if (opties.profiel) S._beoordeelProfiel = opties.profiel;
     w.sluitWedstrijd(tab);
     return;
@@ -103,16 +103,16 @@ async function naarOverzicht(){
   teamKeuzeOpen = false;
   await sluitOpenWedstrijd();
   if (S.teamId){ verlaatTeamView(); return; }
-  if (huidigeView() === 'club'){ const c = await import('./club.js?v=20261125v'); c.verlaatClubView(); }
+  if (huidigeView() === 'club'){ const c = await import('./club.js?v=20261125w'); c.verlaatClubView(); }
 }
 async function openClubDesk(id){
   await sluitOpenWedstrijd();
   if (S.teamId) verlaatTeamView();
-  const c = await import('./club.js?v=20261125v');
+  const c = await import('./club.js?v=20261125w');
   c.openClub(id);
 }
 async function openBouwDesk(clubId, bouw){
-  const b = await import('./bouw-hub.js?v=20261125v');
+  const b = await import('./bouw-hub.js?v=20261125w');
   b.openBouwHub(clubId, bouw);
 }
 /* Bouw-omgeving openen: eerst een open wedstrijd/club/team netjes verlaten. */
@@ -156,17 +156,17 @@ async function voerActieUit(actie, data = {}){
     if (data.pag === 'dash' || data.pag === 'tr' || data.pag === 'uit' || data.pag === 'selmaken') return naarBouw(data.club, data.bouw, data.pag);
     return naarBouwPag(data.club, data.bouw, data.team, data.pag);
   }
-  if (actie === 'trainco')    return import('./trainco.js?v=20261125v').then(m => m.openVanuitApp());
-  if (actie === 'platform')   return import('./platform.js?v=20261125v').then(m => m.openPlatform());
+  if (actie === 'trainco')    return import('./trainco.js?v=20261125w').then(m => m.openVanuitApp());
+  if (actie === 'platform')   return import('./platform.js?v=20261125w').then(m => m.openPlatform());
   if (actie === 'coordbeheer'){
     await openClubDesk(data.id);
     S.clubTab = 'bouwen';          // [20260929a] coördinatoren staan nu onder Club → Bouwen
     return;
   }
-  if (actie === 'chat')       return import('./chatbot.js?v=20261125v').then(m => m.openChatbot());
+  if (actie === 'chat')       return import('./chatbot.js?v=20261125w').then(m => m.openChatbot());
   if (actie === 'tactiek'){
     if (!S.teamId){ const tid = laatsteTeamId(); if (tid) openTeam(tid); }
-    return import('./tactiekbord.js?v=20261125v').then(m => m.openTactiekBibliotheek());
+    return import('./tactiekbord.js?v=20261125w').then(m => m.openTactiekBibliotheek());
   }
   if (actie === 'speler'){ S._dkModus = null; S._profielTab = 'overzicht'; return gaNaarTab('spelers', { profiel: data.id }); }
   if (actie === 'selectie'){ S._dkModus = null; return gaNaarTab('spelers'); }
@@ -178,7 +178,7 @@ async function voerActieUit(actie, data = {}){
   }
   if (actie === 'wedstrijd'){
     if (huidigeView() !== 'team' && huidigeView() !== 'wedstrijd') return;
-    return import('./wedstrijd.js?v=20261125v').then(m => m.openWedstrijd(data.id));
+    return import('./wedstrijd.js?v=20261125w').then(m => m.openWedstrijd(data.id));
   }
 }
 
@@ -369,17 +369,17 @@ function plan(){ if (!gepland){ gepland = true; requestAnimationFrame(teken); } 
 async function sluitPaginaLagen(){
   const open = s => !!document.querySelector(s);
   const veilig = async f => { try { await f(); } catch(e){ console.warn('[zijbalk] laag sluiten mislukt', e); } };
-  if (open('.rapport-achter.open')) await veilig(async () => (await import('./club-inzicht.js?v=20261125v')).sluitRapport());
-  if (open('.tb-board'))            await veilig(async () => (await import('./tactiekbord.js?v=20261125v')).sluitTactiekbord());
-  if (open('.lp-scherm'))           await veilig(async () => (await import('./leerplein.js?v=20261125v')).sluitLeerplein());
-  if (open('.trw-lb.open'))         await veilig(async () => (await import('./training-weergave.js?v=20261125v')).sluitLightbox());
-  if (open('.tnb-overlay.open'))    await veilig(async () => (await import('./training-notities-beheer.js?v=20261125v')).sluitBeheerNotities());
-  if (open('.trb-overlay.open'))    await veilig(async () => (await import('./training-bewerken.js?v=20261125v')).sluitTrainingBewerken());
-  if (open('.pdfv-achter.open'))    await veilig(async () => (await import('./pdf-viewer.js?v=20261125v')).sluitPdfViewer());
-  if (open('.sj-overlay.open'))     await veilig(async () => (await import('./opstelling-sjabloon.js?v=20261125v')).sluitSjabloonScherm());
-  if (open('.trw-overlay.open'))    await veilig(async () => (await import('./training-weergave.js?v=20261125v')).sluitTrainingWeergave());
+  if (open('.rapport-achter.open')) await veilig(async () => (await import('./club-inzicht.js?v=20261125w')).sluitRapport());
+  if (open('.tb-board'))            await veilig(async () => (await import('./tactiekbord.js?v=20261125w')).sluitTactiekbord());
+  if (open('.lp-scherm'))           await veilig(async () => (await import('./leerplein.js?v=20261125w')).sluitLeerplein());
+  if (open('.trw-lb.open'))         await veilig(async () => (await import('./training-weergave.js?v=20261125w')).sluitLightbox());
+  if (open('.tnb-overlay.open'))    await veilig(async () => (await import('./training-notities-beheer.js?v=20261125w')).sluitBeheerNotities());
+  if (open('.trb-overlay.open'))    await veilig(async () => (await import('./training-bewerken.js?v=20261125w')).sluitTrainingBewerken());
+  if (open('.pdfv-achter.open'))    await veilig(async () => (await import('./pdf-viewer.js?v=20261125w')).sluitPdfViewer());
+  if (open('.sj-overlay.open'))     await veilig(async () => (await import('./opstelling-sjabloon.js?v=20261125w')).sluitSjabloonScherm());
+  if (open('.trw-overlay.open'))    await veilig(async () => (await import('./training-weergave.js?v=20261125w')).sluitTrainingWeergave());
   const bh = document.getElementById('bouwhubPagina');
-  if (bh && bh.style.display !== 'none') await veilig(async () => (await import('./bouw-hub.js?v=20261125v')).sluitBouwHub());
+  if (bh && bh.style.display !== 'none') await veilig(async () => (await import('./bouw-hub.js?v=20261125w')).sluitBouwHub());
 }
 
 async function klik(e){
