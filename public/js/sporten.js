@@ -17,3 +17,15 @@ export function sportVan(club, team){
 export const sportNaam = id => sportProfiel(id).naam;
 /* Meer dan één sport: pas dan tonen we een keuze aan de trainer (mockup 3). */
 export const meerdereSporten = () => Object.keys(SPORTEN).length > 1;
+
+/* [20261125y] Stap 3: de sport van het team dat nu open staat. clubconfig.js zet hem bij het laden
+   van de club, teams.js bij een team zonder club. Tot dan het standaardprofiel. */
+let actief = STANDAARD_SPORT;
+export function zetActieveSport(id){ actief = SPORTEN[id] ? id : STANDAARD_SPORT; }
+export const actieveSport = () => actief;
+/* Een woord uit het profiel van de actieve sport, bijv. sportWoord('bond') = 'KNVB'.
+   hoofd = true zet de eerste letter in een hoofdletter. Onbekend woord: het woord zelf. */
+export function sportWoord(sleutel, hoofd = false){
+  const w = (sportProfiel(actief).woorden || {})[sleutel] ?? sleutel;
+  return hoofd ? w.charAt(0).toUpperCase() + w.slice(1) : w;
+}

@@ -30,6 +30,7 @@ import {
   formatieBestaat, formatieNamen
 } from './config.js?v=20261125x';
 import { telGebruik, telNav } from './tracker.js?v=20261125x';
+import { sportWoord } from './sporten.js?v=20261125x';   /* [20261125y] sportprofiel stap 3: woorden uit het profiel */
 
 /* ---------- helpers ---------- */
 
@@ -278,7 +279,7 @@ function tekenEditor(){
     </div>
 
     <div class="sj-veldgroep">
-      <label>Formatie kwart ${ed.actiefKwart} (excl. keeper)</label>
+      <label>Formatie kwart ${ed.actiefKwart} (excl. ${sportWoord('keeper')})</label>
       <div class="sj-segment formaties" id="sjFormatie">
         ${formaties.map(f => `<button data-fm="${esc(f)}" class="${k.formatie===f?'actief':''}">${esc(f)}</button>`).join('')}
       </div>
@@ -439,7 +440,7 @@ function kiesSpelerSheet(slotId){
   }).join('');
 
   const el = bouwSheet();
-  el.querySelector('.sj-sheet-titel').textContent = slot.lijn === 'K' ? 'Keeper kiezen' : 'Speler voor deze plek';
+  el.querySelector('.sj-sheet-titel').textContent = slot.lijn === 'K' ? `${sportWoord('keeper', true)} kiezen` : 'Speler voor deze plek';
   el.querySelector('.sj-sheet-sub').textContent = `${LIJN_NAAM[slot.lijn] || ''}, Kwart ${ed.actiefKwart}`;
   el.querySelector('.sj-sheet-lijst').innerHTML = lijst || '<div class="sj-leeg">Geen spelers in de selectie.</div>';
   const leegBtn = el.querySelector('.sj-sheet-leeg');

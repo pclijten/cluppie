@@ -24,6 +24,7 @@ import { telGebruik, telNav } from './tracker.js?v=20261125x';
 import { opkomstVoor, teltMee, MIN_OPKOMST_TRAININGEN } from './opkomst.js?v=20260922c';
 import { spelersOpWedstrijd, ontbrekendeLeners, leenErbijNa } from './uitleen-regels.js?v=20261113b';
 import { openInvoegSheet, bewaarWedstrijdAlsSjabloon, zetNaToepassenCallback } from './opstelling-sjabloon.js?v=20261125x';
+import { sportWoord } from './sporten.js?v=20261125x';   /* [20261125y] sportprofiel stap 3: woorden uit het profiel */
 import { heeftElftallen, elftalWedstrijd, elftalNaam, hoortBijElftal, spelersVoorElftal, filterOpElftal,
   elftalFilter, elftalFilterHtml } from './elftallen.js?v=20261125x';
 
@@ -124,7 +125,7 @@ function koppelEigenFormatieInvoer(container, getFormat, onToegevoegd){
     if (!veld.value.trim()){ status.textContent=''; status.className='ef-status'; knop.disabled=true; return; }
     if (coords){
       const naam = veld.value.trim().split(/[-\s.]+/).filter(Boolean).join('-');
-      status.textContent = `✓ ${naam} — ${aantalVeldspelers(fmt)} veldspelers${fmt!=='4'?' + keeper':''}`;
+      status.textContent = `✓ ${naam} — ${aantalVeldspelers(fmt)} veldspelers${fmt!=='4'?' + '+sportWoord('keeper'):''}`;
       status.className = 'ef-status ok'; knop.disabled = false;
     } else {
       status.textContent = `Samen ${aantalVeldspelers(fmt)} veldspelers, elke linie 1–6`;
@@ -313,7 +314,7 @@ export function modalNieuweWedstrijd(){
         <button data-ty="normaal" class="actief">Competitie</button>
         <button data-ty="toernooi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8.4 4h7.2v3.6a3.6 3.6 0 0 1-7.2 0z"/><path d="M8.4 5.4H5.8a2.4 2.4 0 0 0 2.6 3.2"/><path d="M15.6 5.4h2.6a2.4 2.4 0 0 1-2.6 3.2"/><path d="M12 11.2v3"/><path d="M9.2 19.8h5.6l-.7-3.6h-4.2z"/></svg> Toernooi</button>
       </div></div>
-    ${cat ? `<p class="u-t-sm u-zacht u-mb-sm">KNVB ${esc(catLabel(S.team.categorie))}: ${esc(cat.knvb)} — standaarden zijn ingevuld.</p>` : ''}
+    ${cat ? `<p class="u-t-sm u-zacht u-mb-sm">${esc(sportWoord('bond'))} ${esc(catLabel(S.team.categorie))}: ${esc(cat.knvb)} — standaarden zijn ingevuld.</p>` : ''}
 
     <div id="mWNormaal">
       <div class="veldgroep mw-tegen"><label for="mWTegen">Tegenstander</label>
@@ -382,7 +383,7 @@ export function modalNieuweWedstrijd(){
     if (plekHand || type === 'toernooi' || !p){
       const vorige = $('#mWPlekTekst')?.value;
       el.innerHTML = `<input class="invoer" id="mWPlekTekst" maxlength="80" placeholder="${type === 'toernooi' ? 'Bijv. Sportpark De Kluis, Mierlo' : 'Sportpark (optioneel)'}" value="${esc(vorige ?? (p?.accommodatie || ''))}">
-        ${!plekHand && type !== 'toernooi' ? `<p class="mw-hint">${thuis ? 'Eigen sportpark nog niet bekend; dat vult de Sportlink-sync.' : 'Kies een tegenstander uit de lijst, dan zetten we de plek klaar.'}</p>` : ''}`;
+        ${!plekHand && type !== 'toernooi' ? `<p class="mw-hint">${thuis ? `Eigen sportpark nog niet bekend; dat vult de ${sportWoord('ledenbron')}-sync.` : 'Kies een tegenstander uit de lijst, dan zetten we de plek klaar.'}</p>` : ''}`;
       return;
     }
     el.innerHTML = `<div class="mw-plek"><span aria-hidden="true">${ico(thuis ? 'navigation-home' : 'match-location', 14)}</span>
@@ -2047,7 +2048,7 @@ function genereerVerslag(){
     const sorted = [...(w.selectie||[])].filter(pid => speler(pid) && a.tijd[pid])
       .sort((x,y) => (a.tijd[y]||0) - (a.tijd[x]||0));
     for (const pid of sorted){
-      const kk = a.keeper[pid] ? ` (${a.keeper[pid]}× keeper)` : '';
+      const kk = a.keeper[pid] ? ` (${a.keeper[pid]}× ${sportWoord('keeper')})` : '';
       lines.push(`• ${spelerNaam(pid)}: ${uurMin(a.tijd[pid])}${kk}`);
     }
     const nietGespeeld = (w.selectie||[]).filter(pid => speler(pid) && !a.tijd[pid]);
@@ -2670,7 +2671,7 @@ export function htmlStats(){
       {th:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3.4 19V7.6h17.2V19"/><path d="M9.2 7.6V19"/><path d="M14.8 7.6V19"/><path d="M3.4 13.3h17.2"/></svg>',  titel:'Doelpunten',          val:p => tot.goals[p.id]||0,     nadruk:true},
       {th:'A',   titel:'Assists',             val:p => tot.assists[p.id]||0,   nadruk:true},
       {th:'C',   titel:'Aanvoerdersbeurten',  val:p => tot.aanv[p.id]||0,      fmt:n => n+'×'},
-      {th:'K',   titel:'Periodes als keeper', val:p => tot.keeper[p.id]||0},
+      {th:'K',   titel:'Periodes als ' + sportWoord('keeper'), val:p => tot.keeper[p.id]||0},
       {th:'<span class="kaartje geel" aria-hidden="true"></span>',  titel:'Gele kaarten',        val:p => tot.geel[p.id]||0},
       {th:'<span class="kaartje rood" aria-hidden="true"></span>',  titel:'Rode kaarten',        val:p => tot.rood[p.id]||0},
       {th:'⇄',   titel:'Elders gespeeld terwijl uitgeleend',
@@ -2896,7 +2897,7 @@ export async function exportStatsExcel(knop){
       {header:'Doelpunten', key:'goals', width:12},
       {header:'Assists', key:'assists', width:10},
       {header:'Aanvoerder (×)', key:'aanv', width:14},
-      {header:'Periodes keeper', key:'keeper', width:15},
+      {header:'Periodes ' + sportWoord('keeper'), key:'keeper', width:15},
       {header:'Geel', key:'geel', width:8},
       {header:'Rood', key:'rood', width:8},
     ];
@@ -3833,15 +3834,15 @@ function toonWijzigOpzet(sectie){
     ${isToernooi(w) ? '' : `<div class="veldgroep"><label>${w.thuis ? 'Locatie' : 'Locatie (sportpark)'}</label>
       <span class="wo-opg" data-opg="locatie"></span>
       <input class="invoer" id="woLocatie" value="${esc(w.locatie || '')}" placeholder="Bijv. Sportpark De Hut" autocomplete="off">
-      ${w.bron === 'sportlink' ? '<p class="wo-hint">Komt uit Sportlink en kan bij de volgende synchronisatie terugveranderen.</p>' : ''}</div>
+      ${w.bron === 'sportlink' ? `<p class="wo-hint">Komt uit ${sportWoord('ledenbron')} en kan bij de volgende synchronisatie terugveranderen.</p>` : ''}</div>
     ${w.thuis ? '' : `<div class="veldgroep"><label>Adres voor de route</label>
       <span class="wo-opg" data-opg="adres"></span>
       <input class="invoer" id="woAdres" value="${esc(w.adres || '')}" placeholder="Straat en plaats, als de naam niet genoeg is" autocomplete="off"></div>`}
     <div class="rij">
-      <div class="veldgroep"><label>Veld</label><span class="wo-opg" data-opg="veld"></span><input class="invoer" id="woVeld" value="${esc(w.veld || '')}" placeholder="${esc(w.slVeld ? 'Sportlink: ' + w.slVeld : 'Bijv. 3')}" autocomplete="off"></div>
-      <div class="veldgroep"><label>Kleedkamer</label><span class="wo-opg" data-opg="kleedkamer"></span><input class="invoer" id="woKleed" value="${esc(w.kleedkamer || '')}" placeholder="${esc(w.slKleedkamer ? 'Sportlink: ' + w.slKleedkamer : 'Bijv. 4')}" autocomplete="off"></div>
+      <div class="veldgroep"><label>Veld</label><span class="wo-opg" data-opg="veld"></span><input class="invoer" id="woVeld" value="${esc(w.veld || '')}" placeholder="${esc(w.slVeld ? sportWoord('ledenbron') + ': ' + w.slVeld : 'Bijv. 3')}" autocomplete="off"></div>
+      <div class="veldgroep"><label>Kleedkamer</label><span class="wo-opg" data-opg="kleedkamer"></span><input class="invoer" id="woKleed" value="${esc(w.kleedkamer || '')}" placeholder="${esc(w.slKleedkamer ? sportWoord('ledenbron') + ': ' + w.slKleedkamer : 'Bijv. 4')}" autocomplete="off"></div>
     </div>
-    <p class="wo-hint">Leeg laten neemt veld en kleedkamer over uit Sportlink, zodra de club ze daar invult.</p>`}
+    <p class="wo-hint">Leeg laten neemt veld en kleedkamer over uit ${sportWoord('ledenbron')}, zodra de club ze daar invult.</p>`}
     <div class="veldgroep"><label>Aanvoerder</label>
       <span class="wo-opg" data-opg="aanvoerder"></span>
       <button type="button" class="wo-aanv-knop" id="woAanvoerderKnop">

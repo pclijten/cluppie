@@ -30,6 +30,7 @@
    beheerder de waarden in Instellingen "vastlegt". */
 import { S, clubAfkorting } from './state.js?v=20261125x';
 import * as C from './config.js?v=20261125x';
+import { zetActieveSport } from './sporten.js?v=20261125x';   /* [20261125y] sportprofiel stap 3 */
 import { db, doc, getDoc } from './firebase.js?v=20261011g';
 import { zetContentClub } from './content.js?v=20261125x';
 import { weerVanTeam } from './snelstart-logica.js?v=20261122a';
@@ -207,6 +208,7 @@ export function cfg(){ return HUIDIG ? HUIDIG.eff : diep(NEUTRAAL, {}); }
 /* Zet alles terug op de standaard en legt de club-aanpassingen erover. */
 export function pasClubConfigToe(club){
   if (!club || !club.id) return;
+  zetActieveSport(club.sport);   /* [20261125y] sportprofiel: een clubteam volgt de sport van de club */
   const eff = effectief(club);
   const sig = club.id + '|' + (club.naam || '') + '|' + (club.huidigSeizoen || '') + '|' + JSON.stringify(eff);
   LOGO_CACHE[club.id] = veiligUrl(eff.identiteit.logo) || CLUPPIE_LOGO;

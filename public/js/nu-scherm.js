@@ -24,6 +24,7 @@ import { effectieveSelectie, spelersOpWedstrijd, spelersOpTraining } from './uit
 import { doelTeksten, samenvattingNu, haalSamenvatting } from './doel-samenvatting.js?v=20261125x';
 import { veldPilHtml } from './veldkaart.js?v=20261125x';
 import { kiesUitgelicht, gezienNu, gezienGeladen, laadGezien, markeerGezien } from './video-uitgelicht.js?v=20261124c';
+import { sportWoord } from './sporten.js?v=20261125x';   /* [20261125y] sportprofiel stap 3: woorden uit het profiel */
 
 const p2 = n => String(n).padStart(2, '0');
 const isoVan = d => `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
@@ -256,7 +257,7 @@ const afgelastOp = datum => { const a = S.team?.afgelast; return a && a.datum ==
 function afgelastKaart(w, nu){
   return `${kop(tag('Afgelast', 'accent'))}${titel(`<s class="nu-doorgestreept">${esc(w.tegenstander || 'Wedstrijd')}</s>`)}
     ${meta(`${esc(dagLabel(w.datum, nu))} ${esc(w.aftrap || '')}`.trim(), w.thuis ? 'thuis' : 'uit')}
-    <p class="nu-melding" role="status">${ico('action-warning', 20)}<span><b>Sportlink meldt deze wedstrijd als afgelast.</b>
+    <p class="nu-melding" role="status">${ico('action-warning', 20)}<span><b>${sportWoord('ledenbron')} meldt deze wedstrijd als afgelast.</b>
       <span class="nu-zacht">Wordt in het weekend elk uur gecontroleerd.</span></span></p>
     ${acties(knop('Planning openen', 'planning-calendar', 'data-nu-tab="planning"', false))}`;
 }
@@ -357,7 +358,7 @@ function daarnaItem(e, nu){
     titel = esc(w.tegenstander || soort).replace(/-/g, '‑');
     /* kort houden: de regel breekt niet af en het aantal moet leesbaar blijven */
     sub = af ? `${soort} afgelast` : `${w.type === 'toernooi' ? 'Toernooi' : w.thuis ? 'Thuis' : 'Uit'}, ${p.ja} van ${p.totaal} mee`;
-    inhoud = af ? `${meta('Sportlink meldt deze wedstrijd als afgelast.')}` : `${meta(w.aftrap ? `Aanvang ${esc(w.aftrap)}` : '', w.thuis ? 'thuis' : 'uit')}
+    inhoud = af ? `${meta(`${sportWoord('ledenbron')} meldt deze wedstrijd als afgelast.`)}` : `${meta(w.aftrap ? `Aanvang ${esc(w.aftrap)}` : '', w.thuis ? 'thuis' : 'uit')}
       ${plekHtml(w)}
       ${feiten(rij('Opstelling', ok.klaar === ok.totaal ? 'Klaar' : `<span class="nu-let">${ok.klaar} van ${ok.totaal} periodes</span>`))}
       ${presKnopWedstrijd(w)}
@@ -379,7 +380,7 @@ function dagItem(r, nu){
   const it = r.item, type = (it.bron === 'club' || it.bron === 'activiteit') ? 'club' : (DAG_BADGE[it.type] ? it.type : 'eigen');
   const vrij = type === 'vrij';
   const titel = vrij && (!it.label || it.label === 'Vrij') ? 'Geen wedstrijd' : (it.label || (type === 'club' ? 'Clubactiviteit' : 'Eigen dag'));
-  const sub = it.opmerking || (vrij ? 'Vrij weekend (KNVB)' : (type === 'eigen' || type === 'club') ? '' : 'Nog geen wedstrijd ingelezen');
+  const sub = it.opmerking || (vrij ? `Vrij weekend (${sportWoord('bond')})` : (type === 'eigen' || type === 'club') ? '' : 'Nog geen wedstrijd ingelezen');
   return `<div class="nu-d-item nu-d-dagrij" data-nu-prio="${r.prio || 2}">
     <button type="button" class="nu-rij-d" data-nu-tab="planning">
       <span class="nu-d-dag">${esc(dagLabel(r.datum, nu))}</span>
