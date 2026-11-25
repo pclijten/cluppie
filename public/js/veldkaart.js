@@ -47,10 +47,12 @@
      clubnaam   OpenStreetMap Nominatim (alleen de zoektekst, bij Zoek)
    Geen GPS of locatie van de gebruiker. */
 import { db, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, collection, getDocs, query, where, serverTimestamp, storage, sRef, uploadBytes, getDownloadURL } from './firebase.js?v=20261011g';
-import { S, esc, meld, isBeheerder } from './state.js?v=20261125y';
+import { S, esc, meld, isBeheerder } from './state.js?v=20261125z';
 import { ico } from './icons.js?v=20261116t';
-import { telGebruik } from './tracker.js?v=20261125y';
-import { catInfo } from './config.js?v=20261125y';
+import { telGebruik } from './tracker.js?v=20261125z';
+import { catInfo } from './config.js?v=20261125z';
+import { sportVeld } from './sporten.js?v=20261125z';   /* [20261125z] veld uit het sportprofiel */
+const kaartCirkel = () => { const c = sportVeld().kaart?.cirkel; return !c ? '' : c === 18 ? '<i class="vk-l-cirkel"></i>' : `<i class="vk-l-cirkel" style="width:${c}%"></i>`; };
 
 /* ---------- kaartwiskunde (web-mercator, tegels van 256 px) ---------- */
 const TS = 256, ZMIN = 15, ZMAX = 20;
@@ -573,7 +575,7 @@ function veldenLaag(k, velden, o = {}){
     }).join('');
     const grepen = greep && gekozen === v.id;
     uit.push(`<div class="vk-veld ${klas}${grepen ? ' grijpbaar' : ''}" style="left:${p.x}px;top:${p.y}px;width:${k.m2px(v.lengte)}px;height:${k.m2px(v.breedte)}px;transform:translate(-50%,-50%) rotate(${h}deg)"${grepen ? ' data-vk-greep="sleep"' : ''}>
-      <i class="vk-l-rand"></i><i class="vk-l-mid"></i><i class="vk-l-cirkel"></i>${delen}
+      <i class="vk-l-rand"></i><i class="vk-l-mid"></i>${kaartCirkel()}${delen}
       ${grepen ? `<b class="vk-greep vk-greep-draai" data-vk-greep="draai" title="Sleep om te draaien">${svgI('<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/>', 18)}</b>
         <b class="vk-greep vk-greep-maat" data-vk-greep="maat" title="Sleep om de maat te veranderen"></b>` : ''}
       ${labels && !vd.length ? `<span class="vk-veld-naam" style="${tegen}">${esc(metVeld(v.naam))}</span>` : ''}</div>`);
