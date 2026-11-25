@@ -1,5 +1,5 @@
-import { S } from './state.js?v=20261125x';
-import { sportProfiel, STANDAARD_SPORT } from './sporten.js?v=20261125x';
+import { S } from './state.js?v=20261125z';
+import { sportProfiel, STANDAARD_SPORT } from './sporten.js?v=20261125z';
 
 /* [20261124a] De standaardwaarden die bij de sport horen komen uit het sportprofiel
    (sport-voetbal.js). Hier een losse kopie, zodat clubconfig.js ze in plaats kan

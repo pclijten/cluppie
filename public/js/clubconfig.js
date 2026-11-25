@@ -28,10 +28,11 @@
 
    Een club-document zonder instellingen.v krijgt de neutrale standaard totdat de
    beheerder de waarden in Instellingen "vastlegt". */
-import { S, clubAfkorting } from './state.js?v=20261125x';
-import * as C from './config.js?v=20261125x';
+import { S, clubAfkorting } from './state.js?v=20261125z';
+import * as C from './config.js?v=20261125z';
+import { zetActieveSport } from './sporten.js?v=20261125z';   /* [20261125y] sportprofiel stap 3 */
 import { db, doc, getDoc } from './firebase.js?v=20261011g';
-import { zetContentClub } from './content.js?v=20261125x';
+import { zetContentClub } from './content.js?v=20261125z';
 import { weerVanTeam } from './snelstart-logica.js?v=20261122a';
 import { schoonProfiel as schoonPdfProfiel } from './pdf-profiel.js?v=20261115e';
 
@@ -207,6 +208,7 @@ export function cfg(){ return HUIDIG ? HUIDIG.eff : diep(NEUTRAAL, {}); }
 /* Zet alles terug op de standaard en legt de club-aanpassingen erover. */
 export function pasClubConfigToe(club){
   if (!club || !club.id) return;
+  zetActieveSport(club.sport);   /* [20261125y] sportprofiel: een clubteam volgt de sport van de club */
   const eff = effectief(club);
   const sig = club.id + '|' + (club.naam || '') + '|' + (club.huidigSeizoen || '') + '|' + JSON.stringify(eff);
   LOGO_CACHE[club.id] = veiligUrl(eff.identiteit.logo) || CLUPPIE_LOGO;
@@ -217,7 +219,7 @@ export function pasClubConfigToe(club){
     leiding: { admins: club.admins || {}, hoofdJeugd: club.hoofdJeugd || {}, bouwCoordinatoren: club.bouwCoordinatoren || {},
       eigenBouwen: Array.isArray(club.eigenBouwen) ? club.eigenBouwen : [] } };
   /* [20261116b] eenmalige uitleg voor het hoofd jeugdopleiding (rolkaart.js) */
-  if (S.user && club.hoofdJeugd && club.hoofdJeugd[S.user.uid] === true) import('./rolkaart.js?v=20261125x').then(m => m.planRolkaart()).catch(() => {});
+  if (S.user && club.hoofdJeugd && club.hoofdJeugd[S.user.uid] === true) import('./rolkaart.js?v=20261125z').then(m => m.planRolkaart()).catch(() => {});
   /* [20261021] maximale videogrootte: alleen de eindbaas (platformModules.maxVideoMB); buiten de handtekening zoals S._clubPlatform */
   { const pv = Number(club.platformModules && club.platformModules.maxVideoMB);
     C.ACTIEF.maxVideoMB = pv > 0 ? pv : C.ACTIEF_STANDAARD.maxVideoMB; }

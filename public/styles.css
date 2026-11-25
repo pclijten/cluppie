@@ -3704,6 +3704,11 @@ textarea.trw-vel-in{min-height:80px;resize:none}
 .tb-zestien-o{left:22%;right:22%;top:-2px;height:13%;border-top:none}
 .tb-vijf-b{left:36%;right:36%;bottom:-2px;height:5.5%;border-bottom:none}
 .tb-vijf-o{left:36%;right:36%;top:-2px;height:5.5%;border-top:none}
+/* [20261125z] vakken uit het sportprofiel (stap 4): links, rechts en hoogte komen inline mee */
+.tb-vak-b{bottom:-2px;border-bottom:none}
+.tb-vak-o{top:-2px;border-top:none}
+.tb-vak-o.tb-vak-boog{border-radius:0 0 50% 50% / 0 0 100% 100%}
+.tb-vak-b.tb-vak-boog{border-radius:50% 50% 0 0 / 100% 100% 0 0}
 
 .tb-tekenlaag{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:5;touch-action:none;pointer-events:none}
 .tb-objecten{position:absolute;inset:0;z-index:10}

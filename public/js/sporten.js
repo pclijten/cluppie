@@ -1,7 +1,7 @@
 /* ==================== SPORTPROFIELEN ====================
    [20261124a] Register van de sportprofielen. Nu alleen voetbal; een club of team
    zonder sport is voetbal. Zie docs/sportprofiel-impactanalyse.md. */
-import { VOETBAL } from './sport-voetbal.js?v=20261125x';
+import { VOETBAL } from './sport-voetbal.js?v=20261125z';
 
 export const STANDAARD_SPORT = 'voetbal';
 export const SPORTEN = Object.freeze({ voetbal: VOETBAL });
@@ -17,3 +17,30 @@ export function sportVan(club, team){
 export const sportNaam = id => sportProfiel(id).naam;
 /* Meer dan één sport: pas dan tonen we een keuze aan de trainer (mockup 3). */
 export const meerdereSporten = () => Object.keys(SPORTEN).length > 1;
+
+/* [20261125y] Stap 3: de sport van het team dat nu open staat. clubconfig.js zet hem bij het laden
+   van de club, teams.js bij een team zonder club. Tot dan het standaardprofiel. */
+let actief = STANDAARD_SPORT;
+export function zetActieveSport(id){ actief = SPORTEN[id] ? id : STANDAARD_SPORT; }
+export const actieveSport = () => actief;
+/* Een woord uit het profiel van de actieve sport, bijv. sportWoord('bond') = 'KNVB'.
+   hoofd = true zet de eerste letter in een hoofdletter. Onbekend woord: het woord zelf. */
+export function sportWoord(sleutel, hoofd = false){
+  const w = (sportProfiel(actief).woorden || {})[sleutel] ?? sleutel;
+  return hoofd ? w.charAt(0).toUpperCase() + w.slice(1) : w;
+}
+
+/* [20261125z] Stap 4: het veld van de actieve sport (tactiekbord, deelplaatje, veldkaart). */
+export const sportVeld = () => sportProfiel(actief).veld || sportProfiel(STANDAARD_SPORT).veld;
+/* Lijnen van het tactiekbord als html: dwarslijnen, middencirkel en de vakken aan beide doelkanten.
+   Voor voetbal precies dezelfde maten als de vroegere vaste css-klassen. */
+export function bordLijnenHtml(veld = sportVeld()){
+  const b = veld.bord, uit = [];
+  for (const y of b.dwars || []) uit.push(y === 50 ? '<div class="tb-lijn tb-midden"></div>' : `<div class="tb-lijn tb-midden" style="top:${y}%"></div>`);
+  if (b.cirkel) uit.push(b.cirkel === 24 ? '<div class="tb-lijn tb-cirkel"></div>' : `<div class="tb-lijn tb-cirkel" style="width:${b.cirkel}%"></div>`);
+  for (const v of b.vakken || []){
+    const zij = (100 - v.b) / 2, boog = v.vorm === 'boog' ? ' tb-vak-boog' : '';
+    for (const k of ['o', 'b']) uit.push(`<div class="tb-lijn tb-vak-${k}${boog}" style="left:${zij}%;right:${zij}%;height:${v.h}%"></div>`);
+  }
+  return uit.join('\n        ');
+}

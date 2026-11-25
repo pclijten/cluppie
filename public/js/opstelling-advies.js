@@ -24,17 +24,18 @@
    Opgeroepen vanuit wedstrijd.js (openOpstellingAdvies). Opslaan en hertekenen
    gebeurt via de callback van wedstrijd.js, zodat er één schrijfpad blijft. */
 import { db, doc, updateDoc } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal, spelerNaam, spelerNr } from './state.js?v=20261125x';
+import { S, esc, meld, openModal, sluitModal, spelerNaam, spelerNr } from './state.js?v=20261125z';
 import {
   bouwSlots, positieNaam, formatieNamen, isToernooi,
   POSITIE_GROEPEN, afwezigRedenInfo
-} from './config.js?v=20261125x';
-import { analyseWedstrijd, speeltijdReserve } from './analyse.js?v=20261125x';
+} from './config.js?v=20261125z';
+import { analyseWedstrijd, speeltijdReserve } from './analyse.js?v=20261125z';
 import { opkomstVoor, MIN_OPKOMST_TRAININGEN } from './opkomst.js?v=20260922c';
 import { spelersOpWedstrijd } from './uitleen-regels.js?v=20261113b';
 import { TE_GROEPEN, teScores, teLaagste, teLeeftijd } from './team-evaluatie-criteria.js?v=20261120a';
 import { ico } from './icons.js?v=20261116t';
-import { telGebruik } from './tracker.js?v=20261125x';
+import { telGebruik } from './tracker.js?v=20261125z';
+import { sportWoord } from './sporten.js?v=20261125z';   /* [20261125y] sportprofiel stap 3: woorden uit het profiel */
 
 const VERSIE = 1;
 const svg = (d, n = 16, w = 1.8) => `<svg width="${n}" height="${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${d}</svg>`;
@@ -459,7 +460,7 @@ function waarom(p, r, cfg, inv, pn){
   if (kk.length){
     const doorCoach = kk.every(k => r.keeperBron[k] === 'coach');
     const nood = kk.some(k => r.keeperBron[k] === 'nood');
-    uit.push(`Keeper in ${pn} ${kk.join(', ')}${doorCoach ? ', zoals jij hebt gekozen' : nood ? ': er was geen vaste keeper beschikbaar. Kies zelf een keeper als je dat anders wilt' : p.keeperKw ? `: keepte dit seizoen ${p.keeperKw} keer` : ''}.`);
+    uit.push(`${sportWoord('keeper', true)} in ${pn} ${kk.join(', ')}${doorCoach ? ', zoals jij hebt gekozen' : nood ? `: er was geen vaste ${sportWoord('keeper')} beschikbaar. Kies zelf een ${sportWoord('keeper')} als je dat anders wilt` : p.keeperKw ? `: keepte dit seizoen ${p.keeperKw} keer` : ''}.`);
   }
   if (cfg.seizoen && r.a < 1 && p.speelb > 0){
     if (p.pct < r.teamPct - 0.06 && gespeeld > gem) uit.push(`Seizoen ${pct}% speeltijd, teamgemiddelde ${pctT}%: krijgt voorrang op extra minuten.`);
@@ -592,8 +593,8 @@ function htmlInstellen(){
       `<button type="button" data-oa-kpm="${id}" class="${cfg.keeperModus === id ? 'actief' : ''}">${t}</button>`).join('')}</div>
     <div class="oa-kp">${kpHtml}</div>
     <p class="oa-hint">${cfg.keeperModus === 'auto'
-      ? (keepersNamen.length ? `Cluppie kiest uit wie dit seizoen keepte (${esc(keepersNamen.join(', '))}). Bij Resultaat de beste keeper de hele wedstrijd, anders een helft ieder.` : 'Nog niemand keepte dit seizoen. Kies hierboven per helft of per ' + n + ' zelf een keeper.')
-      : 'Wie dit seizoen keepte staat vooraan. Niemand gekozen? Dan kiest Cluppie. Grijs: niet beschikbaar in die periode. De keeper staat altijd de hele ' + n + '.'}</p>` : ''}
+      ? (keepersNamen.length ? `Cluppie kiest uit wie dit seizoen keepte (${esc(keepersNamen.join(', '))}). Bij Resultaat de beste ${sportWoord('keeper')} de hele wedstrijd, anders een helft ieder.` : 'Nog niemand keepte dit seizoen. Kies hierboven per helft of per ' + n + ' zelf een ' + sportWoord('keeper') + '.')
+      : 'Wie dit seizoen keepte staat vooraan. Niemand gekozen? Dan kiest Cluppie. Grijs: niet beschikbaar in die periode. De ' + sportWoord('keeper') + ' staat altijd de hele ' + n + '.'}</p>` : ''}
 
     <div class="oa-label oa-mt">Extra wisselen binnen een ${n}</div>
     <div class="oa-kw-kies" style="grid-template-columns:repeat(${P},1fr)">${Array.from({ length: P }, (_, i) => i + 1).map(k =>
@@ -693,13 +694,13 @@ function htmlVoorstel(){
     `<button type="button" data-oa-kwart="${k}" class="${k === _st.kwart ? 'actief' : ''}">${pLabel(k)}<small>${tabSub(k)}</small></button>`).join('')}</div>
   ${extraHier ? `<div class="segment oa-moment"><button type="button" data-oa-deel="1" class="${_st.deel === 1 ? 'actief' : ''}">Begin ${n}</button><button type="button" data-oa-deel="2" class="${_st.deel === 2 ? 'actief' : ''}">Na ${tijd(cfg.moment)}</button></div>` : ''}
   <div class="veld-wrap oa-veld"><div class="veld">${veldHtml(r, i)}</div></div>
-  <div class="oa-legenda"><span><i class="nieuw"></i>Nieuw erin</span><span><i class="keeper"></i>Keeper</span></div>
+  <div class="oa-legenda"><span><i class="nieuw"></i>Nieuw erin</span><span><i class="keeper"></i>${sportWoord('keeper', true)}</span></div>
   <div class="oa-bank">${bank}</div>
   ${plan}
 
   <div class="sectie-kop">${ico('training-duration', 18)}Speeltijd per speler</div>
   <div class="kaart oa-spelers">
-    <div class="oa-legenda oa-legenda-blok"><span><i class="v"></i>Veld</span><span><i class="k"></i>Keeper</span><span><i class="b"></i>Bank</span><span><i class="s"></i>Disciplinair</span><span><i class="x"></i>Nog niet</span>${cfg.extra.length ? '<span><i class="v h"></i>Deel van een ' + n + '</span>' : ''}</div>
+    <div class="oa-legenda oa-legenda-blok"><span><i class="v"></i>Veld</span><span><i class="k"></i>${sportWoord('keeper', true)}</span><span><i class="b"></i>Bank</span><span><i class="s"></i>Disciplinair</span><span><i class="x"></i>Nog niet</span>${cfg.extra.length ? '<span><i class="v h"></i>Deel van een ' + n + '</span>' : ''}</div>
     ${spelersHtml}
     <p class="oa-hint">Tik op een speler voor het waarom. Rechts: speelminuten-% dit seizoen en na deze wedstrijd.</p>
   </div>

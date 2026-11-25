@@ -24,12 +24,13 @@ import { db, collection, doc, setDoc, deleteDoc, updateDoc, onSnapshot, serverTi
 import {
   S, esc, meld, speler, spelerNaam, spelerNr,
   bewaakTerug, vangnetStilTerugAlsNodig, terugLaag
-} from './state.js?v=20261125x';
+} from './state.js?v=20261125z';
 import {
   FORMATIES, bouwSlots, LIJN_NAAM, parseFormatie,
   formatieBestaat, formatieNamen
-} from './config.js?v=20261125x';
-import { telGebruik, telNav } from './tracker.js?v=20261125x';
+} from './config.js?v=20261125z';
+import { telGebruik, telNav } from './tracker.js?v=20261125z';
+import { sportWoord } from './sporten.js?v=20261125z';   /* [20261125y] sportprofiel stap 3: woorden uit het profiel */
 
 /* ---------- helpers ---------- */
 
@@ -278,7 +279,7 @@ function tekenEditor(){
     </div>
 
     <div class="sj-veldgroep">
-      <label>Formatie kwart ${ed.actiefKwart} (excl. keeper)</label>
+      <label>Formatie kwart ${ed.actiefKwart} (excl. ${sportWoord('keeper')})</label>
       <div class="sj-segment formaties" id="sjFormatie">
         ${formaties.map(f => `<button data-fm="${esc(f)}" class="${k.formatie===f?'actief':''}">${esc(f)}</button>`).join('')}
       </div>
@@ -439,7 +440,7 @@ function kiesSpelerSheet(slotId){
   }).join('');
 
   const el = bouwSheet();
-  el.querySelector('.sj-sheet-titel').textContent = slot.lijn === 'K' ? 'Keeper kiezen' : 'Speler voor deze plek';
+  el.querySelector('.sj-sheet-titel').textContent = slot.lijn === 'K' ? `${sportWoord('keeper', true)} kiezen` : 'Speler voor deze plek';
   el.querySelector('.sj-sheet-sub').textContent = `${LIJN_NAAM[slot.lijn] || ''}, Kwart ${ed.actiefKwart}`;
   el.querySelector('.sj-sheet-lijst').innerHTML = lijst || '<div class="sj-leeg">Geen spelers in de selectie.</div>';
   const leegBtn = el.querySelector('.sj-sheet-leeg');
@@ -609,7 +610,7 @@ function bevestigToepassen(sj, wid){
     // sluit het sjabloonscherm zodat de coach de bijgewerkte wedstrijd ziet
     sluitOverlay();
     // open de wedstrijd zodat het resultaat direct zichtbaar is
-    import('./wedstrijd.js?v=20261125x').then(m => m.openWedstrijd(wid)).catch(() => {});
+    import('./wedstrijd.js?v=20261125z').then(m => m.openWedstrijd(wid)).catch(() => {});
   }).catch(e => meld('Opslaan mislukt: ' + (e.code || e.message)));
 }
 

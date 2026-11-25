@@ -25,9 +25,10 @@
 
 import { db, collection, doc, addDoc, updateDoc, deleteDoc, setDoc,
          onSnapshot, serverTimestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld, spelerNaam, spelerNr, modAan, bewaakTerug, vangnetStilTerugAlsNodig, terugLaag } from './state.js?v=20261125x';
-import { bouwSlots } from './config.js?v=20261125x';
-import { telNav } from './tracker.js?v=20261125x';
+import { S, esc, meld, spelerNaam, spelerNr, modAan, bewaakTerug, vangnetStilTerugAlsNodig, terugLaag } from './state.js?v=20261125z';
+import { bouwSlots } from './config.js?v=20261125z';
+import { bordLijnenHtml, sportVeld } from './sporten.js?v=20261125z';   /* [20261125z] veld uit het sportprofiel */
+import { telNav } from './tracker.js?v=20261125z';
 
 const NS = 'http://www.w3.org/2000/svg';
 
@@ -216,7 +217,7 @@ export function openTactiekLijst(w){
   if (toonLeerplein){
     host.querySelector('#tbLeerplein').onclick = () => {
       sluit();
-      import('./leerplein.js?v=20261125x').then(m => m.openLeerplein(w));
+      import('./leerplein.js?v=20261125z').then(m => m.openLeerplein(w));
     };
   }
 
@@ -376,12 +377,7 @@ function tekenBoard(w){
     <div class="tb-stage">
       <div class="tb-veld-wrap" id="tbVeldWrap">
         <div class="tb-veld"></div>
-        <div class="tb-lijn tb-midden"></div>
-        <div class="tb-lijn tb-cirkel"></div>
-        <div class="tb-lijn tb-zestien-o"></div>
-        <div class="tb-lijn tb-vijf-o"></div>
-        <div class="tb-lijn tb-zestien-b"></div>
-        <div class="tb-lijn tb-vijf-b"></div>
+        ${bordLijnenHtml()}
         <svg class="tb-tekenlaag" id="tbTeken" viewBox="0 0 100 100" preserveAspectRatio="none">
           <defs>
             <marker id="tbPijl" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto">
@@ -826,14 +822,16 @@ async function deelAlsAfbeelding(w){
   }
   // lijnen
   c.strokeStyle = 'rgba(255,255,255,.82)'; c.lineWidth = 3;
-  c.beginPath(); c.moveTo(0, H/2); c.lineTo(W, H/2); c.stroke();               // middenlijn
-  c.beginPath(); c.arc(W/2, H/2, W*0.12, 0, Math.PI*2); c.stroke();            // middencirkel
-  const box = (yTop, hFrac, wFrac) => {
+  /* [20261125z] lijnen uit het sportprofiel (stap 4); voor voetbal dezelfde maten als altijd */
+  const bord = sportVeld().bord;
+  for (const y of bord.dwars || []){ c.beginPath(); c.moveTo(0, H*y/100); c.lineTo(W, H*y/100); c.stroke(); }   // middenlijn (en bij hockey de 23m-lijnen)
+  if (bord.cirkel){ c.beginPath(); c.arc(W/2, H/2, W*bord.cirkel/200, 0, Math.PI*2); c.stroke(); }            // middencirkel
+  const box = (yTop, hFrac, wFrac, boog) => {
     const bw = W*wFrac, x = (W-bw)/2, bh = H*hFrac;
-    c.strokeRect(x, yTop ? 0 : H-bh, bw, bh);
+    if (!boog){ c.strokeRect(x, yTop ? 0 : H-bh, bw, bh); return; }
+    c.beginPath(); c.ellipse(W/2, yTop ? 0 : H, bw/2, bh, 0, yTop ? 0 : Math.PI, yTop ? Math.PI : Math.PI*2); c.stroke();   // cirkel (hockey)
   };
-  box(true, 0.13, 0.56); box(false, 0.13, 0.56);   // 16m
-  box(true, 0.055, 0.28); box(false, 0.055, 0.28); // 5m
+  for (const v of bord.vakken || []){ box(true, v.h/100, v.b/100, v.vorm === 'boog'); box(false, v.h/100, v.b/100, v.vorm === 'boog'); }   // 16m en 5m
 
   // tekeningen
   const px = v => v/100*W, py = v => v/100*H;

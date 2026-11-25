@@ -4,16 +4,16 @@
    Gegevens: teams/{id}.eigenClub en gebruikers/{uid}/meta/onboarding.snelstart (alleen UI-vlaggen). */
 import { isFirestoreVastgelopen, toonHerlaadBalk } from './firestore-herstel.js?v=20261113a';
 import { db, collection, doc, addDoc, updateDoc, setDoc, getDoc, getDocs, serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, $, $$, esc, meld, teamCode, openModal, sluitModal } from './state.js?v=20261125x';
-import { CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, bouwVanCategorie, catLabel } from './config.js?v=20261125x';
+import { S, $, $$, esc, meld, teamCode, openModal, sluitModal } from './state.js?v=20261125z';
+import { CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, bouwVanCategorie, catLabel } from './config.js?v=20261125z';
 import {
   bouwEigenClub, valideerClub, valideerPlaats, standaardTeamNaam, categorieVoor, STANDAARD_CAT,
   eersteStappenStatus, toonEersteStappen, toonWelkomCoach, welkomCoachStatus, isNieuwAccount, toonClubTip,
   deelTekstClub, toonDeelClub, magClubHerkennen,
 } from './snelstart-logica.js?v=20261122a';
-import { koppelClubSuggesties, normNaam } from './clubgids.js?v=20261125x';
-import { laadSoloAI } from './clubconfig.js?v=20261125x';
-import { SPORTEN, STANDAARD_SPORT, meerdereSporten } from './sporten.js?v=20261125x';   /* [20261125x] sportprofiel */
+import { koppelClubSuggesties, normNaam } from './clubgids.js?v=20261125z';
+import { laadSoloAI } from './clubconfig.js?v=20261125z';
+import { SPORTEN, STANDAARD_SPORT, meerdereSporten, sportWoord } from './sporten.js?v=20261125z';   /* [20261125x] sportprofiel; [20261125y] woorden */
 
 /* ---------- Plaats opzoeken (Open-Meteo, zonder sleutel) ---------- */
 async function zoekPlaats(q){
@@ -137,12 +137,12 @@ export async function openSnelstart(){
         <li><b>Alles voor je team.</b> Presentie, wedstrijdverslag en ontwikkeling per speler, op je telefoon.</li>
       </ul>
       <p class="meta sn-tip">${soloAI
-        ? 'Eerlijk vooraf: zonder club werkt Cluppie niet met Sportlink en zijn er geen clubbrede plannen, omdat die via de club lopen. AI-hulp bij Training maken, de seizoensplanning en de hulpchat heb je wel, met een maximum per maand. Sluit je club zich later aan, dan gaat je team mee.'
-        : 'Eerlijk vooraf: zonder club werkt Cluppie niet met Sportlink en heb je geen AI-hulp, omdat die via de club lopen (sleutel van de club, kosten en privacyafspraken). Al het andere staat open, en sluit je club zich later aan, dan gaat je team mee.'}</p>
+        ? `Eerlijk vooraf: zonder club werkt Cluppie niet met ${sportWoord('ledenbron')} en zijn er geen clubbrede plannen, omdat die via de club lopen. AI-hulp bij Training maken, de seizoensplanning en de hulpchat heb je wel, met een maximum per maand. Sluit je club zich later aan, dan gaat je team mee.`
+        : `Eerlijk vooraf: zonder club werkt Cluppie niet met ${sportWoord('ledenbron')} en heb je geen AI-hulp, omdat die via de club lopen (sleutel van de club, kosten en privacyafspraken). Al het andere staat open, en sluit je club zich later aan, dan gaat je team mee.`}</p>
       <button class="knop vol" id="ssVerder">Laten we beginnen</button>
       <button class="knop licht vol" id="ssRond" style="margin-top:8px">Liever eerst een rondleiding</button>`);
     $('#ssVerder').onclick = tekenStap2;
-    $('#ssRond').onclick = () => { sluitModal(); import('./onboarding.js?v=20261125x').then(m => m.startOnboarding(true)); };
+    $('#ssRond').onclick = () => { sluitModal(); import('./onboarding.js?v=20261125z').then(m => m.startOnboarding(true)); };
   };
 
   const tekenStap2 = () => {
@@ -171,7 +171,7 @@ export async function openSnelstart(){
       if (!st.naamAangepast) $('#ssNaam').value = standaardTeamNaam(st.cat, catLabel(st.cat), st.nr);
       st.naam = $('#ssNaam').value.trim();
       const c = catInfo(st.cat);
-      $('#ssKnvb').innerHTML = `<b>KNVB ${esc(catLabel(st.cat))}:</b> ${esc(c.knvb)}<br>Ik stel ${c.periodes === 2 ? '2 helften' : '4 kwarten'} van ${String(c.duur).replace('.', ',')} minuten in. Per wedstrijd aan te passen.`;
+      $('#ssKnvb').innerHTML = `<b>${esc(sportWoord('bond'))} ${esc(catLabel(st.cat))}:</b> ${esc(c.knvb)}<br>Ik stel ${c.periodes === 2 ? '2 helften' : '4 kwarten'} van ${String(c.duur).replace('.', ',')} minuten in. Per wedstrijd aan te passen.`;
     };
     $$('#ssSport [data-sport]').forEach(b => b.onclick = () => {
       st.sport = b.dataset.sport;
@@ -210,7 +210,7 @@ export async function openSnelstart(){
       <div class="sn-wel-niet">
         <div><b>Je hebt</b><ul><li>Opstelling en speeltijd</li><li>Presentie en verslagen</li><li>Training maken</li>${soloAI ? '<li>AI-hulp bij Training maken en de hulpchat (maximum per maand)</li>' : ''}<li>Weer op je teamscherm${st.club.lat === null ? ' (alleen met een gekozen plaats)' : ''}</li></ul></div>
         <div><b>Nog niet, want dat loopt via een club</b><ul class="sn-niet">
-          <li><b>Sportlink-koppeling</b><span>Wedstrijden, uitslagen en de poule komen uit Sportlink. Toegang daartoe heeft alleen de club, met een eigen sleutel (Client ID).</span></li>
+          <li><b>${sportWoord('ledenbron')}-koppeling</b><span>Wedstrijden, uitslagen en de poule komen uit ${sportWoord('ledenbron')}. Toegang daartoe heeft alleen de club, met een eigen sleutel (Client ID).</span></li>
           ${soloAI ? '' : '<li><b>AI-hulp</b><span>AI kost geld per vraag en vraagt privacyafspraken. Die maakt Cluppie met de club, niet met losse trainers.</span></li>'}
           <li><b>Clubbrede plannen</b><span>Seizoensplannen en afspraken die de club voor alle teams maakt.</span></li></ul></div>
       </div>
@@ -242,7 +242,7 @@ export async function openSnelstart(){
           eigenClub: st.club, sport: st.sport, gemaakt: serverTimestamp(),
         });
         sluitModal();
-        import('./teams.js?v=20261125x').then(m => m.openTeam(ref.id));
+        import('./teams.js?v=20261125z').then(m => m.openTeam(ref.id));
       } catch (e){
         console.error(e); knop.disabled = false;
         if (isFirestoreVastgelopen(e)){ toonHerlaadBalk(); meld('De verbinding is vastgelopen. Herlaad de app en maak je team opnieuw aan.'); }
@@ -269,7 +269,7 @@ export function modalClubPlaats(){
       t.eigenClub = eigenClub;
       vergeetHerkenning(t.id);   /* andere club ingevuld: opnieuw kijken of die al meedoet */
       sluitModal(); meld('Opgeslagen');
-      import('./teams.js?v=20261125x').then(m => m.renderTeam && m.renderTeam());
+      import('./teams.js?v=20261125z').then(m => m.renderTeam && m.renderTeam());
     } catch (err){ console.error(err); meld('Opslaan mislukt, probeer het nog eens'); }
   };
 }
@@ -327,7 +327,7 @@ export async function koppelEersteStappen(v, { zetTeamTab } = {}){
   el.innerHTML = html;
   koppelKnoppen(el, team, teamId, () => koppelEersteStappen(v, { zetTeamTab }));
   el.querySelectorAll('[data-ss-tab]').forEach(b => b.onclick = () => zetTeamTab && zetTeamTab(b.dataset.ssTab));
-  const r = el.querySelector('#ssRondleiding'); if (r) r.onclick = () => import('./onboarding.js?v=20261125x').then(m => m.startOnboarding(true));
+  const r = el.querySelector('#ssRondleiding'); if (r) r.onclick = () => import('./onboarding.js?v=20261125z').then(m => m.startOnboarding(true));
   const w = el.querySelector('#ssVerberg'); if (w) w.onclick = async () => { el.innerHTML = ''; await zetVlag('eersteStappenWeg', true); };
   const cv = el.querySelector('#ssClubVul'); if (cv) cv.onclick = modalClubPlaats;
   const opnieuw = () => koppelEersteStappen(v, { zetTeamTab });
@@ -341,7 +341,7 @@ export async function koppelEersteStappen(v, { zetTeamTab } = {}){
    Geeft false terug als de trainer het deelvenster zelf sluit. */
 async function deelMetClub(){
   const tekst = deelTekstClub();
-  import('./tracker.js?v=20261125x').then(m => m.telGebruik('deel_club')).catch(() => {});
+  import('./tracker.js?v=20261125z').then(m => m.telGebruik('deel_club')).catch(() => {});
   if (navigator.share){
     try { await navigator.share({ text: tekst }); return true; }
     catch (e){ if (e && e.name === 'AbortError') return false; }
@@ -386,7 +386,7 @@ function koppelWelkomCoach(v, el, team, teamId, vl, { zetTeamTab } = {}){
       <span class="sn-vink" aria-hidden="true">${s.klaar ? '✓' : ''}</span><span class="sn-tekst"><b>${esc(s.titel)}</b><small>${esc(s.uitleg)}</small></span></button>`).join('')}
     <div class="sn-voet"><button class="sn-link" id="ssRondleiding">Liever een rondleiding?</button><button class="sn-link" id="ssVerberg">Verberg</button></div></section>`;
   el.querySelectorAll('[data-ss-tab]').forEach(b => b.onclick = () => zetTeamTab && zetTeamTab(b.dataset.ssTab));
-  const r = el.querySelector('#ssRondleiding'); if (r) r.onclick = () => import('./onboarding.js?v=20261125x').then(m => m.startOnboarding(true));
+  const r = el.querySelector('#ssRondleiding'); if (r) r.onclick = () => import('./onboarding.js?v=20261125z').then(m => m.startOnboarding(true));
   const w = el.querySelector('#ssVerberg'); if (w) w.onclick = async () => { el.innerHTML = ''; await zetVlag('welkomCoachWeg', true); };
 }
 
@@ -400,7 +400,7 @@ function koppelKaart(team){
   const club = esc(kv.clubNaam || 'Je club');
   if (kv.status === 'open') return `<section class="kaart sn-kaart"><div class="sn-kop"><b>${club} gebruikt Cluppie</b></div>
     <p class="meta" style="margin:0 0 10px">Wil je ${esc(team.naam || 'je team')} bij de club onderbrengen? Je spelers, wedstrijden en trainingen gaan mee.
-      De clubbeheerder keurt het goed en ziet daarna je team en spelers. De club bepaalt dan ook welke onderdelen je gebruikt, en de Sportlink-koppeling komt er via de club bij.</p>
+      De clubbeheerder keurt het goed en ziet daarna je team en spelers. De club bepaalt dan ook welke onderdelen je gebruikt, en de ${sportWoord('ledenbron')}-koppeling komt er via de club bij.</p>
     <div class="rij"><button class="knop fluo vol" id="ssKoppel">Vraag aan bij ${club}</button><button class="knop licht" id="ssKoppelNee">Liever niet</button></div></section>`;
   if (kv.status === 'aangevraagd') return `<section class="kaart sn-kaart"><div class="sn-kop"><b>Aanvraag ligt bij ${club}</b></div>
     <p class="meta" style="margin:0">De clubbeheerder beoordeelt je aanvraag. Tot die tijd werk je gewoon door; er verandert niets aan je team.</p></section>`;

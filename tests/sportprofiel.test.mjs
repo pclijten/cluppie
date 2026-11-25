@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 /* zelfde specifier als config.js (met ?v=), anders laadt Node een tweede exemplaar */
 import fs from 'node:fs';
 const spec = fs.readFileSync(new URL('../public/js/config.js', import.meta.url), 'utf8').match(/'\.\/(sporten\.js\?v=[0-9a-z]+)'/)[1];
-const { sportProfiel, STANDAARD_SPORT, SPORTEN, sportVan, sportNaam, meerdereSporten } = await import('../public/js/' + spec);
+const { sportProfiel, STANDAARD_SPORT, SPORTEN, sportVan, sportNaam, meerdereSporten, sportWoord, zetActieveSport, actieveSport, sportVeld, bordLijnenHtml } = await import('../public/js/' + spec);
 const VOETBAL = SPORTEN.voetbal;
 const C = await import('../public/js/config.js');
 let n = 0; const ok = (c, m) => { assert.ok(c, m); n++; };
@@ -32,6 +32,21 @@ ok(sportVan(null, null) === 'voetbal' && sportVan({}, null) === 'voetbal' && spo
 ok(sportVan({ sport: 'voetbal' }, { sport: 'curling' }) === 'voetbal', 'clubteam volgt de club');
 ok(sportVan(null, { sport: 'curling' }) === 'voetbal' && sportVan({ sport: 'curling' }) === 'voetbal', 'onbekende sport: voetbal');
 ok(sportNaam('voetbal') === 'Voetbal' && meerdereSporten() === false, 'naam en nog maar één sport');
+
+/* [20261125y] stap 3: woorden uit het profiel van de actieve sport */
+ok(actieveSport() === 'voetbal' && sportWoord('bond') === 'KNVB' && sportWoord('ledenbron') === 'Sportlink', 'woorden voetbal');
+ok(sportWoord('keeper') === 'keeper' && sportWoord('keeper', true) === 'Keeper', 'hoofdletter');
+ok(sportWoord('onbekend') === 'onbekend', 'onbekend woord blijft staan');
+zetActieveSport('curling'); ok(actieveSport() === 'voetbal', 'onbekende sport: voetbal');
+zetActieveSport(undefined); ok(sportWoord('bond') === 'KNVB', 'zonder sport: voetbal');
+
+/* [20261125z] stap 4: veld uit het profiel; voor voetbal dezelfde lijnen als de vroegere vaste klassen */
+ok(sportVeld() === VOETBAL.veld && sportVeld().lengte === 105, 'veld voetbal');
+{ const h = bordLijnenHtml();
+  ok((h.match(/tb-lijn/g) || []).length === 6 && h.includes('tb-midden') && h.includes('tb-cirkel"'), 'middenlijn en middencirkel');
+  ok(h.includes('left:22%;right:22%;height:13%') && h.includes('left:36%;right:36%;height:5.5%'), 'zestien en vijf op de oude maten');
+  const boog = bordLijnenHtml({ bord: { dwars: [25, 50, 75], cirkel: 0, vakken: [{ b: 60, h: 16, vorm: 'boog' }] } });
+  ok(!boog.includes('tb-cirkel') && boog.includes('top:25%') && (boog.match(/tb-vak-boog/g) || []).length === 2, 'ander veld: dwarslijnen, geen cirkel, boog'); }
 
 /* Aanpassen zoals clubconfig.js doet raakt het profiel niet */
 C.CATEGORIEEN.JO11.duur = 99; C.LEERCURVE.length = 0;
