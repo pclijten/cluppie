@@ -410,7 +410,7 @@ async function zetTeamNaarClub(db, { clubId, club, teamId, uid, naam, aanvraagRe
     if (!t) throw new HttpsError('not-found', 'Dit team bestaat niet meer.');
     if (t.club && t.club !== clubId) throw new HttpsError('failed-precondition', 'Dit team hoort al bij een andere club.');
     if (!t.leden?.[uid]) throw new HttpsError('failed-precondition', 'De aanvrager is geen coach meer van dit team.');
-    /* [20261125w] sportprofiel: een team gaat alleen naar een club met dezelfde sport (ontbreekt = voetbal);
+    /* [20261125x] sportprofiel: een team gaat alleen naar een club met dezelfde sport (ontbreekt = voetbal);
        daarna volgt het team de club, dus het eigen sportveld vervalt */
     const c = (await tx.get(clubRef(db, clubId))).data() || {};
     if ((t.sport || 'voetbal') !== (c.sport || 'voetbal'))

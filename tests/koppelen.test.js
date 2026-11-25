@@ -63,7 +63,7 @@ const throws = async (f, code, m) => { try { await f(); ok(false, m + ' (geen fo
   await T.beoordeelAanvraag(req('adm', { clubId: 'c1', uid: 'ruben', soort: 'team', besluit: 'af' }));
   ok(store.get('teams/solo2').koppelVoorstel.status === 'afgewezen' && !store.get('teams/solo2').club, 'afgewezen: team blijft los');
 
-  /* [20261125w] sportprofiel: alleen naar een club met dezelfde sport; daarna volgt het team de club */
+  /* [20261125x] sportprofiel: alleen naar een club met dezelfde sport; daarna volgt het team de club */
   store.set('teams/solo3', { naam: 'O9-3', leden: { joris: true }, sport: 'hockey', koppelVoorstel: { clubId: 'c1', status: 'open' } });
   await T.vraagKoppelingAan(req('joris', { teamId: 'solo3' }));
   await throws(() => T.beoordeelAanvraag(req('adm', { clubId: 'c1', uid: 'joris', soort: 'team', besluit: 'goed' })), 'failed-precondition', 'andere sport dan de club: geweigerd');

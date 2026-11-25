@@ -11,7 +11,7 @@ service cloud.firestore {
     function echt() { return ingelogd() && !anoniem(); }
     function uid() { return request.auth.uid; }
     function wijzigt(sleutels) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(sleutels); }
-    /* [20261125w] sportprofiel: de sporten die de app kent (public/js/sporten.js). Ontbreekt het veld, dan is het voetbal. */
+    /* [20261125x] sportprofiel: de sporten die de app kent (public/js/sporten.js). Ontbreekt het veld, dan is het voetbal. */
     function geldigeSport(d) { return d.get('sport', 'voetbal') in ['voetbal']; }
     function sportGelijk() { return request.resource.data.get('sport', null) == resource.data.get('sport', null); }
 
@@ -209,7 +209,7 @@ service cloud.firestore {
         && geldigeSport(request.resource.data);
       /* clubadmin of platformbeheerder: alles */
       allow update: if (isPlatform() && geldigeSport(request.resource.data))
-        /* clubadmin mag alles behalve de schakelaars van de eindbaas (platformModules) en de sport [20261125w] */
+        /* clubadmin mag alles behalve de schakelaars van de eindbaas (platformModules) en de sport [20261125x] */
         || (isClubAdmin(clubId)
             && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['platformModules', 'sport']))
         /* teamaanmaker registreert een nieuw team bij de club: alleen toevoegen, niets weghalen [20261115d] */
@@ -372,7 +372,7 @@ service cloud.firestore {
                                  || (resource.data.get('club', null) != null && isClubLid(resource.data.club))
                                  || (resource.data.get('club', null) != null && isTraincoVanClub(resource.data.club))));
       /* [20261115d] de anonieme deel-link leest het teamdocument niet meer (namen van coaches, vaste afmeldingen) */
-      /* [20261125w] sport: alleen een team zonder club kiest zelf (een clubteam volgt de club), en alleen een bekende sport */
+      /* [20261125x] sport: alleen een team zonder club kiest zelf (een clubteam volgt de club), en alleen een bekende sport */
       allow create: if echt()
         && (!('sport' in request.resource.data) || (request.resource.data.get('club', null) == null && geldigeSport(request.resource.data)))
         && (
@@ -383,7 +383,7 @@ service cloud.firestore {
         || (request.resource.data.get('club', null) != null && isClubAdmin(request.resource.data.club)));
       /* leden en clubkoppeling: een coach mag die niet zelf wijzigen (anders kan hij iemand toevoegen of het team
          naar een andere club verplaatsen). Clubbeheer en de coördinator van de bouw mogen wel. */
-      /* [20261125w] de sport van een team ligt vast na het aanmaken (zie geldigeSport) */
+      /* [20261125x] de sport van een team ligt vast na het aanmaken (zie geldigeSport) */
       allow update: if sportGelijk() && ((isVolCoach(teamId) && coachWijzigtTeamVeilig())
         /* sturende rol: alles, maar het team gaat niet naar een andere club (loskoppelen mag alleen de clubadmin) */
         || (magBouwSturen(teamId)

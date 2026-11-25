@@ -34,12 +34,12 @@
    uit bouw-hub.laadBouwData en hertekenen zichzelf; dit bestand houdt de
    opgehaalde gegevens en de weekkeuze op die context bij (ctx._btr, ctx._btrSt). */
 import { db, collection, getDocs, query, where } from './firebase.js?v=20261011g';
-import { esc, openModal, sluitModal } from './state.js?v=20261125w';
+import { esc, openModal, sluitModal } from './state.js?v=20261125x';
 import { ico } from './icons.js?v=20261116t';
 import { teltMee } from './opkomst.js?v=20260922c';
-import { momentenVanTeam, DAGEN_LANG, DAGEN_KORT } from './trainingsmomenten.js?v=20261125w';
-import { oefHtml, diagramVoorOefening, openLightbox } from './training-weergave.js?v=20261125w';
-import { doelTeksten, samenvattingNu } from './doel-samenvatting.js?v=20261125w';
+import { momentenVanTeam, DAGEN_LANG, DAGEN_KORT } from './trainingsmomenten.js?v=20261125x';
+import { oefHtml, diagramVoorOefening, openLightbox } from './training-weergave.js?v=20261125x';
+import { doelTeksten, samenvattingNu } from './doel-samenvatting.js?v=20261125x';
 
 /* ---------- datums (lokaal, 12:00 als anker tegen zomertijd) ---------- */
 const pad = n => String(n).padStart(2, '0');

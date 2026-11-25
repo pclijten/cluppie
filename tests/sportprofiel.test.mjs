@@ -27,7 +27,7 @@ ok(C.KNVB_SEIZOEN === VOETBAL.kalenderSeizoen && C.CLUB_FORMATIE_11 === VOETBAL.
 assert.deepEqual({ ...C.ACTIEF_STANDAARD.tijdstraf }, { ...VOETBAL.tijdstraf }); n++;
 assert.deepEqual({ ...C.ACTIEF_STANDAARD.bouwGrenzen }, { ...VOETBAL.bouwGrenzen }); n++;
 
-/* [20261125w] sport van club of team: clubteam volgt de club, onbekend of leeg = voetbal */
+/* [20261125x] sport van club of team: clubteam volgt de club, onbekend of leeg = voetbal */
 ok(sportVan(null, null) === 'voetbal' && sportVan({}, null) === 'voetbal' && sportVan(null, {}) === 'voetbal', 'zonder veld: voetbal');
 ok(sportVan({ sport: 'voetbal' }, { sport: 'curling' }) === 'voetbal', 'clubteam volgt de club');
 ok(sportVan(null, { sport: 'curling' }) === 'voetbal' && sportVan({ sport: 'curling' }) === 'voetbal', 'onbekende sport: voetbal');
