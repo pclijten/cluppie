@@ -9940,8 +9940,8 @@ p.cp-let{margin:0;font-size:var(--t-sm)}
   .dk-bord .dk-pill{ background:color-mix(in srgb,var(--bord-lijn) 8%,var(--surface)); border:1px solid color-mix(in srgb,var(--bord-lijn) 22%,transparent); color:var(--accent-tekst); }
   :root[data-thema="donker"] .dk-bord .dk-pill{ background:color-mix(in srgb,var(--wit) 7%,transparent); border-color:color-mix(in srgb,var(--wit) 16%,transparent); color:var(--ink); }
   .dk-bord .dk-groot{ margin-top:var(--space-md); font-size:clamp(48px,4.6vw,72px); letter-spacing:0; color:var(--ink); }
-  .dk-bord .dk-groot .dk-omlijnd{ display:block; -webkit-text-stroke:1.6px var(--accent-tekst); }
-  :root[data-thema="donker"] .dk-bord .dk-groot .dk-omlijnd{ -webkit-text-stroke-color:var(--wit); }
+  /* tegenstander massief in de clubkleur: een omlijnde letter in rood leest slecht op wit */
+  .dk-bord .dk-groot .dk-omlijnd{ display:block; -webkit-text-stroke:0; color:var(--accent-tekst); }
   .dk-bord-links > p{ margin-top:var(--space-sm); color:var(--ink-2); font-size:var(--t-base); }
   .dk-bord-links > p b{ color:var(--ink); font-weight:600; }
   .dk-bord-onder{ margin-top:auto; padding-top:var(--space-lg); display:flex; align-items:flex-end; gap:20px; flex-wrap:wrap; }
@@ -9969,12 +9969,14 @@ p.cp-let{margin:0;font-size:var(--t-sm)}
   .dk-bord .dk-veld{ background-image:linear-gradient(color-mix(in srgb,var(--bord-lijn) 40%,transparent),color-mix(in srgb,var(--bord-lijn) 40%,transparent));
     background-size:100% 1.5px; background-position:0 50%; background-repeat:no-repeat; }
   .dk-bord .dk-veld-leeg span{ background:var(--surface-2); color:var(--ink-2); }
-  .dk-bord .dk-p b{ width:30px; height:30px; border-radius:10px; font-size:var(--t-lg); background:var(--accent-vlak); color:var(--accent-ink);
-    box-shadow:0 6px 14px -6px color-mix(in srgb,var(--accent-vlak) 70%,transparent); }
-  .dk-bord .dk-p.k b{ background:var(--vast-donkergrijs-1); color:var(--wit); border-radius:50%; }
-  .dk-bord .dk-p small{ background:none; color:var(--ink); font-weight:600; font-size:var(--t-2xs); padding:0; }
-  :root[data-thema="donker"] .dk-bord .dk-p b{ background:var(--wit); color:var(--accent-tekst); box-shadow:0 6px 14px -6px rgba(0,0,0,.6); }
-  :root[data-thema="donker"] .dk-bord .dk-p.k b{ background:var(--accent-vlak); color:var(--accent-ink); }
+  /* spelers: witte tegel met een rand in de clubkleur en een donker cijfer, naam eronder op een wit labeltje */
+  .dk-bord .dk-p b{ width:32px; height:32px; border-radius:10px; font-size:var(--t-lg); background:var(--wit); color:var(--vast-donkergrijs-1);
+    border:2px solid var(--accent-vlak); box-shadow:0 4px 10px -4px rgba(0,0,0,.25); }
+  .dk-bord .dk-p.k b{ background:var(--vast-donkergrijs-1); color:var(--wit); border-color:var(--vast-donkergrijs-1); border-radius:50%; }
+  .dk-bord .dk-p small{ background:var(--surface); color:var(--ink); font-weight:600; font-size:var(--t-2xs); padding:1px var(--space-2xs); border-radius:var(--r-2xs); }
+  :root[data-thema="donker"] .dk-bord .dk-p b{ border-color:var(--wit); box-shadow:0 4px 10px -4px rgba(0,0,0,.6); }
+  :root[data-thema="donker"] .dk-bord .dk-p.k b{ background:var(--accent-vlak); color:var(--accent-ink); border-color:var(--accent-vlak); }
+  :root[data-thema="donker"] .dk-bord .dk-p small{ background:var(--surface-2); }
 
   /* kaarten eronder: gestippelde kopregel, speeltijd in de clubkleur */
   .dk-dash .dk-blok h3{ padding-bottom:var(--space-sm); border-bottom:1.5px dashed var(--line-d); }
