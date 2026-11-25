@@ -74,4 +74,23 @@ assert.equal(L.seizoensweekOp(plan.kal, '2020-01-01'), 1, 'vóór de start: week
   const nov = L.positieWeek(plan, L.seizoensweekOp(plan.kal, '2026-11-17'));
   assert.equal(nov.blok.thema, L.positieOp(plan, '2026-11-17').blok.thema, 'november: zelfde thema als de jaarlijn');
 }
+/* [20261126g] hockey: de leerblokken, modellen en accenten komen uit het hockeyprofiel */
+{
+  const bron = (await import('node:fs')).readFileSync(new URL('../public/js/seizoensplan-logica.js', import.meta.url), 'utf8');
+  const spec = n => '../public/js/' + bron.match(new RegExp(`'\\./(${n}\\.js\\?v=[0-9a-z]+)'`))[1];
+  const TP = await import(spec('trainingsplanner'));
+  const tpBron = (await import('node:fs')).readFileSync(new URL('../public/js/trainingsplanner.js', import.meta.url), 'utf8');
+  const C = await import('../public/js/' + tpBron.match(/'\.\/(config\.js\?v=[0-9a-z]+)'/)[1]);
+  const SP = await import(spec('sporten'));
+  C.laadSportStandaard('hockey'); SP.zetActieveSport('hockey');
+  const hockey = new Set(SP.sportProfiel('hockey').leercurve.map(t => t.thema));
+  const bes = L.beschikbareThemas(BIBLIOTHEEK.vormen.filter(v => v.sport === 'hockey'));
+  for (const model of Object.keys(L.MODELLEN)) for (const [bouw, lft] of [['onder', 8], ['midden', 11], ['boven', 15]]){
+    const plan = L.maakSeizoensplan({ categorie: 'JO' + lft, leeftijd: lft, bouw, model, start: '2026-08-24', eind: '2027-06-06', vrij: [], accent: ['Techniek'], beschikbaar: bes });
+    assert.ok(plan.blokken.length >= 6 && plan.blokken.every(b => hockey.has(b.thema)), `hockey ${model} ${bouw}: alleen hockeythema's`);
+    assert.ok(new Set(plan.blokken.map(b => b.thema)).size >= 3, `hockey ${model} ${bouw}: minstens 3 verschillende thema's`);
+  }
+  assert.ok(TP.volgordeVoor('onder').includes('Stickvaardigheid en balbeheersing'), 'hockey: eigen volgorde voor de onderbouw');
+  C.laadSportStandaard('voetbal'); SP.zetActieveSport('voetbal');
+}
 console.log('seizoensplan: alle controles geslaagd');

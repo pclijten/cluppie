@@ -22,7 +22,8 @@ import { UIT_O } from './o.mjs';
 import { UIT_P } from './p.mjs';
 import { UIT_S } from './s.mjs';
 import { UIT_T } from './t.mjs';
-export const UITWERKING = { ...UIT_A, ...UIT_B, ...UIT_C, ...UIT_D, ...UIT_E, ...UIT_F, ...UIT_G, ...UIT_H, ...UIT_I, ...UIT_J, ...UIT_K, ...UIT_M, ...UIT_N, ...UIT_O, ...UIT_P, ...UIT_S, ...UIT_T };
+import { UIT_HOCKEY } from './hockey.mjs';   /* [20261126g] */
+export const UITWERKING = { ...UIT_A, ...UIT_B, ...UIT_C, ...UIT_D, ...UIT_E, ...UIT_F, ...UIT_G, ...UIT_H, ...UIT_I, ...UIT_J, ...UIT_K, ...UIT_M, ...UIT_N, ...UIT_O, ...UIT_P, ...UIT_S, ...UIT_T, ...UIT_HOCKEY };
 
 const TEKST = { doel: 'doel', uitleg: 'uitleg', org: 'organisatie', regels: 'regels', punten: 'coachpunten', vragen: 'coachvragen', makk: 'makkelijker', moei: 'moeilijker', letOp: 'letOp', naam: 'naam', lft: 'leeftijd', tijd: 'tijd' };
 export const fouten = [], letOp = [];

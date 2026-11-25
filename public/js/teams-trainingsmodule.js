@@ -18,27 +18,27 @@
    Tabblad: 'trainingsmodule'. Importeert NIET uit teams.js (geen kringimport); teams.js geeft
    zetTeamTab mee aan koppelTrainingsmodule(). */
 import { db, collection, addDoc, setDoc, getDoc, getDocs, deleteDoc, doc, functions, httpsCallable, serverTimestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261126f';
-import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } from './config.js?v=20261126f';
-import { aiAan, aiDoel } from './clubconfig.js?v=20261126f';
+import { S, esc, meld } from './state.js?v=20261126g';
+import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } from './config.js?v=20261126g';
+import { aiAan, aiDoel } from './clubconfig.js?v=20261126g';
 import { ico } from './icons.js?v=20261116t';
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261121b';
-import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261126f';
-import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, kiesDuur, SLOT_NAAM, groepsindeling, opbouwVoor, WEER } from './trainingsplanner.js?v=20261126f';
+import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261126g';
+import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261126g';
+import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, kiesDuur, SLOT_NAAM, groepsindeling, opbouwVoor, WEER } from './trainingsplanner.js?v=20261126g';
 import { MATERIAAL, MATERIAAL_NAAM, PRESETS, presetVan, VELDEN, schoonContext, behoefte, haalbaar, valtAf, tipTekst } from './trainingscontext-logica.js?v=20261019a';
 import { htmlZevenVelden, STANDAARD_OPEN } from './oefenkaart.js?v=20261121b';
 import { maak3DBlok, heeftWebGL } from './scene3d.js?v=20261121b';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
 import { TERUGBLIK_VRAGEN, zetAntwoord, terugblikKlaar, terugblikSamenvatting, signaalVormBewaard, signaalVormGewisseld, signaalTerugblik, signaalMateriaal, signaalGat, gatRedenen } from './leren-logica.js?v=20261019b';
-import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261126f';
+import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261126g';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261121b';
-import { positieWeek, seizoensweekOp, weekKalender, standaardVrij, maandagVan, seizoenStartJaar } from './seizoensplan-logica.js?v=20261126f';
-import { trainingenRef } from './seizoensplan-trainingen.js?v=20261126f';
-import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261126f';
-import { oefeningVan, geplandeTraining, vormIdsVan, rondBlok } from './seizoensplan-club.js?v=20261126f';
-import { onderdeelAan } from './onderdelen.js?v=20261126f';
+import { positieWeek, seizoensweekOp, weekKalender, standaardVrij, maandagVan, seizoenStartJaar } from './seizoensplan-logica.js?v=20261126g';
+import { trainingenRef } from './seizoensplan-trainingen.js?v=20261126g';
+import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261126g';
+import { oefeningVan, geplandeTraining, vormIdsVan, rondBlok } from './seizoensplan-club.js?v=20261126g';
+import { onderdeelAan } from './onderdelen.js?v=20261126g';
 /* [20261116h] de speelwijze als rode draad: leerdoel, coachwoorden, vormen die het principe trainen en de regel in het partijspel */
-import { speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad } from './speelwijze.js?v=20261126f';
+import { speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad } from './speelwijze.js?v=20261126g';
 import { rodeDraad, principe as principeOpId, principeVoorThema, principeVanVorm, LESOPBOUW } from './speelwijze-logica.js?v=20261116j';
 import { htmlDraadKaart, htmlPrincipeChip } from './speelwijze-html.js?v=20261116j';
 

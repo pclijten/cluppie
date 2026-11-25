@@ -12,7 +12,8 @@
      momenten  : aanvallen en verdedigen wisselen af; elk "moment van het spel" komt terug
      cyclus    : opbouwen · centrum · flank · verdedigen in korte cycli
    (Idee van periodes en herhaling: KNVB-seizoensplanning en De Voetbalmethode deel 4; geen tekst overgenomen.) */
-import { LEERCURVE, VOLGORDE_PER_BOUW, BLOKFASEN, jaarlijn } from './trainingsplanner.js?v=20261126f';
+import { LEERCURVE, VOLGORDE_PER_BOUW, BLOKFASEN, jaarlijn, volgordeVoor } from './trainingsplanner.js?v=20261126g';
+import { actieveSport, sportProfiel } from './sporten.js?v=20261126g';
 import { speelwijzeVan, speelwijzeThemas, principeVoorThema } from './speelwijze-logica.js?v=20261116j';
 
 export const MODELLEN = {
@@ -29,6 +30,10 @@ export const ACCENTEN = {
   'Plezier & teamgevoel': ['Teamsport en plezier'],
   'Aanvallen': ['Scoren', 'Dieptespel opbouw'],
 };
+
+/* [20261126g] Een sport met eigen thema's (hockey) geeft eigen modelreeksen en accenten mee in het sportprofiel. */
+const modelSeq = model => sportProfiel(actieveSport()).seizoensModellen?.[model] || MODELLEN[model]?.seq || null;
+export const accentThemas = a => (sportProfiel(actieveSport()).accenten || ACCENTEN)[a] || [];
 
 /* ---------- kalender ---------- */
 const dag = iso => new Date(iso + 'T12:00:00');
@@ -87,10 +92,10 @@ export function beschikbareThemas(vormen){ return new Set(vormen.flatMap(v => v.
 export function themaVolgorde({ model, bouw, leeftijd, accent = [], beschikbaar, speelwijze = null }){
   const ok = new Set(LEERCURVE.filter(t => t.vanaf <= leeftijd).map(t => t.thema));
   const bruikbaar = t => ok.has(t) && (!beschikbaar || beschikbaar.has(t));
-  const bron = MODELLEN[model]?.seq || VOLGORDE_PER_BOUW[bouw] || VOLGORDE_PER_BOUW.midden;
+  const bron = modelSeq(model) || volgordeVoor(bouw);
   let seq = bron.filter(bruikbaar);
   if (!seq.length) seq = [...ok].filter(bruikbaar);
-  const acc = accent.flatMap(a => ACCENTEN[a] || []).filter(bruikbaar);
+  const acc = accent.flatMap(accentThemas).filter(bruikbaar);
   let uit = seq;
   if (acc.length){
     const set = new Set(acc); uit = [];
@@ -136,7 +141,7 @@ export function waarom(b, p){
   if (p.model === 'leercurve') r.push(`Volgorde uit de leercurve voor de ${p.bouw}bouw; ${b.thema} (${b.domein}) komt vanaf ${lv} jaar aan bod.`);
   else if (p.model === 'momenten') r.push('Model “vier momenten”: aanvallen en verdedigen wisselen elkaar af, zodat beide regelmatig terugkomen.');
   else r.push('Model “opbouw · centrum · flank · verdedigen”: korte cyclus met één teamfunctie per blok.');
-  const acc = (p.accent || []).find(a => (ACCENTEN[a] || []).includes(b.thema));
+  const acc = (p.accent || []).find(a => accentThemas(a).includes(b.thema));
   if (acc) r.push(`Jij koos het accent “${acc}”, daarom komt dit thema extra vaak.`);
   const pr = p.speelwijze ? principeVoorThema(p.speelwijze, b.thema) : null;
   if (pr) r.push(`Speelwijze: dit blok traint “${pr.titel}”${speelwijzeExtra(p.speelwijze).includes(b.thema) ? ' en komt daarom twee keer in het seizoen' : ''}.`);

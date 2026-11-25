@@ -45,6 +45,15 @@ SP.zetActieveSport('voetbal'); C.laadSportStandaard('voetbal');
 ok(JSON.stringify({ cat: C.CATEGORIEEN, catM: C.CATEGORIEEN_MEIDEN, f: C.FORMATIES, l: C.LIJN_NAAM, p: C.POSITIE_GROEPEN, k: C.KNVB_KALENDER,
   lc: C.LEERCURVE, d: C.DOEL_SUGGESTIES_BANDEN, s: C.KNVB_SEIZOEN, f11: C.CLUB_FORMATIE_11, ts: C.ACTIEF.tijdstraf, bg: C.ACTIEF.bouwGrenzen }) === voetbalVoor, 'voetbal na wisselen gelijk');
 ok(SP.heeftSportlink() && SP.sportInhoud(), 'voetbal: Sportlink en eigen inhoud');
-SP.zetActieveSport('hockey'); ok(!SP.heeftSportlink() && !SP.sportInhoud() && SP.sportWoord('bond') === 'KNHB' && SP.kaartDef('groen').duur === 120, 'hockey: LISA, pilot zonder inhoud, groene kaart');
+SP.zetActieveSport('hockey'); ok(!SP.heeftSportlink() && SP.sportInhoud() && SP.sportWoord('bond') === 'KNHB' && SP.kaartDef('groen').duur === 120, 'hockey: LISA, eigen inhoud (20261126g), groene kaart');
+SP.zetActieveSport('volleybal'); ok(!SP.sportInhoud(), 'volleybal: nog zonder inhoud');
+SP.zetActieveSport('korfbal'); ok(!SP.sportInhoud(), 'korfbal: nog zonder inhoud');
 SP.zetActieveSport('voetbal');
+/* [20261126g] een sport met eigen inhoud en eigen thema's heeft eigen leerblokken: alle thema's daarin komen uit de eigen leercurve */
+for (const P of Object.values(SP.SPORTEN).filter(P => P.inhoud && P.id !== 'voetbal')){
+  const lc = new Set(P.leercurve.map(t => t.thema));
+  const lijsten = [...Object.values(P.volgordePerBouw || {}), ...Object.values(P.seizoensModellen || {}), ...Object.values(P.accenten || {})];
+  ok(P.volgordePerBouw && ['onder', 'midden', 'boven'].every(b => P.volgordePerBouw[b]?.length >= 3), `${P.id}: leerblokken voor onder-, midden- en bovenbouw`);
+  ok(lijsten.flat().every(t => lc.has(t)), `${P.id}: leerblokken, modellen en accenten gebruiken alleen thema's uit de leercurve`);
+}
 console.log(`sport-profielen: ${n} controles geslaagd`);

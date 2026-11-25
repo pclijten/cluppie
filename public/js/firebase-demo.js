@@ -441,7 +441,10 @@ zetSeed(`clubs/${CLUB}`, { ...store.get(`clubs/${CLUB}`), teams: Object.fromEntr
 /* trainingen: per team twee per week (vorige, deze en volgende week) uit de eigen bibliotheek */
 async function zetTrainingen(){
   const [{ BIBLIOTHEEK }, { vormSvg }] = await Promise.all([import('./trainingsbibliotheek.js'), import('./trainingsvorm-svg.js')]);
-  const vormen = BIBLIOTHEEK.vormen;
+  /* [20261126g] demo in een andere sport (?sport=hockey): alleen de oefenstof van die sport */
+  const demoSport = (() => { try { return new URLSearchParams(location.search).get('sport') || 'voetbal'; } catch (e) { return 'voetbal'; } })();
+  const vanSport = BIBLIOTHEEK.vormen.filter(v => (v.sport || 'voetbal') === demoSport);
+  const vormen = vanSport.length ? vanSport : BIBLIOTHEEK.vormen.filter(v => !v.sport || v.sport === 'voetbal');
   /* [20261116i] Zelfde blokken als een echte training (7 vaste velden, zie oefeningVan in seizoensplan-club.js),
      zodat de demo ook het spelverloop en de uitwerking per oefening laat zien. */
   const lijst = (veld, kop, items) => (Array.isArray(items) && items.length ? [{ veld, kop, type: 'lijst', items: items.map(String) }] : []);
@@ -458,7 +461,9 @@ async function zetTrainingen(){
       ...lijst('spel', 'Spelvormen', (v.varianten || []).map(x => `${x.naam}: ${x.uitleg}`))],
     svg: v.tekening ? vormSvg(v, v.veld) : '', bron: { vormId: v.id, slot, minuten, spelers: null },
   });
-  const THEMAS = ['Positiespel opbouw', 'Storen en veroveren', 'Scoren', 'Uitspelen 1:1', 'Teamsport en plezier'];
+  const THEMAS = vanSport.length && demoSport === 'hockey'
+    ? ['Passen en aannemen', 'Dribbelen en passeren 1:1', 'Scoren in de cirkel', 'Druk zetten en veroveren', 'Teamsport en plezier']
+    : ['Positiespel opbouw', 'Storen en veroveren', 'Scoren', 'Uitspelen 1:1', 'Teamsport en plezier'];
   for (const t of TEAMS){
     const lft = Number(t.cat.replace(/\D/g, ''));
     const passend = fase => vormen.filter(v => v.fase === fase && lft >= v.leeftijd[0] && lft <= v.leeftijd[1]);
@@ -533,6 +538,7 @@ if (DEMO_ROL){
     club.leden = {}; club.ledenInfo = {}; uitTeam('demo-o13-1');
     const t = { ...store.get('teams/demo-o11-2') }; delete t.club; delete t.clubNaam; delete t.sportlinkNaam;
     t.naam = 'Buurtteam O11'; t.eigenClub = { naam: 'Buurtclub', plaats: 'Utrecht' };
+    if (club.sport) t.sport = club.sport;   /* [20261126g] ?demo=los&sport=hockey: het losse team in die sport */
     store.set('teams/demo-o11-2', t);
   }
   store.set(`clubs/${CLUB}`, club);
