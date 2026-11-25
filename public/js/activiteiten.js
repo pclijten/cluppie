@@ -24,16 +24,22 @@
    Rekenwerk, export en import: activiteiten-logica.js (getest). Sjablonen: activiteit-sjablonen.js. */
 import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, deleteField, query, where, onSnapshot,
   serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261125m';
+import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261125v';
 import { ico } from './icons.js?v=20261116t';
 import { SJABLONEN, sjabloonVan } from './activiteit-sjablonen.js?v=20261125m';
-import * as L from './activiteiten-logica.js?v=20261125m';
+import * as L from './activiteiten-logica.js?v=20261125v';
+import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261125v';
+import * as TN from './activiteit-toernooi.js?v=20261125v';
 
 let A = null;
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const nuMin = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
 const uid = () => S.user?.uid || '';
 const isAdmin = () => !!(S.club?.admins?.[uid()]) || isPlatformBeheerder();
+/* Toernooi staat standaard alleen aan bij een toernooi-draaiboek; de rest standaard aan. */
+const tabAan = (a, id) => id === 'toernooi' ? (a.tabs?.toernooi ?? /toernooi/i.test(`${a.type || ''} ${a.sjabloon || ''}`)) === true : a.tabs?.[id] !== false;
+const tnCtx = () => ({ act: A.act, actNu: () => A?.act, actId: A.id, clubId: A.clubId, el: A.el, kopieer: kopieKlembord, waLink, zet, herteken: () => hertekenZacht(), venster: html => { A.venster = html; teken(); }, sluitVenster,
+  download, bestandsnaam, printen, csvLees: L.csvLees });
 const aiAan = () => S.club?.platformModules?.ai === true;
 const actRef = id => doc(db, 'clubs', A.clubId, 'activiteiten', id);
 const deelLink = id => `${location.origin}${location.pathname.replace(/[^/]*$/, '')}?act=${encodeURIComponent(id)}`;
@@ -57,7 +63,7 @@ export async function openActiviteiten(clubId, actId = ''){
 }
 export function sluitActiviteiten(){
   if (!A) return;
-  stopSubs(); clearInterval(A.liveTik);
+  sluitDatumkiezer(); stopSubs(); clearInterval(A.liveTik);
   A.el.classList.remove('toon'); A.el.innerHTML = '';
   document.documentElement.classList.remove('ac-open');
   A = null;
@@ -74,8 +80,14 @@ function laag(){
       if (A.venster) sluitVenster(); else if (A.live){ A.live = false; clearInterval(A.liveTik); teken(); } else if (A.id) terugNaarLijst(); else sluitActiviteiten();
     }, true);
     el.addEventListener('click', klik);
+    koppelDatumkiezer(el, () => ({ stip: s => (A?.lijst || []).filter(x => x.datum === s && x.id !== A.id).map(x => x.naam).join(', ') }));
+    document.addEventListener('click', e => { if (A && e.target.closest?.('#zijbalk')) sluitActiviteiten(); }, true);
     el.addEventListener('change', wijzig);
-    el.addEventListener('focusout', () => setTimeout(() => { if (A?.vuil && !actiefVeld()) { A.vuil = false; teken(); } }, 50));
+    el.addEventListener('input', e => { if (A?.act) TN.invoerToernooi(tnCtx(), e.target); });
+    el.addEventListener('focusout', () => setTimeout(() => { if (A?.vuil && !actiefVeld() && !A.druk) { A.vuil = false; teken(); } }, 50));
+    /* Tijdens een tik of klik niet hertekenen: anders verdwijnt de knop onder de vinger en gaat de klik verloren
+       (bijvoorbeeld als je net een veld hebt ingevuld en meteen op een knop drukt). */
+    el.addEventListener('pointerdown', () => { if (A) A.druk = true; });
     el.addEventListener('dragstart', e => { const k = e.target.closest?.('[data-sleep]'); if (k){ e.dataTransfer.setData('text/plain', k.dataset.sleep); e.dataTransfer.effectAllowed = 'move'; } });
     el.addEventListener('dragover', e => { if (e.target.closest?.('[data-kolom]')) e.preventDefault(); });
     el.addEventListener('drop', e => { const k = e.target.closest?.('[data-kolom]'); const id = e.dataTransfer.getData('text/plain'); if (k && id){ e.preventDefault(); zet({ [`taken.${id}.status`]: k.dataset.kolom }); } });
@@ -98,7 +110,7 @@ async function laadLijst(){
 }
 
 function openAct(id){
-  stopSubs();
+  stopSubs(); if (A.id !== id) TN.resetToernooi();
   A.id = id; A.act = null; A.deel = null; A.aanm = []; A.tab = A.tab || 'overzicht';
   teken();
   A.subs.push(onSnapshot(actRef(id), s => {
@@ -113,16 +125,18 @@ function volgDeel(deelId){
   A.subs.push(onSnapshot(doc(db, 'activiteitDeel', deelId), s => { A.deel = s.exists() ? { id: s.id, ...s.data() } : null; hertekenZacht(); }, () => {}));
   A.subs.push(onSnapshot(collection(db, 'activiteitDeel', deelId, 'aanmeldingen'), s => { A.aanm = s.docs.map(d => ({ id: d.id, ...d.data() })); hertekenZacht(); }, () => {}));
 }
-function hertekenZacht(){ if (actiefVeld()) A.vuil = true; else teken(); }
+function hertekenZacht(){ if (actiefVeld() || A.druk) A.vuil = true; else teken(); }
+for (const soort of ['pointerup', 'pointercancel']) addEventListener(soort, () => { if (!A?.druk) return; A.druk = false; setTimeout(() => { if (A?.vuil && !actiefVeld() && !A.druk){ A.vuil = false; teken(); } }, 0); });
 async function terugNaarLijst(){ stopSubs(); A.id = ''; A.act = null; A.live = false; clearInterval(A.liveTik); await laadLijst(); teken(); }
 
 /* ---------- schrijven ---------- */
-const AGENDA_VELDEN = ['naam', 'datum', 'start', 'eind', 'locatie', 'omschrijving', 'teams', 'agenda', 'kamer', 'status', 'planB', 'deelId'];
+const AGENDA_VELDEN = ['naam', 'datum', 'start', 'eind', 'locatie', 'omschrijving', 'teams', 'agenda', 'kamer', 'status', 'planB', 'deelId', 'vraag', 'vraagTot'];
 async function zet(patch, { stil = false } = {}){
   if (!A?.id) return;
   try {
     await updateDoc(actRef(A.id), { ...patch, bijgewerktMs: Date.now(), bijgewerktDoor: uid() });
     if (Object.keys(patch).some(k => AGENDA_VELDEN.includes(k.split('.')[0]))) syncAgenda();
+    if (A.act?.toernooi?.liveId && Object.keys(patch).some(k => ['toernooi', 'naam', 'datum', 'locatie', 'planB'].includes(k.split('.')[0]))) TN.planLive(tnCtx());
     if (Object.keys(patch).some(k => ['naam', 'datum', 'start', 'locatie'].includes(k)) && A.act?.deelId)
       setDoc(doc(db, 'activiteitDeel', A.act.deelId), { titel: patch.naam ?? A.act.naam, datum: patch.datum ?? A.act.datum, start: patch.start ?? A.act.start ?? '', locatie: patch.locatie ?? A.act.locatie ?? '' }, { merge: true }).catch(() => {});
     if (!stil) toonOpgeslagen();
@@ -181,11 +195,11 @@ function htmlLijst(){
 
 /* één activiteit */
 function htmlAct(){
-  const a = A.act, tabs = L.TABS.filter(([id]) => L.VASTE_TABS.includes(id) || a.tabs?.[id] !== false);
+  const a = A.act, tabs = L.TABS.filter(([id]) => L.VASTE_TABS.includes(id) || tabAan(a, id));
   if (!tabs.some(([id]) => id === A.tab)) A.tab = 'overzicht';
   const sub = [a.datum ? L.datumLang(a.datum) : 'Nog geen datum', a.start ? `${a.start}${a.eind ? '–' + a.eind : ''}` : '', L.STATUS_ACT[a.status] || ''].filter(Boolean).join(' · ');
   const inhoud = { overzicht: htmlOverzicht, taken: htmlTaken, programma: htmlProgramma, mensen: htmlMensen, vrijwilligers: htmlVrijwilligers, deelnemers: htmlDeelnemers,
-    locatie: htmlLocatie, communicatie: htmlCommunicatie, budget: htmlBudget, documenten: htmlDocumenten, evaluatie: htmlEvaluatie }[A.tab];
+    toernooi: () => TN.htmlToernooi(tnCtx()), locatie: htmlLocatie, communicatie: htmlCommunicatie, budget: htmlBudget, documenten: htmlDocumenten, evaluatie: htmlEvaluatie }[A.tab];
   return `${kop(a.naam || 'Activiteit', sub, `<button class="knop licht" data-ac="export">${ico('admin-download', 18)} Exporteren</button>`)}
     ${a.planB?.actief ? `<div class="ac-melding rood">${ico('action-warning', 18)} <span><b>Plan B is actief.</b> ${esc(a.planB.tekst || '')}</span><button class="knop klein licht" data-ac="planb-uit">Terug naar plan A</button></div>` : ''}
     <nav class="ac-tabs" role="tablist">${tabs.map(([id, n]) => `<button role="tab" aria-selected="${A.tab === id}" class="${A.tab === id ? 'aan' : ''}" data-tab="${id}">${esc(n)}${tabTeller(id)}</button>`).join('')}</nav>
@@ -223,7 +237,7 @@ function htmlOverzicht(){
         ${o.taken.zonderEigenaar ? `<p class="ac-zacht">${o.taken.zonderEigenaar} open ${o.taken.zonderEigenaar === 1 ? 'taak heeft' : 'taken hebben'} nog geen eigenaar.</p>` : ''}</div>
       <div class="ac-paneel"><h3>Gegevens</h3>
         <label class="ac-label">Naam</label>${veld('naam', a.naam)}
-        <div class="ac-rij2"><span><label class="ac-label">Datum</label>${veld('datum', a.datum, { type: 'date' })}</span>
+        <div class="ac-rij2"><span><label class="ac-label">Datum</label>${datumVeld('data-veld="datum"', a.datum)}</span>
           <span><label class="ac-label">Status</label><select class="ac-in" data-veld="status">${Object.entries(L.STATUS_ACT).map(([k, n]) => opt(k, n, a.status === k)).join('')}</select></span></div>
         <div class="ac-rij2"><span><label class="ac-label">Begin</label>${veld('start', a.start, { type: 'time' })}</span><span><label class="ac-label">Einde</label>${veld('eind', a.eind, { type: 'time' })}</span></div>
         <label class="ac-label">Locatie</label>${veld('locatie', a.locatie, { ph: 'Sportpark, kantine, sporthal…' })}
@@ -232,7 +246,7 @@ function htmlOverzicht(){
     ${v ? `<div class="ac-paneel ac-geheugen"><h3>${ico('admin-archive', 18)} Lessen van ${esc(v.naam || 'vorige keer')}${v.datum ? ` (${esc(L.datumKort(v.datum))} ${esc(v.datum.slice(0, 4))})` : ''}</h3>
       ${v.goed ? `<p><b>Ging goed:</b> ${esc(v.goed)}</p>` : ''}${v.beter ? `<p><b>Kan beter:</b> ${esc(v.beter)}</p>` : ''}<p class="ac-zacht">Tips van vorige keer staan bij de taken in het draaiboek.</p></div>` : ''}
     <div class="ac-paneel"><h3>Onderdelen</h3><p class="ac-zacht">Zet aan wat je nodig hebt. Een informatieavond heeft geen velden nodig, een toernooi wel.</p>
-      <div class="ac-chips">${L.TABS.filter(([id]) => !L.VASTE_TABS.includes(id)).map(([id, n]) => `<label class="ac-chip ${a.tabs?.[id] !== false ? 'aan' : ''}"><input type="checkbox" data-veld="tabs.${id}" data-bool ${a.tabs?.[id] !== false ? 'checked' : ''}> ${esc(n)}</label>`).join('')}</div></div>
+      <div class="ac-chips">${L.TABS.filter(([id]) => !L.VASTE_TABS.includes(id)).map(([id, n]) => `<label class="ac-chip ${tabAan(a, id) ? 'aan' : ''}"><input type="checkbox" data-veld="tabs.${id}" data-bool ${tabAan(a, id) ? 'checked' : ''}> ${esc(n)}</label>`).join('')}</div></div>
     ${isAdmin() ? `<div class="ac-acties"><button class="knop licht" data-ac="kopie">Kopie maken (bv. volgend jaar)</button><button class="knop gevaar" data-ac="weg">Activiteit verwijderen</button></div>` : ''}`;
 }
 
@@ -287,7 +301,7 @@ function vensterTaak(id){
     <div class="ac-rij2"><span><label class="ac-label">Eigenaar</label><select class="ac-in" data-veld="taken.${id}.eigenaar">${opt('', '— nog niemand —')}${L.gesorteerd(a.comite, (x, y) => String(x.naam).localeCompare(String(y.naam))).map(l => opt(l.id, `${l.naam}${l.rol ? ' (' + l.rol + ')' : ''}`, t.eigenaar === l.id)).join('')}</select></span>
       <span><label class="ac-label">Fase</label><select class="ac-in" data-veld="taken.${id}.fase">${(a.fasen || L.FASEN).map(f => opt(f.id, f.naam, (t.fase || L.faseVan(t.d)) === f.id)).join('')}</select></span></div>
     <div class="ac-rij2"><span><label class="ac-label">Klaar … dagen vooraf ${vast ? '(staat op vaste datum)' : ''}</label>${veld(`taken.${id}.d`, t.d ?? '', { type: 'number', extra: 'data-num inputmode="numeric" step="1" min="-365" max="730"' })}</span>
-      <span><label class="ac-label">Of een vaste datum</label>${veld(`taken.${id}.datum`, t.datum || '', { type: 'date' })}</span></div>
+      <span><label class="ac-label">Of een vaste datum</label>${datumVeld(`data-veld="taken.${esc(id)}.datum"`, t.datum || '', { leeg: 'Geen vaste datum' })}</span></div>
     <p class="ac-zacht">${esc(L.dTekst(vast ? null : t.d))}${L.taakDatum(t, a.datum) ? ` → klaar vóór ${esc(L.datumLang(L.taakDatum(t, a.datum)))}` : ''}. Negatief = na de activiteit.</p>
     <label class="ac-label">Status</label><div class="ac-schakel">${Object.entries(L.STATUS_TAAK).map(([k, n]) => `<button class="${(t.status || 'open') === k ? 'aan' : ''}" data-ac="status" data-id="${esc(id)}" data-naar="${k}">${n}</button>`).join('')}</div>
     <label class="ac-label">Notitie</label>${tekstvak(`taken.${id}.notitie`, t.notitie, 'Afspraken, telefoonnummer leverancier, link…')}
@@ -379,6 +393,9 @@ function htmlDeelnemers(){
     <div class="ac-paneel"><h3>Zichtbaar maken</h3>
       <label class="ac-schak"><input type="checkbox" data-veld="agenda" data-bool ${a.agenda ? 'checked' : ''}> <span><b>In de Planning van de gekozen teams</b><small>Coaches zien naam, datum, tijd, locatie en de vrijwilligerslink, en maken met één knop een deelnemerslijstje voor hun team.</small></span></label>
       <label class="ac-schak"><input type="checkbox" data-veld="kamer" data-bool ${a.kamer ? 'checked' : ''} ${a.agenda ? '' : 'disabled'}> <span><b>Ook in de Teamkamer van ouders</b><small>Alleen bij teams waar de Teamkamer aan staat. Geen namen van kinderen.</small></span></label></div>
+    <div class="ac-paneel"><h3>Vraag wie meedoet</h3>
+      <label class="ac-schak"><input type="checkbox" data-veld="vraag" data-bool ${a.vraag ? 'checked' : ''}> <span><b>Deelnemerslijstje en vraag aan ouders klaarzetten</b><small>Elk gekozen team krijgt meteen een lijstje "Doet mee" bij Lijstjes. Staat de Teamkamer aan, dan vragen we het ook aan de ouders; hun antwoord komt vanzelf in het lijstje.</small></span></label>
+      ${a.vraag ? `<div class="ac-rij2"><span><label class="ac-label">Antwoord graag vóór</label>${datumVeld('data-veld="vraagTot"', a.vraagTot || '', { leeg: '3 dagen vooraf' })}</span></div>` : ''}</div>
     <div class="ac-paneel"><h3>Aantallen</h3><div class="ac-rij2"><span><label class="ac-label">Verwacht aantal deelnemers</label>${veld('deelnemers.verwacht', a.deelnemers?.verwacht ?? '', { type: 'number', extra: 'data-num min="0" max="5000" inputmode="numeric"' })}</span></div>
       <label class="ac-label">Notitie (bv. ook vriendjes welkom, aanmelden vóór …)</label>${tekstvak('deelnemers.notitie', a.deelnemers?.notitie, '')}
       <p class="ac-zacht">Wie er per team meedoet, staat in het lijstje van dat team (alleen de staf van het team ziet namen).</p></div>`;
@@ -475,7 +492,7 @@ function vensterGegevens(bron){
   const naam = bron.soort === 'kopie' ? bron.act.naam : bron.sj?.naam || '';
   A.venster = `<h2>${esc(bron.soort === 'kopie' ? 'Kopie van ' + bron.act.naam : bron.sj?.naam || 'Nieuwe activiteit')}</h2>
     <label class="ac-label">Naam</label><input class="ac-in" data-kies="naam" value="${esc(naam)}" maxlength="80">
-    <label class="ac-label">Datum</label><input class="ac-in" type="date" data-kies="datum" value="">
+    <label class="ac-label">Datum</label>${datumVeld('data-kies="datum"', '')}
     ${bron.soort === 'kopie' ? '<label class="ac-schak"><input type="checkbox" data-kies="mensen" checked> <span><b>Comité en eigenaren meenemen</b></span></label>' : ''}
     <p class="ac-zacht">${bron.soort === 'kopie' ? 'Taken staan weer open, vaste datums schuiven mee en de tips uit de evaluatie staan bij de taken.' : 'De taken worden teruggerekend vanaf deze datum.'}</p>
     <div class="ac-acties"><button class="knop licht" data-ac="venster-dicht">Annuleren</button><span class="ac-groei"></span><button class="knop vol" data-ac="nieuw-maak">Aanmaken</button></div>`;
@@ -508,6 +525,7 @@ function vensterExport(){
       ${a.tabs?.budget !== false ? `<button data-exp="csv-budget">${ico('admin-file', 22)}<b>Budget (Excel/CSV)</b></button>` : ''}
       ${a.tabs?.locatie !== false ? `<button data-exp="csv-materiaal">${ico('admin-file', 22)}<b>Spullen (Excel/CSV)</b></button>` : ''}
       ${L.isIso(a.datum) ? `<button data-exp="ics">${ico('planning-calendar', 22)}<b>Agenda (ICS)</b><small>Met het dagprogramma</small></button>` : ''}
+      ${tabAan(a, 'toernooi') ? TN.exportKnoppen(a) : ''}
       <button data-exp="json">${ico('admin-download', 22)}<b>Alles (JSON)</b><small>Back-up, of overzetten naar een andere club</small></button>
       <button data-exp="json-sj">${ico('admin-archive', 22)}<b>Als draaiboek (JSON)</b><small>Zonder datums, namen en bedragen</small></button>
     </div><div class="ac-acties"><span class="ac-groei"></span><button class="knop licht" data-ac="venster-dicht">Sluiten</button></div>`;
@@ -530,6 +548,7 @@ function exporteer(soort){
   if (soort === 'ics') return download(bestandsnaam('ics'), L.ics(a, { id: A.id, programma: true, url: a.deelId ? deelLink(a.deelId) : '' }), 'text/calendar;charset=utf-8');
   if (soort === 'json') return download(bestandsnaam('json'), L.jsonExport(a, { diensten: A.deel?.diensten, aanmeldingen: A.aanm }), 'application/json');
   if (soort === 'json-sj') return download(bestandsnaam('json', 'draaiboek').replace(/-\d{4}-\d{2}-\d{2}/, ''), L.jsonSjabloon(L.alsSjabloon(a, { diensten: A.deel?.diensten })), 'application/json');
+  if (TN.exporteerToernooi(tnCtx(), soort)) return;
   if (soort === 'pdf') return printen(htmlPrintDraaiboek());
   if (soort === 'pdf-rooster') return printen(htmlPrintRooster());
 }
@@ -584,6 +603,7 @@ async function klik(e){
   const op = t.closest('[data-open]'); if (op){ A.tab = 'overzicht'; return openAct(op.dataset.open); }
   const tk = t.closest('[data-taak]'); if (tk) return vensterTaak(tk.dataset.taak);
   const ex = t.closest('[data-exp]'); if (ex) return exporteer(ex.dataset.exp);
+  const tn = t.closest('[data-tn]'); if (tn && A.act){ if (tn.disabled) return; return TN.klikToernooi(tnCtx(), tn); }
   if (t.classList.contains('ac-venster')) return sluitVenster();
   const b = t.closest('[data-ac]'); if (!b) return;
   const ac = b.dataset.ac, id = b.dataset.id, a = A.act;
@@ -666,7 +686,7 @@ async function klik(e){
     case 'kopieer': return kopieKlembord(b.dataset.tekst);
     case 'teams-alle': return zet({ teams: (S.clubTeams || []).filter(x => x && x.id && !x.gearchiveerd).map(x => x.id).slice(0, L.MAX.teams) });
     case 'teams-geen': return zet({ teams: [] });
-    case 'veldplanner': return import('./veldplanner.js?v=20261125m').then(m => m.openVeldplanner(A.clubId));
+    case 'veldplanner': return import('./veldplanner.js?v=20261125v').then(m => m.openVeldplanner(A.clubId));
     case 'aflasten': return vensterAflasten();
     case 'aflasten-ja': return aflasten();
     case 'bericht-plaats': return plaatsBericht(id);
@@ -680,6 +700,7 @@ async function klik(e){
 async function wijzig(e){
   if (!A) return;
   const t = e.target;
+  if (A.act && await TN.wijzigToernooi(tnCtx(), t)) return;
   if (t.matches('[data-ac-bestand]')) return leesBestand(t);
   if (t.matches('[data-kies="lid"]')){
     const u = t.value; if (!u) return;
@@ -702,6 +723,8 @@ async function wijzig(e){
   if (/^taken\.[^.]+\.datum$/.test(pad) && w && !L.isIso(w)) return;
   if (pad === 'datum' && w && !L.isIso(w)) return;
   const patch = { [pad]: w };
+  if (pad === 'vraag' && w === true) patch.agenda = true;
+  if (pad === 'agenda' && w === false) patch.vraag = false;
   if (pad === 'datum') patch.seizoen = L.seizoenVan(w);
   if (pad === 'agenda' && !w) patch.kamer = false;
   await zet(patch);
@@ -740,6 +763,7 @@ async function verwijder(){
       await deleteDoc(doc(db, 'activiteitDeel', deelId));
     }
     await deleteDoc(doc(db, 'clubs', A.clubId, 'activiteitenAgenda', id)).catch(() => {});
+    if (A.act?.toernooi?.liveId) await deleteDoc(doc(db, 'toernooiLive', A.act.toernooi.liveId)).catch(() => {});
     await deleteDoc(actRef(id));
     A.venster = null; meld('Verwijderd');
   } catch (e){ console.error('[activiteiten] verwijderen', e); meld('Verwijderen mislukt.'); }
@@ -839,9 +863,13 @@ html.ac-open{overflow:hidden}
 .ac-app{height:100%;overflow:auto;padding:var(--space-md) 16px calc(var(--space-xl) + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:var(--space-sm);max-width:1100px;margin:0 auto}
 .ac-leeg{margin:auto;max-width:440px;text-align:center;display:flex;flex-direction:column;gap:var(--space-sm);align-items:center}
 .ac-kop{display:flex;align-items:center;gap:var(--space-sm);position:relative}
-.ac-kop .knop{flex-shrink:0}
+.ac-kop .knop{flex-shrink:0;width:auto}
+.ac-acties .knop.vol{width:auto}
+html.desk .ac-laag{left:var(--zij-w,0px)}
+html.desk .ac-venster{left:var(--zij-w,0px);align-items:center}
+html.desk .ac-blad{border-radius:var(--r-l)}
 .ac-terug{width:40px;height:40px;border-radius:50%;background:var(--card);font-size:24px;line-height:1;color:var(--ink);flex-shrink:0}
-.ac-titel{display:flex;flex-direction:column;margin-right:auto;min-width:0}
+.ac-titel{display:flex;flex-direction:column;margin-right:auto;min-width:0;flex:1 1 0}
 .ac-titel small{font-size:var(--t-xs);color:var(--ink-2)}
 .ac-titel h1{font-family:var(--font-display);font-weight:700;text-transform:uppercase;font-size:var(--t-3xl);margin:0;line-height:1;overflow-wrap:anywhere}
 .ac-staat{font-size:var(--t-xs);color:var(--ok);position:absolute;right:16px;top:calc(100% - 2px);pointer-events:none}
@@ -973,6 +1001,7 @@ textarea.ac-in{resize:vertical}
   .ac-prog{padding-bottom:8px;border-bottom:1px solid var(--hair)}
   .ac-titel h1{font-size:var(--t-2xl)}
   .ac-kop .knop{padding-inline:10px}
-}`;
+  .ac-staat{display:none}
+}${TN.TOERNOOI_CSS}`;
   document.head.appendChild(s);
 }

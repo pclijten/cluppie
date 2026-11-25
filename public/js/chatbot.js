@@ -19,11 +19,11 @@
    ============================================================================ */
 
 import { functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, terugLaag, terugLaagWeg } from './state.js?v=20261125m';
-import { telGebruik } from './tracker.js?v=20261125m';
-import { aiAan } from './clubconfig.js?v=20261125m';
-import { startOnboarding, startOnboardingHoofdstuk, heeftOnboardingHoofdstuk } from './onboarding.js?v=20261125m';
-import { mijnRollen } from './rolkaart.js?v=20261125m';
+import { S, esc, terugLaag, terugLaagWeg } from './state.js?v=20261125v';
+import { telGebruik } from './tracker.js?v=20261125v';
+import { aiAan } from './clubconfig.js?v=20261125v';
+import { startOnboarding, startOnboardingHoofdstuk, heeftOnboardingHoofdstuk } from './onboarding.js?v=20261125v';
+import { mijnRollen } from './rolkaart.js?v=20261125v';
 import { startVragen } from './hulp-rol.js?v=20261122a';
 
 /* Sessiegeschiedenis — leeft alleen zolang de app open is. */

@@ -1,5 +1,5 @@
-import { S } from './state.js?v=20261125m';
-import { periodeNrs, slotLijn, slotPositieNaam } from './config.js?v=20261125m';
+import { S } from './state.js?v=20261125v';
+import { periodeNrs, slotLijn, slotPositieNaam } from './config.js?v=20261125v';
 
 /* ==================== SPEELTIJD-BEREKENING ====================
    Losse module zonder UI-afhankelijkheden, zodat zowel het wedstrijdscherm

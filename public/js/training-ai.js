@@ -17,9 +17,9 @@ import {
   storage, sRef, uploadBytes, getDownloadURL,
   functions, httpsCallable
 } from './firebase.js?v=20261011g';
-import { laadPdfJs } from './pdf-viewer.js?v=20261125m';
-import { pdfOmzettenAan } from './clubconfig.js?v=20261125m';
-import { S } from './state.js?v=20261125m';
+import { laadPdfJs } from './pdf-viewer.js?v=20261125v';
+import { pdfOmzettenAan } from './clubconfig.js?v=20261125v';
+import { S } from './state.js?v=20261125v';
 import { schoonProfiel, overTeSlaan, koppelDiagrammen } from './pdf-profiel.js?v=20261115e';
 export { koppelDiagrammen };
 

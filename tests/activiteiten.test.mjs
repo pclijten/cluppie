@@ -109,9 +109,13 @@ gelijk(A.takenUitCsv(A.csvTaken(kerst, '2026-11-25'), '2026-12-19').taken.length
 gelijk(A.botstMet(diensten, ['d1'], 'd2'), 'd1'); gelijk(A.botstMet(diensten, [], 'd2'), null);
 gelijk(A.schoneNaam('  <b>Anna</b>  de   Vries-van der Heijden '), 'bAnna/b de Vries-van der');
 
+/* kopie met toernooi: opzet mee, spelers en live-link niet */
+const kt = A.kopie({ ...vorig, vraag: true, toernooi: { duur: 10, velden: { v: { naam: 'Veld 1' } }, spelers: { s: { naam: 'Kind' } }, teams: { t: {} }, schema: [{ id: 'w1' }], uitslag: { w1: { a: 1, b: 0 } }, liveId: 'abc', live: true, mededelingen: { m: { tekst: 'x' } } } }, { datum: '2027-12-18' });
+gelijk(Object.keys(kt.toernooi).sort(), ['duur', 'velden'], 'kopie toernooi'); ok(kt.vraag === false);
+ok(!A.jsonExport({ naam: 'x', toernooi: { liveId: 'abc', live: true, duur: 9 } }).includes('abc'), 'export zonder live-link');
 /* agenda-kopie: geen budget of comité */
 const ak = A.agendaKopie({ ...vorig, teams: ['t1'], kamer: true, deelId: 'dd' }, { clubNaam: 'Club', link: 'L' });
-gelijk(Object.keys(ak).sort(), ['clubNaam', 'datum', 'deelId', 'eind', 'kamer', 'link', 'locatie', 'naam', 'omschrijving', 'planB', 'start', 'status', 'teams']);
+gelijk(Object.keys(ak).sort(), ['clubNaam', 'datum', 'deelId', 'eind', 'kamer', 'link', 'locatie', 'naam', 'omschrijving', 'planB', 'seizoen', 'start', 'status', 'teams', 'vraag', 'vraagTot']);
 
 /* AI-concept schoonmaken */
 gelijk(A.schoonConcept({ naam: 'X', taken: [] }), null);

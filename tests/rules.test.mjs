@@ -750,6 +750,28 @@ test('activiteiten: clubbeheer maakt aan, het comité werkt mee, alleen met de s
   await assertFails(updateDoc(doc(a, 'clubs/A/activiteiten/k1'), { naam: 'Nieuw' }));
   await assertSucceeds(getDoc(doc(a, 'clubs/A/activiteiten/k1')));
 });
+test('toernooi live: iedereen met de link leest, alleen het comité schrijft, dicht is dicht', async () => {
+  const a = als('adminA'), coach = als('coachA'), kijker = anoniem('anon1');
+  await env.withSecurityRulesDisabled(async ctx => {
+    const db = ctx.firestore();
+    await updateDoc(doc(db, 'clubs/A'), { platformModules: { activiteiten: true } });
+    await setDoc(doc(db, 'clubs/A/activiteiten/k1'), { naam: 'Kersttoernooi', comiteUids: ['coachA'] });
+  });
+  const live = { club: 'A', actId: 'k1', open: true, naam: 'Kersttoernooi', schema: [{ id: 'w1', a: 't1', b: 't2', t: '09:00', v: 'v1' }], uitslag: {} };
+  await assertFails(setDoc(doc(als('coordA'), 'toernooiLive/l1'), live));                                                // geen comité
+  await assertFails(setDoc(doc(als('adminB'), 'toernooiLive/l1'), live));                                                // andere club
+  await assertFails(setDoc(doc(kijker, 'toernooiLive/l1'), live));                                                       // anoniem schrijft niet
+  await assertSucceeds(setDoc(doc(coach, 'toernooiLive/l1'), live));
+  await assertSucceeds(getDoc(doc(kijker, 'toernooiLive/l1')));
+  await assertFails(getDocs(collection(kijker, 'toernooiLive')));                                                        // niet opsommen
+  await assertFails(updateDoc(doc(kijker, 'toernooiLive/l1'), { 'uitslag.w1': { a: 9, b: 0 } }));                          // kijker vult geen uitslag in
+  await assertSucceeds(updateDoc(doc(a, 'toernooiLive/l1'), { 'uitslag.w1': { a: 2, b: 1 } }));
+  await assertFails(updateDoc(doc(coach, 'toernooiLive/l1'), { actId: 'anders' }));                                       // niet omhangen
+  await assertSucceeds(setDoc(doc(coach, 'toernooiLive/l1'), { open: false }, { merge: true }));
+  await assertFails(getDoc(doc(kijker, 'toernooiLive/l1')));                                                             // dicht
+  await assertSucceeds(getDoc(doc(coach, 'toernooiLive/l1')));
+  await assertSucceeds(deleteDoc(doc(a, 'toernooiLive/l1')));
+});
 test('activiteiten: vrijwilligers schrijven zich via de open link in, alleen een voornaam en één keer per dienst', async () => {
   const a = als('adminA'), coach = als('coachA'), ouder = anoniem('anon1'), ander = anoniem('anon2');
   await env.withSecurityRulesDisabled(async ctx => {
