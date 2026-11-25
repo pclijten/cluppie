@@ -9,7 +9,8 @@
 import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, collection, onSnapshot } from './firebase.js?v=20261011g';
 import { plaatjeOk, veiligeLink } from './toernooi-logica.js?v=20261125w';
 import { sorteer } from './clubscherm-logica.js?v=20261125w';
-import { stijl as stijlLive } from './live-boot.js?v=20261125w';
+import { stijl as stijlLive } from './live-boot.js?v=20261126n';
+import { tvStijl, tvKleur, tvZet, bordHtml, logoHtml, tikHtml, diaHtml, sponsHtml, voetHtml } from './tv-stijl.js?v=20261126n';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const authKlaar = () => new Promise(k => { const stop = onAuthStateChanged(auth, () => { stop(); k(); }, () => k()); });
@@ -30,7 +31,7 @@ const PER = 8;      /* wedstrijden per pagina op de tv */
 export async function bootSchermPagina(tvId){
   const el = document.getElementById('deel');
   if (!el) return;
-  stijlLive(); stijl();
+  stijlLive(); stijl(); tvStijl();
   el.style.display = 'block';
   const breed = () => innerWidth >= 900;
   el.innerHTML = melding('Even geduld', 'Het scherm wordt geladen…');
@@ -68,7 +69,6 @@ export async function bootSchermPagina(tvId){
     const spons = st.items.filter(x => x.soort === 'sponsor' && (x.titel || x.img)), dias = st.items.filter(x => x.titel || x.tekst || x.img);
     const logo = plaatjeOk(d.logo) ? `<img class="lv-logo" src="${esc(d.logo)}" alt="">` : '', kleur = /^#[0-9a-f]{6}$/i.test(d.kleur || '') ? ` style="--accent:${d.kleur}"` : '';
     const dag = new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
-    const klok = new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
     if (!tv){
       el.innerHTML = `<div class="lv"${kleur}><header class="lv-kop">${logo}<div><small>${esc(dag)}</small><h1>${esc(d.clubNaam || 'Vandaag')}</h1></div></header>
         ${d.mededeling ? `<div class="lv-banner">${esc(d.mededeling)}</div>` : ''}
@@ -81,13 +81,24 @@ export async function bootSchermPagina(tvId){
     const n = nuMin(), komend = alles.findIndex(w => min(w.tijd) + 100 >= n), start = Math.max(0, komend < 0 ? alles.length - PER : komend);
     const kolommen = dias.length ? 1 : 2, perBeeld = PER * kolommen, paginas = Math.max(1, Math.ceil(Math.max(0, alles.length - start) / perBeeld)), pag = st.tik % paginas;
     const deel = alles.slice(start + pag * perBeeld, start + pag * perBeeld + perBeeld), beurt = dias.length ? dias[st.tik % dias.length] : null;
-    const lijst = l => l.map(rij).join('');
-    el.innerHTML = `<div class="lv lv-tv"${kleur}><header class="lv-tvkop">${logo}<div class="lv-tvtitel"><small>${esc(dag)}</small><h1>${esc(d.clubNaam || 'Vandaag')}</h1></div><span class="lv-klok">${esc(klok)}</span></header>
-      <main class="lv-tvmain"><div class="lv-tvkolom"><section class="lv-kaart ks-prog"><h2>Vandaag op het programma${paginas > 1 ? ` <small>${pag + 1} / ${paginas}</small>` : ''}</h2>
-          ${deel.length ? lijst(deel.slice(0, PER)) : `<p class="ks-leeg">${alles.length ? 'Alle wedstrijden van vandaag zijn gespeeld.' : 'Vandaag staan er geen wedstrijden op het programma.'}</p>`}</section></div>
-        <div class="lv-tvkolom">${beurt ? dia(beurt) : deel.length > PER ? `<section class="lv-kaart ks-prog"><h2>&nbsp;</h2>${lijst(deel.slice(PER))}</section>` : `<section class="lv-kaart lv-dia"><h2>Welkom bij ${esc(d.clubNaam || 'de club')}</h2><p>Veel plezier vandaag!</p></section>`}</div></main>
-      ${spons.length ? `<div class="lv-tvspons"><small>Sponsoren</small>${balk(spons, false)}</div>` : ''}
-      ${d.mededeling ? `<footer class="lv-tvvoet"><div class="lv-ticker">${esc(d.mededeling)}</div></footer>` : ''}</div>`;
+    const tvRij = w => { const bezig = isVandaag && !w.afgelast && !w.stand && w.thuis && min(w.tijd) <= n && n < min(w.tijd) + 90;
+      return `<div class="kb-wed ${w.afgelast ? 'af' : ''} ${bezig ? 'bezig' : ''}" style="--pk:${w.thuis ? 'var(--tv-wit)' : 'rgba(255,255,255,.28)'}" data-tv-k="${esc([w.tijd, w.a, w.b].join('|'))}" data-tv-stand="${esc(w.stand || '')}">
+      <span class="kb-wed-v"><b>${esc(w.tijd || '–')}</b>${esc(w.afgelast ? 'Afgelast' : [w.veld, w.kk ? 'kk ' + w.kk : ''].filter(Boolean).join(' · ') || (w.thuis ? '' : 'uit'))}</span>
+      <span class="kb-wed-a">${esc(w.a)}</span><span class="kb-wed-u ${w.stand ? 'klaar' : ''}">${esc(w.stand || 'vs')}</span><span class="kb-wed-b">${esc(w.b)}</span></div>`; };
+    const lijst = l => l.map(tvRij).join('');
+    const img = plaatjeOk(d.logo) ? `<img src="${esc(d.logo)}" alt="">` : '';
+    const diaVan = x => diaHtml({ ...x, img: plaatjeOk(x.img) ? x.img : '' }, x.soort === 'sponsor' ? (x.pakket === 'hoofd' ? 'Onze hoofdsponsor' : 'Met dank aan onze sponsor') : '');
+    const welkom = `<section class="kb-paneel kb-dia kb-welkom">${logoHtml(img)}<small>${esc(dag)}</small><h2>Welkom bij ${esc(d.clubNaam || 'de club')}</h2><p>Veel plezier vandaag!</p></section>`;
+    const rechts = beurt ? diaVan(beurt) + tikHtml(dias.length, st.tik % dias.length, 12)
+      : deel.length > PER ? `<section class="kb-paneel ks-prog"><h2>&nbsp;</h2>${lijst(deel.slice(PER))}</section>` : welkom;
+    tvZet(el, `<div class="lv lv-tv"${tvKleur(d.kleur)}>${bordHtml()}
+      <header class="kb-kop" data-tv="kop">${logoHtml(img)}<div class="kb-titel"><small>${esc(dag)}</small><h1>${esc(d.clubNaam || 'Vandaag')}</h1></div><div class="kb-klokblok"><div class="kb-klok" data-tv-klok></div></div></header>
+      <main class="kb-main"><div class="kb-kolom" data-tv="links"><section class="kb-paneel ks-prog"><h2>Vandaag op het programma${paginas > 1 ? ` <small>${pag + 1} / ${paginas}</small>` : ''}</h2>
+          ${deel.length ? lijst(deel.slice(0, PER)) : `<p class="kb-leeg">${alles.length ? 'Alle wedstrijden van vandaag zijn gespeeld.' : 'Vandaag staan er geen wedstrijden op het programma.'}</p>`}
+          ${paginas > 1 ? tikHtml(paginas, pag, 12) : ''}</section></div>
+        <div class="kb-kolom" data-tv="rechts">${rechts}</div></main>
+      ${sponsHtml(spons.map(x => ({ ...x, img: plaatjeOk(x.img) ? x.img : '' })))}
+      ${voetHtml({ regels: d.mededeling ? [{ tekst: d.mededeling }] : [] })}</div>`);
     document.documentElement.classList.add('lv-tv-html');
   }
 }
@@ -98,8 +109,7 @@ function stijl(){
   s.textContent = `
 .ks-wed{grid-template-columns:92px minmax(0,1fr) 58px minmax(0,1fr)}
 .ks-af{opacity:.55}.ks-af .lv-wed-a,.ks-af .lv-wed-b{text-decoration:line-through}
-.lv-tv .ks-wed{grid-template-columns:9.5em minmax(0,1fr) 4.6em minmax(0,1fr);font-size:1.15em;padding:.42em 0 .42em .6em}
-.lv-tv .ks-prog{flex:1;min-height:0;overflow:hidden}.ks-leeg{font-size:1.3em}
+.lv-tv .ks-prog{flex:1}.lv-tv .ks-prog .kb-wed{grid-template-columns:6.4em minmax(0,1fr) 3.8em minmax(0,1fr)}
 @media (max-width:420px){.ks-wed{grid-template-columns:78px minmax(0,1fr) 46px minmax(0,1fr)}}`;
   document.head.appendChild(s);
 }
