@@ -11,6 +11,15 @@ export const VOETBAL = vries({
   naam: 'Voetbal',
   icoon: 'football-pitch',
   /* [20261125y] woorden die per sport verschillen (stap 3); sportWoord() in sporten.js leest ze */
+  /* [20261125z] veld (stap 4). Maten in meters; het tactiekbord tekent in procenten van het bord
+     (breedte × lengte, staand): dwarslijnen op een hoogte, een middencirkel (breedte in % van het bord)
+     en vakken aan beide doelkanten (b = breedte, h = diepte, vorm rechthoek of boog). De veldkaart
+     tekent de middencirkel in % van de lengte van het veld. */
+  veld: {
+    lengte: 105, breedte: 68,
+    bord: { dwars: [50], cirkel: 24, vakken: [{ id: 'zestien', b: 56, h: 13, vorm: 'rechthoek' }, { id: 'vijf', b: 28, h: 5.5, vorm: 'rechthoek' }] },
+    kaart: { cirkel: 18 },
+  },
   woorden: { bond: 'KNVB', ledenbron: 'Sportlink', keeper: 'keeper', elftal: 'elftal', buitenspel: 'buitenspel' },
   /* Regels die per club instelbaar zijn (ACTIEF in config.js). KNVB: tijdstraf 5 min t/m O15, daarna 10. */
   tijdstraf: { pupilSec: 300, jeugdSec: 600, jeugdVanaf: 16 },

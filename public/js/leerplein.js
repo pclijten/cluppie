@@ -21,6 +21,7 @@ import { esc, spelerNr, bewaakTerug, vangnetStilTerugAlsNodig, terugLaag } from 
 import { LEERCURVE, bouwSlots } from './config.js?v=20261125y';
 import { LEERINHOUD } from './leerinhoud.js?v=20261110a';
 import { telNav } from './tracker.js?v=20261125y';
+import { sportVeld } from './sporten.js?v=20261125y';   /* [20261125z] veld uit het sportprofiel */
 
 const NS = 'http://www.w3.org/2000/svg';
 
@@ -110,7 +111,7 @@ function toonThema(){
       <div class="lp-veld-wrap" id="lpVeldWrap">
         <div class="lp-veld"></div>
         <div class="lp-lijn lp-midden"></div>
-        <div class="lp-lijn lp-cirkel"></div>
+        ${sportVeld().bord.cirkel ? '<div class="lp-lijn lp-cirkel"></div>' : ''}
         <svg class="lp-teken" id="lpTeken" viewBox="0 0 100 100" preserveAspectRatio="none">
           <defs>
             <marker id="lpLoop" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--loop,var(--n3))"/></marker>
