@@ -11,7 +11,7 @@ const SLEUTELS = ['id', 'naam', 'icoon', 'open', 'inhoud', 'ledenbron', 'veld', 
   'categorieenMeiden', 'formaties', 'lijnNaam', 'zoneNaam', 'positieGroepen', 'kalenderSeizoen', 'kalender', 'leercurve', 'formatie11', 'doelSuggesties'];
 const diepBevroren = o => !o || typeof o !== 'object' || (Object.isFrozen(o) && Object.values(o).every(diepBevroren));
 ok(JSON.stringify(Object.keys(SP.SPORTEN)) === JSON.stringify(['voetbal', 'hockey', 'volleybal', 'korfbal']), 'vier sporten');
-ok(SP.openSporten().map(p => p.id).join() === 'voetbal' && !SP.meerdereSporten(), 'alleen voetbal open, de rest pilot');
+ok(SP.openSporten().map(p => p.id).join() === 'voetbal,hockey' && SP.meerdereSporten(), 'voetbal en hockey open, volleybal en korfbal pilot');
 
 const voetbalVoor = JSON.stringify({ cat: C.CATEGORIEEN, catM: C.CATEGORIEEN_MEIDEN, f: C.FORMATIES, l: C.LIJN_NAAM, p: C.POSITIE_GROEPEN, k: C.KNVB_KALENDER,
   lc: C.LEERCURVE, d: C.DOEL_SUGGESTIES_BANDEN, s: C.KNVB_SEIZOEN, f11: C.CLUB_FORMATIE_11, ts: C.ACTIEF.tijdstraf, bg: C.ACTIEF.bouwGrenzen });

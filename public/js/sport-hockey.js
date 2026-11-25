@@ -11,7 +11,7 @@ export const HOCKEY = vries({
   id: 'hockey',
   naam: 'Hockey',
   icoon: 'football-pitch',
-  open: false,          /* pilot: alleen de eindbaas zet een club op hockey */
+  open: true,           /* [20261126f] open voor iedereen (besluit Paul 25-11-2026); oefenstof volgt met de clubs */
   inhoud: false,
   ledenbron: 'lisa',
   veld: {

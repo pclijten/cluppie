@@ -4,10 +4,11 @@
    Server: functions/aanmelding.js (meldClubAan). Link om te delen: https://www.cluppie.io/?aanmelden */
 
 import { db, doc, getDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261126e';
-import { DISTRICTEN } from './clubconfig.js?v=20261126e';
-import { koppelClubSuggesties } from './clubgids.js?v=20261126e';
-import { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } from './sportlink-clubinfo.js?v=20261126e';
+import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261126f';
+import { DISTRICTEN } from './clubconfig.js?v=20261126f';
+import { koppelClubSuggesties } from './clubgids.js?v=20261126f';
+import { openSporten, meerdereSporten, sportProfiel } from './sporten.js?v=20261126f';   /* [20261126f] sport bij aanmelden */
+import { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } from './sportlink-clubinfo.js?v=20261126f';
 
 export async function laadMijnAanmelding(el){
   if (!el || !S.user) return;
@@ -34,9 +35,15 @@ export function modalClubAanmelden(naVersturen){
   const mail = S.user?.email || '';
   /* [20261012a] eerst (optioneel) de Sportlink Client ID: dan vullen we naam, plaats, logo en kleur in */
   const SL = { clientId: '', clubcode: '', logo: '', kleur: '', bestaatAl: false };
+  /* [20261126f] sport van de club: uit de link (?sport=, landingspagina), anders die van een eigen los team, anders voetbal */
+  const open = openSporten().map(p => p.id);
+  const uitLink = new URLSearchParams(location.search).get('sport');
+  const eigenSport = (S.teams || []).find(t => !t.club && t.sport)?.sport;
+  let sport = [uitLink, eigenSport].find(x => open.includes(x)) || 'voetbal';
   openModal(`<h2>Club aanmelden</h2>
-    <p class="cb-uitleg" style="margin:0 0 12px">Heb je de Sportlink Client ID van je club? Dan vullen we de rest voor je in. Zonder ID vul je in wat je weet; de rest regel je later in de app.</p>
-    <div class="cb-kaart sl-zoek">
+    ${meerdereSporten() ? `<div class="veldgroep"><label for="caSport">Sport</label><select class="invoer" id="caSport">${openSporten().map(p => `<option value="${p.id}"${p.id === sport ? ' selected' : ''}>${esc(p.naam)}</option>`).join('')}</select></div>` : ''}
+    <p class="cb-uitleg" style="margin:0 0 12px" data-ca-sportlink>Heb je de Sportlink Client ID van je club? Dan vullen we de rest voor je in. Zonder ID vul je in wat je weet; de rest regel je later in de app.</p>
+    <div class="cb-kaart sl-zoek" data-ca-sportlink>
       <div class="veldgroep" style="margin:0"><label for="caClient">Sportlink Client ID (optioneel)</label>
         <div class="rij sl-zoek-rij"><input class="invoer" id="caClient" maxlength="40" autocomplete="off" spellcheck="false" placeholder="Bijv. k7Rq2pX9aW">
           <button class="knop fluo" id="caZoek">Zoek club</button></div>
@@ -46,7 +53,7 @@ export function modalClubAanmelden(naVersturen){
     <div class="veldgroep"><label>Naam van de club</label><input class="invoer" id="caClub" maxlength="60" autocomplete="organization" placeholder="Bijv. RKVV Voorbeeld"></div>
     <div class="rij">
       <div class="veldgroep" style="flex:1"><label>Plaats</label><input class="invoer" id="caPlaats" maxlength="60" autocomplete="address-level2"></div>
-      <div class="veldgroep" style="flex:1"><label>KNVB-district</label><select class="invoer" id="caDistrict"><option value="">Weet ik niet</option>${DISTRICTEN.map(d => `<option value="${d.id}">${esc(d.naam)}</option>`).join('')}</select></div>
+      <div class="veldgroep" style="flex:1" data-ca-voetbal><label>KNVB-district</label><select class="invoer" id="caDistrict"><option value="">Weet ik niet</option>${DISTRICTEN.map(d => `<option value="${d.id}">${esc(d.naam)}</option>`).join('')}</select></div>
     </div>
     <div class="rij">
       <div class="veldgroep" style="flex:2"><label>Jouw naam</label><input class="invoer" id="caNaam" maxlength="80" value="${esc(naam)}" autocomplete="name"></div>
@@ -63,6 +70,18 @@ export function modalClubAanmelden(naVersturen){
     <label class="ci-schakel"><input type="checkbox" id="caAkkoord"><span>Ik meld deze club aan namens de club en ga akkoord met de <a href="privacy.html" target="_blank" rel="noopener">privacyverklaring</a>. De club sluit later digitaal de verwerkersovereenkomst af.</span></label>
     <button class="knop vol" id="caVerstuur" style="margin-top:12px">Aanmelding versturen</button>`);
   const $m = id => document.getElementById(id);
+  /* [20261126f] Sportlink-zoeken alleen bij een sport met Sportlink, het KNVB-district alleen bij voetbal */
+  const toonSport = () => {
+    document.querySelectorAll('[data-ca-sportlink]').forEach(x => { x.hidden = sportProfiel(sport).ledenbron !== 'sportlink'; });
+    document.querySelectorAll('[data-ca-voetbal]').forEach(x => { x.hidden = sport !== 'voetbal'; });
+    $m('caClub').dataset.cgUit = sport === 'voetbal' ? '' : '1';   /* clubgids kent alleen KNVB-clubs */
+  };
+  toonSport();
+  if ($m('caSport')) $m('caSport').onchange = e => {
+    sport = e.target.value; toonSport();
+    if (sport !== 'voetbal') $m('caDistrict').value = '';
+    if (sportProfiel(sport).ledenbron !== 'sportlink'){ Object.assign(SL, { clientId: '', clubcode: '', logo: '', kleur: '', bestaatAl: false }); $m('caVondst').innerHTML = ''; $m('caVerstuur').disabled = false; }
+  };
   const vul = (id, waarde) => { const el = $m(id); if (el && waarde){ el.value = waarde; el.classList.add('sl-auto'); } };
   /* [20261113b] bekende KNVB-clubnaam kiezen vult ook de plaats in */
   koppelClubSuggesties($m('caClub'), c => { if (c.plaats && !$m('caPlaats').value.trim()) vul('caPlaats', c.plaats); });
@@ -96,7 +115,7 @@ export function modalClubAanmelden(naVersturen){
     const data = {
       clubNaam: $m('caClub').value.trim(), plaats: $m('caPlaats').value.trim(), district: $m('caDistrict').value,
       contactNaam: $m('caNaam').value.trim(), aantalTeams: $m('caTeams').value, rol: $m('caRol').value.trim(), werkwijze: document.querySelector('input[name="caWerk"]:checked')?.value === 'vrij' ? 'vrij' : 'club',
-      contactEmail: $m('caMail').value.trim(), bericht: $m('caBericht').value.trim(), akkoord: $m('caAkkoord').checked,
+      contactEmail: $m('caMail').value.trim(), bericht: $m('caBericht').value.trim(), akkoord: $m('caAkkoord').checked, sport,
       ...(SL.clientId ? { sportlinkClientId: SL.clientId, sportlinkClubcode: SL.clubcode } : {}),
       ...(SL.logo ? { logo: SL.logo } : {}), ...(SL.kleur ? { kleur: SL.kleur } : {}),
     };

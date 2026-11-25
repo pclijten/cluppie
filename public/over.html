@@ -84,10 +84,10 @@
         <span class="sport__bond">KNVB</span>
         <span class="sport__status">Voor iedereen</span>
       </a>
-      <a class="sport reveal" href="mailto:paul@cluppie.io?subject=Pilot%20Cluppie%20hockey" data-sport="hockey">
+      <a class="sport sport--open reveal" href="#kies" data-sport="hockey">
         <span class="sport__naam">Hockey</span>
         <span class="sport__bond">KNHB</span>
-        <span class="sport__status">Pilot: meld je club aan</span>
+        <span class="sport__status">Voor iedereen</span>
       </a>
       <a class="sport reveal" href="mailto:paul@cluppie.io?subject=Pilot%20Cluppie%20volleybal" data-sport="volleybal">
         <span class="sport__naam">Volleybal</span>
@@ -100,7 +100,20 @@
         <span class="sport__status">Pilot: meld je club aan</span>
       </a>
     </div>
-    <p class="sporten__noot">Bij hockey, volleybal en korfbal bouwen we de oefenstof en de plannen samen met de eerste clubs. Opstelling, speeltijd, teamkamer en rollen werken meteen.</p>
+    <p class="sporten__noot">Opstelling, speeltijd, teamkamer en rollen werken bij elke sport meteen. De oefenstof en de plannen voor hockey, volleybal en korfbal bouwen we samen met de eerste clubs.</p>
+    <script>
+      /* [20261126f] gekozen open sport gaat mee naar de start van trainer en club (?sport=) */
+      document.querySelectorAll('.sport--open[data-sport]').forEach(function (t) {
+        t.addEventListener('click', function () {
+          var sp = t.dataset.sport;
+          document.querySelectorAll('.sport--open').forEach(function (x) { x.classList.toggle('sport--gekozen', x === t); });
+          document.querySelectorAll('a[href*="?start=trainer"], a[href*="?aanmelden"]').forEach(function (a) {
+            var u = a.getAttribute('href').replace(/&sport=[a-z]+/, '');
+            a.setAttribute('href', sp === 'voetbal' ? u : u + '&sport=' + sp);
+          });
+        });
+      });
+    </script>
   </div>
 </section>
 

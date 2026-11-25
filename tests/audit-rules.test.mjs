@@ -211,7 +211,8 @@ test('proeven per gebruikerstype', async () => {
   /* [20261126c] vier sporten: de eindbaas zet elke sport op een club; een losse trainer alleen een open sport (hockey e.a. zijn nog pilot) */
   await proef(99, 'eindbaas', 'zet een club op hockey', 'toestaan', () => updateDoc(doc(als('paul', EINDBAAS), 'clubs/test-fc'), { sport: 'hockey' }));
   await proef(100, 'eindbaas', 'zet een club op korfbal', 'toestaan', () => updateDoc(doc(als('paul', EINDBAAS), 'clubs/test-fc'), { sport: 'korfbal' }));
-  await proef(101, 'losse trainer', 'maakt een hockeyteam zonder club (pilot)', 'weigeren', () => setDoc(doc(als('los'), 'teams/los-hockey'), { naam: 'Buurt O9', leden: { los: true }, sport: 'hockey' }));
+  await proef(101, 'losse trainer', 'maakt een hockeyteam zonder club (open sport)', 'toestaan', () => setDoc(doc(als('los'), 'teams/los-hockey'), { naam: 'Buurt O9', leden: { los: true }, sport: 'hockey' }));
+  await proef(103, 'losse trainer', 'maakt een korfbalteam zonder club (pilot)', 'weigeren', () => setDoc(doc(als('los'), 'teams/los-korfbal'), { naam: 'Buurt K1', leden: { los: true }, sport: 'korfbal' }));
   await proef(102, 'clubadmin', 'zet de eigen club op volleybal', 'weigeren', () => updateDoc(doc(als('admin'), 'clubs/test-fc'), { sport: 'volleybal' }));
   /* als laatste: verwijderen maakt het team onbruikbaar voor de andere proeven */
   await proef(7, 'coach', 'verwijdert het eigen clubteam', 'weigeren', () => deleteDoc(doc(als('coach'), 'teams/o11')));
