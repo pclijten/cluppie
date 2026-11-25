@@ -19,6 +19,7 @@ export const ONDERDELEN = [
   { id: 'teamkamer',       naam: 'Teamkamer',        kort: 'Teamkamer', soort: 'schakel', uitleg: 'Ouders en spelers kijken mee bij hun team.' },
   { id: 'leren',           naam: 'Leren van gebruik', kort: 'Leren',    soort: 'schakel', uitleg: 'Cluppie leert van hoe trainers de app gebruiken.' },
   { id: 'veldplanner',     naam: 'Veldplanner',      kort: 'Veldplanner', soort: 'schakel', uitleg: 'Teams over velden, tijden en kleedkamers verdelen.' },
+  { id: 'activiteiten',    naam: 'Activiteiten',     kort: 'Activiteiten', soort: 'schakel', uitleg: 'Clubactiviteiten organiseren met draaiboek, comité en vrijwilligers.' },
   { id: 'pdfOmzetten',     naam: 'PDF omzetten',     kort: 'PDF',       soort: 'schakel', uitleg: 'Oefenstof-PDF omzetten zonder de AI-module.' },
   { id: 'aiLimiet',        naam: 'AI per maand',     kort: 'AI-limiet', soort: 'getal', min: 0, max: 100000, leeg: 'onbeperkt' },
   { id: 'maxVideoMB',      naam: 'Video max (MB)',   kort: 'Video MB',  soort: 'getal', min: 5, max: 300 },

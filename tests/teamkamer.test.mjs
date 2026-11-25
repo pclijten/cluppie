@@ -303,7 +303,7 @@ ok(!/<textarea|contenteditable/.test(app), 'ouders en spelers kunnen nergens vri
 const logica = fs.readFileSync(new URL('../functions/teamkamer-logica.js', import.meta.url), 'utf8');
 ok(!/afwezigRedenen\[|\.reden\b|\.notitie\b|leerpunten|beoordeling/.test(logica.replace(/\/\*[\s\S]*?\*\//g, '')), 'de kopie neemt geen reden, notitie, leerpunt of beoordeling over');
 const index = fs.readFileSync(new URL('../functions/index.js', import.meta.url), 'utf8');
-ok(index.includes("require('./teamkamer').functies") && Object.keys(F).length === 21, 'functies geëxporteerd');
+ok(index.includes("require('./teamkamer').functies") && Object.keys(F).length === 22, 'functies geëxporteerd');
 
 /* [20261116n] thuis oefenen: video's. Alleen een YouTube-id of een video uit de opslag van Cluppie komt in de kopie. */
 const opslag = 'https://firebasestorage.googleapis.com/v0/b/voorbeeld.appspot.com/o/clubs%2Fc1%2Fvideos%2Fclip.mp4?alt=media&token=x';

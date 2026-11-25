@@ -9,7 +9,7 @@
      bericht klaar, Cluppie verstuurt en bewaart niets. */
 import { auth, db, functions, httpsCallable, signInAnonymously, signOut, onAuthStateChanged, signInWithEmailAndPassword,
   createUserWithEmailAndPassword, sendEmailVerification, collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, where, onSnapshot } from './firebase.js?v=20261011g';
-import * as K from './kamer-logica.js?v=20261118a';
+import * as K from './kamer-logica.js?v=20261125m';
 
 const wortel = document.getElementById('tk');
 const qs = new URLSearchParams(location.search);
@@ -280,7 +280,7 @@ function htmlTrainingKaart(i){
   </section>`;
 }
 function htmlVandaag(){
-  const vandaag = K.vandaagIso(), kom = K.komend(A.agenda, vandaag), eerst = kom[0];
+  const vandaag = K.vandaagIso(), kom = K.komend(A.agenda, vandaag), eerst = kom.find(i => i.soort !== 'activiteit');   /* [20261125x] een clubactiviteit staat onder Daarna */
   const open = zichtbarePolls().filter(p => p.status === 'open');
   const nieuw = nieuweBerichten(), stem = nogStemmen();
   const eerder = mag('berichten') ? A.berichten.filter(b => !nieuw.includes(b)).slice(0, 2) : [];
@@ -297,7 +297,7 @@ function htmlVandaag(){
   const videos = (A.kamer?.thuisVideos || []).filter(v => v && (v.yt || v.url));
   /* [20261116r] daarna: de volgende training en de volgende wedstrijd, voor zover ze hierboven niet al staan */
   const rest = kom.filter(i => i !== eerst && i !== wedstrijdWeek);
-  const daarna = [rest.find(i => i.soort === 'training'), rest.find(i => i.soort === 'wedstrijd')].filter(Boolean).sort((a, b) => a.datum.localeCompare(b.datum));
+  const daarna = [rest.find(i => i.soort === 'training'), rest.find(i => i.soort === 'wedstrijd'), rest.find(i => i.soort === 'activiteit' && K.binnenDagen(i.datum, vandaag, 21))].filter(Boolean).sort((a, b) => a.datum.localeCompare(b.datum));
   return `<div class="tk-kolom">${boven}${eerst ? (eerst.soort === 'wedstrijd' ? htmlWedstrijdKaart(eerst) : htmlTrainingKaart(eerst)) : '<section class="tk-kaart"><p class="tk-zacht" style="margin:0">Er staat nog niets in de agenda.</p></section>'}
     ${wedstrijdWeek && wedstrijdWeek !== eerst ? htmlWedstrijdKaart(wedstrijdWeek) : ''}
     ${daarna.length ? `<h2 class="tk-label">Daarna</h2>${daarna.map(htmlItem).join('')}` : ''}
@@ -317,6 +317,7 @@ function htmlVandaag(){
     ${rol() === 'speler' ? `<div class="tk-melding">${ico('slot', true)}<span>Je ouder beheert je toegang. Chatten kan hier niet.</span></div>` : ''}</div>`;
 }
 function htmlItem(i){
+  if (i.soort === 'activiteit') return htmlActiviteit(i);
   const d = K.datumDelen(i.datum), isOpen = A.open === i.id, af = i.afwezig || [];
   const op = i.opstelling;
   return `<section class="tk-item"><button class="tk-item-kop" data-doe="open" data-id="${e(i.id)}" aria-expanded="${isOpen}">
@@ -331,6 +332,19 @@ function htmlItem(i){
       ${op ? htmlOpstelling(op) : ''}
       ${i.plek ? `<div class="tk-klein tk-zacht">${e([i.plek, i.veld].filter(Boolean).join(', '))}</div>` : ''}
       ${isOuder() && mag('afmelden') && !i.afgelast && i.datum >= K.vandaagIso() ? `<button class="tk-knop licht klein" data-doe="afmelden" data-id="${e(i.id)}">Afmelden via WhatsApp</button>` : ''}
+    </div>` : ''}</section>`;
+}
+/* [20261125x] clubactiviteit (Activiteiten): naam, tijd, plek, plan B en de link om te helpen. Geen namen van kinderen. */
+function htmlActiviteit(i){
+  const d = K.datumDelen(i.datum), isOpen = A.open === i.id, link = /^https:\/\//.test(i.link || '') ? i.link : '';
+  return `<section class="tk-item"><button class="tk-item-kop" data-doe="open" data-id="${e(i.id)}" aria-expanded="${isOpen}">
+      <span class="tk-datum"><span>${d.dag}</span><b>${d.nr}</b><span>${d.maand}</span></span>
+      <span class="tk-item-tekst"><span class="tk-vet" style="display:block">${e(K.itemTitel(i))}</span><span class="tk-klein ${i.planB ? 'tk-let' : 'tk-zacht'}">${e(K.itemSub(i))}</span></span>
+      <span class="tk-klein tk-vet">Club</span></button>
+    ${isOpen ? `<div class="tk-item-meer">
+      ${i.planB ? `<div class="tk-rij"><span class="tk-let tk-vet">Plan B</span><span>${e(i.planB)}</span></div>` : ''}
+      ${i.tekst ? `<p class="tk-klein" style="margin:0;white-space:pre-line">${e(i.tekst)}</p>` : ''}
+      ${link && i.datum >= K.vandaagIso() ? `<a class="tk-knop licht klein" href="${e(link)}" target="_blank" rel="noopener">Ik help mee</a>` : ''}
     </div>` : ''}</section>`;
 }
 function htmlAgenda(){

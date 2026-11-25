@@ -717,6 +717,70 @@ test('veldplanner: clubbeheer en trainingscoördinator plannen, alleen met de sc
   await assertFails(updateDoc(doc(a, 'clubs/A/veldroosters/basis'), { blokken: [] }));                              // weer uit: alleen nog lezen
   await assertSucceeds(getDoc(doc(a, 'clubs/A/veldroosters/basis')));
 });
+/* ---------- [20261125x] activiteiten: comité, agenda voor de teams, open vrijwilligerslink ---------- */
+test('activiteiten: clubbeheer maakt aan, het comité werkt mee, alleen met de schakelaar van de eindbaas aan', async () => {
+  const a = als('adminA'), coach = als('coachA'), coord = als('coordA');
+  const act = { naam: 'Kersttoernooi', datum: '2026-12-19', comiteUids: [], taken: { t1: { titel: 'Zaal', d: 56, status: 'open' } }, budget: {} };
+  await assertFails(setDoc(doc(a, 'clubs/A/activiteiten/k1'), act));                                                  // schakelaar nog uit
+  await env.withSecurityRulesDisabled(async ctx => { await updateDoc(doc(ctx.firestore(), 'clubs/A'), { platformModules: { activiteiten: true } }); });
+  await assertSucceeds(setDoc(doc(a, 'clubs/A/activiteiten/k1'), act));
+  await assertFails(setDoc(doc(coach, 'clubs/A/activiteiten/k2'), { ...act, comiteUids: ['coachA'] }));               // een coach maakt geen activiteit
+  await assertFails(getDoc(doc(coach, 'clubs/A/activiteiten/k1')));                                                    // nog niet in het comité
+  await assertSucceeds(updateDoc(doc(a, 'clubs/A/activiteiten/k1'), { comiteUids: ['coachA'], 'comite.coachA': { naam: 'Coach', uid: 'coachA', rol: 'Voorzitter' } }));
+  await assertSucceeds(getDoc(doc(coach, 'clubs/A/activiteiten/k1')));
+  await assertSucceeds(getDocs(query(collection(coach, 'clubs/A/activiteiten'), where('comiteUids', 'array-contains', 'coachA'))));
+  await assertFails(getDocs(collection(coach, 'clubs/A/activiteiten')));                                               // niet alles van de club
+  await assertSucceeds(updateDoc(doc(coach, 'clubs/A/activiteiten/k1'), { 'taken.t1.status': 'klaar' }));             // comité werkt mee
+  await assertFails(updateDoc(doc(coach, 'clubs/A/activiteiten/k1'), { comiteUids: ['coachA', 'coordA'] }));           // maar kiest het comité niet
+  await assertFails(updateDoc(doc(coord, 'clubs/A/activiteiten/k1'), { 'taken.t1.status': 'open' }));                 // geen comité
+  await assertFails(deleteDoc(doc(coach, 'clubs/A/activiteiten/k1')));
+  await assertFails(getDoc(doc(als('adminB'), 'clubs/A/activiteiten/k1')));                                            // andere club
+  await assertFails(updateDoc(doc(a, 'clubs/A/activiteiten/k1'), { naam: '' }));
+  /* agenda voor de teams: elk clublid leest, het comité schrijft */
+  await assertSucceeds(setDoc(doc(coach, 'clubs/A/activiteitenAgenda/k1'), { naam: 'Kersttoernooi', datum: '2026-12-19', teams: ['t1'] }));
+  await assertSucceeds(getDoc(doc(coord, 'clubs/A/activiteitenAgenda/k1')));
+  await assertFails(setDoc(doc(coord, 'clubs/A/activiteitenAgenda/k1'), { naam: 'Gekaapt' }));
+  await assertFails(getDoc(doc(als('coachB'), 'clubs/A/activiteitenAgenda/k1')));
+  /* clubsjablonen */
+  await assertSucceeds(setDoc(doc(a, 'clubs/A/activiteitSjablonen/s1'), { naam: 'Ons toernooi', taken: [] }));
+  await assertSucceeds(getDoc(doc(coach, 'clubs/A/activiteitSjablonen/s1')));
+  await assertFails(setDoc(doc(coach, 'clubs/A/activiteitSjablonen/s2'), { naam: 'X', taken: [] }));
+  /* schakelaar weer uit: alleen nog lezen */
+  await env.withSecurityRulesDisabled(async ctx => { await updateDoc(doc(ctx.firestore(), 'clubs/A'), { platformModules: { activiteiten: false } }); });
+  await assertFails(updateDoc(doc(a, 'clubs/A/activiteiten/k1'), { naam: 'Nieuw' }));
+  await assertSucceeds(getDoc(doc(a, 'clubs/A/activiteiten/k1')));
+});
+test('activiteiten: vrijwilligers schrijven zich via de open link in, alleen een voornaam en één keer per dienst', async () => {
+  const a = als('adminA'), coach = als('coachA'), ouder = anoniem('anon1'), ander = anoniem('anon2');
+  await env.withSecurityRulesDisabled(async ctx => {
+    const db = ctx.firestore();
+    await updateDoc(doc(db, 'clubs/A'), { platformModules: { activiteiten: true } });
+    await setDoc(doc(db, 'clubs/A/activiteiten/k1'), { naam: 'Kersttoernooi', comiteUids: ['coachA'] });
+  });
+  const deel = { club: 'A', actId: 'k1', titel: 'Kersttoernooi', open: true, diensten: { d1: { naam: 'Kantine', start: '09:00', eind: '11:00', nodig: 2 } } };
+  await assertFails(setDoc(doc(als('coordA'), 'activiteitDeel/x1'), deel));                                            // geen comité
+  await assertFails(setDoc(doc(als('adminB'), 'activiteitDeel/x1'), deel));
+  await assertSucceeds(setDoc(doc(coach, 'activiteitDeel/x1'), deel));                                                  // comitélid zet diensten klaar
+  await assertSucceeds(getDoc(doc(ouder, 'activiteitDeel/x1')));
+  await assertFails(getDocs(collection(ouder, 'activiteitDeel')));                                                     // niet alle links opvragen
+  const aanm = { uid: 'anon1', dienst: 'd1', naam: 'Anna', ms: nu, door: 'link' };
+  await assertSucceeds(setDoc(doc(ouder, 'activiteitDeel/x1/aanmeldingen/anon1_d1'), aanm));
+  await assertFails(setDoc(doc(ouder, 'activiteitDeel/x1/aanmeldingen/anders'), aanm));                                // vast id
+  await assertFails(setDoc(doc(ouder, 'activiteitDeel/x1/aanmeldingen/anon1_d9'), { ...aanm, dienst: 'd9' }));          // bestaat niet
+  await assertFails(setDoc(doc(ander, 'activiteitDeel/x1/aanmeldingen/anon2_d1'), { ...aanm, uid: 'anon2', naam: 'x'.repeat(25) }));
+  await assertFails(setDoc(doc(ander, 'activiteitDeel/x1/aanmeldingen/anon2_d1'), { ...aanm, uid: 'anon2', tel: '0612345678' }));
+  await assertFails(setDoc(doc(ander, 'activiteitDeel/x1/aanmeldingen/anon2_d1'), { ...aanm, uid: 'anon2', door: 'comite' }));
+  await assertFails(deleteDoc(doc(ander, 'activiteitDeel/x1/aanmeldingen/anon1_d1')));                                 // niet die van een ander
+  await assertSucceeds(updateDoc(doc(coach, 'activiteitDeel/x1/aanmeldingen/anon1_d1'), { aanwezig: true }));          // op de dag aftekenen
+  await assertFails(updateDoc(doc(coach, 'activiteitDeel/x1/aanmeldingen/anon1_d1'), { naam: 'Ander' }));
+  await assertFails(updateDoc(doc(ouder, 'activiteitDeel/x1/aanmeldingen/anon1_d1'), { aanwezig: true }));
+  await assertSucceeds(setDoc(doc(a, 'activiteitDeel/x1/aanmeldingen/c1'), { uid: 'adminA', dienst: 'd1', naam: 'Bas', ms: nu, door: 'comite' }));
+  await assertFails(updateDoc(doc(coach, 'activiteitDeel/x1'), { club: 'B' }));                                         // club ligt vast
+  await assertSucceeds(updateDoc(doc(coach, 'activiteitDeel/x1'), { open: false }));
+  await assertFails(getDoc(doc(ander, 'activiteitDeel/x1')));                                                          // link dicht
+  await assertFails(setDoc(doc(ander, 'activiteitDeel/x1/aanmeldingen/anon2_d1'), { ...aanm, uid: 'anon2' }));
+  await assertSucceeds(deleteDoc(doc(ouder, 'activiteitDeel/x1/aanmeldingen/anon1_d1')));                              // eigen aanmelding weghalen mag altijd
+});
 test('toernooitje: het eigen team leest en schrijft, een ander team en een andere club niet', async () => {
   const t = { naam: 'Vrijdagtoernooi', status: 'opzet', gemaaktMs: nu };
   await assertSucceeds(setDoc(doc(als('coachA'), 'teams/t1/toernooitjes/x1'), t));
