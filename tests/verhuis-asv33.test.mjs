@@ -24,6 +24,11 @@ is(L.doelPad('mail/x', {}), null);
 is(L.doelPad('gebruikers/oud/gelezen/tr1', { uidMap: { oud: 'nieuw' } }), 'gebruikers/nieuw/gelezen/tr1');
 is(L.doelPad('teams/oud/spelers/oud', { uidMap: { oud: 'nieuw' } }), 'teams/nieuw/spelers/nieuw', 'alleen document-id\'s, geen collectienamen');
 is(L.doelPad('oud/x', { uidMap: { oud: 'nieuw' } }), null);
+is(L.doelPad('gebruik/oud_video_c9', { uidMap: { oud: 'nieuw' } }), 'gebruik/nieuw_video_c9', 'wie een video bekeek: id begint met het account-id');
+is(L.doelPad('gebruik/oud_2026-11-23', { uidMap: { oud: 'nieuw' } }), 'gebruik/nieuw_2026-11-23');
+is(L.doelPad('navpaden/oud_abc123', { uidMap: { oud: 'nieuw' } }), 'navpaden/nieuw_abc123');
+is(L.doelPad('gebruik/ander_video_c9', { uidMap: { oud: 'nieuw' } }), 'gebruik/ander_video_c9');
+is(L.doelPad('gebruikers/u1/meta/onboarding', {}), 'gebruikers/u1/meta/onboarding', 'gezien-status van de uitgelichte video gaat mee');
 ok(!L.KOPIEER.some(c => L.SLA_OVER.includes(c) || L.NAAR_CLUB.includes(c)), 'een collectie staat in één lijst');
 
 /* ---- accounts ---- */

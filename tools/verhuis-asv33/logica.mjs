@@ -23,8 +23,14 @@ export function doelPad(pad, { clubId, uidMap = {} } = {}){
     return ['clubs', clubId, ...d].join('/');
   }
   if (!KOPIEER.includes(top)) return null;
-  /* document-id's die een account-id zijn (gebruikers/{uid}, …/gelezen, clubs/x/speelstijlRondes/y/antwoorden/{uid}) */
-  return d.map((deel, i) => (i % 2 === 1 && uidMap[deel]) ? uidMap[deel] : deel).join('/');
+  /* document-id's die een account-id zijn (gebruikers/{uid}, …/gelezen, clubs/x/speelstijlRondes/y/antwoorden/{uid})
+     of ermee beginnen (gebruik/{uid}_{datum}, gebruik/{uid}_video_{clubId}, navpaden/{uid}_{sessie}) */
+  return d.map((deel, i) => {
+    if (i % 2 !== 1) return deel;
+    if (uidMap[deel]) return uidMap[deel];
+    const k = deel.indexOf('_');
+    return k > 0 && uidMap[deel.slice(0, k)] ? uidMap[deel.slice(0, k)] + deel.slice(k) : deel;
+  }).join('/');
 }
 
 /* ---------- Accounts ---------- */
