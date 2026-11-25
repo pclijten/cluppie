@@ -334,6 +334,15 @@ export const clubVanTeam = (t, teamId) => t.clubs?.[t.teams?.[teamId]?.club]?.na
 
 /* ---------- live pagina ---------- */
 export const MAX_MEDEDELINGEN = 30;
+/* Sponsoren en eigen schermen voor de live pagina en de tv. Het plaatje is een klein gemaakte
+   data-URL (zie activiteit-toernooi.js), zodat het in het document past en zonder account te zien is. */
+export const MAX_SCHERMEN = 12, MAX_PLAATJE = 70000;
+export const plaatjeOk = v => typeof v === 'string' && v.length <= MAX_PLAATJE && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v);
+export const veiligeLink = v => { const u = String(v ?? '').trim().slice(0, 200); if (!u) return ''; const m = /^https?:\/\//i.test(u) ? u : /^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(u) ? 'https://' + u : ''; return /["'<>\s]/.test(m) ? '' : m; };
+export function schermen(t, { leeg = false } = {}){
+  return gesorteerd(t?.schermen).map(x => ({ id: x.id, soort: x.soort === 'sponsor' ? 'sponsor' : 'scherm', titel: tekst(x.titel, 60), tekst: tekst(x.tekst, 240), link: veiligeLink(x.link), img: plaatjeOk(x.img) ? x.img : '', tv: x.tv !== false, tel: x.tel !== false }))
+    .filter(x => leeg || x.titel || x.tekst || x.img).slice(0, MAX_SCHERMEN);
+}
 export const liveId = () => Array.from({ length: 20 }, () => 'abcdefghjkmnpqrstuvwxyz23456789'[Math.floor(Math.random() * 31)]).join('');
 /* Wat iedereen met de link ziet: schema, uitslagen, stand, kleedkamers en mededelingen. Geen spelers. */
 export function liveKopie(act = {}, { clubNaam = '' } = {}){
@@ -347,6 +356,7 @@ export function liveKopie(act = {}, { clubNaam = '' } = {}){
     schema: (t.schema || []).slice(0, MAX.schema).map(w => ({ id: w.id, p: w.p, a: w.a, b: w.b, v: w.v, t: w.t, fase: w.fase || 'poule' })),
     uitslag: Object.fromEntries(Object.entries(t.uitslag || {}).filter(([, u]) => u && u.a != null && u.b != null && u.a !== '' && u.b !== '').map(([id, u]) => [id, { a: Number(u.a), b: Number(u.b) }])),
     mededelingen: mededelingen(t),
+    schermen: schermen(t),
     planB: act.planB?.actief === true ? tekst(act.planB.tekst, 300) : '',
   };
 }

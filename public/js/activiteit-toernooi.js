@@ -11,9 +11,9 @@
    Opslag: veld `toernooi` in de activiteit (zie toernooi-logica.js). Geen rules-wijziging nodig.
    Dit bestand krijgt alles van activiteiten.js via ctx en importeert dat bestand niet. */
 import { db, doc, collection, getDoc, getDocs, setDoc, deleteField } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261125u';
+import { S, esc, meld } from './state.js?v=20261125v';
 import { ico } from './icons.js?v=20261116t';
-import * as T from './toernooi-logica.js?v=20261125u';
+import * as T from './toernooi-logica.js?v=20261125v';
 
 const opt = (w, t, sel) => `<option value="${esc(w)}"${sel ? ' selected' : ''}>${esc(t)}</option>`;
 const SUB = [['opzet', 'Opzet'], ['spelers', 'Spelers'], ['teams', 'Teams'], ['schema', 'Schema'], ['kk', 'Kleedkamers'], ['uitslagen', 'Uitslagen'], ['live', 'Live']];
@@ -332,6 +332,10 @@ export async function klikToernooi(ctx, b){
       inp.value = '';
       await zet({ [`toernooi.mededelingen.${T.nieuwId('m')}`]: { tekst, ms: Date.now() } }); return meld(t.live ? 'Mededeling staat op de live pagina' : 'Mededeling bewaard');
     }
+    case 'scherm-nieuw': { if (Object.keys(t.schermen || {}).length >= T.MAX_SCHERMEN) return meld(`Maximaal ${T.MAX_SCHERMEN} sponsoren en schermen.`);
+      return zet({ [`toernooi.schermen.${T.nieuwId('x')}`]: { soort: id === 'sponsor' ? 'sponsor' : 'scherm', titel: '', tekst: '', volg: T.volgende(t.schermen), tv: true, tel: true } }); }
+    case 'scherm-weg': return zet({ [`toernooi.schermen.${id}`]: deleteField() });
+    case 'scherm-plaatje-weg': return zet({ [`toernooi.schermen.${id}.img`]: deleteField() });
     case 'med-weg': return zet({ [`toernooi.mededelingen.${id}`]: deleteField() });
     case 'kk-nieuw': return zet({ [`toernooi.kk.${T.nieuwId('k')}`]: { naam: `Kleedkamer ${Object.keys(t.kk || {}).length + 1}`, plekken: 2, volg: T.volgende(t.kk) } });
     case 'kk-club': {
@@ -371,6 +375,13 @@ async function importeer(ctx, tekst){
 
 export async function wijzigToernooi(ctx, el){
   const a = ctx.act, t = a.toernooi || {};
+  if (el.matches('[data-tn-plaatje]')){
+    const f = el.files?.[0], sid = el.dataset.tnPlaatje; el.value = ''; if (!f || !t.schermen?.[sid]) return true;
+    if (!/^image\//.test(f.type) || f.size > 12 * 1024 * 1024){ meld('Kies een afbeelding (jpg of png, max 12 MB).'); return true; }
+    try { const img = await kleinPlaatje(f); if (!T.plaatjeOk(img)) throw new Error('te groot'); await ctx.zet({ [`toernooi.schermen.${sid}.img`]: img }); meld('Afbeelding geplaatst'); }
+    catch (e){ console.error('[toernooi] plaatje', e); meld('Deze afbeelding kon niet gebruikt worden. Probeer een jpg of png.'); }
+    return true;
+  }
   if (el.matches('[data-tn-bestand]')){
     const f = el.files?.[0]; el.value = ''; if (!f) return true;
     if (f.size > 2 * 1024 * 1024){ meld('Dit bestand is te groot (max 2 MB).'); return true; }
@@ -433,6 +444,20 @@ async function excelRijen(bestand){
 }
 
 /* ---------- live pagina, QR en mededelingen ---------- */
+/* Een logo of foto klein maken (wit vlak eronder, jpg) tot het in het document past. */
+async function kleinPlaatje(bestand){
+  const url = URL.createObjectURL(bestand);
+  try {
+    const img = await new Promise((ok, mis) => { const i = new Image(); i.onload = () => ok(i); i.onerror = mis; i.src = url; });
+    for (const [maat, kw] of [[640, .82], [520, .78], [420, .72], [320, .68], [240, .6]]){
+      const f = Math.min(1, maat / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(img.naturalWidth * f)); c.height = Math.max(1, Math.round(img.naturalHeight * f));
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+      const uit = c.toDataURL('image/jpeg', kw); if (uit.length <= T.MAX_PLAATJE) return uit;
+    }
+    return '';
+  } finally { URL.revokeObjectURL(url); }
+}
 export const liveLink = (id, tv) => `${location.origin}${location.pathname.replace(/[^/]*$/, '')}?live=${encodeURIComponent(id)}${tv ? '&tv=1' : ''}`;
 let _qr = null;
 async function qrSvg(tekst){
@@ -443,7 +468,7 @@ async function qrSvg(tekst){
 function htmlLive(ctx, a, t){
   const aan = t.live === true && t.liveId, link = aan ? liveLink(t.liveId) : '';
   if (aan && st.qrVoor !== t.liveId){ st.qrVoor = t.liveId; st.qrSvg = ''; qrSvg(link).then(svg => { st.qrSvg = svg; ctx.herteken(); }).catch(() => { st.qrSvg = ''; }); }
-  const med = T.mededelingen(t);
+  const med = T.mededelingen(t), sch = T.schermen(t, { leeg: true }), vol = Object.keys(t.schermen || {}).length >= T.MAX_SCHERMEN;
   return `<div class="ac-paneel"><h3>Live pagina</h3><p class="ac-zacht">Iedereen met de link of de QR-code ziet het speelschema, de uitslagen, de stand, de kleedkamers en je mededelingen. Zonder account, en zonder namen van spelers. De pagina werkt zichzelf bij.</p>
       ${aan ? `<div class="tn-live"><div class="tn-qr">${st.qrSvg || '<span class="ac-zacht">QR-code maken…</span>'}</div>
           <div class="tn-live-t"><input class="ac-in" readonly value="${esc(link)}" aria-label="Link naar de live pagina" onfocus="this.select()">
@@ -455,7 +480,14 @@ function htmlLive(ctx, a, t){
     <div class="ac-paneel"><h3>Mededelingen</h3><p class="ac-zacht">Bijvoorbeeld: "Finales beginnen 10 minuten later" of "Prijsuitreiking om 12:30 in de kantine". Staat meteen bovenaan de live pagina en loopt mee op tv.</p>
       <div class="ac-rij"><input class="ac-in ac-groei" data-tn-med maxlength="280" placeholder="Typ een mededeling"><button class="knop vol klein" data-tn="med-stuur">Plaatsen</button></div>
       ${med.map(m => `<div class="ac-rij"><span class="ac-tijd">${esc(new Date(m.ms).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }))}</span><span class="ac-groei">${esc(m.tekst)}</span><button class="ac-x" data-tn="med-weg" data-id="${esc(m.id)}" aria-label="Weg">✕</button></div>`).join('') || '<p class="ac-zacht">Nog geen mededelingen.</p>'}
-      <p class="ac-zacht">Coaches van eigen teams bereik je ook via de tab Communicatie (Berichten en WhatsApp).</p></div>`;
+      <p class="ac-zacht">Coaches van eigen teams bereik je ook via de tab Communicatie (Berichten en WhatsApp).</p></div>
+    <div class="ac-paneel"><h3>Sponsoren en eigen schermen</h3><p class="ac-zacht">Sponsoren staan met hun logo op de tv en onderaan de live pagina. Een eigen scherm is een dia met titel, tekst en eventueel een afbeelding, bijvoorbeeld het menu van de kantine, de loterij of de huisregels. Op tv wisselen ze af met de standen.</p>
+      ${sch.map(x => `<div class="tn-scherm"><label class="tn-plaatje" title="Afbeelding kiezen">${x.img ? `<img src="${esc(x.img)}" alt="">` : `<span>${x.soort === 'sponsor' ? 'Logo' : 'Afbeelding'}</span>`}<input type="file" accept="image/*" data-tn-plaatje="${esc(x.id)}" hidden></label>
+          <div class="tn-scherm-v"><div class="ac-rij"><span class="ac-zacht">${x.soort === 'sponsor' ? 'Sponsor' : 'Scherm'}</span>${veld(`schermen.${x.id}.titel`, x.titel, { klasse: 'ac-groei vet', ph: x.soort === 'sponsor' ? 'Naam van de sponsor' : 'Titel', extra: 'maxlength="60"' })}<button class="ac-x" data-tn="scherm-weg" data-id="${esc(x.id)}" aria-label="Weg">✕</button></div>
+            ${veld(`schermen.${x.id}.tekst`, x.tekst, { ph: x.soort === 'sponsor' ? 'Korte tekst (mag leeg blijven)' : 'Tekst op het scherm', extra: 'maxlength="240"' })}
+            ${x.soort === 'sponsor' ? veld(`schermen.${x.id}.link`, x.link, { ph: 'Website (mag leeg blijven)', extra: 'maxlength="200" inputmode="url"' }) : ''}
+            <div class="ac-rij"><label class="ac-schak"><input type="checkbox" data-veld="toernooi.schermen.${esc(x.id)}.tv" data-bool ${x.tv ? 'checked' : ''}> Op tv</label><label class="ac-schak"><input type="checkbox" data-veld="toernooi.schermen.${esc(x.id)}.tel" data-bool ${x.tel ? 'checked' : ''}> Op de live pagina</label>${x.img ? `<span class="ac-groei"></span><button class="knop licht klein" data-tn="scherm-plaatje-weg" data-id="${esc(x.id)}">Afbeelding weg</button>` : ''}</div></div></div>`).join('') || '<p class="ac-zacht">Nog geen sponsoren of schermen.</p>'}
+      <div class="ac-acties"><button class="knop licht klein" data-tn="scherm-nieuw" data-id="sponsor" ${vol ? 'disabled' : ''}>${ico('action-add', 16)} Sponsor</button><button class="knop licht klein" data-tn="scherm-nieuw" data-id="scherm" ${vol ? 'disabled' : ''}>${ico('action-add', 16)} Eigen scherm</button>${vol ? `<span class="ac-zacht">Maximaal ${T.MAX_SCHERMEN}.</span>` : ''}</div></div>`;
 }
 /* Na elke wijziging aan het toernooi de live-kopie bijwerken (kort gebundeld). */
 let _liveT = null;
@@ -500,6 +532,11 @@ function printHtml(a){
 
 /* ---------- stijl ---------- */
 export const TOERNOOI_CSS = `
+.tn-scherm{display:flex;gap:var(--space-md);align-items:flex-start;padding:10px 0;border-top:1px solid var(--hair)}
+.tn-plaatje{width:96px;height:72px;flex-shrink:0;border-radius:10px;background:#fff;border:1.5px dashed var(--hair);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;color:#667;font-size:var(--t-xs,12px)}
+.tn-plaatje img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+.tn-scherm-v{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.tn-scherm-v .ac-rij{flex-wrap:wrap}
 .tn-clubrij{flex-wrap:wrap}
 @media (max-width:600px){.tn-clubrij>.ac-in:first-child{flex:1 1 100%}.tn-clubrij>select{flex:1 1 0;min-width:0}}
 .tn-sub{flex-wrap:wrap}

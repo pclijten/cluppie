@@ -47,10 +47,10 @@
      clubnaam   OpenStreetMap Nominatim (alleen de zoektekst, bij Zoek)
    Geen GPS of locatie van de gebruiker. */
 import { db, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, collection, getDocs, query, where, serverTimestamp, storage, sRef, uploadBytes, getDownloadURL } from './firebase.js?v=20261011g';
-import { S, esc, meld, isBeheerder } from './state.js?v=20261125u';
+import { S, esc, meld, isBeheerder } from './state.js?v=20261125v';
 import { ico } from './icons.js?v=20261116t';
-import { telGebruik } from './tracker.js?v=20261125u';
-import { catInfo } from './config.js?v=20261125u';
+import { telGebruik } from './tracker.js?v=20261125v';
+import { catInfo } from './config.js?v=20261125v';
 
 /* ---------- kaartwiskunde (web-mercator, tegels van 256 px) ---------- */
 const TS = 256, ZMIN = 15, ZMAX = 20;

@@ -24,12 +24,12 @@
    Rekenwerk, export en import: activiteiten-logica.js (getest). Sjablonen: activiteit-sjablonen.js. */
 import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, deleteField, query, where, onSnapshot,
   serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261125u';
+import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261125v';
 import { ico } from './icons.js?v=20261116t';
 import { SJABLONEN, sjabloonVan } from './activiteit-sjablonen.js?v=20261125m';
-import * as L from './activiteiten-logica.js?v=20261125u';
-import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261125u';
-import * as TN from './activiteit-toernooi.js?v=20261125u';
+import * as L from './activiteiten-logica.js?v=20261125v';
+import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261125v';
+import * as TN from './activiteit-toernooi.js?v=20261125v';
 
 let A = null;
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -84,7 +84,10 @@ function laag(){
     document.addEventListener('click', e => { if (A && e.target.closest?.('#zijbalk')) sluitActiviteiten(); }, true);
     el.addEventListener('change', wijzig);
     el.addEventListener('input', e => { if (A?.act) TN.invoerToernooi(tnCtx(), e.target); });
-    el.addEventListener('focusout', () => setTimeout(() => { if (A?.vuil && !actiefVeld()) { A.vuil = false; teken(); } }, 50));
+    el.addEventListener('focusout', () => setTimeout(() => { if (A?.vuil && !actiefVeld() && !A.druk) { A.vuil = false; teken(); } }, 50));
+    /* Tijdens een tik of klik niet hertekenen: anders verdwijnt de knop onder de vinger en gaat de klik verloren
+       (bijvoorbeeld als je net een veld hebt ingevuld en meteen op een knop drukt). */
+    el.addEventListener('pointerdown', () => { if (A) A.druk = true; });
     el.addEventListener('dragstart', e => { const k = e.target.closest?.('[data-sleep]'); if (k){ e.dataTransfer.setData('text/plain', k.dataset.sleep); e.dataTransfer.effectAllowed = 'move'; } });
     el.addEventListener('dragover', e => { if (e.target.closest?.('[data-kolom]')) e.preventDefault(); });
     el.addEventListener('drop', e => { const k = e.target.closest?.('[data-kolom]'); const id = e.dataTransfer.getData('text/plain'); if (k && id){ e.preventDefault(); zet({ [`taken.${id}.status`]: k.dataset.kolom }); } });
@@ -122,7 +125,8 @@ function volgDeel(deelId){
   A.subs.push(onSnapshot(doc(db, 'activiteitDeel', deelId), s => { A.deel = s.exists() ? { id: s.id, ...s.data() } : null; hertekenZacht(); }, () => {}));
   A.subs.push(onSnapshot(collection(db, 'activiteitDeel', deelId, 'aanmeldingen'), s => { A.aanm = s.docs.map(d => ({ id: d.id, ...d.data() })); hertekenZacht(); }, () => {}));
 }
-function hertekenZacht(){ if (actiefVeld()) A.vuil = true; else teken(); }
+function hertekenZacht(){ if (actiefVeld() || A.druk) A.vuil = true; else teken(); }
+for (const soort of ['pointerup', 'pointercancel']) addEventListener(soort, () => { if (!A?.druk) return; A.druk = false; setTimeout(() => { if (A?.vuil && !actiefVeld() && !A.druk){ A.vuil = false; teken(); } }, 0); });
 async function terugNaarLijst(){ stopSubs(); A.id = ''; A.act = null; A.live = false; clearInterval(A.liveTik); await laadLijst(); teken(); }
 
 /* ---------- schrijven ---------- */
@@ -682,7 +686,7 @@ async function klik(e){
     case 'kopieer': return kopieKlembord(b.dataset.tekst);
     case 'teams-alle': return zet({ teams: (S.clubTeams || []).filter(x => x && x.id && !x.gearchiveerd).map(x => x.id).slice(0, L.MAX.teams) });
     case 'teams-geen': return zet({ teams: [] });
-    case 'veldplanner': return import('./veldplanner.js?v=20261125u').then(m => m.openVeldplanner(A.clubId));
+    case 'veldplanner': return import('./veldplanner.js?v=20261125v').then(m => m.openVeldplanner(A.clubId));
     case 'aflasten': return vensterAflasten();
     case 'aflasten-ja': return aflasten();
     case 'bericht-plaats': return plaatsBericht(id);

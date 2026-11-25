@@ -114,4 +114,13 @@ ok(T.nuEnStraks(lv, T.naarMin('08:00')).nuT === '' && T.nuEnStraks(lv, T.naarMin
 ok(/^[a-z2-9]{20}$/.test(T.liveId()) && T.liveId() !== T.liveId(), 'live-id');
 ok(T.csvTeams(act.toernooi).includes('SV Venray'), 'csv met vereniging');
 
+/* sponsoren en eigen schermen */
+const png = 'data:image/png;base64,iVBORw0KGgo=';
+const sch = T.schermen({ schermen: { a: { soort: 'sponsor', titel: 'Bakker Jan', link: 'bakkerjan.nl', img: png, volg: 2 }, b: { soort: 'scherm', titel: 'Menu', tekst: 'Friet 2,50', volg: 1, tv: false }, c: { soort: 'scherm', titel: '', volg: 3 }, d: { soort: 'sponsor', titel: 'Fout', link: 'javascript:alert(1)', img: 'data:text/html;base64,AAAA', volg: 4 } } });
+ok(sch.length === 3 && sch[0].titel === 'Menu' && sch[0].tv === false && sch[0].tel === true, 'schermen: volgorde, lege weg, tv uit');
+ok(sch[1].link === 'https://bakkerjan.nl' && sch[1].img === png, 'sponsor: link en logo');
+ok(sch[2].link === '' && sch[2].img === '', 'onveilige link en plaatje geweigerd');
+ok(!T.plaatjeOk('data:image/png;base64,' + 'A'.repeat(T.MAX_PLAATJE)) && T.veiligeLink('http://x.nl/a b') === '', 'te groot plaatje en link met spatie');
+ok(T.liveKopie({ toernooi: { schermen: { a: { soort: 'sponsor', titel: 'Bakker Jan' } } } }).schermen[0].soort === 'sponsor' && T.schermen({ schermen: { c: { titel: '' } } }, { leeg: true }).length === 1, 'schermen in de live-kopie');
+
 console.log(`toernooi: ${n} controles geslaagd`);
