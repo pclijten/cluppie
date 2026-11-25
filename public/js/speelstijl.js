@@ -18,7 +18,7 @@ import { rechtenVoor } from './seizoensplan-club.js?v=20261126b';
 import * as L from './speelstijl-logica.js?v=20261019e';
 import { speelwijzeVan, perMoment, huidigUitStijl, vormenPerPrincipe } from './speelwijze-logica.js?v=20261116j';
 import { htmlWiel, htmlPrincipe, htmlLater, htmlSchuiven } from './speelwijze-html.js?v=20261116j';
-import { vormen, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261121b';
+import { vormen, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261126b';
 
 const uidNu = () => S.user?.uid || '';
 const isPlanner = () => rechtenVoor(S.club, uidNu()).alles;

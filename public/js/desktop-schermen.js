@@ -1065,7 +1065,7 @@ async function actie(b){
   if (a === 'stofuitzet'){   /* [20261120k] alle vakken in één plaatje, met de training zoals hij vandaag is */
     const t = S.trainingen.find(x => x.id === id); if (!t) return;
     const lijst = (t.teams || []).includes(S.teamId) ? vandaagVan(t).oefeningen : (t.oefeningen || []);
-    const [TL, B, TV] = await Promise.all([import('./training-tijdlijn.js?v=20261126b'), import('./bibliotheek.js?v=20261121b'), import('./training-vandaag.js?v=20261126b')]);
+    const [TL, B, TV] = await Promise.all([import('./training-tijdlijn.js?v=20261126b'), import('./bibliotheek.js?v=20261126b'), import('./training-vandaag.js?v=20261126b')]);
     TL.openUitzet(TL.tijdlijnInfo(lijst, B.vormOpId, TV.startTijd(t, S.teamId)));
     return;
   }

@@ -30,7 +30,7 @@ import {
   formatieBestaat, formatieNamen
 } from './config.js?v=20261126b';
 import { telGebruik, telNav } from './tracker.js?v=20261126b';
-import { sportWoord } from './sporten.js?v=20261126a';   /* [20261125y] sportprofiel stap 3: woorden uit het profiel */
+import { sportWoord } from './sporten.js?v=20261126b';   /* [20261125y] sportprofiel stap 3: woorden uit het profiel */
 
 /* ---------- helpers ---------- */
 

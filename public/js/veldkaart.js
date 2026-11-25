@@ -51,7 +51,7 @@ import { S, esc, meld, isBeheerder } from './state.js?v=20261126b';
 import { ico } from './icons.js?v=20261116t';
 import { telGebruik } from './tracker.js?v=20261126b';
 import { catInfo } from './config.js?v=20261126b';
-import { sportVeld } from './sporten.js?v=20261126a';   /* [20261125z] veld uit het sportprofiel */
+import { sportVeld } from './sporten.js?v=20261126b';   /* [20261125z] veld uit het sportprofiel */
 const kaartCirkel = () => { const c = sportVeld().kaart?.cirkel; return !c ? '' : c === 18 ? '<i class="vk-l-cirkel"></i>' : `<i class="vk-l-cirkel" style="width:${c}%"></i>`; };
 
 /* ---------- kaartwiskunde (web-mercator, tegels van 256 px) ---------- */

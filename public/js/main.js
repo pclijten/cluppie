@@ -119,7 +119,7 @@ onAuthStateChanged(auth, async user => {
     startTeams();
     registreerLogin();
     /* [20261113d] beheerlaag van de trainingsbibliotheek (klein, één keer per sessie) */
-    import('./bibliotheek.js?v=20261121b').then(m => m.laadBibliotheek()).catch(() => {});
+    import('./bibliotheek.js?v=20261126b').then(m => m.laadBibliotheek()).catch(() => {});
     if (new URLSearchParams(location.search).get('trainco')){
       import('./trainco.js?v=20261126b').then(m => m.bootVoorbeeld(user)).catch(() => {});
     }

@@ -16,7 +16,7 @@
    opWijziging() om opnieuw te tekenen. Klikken in de balk worden hier één keer voor het hele document afgehandeld. */
 import { db, doc, getDoc, setDoc, deleteDoc, serverTimestamp } from './firebase.js?v=20261011g';
 import { S, esc, meld } from './state.js?v=20261126b';
-import { vormen, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261121b';
+import { vormen, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261126b';
 import { speelwijzeNu } from './speelwijze.js?v=20261126b';
 import { weerLocatie } from './clubconfig.js?v=20261126b';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';

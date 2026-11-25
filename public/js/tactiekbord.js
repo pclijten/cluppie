@@ -27,7 +27,7 @@ import { db, collection, doc, addDoc, updateDoc, deleteDoc, setDoc,
          onSnapshot, serverTimestamp } from './firebase.js?v=20261011g';
 import { S, esc, meld, spelerNaam, spelerNr, modAan, bewaakTerug, vangnetStilTerugAlsNodig, terugLaag } from './state.js?v=20261126b';
 import { bouwSlots } from './config.js?v=20261126b';
-import { bordLijnenHtml, sportVeld } from './sporten.js?v=20261126a';   /* [20261125z] veld uit het sportprofiel */
+import { bordLijnenHtml, sportVeld } from './sporten.js?v=20261126b';   /* [20261125z] veld uit het sportprofiel */
 import { telNav } from './tracker.js?v=20261126b';
 
 const NS = 'http://www.w3.org/2000/svg';

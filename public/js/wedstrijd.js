@@ -24,7 +24,7 @@ import { telGebruik, telNav } from './tracker.js?v=20261126b';
 import { opkomstVoor, teltMee, MIN_OPKOMST_TRAININGEN } from './opkomst.js?v=20260922c';
 import { spelersOpWedstrijd, ontbrekendeLeners, leenErbijNa } from './uitleen-regels.js?v=20261113b';
 import { openInvoegSheet, bewaarWedstrijdAlsSjabloon, zetNaToepassenCallback } from './opstelling-sjabloon.js?v=20261126b';
-import { sportWoord, sportWedstrijd, sportKaarten, kaartDef, zonderKeeper } from './sporten.js?v=20261126a';   /* [20261125y] sportprofiel stap 3: woorden uit het profiel */
+import { sportWoord, sportWedstrijd, sportKaarten, kaartDef, zonderKeeper } from './sporten.js?v=20261126b';   /* [20261125y] sportprofiel stap 3: woorden uit het profiel */
 import { heeftElftallen, elftalWedstrijd, elftalNaam, hoortBijElftal, spelersVoorElftal, filterOpElftal,
   elftalFilter, elftalFilterHtml } from './elftallen.js?v=20261126b';
 

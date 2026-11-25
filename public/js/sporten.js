@@ -1,7 +1,7 @@
 /* ==================== SPORTPROFIELEN ====================
    [20261124a] Register van de sportprofielen. Nu alleen voetbal; een club of team
    zonder sport is voetbal. Zie docs/sportprofiel-impactanalyse.md. */
-import { VOETBAL } from './sport-voetbal.js?v=20261126a';
+import { VOETBAL } from './sport-voetbal.js?v=20261126b';
 
 export const STANDAARD_SPORT = 'voetbal';
 export const SPORTEN = Object.freeze({ voetbal: VOETBAL });
@@ -56,3 +56,10 @@ export function periodeKortVoor(aantal){ const pk = sportWedstrijd().periodeKort
 /* De kaarten van deze sport; een kaart die een andere sport kent maar deze niet, valt terug op zijn eigen naam. */
 export const sportKaarten = () => sportWedstrijd().kaarten;
 export const kaartDef = type => sportKaarten().find(k => k.type === type) || null;
+
+/* [20261126b] Stap 6: heeft deze sport eigen oefenstof en plannen? Zo niet, dan blijven de onderdelen
+   die daarop draaien (Training maken, Seizoensplanning) uit, in plaats van voetbalstof te tonen. */
+export const sportInhoud = () => sportProfiel(actief).inhoud === true;
+
+/* [20261126c] Stap 7: werkt deze sport met Sportlink? (voetbal, korfbal en volleybal wel, hockey met LISA niet) */
+export const heeftSportlink = () => sportProfiel(actief).ledenbron === 'sportlink';

@@ -218,7 +218,7 @@ async function zet3D(el){
   if (el._blok || el._bezig || !el.isConnected || !kan3D()) return;
   el._bezig = true;
   try {
-    const { vormOpId } = await import('./bibliotheek.js?v=20261121b');
+    const { vormOpId } = await import('./bibliotheek.js?v=20261126b');
     const v = vormOpId(el.dataset.trwVorm);
     if (!v){ el.classList.remove('wacht'); el.style.minHeight = ''; return; }      /* vorm bestaat niet meer: de tekening blijft */
     if (el.isConnected && el._inBeeld && !el._blok) plaats3D(el, maak3DBlok(v, v.veld));
@@ -278,7 +278,7 @@ export async function openTrainingWeergave({ titel, meta, oefeningen, diagramUrl
   let TL = null, vormVan = () => null;
   try { TL = await import('./training-tijdlijn.js?v=20261126b'); } catch (e){ TL = null; }
   if (TL && (oefeningen || []).some(o => o?.bron?.vormId)){
-    try { const B = await import('./bibliotheek.js?v=20261121b'); vormVan = B.vormOpId; } catch (e){ /* zonder bibliotheek: tijdlijn zonder fase en veld */ }
+    try { const B = await import('./bibliotheek.js?v=20261126b'); vormVan = B.vormOpId; } catch (e){ /* zonder bibliotheek: tijdlijn zonder fase en veld */ }
   }
   if (el._beurt !== beurt) return;
   const desk = () => document.documentElement.classList.contains('desk') && window.matchMedia?.('(min-width:1100px)').matches;
