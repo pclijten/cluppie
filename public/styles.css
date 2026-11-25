@@ -9901,7 +9901,7 @@ p.cp-let{margin:0;font-size:var(--t-sm)}
   .knop, .invoer, .kaart, .segment button{ border:1px solid ButtonText; }
 }
 
-/* [20261126a] DESKTOP-DASHBOARD "TACTISCH BORD"
+/* [20261126b] DESKTOP-DASHBOARD "TACTISCH BORD"
    Het wedstrijdblok bovenaan het dashboard in de stijl van het laadscherm: stippenraster, tactische lijnen
    en een pass-lijn. Licht: wit bord met lijnen in de clubkleur. Donker: donker bord met witte lijnen.
    --bord-lijn is het enige knopje per thema; de clubkleur komt uit --accent (clubconfig.js). */
