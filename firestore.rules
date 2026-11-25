@@ -11,6 +11,9 @@ service cloud.firestore {
     function echt() { return ingelogd() && !anoniem(); }
     function uid() { return request.auth.uid; }
     function wijzigt(sleutels) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(sleutels); }
+    /* [20261125x] sportprofiel: de sporten die de app kent (public/js/sporten.js). Ontbreekt het veld, dan is het voetbal. */
+    function geldigeSport(d) { return d.get('sport', 'voetbal') in ['voetbal']; }
+    function sportGelijk() { return request.resource.data.get('sport', null) == resource.data.get('sport', null); }
 
     /* ---------- platform ---------- */
     function platformDoc() { return get(/databases/$(database)/documents/platform/instellingen).data; }
@@ -202,12 +205,13 @@ service cloud.firestore {
       /* aanmaken: alleen platformbeheerder (zoals de client-gating), maker is zelf admin en lid */
       allow create: if isPlatform()
         && request.resource.data.admins.get(uid(), false) == true
-        && request.resource.data.leden.get(uid(), false) == true;
+        && request.resource.data.leden.get(uid(), false) == true
+        && geldigeSport(request.resource.data);
       /* clubadmin of platformbeheerder: alles */
-      allow update: if isPlatform()
-        /* clubadmin mag alles behalve de schakelaars van de eindbaas (platformModules) */
+      allow update: if (isPlatform() && geldigeSport(request.resource.data))
+        /* clubadmin mag alles behalve de schakelaars van de eindbaas (platformModules) en de sport [20261125x] */
         || (isClubAdmin(clubId)
-            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['platformModules']))
+            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['platformModules', 'sport']))
         /* teamaanmaker registreert een nieuw team bij de club: alleen toevoegen, niets weghalen [20261115d] */
         || (echt() && isClubLid(clubId) && wijzigt(['teams'])
             && request.resource.data.get('teams', {}).diff(resource.data.get('teams', {})).removedKeys().size() == 0
@@ -374,7 +378,10 @@ service cloud.firestore {
                                  || (resource.data.get('club', null) != null && isClubLid(resource.data.club))
                                  || (resource.data.get('club', null) != null && isTraincoVanClub(resource.data.club))));
       /* [20261115d] de anonieme deel-link leest het teamdocument niet meer (namen van coaches, vaste afmeldingen) */
-      allow create: if echt() && (
+      /* [20261125x] sport: alleen een team zonder club kiest zelf (een clubteam volgt de club), en alleen een bekende sport */
+      allow create: if echt()
+        && (!('sport' in request.resource.data) || (request.resource.data.get('club', null) == null && geldigeSport(request.resource.data)))
+        && (
         (request.resource.data.leden.get(uid(), false) == true
           && (request.resource.data.get('club', null) == null
               || isClubLid(request.resource.data.club) || isClubAdmin(request.resource.data.club)))
@@ -382,11 +389,12 @@ service cloud.firestore {
         || (request.resource.data.get('club', null) != null && isClubAdmin(request.resource.data.club)));
       /* leden en clubkoppeling: een coach mag die niet zelf wijzigen (anders kan hij iemand toevoegen of het team
          naar een andere club verplaatsen). Clubbeheer en de coördinator van de bouw mogen wel. */
-      allow update: if (isVolCoach(teamId) && coachWijzigtTeamVeilig())
+      /* [20261125x] de sport van een team ligt vast na het aanmaken (zie geldigeSport) */
+      allow update: if sportGelijk() && ((isVolCoach(teamId) && coachWijzigtTeamVeilig())
         /* sturende rol: alles, maar het team gaat niet naar een andere club (loskoppelen mag alleen de clubadmin) */
         || (magBouwSturen(teamId)
             && (request.resource.data.get('club', null) == resource.data.get('club', null)
-                || (request.resource.data.get('club', null) == null && isClubAdmin(teamClub(teamId)))));
+                || (request.resource.data.get('club', null) == null && isClubAdmin(teamClub(teamId))))));
       /* [20261115d] een clubteam verwijdert alleen de clubadmin; een trainer zonder club zijn eigen team */
       allow delete: if (isVolCoach(teamId) && resource.data.get('club', null) == null)
         || (resource.data.get('club', null) != null && isClubAdmin(resource.data.club));

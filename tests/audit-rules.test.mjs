@@ -62,6 +62,7 @@ async function vulDatabase(){
     await setDoc(doc(db, 'teams/mo11'), { club: 'test-fc', naam: 'MO11-1', bouw: 'midden', bouwHandmatig: true, leden: { andereCoach: true } });
     await setDoc(doc(db, 'teams/e11'), { club: 'sv-elders', naam: 'O11-1', bouw: 'midden', leden: { ander: true } });
     await setDoc(doc(db, 'teams/los'), { naam: 'Buurtteam O10', leden: { los: true }, eigenClub: { naam: 'Buurt', plaats: 'Testdorp' } });
+    await setDoc(doc(db, 'teams/los-sport'), { naam: 'Buurt O9', leden: { los: true }, eigenClub: { naam: 'Buurt', plaats: 'Testdorp' }, sport: 'voetbal' });   /* [20261125x] */
     for (const t of ['o11', 'o13', 'mo11', 'e11', 'los'])
       await setDoc(doc(db, `teams/${t}/spelers/s1`), { naam: 'Speler 1', nummer: 7, notitie: 'fictieve notitie van de coach', leerpunten: [{ id: 'l1', tekst: 'fictief leerpunt' }] });
     await setDoc(doc(db, 'teams/o13/beoordelingen/b1'), { score: 3 });
@@ -196,6 +197,17 @@ test('proeven per gebruikerstype', async () => {
     () => setDoc(doc(als('coach'), 'beoordelingenPrive/p2'), { teamId: 'o11', club: 'test-fc', door: { uid: 'coach' }, zichtbaarVoor: ['coach', 'ander'] }));
   await proef(88, 'coach', 'zet een medecoach in de lezerslijst van een privé-beoordeling', 'weigeren',
     () => setDoc(doc(als('coach'), 'beoordelingenPrive/p3'), { teamId: 'o11', club: 'test-fc', door: { uid: 'coach' }, zichtbaarVoor: ['coach', 'coach2'] }));
+  /* --- sportprofiel [20261125x]: de sport zet alleen de eindbaas; een team kiest alleen zonder club, daarna vast --- */
+  await proef(89, 'clubadmin', 'wijzigt de sport van de eigen club', 'weigeren', () => updateDoc(doc(als('admin'), 'clubs/test-fc'), { sport: 'voetbal' }));
+  await proef(90, 'eindbaas', 'zet de sport van een club', 'toestaan', () => updateDoc(doc(als('paul', EINDBAAS), 'clubs/test-fc'), { sport: 'voetbal' }));
+  await proef(91, 'eindbaas', 'zet een sport die de app niet kent', 'weigeren', () => updateDoc(doc(als('paul', EINDBAAS), 'clubs/test-fc'), { sport: 'curling' }));
+  await proef(92, 'losse trainer', 'maakt een team zonder club met een sport', 'toestaan', () => setDoc(doc(als('los'), 'teams/los-nieuw'), { naam: 'Buurt O8', leden: { los: true }, sport: 'voetbal' }));
+  await proef(93, 'losse trainer', 'maakt een team met een sport die de app niet kent', 'weigeren', () => setDoc(doc(als('los'), 'teams/los-nieuw2'), { naam: 'Buurt O8', leden: { los: true }, sport: 'curling' }));
+  await proef(94, 'coach', 'maakt een clubteam met een eigen sport (een clubteam volgt de club)', 'weigeren', () => setDoc(doc(als('coach'), 'teams/o9-sport'), { naam: 'O9-1', club: 'test-fc', leden: { coach: true }, sport: 'voetbal' }));
+  await proef(95, 'losse trainer', 'wijzigt de sport van het eigen team', 'weigeren', () => updateDoc(doc(als('los'), 'teams/los-sport'), { sport: 'hockey' }));
+  await proef(96, 'bouwcoördinator', 'zet een sport op een team van de eigen bouw', 'weigeren', () => updateDoc(doc(als('bouw'), 'teams/o11'), { sport: 'voetbal' }));
+  await proef(97, 'losse trainer', 'wijzigt de naam van het eigen team (sport blijft gelijk)', 'toestaan', () => updateDoc(doc(als('los'), 'teams/los'), { naam: 'Buurtteam O10 groen' }));
+  await proef(98, 'losse trainer', 'wijzigt de naam van het eigen team met een sport (sport blijft gelijk)', 'toestaan', () => updateDoc(doc(als('los'), 'teams/los-sport'), { naam: 'Buurt O9 groen' }));
   /* als laatste: verwijderen maakt het team onbruikbaar voor de andere proeven */
   await proef(7, 'coach', 'verwijdert het eigen clubteam', 'weigeren', () => deleteDoc(doc(als('coach'), 'teams/o11')));
   const fout = uitkomsten.filter(u => !u.klopt).map(u => `${u.nr} ${u.rol}: ${u.wat} -> ${u.uit}`);

@@ -9,7 +9,7 @@
    Opslag: clubs/{club}/sponsoren/{id} (met bedrag en notitie) en de openbare kopie in
    clubTv/{tvId} + clubTv/{tvId}/schermen/{id}. Krijgt alles van activiteiten.js via ctx. */
 import { db, doc, collection, query, where, getDocs, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261125w';
+import { S, esc, meld } from './state.js?v=20261125x';
 import { ico } from './icons.js?v=20261116t';
 import { liveId, MAX_SCHERMEN } from './toernooi-logica.js?v=20261125w';
 import { kleinPlaatje } from './plaatje.js?v=20261125w';

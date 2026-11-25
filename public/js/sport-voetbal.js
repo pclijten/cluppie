@@ -9,6 +9,7 @@ const vries = o => { if (o && typeof o === 'object' && !Object.isFrozen(o)){ Obj
 export const VOETBAL = vries({
   id: 'voetbal',
   naam: 'Voetbal',
+  icoon: 'football-pitch',
   /* Regels die per club instelbaar zijn (ACTIEF in config.js). KNVB: tijdstraf 5 min t/m O15, daarna 10. */
   tijdstraf: { pupilSec: 300, jeugdSec: 600, jeugdVanaf: 16 },
   /* Onder t/m O11, Midden t/m O15, rest Boven */
