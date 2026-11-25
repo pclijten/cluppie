@@ -15,7 +15,7 @@
    Bewust een eigen module: modAan staat in state.js en daar iets in wijzigen kost een release
    van ~30 bestanden. Dit geldt alleen voor de sleutels in BEHEERD; de andere modules lopen
    gewoon via modAan(). Zonder imports van firebase, dus ook los te testen. */
-import { S, modAan } from './state.js?v=20261126b';
+import { S, modAan } from './state.js?v=20261126c';
 import { sportInhoud } from './sporten.js?v=20261126b';
 
 export const BEHEERD = ['trainingsmodule', 'seizoensplan'];
