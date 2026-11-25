@@ -24,7 +24,7 @@ import { effectieveSelectie, spelersOpWedstrijd, spelersOpTraining } from './uit
 import { doelTeksten, samenvattingNu, haalSamenvatting } from './doel-samenvatting.js?v=20261126a';
 import { veldPilHtml } from './veldkaart.js?v=20261126a';
 import { kiesUitgelicht, gezienNu, gezienGeladen, laadGezien, markeerGezien } from './video-uitgelicht.js?v=20261124c';
-import { sportWoord } from './sporten.js?v=20261125z';   /* [20261125y] sportprofiel stap 3: woorden uit het profiel */
+import { sportWoord } from './sporten.js?v=20261126a';   /* [20261125y] sportprofiel stap 3: woorden uit het profiel */
 
 const p2 = n => String(n).padStart(2, '0');
 const isoVan = d => `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;

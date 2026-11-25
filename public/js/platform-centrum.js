@@ -24,7 +24,7 @@ import { modulesVoorNieuweClub } from './onderdelen.js?v=20261126a';
 import { OPTIES as TK_OPTIES } from './kamer-logica.js?v=20261125m';   /* [20261116m] mogelijkheden van de teamkamer, elk met een eigen schakelaar */
 import { KEUZES as PDF_KEUZES, schoonProfiel, isStandaard, PDF_LIMIET_STANDAARD, AANWIJZING_MAX } from './pdf-profiel.js?v=20261115e';
 import * as MW from './platform-maatwerk.js?v=20261126a';   /* [20261121a] Maatwerk-tabel, maatwerk en notities per club, rollen per club */
-import { SPORTEN, sportVan, sportNaam } from './sporten.js?v=20261125z';   /* [20261125x] sportprofiel */
+import { SPORTEN, sportVan, sportNaam } from './sporten.js?v=20261126a';   /* [20261125x] sportprofiel */
 
 const STAP_NAAM = Object.fromEntries(STARTLIJST_STAPPEN.map(s => [s.id, s.titel]));
 const MENU = [

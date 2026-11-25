@@ -24,7 +24,7 @@ import { telGebruik, telNav } from './tracker.js?v=20261126a';
 import { opkomstVoor, teltMee, MIN_OPKOMST_TRAININGEN } from './opkomst.js?v=20260922c';
 import { spelersOpWedstrijd, ontbrekendeLeners, leenErbijNa } from './uitleen-regels.js?v=20261113b';
 import { openInvoegSheet, bewaarWedstrijdAlsSjabloon, zetNaToepassenCallback } from './opstelling-sjabloon.js?v=20261126a';
-import { sportWoord } from './sporten.js?v=20261125z';   /* [20261125y] sportprofiel stap 3: woorden uit het profiel */
+import { sportWoord, sportWedstrijd, sportKaarten, kaartDef, zonderKeeper } from './sporten.js?v=20261126a';   /* [20261125y] sportprofiel stap 3: woorden uit het profiel */
 import { heeftElftallen, elftalWedstrijd, elftalNaam, hoortBijElftal, spelersVoorElftal, filterOpElftal,
   elftalFilter, elftalFilterHtml } from './elftallen.js?v=20261126a';
 
@@ -125,7 +125,7 @@ function koppelEigenFormatieInvoer(container, getFormat, onToegevoegd){
     if (!veld.value.trim()){ status.textContent=''; status.className='ef-status'; knop.disabled=true; return; }
     if (coords){
       const naam = veld.value.trim().split(/[-\s.]+/).filter(Boolean).join('-');
-      status.textContent = `✓ ${naam} — ${aantalVeldspelers(fmt)} veldspelers${fmt!=='4'?' + '+sportWoord('keeper'):''}`;
+      status.textContent = `✓ ${naam} — ${aantalVeldspelers(fmt)} veldspelers${!zonderKeeper(fmt)?' + '+sportWoord('keeper'):''}`;
       status.className = 'ef-status ok'; knop.disabled = false;
     } else {
       status.textContent = `Samen ${aantalVeldspelers(fmt)} veldspelers, elke linie 1–6`;
@@ -1398,7 +1398,7 @@ export function toonBijwerkScherm(){
       <span class="bw-tijd">${gebeurtenisTijd(g.sec, w)} <span class="bw-pen">✎</span></span></div>`;
   const kaartRegel = c => `<div class="bijwerk-regel${c.auto?' bw-auto':''}" ${c.auto?'':`data-bw-kaart="${c.i}"`}>
       <span class="bw-ico">${KAART_ICOON[c.type]||'<span class="kaartje geel" aria-hidden="true"></span>'}</span>
-      <span class="bw-naam"><b>${esc(spelerNaam(c.pid))}</b><span class="sep" aria-hidden="true"></span>${esc(KAART_NAAM[c.type]||c.type)}${c.type==='tijd'&&c.duur?' ('+Math.round(c.duur/60)+' min)':''}${c.auto?' (automatisch)':''}</span>
+      <span class="bw-naam"><b>${esc(spelerNaam(c.pid))}</b><span class="sep" aria-hidden="true"></span>${esc(KAART_NAAM[c.type]||c.type)}${c.duur?' ('+Math.round(c.duur/60)+' min)':''}${c.auto?' (automatisch)':''}</span>
       <span class="bw-tijd">${gebeurtenisTijd(c.sec, w)}${c.auto?'':' <span class="bw-pen">✎</span>'}</span></div>`;
 
   const speeltijdRij = pid => {
@@ -1910,18 +1910,16 @@ function modalKaart(opties = {}){
         <select class="invoer" id="mKSpeler">${alle.map(optie).join('')}</select></div>
       <div class="veldgroep"><label>Type</label>
         <div class="segment" id="mKType">
-          <button data-t="geel" class="actief"><span class="kaartje geel" aria-hidden="true"></span> Geel</button>
-          <button data-t="tijd"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.2V12l3.4 2.2"/></svg> Tijdstraf</button>
-          <button data-t="rood"><span class="kaartje rood" aria-hidden="true"></span> Rood</button>
+          ${sportKaarten().map((k, i) => `<button data-t="${esc(k.type)}"${i ? '' : ' class="actief"'}>${KAART_ICOON[k.type] || KAART_ICOON.geel} ${esc(k.knop)}</button>`).join('\n          ')}
         </div></div>
       ${achteraf ? `<div class="veldgroep"><label>Op welke minuut</label>${minSecInvoerHtml('mKMin','mKSec', startSec)}</div>` : ''}
       <p class="u-t-sm u-zacht u-mb-md u-lh-ruim">
-        <b>KNVB:</b> een gele kaart is een waarschuwing. Bij een tweede gele in dezelfde wedstrijd volgt rood. In de B-categorie geldt een tijdstrafregeling: ${Math.round(duur/60)} minuten voor deze leeftijd${duur===300?' (pupillen)':' (junioren/senioren)'}.
+        <b>${esc(sportWoord('bond'))}:</b> ${sportWedstrijd().kaartUitleg.replace('{min}', Math.round(duur/60)).replace('{wie}', duur===300?' (pupillen)':' (junioren/senioren)')}
       </p>
       <button class="knop vol" id="mKOk">Registreren</button>
       ${achteraf ? `<button class="knop licht vol u-mt-xs" id="mKTerug" >‹ Terug naar overzicht</button>` : ''}`);
     if (achteraf) { bindPeriodeKies('mKPeriode', nr, (gek) => { nr = gek; teken(); }); kruisNaarBijwerk(terug); }
-    let type = 'geel';
+    let type = sportKaarten()[0]?.type || 'geel';
     $$('#mKType button').forEach(b => b.onclick = () => {
       $$('#mKType button').forEach(x=>x.classList.remove('actief')); b.classList.add('actief'); type = b.dataset.t;
     });
@@ -1930,10 +1928,11 @@ function modalKaart(opties = {}){
       const pid = $('#mKSpeler').value;
       const sec = achteraf ? leesMinSec('#mKMin','#mKSec') : Math.round(klokSec(k2));
       const kaart = {pid, type, kwart: nr, sec};
-      if (type === 'tijd') kaart.duur = duur;
+      const def = kaartDef(type);   /* [20261126a] duur en gevolgen uit het sportprofiel */
+      if (def && def.duur) kaart.duur = def.duur === 'tijdstraf' ? duur : def.duur;
       (w.kaarten ||= []).push(kaart);
       telGebruik(achteraf ? 'kaart_achteraf' : 'kaart');
-      if (type === 'geel'){
+      if (type === 'geel' && sportWedstrijd().tweedeGeelRood){
         const aantalGeel = w.kaarten.filter(c => c.pid === pid && c.type === 'geel').length;
         if (aantalGeel >= 2){
           w.kaarten.push({pid, type:'rood', kwart: nr, sec, auto:true});
@@ -2077,7 +2076,7 @@ function genereerVerslag(){
     lines.push('Kaarten:');
     for (const c of [...w.kaarten].filter(c => !c.auto).sort((a,b)=>a.sec-b.sec)){
       const lbl = periodeLabel(w, String(c.kwart));
-      const txt = c.type === 'tijd' ? `tijdstraf ${Math.round(c.duur/60)} min` : KAART_NAAM[c.type];
+      const txt = (c.type === 'tijd' || c.duur) ? `${KAART_NAAM[c.type] || c.type} ${Math.round((c.duur||0)/60)} min` : KAART_NAAM[c.type];
       lines.push(`• ${spelerNaam(c.pid)} — ${txt} (${lbl}, ${gebeurtenisTijd(c.sec, w)})`);
     }
     lines.push('');
@@ -3308,7 +3307,7 @@ export function renderWedstrijd(){
           `<button type="button" class="zl-knop" data-corrigeer-goal="${e.i}">Wijzig</button>`);
       }
       return rij('zl-krt ' + esc(e.type), tijd, esc(spelerNaam(e.pid)),
-        `${esc(KAART_NAAM[e.type] || 'Kaart')}${e.type === 'tijd' ? ', ' + Math.round((e.duur||0)/60) + ' min' : ''}${e.auto ? ', automatisch' : ''}`,
+        `${esc(KAART_NAAM[e.type] || 'Kaart')}${(e.type === 'tijd' || e.duur) ? ', ' + Math.round((e.duur||0)/60) + ' min' : ''}${e.auto ? ', automatisch' : ''}`,
         e.auto ? '' : `<button type="button" class="zl-knop" data-corrigeer-kaart="${e.i}">Wijzig</button>`);
     });
     const duur = Math.round((w.kwartduur||0)*60);
@@ -3511,7 +3510,7 @@ ${confroHtml}
           return `
             <div class="log-item kaart bewerkbaar ${e.type==='rood'?'rood':''}" ${e.auto?'':`data-corrigeer-kaart="${e.i}" title="Tik om te corrigeren"`}>
               <span class="goal-bal">${KAART_ICOON[e.type]}</span>
-              <span><b>${esc(spelerNaam(e.pid))}</b><span class="sep" aria-hidden="true"></span>${esc(KAART_NAAM[e.type])}${e.type==='tijd' ? ' ('+Math.round(e.duur/60)+' min)' : ''}${e.auto?' (automatisch)':''}</span>
+              <span><b>${esc(spelerNaam(e.pid))}</b><span class="sep" aria-hidden="true"></span>${esc(KAART_NAAM[e.type])}${(e.type==='tijd' || e.duur) ? ' ('+Math.round((e.duur||0)/60)+' min)' : ''}${e.auto?' (automatisch)':''}</span>
               <span class="min">${gebeurtenisTijd(e.sec, w)}</span>
               ${e.auto ? '' : '<span class="bewerk-hint">✎</span>'}
             </div>`;

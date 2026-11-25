@@ -35,7 +35,7 @@ import { spelersOpWedstrijd } from './uitleen-regels.js?v=20261113b';
 import { TE_GROEPEN, teScores, teLaagste, teLeeftijd } from './team-evaluatie-criteria.js?v=20261120a';
 import { ico } from './icons.js?v=20261116t';
 import { telGebruik } from './tracker.js?v=20261126a';
-import { sportWoord } from './sporten.js?v=20261125z';   /* [20261125y] sportprofiel stap 3: woorden uit het profiel */
+import { sportWoord } from './sporten.js?v=20261126a';   /* [20261125y] sportprofiel stap 3: woorden uit het profiel */
 
 const VERSIE = 1;
 const svg = (d, n = 16, w = 1.8) => `<svg width="${n}" height="${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${d}</svg>`;

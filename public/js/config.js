@@ -1,5 +1,5 @@
 import { S } from './state.js?v=20261126a';
-import { sportProfiel, STANDAARD_SPORT } from './sporten.js?v=20261125z';
+import { sportProfiel, STANDAARD_SPORT, zonderKeeper, periodeNaamVoor, periodeKortVoor } from './sporten.js?v=20261126a';
 
 /* [20261124a] De standaardwaarden die bij de sport horen komen uit het sportprofiel
    (sport-voetbal.js). Hier een losse kopie, zodat clubconfig.js ze in plaats kan
@@ -70,12 +70,12 @@ export function tijdstrafSec(){
   if (cat === 'Senioren' || cat === 'Vrouwen') return t.jeugdSec;
   return t.pupilSec;
 }
-export const KAART_ICOON = {geel:'<span class="kaartje geel" aria-hidden="true"></span>', rood:'<span class="kaartje rood" aria-hidden="true"></span>', tijd:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.2V12l3.4 2.2"/></svg>'};
-export const KAART_NAAM  = {geel:'gele kaart', rood:'rode kaart', tijd:'tijdstraf'};
+export const KAART_ICOON = {groen:'<span class="kaartje groen" aria-hidden="true"></span>', geel:'<span class="kaartje geel" aria-hidden="true"></span>', rood:'<span class="kaartje rood" aria-hidden="true"></span>', tijd:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.2V12l3.4 2.2"/></svg>'};
+export const KAART_NAAM  = {groen:'groene kaart', geel:'gele kaart', rood:'rode kaart', tijd:'tijdstraf'};   /* [20261126a] groen: hockey */
 
 export function periodeNaam(w){
   if (isToernooi(w)) return w.toernooi.helften === 1 ? 'Wedstrijd' : 'Helft';
-  return (w.periodes||4) === 2 ? 'Helft' : 'Kwart';
+  return periodeNaamVoor(w.periodes||4);   /* [20261126a] uit het sportprofiel */
 }
 export function periodeNrs(w){ return Array.from({length: w.periodes||4}, (_,i) => String(i+1)); }
 export function periodeLabel(w, nr){
@@ -83,7 +83,7 @@ export function periodeLabel(w, nr){
     const h = w.toernooi.helften;
     return h === 1 ? 'W'+nr : 'W'+Math.ceil(nr/h)+'.'+(((nr-1)%h)+1);
   }
-  return ((w.periodes||4) === 2 ? 'H' : 'K') + nr;
+  return periodeKortVoor(w.periodes||4) + nr;   /* [20261126a] uit het sportprofiel */
 }
 export function toernooiWnr(w, nr = S.kwart){ return Math.ceil(Number(nr) / w.toernooi.helften); }
 export function periodeOmschrijving(w, nr = S.kwart){
@@ -108,7 +108,7 @@ export const LIJN_NAAM = kopie(SPORT.lijnNaam);
    aantalVeld = aantal veldspelers voor het format (format zonder keeper voor
    '4', anders format-1). Retourneert null als de invoer niet klopt. */
 export function aantalVeldspelers(format){
-  return format === '4' ? 4 : (Number(format) - 1);
+  return zonderKeeper(format) ? Number(format) : (Number(format) - 1);   /* [20261126a] keeper uit het sportprofiel */
 }
 /* Horizontale spreiding per linie — zelfde randmarges als de vaste formaties:
    1→midden, 2→32/68, 3→22/50/78, 4→14/38/62/86, 5→10..90, 6→8..92. */
@@ -132,7 +132,7 @@ export function parseFormatie(naam, format){
 
   // Dieptebanden (achter → voor). We verdelen de linies over de band tussen
   // 'achter' (verdediging) en 'voor' (aanval), net als de vaste formaties.
-  const band = format === '4'
+  const band = zonderKeeper(format)
     ? { achter: 70, voor: 26 }
     : { achter: 76, voor: 22 };
   const n = lijnen.length;
@@ -179,7 +179,7 @@ export function bouwSlots(format, formatie){
   const def = (FORMATIES[format] && FORMATIES[format][formatie])
            || parseFormatie(formatie, format)
            || Object.values(FORMATIES[format])[0];
-  const slots = format === '4' ? [] : [{id:'K', x:50, y:90, lijn:'K'}];
+  const slots = zonderKeeper(format) ? [] : [{id:'K', x:50, y:90, lijn:'K'}];
   const tel = {V:0, M:0, A:0};
   for (const [x,y,l] of def){ tel[l]++; slots.push({id:l+tel[l], x, y, lijn:l}); }
   return slots;
@@ -193,7 +193,7 @@ export const slotLijn = id => id[0];
 const ZONE_NAAM = kopie(SPORT.zoneNaam);
 function zone(x){ return x < 35 ? 'links' : x > 65 ? 'rechts' : 'midden'; }
 export function positieNaam(lijn, x){
-  if (lijn === 'K') return 'Keeper';
+  if (lijn === 'K') return LIJN_NAAM.K || 'Keeper';
   return (ZONE_NAAM[lijn] && ZONE_NAAM[lijn][zone(x)]) || LIJN_NAAM[lijn] || '';
 }
 export function slotPositieNaam(format, formatie, slotId){
@@ -261,7 +261,7 @@ export function youtubeWatch(id){ return `https://www.youtube.com/watch?v=${id}`
    Districten Zuid I en II. Zaterdagdatum per speelweek (ISO).
    t: wd=wedstrijddag, beker, inhaal, vrij. l=label, n=opmerking (optioneel).
    pup=O7-O12, jun=O13-O19, sen=Senioren/Vrouwen, mei=Meiden MO13-MO20. */
-export const KNVB_SEIZOEN = SPORT.kalenderSeizoen;
+export let KNVB_SEIZOEN = SPORT.kalenderSeizoen;   /* let: laadSportStandaard() zet hem per sport */
 /* Label van de kalender die de club gebruikt (kan een eigen import zijn). */
 export function knvbSeizoenLabel(){ return ACTIEF.kalender?.seizoen || KNVB_SEIZOEN; }
 
@@ -383,7 +383,7 @@ export function kompasIndexVoorWeek(aantal, week = isoWeek()){
 /* Formatie-uitgangspunt van de club (§3.2): 1:4:3:3, omschakelend naar 1:3:4:3 bij balbezit.
    Dit is de oorspronkelijke standaardwaarde. Nieuwe code gebruikt clubFormatie11():
    die geeft de instelling van de actieve club, of '' als die er geen heeft. */
-export const CLUB_FORMATIE_11 = SPORT.formatie11;
+export let CLUB_FORMATIE_11 = SPORT.formatie11;
 export function clubFormatie11(){ return ACTIEF.formatie11 || ''; }
 
 /* ==================== WEDSTRIJDDOEL-SUGGESTIES (§3.1 t/m §3.4) ====================
@@ -562,3 +562,24 @@ export const GEBRUIK_EVENTS = (() => {
   return m;
 })();
 export function gebruikEventLabel(ev){ return GEBRUIK_EVENTS[ev]?.label || ev; }
+
+/* ==================== SPORT WISSELEN ====================
+   [20261126a] Sportprofiel stap 5: zet de standaardwaarden van een andere sport IN PLAATS in de
+   exports hierboven, zodat alle importerende modules ze via de live-binding zien. clubconfig.js
+   roept dit aan vóór het toepassen van de clubinstellingen (eerst sport, dan club). Voor voetbal,
+   de standaard bij het laden, gebeurt er niets tot er een andere sport langskomt. */
+const vervang = (doel, bron) => {
+  const k = kopie(bron);
+  if (Array.isArray(doel)){ doel.length = 0; doel.push(...k); return; }
+  for (const x of Object.keys(doel)) delete doel[x];
+  Object.assign(doel, k);
+};
+export function laadSportStandaard(id){
+  const P = sportProfiel(id);
+  vervang(CATEGORIEEN, P.categorieen); vervang(CATEGORIEEN_MEIDEN, P.categorieenMeiden);
+  vervang(FORMATIES, P.formaties); vervang(LIJN_NAAM, P.lijnNaam); vervang(ZONE_NAAM, P.zoneNaam);
+  vervang(POSITIE_GROEPEN, P.positieGroepen); vervang(KNVB_KALENDER, P.kalender);
+  vervang(LEERCURVE, P.leercurve); vervang(DOEL_SUGGESTIES_BANDEN, P.doelSuggesties);
+  KNVB_SEIZOEN = P.kalenderSeizoen; CLUB_FORMATIE_11 = P.formatie11;
+  Object.assign(ACTIEF.tijdstraf, P.tijdstraf); Object.assign(ACTIEF.bouwGrenzen, P.bouwGrenzen);
+}
