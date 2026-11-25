@@ -11,13 +11,13 @@
 
    Importeert NIET uit teams.js of teams-seizoensplan.js (geen kringimport): het plan van het team leest hij uit
    S._spPlan, en teams.js geeft zetTeamTab mee. */
-import { S, esc, meld } from './state.js?v=20261125x';
+import { S, esc, meld } from './state.js?v=20261125y';
 import { db, doc, getDoc, setDoc, deleteDoc } from './firebase.js?v=20261011g';
-import { leeftijdVanCategorie, catLabel } from './config.js?v=20261125x';
-import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261125x';
+import { leeftijdVanCategorie, catLabel } from './config.js?v=20261125y';
+import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261125y';
 import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261121b';
-import { positieOp, positieWeek } from './seizoensplan-logica.js?v=20261125x';
-import { rechtenVoor } from './seizoensplan-club.js?v=20261125x';
+import { positieOp, positieWeek } from './seizoensplan-logica.js?v=20261125y';
+import { rechtenVoor } from './seizoensplan-club.js?v=20261125y';
 import { maak3DBlok } from './scene3d.js?v=20261121b';
 import * as L from './speelstijl-logica.js?v=20261019e';
 import { speelwijzeVan, perMoment, rodeDraad, dekking, vormenPerPrincipe, principeVoorThema, huidigUitStijl, MOMENTEN } from './speelwijze-logica.js?v=20261116j';

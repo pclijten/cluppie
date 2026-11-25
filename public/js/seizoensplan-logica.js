@@ -12,7 +12,7 @@
      momenten  : aanvallen en verdedigen wisselen af; elk "moment van het spel" komt terug
      cyclus    : opbouwen · centrum · flank · verdedigen in korte cycli
    (Idee van periodes en herhaling: KNVB-seizoensplanning en De Voetbalmethode deel 4; geen tekst overgenomen.) */
-import { LEERCURVE, VOLGORDE_PER_BOUW, BLOKFASEN, jaarlijn } from './trainingsplanner.js?v=20261125x';
+import { LEERCURVE, VOLGORDE_PER_BOUW, BLOKFASEN, jaarlijn } from './trainingsplanner.js?v=20261125y';
 import { speelwijzeVan, speelwijzeThemas, principeVoorThema } from './speelwijze-logica.js?v=20261116j';
 
 export const MODELLEN = {

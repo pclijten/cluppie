@@ -1,7 +1,7 @@
 /* ==================== SPORTPROFIELEN ====================
    [20261124a] Register van de sportprofielen. Nu alleen voetbal; een club of team
    zonder sport is voetbal. Zie docs/sportprofiel-impactanalyse.md. */
-import { VOETBAL } from './sport-voetbal.js?v=20261125x';
+import { VOETBAL } from './sport-voetbal.js?v=20261125y';
 
 export const STANDAARD_SPORT = 'voetbal';
 export const SPORTEN = Object.freeze({ voetbal: VOETBAL });
