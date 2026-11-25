@@ -5,10 +5,11 @@
    daarna alleen de uitleg personaliseren; de keuze en controle gebeuren hier.
    ========================================================================== */
 
-import { LEERCURVE } from './config.js?v=20261126f';
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261121b';
+import { LEERCURVE } from './config.js?v=20261126g';
+import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261126g';
 import { haalbaar, MATERIAAL_NAAM, MAX_INTENSITEIT_VOOR_WEDSTRIJD, dagVoorWedstrijd, ruimteM2 } from './trainingscontext-logica.js?v=20261019a';
 import { vormBonus, principeVoorThema, principeVanVorm } from './speelwijze-logica.js?v=20261116j';
+import { actieveSport, sportProfiel } from './sporten.js?v=20261126g';   /* [20261126g] leerblokken per sport */
 export { LEERCURVE };
 
 /* ───────────── Trainingsopbouw ───────────── */
@@ -496,10 +497,16 @@ export const VOLGORDE_PER_BOUW = {
   boven:  ['Positiespel opbouw', 'Storen en veroveren', 'Dieptespel opbouw', 'Verdedigen dieptespel', 'Aanvallen met voorzet', 'Verdedigen van voorzet', 'Voorkomen van doelpunten', 'Scoren'],
 };
 
+/* [20261126g] De volgorde voor de actieve sport: een sport met eigen thema's (hockey) geeft zijn eigen lijst mee. */
+export function volgordeVoor(bouw){
+  const V = sportProfiel(actieveSport()).volgordePerBouw || VOLGORDE_PER_BOUW;
+  return V[bouw] || V.midden;
+}
+
 /* Maakt een jaarlijn van leerblokken (4–6 weken). weken = aantal trainingsweken in het seizoen. */
 export function jaarlijn({ bouw, leeftijd, weken = 36, beschikbaar = null }){
   const ok = new Set(LEERCURVE.filter(t => t.vanaf <= leeftijd).map(t => t.thema));
-  let lijst = (VOLGORDE_PER_BOUW[bouw] || VOLGORDE_PER_BOUW.midden).filter(t => ok.has(t) && (!beschikbaar || beschikbaar.has(t)));
+  let lijst = (bouw === '_eigen' && VOLGORDE_PER_BOUW._eigen ? VOLGORDE_PER_BOUW._eigen : volgordeVoor(bouw)).filter(t => ok.has(t) && (!beschikbaar || beschikbaar.has(t)));
   if (!lijst.length) lijst = [...ok].filter(t => !beschikbaar || beschikbaar.has(t));
   const nBlokken = Math.max(1, Math.round(weken / 5));
   const blokken = [];

@@ -7,8 +7,9 @@
    Importeert niets uit teams.js (geen kringverwijzing): teams.js geeft renderTeam mee aan
    koppelTeamkamer(). state.js is niet aangeraakt. */
 import { db, functions, httpsCallable, doc, collection, addDoc, setDoc, updateDoc, deleteDoc, getDocs, query, where, onSnapshot, Timestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261126f';
+import { S, esc, meld } from './state.js?v=20261126g';
 import * as K from './kamer-logica.js?v=20261125m';
+import { actieveSport } from './sporten.js?v=20261126g';   /* [20261126g] alleen oefenstof van de eigen sport */
 
 const roep = (naam, data) => httpsCallable(functions, naam)(data || {}).then(r => r.data);
 const M = { teamId: null, sub: 'toegang', subs: [], kamer: null, link: null, aanvragen: [], leden: [], polls: [], berichten: [], gezin: {},
@@ -51,7 +52,7 @@ async function doeSync(){
   const i = inst();
   if (!i.aan) return;
   if (i.trainingen && mag('trainingen')){
-    const { trainingenPerWeek } = await import('./teams-training.js?v=20261126f');
+    const { trainingenPerWeek } = await import('./teams-training.js?v=20261126g');
     if (S.teamId !== teamId) return;
     const vandaag = K.vandaagIso(), items = {};
     for (const g of trainingenPerWeek().komend) for (const x of g.items){
@@ -61,7 +62,7 @@ async function doeSync(){
     await lever(teamId, 'trainingen', { items });
   }
   if (i.stats.aan && mag('stats') && (S.spelers || []).length){
-    const [A, O] = await Promise.all([import('./analyse.js?v=20261126f'), import('./opkomst.js?v=20260922c')]);
+    const [A, O] = await Promise.all([import('./analyse.js?v=20261126g'), import('./opkomst.js?v=20260922c')]);
     if (S.teamId !== teamId) return;
     const sz = S.huidigSeizoen, ditSeizoen = (x) => !sz || !x.seizoen || x.seizoen === sz;
     const spelers = K.statsVoorOuders(eigenSpelers(), (S.wedstrijden || []).filter(ditSeizoen), (S.presentie || []).filter(ditSeizoen),
@@ -297,7 +298,7 @@ export function koppelTeamkamer(v, { renderTeam }){
       M.zoek = t.value;
       const toon = () => { const doel = root.querySelector('#tk-treffers'); if (doel) doel.innerHTML = M.zoek && M.vormen ? M.vormen.filter(x => x.naam.toLowerCase().includes(M.zoek.toLowerCase())).slice(0, 6).map(trefferHtml).join('') : ''; };
       if (M.vormen) toon();
-      else import('./trainingsbibliotheek.js?v=20261121b').then(m => { M.vormen = m.BIBLIOTHEEK.vormen.map(x => ({ id: x.id, naam: x.naam })); toon(); }).catch(() => {});
+      else import('./trainingsbibliotheek.js?v=20261126g').then(m => { M.vormen = m.BIBLIOTHEEK.vormen.filter(x => (x.sport || 'voetbal') === actieveSport()).map(x => ({ id: x.id, naam: x.naam })); toon(); }).catch(() => {});
       return;
     }
     if (!f || !t.dataset.tkf) return;

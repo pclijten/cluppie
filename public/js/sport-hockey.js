@@ -4,7 +4,8 @@
    O10 8 tegen 8, O11 9 tegen 9 op driekwart veld (sinds 2025/26), vanaf O12 11 tegen 11.
    Speeltijden van O11 en ouder en de kaartduur per leeftijd: te controleren met de pilotclub
    (de club kan ze aanpassen onder Instellingen › Regels en Lijsten). Eigen oefenstof en plannen
-   ontbreken nog (inhoud: false). Bewust zonder imports: pure data. */
+   ontbreken nog (inhoud: false). Bewust zonder imports: pure data.
+   [20261126g] Eigen oefenstof (tools/trainingsbibliotheek/vormen-hockey.mjs) en leerblokken: inhoud: true. */
 const vries = o => { if (o && typeof o === 'object' && !Object.isFrozen(o)){ Object.freeze(o); Object.values(o).forEach(vries); } return o; };
 
 export const HOCKEY = vries({
@@ -12,7 +13,7 @@ export const HOCKEY = vries({
   naam: 'Hockey',
   icoon: 'football-pitch',
   open: true,           /* [20261126f] open voor iedereen (besluit Paul 25-11-2026); oefenstof volgt met de clubs */
-  inhoud: false,
+  inhoud: true,         /* [20261126g] eigen oefenstof: Training maken en Seizoensplanning werken voor hockey */
   ledenbron: 'lisa',
   veld: {
     lengte: 91.4, breedte: 55,
@@ -112,6 +113,23 @@ export const HOCKEY = vries({
     { thema: 'Omschakelen balwinst', vanaf: 13, domein: 'TA' },
     { thema: 'Omschakelen balverlies', vanaf: 13, domein: 'TA' },
   ],
+  /* [20261126g] Volgorde van de leerblokken per bouw (jaarlijn en seizoensplan), de seizoensmodellen en de accenten.
+     Zelfde vorm als VOLGORDE_PER_BOUW in trainingsplanner.js en MODELLEN/ACCENTEN in seizoensplan-logica.js. */
+  volgordePerBouw: {
+    onder:  ['Teamsport en plezier', 'Stickvaardigheid en balbeheersing', 'Passen en aannemen', 'Dribbelen en passeren 1:1', 'Scoren in de cirkel', 'Vrijlopen en aanspeelbaar zijn', 'Teamsport en plezier'],
+    midden: ['Passen en aannemen', 'Vrijlopen en aanspeelbaar zijn', 'Opbouwen van achteruit', 'Verdedigen 1:1 (jab en tackle)', 'Druk zetten en veroveren', 'Dribbelen en passeren 1:1', 'Cirkelverdediging', 'Scoren in de cirkel', 'Strafcorner aanvallen', 'Strafcorner verdedigen'],
+    boven:  ['Opbouwen van achteruit', 'Druk zetten en veroveren', 'Omschakelen balwinst', 'Cirkelverdediging', 'Strafcorner aanvallen', 'Strafcorner verdedigen', 'Omschakelen balverlies', 'Scoren in de cirkel'],
+  },
+  seizoensModellen: {
+    momenten: ['Opbouwen van achteruit', 'Druk zetten en veroveren', 'Vrijlopen en aanspeelbaar zijn', 'Cirkelverdediging', 'Scoren in de cirkel', 'Verdedigen 1:1 (jab en tackle)', 'Strafcorner aanvallen', 'Omschakelen balverlies', 'Strafcorner verdedigen', 'Omschakelen balwinst'],
+    cyclus: ['Opbouwen van achteruit', 'Dribbelen en passeren 1:1', 'Scoren in de cirkel', 'Druk zetten en veroveren', 'Vrijlopen en aanspeelbaar zijn', 'Strafcorner aanvallen', 'Cirkelverdediging', 'Strafcorner verdedigen'],
+  },
+  accenten: {
+    'Verdedigen': ['Verdedigen 1:1 (jab en tackle)', 'Druk zetten en veroveren', 'Cirkelverdediging'],
+    'Techniek': ['Stickvaardigheid en balbeheersing', 'Dribbelen en passeren 1:1'],
+    'Plezier & teamgevoel': ['Teamsport en plezier'],
+    'Aanvallen': ['Scoren in de cirkel', 'Opbouwen van achteruit'],
+  },
   formatie11: '4-3-3',
   doelSuggesties: [
     { tot: 9, teksten: ['Iedereen houdt de bal aan de platte kant van de stick', 'Na balverovering meteen naar het doel dribbelen', 'Iedereen minstens 1x een schot op doel', 'Elkaar aanmoedigen na een fout'] },
