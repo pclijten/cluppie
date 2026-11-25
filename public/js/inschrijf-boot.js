@@ -8,7 +8,7 @@
    onder het vaste id <uid>_<0-9>. Contactgegevens leest alleen het comité en dit toestel zelf
    (firestore.rules). Online betalen zit er niet in: de club zet er een betaallink of rekeningnummer bij. */
 import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, collection, query, where, setDoc, deleteDoc, onSnapshot } from './firebase.js?v=20261011g';
-import * as T from './toernooi-logica.js?v=20261125v';
+import * as T from './toernooi-logica.js?v=20261125w';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const SLEUTEL = 'cluppieInschrijfContact';
@@ -64,9 +64,9 @@ export async function bootInschrijfPagina(insId){
     const mijn = st.mijn, prijsTotaal = mijn.filter(x => x.status !== 'afgewezen' && !x.betaald).reduce((s, x) => s + (d.cats?.[x.cat]?.prijs || 0), 0);
     const toonForm = !dicht && mijn.length < 10 && (!mijn.length || st.nogEen);
     const statusTekst = { nieuw: 'Ontvangen, de organisatie bevestigt nog', toegelaten: 'Toegelaten, jullie doen mee', wachtlijst: 'Op de wachtlijst', afgewezen: 'Niet toegelaten' };
-    el.innerHTML = `<div class="is">
-      <header><small>${esc([d.clubNaam, datumLang(d.datum)].filter(Boolean).join(' · '))}</small><h1>${esc(d.naam || 'Toernooi')}</h1>
-        <p class="is-zacht">${esc([d.start ? 'Aanvang ' + d.start : '', d.locatie].filter(Boolean).join(' · '))}</p></header>
+    el.innerHTML = `<div class="is"${/^#[0-9a-f]{6}$/i.test(d.kleur || '') ? ` style="--accent:${d.kleur}"` : ''}>
+      <header>${T.plaatjeOk(d.logo) ? `<img class="is-logo" src="${esc(d.logo)}" alt="">` : ''}<div><small>${esc([d.clubNaam, datumLang(d.datum)].filter(Boolean).join(' · '))}</small><h1>${esc(d.naam || 'Toernooi')}</h1>
+        <p class="is-zacht">${esc([d.start ? 'Aanvang ' + d.start : '', d.locatie].filter(Boolean).join(' · '))}</p></div></header>
       ${d.tekst ? `<section class="is-kaart"><p class="is-tekst">${esc(d.tekst)}</p></section>` : ''}
       <section class="is-kaart"><h2>Categorieën</h2>${cats.map(c => `<div class="is-rij"><span><b>${esc(c.naam)}</b><small>${c.max ? `${Math.max(0, c.max - (c.bezet || 0))} van ${c.max} plekken vrij` : 'Plek genoeg'}</small></span><b>${c.prijs ? esc(T.euro(c.prijs)) : 'Gratis'}</b></div>`).join('')}
         ${d.tot ? `<p class="is-zacht">Inschrijven kan tot en met ${esc(datumLang(d.tot))}.</p>` : ''}</section>
@@ -127,6 +127,7 @@ function stijl(){
 .is{max-width:560px;margin:0 auto;padding:16px 16px calc(28px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px;color:var(--ink)}
 .is-midden{min-height:60vh;justify-content:center;text-align:center}
 .is h1{font-family:var(--font-display);text-transform:uppercase;font-size:var(--t-3xl,30px);line-height:1;margin:2px 0 4px}
+.is header{display:flex;align-items:center;gap:12px}.is header>div{min-width:0}.is-logo{width:60px;height:60px;object-fit:contain;flex-shrink:0;border-radius:10px;background:#fff;padding:3px}
 .is header small{color:var(--ink-2);font-size:var(--t-sm,14px)}
 .is-kaart{background:var(--card);border-radius:var(--r-m,14px);padding:14px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px}
 .is-kaart h2{font-family:var(--font-display);text-transform:uppercase;font-size:var(--t-lg,18px);margin:0}

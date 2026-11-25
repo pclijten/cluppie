@@ -11,10 +11,12 @@
    Opslag: veld `toernooi` in de activiteit (zie toernooi-logica.js). Geen rules-wijziging nodig.
    Dit bestand krijgt alles van activiteiten.js via ctx en importeert dat bestand niet. */
 import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, deleteField } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261125v';
+import { S, esc, meld } from './state.js?v=20261125w';
 import { ico } from './icons.js?v=20261116t';
-import * as T from './toernooi-logica.js?v=20261125v';
+import * as T from './toernooi-logica.js?v=20261125w';
+import { kleinPlaatje } from './plaatje.js?v=20261125w';
 
+const clubInfo = () => ({ clubNaam: S.club?.naam || '', logo: S.club?.instellingen?.identiteit?.logo || '', kleur: S.club?.instellingen?.identiteit?.kleur || '' });
 const opt = (w, t, sel) => `<option value="${esc(w)}"${sel ? ' selected' : ''}>${esc(t)}</option>`;
 const SUB = [['opzet', 'Opzet'], ['inschrijven', 'Inschrijven'], ['spelers', 'Spelers'], ['teams', 'Teams'], ['schema', 'Schema'], ['kk', 'Kleedkamers'], ['uitslagen', 'Uitslagen'], ['live', 'Live']];
 const st = { sub: 'opzet', zoek: '', gekozen: '', teamFilter: '', club: null, clubLaden: null, voorstel: null };
@@ -317,7 +319,7 @@ export async function klikToernooi(ctx, b){
     case 'ins-aan': {
       if (!T.inschrijfCats(t).length) return meld('Maak eerst een categorie.');
       const iid = t.inschrijfId || T.liveId();
-      try { await setDoc(doc(db, 'toernooiInschrijf', iid), { club: ctx.clubId, actId: ctx.actId, open: true, ...T.inschrijfKopie(a, { clubNaam: S.club?.naam || '', bezet: T.bezetPerCat(ins.id === iid ? ins.lijst || [] : []) }), bijgewerktMs: Date.now() }); }
+      try { await setDoc(doc(db, 'toernooiInschrijf', iid), { club: ctx.clubId, actId: ctx.actId, open: true, ...T.inschrijfKopie(a, { ...clubInfo(), bezet: T.bezetPerCat(ins.id === iid ? ins.lijst || [] : []) }), bijgewerktMs: Date.now() }); }
       catch (e){ console.error('[toernooi] inschrijven', e); return meld(e?.code === 'permission-denied' ? 'Inschrijven kan nog niet aan: de regels zijn nog niet gepubliceerd.' : 'Openzetten mislukt.'); }
       await zet({ 'toernooi.inschrijfId': iid, 'toernooi.inschrijf.open': true }); return meld('Inschrijven staat open. Deel de link!');
     }
@@ -340,7 +342,7 @@ export async function klikToernooi(ctx, b){
     case 'ins-csv': return ctx.download(ctx.bestandsnaam('csv', 'inschrijvingen'), T.csvInschrijvingen(ins.lijst || [], t), 'text/csv;charset=utf-8');
     case 'live-aan': {
       const lid = t.liveId || T.liveId();
-      try { await setDoc(doc(db, 'toernooiLive', lid), { club: ctx.clubId, actId: ctx.actId, open: true, ...T.liveKopie(a, { clubNaam: S.club?.naam || '' }), bijgewerktMs: Date.now() }); }
+      try { await setDoc(doc(db, 'toernooiLive', lid), { club: ctx.clubId, actId: ctx.actId, open: true, ...T.liveKopie(a, clubInfo()), bijgewerktMs: Date.now() }); }
       catch (e){ console.error('[toernooi] live', e); return meld(e?.code === 'permission-denied' ? 'De live pagina kan nog niet aan: de regels zijn nog niet gepubliceerd.' : 'Aanzetten mislukt.'); }
       await zet({ 'toernooi.liveId': lid, 'toernooi.live': true }); return meld('De live pagina staat aan');
     }
@@ -360,6 +362,19 @@ export async function klikToernooi(ctx, b){
     }
     case 'scherm-nieuw': { if (Object.keys(t.schermen || {}).length >= T.MAX_SCHERMEN) return meld(`Maximaal ${T.MAX_SCHERMEN} sponsoren en schermen.`);
       return zet({ [`toernooi.schermen.${T.nieuwId('x')}`]: { soort: id === 'sponsor' ? 'sponsor' : 'scherm', titel: '', tekst: '', volg: T.volgende(t.schermen), tv: true, tel: true } }); }
+    case 'scherm-club': {
+      let lijst = [];
+      try { lijst = await (await import('./clubschermen.js?v=20261125w')).clubSponsoren(ctx.clubId); }
+      catch { return meld('De sponsoren van de club zijn alleen te lezen door de clubbeheerder.'); }
+      if (!lijst.length) return meld('De club heeft nog geen sponsoren. Zet ze in Activiteiten › Kantine-tv en sponsoren.');
+      const heeft = new Set(Object.values(t.schermen || {}).map(x => String(x?.titel || '').toLowerCase())), patch = {};
+      let vrij = T.MAX_SCHERMEN - Object.keys(t.schermen || {}).length, volg = T.volgende(t.schermen);
+      for (const x of lijst){ if (vrij <= 0) break; if (x.titel && heeft.has(x.titel.toLowerCase())) continue;
+        patch[`toernooi.schermen.${T.nieuwId('x')}`] = { soort: 'sponsor', titel: x.titel, tekst: x.tekst, link: x.link, ...(x.img ? { img: x.img } : {}), volg: volg++, tv: true, tel: true }; vrij--; }
+      const n = Object.keys(patch).length;
+      if (!n) return meld('Alle sponsoren van de club staan er al bij.');
+      await zet(patch); return meld(n === 1 ? '1 sponsor overgenomen' : `${n} sponsoren overgenomen`);
+    }
     case 'scherm-weg': return zet({ [`toernooi.schermen.${id}`]: deleteField() });
     case 'scherm-plaatje-weg': return zet({ [`toernooi.schermen.${id}.img`]: deleteField() });
     case 'med-weg': return zet({ [`toernooi.mededelingen.${id}`]: deleteField() });
@@ -494,7 +509,7 @@ export function planInschrijf(ctx){
   _insT = setTimeout(async () => {
     const a = ctx.actNu(), t = a?.toernooi;
     if (!t?.inschrijfId || t.inschrijf?.open !== true || ins.id !== t.inschrijfId) return;
-    try { await setDoc(doc(db, 'toernooiInschrijf', t.inschrijfId), { club: ctx.clubId, actId: ctx.actId, open: true, ...T.inschrijfKopie(a, { clubNaam: S.club?.naam || '', bezet: T.bezetPerCat(ins.lijst || []) }), bijgewerktMs: Date.now() }); }
+    try { await setDoc(doc(db, 'toernooiInschrijf', t.inschrijfId), { club: ctx.clubId, actId: ctx.actId, open: true, ...T.inschrijfKopie(a, { ...clubInfo(), bezet: T.bezetPerCat(ins.lijst || []) }), bijgewerktMs: Date.now() }); }
     catch (e){ console.warn('[toernooi] inschrijfpagina bijwerken', e); }
   }, 600);
 }
@@ -568,27 +583,6 @@ async function zetInschrijfStatus(ctx, t, id, naar){
 }
 
 /* ---------- live pagina, QR en mededelingen ---------- */
-/* Een logo of foto klein maken (wit vlak eronder, jpg) tot het in het document past. */
-async function kleinPlaatje(bestand){
-  const url = URL.createObjectURL(bestand);
-  try {
-    const img = await new Promise((ok, mis) => { const i = new Image(); i.onload = () => ok(i); i.onerror = mis; i.src = url; });
-    for (const [maat, kw] of [[640, .82], [520, .78], [420, .72], [320, .68], [240, .6]]){
-      const f = Math.min(1, maat / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
-      c.width = Math.max(1, Math.round(img.naturalWidth * f)); c.height = Math.max(1, Math.round(img.naturalHeight * f));
-      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
-      const uit = c.toDataURL('image/jpeg', kw); if (uit.length <= T.MAX_PLAATJE) return uit;
-    }
-    return '';
-  } finally { URL.revokeObjectURL(url); }
-}
-export const liveLink = (id, tv) => `${location.origin}${location.pathname.replace(/[^/]*$/, '')}?live=${encodeURIComponent(id)}${tv ? '&tv=1' : ''}`;
-let _qr = null;
-async function qrSvg(tekst){
-  await (_qr ||= laadScript('vendor/qrcode.js', () => typeof window.qrcode === 'function').catch(e => { _qr = null; throw e; }));
-  const q = window.qrcode(0, 'M'); q.addData(tekst); q.make();
-  return q.createSvgTag({ cellSize: 6, margin: 12, scalable: true });
-}
 function htmlLive(ctx, a, t){
   const aan = t.live === true && t.liveId, link = aan ? liveLink(t.liveId) : '';
   if (aan && st.qrVoor !== t.liveId){ st.qrVoor = t.liveId; st.qrSvg = ''; qrSvg(link).then(svg => { st.qrSvg = svg; ctx.herteken(); }).catch(() => { st.qrSvg = ''; }); }
@@ -611,7 +605,7 @@ function htmlLive(ctx, a, t){
             ${veld(`schermen.${x.id}.tekst`, x.tekst, { ph: x.soort === 'sponsor' ? 'Korte tekst (mag leeg blijven)' : 'Tekst op het scherm', extra: 'maxlength="240"' })}
             ${x.soort === 'sponsor' ? veld(`schermen.${x.id}.link`, x.link, { ph: 'Website (mag leeg blijven)', extra: 'maxlength="200" inputmode="url"' }) : ''}
             <div class="ac-rij"><label class="ac-schak"><input type="checkbox" data-veld="toernooi.schermen.${esc(x.id)}.tv" data-bool ${x.tv ? 'checked' : ''}> Op tv</label><label class="ac-schak"><input type="checkbox" data-veld="toernooi.schermen.${esc(x.id)}.tel" data-bool ${x.tel ? 'checked' : ''}> Op de live pagina</label>${x.img ? `<span class="ac-groei"></span><button class="knop licht klein" data-tn="scherm-plaatje-weg" data-id="${esc(x.id)}">Afbeelding weg</button>` : ''}</div></div></div>`).join('') || '<p class="ac-zacht">Nog geen sponsoren of schermen.</p>'}
-      <div class="ac-acties"><button class="knop licht klein" data-tn="scherm-nieuw" data-id="sponsor" ${vol ? 'disabled' : ''}>${ico('action-add', 16)} Sponsor</button><button class="knop licht klein" data-tn="scherm-nieuw" data-id="scherm" ${vol ? 'disabled' : ''}>${ico('action-add', 16)} Eigen scherm</button>${vol ? `<span class="ac-zacht">Maximaal ${T.MAX_SCHERMEN}.</span>` : ''}</div></div>`;
+      <div class="ac-acties"><button class="knop licht klein" data-tn="scherm-nieuw" data-id="sponsor" ${vol ? 'disabled' : ''}>${ico('action-add', 16)} Sponsor</button><button class="knop licht klein" data-tn="scherm-nieuw" data-id="scherm" ${vol ? 'disabled' : ''}>${ico('action-add', 16)} Eigen scherm</button>${S.club?.admins?.[S.user?.uid] ? `<button class="knop licht klein" data-tn="scherm-club" ${vol ? 'disabled' : ''}>Sponsoren van de club overnemen</button>` : ''}${vol ? `<span class="ac-zacht">Maximaal ${T.MAX_SCHERMEN}.</span>` : ''}</div></div>`;
 }
 /* Na elke wijziging aan het toernooi de live-kopie bijwerken (kort gebundeld). */
 let _liveT = null;
@@ -620,7 +614,7 @@ export function planLive(ctx){
   _liveT = setTimeout(async () => {
     const a = ctx.actNu(), t = a?.toernooi;
     if (!t || t.live !== true || !t.liveId) return;
-    try { await setDoc(doc(db, 'toernooiLive', t.liveId), { club: ctx.clubId, actId: ctx.actId, open: true, ...T.liveKopie(a, { clubNaam: S.club?.naam || '' }), bijgewerktMs: Date.now() }); }
+    try { await setDoc(doc(db, 'toernooiLive', t.liveId), { club: ctx.clubId, actId: ctx.actId, open: true, ...T.liveKopie(a, clubInfo()), bijgewerktMs: Date.now() }); }
     catch (e){ console.warn('[toernooi] live bijwerken', e); }
   }, 600);
 }

@@ -336,7 +336,8 @@ export const clubVanTeam = (t, teamId) => t.clubs?.[t.teams?.[teamId]?.club]?.na
 export const MAX_MEDEDELINGEN = 30;
 /* Sponsoren en eigen schermen voor de live pagina en de tv. Het plaatje is een klein gemaakte
    data-URL (zie activiteit-toernooi.js), zodat het in het document past en zonder account te zien is. */
-export const MAX_SCHERMEN = 12, MAX_PLAATJE = 70000;
+export const MAX_SCHERMEN = 12;
+export const MAX_PLAATJE = 70000;
 export const plaatjeOk = v => typeof v === 'string' && v.length <= MAX_PLAATJE && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v);
 export const veiligeLink = v => { const u = String(v ?? '').trim().slice(0, 200); if (!u) return ''; const m = /^https?:\/\//i.test(u) ? u : /^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(u) ? 'https://' + u : ''; return /["'<>\s]/.test(m) ? '' : m; };
 export function schermen(t, { leeg = false } = {}){
@@ -345,10 +346,12 @@ export function schermen(t, { leeg = false } = {}){
 }
 export const liveId = () => Array.from({ length: 20 }, () => 'abcdefghjkmnpqrstuvwxyz23456789'[Math.floor(Math.random() * 31)]).join('');
 /* Wat iedereen met de link ziet: schema, uitslagen, stand, kleedkamers en mededelingen. Geen spelers. */
-export function liveKopie(act = {}, { clubNaam = '' } = {}){
+/* logo en clubkleur voor de openbare pagina's (live, tv, inschrijven) */
+export const clubUiterlijk = (logo, kleur) => ({ logo: plaatjeOk(logo) ? logo : '', kleur: /^#[0-9a-f]{6}$/i.test(kleur || '') ? kleur : '' });
+export function liveKopie(act = {}, { clubNaam = '', logo = '', kleur = '' } = {}){
   const t = act.toernooi || {}, o = opzet(t), kk = planKleedkamers(t).kk;
   return {
-    naam: tekst(act.naam, 80), datum: act.datum || '', locatie: tekst(act.locatie, 80), clubNaam: tekst(clubNaam, 80),
+    naam: tekst(act.naam, 80), datum: act.datum || '', locatie: tekst(act.locatie, 80), clubNaam: tekst(clubNaam, 80), ...clubUiterlijk(logo, kleur),
     start: o.start, duur: o.duur, wissel: o.wissel,
     veldjes: veldjes(t).map(v => ({ id: v.id, naam: v.naam })),
     poules: Object.fromEntries(gesorteerd(t.poules).map(p => [p.id, { naam: tekst(p.naam, 40), kleur: /^#[0-9a-f]{6}$/i.test(p.kleur || '') ? p.kleur : '#999999', volg: p.volg ?? 0 }])),
@@ -398,10 +401,10 @@ export function bezetPerCat(aanmeldingen = []){
   for (const a of aanmeldingen) if (a && a.cat && !['afgewezen', 'wachtlijst'].includes(a.status)) uit[a.cat] = (uit[a.cat] || 0) + 1;
   return uit;
 }
-export function inschrijfKopie(act = {}, { clubNaam = '', bezet = {} } = {}){
+export function inschrijfKopie(act = {}, { clubNaam = '', bezet = {}, logo = '', kleur = '' } = {}){
   const t = act.toernooi || {}, i = t.inschrijf || {};
   return {
-    naam: tekst(act.naam, 80), datum: act.datum || '', start: act.start || '', locatie: tekst(act.locatie, 80), clubNaam: tekst(clubNaam, 80), soort: soort(t),
+    naam: tekst(act.naam, 80), datum: act.datum || '', start: act.start || '', locatie: tekst(act.locatie, 80), clubNaam: tekst(clubNaam, 80), ...clubUiterlijk(logo, kleur), soort: soort(t),
     tekst: String(i.tekst ?? '').trim().slice(0, 600), tot: /^\d{4}-\d{2}-\d{2}$/.test(i.tot || '') ? i.tot : '',
     contact: tekst(i.contact, 60), contactMail: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(i.contactMail || '').trim()) ? String(i.contactMail).trim().slice(0, 120) : '',
     betaal: String(i.betaal ?? '').trim().slice(0, 400), betaalLink: veiligeLink(i.betaalLink),

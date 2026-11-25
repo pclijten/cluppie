@@ -280,6 +280,12 @@ service cloud.firestore {
         allow read: if isClubLid(clubId);
         allow write: if isClubAdmin(clubId) && activiteitenAan(clubId);
       }
+      /* [20261125w] Sponsoren en eigen schermen van de club (Activiteiten › Kantine-tv en sponsoren), met bedrag en
+         notitie: alleen clubbeheer. De openbare kopie voor de tv staat in clubTv/{id}/schermen. */
+      match /sponsoren/{sid} {
+        allow read: if isClubAdmin(clubId);
+        allow write: if isClubAdmin(clubId) && activiteitenAan(clubId);
+      }
       match /veldplanner/{docId} {
         allow read: if isVeldplanner(clubId);
         allow write: if isVeldplanner(clubId) && veldplannerAan(clubId) && docId == 'instellingen';
@@ -772,6 +778,56 @@ service cloud.firestore {
         allow update: if beheer() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'betaald', 'teamId'])
           && request.resource.data.status in ['nieuw', 'toegelaten', 'wachtlijst', 'afgewezen'];
         allow delete: if ingelogd() && (resource.data.uid == uid() || beheer());
+      }
+    }
+    /* [20261125w] Kantine-tv van de club (?scherm=<id>, scherm-boot.js): het programma van vandaag (door de Cloud Function
+       kantineTv), een mededeling, en in de subcollectie de sponsoren en eigen schermen. Voor iedereen met de link, ook
+       anoniem. Geen persoonsgegevens. Clubbeheer vindt de eigen tv met where('club', '==', clubId). */
+    match /clubTv/{tvId} {
+      function tvBeheer(d) { return d.get('club', null) is string && isClubAdmin(d.club); }
+      allow get: if ingelogd() && (resource.data.get('open', false) == true || tvBeheer(resource.data));
+      allow list: if echt() && tvBeheer(resource.data);
+      allow create: if tvBeheer(request.resource.data) && activiteitenAan(request.resource.data.club);
+      allow update: if tvBeheer(resource.data) && activiteitenAan(resource.data.club)
+        && request.resource.data.get('club', null) == resource.data.get('club', null)
+        && request.resource.data.get('programma', []) is list && request.resource.data.get('programma', []).size() <= 120;
+      allow delete: if tvBeheer(resource.data);
+      match /schermen/{sid} {
+        function tv() { return get(/databases/$(database)/documents/clubTv/$(tvId)).data; }
+        allow read: if ingelogd() && (tv().get('open', false) == true || tvBeheer(tv()));
+        allow write: if tvBeheer(tv()) && activiteitenAan(tv().club);
+      }
+    }
+    /* [20261125w] Vrijwilligersbank (?taken=<id>, taken-boot.js): de club zet er taken op met een vaste omschrijving
+       (wat doe je, wanneer, hoe lang, waar). Wie de link heeft meldt zich aan voor een taak. De taken zijn openbaar;
+       een aanmelding (naam, e-mail of telefoon) leest alleen clubbeheer en de aanmelder zelf. */
+    match /vrijwilligersBank/{bankId} {
+      function bankBeheer(d) { return d.get('club', null) is string && isClubAdmin(d.club); }
+      allow get: if ingelogd() && (resource.data.get('open', false) == true || bankBeheer(resource.data));
+      allow list: if echt() && bankBeheer(resource.data);
+      allow create: if bankBeheer(request.resource.data) && activiteitenAan(request.resource.data.club)
+        && request.resource.data.taken is map && request.resource.data.taken.size() <= 60;
+      allow update: if bankBeheer(resource.data) && activiteitenAan(resource.data.club)
+        && request.resource.data.get('club', null) == resource.data.get('club', null)
+        && request.resource.data.taken is map && request.resource.data.taken.size() <= 60;
+      allow delete: if bankBeheer(resource.data);
+      match /aanmeldingen/{aanmId} {
+        function bank() { return get(/databases/$(database)/documents/vrijwilligersBank/$(bankId)).data; }
+        allow read: if ingelogd() && (resource.data.uid == uid() || bankBeheer(bank()));
+        /* één aanmelding per taak per toestel (vast id <uid>_<taak>) */
+        allow create: if ingelogd() && bank().get('open', false) == true
+          && request.resource.data.keys().hasOnly(['uid', 'taak', 'naam', 'contact', 'opm', 'ms', 'status'])
+          && request.resource.data.uid == uid()
+          && request.resource.data.taak is string && request.resource.data.taak in bank().taken
+          && aanmId == uid() + '_' + request.resource.data.taak
+          && request.resource.data.status == 'nieuw'
+          && request.resource.data.ms is number
+          && request.resource.data.naam is string && request.resource.data.naam.size() > 0 && request.resource.data.naam.size() <= 60
+          && request.resource.data.contact is string && request.resource.data.contact.size() >= 5 && request.resource.data.contact.size() <= 120
+          && request.resource.data.get('opm', '') is string && request.resource.data.get('opm', '').size() <= 300;
+        allow update: if bankBeheer(bank()) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+          && request.resource.data.status in ['nieuw', 'gesproken', 'geplaatst', 'afgewezen'];
+        allow delete: if ingelogd() && (resource.data.uid == uid() || bankBeheer(bank()));
       }
     }
     match /activiteitDeel/{deelId} {

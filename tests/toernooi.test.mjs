@@ -138,7 +138,8 @@ const lijstIns = [{ cat: 'a', status: 'toegelaten', betaald: true, club: 'A', em
 ok(T.bezetPerCat(lijstIns).a === 2 && T.bezetPerCat(lijstIns).b === 1, 'bezet per categorie');
 const tot = T.inschrijfTotaal(lijstIns, tIns);
 ok(tot.n === 5 && tot.nieuw === 1 && tot.toegelaten === 2 && tot.verwacht === 25 && tot.betaald === 12.5, 'totaal inschrijfgeld');
-ok(T.csvInschrijvingen(lijstIns, tIns).split('\r\n')[0].includes('School;Team;Categorie') && T.csvInschrijvingen(lijstIns, tIns).split('\r\n')[1].startsWith('B;'), 'csv inschrijvingen');
+ok(T.csvInschrijvingen(lijstIns, tIns).split('\r\n')[0].includes('School;Team;Categorie') && T.csvInschrijvingen(lijstIns, tIns).includes('\r\nB;'), 'csv inschrijvingen');
+ok(T.liveKopie({}, { logo: png, kleur: '#0055aa' }).logo === png && T.liveKopie({}, { logo: 'http://x/y.png', kleur: 'rood' }).logo === '' && T.inschrijfKopie({}, { kleur: '#0055AA' }).kleur === '#0055AA', 'clublogo en kleur');
 ok(T.euro(15) === '€ 15,-' && T.euro(12.5) === '€ 12,50' && T.bedrag('1e9') === 0, 'bedragen');
 
 console.log(`toernooi: ${n} controles geslaagd`);

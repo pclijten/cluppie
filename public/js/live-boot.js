@@ -8,7 +8,7 @@
    toernooiLive/{id} lezen (firestore.rules). Geen spelersnamen, niets om in te vullen.
    De pagina werkt zichzelf bij (onSnapshot); het comité vult de uitslagen in via Activiteiten. */
 import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, onSnapshot } from './firebase.js?v=20261011g';
-import * as T from './toernooi-logica.js?v=20261125v';
+import * as T from './toernooi-logica.js?v=20261125w';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const SLEUTEL = 'cluppieLiveTeam';
@@ -72,6 +72,8 @@ export async function bootLivePagina(liveId, { tv = false } = {}){
       <table class="lv-stand"><thead><tr><th></th><th>Team</th><th>G</th>${groot ? '<th>W</th><th>GL</th><th>V</th>' : ''}<th>DS</th><th>P</th></tr></thead><tbody>
       ${rijen.map((r, i) => `<tr class="${st.team === r.id ? 'mijn' : ''}"><td>${i + 1}</td><td>${esc(r.naam)}</td><td>${r.g}</td>${groot ? `<td>${r.w}</td><td>${r.gl}</td><td>${r.v}</td>` : ''}<td>${r.saldo > 0 ? '+' : ''}${r.saldo}</td><td><b>${r.pnt}</b></td></tr>`).join('')}</tbody></table></section>` : ''; };
   const isVandaag = () => !st.d.datum || st.d.datum === vandaag();
+  const logo = d => T.plaatjeOk(d.logo) ? `<img class="lv-logo" src="${esc(d.logo)}" alt="">` : '';
+  const accent = d => /^#[0-9a-f]{6}$/i.test(d.kleur || '') ? ` style="--accent:${d.kleur}"` : '';
   /* Sponsoren en eigen schermen: het plaatje is een data-URL die de regels van de planner al controleren; hier nog eens. */
   const schermen = waar => (st.d.schermen || []).filter(x => x && x[waar] !== false).map(x => ({ ...x, img: T.plaatjeOk(x.img) ? x.img : '', link: T.veiligeLink(x.link) }));
   const dia = x => `<section class="lv-kaart lv-dia ${x.soort === 'sponsor' ? 'sponsor' : ''}">${x.soort === 'sponsor' ? '<small class="lv-zacht">Met dank aan onze sponsor</small>' : ''}${x.img ? `<div class="lv-dia-img"><img src="${esc(x.img)}" alt=""></div>` : ''}${x.titel ? `<h2>${esc(x.titel)}</h2>` : ''}${x.tekst ? `<p>${esc(x.tekst)}</p>` : ''}</section>`;
@@ -101,7 +103,7 @@ export async function bootLivePagina(liveId, { tv = false } = {}){
       info: () => `<section class="lv-kaart">${med.map(m => `<div class="lv-med"><small>${esc(new Date(m.ms).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }))}</small><p>${esc(m.tekst)}</p></div>`).join('') || '<p>Nog geen mededelingen.</p>'}</section>
         ${teams.some(t => t.kk) ? `<section class="lv-kaart"><h2>Kleedkamers</h2>${teams.filter(t => t.kk && (!st.team || t.id === st.team)).map(t => `<div class="lv-rij"><span>${esc(t.naam)}</span><b>${esc(t.kk)}</b></div>`).join('')}</section>` : ''}`,
     }[st.tab] || (() => '');
-    return `<div class="lv"><header class="lv-kop"><small>${esc([d.clubNaam, datumLang(d.datum), d.locatie].filter(Boolean).join(' · '))}</small><h1>${esc(d.naam || 'Toernooi')}</h1></header>
+    return `<div class="lv"${accent(d)}><header class="lv-kop">${logo(d)}<div><small>${esc([d.clubNaam, datumLang(d.datum), d.locatie].filter(Boolean).join(' · '))}</small><h1>${esc(d.naam || 'Toernooi')}</h1></div></header>
       ${d.planB ? `<div class="lv-banner rood"><b>Plan B:</b> ${esc(d.planB)}</div>` : ''}
       ${med[0] && st.tab !== 'info' ? `<button class="lv-banner" data-lv-tab="info"><b>${esc(new Date(med[0].ms).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }))}</b> ${esc(med[0].tekst)}</button>` : ''}
       <select class="lv-kies" data-lv-team aria-label="Kies je team"><option value="">Alle teams</option>${teams.map(t => `<option value="${esc(t.id)}"${st.team === t.id ? ' selected' : ''}>${esc(t.naam)}</option>`).join('')}</select>
@@ -120,7 +122,7 @@ export async function bootLivePagina(liveId, { tv = false } = {}){
     const blokken = beurten.length, b = st.tvPoule % blokken, beurt = beurten[b], toon = beurt.dia ? [] : poules.slice(beurt.stand * per, beurt.stand * per + per);
     const klok = new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
     const laatste = [...(d.schema || [])].filter(w => d.uitslag?.[w.id]).sort((a, c) => T.naarMin(c.t) - T.naarMin(a.t)).slice(0, 6);
-    return `<div class="lv lv-tv"><header class="lv-tvkop"><div><small>${esc([d.clubNaam, datumLang(d.datum)].filter(Boolean).join(' · '))}</small><h1>${esc(d.naam || 'Toernooi')}</h1></div><span class="lv-klok">${esc(klok)}</span></header>
+    return `<div class="lv lv-tv"${accent(d)}><header class="lv-tvkop">${logo(d)}<div class="lv-tvtitel"><small>${esc([d.clubNaam, datumLang(d.datum)].filter(Boolean).join(' · '))}</small><h1>${esc(d.naam || 'Toernooi')}</h1></div><span class="lv-klok">${esc(klok)}</span></header>
       ${d.planB ? `<div class="lv-banner rood"><b>Plan B:</b> ${esc(d.planB)}</div>` : ''}
       <main class="lv-tvmain"><div class="lv-tvkolom">
           ${ns.nu.length ? `<section class="lv-kaart"><h2><i class="lv-live"></i>Nu op het veld <small>${esc(ns.nuT)}</small></h2>${ns.nu.map(w => wed(w)).join('')}</section>` : ''}
@@ -137,7 +139,7 @@ export async function bootLivePagina(liveId, { tv = false } = {}){
   el.addEventListener('change', e => { if (e.target.matches('[data-lv-team]')){ st.team = e.target.value; try { localStorage.setItem(SLEUTEL + liveId, st.team); } catch { /* geen opslag */ } teken(); } });
 }
 
-function stijl(){
+export function stijl(){
   if (document.getElementById('lvStijl')) return;
   const s = document.createElement('style'); s.id = 'lvStijl';
   s.textContent = `
@@ -185,6 +187,9 @@ function stijl(){
 .lv-tv .lv-dia small{font-size:1em}
 .lv-tvspons{display:flex;align-items:center;gap:1.4vw;overflow:hidden}.lv-tvspons small{color:var(--ink-2);text-transform:uppercase;letter-spacing:.06em;font-size:.8em;flex-shrink:0}
 .lv-tvspons .lv-sponsors{flex-wrap:nowrap;justify-content:flex-start;gap:1vw;overflow:hidden}.lv-tvspons .lv-sponsors span{height:9vh;min-width:8vw;padding:1vh 1vw;font-size:1.2em;flex-shrink:0}.lv-tvspons .lv-sponsors img{max-width:14vw}
+.lv-kop{display:flex;align-items:center;gap:12px}.lv-kop>div{min-width:0}
+.lv-logo{width:56px;height:56px;object-fit:contain;flex-shrink:0;border-radius:10px;background:#fff;padding:3px}
+.lv-tvkop{gap:1.4vw}.lv-tvtitel{flex:1;min-width:0}.lv-tv .lv-logo{width:auto;height:clamp(60px,9vh,130px);max-width:14vw;align-self:center;padding:.5vh}
 .lv-voet{text-align:center;color:var(--ink-2);font-size:var(--t-xs,12px);margin:8px 0 0}
 html.lv-tv-html,html.lv-tv-html body{height:100%;overflow:hidden}
 .lv-tv{max-width:none;height:100vh;box-sizing:border-box;padding:2.2vh 2.4vw;gap:1.6vh;font-size:clamp(16px,1.25vw,30px)}
