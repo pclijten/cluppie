@@ -9,6 +9,7 @@
    De pagina werkt zichzelf bij (onSnapshot); het comité vult de uitslagen in via Activiteiten. */
 import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, onSnapshot } from './firebase.js?v=20261011g';
 import * as T from './toernooi-logica.js?v=20261125w';
+import { tvStijl, tvKleur, tvZet, bordHtml, logoHtml, tikHtml, diaHtml, sponsHtml, voetHtml } from './tv-stijl.js?v=20261126n';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const SLEUTEL = 'cluppieLiveTeam';
@@ -29,7 +30,7 @@ const melding = (titel, tekst) => `<div class="lv lv-midden"><h1>${esc(titel)}</
 export async function bootLivePagina(liveId, { tv = false } = {}){
   const el = document.getElementById('deel');
   if (!el) return;
-  stijl();
+  stijl(); if (tv) tvStijl();
   el.style.display = 'block';
   document.documentElement.classList.toggle('lv-tv-html', tv);
   el.innerHTML = melding('Even geduld', 'Het toernooi wordt geladen…');
@@ -82,7 +83,7 @@ export async function bootLivePagina(liveId, { tv = false } = {}){
   function teken(){
     const d = st.d; if (!d) return;
     if (st.team && !d.teams?.[st.team]) st.team = '';
-    el.innerHTML = tv ? htmlTv(d) : htmlTelefoon(d);
+    if (tv) tvZet(el, htmlTv(d)); else el.innerHTML = htmlTelefoon(d);
   }
 
   function htmlTelefoon(d){
@@ -112,6 +113,16 @@ export async function bootLivePagina(liveId, { tv = false } = {}){
       ${spons.length ? `<section class="lv-kaart"><h2>Sponsoren</h2>${sponsorBalk(spons)}</section>` : ''}<p class="lv-voet">Werkt zichzelf bij · Cluppie</p></div>`;
   }
 
+  /* Tv: links wat er nu en straks speelt, rechts wisselend de standen en de dia's (elke 12 seconden). */
+  const tvWed = (w, { tijd = false } = {}) => `<div class="kb-wed" style="--pk:${esc(kleur(w.p))}" data-tv-k="${esc(w.id)}" data-tv-stand="${esc(uit(w))}">
+      <span class="kb-wed-v">${tijd ? `<b>${esc(w.t)}</b>` : ''}${esc(veld(w.v))}</span><span class="kb-wed-a">${esc(naam(w.a))}</span>
+      <span class="kb-wed-u ${uit(w) ? 'klaar' : ''}">${esc(uit(w) || 'vs')}</span><span class="kb-wed-b">${esc(naam(w.b))}</span></div>`;
+  const tvStand = pid => { const rijen = T.stand(st.d, pid), p = st.d.poules[pid];
+    return rijen.length ? `<section class="kb-paneel"><h2><i class="kb-stip" style="--pk:${esc(p?.kleur || '#999')}"></i>${esc(p?.naam || 'Poule')}</h2>
+      <table class="kb-stand"><thead><tr><th></th><th>Team</th><th>G</th><th>W</th><th>GL</th><th>V</th><th>DS</th><th>P</th></tr></thead><tbody>
+      ${rijen.map((r, i) => `<tr><td><span>${i + 1}</span></td><td>${esc(r.naam)}</td><td>${r.g}</td><td>${r.w}</td><td>${r.gl}</td><td>${r.v}</td><td>${r.saldo > 0 ? '+' : ''}${r.saldo}</td><td><b>${r.pnt}</b></td></tr>`).join('')}</tbody></table></section>` : ''; };
+  const tijdStip = t => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime() + T.naarMin(t) * 60000; };
+
   function htmlTv(d){
     const ns = isVandaag() ? T.nuEnStraks(d, nuMin()) : { nu: [], straks: [], nuT: '', straksT: '' };
     const poules = T.gesorteerd(d.poules).filter(p => T.stand(d, p.id).length), med = d.mededelingen || [];
@@ -120,19 +131,21 @@ export async function bootLivePagina(liveId, { tv = false } = {}){
     const per = spons.length ? 1 : 2, nStand = Math.max(1, Math.ceil(poules.length / per)), beurten = [];
     for (let i = 0, k = 0; i < Math.max(nStand, alle.length); i++){ if (i < nStand || !alle.length) beurten.push({ stand: i % nStand }); if (alle.length) beurten.push({ dia: alle[k++ % alle.length] }); }
     const blokken = beurten.length, b = st.tvPoule % blokken, beurt = beurten[b], toon = beurt.dia ? [] : poules.slice(beurt.stand * per, beurt.stand * per + per);
-    const klok = new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
     const laatste = [...(d.schema || [])].filter(w => d.uitslag?.[w.id]).sort((a, c) => T.naarMin(c.t) - T.naarMin(a.t)).slice(0, 6);
-    return `<div class="lv lv-tv"${accent(d)}><header class="lv-tvkop">${logo(d)}<div class="lv-tvtitel"><small>${esc([d.clubNaam, datumLang(d.datum)].filter(Boolean).join(' · '))}</small><h1>${esc(d.naam || 'Toernooi')}</h1></div><span class="lv-klok">${esc(klok)}</span></header>
-      ${d.planB ? `<div class="lv-banner rood"><b>Plan B:</b> ${esc(d.planB)}</div>` : ''}
-      <main class="lv-tvmain"><div class="lv-tvkolom">
-          ${ns.nu.length ? `<section class="lv-kaart"><h2><i class="lv-live"></i>Nu op het veld <small>${esc(ns.nuT)}</small></h2>${ns.nu.map(w => wed(w)).join('')}</section>` : ''}
-          ${ns.straks.length ? `<section class="lv-kaart"><h2>Hierna <small>${esc(ns.straksT)}</small></h2>${ns.straks.map(w => wed(w)).join('')}</section>` : ''}
-          ${!ns.nu.length && !ns.straks.length && laatste.length ? `<section class="lv-kaart"><h2>Laatste uitslagen</h2>${laatste.map(w => wed(w, { tijd: true })).join('')}</section>` : ''}
-          ${!ns.nu.length && !ns.straks.length && !laatste.length ? `<section class="lv-kaart"><p>${(d.schema || []).length ? 'Het schema staat klaar.' : 'Het speelschema volgt nog.'}</p></section>` : ''}</div>
-        <div class="lv-tvkolom">${beurt.dia ? dia(beurt.dia) : toon.map(p => standTabel(p.id, true)).join('') || '<section class="lv-kaart"><p>Nog geen stand.</p></section>'}
-          ${blokken > 1 ? `<p class="lv-zacht lv-bol">${Array.from({ length: blokken }, (_, i) => `<i class="${i === b ? 'aan' : ''}"></i>`).join('')}</p>` : ''}</div></main>
-      ${spons.length ? `<div class="lv-tvspons"><small>Sponsoren</small>${sponsorBalk(spons)}</div>` : ''}
-      <footer class="lv-tvvoet">${st.qr ? `<div class="lv-tvqr">${st.qr}</div>` : ''}<div class="lv-ticker">${med.length ? `<b>${esc(new Date(med[0].ms).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }))}</b> ${esc(med[0].tekst)}${med[1] ? `<span> · ${esc(med[1].tekst)}</span>` : ''}` : 'Scan de code en volg je eigen team op je telefoon.'}</div></footer></div>`;
+    const van = ns.nuT ? tijdStip(ns.nuT) : 0, tot = van + (Number(d.duur) || 12) * 60000;
+    const img = T.plaatjeOk(d.logo) ? `<img src="${esc(d.logo)}" alt="">` : '';
+    return `<div class="lv lv-tv"${tvKleur(d.kleur)}>${bordHtml()}
+      <header class="kb-kop" data-tv="kop">${logoHtml(img)}<div class="kb-titel"><small>${isVandaag() ? '<span class="kb-livepil"><i></i>Live</span>' : ''}${esc([d.clubNaam, datumLang(d.datum)].filter(Boolean).join(' · '))}</small><h1>${esc(d.naam || 'Toernooi')}</h1></div><div class="kb-klokblok"><div class="kb-klok" data-tv-klok></div></div></header>
+      ${d.planB ? `<div class="lv-banner rood" data-tv="planb"><b>Plan B:</b> ${esc(d.planB)}</div>` : ''}
+      <main class="kb-main"><div class="kb-kolom" data-tv="links">
+          ${ns.nu.length ? `<section class="kb-paneel"><h2><i class="lv-live"></i>Nu op het veld <small>${esc(ns.nuT)}</small></h2><div class="kb-ronde" data-tv-van="${van}" data-tv-tot="${tot}"><i></i></div>${ns.nu.map(w => tvWed(w)).join('')}</section>` : ''}
+          ${ns.straks.length ? `<section class="kb-paneel"><h2>Hierna <small>${esc(ns.straksT)}</small></h2>${ns.straks.map(w => tvWed(w)).join('')}</section>` : ''}
+          ${!ns.nu.length && !ns.straks.length && laatste.length ? `<section class="kb-paneel"><h2>Laatste uitslagen</h2>${laatste.map(w => tvWed(w, { tijd: true })).join('')}</section>` : ''}
+          ${!ns.nu.length && !ns.straks.length && !laatste.length ? `<section class="kb-paneel"><p class="kb-leeg">${(d.schema || []).length ? 'Het schema staat klaar.' : 'Het speelschema volgt nog.'}</p></section>` : ''}</div>
+        <div class="kb-kolom" data-tv="rechts">${beurt.dia ? diaHtml(beurt.dia, beurt.dia.soort === 'sponsor' ? 'Met dank aan onze sponsor' : '') : toon.map(p => tvStand(p.id)).join('') || '<section class="kb-paneel"><p class="kb-leeg">Nog geen stand.</p></section>'}
+          ${tikHtml(blokken, b, 12)}</div></main>
+      ${sponsHtml(spons)}
+      ${voetHtml({ qr: st.qr, qrTekst: 'Volg je team live', kop: med.length ? 'Mededeling' : 'Live', regels: med.length ? med.slice(0, 3).map(m => ({ tijd: new Date(m.ms).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }), tekst: m.tekst })) : [{ tekst: 'Scan de code en volg je eigen team op je telefoon.' }] })}</div>`;
   }
 
   el.addEventListener('click', e => { const t = e.target.closest('[data-lv-tab]'); if (t){ st.tab = t.dataset.lvTab; teken(); scrollTo(0, 0); } });
@@ -146,7 +159,6 @@ export function stijl(){
 .lv{max-width:720px;margin:0 auto;padding:16px 16px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px;color:var(--ink)}
 .lv-midden{min-height:60vh;justify-content:center;text-align:center}
 .lv h1{font-family:var(--font-display);text-transform:uppercase;font-size:var(--t-3xl,30px);line-height:1;margin:2px 0 0}
-.lv-kop small,.lv-tvkop small{color:var(--ink-2);font-size:var(--t-sm,14px)}
 .lv-kaart{background:var(--card);border-radius:var(--r-m,14px);padding:12px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:6px}
 .lv-kaart h2{font-family:var(--font-display);text-transform:uppercase;font-size:var(--t-lg,18px);margin:0;display:flex;align-items:center;gap:8px}
 .lv-kaart h2 small{font-family:inherit;color:var(--ink-2);margin-left:auto;font-variant-numeric:tabular-nums}
@@ -182,29 +194,9 @@ export function stijl(){
 .lv-sponsors img{max-height:100%;max-width:150px;object-fit:contain;display:block}
 .lv-dia{align-items:center;text-align:center}.lv-dia-img{background:#fff;border-radius:12px;padding:10px;max-width:100%}.lv-dia-img img{max-width:100%;max-height:220px;object-fit:contain;display:block}
 .lv-dia p{font-size:var(--t-lg,18px);white-space:pre-line}
-.lv-tv .lv-dia{flex:1;justify-content:center;gap:2vh;min-height:0}.lv-tv .lv-dia h2{font-size:2.6em;justify-content:center;text-align:center}.lv-tv .lv-dia p{font-size:1.7em;line-height:1.3}
-.lv-tv .lv-dia-img{flex:0 1 auto;min-height:0;display:flex;padding:2vh 2vw}.lv-tv .lv-dia-img img{max-height:38vh;max-width:36vw}
-.lv-tv .lv-dia small{font-size:1em}
-.lv-tvspons{display:flex;align-items:center;gap:1.4vw;overflow:hidden}.lv-tvspons small{color:var(--ink-2);text-transform:uppercase;letter-spacing:.06em;font-size:.8em;flex-shrink:0}
-.lv-tvspons .lv-sponsors{flex-wrap:nowrap;justify-content:flex-start;gap:1vw;overflow:hidden}.lv-tvspons .lv-sponsors span{height:9vh;min-width:8vw;padding:1vh 1vw;font-size:1.2em;flex-shrink:0}.lv-tvspons .lv-sponsors img{max-width:14vw}
 .lv-kop{display:flex;align-items:center;gap:12px}.lv-kop>div{min-width:0}
 .lv-logo{width:56px;height:56px;object-fit:contain;flex-shrink:0;border-radius:10px;background:#fff;padding:3px}
-.lv-tvkop{gap:1.4vw}.lv-tvtitel{flex:1;min-width:0}.lv-tv .lv-logo{width:auto;height:clamp(60px,9vh,130px);max-width:14vw;align-self:center;padding:.5vh}
 .lv-voet{text-align:center;color:var(--ink-2);font-size:var(--t-xs,12px);margin:8px 0 0}
-html.lv-tv-html,html.lv-tv-html body{height:100%;overflow:hidden}
-.lv-tv{max-width:none;height:100vh;box-sizing:border-box;padding:2.2vh 2.4vw;gap:1.6vh;font-size:clamp(16px,1.25vw,30px)}
-.lv-tvkop{display:flex;align-items:flex-end;justify-content:space-between}
-.lv-tv h1{font-size:clamp(34px,4.2vw,96px)}.lv-tvkop small{font-size:1em}
-.lv-klok{font-family:var(--font-display);font-size:clamp(34px,4.2vw,96px);line-height:1;font-variant-numeric:tabular-nums}
-.lv-tvmain{flex:1;min-height:0;display:grid;grid-template-columns:1.1fr 1fr;gap:2vw}
-.lv-tvkolom{display:flex;flex-direction:column;gap:1.6vh;min-height:0;overflow:hidden}
-.lv-tv .lv-kaart{padding:1.6vh 1.2vw}.lv-tv .lv-kaart h2{font-size:1.5em}.lv-tv .lv-stand{font-size:1.1em}.lv-tv .lv-stand th{font-size:.8em}
-.lv-tv .lv-wed{grid-template-columns:7em minmax(0,1fr) 5em minmax(0,1fr);font-size:1.25em;padding:.5em 0 .5em .6em;border-left-width:.35em}
-.lv-tv .lv-wed-v{font-size:.7em}
-.lv-bol{display:flex;gap:8px;justify-content:center}.lv-bol i{width:10px;height:10px;border-radius:50%;background:var(--hair)}.lv-bol i.aan{background:var(--accent)}
-.lv-tvvoet{display:flex;align-items:center;gap:1.5vw}
-.lv-tvqr{width:clamp(80px,7vw,150px);background:#fff;border-radius:10px;padding:4px;flex-shrink:0}.lv-tvqr svg{display:block;width:100%;height:auto}
-.lv-ticker{flex:1;background:var(--accent);color:var(--accent-ink,#fff);border-radius:var(--r-m,14px);padding:1.2vh 1.4vw;font-size:1.4em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:420px){.lv-wed{grid-template-columns:52px minmax(0,1fr) 50px minmax(0,1fr)}}`;
   document.head.appendChild(s);
 }

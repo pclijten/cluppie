@@ -41,13 +41,13 @@ if (_deelId){
   import('./activiteit-boot.js?v=20261125w').then(m => m.bootActiviteitPagina(_actId));
 } else if (_liveId){
   document.getElementById('opstart')?.remove();
-  import('./live-boot.js?v=20261125w').then(m => m.bootLivePagina(_liveId, { tv: _zoek.get('tv') === '1' }));
+  import('./live-boot.js?v=20261126n').then(m => m.bootLivePagina(_liveId, { tv: _zoek.get('tv') === '1' }));
 } else if (_insId){
   document.getElementById('opstart')?.remove();
   import('./inschrijf-boot.js?v=20261125w').then(m => m.bootInschrijfPagina(_insId));
 } else if (_schermId){
   document.getElementById('opstart')?.remove();
-  import('./scherm-boot.js?v=20261125w').then(m => m.bootSchermPagina(_schermId));
+  import('./scherm-boot.js?v=20261126n').then(m => m.bootSchermPagina(_schermId));
 } else if (_takenId){
   document.getElementById('opstart')?.remove();
   import('./taken-boot.js?v=20261125w').then(m => m.bootTakenPagina(_takenId));
