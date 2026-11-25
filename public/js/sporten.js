@@ -1,10 +1,10 @@
 /* ==================== SPORTPROFIELEN ====================
    [20261124a] Register van de sportprofielen. Nu alleen voetbal; een club of team
    zonder sport is voetbal. Zie docs/sportprofiel-impactanalyse.md. */
-import { HOCKEY } from './sport-hockey.js?v=20261126c';
-import { VOLLEYBAL } from './sport-volleybal.js?v=20261126c';
-import { KORFBAL } from './sport-korfbal.js?v=20261126c';
-import { VOETBAL } from './sport-voetbal.js?v=20261126c';
+import { HOCKEY } from './sport-hockey.js?v=20261126e';
+import { VOLLEYBAL } from './sport-volleybal.js?v=20261126e';
+import { KORFBAL } from './sport-korfbal.js?v=20261126e';
+import { VOETBAL } from './sport-voetbal.js?v=20261126e';
 
 export const STANDAARD_SPORT = 'voetbal';
 /* [20261126c] de vier grootste teamsporten; een sport met open: false is een pilot (alleen de eindbaas zet hem) */
