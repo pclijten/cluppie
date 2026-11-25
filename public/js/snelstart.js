@@ -4,15 +4,16 @@
    Gegevens: teams/{id}.eigenClub en gebruikers/{uid}/meta/onboarding.snelstart (alleen UI-vlaggen). */
 import { isFirestoreVastgelopen, toonHerlaadBalk } from './firestore-herstel.js?v=20261113a';
 import { db, collection, doc, addDoc, updateDoc, setDoc, getDoc, getDocs, serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, $, $$, esc, meld, teamCode, openModal, sluitModal } from './state.js?v=20261125v';
-import { CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, bouwVanCategorie, catLabel } from './config.js?v=20261125v';
+import { S, $, $$, esc, meld, teamCode, openModal, sluitModal } from './state.js?v=20261125w';
+import { CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, bouwVanCategorie, catLabel } from './config.js?v=20261125w';
 import {
   bouwEigenClub, valideerClub, valideerPlaats, standaardTeamNaam, categorieVoor, STANDAARD_CAT,
   eersteStappenStatus, toonEersteStappen, toonWelkomCoach, welkomCoachStatus, isNieuwAccount, toonClubTip,
   deelTekstClub, toonDeelClub, magClubHerkennen,
 } from './snelstart-logica.js?v=20261122a';
-import { koppelClubSuggesties, normNaam } from './clubgids.js?v=20261125v';
-import { laadSoloAI } from './clubconfig.js?v=20261125v';
+import { koppelClubSuggesties, normNaam } from './clubgids.js?v=20261125w';
+import { laadSoloAI } from './clubconfig.js?v=20261125w';
+import { SPORTEN, STANDAARD_SPORT, meerdereSporten } from './sporten.js?v=20261125w';   /* [20261125w] sportprofiel */
 
 /* ---------- Plaats opzoeken (Open-Meteo, zonder sleutel) ---------- */
 async function zoekPlaats(q){
@@ -121,7 +122,9 @@ export async function openSnelstart(){
   /* [20261114a] AI voor losse trainers kan de platformbeheerder aanzetten; de uitleg volgt die schakelaar */
   await laadSoloAI();
   const soloAI = S._soloAI === true;
-  const st ={ stap: 1, geslacht: 'j', cat: STANDAARD_CAT.j, nr: '1', naamAangepast: false, naam: '', club: null };
+  /* [20261125w] sport: uit de landingspagina (?sport=...) of de standaard; kiezen kan pas als er meer dan één sport is */
+  const sportUrl = new URLSearchParams(location.search).get('sport');
+  const st ={ stap: 1, geslacht: 'j', cat: STANDAARD_CAT.j, nr: '1', naamAangepast: false, naam: '', club: null, sport: SPORTEN[sportUrl] ? sportUrl : STANDAARD_SPORT };
   let cp = null;
 
   const stapKop = (n, titel) => `<div class="sn-stappen" aria-label="Stap ${n} van 3">${[1, 2, 3].map(i => `<span class="${i <= n ? 'aan' : ''}"></span>`).join('')}</div><h2>${titel}</h2>`;
@@ -139,7 +142,7 @@ export async function openSnelstart(){
       <button class="knop vol" id="ssVerder">Laten we beginnen</button>
       <button class="knop licht vol" id="ssRond" style="margin-top:8px">Liever eerst een rondleiding</button>`);
     $('#ssVerder').onclick = tekenStap2;
-    $('#ssRond').onclick = () => { sluitModal(); import('./onboarding.js?v=20261125v').then(m => m.startOnboarding(true)); };
+    $('#ssRond').onclick = () => { sluitModal(); import('./onboarding.js?v=20261125w').then(m => m.startOnboarding(true)); };
   };
 
   const tekenStap2 = () => {
@@ -149,6 +152,8 @@ export async function openSnelstart(){
     const bewaar = st.club;
     openModal(`${stapKop(2, 'Voor welke club train je?')}
       <p class="meta" style="margin:-4px 0 12px">Zo zet ik het weer en de standaarden voor je klaar.</p>
+      ${meerdereSporten() ? `<div class="veldgroep"><label>Sport</label><div class="segment" id="ssSport">${Object.values(SPORTEN).map(p => `<button data-sport="${esc(p.id)}" class="${st.sport === p.id ? 'actief' : ''}">${esc(p.naam)}</button>`).join('')}</div>
+        <p class="meta" style="margin:6px 2px 0">Kies je sport één keer. Daarop zet ik de categorieën, het veld en de oefenstof klaar.</p></div>` : ''}
       <div id="ssCP">${htmlClubPlaats('ss', bewaar ? bewaar.naam : '', bewaar ? bewaar.plaats : '')}</div>
       <div class="veldgroep"><label>Jongens of meiden</label>
         <div class="segment" id="ssGeslacht"><button data-g="j" class="${st.geslacht === 'j' ? 'actief' : ''}">Jongens (JO)</button><button data-g="m" class="${st.geslacht === 'm' ? 'actief' : ''}">Meiden (MO)</button></div></div>
@@ -168,6 +173,10 @@ export async function openSnelstart(){
       const c = catInfo(st.cat);
       $('#ssKnvb').innerHTML = `<b>KNVB ${esc(catLabel(st.cat))}:</b> ${esc(c.knvb)}<br>Ik stel ${c.periodes === 2 ? '2 helften' : '4 kwarten'} van ${String(c.duur).replace('.', ',')} minuten in. Per wedstrijd aan te passen.`;
     };
+    $$('#ssSport [data-sport]').forEach(b => b.onclick = () => {
+      st.sport = b.dataset.sport;
+      $$('#ssSport [data-sport]').forEach(x => x.classList.toggle('actief', x === b));
+    });
     $$('#ssGeslacht button').forEach(b => b.onclick = () => {
       st.geslacht = b.dataset.g;
       $$('#ssGeslacht button').forEach(x => x.classList.toggle('actief', x === b));
@@ -230,10 +239,10 @@ export async function openSnelstart(){
           bouw: bouwVanCategorie(st.cat), code: teamCode(st.naam, '', bestaande),
           leden: { [S.user.uid]: true },
           ledenInfo: { [S.user.uid]: { naam: S.user.displayName || (S.user.email || '').split('@')[0] || 'Coach' } },
-          eigenClub: st.club, gemaakt: serverTimestamp(),
+          eigenClub: st.club, sport: st.sport, gemaakt: serverTimestamp(),
         });
         sluitModal();
-        import('./teams.js?v=20261125v').then(m => m.openTeam(ref.id));
+        import('./teams.js?v=20261125w').then(m => m.openTeam(ref.id));
       } catch (e){
         console.error(e); knop.disabled = false;
         if (isFirestoreVastgelopen(e)){ toonHerlaadBalk(); meld('De verbinding is vastgelopen. Herlaad de app en maak je team opnieuw aan.'); }
@@ -260,7 +269,7 @@ export function modalClubPlaats(){
       t.eigenClub = eigenClub;
       vergeetHerkenning(t.id);   /* andere club ingevuld: opnieuw kijken of die al meedoet */
       sluitModal(); meld('Opgeslagen');
-      import('./teams.js?v=20261125v').then(m => m.renderTeam && m.renderTeam());
+      import('./teams.js?v=20261125w').then(m => m.renderTeam && m.renderTeam());
     } catch (err){ console.error(err); meld('Opslaan mislukt, probeer het nog eens'); }
   };
 }
@@ -318,7 +327,7 @@ export async function koppelEersteStappen(v, { zetTeamTab } = {}){
   el.innerHTML = html;
   koppelKnoppen(el, team, teamId, () => koppelEersteStappen(v, { zetTeamTab }));
   el.querySelectorAll('[data-ss-tab]').forEach(b => b.onclick = () => zetTeamTab && zetTeamTab(b.dataset.ssTab));
-  const r = el.querySelector('#ssRondleiding'); if (r) r.onclick = () => import('./onboarding.js?v=20261125v').then(m => m.startOnboarding(true));
+  const r = el.querySelector('#ssRondleiding'); if (r) r.onclick = () => import('./onboarding.js?v=20261125w').then(m => m.startOnboarding(true));
   const w = el.querySelector('#ssVerberg'); if (w) w.onclick = async () => { el.innerHTML = ''; await zetVlag('eersteStappenWeg', true); };
   const cv = el.querySelector('#ssClubVul'); if (cv) cv.onclick = modalClubPlaats;
   const opnieuw = () => koppelEersteStappen(v, { zetTeamTab });
@@ -332,7 +341,7 @@ export async function koppelEersteStappen(v, { zetTeamTab } = {}){
    Geeft false terug als de trainer het deelvenster zelf sluit. */
 async function deelMetClub(){
   const tekst = deelTekstClub();
-  import('./tracker.js?v=20261125v').then(m => m.telGebruik('deel_club')).catch(() => {});
+  import('./tracker.js?v=20261125w').then(m => m.telGebruik('deel_club')).catch(() => {});
   if (navigator.share){
     try { await navigator.share({ text: tekst }); return true; }
     catch (e){ if (e && e.name === 'AbortError') return false; }
@@ -377,7 +386,7 @@ function koppelWelkomCoach(v, el, team, teamId, vl, { zetTeamTab } = {}){
       <span class="sn-vink" aria-hidden="true">${s.klaar ? '✓' : ''}</span><span class="sn-tekst"><b>${esc(s.titel)}</b><small>${esc(s.uitleg)}</small></span></button>`).join('')}
     <div class="sn-voet"><button class="sn-link" id="ssRondleiding">Liever een rondleiding?</button><button class="sn-link" id="ssVerberg">Verberg</button></div></section>`;
   el.querySelectorAll('[data-ss-tab]').forEach(b => b.onclick = () => zetTeamTab && zetTeamTab(b.dataset.ssTab));
-  const r = el.querySelector('#ssRondleiding'); if (r) r.onclick = () => import('./onboarding.js?v=20261125v').then(m => m.startOnboarding(true));
+  const r = el.querySelector('#ssRondleiding'); if (r) r.onclick = () => import('./onboarding.js?v=20261125w').then(m => m.startOnboarding(true));
   const w = el.querySelector('#ssVerberg'); if (w) w.onclick = async () => { el.innerHTML = ''; await zetVlag('welkomCoachWeg', true); };
 }
 

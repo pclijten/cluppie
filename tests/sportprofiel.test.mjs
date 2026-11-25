@@ -2,8 +2,10 @@
    Bewaakt dat het profiel bevroren blijft, dat config.js dezelfde waarden geeft en dat
    aanpassen door clubconfig.js (in plaats) het profiel niet raakt. */
 import assert from 'node:assert/strict';
-/* zelfde specifier als config.js, anders laadt Node een tweede exemplaar */
-const { sportProfiel, STANDAARD_SPORT, SPORTEN } = await import('../public/js/sporten.js?v=20261124a');
+/* zelfde specifier als config.js (met ?v=), anders laadt Node een tweede exemplaar */
+import fs from 'node:fs';
+const spec = fs.readFileSync(new URL('../public/js/config.js', import.meta.url), 'utf8').match(/'\.\/(sporten\.js\?v=[0-9a-z]+)'/)[1];
+const { sportProfiel, STANDAARD_SPORT, SPORTEN, sportVan, sportNaam, meerdereSporten } = await import('../public/js/' + spec);
 const VOETBAL = SPORTEN.voetbal;
 const C = await import('../public/js/config.js');
 let n = 0; const ok = (c, m) => { assert.ok(c, m); n++; };
@@ -24,6 +26,12 @@ for (const [exp, key] of paren){
 ok(C.KNVB_SEIZOEN === VOETBAL.kalenderSeizoen && C.CLUB_FORMATIE_11 === VOETBAL.formatie11, 'losse waarden');
 assert.deepEqual({ ...C.ACTIEF_STANDAARD.tijdstraf }, { ...VOETBAL.tijdstraf }); n++;
 assert.deepEqual({ ...C.ACTIEF_STANDAARD.bouwGrenzen }, { ...VOETBAL.bouwGrenzen }); n++;
+
+/* [20261125w] sport van club of team: clubteam volgt de club, onbekend of leeg = voetbal */
+ok(sportVan(null, null) === 'voetbal' && sportVan({}, null) === 'voetbal' && sportVan(null, {}) === 'voetbal', 'zonder veld: voetbal');
+ok(sportVan({ sport: 'voetbal' }, { sport: 'curling' }) === 'voetbal', 'clubteam volgt de club');
+ok(sportVan(null, { sport: 'curling' }) === 'voetbal' && sportVan({ sport: 'curling' }) === 'voetbal', 'onbekende sport: voetbal');
+ok(sportNaam('voetbal') === 'Voetbal' && meerdereSporten() === false, 'naam en nog maar één sport');
 
 /* Aanpassen zoals clubconfig.js doet raakt het profiel niet */
 C.CATEGORIEEN.JO11.duur = 99; C.LEERCURVE.length = 0;

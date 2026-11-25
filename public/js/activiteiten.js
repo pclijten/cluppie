@@ -24,12 +24,12 @@
    Rekenwerk, export en import: activiteiten-logica.js (getest). Sjablonen: activiteit-sjablonen.js. */
 import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, deleteField, query, where, onSnapshot,
   serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261125v';
+import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261125w';
 import { ico } from './icons.js?v=20261116t';
 import { SJABLONEN, sjabloonVan } from './activiteit-sjablonen.js?v=20261125m';
 import * as L from './activiteiten-logica.js?v=20261125v';
-import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261125v';
-import * as TN from './activiteit-toernooi.js?v=20261125v';
+import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261125w';
+import * as TN from './activiteit-toernooi.js?v=20261125w';
 
 let A = null;
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -686,7 +686,7 @@ async function klik(e){
     case 'kopieer': return kopieKlembord(b.dataset.tekst);
     case 'teams-alle': return zet({ teams: (S.clubTeams || []).filter(x => x && x.id && !x.gearchiveerd).map(x => x.id).slice(0, L.MAX.teams) });
     case 'teams-geen': return zet({ teams: [] });
-    case 'veldplanner': return import('./veldplanner.js?v=20261125v').then(m => m.openVeldplanner(A.clubId));
+    case 'veldplanner': return import('./veldplanner.js?v=20261125w').then(m => m.openVeldplanner(A.clubId));
     case 'aflasten': return vensterAflasten();
     case 'aflasten-ja': return aflasten();
     case 'bericht-plaats': return plaatsBericht(id);

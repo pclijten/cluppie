@@ -84,7 +84,8 @@ Inhoud van een profiel (alles wat nu als voetbal in `config.js` staat):
 ## Stand
 
 - 24-11-2026: **stap 1 gebouwd** op de branch, niet gemerged. `public/js/sport-voetbal.js` (diep bevroren profiel) en `public/js/sporten.js` (register, `sportProfiel(id)`, onbekend = voetbal). `config.js` maakt er losse kopieën van; namen en vormen van alle exports zijn gelijk. Bewijs: alle 72 exports van `config.js` vóór en na vergeleken (gelijk, ook de functies), `npm test` groen met nieuwe `tests/sportprofiel.test.mjs` (24 controles), rooktest (157 schermen, 8 rollen) gelijk aan `main`.
-- Mockups voor stap 2 en 3 (P3): `docs/mockups/sportprofiel/`.
+- Mockups voor stap 2 en 3 (P3): `docs/mockups/sportprofiel/`. Akkoord van Paul op 25-11-2026.
+- 25-11-2026: **stap 2 gebouwd** (20261125w): sport bij club (alleen eindbaas) en team (alleen zonder club, bij aanmaken, daarna vast), rules met tien nieuwe proeven (98 van 98 kloppen), overstap naar een club alleen bij dezelfde sport, kaart Sport in Instellingen, blok Sport in Platform › Clubs, sportkeuze in de snelstart (verborgen zolang er één sport is; `?sport=` uit de latere landingspagina wordt al gelezen). De sportkeuze in het aanmeldformulier voor clubs komt pas als er een tweede sport is.
 
 ## Aanpak in kleine releases
 

@@ -11,7 +11,7 @@
    Opslag: veld `toernooi` in de activiteit (zie toernooi-logica.js). Geen rules-wijziging nodig.
    Dit bestand krijgt alles van activiteiten.js via ctx en importeert dat bestand niet. */
 import { db, doc, collection, getDoc, getDocs, setDoc, deleteField } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261125v';
+import { S, esc, meld } from './state.js?v=20261125w';
 import { ico } from './icons.js?v=20261116t';
 import * as T from './toernooi-logica.js?v=20261125v';
 

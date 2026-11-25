@@ -5587,6 +5587,7 @@ textarea.lj-namen{min-height:130px}
 .cb-schakelrij svg{color:var(--ink-2);flex-shrink:0}
 .cb-schakelrij .cb-persoon-n{font-size:var(--t-md)}
 .cb-uitleg{font-size:var(--t-xs);color:var(--ink-2);line-height:1.45;margin-top:var(--space-xs)}
+.cb-vast{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;font-size:var(--t-2xs);color:var(--ink-2);background:color-mix(in srgb, var(--ink) 7%, transparent);white-space:nowrap}
 .cb-waarom ul{margin:6px 0 0;padding-left:18px}
 .cb-waarom li{margin:3px 0}
 .cb-waarom b{color:var(--ink)}

@@ -410,13 +410,18 @@ async function zetTeamNaarClub(db, { clubId, club, teamId, uid, naam, aanvraagRe
     if (!t) throw new HttpsError('not-found', 'Dit team bestaat niet meer.');
     if (t.club && t.club !== clubId) throw new HttpsError('failed-precondition', 'Dit team hoort al bij een andere club.');
     if (!t.leden?.[uid]) throw new HttpsError('failed-precondition', 'De aanvrager is geen coach meer van dit team.');
+    /* [20261125w] sportprofiel: een team gaat alleen naar een club met dezelfde sport (ontbreekt = voetbal);
+       daarna volgt het team de club, dus het eigen sportveld vervalt */
+    const c = (await tx.get(clubRef(db, clubId))).data() || {};
+    if ((t.sport || 'voetbal') !== (c.sport || 'voetbal'))
+      throw new HttpsError('failed-precondition', 'Dit team speelt een andere sport dan de club. Een team kan alleen naar een club met dezelfde sport.');
     const leden = Object.keys(t.leden || {}).filter(u => t.leden[u] === true);
     const clubUpd = { [`teams.${teamId}`]: true };
     for (const u of leden){
       clubUpd[`leden.${u}`] = true;
       clubUpd[`ledenInfo.${u}`] = { naam: (u === uid ? naam : t.ledenInfo?.[u]?.naam) || 'Coach' };
     }
-    tx.update(tRef, { club: clubId, clubNaam: club?.naam || '', [`rollen.${uid}`]: 'coach', [`ledenInfo.${uid}`]: { naam }, koppelVoorstel: FieldValue.delete(), gekoppeld: FieldValue.serverTimestamp() });
+    tx.update(tRef, { club: clubId, clubNaam: club?.naam || '', [`rollen.${uid}`]: 'coach', [`ledenInfo.${uid}`]: { naam }, koppelVoorstel: FieldValue.delete(), sport: FieldValue.delete(), gekoppeld: FieldValue.serverTimestamp() });
     tx.update(clubRef(db, clubId), clubUpd);
     if (aanvraagRef) tx.delete(aanvraagRef);
   });
