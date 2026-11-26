@@ -1,6 +1,6 @@
 /* TV-SJABLOON "SPORTNIEUWS" [20261126q]: een vast nieuwskader. Het hoofdvenster wisselt; de live standen rechts en de
    lopende banden onderin blijven altijd staan. Bij een doelpunt schiet er een rode balk in. Zie docs/tv-sjablonen.md. */
-import { esc, maat, maatWoord, stip, klok, beeld, lint, label, bovenSponsor } from './tv-speler.js?v=20261126u';
+import { esc, standWissel, maat, maatWoord, stip, klok, beeld, lint, label, bovenSponsor } from './tv-speler.js?v=20261126v';
 
 export default {
   id: 'sportnieuws', per: 7, duur: 12000,
@@ -16,7 +16,7 @@ export default {
     <div class="sn-gm">Meer standen en uitslagen</div><div class="sn-gr">${rest.map(r => `<div><span class="ts-kap">${esc(r.a)} – ${esc(r.b)}</span><b>${esc(r.score || '0–0')}</b></div>`).join('')}</div>`; },
   dia: (m, x) => `<div class="sn-ad ${x.soort}">${x.soort === 'sponsor' ? '<span class="sn-tag">Sponsor</span>' : ''}${beeld(x, 'ts-beeld sn-img')}<div class="e">${esc(bovenSponsor(x))}</div><div class="n" style="${maatWoord(x.titel, x.img ? 110 : 170, x.img ? 16 : 10)}">${esc(x.titel)}</div>${x.tekst ? `<p>${esc(x.tekst)}</p>` : ''}</div>`,
   goal: (m, g) => `<div class="sn-goal"><div class="sn-br">Goal<small>${esc(g.veld || 'Zojuist')}</small></div>
-    <div class="w" style="${maat(g.team, 130, 18)}">${esc(g.team)}</div><div class="sn-gs"><div class="h"><span class="ts-kap" style="${maat(g.a, 68, 13)}">${esc(g.a)}</span></div><div class="s">${esc(g.stand)}</div><div class="u"><span class="ts-kap" style="${maat(g.b, 68, 13)}">${esc(g.b)}</span></div></div></div>`,
+    <div class="w" style="${maat(g.team, 130, 18)}">${esc(g.team)}</div><div class="sn-gs"><div class="h"><span class="ts-kap" style="${maat(g.a, 68, 13)}">${esc(g.a)}</span></div><div class="s">${standWissel(g)}</div><div class="u"><span class="ts-kap" style="${maat(g.b, 68, 13)}">${esc(g.b)}</span></div></div></div>`,
   css: `
 .ts-sportnieuws{background:linear-gradient(160deg,#0a1120,#0f182a 55%,var(--club-dd))}
 .ts-sportnieuws .ts-scenes{inset:auto;left:48px;top:124px;width:1352px;height:772px;overflow:hidden;border-radius:8px;background:#0d1524;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}

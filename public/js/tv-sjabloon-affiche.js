@@ -1,7 +1,7 @@
 /* TV-SJABLOON "AFFICHE" [20261126q]: één boodschap per dia in enorme letters, als een campagneposter.
    Overgang: een nieuw kleurvlak schuift van onder over het oude, de regels rijzen uit een masker.
    Dit is het eenvoudigste sjabloon: een goed begin voor een nieuw. Zie docs/tv-sjablonen.md. */
-import { esc, maat, stip, klok, beeld, lint, bovenSponsor } from './tv-speler.js?v=20261126u';
+import { esc, standWissel, maat, stip, klok, beeld, lint, bovenSponsor } from './tv-speler.js?v=20261126v';
 
 const regel = (html, i, extra = '') => `<span class="ts-regel"><span style="--i:${i};${extra}">${html}</span></span>`;
 const onder = r => r.status === 'live' ? `Nu bezig: ${esc(r.score || '0–0')}` : r.status === 'af' ? 'Afgelast' : r.status === 'klaar' ? `Gespeeld: ${esc(r.score)}` : esc(r.plek);
@@ -21,7 +21,7 @@ export default {
     return `<div class="af-vlak wit"></div>${x.img ? `<div class="ts-abs af-img ts-a">${beeld(x, 'af-plaat')}</div>` : ''}
     <div class="ts-abs af-naam ${x.img ? 'klein' : ''}" style="${maat('x'.repeat(langste), x.img ? 150 : 300, x.img ? 12 : 8)}">${regel(esc(a), 0)}${b ? regel(esc(b), 1, 'color:color-mix(in oklab,var(--club) 85%,#000)') : ''}</div>
     ${x.tekst ? `<div class="ts-abs af-tekst ts-a" style="--i:2">${esc(x.tekst)}</div>` : ''}${bovenSponsor(x) ? `<div class="ts-abs af-zij ts-a" style="--i:3">${esc(bovenSponsor(x))}</div>` : ''}${band(m)}`; },
-  goal: (m, g) => `<div class="af-goal"><div class="g">${regel('Goal!', 0)}</div><div class="s">${regel(esc(g.stand), 2)}</div>
+  goal: (m, g) => `<div class="af-goal"><div class="g">${regel('Goal!', 0)}</div><div class="s">${regel(standWissel(g), 2)}</div>
     <div class="t">${regel(esc(g.team), 3, maat(g.team, 120, 16))}<span class="ts-regel"><span style="--i:4" class="k">${esc(g.a)} – ${esc(g.b)}${g.veld ? ' · ' + esc(g.veld) : ''}</span></span></div></div>`,
   css: `
 .ts-affiche{background:#0b0b0c;font-family:var(--ts-display)}

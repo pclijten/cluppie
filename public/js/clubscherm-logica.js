@@ -29,18 +29,39 @@ export function standVan(w = {}){
   if (!goals.length && !gestart) return { stand: '', eind: false, bezig: false };
   return { stand: zet(goals.filter(g => g && g.type === 'voor').length, goals.filter(g => g && g.type === 'tegen').length), eind, bezig: !eind };
 }
+/* [20261126v] De doelpunten van een wedstrijd voor de tv: minuut (m) en kant (k: a = thuis, b = uit), op volgorde.
+   namen: { spelerId: naam } of null. Alleen als de club dat aanzet (clubTv.namen) komt de voornaam van de maker (n) en de
+   assist (as) mee, en alleen bij het eigen team. klokGelopen: de coach houdt de wedstrijd met de klok bij. */
+export function doelpuntenVan(w = {}, namen = null){
+  const thuis = w.thuis !== false, duur = Number(w.kwartduur) || 0;
+  const naam = pid => namen && pid && namen[pid] ? tekst(String(namen[pid]).trim().split(/\s+/)[0], 20) : '';
+  return (Array.isArray(w.goals) ? w.goals : []).filter(g => g && (g.type === 'voor' || g.type === 'tegen')).slice(0, 40).map(g => {
+    const d = { m: Number.isFinite(Number(g.sec)) ? Math.max(1, Math.round((Math.max(1, Number(g.kwart) || 1) - 1) * duur + Math.floor(Number(g.sec) / 60) + 1)) : 0, k: (g.type === 'voor') === thuis ? 'a' : 'b' };
+    const n = g.type === 'voor' ? naam(g.pid) : '', as = g.type === 'voor' ? naam(g.assist) : '';
+    if (n) d.n = n;
+    if (n && as) d.as = as;
+    return d;
+  }).sort((x, y) => x.m - y.m);
+}
+export function klokGelopen(w = {}){
+  const kw = w.kwarten && typeof w.kwarten === 'object' ? Object.values(w.kwarten) : [];
+  return kw.some(k => k && k.klok && (k.klok.running || Number(k.klok.base) > 0));
+}
 /* Eén wedstrijd van een team als regel voor de tv. Stand altijd thuis – uit. */
-export function programmaRij(team = {}, w = {}){
+export function programmaRij(team = {}, w = {}, namen = null){
   if (!w || !isIso(w.datum)) return null;
   const thuis = w.thuis !== false, eigen = tekst(team.naam, 40) || 'Team', tegen = tekst(w.tegenstander, 60) || 'Tegenstander';
   const { stand, eind, bezig } = standVan(w);
-  return { datum: w.datum, tijd: isTijd(w.aftrap) ? w.aftrap.padStart(5, '0') : '', thuis, a: thuis ? eigen : tegen, b: thuis ? tegen : eigen,
+  const rij = { datum: w.datum, tijd: isTijd(w.aftrap) ? w.aftrap.padStart(5, '0') : '', thuis, a: thuis ? eigen : tegen, b: thuis ? tegen : eigen,
     veld: tekst(w.info?.veld, 30), kk: tekst(w.info?.kleedkamer, 30), stand, eind, bezig, afgelast: w.status === 'afgelast', soort: tekst(w.competitiesoort, 20) };
+  const goals = bezig || (eind && Array.isArray(w.goals) && w.goals.length) ? doelpuntenVan(w, namen) : [];
+  if (goals.length){ rij.goals = goals; rij.klok = klokGelopen(w); }
+  return rij;
 }
 /* teams: [{ id, naam }], perTeam: { teamId: [wedstrijden] }. Alleen de gevraagde dag, op tijd. */
-export function bouwProgramma(teams = [], perTeam = {}, datum = ''){
+export function bouwProgramma(teams = [], perTeam = {}, datum = '', namen = null){
   const uit = [];
-  for (const t of teams) for (const w of perTeam[t.id] || []){ const r = programmaRij(t, w); if (r && r.datum === datum){ delete r.datum; uit.push(r); } }
+  for (const t of teams) for (const w of perTeam[t.id] || []){ const r = programmaRij(t, w, namen && namen[t.id]); if (r && r.datum === datum){ delete r.datum; uit.push(r); } }
   return uit.sort((x, y) => min(x.tijd) - min(y.tijd) || x.a.localeCompare(y.a, 'nl', { numeric: true })).slice(0, MAX_PROGRAMMA);
 }
 
@@ -72,10 +93,10 @@ export function csvSponsoren(lijst = [], vandaag = ''){
   return '﻿' + [['Sponsor', 'Pakket', 'Bedrag per jaar', 'Loopt tot', 'Status', 'Website', 'Notitie'], ...rijen].map(r => r.map(csvCel).join(';')).join('\r\n');
 }
 /* De openbare kop van de tv: clubnaam, logo, kleur, mededeling en het programma. */
-export function tvKopie({ clubNaam = '', logo = '', kleur = '', mededeling = '', uit = true, datum = '', programma = [], sjabloon = '', goals = '', evenement = '' } = {}){
+export function tvKopie({ clubNaam = '', logo = '', kleur = '', mededeling = '', uit = true, datum = '', programma = [], sjabloon = '', goals = '', evenement = '', namen = false } = {}){
   return { clubNaam: tekst(clubNaam, 80), logo: plaatjeOk(logo) ? logo : '', kleur: /^#[0-9a-f]{6}$/i.test(kleur || '') ? kleur : '', mededeling: tekst(mededeling, 200),
     uit: uit !== false, datum: isIso(datum) ? datum : '', programma: (Array.isArray(programma) ? programma : []).slice(0, MAX_PROGRAMMA),
-    sjabloon: /^[a-z0-9-]{1,30}$/.test(sjabloon || '') ? sjabloon : 'bord', goals: goalKeuze(goals), evenement: evenementId(evenement) };
+    sjabloon: /^[a-z0-9-]{1,30}$/.test(sjabloon || '') ? sjabloon : 'bord', goals: goalKeuze(goals), evenement: evenementId(evenement), namen: namen === true };
 }
 /* [20261126r] Een evenement (toernooi) op de kantine-tv: de id van de live pagina (toernooiLive/{id}), of leeg. */
 export const evenementId = v => /^[a-z0-9]{10,40}$/.test(String(v || '')) ? String(v) : '';
@@ -120,11 +141,15 @@ export function nieuweGoals(gezien, programma = [], keuze = 'park'){
     const k = rijSleutel(r), nu = cijfers(r.stand), had = gezien.has(k), oud = had ? (cijfers(gezien.get(k)) || [0, 0]) : null;
     const achteraf = had && !gezien.get(k) && r.eind === true;
     gezien.set(k, r.stand || '');
-    if (!nu || !oud || achteraf || r.afgelast || keuze === 'uit' || (keuze !== 'alle' && !r.thuis)) continue;
+    /* Achteraf ingevoerd telt niet: de wedstrijd is al afgelopen, of de coach hield hem niet met de klok bij. */
+    if (!nu || !oud || achteraf || r.eind === true || r.klok === false || r.afgelast || keuze === 'uit' || (keuze !== 'alle' && !r.thuis)) continue;
     const da = nu[0] - oud[0], db = nu[1] - oud[1];
     if (da < 0 || db < 0 || da + db < 1 || da + db > 2) continue;
     const kant = da > 0 ? 'a' : 'b';
-    uit.push({ sleutel: k, a: r.a, b: r.b, stand: `${nu[0]}–${nu[1]}`, kant, team: kant === 'a' ? r.a : r.b, eigen: (kant === 'a') === !!r.thuis, thuis: !!r.thuis, veld: r.veld || '' });
+    /* De tijdlijn klopt alleen als elk doelpunt van de stand erin staat (de coach houdt alles bij). */
+    const lijn = Array.isArray(r.goals) && r.goals.length === nu[0] + nu[1] ? r.goals : [], dit = [...lijn].reverse().find(x => x.k === kant) || {};
+    uit.push({ sleutel: k, a: r.a, b: r.b, stand: `${nu[0]}–${nu[1]}`, oud: `${oud[0]}–${oud[1]}`, kant, team: kant === 'a' ? r.a : r.b, eigen: (kant === 'a') === !!r.thuis, thuis: !!r.thuis,
+      veld: r.veld || '', min: dit.m || 0, maker: dit.n || '', assist: dit.as || '', lijn });
   }
   return uit;
 }

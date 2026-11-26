@@ -22,7 +22,7 @@
 import {
   db, collection, doc, addDoc, deleteDoc, query, where, getDocs, serverTimestamp
 } from './firebase.js?v=20261011g';
-import { S, esc, meld, terugLaag } from './state.js?v=20261126u';
+import { S, esc, meld, terugLaag } from './state.js?v=20261126v';
 
 /* Interne toestand voor de op dit moment geopende training. */
 let _actief = null;   // { teamId, trainingId, stage, laagAan, notities:[], actiefItem, veldRefs }

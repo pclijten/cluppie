@@ -13,9 +13,9 @@
    Voorbeeld bekijken zonder iets op te slaan: ?scherm=<id>&sjabloon=<id>, en &proef=1 voor proefwedstrijden met doelpunten. */
 import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, collection, onSnapshot } from './firebase.js?v=20261011g';
 import { plaatjeOk, veiligeLink } from './toernooi-logica.js?v=20261125w';
-import { sorteer, nieuweGoals, goalKeuze, evenementId, evenementTv } from './clubscherm-logica.js?v=20261126t';
-import { sjabloonId, laadSjabloon } from './tv-sjablonen.js?v=20261126u';
-import { maakSpeler, tvModel, proefProgramma, PROEF_DIAS } from './tv-speler.js?v=20261126u';
+import { sorteer, nieuweGoals, goalKeuze, evenementId, evenementTv } from './clubscherm-logica.js?v=20261126v';
+import { sjabloonId, laadSjabloon } from './tv-sjablonen.js?v=20261126v';
+import { maakSpeler, tvModel, proefProgramma, PROEF_DIAS, standWissel, goalBand, goalStijl } from './tv-speler.js?v=20261126v';
 import { stijl as stijlLive } from './live-boot.js?v=20261126n';
 import { tvStijl, tvKleur, tvZet, bordHtml, logoHtml, tikHtml, diaHtml, sponsHtml, voetHtml } from './tv-stijl.js?v=20261126n';
 
@@ -108,11 +108,15 @@ export async function bootSchermPagina(tvId){
   const balk = (lijst, klik) => lijst.length ? `<div class="lv-sponsors">${lijst.map(x => { const b = plaatjeOk(x.img) ? `<img src="${esc(x.img)}" alt="${esc(x.titel)}">` : `<b>${esc(x.titel)}</b>`, l = veiligeLink(x.link); return l && klik ? `<a href="${esc(l)}" target="_blank" rel="noopener sponsored">${b}</a>` : `<span>${b}</span>`; }).join('')}</div>` : '';
 
   /* Doelpunt op het tactisch bord: een balk over het midden van het scherm. De sjablonen hebben hun eigen moment. */
-  function bordGoal(g){
+  /* Scoren er teams tegelijk, dan komen de doelpunten na elkaar: elk zijn volle tijd. */
+  const bordRij = []; let bordTot = 0;
+  function bordGoal(g){ if (g && bordRij.length < 8) bordRij.push(g); if (Date.now() < bordTot || !bordRij.length) return; toonBordGoal(bordRij.shift()); }
+  function toonBordGoal(g){
+    goalStijl(); bordTot = Date.now() + 9000;
     document.querySelector('.ks-goal')?.remove();
     const b = document.createElement('div'); b.className = 'ks-goal';
-    b.innerHTML = `<div><b>Goal!</b><span>${esc(g.team)}</span><p><span>${esc(g.a)}</span><strong>${esc(g.stand)}</strong><span>${esc(g.b)}</span></p>${g.veld ? `<small>${esc(g.veld)}</small>` : ''}</div>`;
-    document.body.appendChild(b); setTimeout(() => b.remove(), 9000);
+    b.innerHTML = `<div><b>Goal!</b><span>${esc(g.team)}</span><p><span>${esc(g.a)}</span><strong>${standWissel(g)}</strong><span>${esc(g.b)}</span></p></div><div class="ks-gband" style="--s:${innerWidth / 1920}">${goalBand(g)}</div>`;
+    document.body.appendChild(b); setTimeout(() => { b.remove(); bordGoal(); }, 9000);
   }
   function stopSpeler(){ if (!st.speler) return; st.speler.stop(); st.speler = null; document.documentElement.classList.remove('ts-html'); document.getElementById('tsSjabloon')?.remove(); }
 
@@ -122,15 +126,20 @@ export async function bootSchermPagina(tvId){
     const ev = !proef && st.ev ? evenementTv(st.ev, vandaag()) : null;
     if (ev){ d = { ...d, clubNaam: ev.naam || d.clubNaam, datum: vandaag(), programma: ev.programma, mededeling: ev.mededeling || d.mededeling, uit: true }; eigenItems = [...ev.items, ...st.items]; }
     if (proef) d = { ...d, datum: vandaag(), programma: proefProgramma(new Date(), st.tik) };
+    /* Namen bij doelpunten alleen als de club dat aan heeft staan (werkt meteen, ook als het programma ze nog bevat). */
+    else if (d.namen !== true && (d.programma || []).some(w => w.goals)) d = { ...d, programma: d.programma.map(w => w.goals ? { ...w, goals: w.goals.map(x => ({ m: x.m, k: x.k })) } : w) };
     const tv = breed(), isVandaag = d.datum === vandaag();
     const goals = nieuweGoals(st.gezien, isVandaag ? (d.programma || []).filter(w => d.uit !== false || w.thuis) : [], goalKeuze(d.goals));
     const sj = sjabloonId(st.sjabloon || kiesSjabloon || d.sjabloon);
     /* Proefdoelpunt vanuit het ontwerpscherm: op de eerste wedstrijd die niet is afgelast. */
     if (st.goalProef){
       st.goalProef = false;
-      const w = (isVandaag ? d.programma || [] : []).find(x => !x.afgelast) || { a: d.clubNaam || 'Thuis', b: 'Gasten', thuis: true, veld: 'Veld 1' };
+      const lijst = isVandaag ? d.programma || [] : [], w = lijst.find(x => x.bezig && !x.afgelast) || lijst.find(x => !x.afgelast) || { a: d.clubNaam || 'Thuis', b: 'Gasten', thuis: true, veld: 'Veld 1' };
       const [x, y] = /^\d+\s*-\s*\d+$/.test(w.stand || '') ? w.stand.split('-').map(n => Number(n)) : [0, 0];
-      goals.push({ sleutel: 'proef', a: w.a, b: w.b, stand: `${x + 1}–${y}`, kant: 'a', team: w.a, eigen: !!w.thuis, thuis: !!w.thuis, veld: w.veld || '' });
+      const eerder = Array.isArray(w.goals) && w.goals.length === x + y ? w.goals : [], m = Math.max(34, ...eerder.map(g => (g.m || 0) + 3));
+      const namen = proef || d.namen === true, dit = { m, k: 'a', ...(namen ? { n: 'Daan', as: 'Sem' } : {}) };
+      goals.push({ sleutel: 'proef', a: w.a, b: w.b, stand: `${x + 1}–${y}`, oud: `${x}–${y}`, kant: 'a', team: w.a, eigen: !!w.thuis, thuis: !!w.thuis, veld: w.veld || 'Veld 1',
+        min: m, maker: dit.n || '', assist: dit.as || '', lijn: eerder.length ? [...eerder, dit] : [{ m: 12, k: 'a' }, { m: 21, k: 'b' }, dit] });
     }
     if (tv && sj !== 'bord' && st.kapot !== sj){
       if (st.T?.id !== sj && st.laadt !== sj){
@@ -146,7 +155,7 @@ export async function bootSchermPagina(tvId){
       return;
     }
     stopSpeler();
-    if (tv) goals.slice(0, 1).forEach(bordGoal);
+    if (tv) goals.forEach(bordGoal);
     const alles = isVandaag ? (d.programma || []).filter(w => d.uit !== false || w.thuis) : [];
     const spons = eigenItems.filter(x => x.soort === 'sponsor' && (x.titel || x.img)), dias = eigenItems.filter(x => x.titel || x.tekst || x.img);
     const logo = plaatjeOk(d.logo) ? `<img class="lv-logo" src="${esc(d.logo)}" alt="">` : '', kleur = /^#[0-9a-f]{6}$/i.test(d.kleur || '') ? ` style="--accent:${d.kleur}"` : '';
@@ -194,11 +203,14 @@ function stijl(){
 .ks-af{opacity:.55}.ks-af .lv-wed-a,.ks-af .lv-wed-b{text-decoration:line-through}
 .lv-tv .ks-prog{flex:1}.lv-tv .ks-prog .kb-wed{grid-template-columns:6.4em minmax(0,1fr) 3.8em minmax(0,1fr)}
 .ks-goal{position:fixed;inset:0;z-index:500;display:grid;place-items:center;background:rgba(5,6,10,.82);color:#fff;text-align:center;animation:ksGoal 9s both;pointer-events:none}
-.ks-goal b{display:block;font-family:var(--font-display);font-weight:800;text-transform:uppercase;font-size:22vw;line-height:.8;animation:ksGoalK .8s cubic-bezier(.2,1.4,.4,1) both}
-.ks-goal div>span{display:block;font-family:var(--font-display);font-weight:800;text-transform:uppercase;font-size:4vw;margin:3vh 0 2vh}
+.ks-goal>div:first-child>b{display:block;font-family:var(--font-display);font-weight:800;text-transform:uppercase;font-size:22vw;line-height:.8;animation:ksGoalK .8s cubic-bezier(.2,1.4,.4,1) both}
+.ks-goal>div:first-child>span{display:block;font-family:var(--font-display);font-weight:800;text-transform:uppercase;font-size:4vw;margin:3vh 0 2vh}
 .ks-goal p{margin:0;display:flex;align-items:center;justify-content:center;gap:1.5vw;font-size:2.6vw;font-weight:600}
 .ks-goal strong{background:#fff;color:#111;border-radius:.3em;padding:.05em .5em;font-family:var(--font-display);font-weight:800;font-size:1.6em}
 .ks-goal small{display:block;margin-top:2vh;font-size:1.6vw;opacity:.75}
+.ks-goal>div:first-child{padding-bottom:14vh}
+.ks-gband{position:absolute;left:0;bottom:0;width:1920px;height:260px;transform-origin:0 100%;transform:scale(var(--s,1));text-align:left}
+.ks-gband .ts-gband{--club:var(--accent,#c8102e);--club-ink:#fff}
 @keyframes ksGoal{0%{opacity:0}4%,94%{opacity:1}100%{opacity:0}}
 @keyframes ksGoalK{from{transform:scale(2.2) rotate(-5deg);opacity:0}}
 @media (max-width:420px){.ks-wed{grid-template-columns:78px minmax(0,1fr) 46px minmax(0,1fr)}}`;

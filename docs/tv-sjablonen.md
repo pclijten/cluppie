@@ -141,3 +141,16 @@ Bij Kantine-tv en sponsoren staat rechts (op een telefoon bovenaan) de tv-pagina
 - In de ontwerpweergave ververst de tv-pagina zichzelf niet (geen nieuwe-versiecontrole, geen herstart om 4 uur).
 
 Wedstrijden die een trainer zelf in de app aanmaakt, staan op de dag zelf vanzelf op de tv (de Cloud Function leest alle `teams/{id}/wedstrijden` van de club). Houdt de trainer de wedstrijd bij, dan zet `kantineTvWedstrijd` elke nieuwe stand meteen op de tv.
+
+## Het doelpunt-moment
+
+Elke regel in het programma kan `goals` hebben: de doelpunten van de wedstrijd als `{ m: minuut, k: 'a' of 'b' }` (a is thuis), plus `n` (voornaam maker) en `as` (voornaam assist) als de club dat aanzet met `clubTv.namen`. Die bouwt `doelpuntenVan` in `clubscherm-logica.js` en in `functions/kantine-tv.js` (zelfde code, de test vergelijkt ze). `klok` zegt of de coach de wedstrijd met de klok bijhield.
+
+`nieuweGoals` geeft per doelpunt: `stand`, `oud` (de stand ervoor), `min`, `maker`, `assist`, `veld` en `lijn` (alle doelpunten, voor de tijdlijn). Geen melding als de wedstrijd al afgelopen is of zonder klok is bijgehouden: achteraf invoeren telt niet.
+
+Voor elk sjabloon gelijk, uit `tv-speler.js`:
+- `standWissel(g)`: de stand waarin het cijfer van het scorende team omspringt. Gebruik dit in `goal()` in plaats van `esc(g.stand)`.
+- `goalBand(g)`: de balk onderin met minuut, maker en assist, veld en de tijdlijn (vanaf twee doelpunten). De speler zet hem er zelf onder; het doelpunt-vlak krijgt dan de klasse `ts-metband`, zodat een sjabloon ruimte kan maken.
+- Doelpunten komen na elkaar in beeld, elk negen seconden (wachtrij van acht).
+
+Namen staan standaard uit: de tv-pagina is openbaar voor wie de link heeft. Na een wijziging in `functions/kantine-tv.js` moeten de functions opnieuw gedeployd worden.

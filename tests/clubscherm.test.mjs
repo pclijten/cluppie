@@ -90,5 +90,29 @@ ok(F.regelAnders({ datum: F.vandaagNL(), goals: [] }, { datum: F.vandaagNL(), go
   ok(C.evenementId('abcdefghjk2345') === 'abcdefghjk2345' && C.evenementId('../x') === '' && C.tvKopie({ evenement: 'abcdefghjk2345' }).evenement === 'abcdefghjk2345' && C.tvKopie({}).evenement === '', 'evenement: id gecontroleerd in de tv-kopie');
 }
 
+/* doelpunten: minuut, maker, tijdlijn; achteraf telt niet */
+{
+  const w = { datum: '2026-11-28', thuis: true, kwartduur: 25, tegenstander: 'Minor', kwarten: kw(1500, false, 400, true),
+    goals: [{ type: 'voor', pid: 'p1', assist: 'p2', kwart: 1, sec: 200 }, { type: 'tegen', kwart: 1, sec: 900 }, { type: 'voor', pid: 'p2', kwart: 2, sec: 130 }] };
+  const namen = { p1: 'Daan de Vries', p2: 'Sem Jansen' };
+  const d = C.doelpuntenVan(w, namen);
+  ok(JSON.stringify(d) === JSON.stringify([{ m: 4, k: 'a', n: 'Daan', as: 'Sem' }, { m: 16, k: 'b' }, { m: 28, k: 'a', n: 'Sem' }]), 'doelpunten: minuut, kant en alleen de voornaam');
+  ok(!JSON.stringify(C.doelpuntenVan(w)).includes('"n"') && C.doelpuntenVan({ ...w, thuis: false })[0].k === 'b', 'zonder namen geen naam; uit: eigen team is kant b');
+  ok(JSON.stringify(F.doelpuntenVan(w, namen)) === JSON.stringify(d) && JSON.stringify(F.programmaRij({ naam: 'JO11-1' }, w, namen)) === JSON.stringify(C.programmaRij({ naam: 'JO11-1' }, w, namen)), 'de Cloud Function maakt dezelfde regel');
+  const rij = C.programmaRij({ naam: 'JO11-1' }, w, namen);
+  ok(rij.goals.length === 3 && rij.klok === true && C.programmaRij({ naam: 'JO11-1' }, { ...w, kwarten: {} }).klok === false && !('goals' in C.programmaRij({ naam: 'x' }, { datum: '2026-11-28' })), 'regel met doelpunten en of de klok liep');
+  ok(C.tvKopie({ namen: true }).namen === true && C.tvKopie({ namen: 'ja' }).namen === false && C.tvKopie({}).namen === false, 'namen tonen staat uit tot de club het aanzet');
+  const gz = new Map(), basis = { ...rij, tijd: '10:30', stand: '1 - 1', goals: rij.goals.slice(0, 2) };
+  C.nieuweGoals(gz, [basis], 'alle');
+  const [gl1] = C.nieuweGoals(gz, [{ ...rij, tijd: '10:30' }], 'alle');
+  ok(gl1 && gl1.stand === '2–1' && gl1.oud === '1–1' && gl1.min === 28 && gl1.maker === 'Sem' && gl1.assist === '' && gl1.lijn.length === 3 && gl1.veld === '', 'melding met oude stand, minuut, maker en tijdlijn');
+  const gz2 = new Map(); C.nieuweGoals(gz2, [basis], 'alle');
+  ok(C.nieuweGoals(gz2, [{ ...rij, tijd: '10:30', eind: true, bezig: false }], 'alle').length === 0, 'doelpunt ingevoerd na het eindsignaal: geen melding');
+  const gz3 = new Map(); C.nieuweGoals(gz3, [basis], 'alle');
+  ok(C.nieuweGoals(gz3, [{ ...rij, tijd: '10:30', klok: false }], 'alle').length === 0, 'wedstrijd zonder klok bijgehouden: geen melding');
+  const gz4 = new Map(); C.nieuweGoals(gz4, [basis], 'alle');
+  ok(C.nieuweGoals(gz4, [{ ...rij, tijd: '10:30', goals: rij.goals.slice(0, 1) }], 'alle')[0].lijn.length === 0, 'tijdlijn alleen als elk doelpunt erin staat');
+}
+
 console.log(mis ? `clubscherm: ${mis} van ${n} MIS` : `clubscherm: ${n} controles geslaagd`);
 process.exit(mis ? 1 : 0);

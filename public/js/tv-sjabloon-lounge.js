@@ -1,6 +1,6 @@
 /* TV-SJABLOON "LOUNGE" [20261126q]: rustig en chic, voor de bestuurskamer of businessclub. Schreefletters,
    veel ruimte en zacht bewegend licht in de clubkleur; een wissel is een trage vervaging. Zie docs/tv-sjablonen.md. */
-import { esc, maat, stip, klok, beeld, bovenSponsor } from './tv-speler.js?v=20261126u';
+import { esc, standWissel, maat, stip, klok, beeld, bovenSponsor } from './tv-speler.js?v=20261126v';
 
 /* Het laatste woord cursief in de clubkleur. */
 const sier = t => { const w = String(t || '').trim().split(/\s+/); const l = w.pop(); return `${esc(w.join(' '))}${w.length ? ' ' : ''}<i>${esc(l)}</i>`; };
@@ -23,7 +23,7 @@ export default {
     ${x.soort === 'sponsor' && ook.length ? `<div class="ts-abs lo-ook">${ook.map(s => `<span class="ts-kap">${esc(s.titel)}</span>`).join('')}</div>` : ''}`; },
   goal: (m, g) => `<div class="lo-goal"><div class="lo-licht"><i></i><i></i><i></i></div>
     <div class="e">${stip} Doelpunt${g.veld ? ' · ' + esc(g.veld) : ''}</div>
-    <div class="sc">${esc(g.stand.replace('–', ' – '))}</div><div class="lijn"></div>
+    <div class="sc">${standWissel(g, esc, ' – ')}</div><div class="lijn"></div>
     <div class="t"><i>${esc(g.team)}</i> scoort.<small class="ts-kap">${esc(g.a)} tegen ${esc(g.b)}</small></div></div>`,
   css: `
 .ts-lounge,.lo-goal{background:#0b0a0e}
@@ -72,6 +72,7 @@ export default {
 .lo-goal .lijn{width:900px;height:1px;background:rgba(255,255,255,.5);margin:26px 0 30px;animation:loLijn 1.4s cubic-bezier(.2,.7,.2,1) .7s both}
 .lo-goal .t{font:400 76px/1.1 'Instrument Serif',Georgia,serif;animation:loIn 1.4s ease .9s both;max-width:1600px}
 .lo-goal .t i{color:var(--club-l)}
+.ts-metband .lo-goal{padding-bottom:200px}.ts-metband .lo-goal .sc{font-size:430px}
 .lo-goal .t small{display:block;font:500 24px/1.6 var(--ts-body);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.7);margin-top:18px}
 @keyframes loLijn{from{transform:scaleX(0)}}
 `,
