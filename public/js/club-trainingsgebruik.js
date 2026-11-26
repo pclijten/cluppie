@@ -16,9 +16,9 @@
    ====================================================================== */
 
 import { db, collection, getDocs, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261127y';
-import { momentenVanTeam } from './trainingsmomenten.js?v=20261127y';
-import { bouwGroepen } from './bouw-indeling.js?v=20261127y';
+import { S, esc, meld } from './state.js?v=20261127z';
+import { momentenVanTeam } from './trainingsmomenten.js?v=20261127z';
+import { bouwGroepen } from './bouw-indeling.js?v=20261127z';
 
 const DAG = ['', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
 const DAG_MS = 86400000;

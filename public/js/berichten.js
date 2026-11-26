@@ -11,13 +11,20 @@
 
    Weggeklikt wordt lokaal onthouden in localStorage onder 'cluppie_bericht_weg'. */
 
-import { S, esc, datumNL } from './state.js?v=20261127y';
+import { S, esc, datumNL } from './state.js?v=20261127z';
 import { ico } from './icons.js?v=20261127b';
 /* gemaakt is een Firestore-Timestamp (of null zolang de schrijfactie nog loopt);
    datumNL() uit state.js verwacht een JJJJ-MM-DD-tekst en gaf hier "Invalid Date". */
 function datumBericht(t){
   const d = t?.toDate ? t.toDate() : t?.seconds ? new Date(t.seconds * 1000) : t ? new Date(t) : null;
   return d && !isNaN(d) ? d.toLocaleDateString('nl-NL', { weekday:'short', day:'numeric', month:'short' }) : 'zojuist';
+}
+
+/* [20261127z] Berichten van vóór het vorige seizoen hoeven niet bij elke start opnieuw gelezen te worden: het archief
+   toont dit en het vorige seizoen (vanaf 1 juli, Nederlandse tijd). PURE, getest in tests/berichten-grens.test.mjs. */
+export function berichtenGrensMs(nu = Date.now()){
+  const d = new Date(nu), jaar = d.getUTCMonth() >= 6 ? d.getUTCFullYear() : d.getUTCFullYear() - 1;
+  return Date.UTC(jaar - 1, 5, 30, 22, 0, 0);
 }
 
 const WEG_KEY = 'cluppie_bericht_weg';
