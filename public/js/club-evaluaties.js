@@ -5,9 +5,9 @@
    Losse module (i.p.v. in club.js) omdat de Excel-export een eigen lui geladen
    library (ExcelJS via CDN) nodig heeft die de rest van de app nooit gebruikt. */
 import { db, collection, getDocs, query, where } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal } from './state.js?v=20261126p';
-import { TEAM_CATEGORIEEN, SKILLS } from './config.js?v=20261126p';
-import { priveBeoordelingenVan } from './beoordelingen-prive.js?v=20261126p';
+import { S, esc, meld, openModal } from './state.js?v=20261126q';
+import { TEAM_CATEGORIEEN, SKILLS } from './config.js?v=20261126q';
+import { priveBeoordelingenVan } from './beoordelingen-prive.js?v=20261126q';
 import { TE_CRITERIA, TE_NIV, teLeeftijd, teZichtbaar, teScores, teCritGemiddelden, teLaagste, teIsNieuw } from './team-evaluatie-criteria.js?v=20261120a';
 /* [20261119c] Kolommen = de onderdelen van de nieuwe teamevaluatie. Per team
    tellen alleen de onderdelen die bij de leeftijd horen; oude evaluaties

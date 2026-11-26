@@ -14,16 +14,28 @@ const isIso = s => /^\d{4}-\d{2}-\d{2}$/.test(String(s || ''));
 const isTijd = s => /^\d{1,2}:\d{2}$/.test(String(s || ''));
 const min = t => isTijd(t) ? Number(t.split(':')[0]) * 60 + Number(t.split(':')[1]) : 9999;
 
+/* De stand van een wedstrijd, altijd thuis – uit. Komt uit de uitslag (Sportlink) of, tijdens de wedstrijd,
+   uit de doelpunten die de coach in de app bijhoudt (w.goals). eind: de wedstrijd is afgelopen;
+   bezig: de klok van een periode loopt of heeft gelopen en er is nog geen einde. Geen spelersnamen. */
+export function standVan(w = {}){
+  const thuis = w.thuis !== false, zet = (v, t) => thuis ? `${v} - ${t}` : `${t} - ${v}`;
+  const voor = Number(w.doelBin), tg = Number(w.doelTegen);
+  if (w.resultaat && Number.isFinite(voor) && Number.isFinite(tg)) return { stand: zet(voor, tg), eind: true, bezig: false };
+  if (/^\d+\s*-\s*\d+$/.test(String(w.uitslag || ''))) return { stand: String(w.uitslag).replace(/\s*-\s*/, ' - '), eind: true, bezig: false };
+  const goals = Array.isArray(w.goals) ? w.goals : [], kw = w.kwarten && typeof w.kwarten === 'object' ? w.kwarten : {};
+  const nrs = Object.keys(kw).sort((a, b) => Number(a) - Number(b)), klok = k => (kw[k] && kw[k].klok) || {};
+  const loopt = nrs.some(k => klok(k).running), gestart = loopt || nrs.some(k => Number(klok(k).base) > 0);
+  const laatste = nrs[nrs.length - 1], eind = !!laatste && !loopt && Number(klok(laatste).base) > 0;
+  if (!goals.length && !gestart) return { stand: '', eind: false, bezig: false };
+  return { stand: zet(goals.filter(g => g && g.type === 'voor').length, goals.filter(g => g && g.type === 'tegen').length), eind, bezig: !eind };
+}
 /* Eén wedstrijd van een team als regel voor de tv. Stand altijd thuis – uit. */
 export function programmaRij(team = {}, w = {}){
   if (!w || !isIso(w.datum)) return null;
   const thuis = w.thuis !== false, eigen = tekst(team.naam, 40) || 'Team', tegen = tekst(w.tegenstander, 60) || 'Tegenstander';
-  let stand = '';
-  const voor = Number(w.doelBin), tg = Number(w.doelTegen);
-  if (w.resultaat && Number.isFinite(voor) && Number.isFinite(tg)) stand = thuis ? `${voor} - ${tg}` : `${tg} - ${voor}`;
-  else if (/^\d+\s*-\s*\d+$/.test(String(w.uitslag || ''))) stand = String(w.uitslag).replace(/\s*-\s*/, ' - ');
+  const { stand, eind, bezig } = standVan(w);
   return { datum: w.datum, tijd: isTijd(w.aftrap) ? w.aftrap.padStart(5, '0') : '', thuis, a: thuis ? eigen : tegen, b: thuis ? tegen : eigen,
-    veld: tekst(w.info?.veld, 30), kk: tekst(w.info?.kleedkamer, 30), stand, afgelast: w.status === 'afgelast', soort: tekst(w.competitiesoort, 20) };
+    veld: tekst(w.info?.veld, 30), kk: tekst(w.info?.kleedkamer, 30), stand, eind, bezig, afgelast: w.status === 'afgelast', soort: tekst(w.competitiesoort, 20) };
 }
 /* teams: [{ id, naam }], perTeam: { teamId: [wedstrijden] }. Alleen de gevraagde dag, op tijd. */
 export function bouwProgramma(teams = [], perTeam = {}, datum = ''){
@@ -60,7 +72,40 @@ export function csvSponsoren(lijst = [], vandaag = ''){
   return '﻿' + [['Sponsor', 'Pakket', 'Bedrag per jaar', 'Loopt tot', 'Status', 'Website', 'Notitie'], ...rijen].map(r => r.map(csvCel).join(';')).join('\r\n');
 }
 /* De openbare kop van de tv: clubnaam, logo, kleur, mededeling en het programma. */
-export function tvKopie({ clubNaam = '', logo = '', kleur = '', mededeling = '', uit = true, datum = '', programma = [] } = {}){
+export function tvKopie({ clubNaam = '', logo = '', kleur = '', mededeling = '', uit = true, datum = '', programma = [], sjabloon = '', goals = '' } = {}){
   return { clubNaam: tekst(clubNaam, 80), logo: plaatjeOk(logo) ? logo : '', kleur: /^#[0-9a-f]{6}$/i.test(kleur || '') ? kleur : '', mededeling: tekst(mededeling, 200),
-    uit: uit !== false, datum: isIso(datum) ? datum : '', programma: (Array.isArray(programma) ? programma : []).slice(0, MAX_PROGRAMMA) };
+    uit: uit !== false, datum: isIso(datum) ? datum : '', programma: (Array.isArray(programma) ? programma : []).slice(0, MAX_PROGRAMMA),
+    sjabloon: /^[a-z0-9-]{1,30}$/.test(sjabloon || '') ? sjabloon : 'bord', goals: goalKeuze(goals) };
+}
+
+/* ---------- tv: status van een wedstrijd en doelpunten ---------- */
+/* Welke doelpunten krijgen een melding op de tv? park: alleen wedstrijden op het eigen sportpark (thuis). */
+export const GOAL_KEUZES = { park: 'Alleen wedstrijden op ons sportpark', alle: 'Alle wedstrijden, ook uit', uit: 'Geen melding' };
+export const goalKeuze = v => GOAL_KEUZES[v] ? v : 'park';
+const cijfers = s => { const m = /^(\d+)\s*-\s*(\d+)$/.exec(String(s || '')); return m ? [Number(m[1]), Number(m[2])] : null; };
+export const rijSleutel = r => [r.tijd, r.a, r.b].join('|');
+/* af | klaar | live | straks | voorbij. nuMin: minuten sinds middernacht. Oude regels (zonder eind) met een stand zijn afgelopen. */
+export function rijStatus(r = {}, nuMin = 0){
+  if (r.afgelast) return 'af';
+  const t = min(r.tijd), heeftTijd = t !== 9999;
+  if (r.eind === true || (r.eind === undefined && r.stand) || (r.stand && heeftTijd && nuMin > t + 150)) return 'klaar';
+  if (r.bezig || r.stand || (r.thuis && heeftTijd && t <= nuMin && nuMin < t + 105)) return 'live';
+  return !heeftTijd || nuMin < t ? 'straks' : 'voorbij';
+}
+/* Vergelijkt het programma met wat de tv al gezien had (gezien: Map sleutel -> stand) en geeft de nieuwe doelpunten.
+   De eerste keer dat een wedstrijd gezien wordt geeft nooit een melding (anders flitst het scherm bij het opstarten),
+   net zomin als een uitslag die achteraf binnenkomt of een correctie naar beneden. Werkt gezien bij. */
+export function nieuweGoals(gezien, programma = [], keuze = 'park'){
+  const uit = [];
+  for (const r of programma){
+    const k = rijSleutel(r), nu = cijfers(r.stand), had = gezien.has(k), oud = had ? (cijfers(gezien.get(k)) || [0, 0]) : null;
+    const achteraf = had && !gezien.get(k) && r.eind === true;
+    gezien.set(k, r.stand || '');
+    if (!nu || !oud || achteraf || r.afgelast || keuze === 'uit' || (keuze !== 'alle' && !r.thuis)) continue;
+    const da = nu[0] - oud[0], db = nu[1] - oud[1];
+    if (da < 0 || db < 0 || da + db < 1 || da + db > 2) continue;
+    const kant = da > 0 ? 'a' : 'b';
+    uit.push({ sleutel: k, a: r.a, b: r.b, stand: `${nu[0]}–${nu[1]}`, kant, team: kant === 'a' ? r.a : r.b, eigen: (kant === 'a') === !!r.thuis, thuis: !!r.thuis, veld: r.veld || '' });
+  }
+  return uit;
 }

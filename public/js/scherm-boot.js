@@ -5,10 +5,17 @@
 
    Zelfde opzet als live-boot.js (en dezelfde stijl): anoniem inloggen, clubTv/{id} en de subcollectie
    schermen lezen. Het bestuur beheert het in Activiteiten › Kantine-tv en sponsoren; het programma
-   houdt de Cloud Function kantineTv bij. Geen persoonsgegevens. */
+   houdt de Cloud Function kantineTv bij. Geen persoonsgegevens.
+
+   [20261126p] Sjablonen: de club kiest hoe de tv eruitziet (clubTv.sjabloon, lijst in tv-sjablonen.js). 'bord' is het
+   tactisch bord hieronder; elk ander sjabloon speelt tv-speler.js af. Een doelpunt (de stand van een wedstrijd gaat
+   omhoog) geeft een melding over het hele scherm; clubTv.goals zegt voor welke wedstrijden (zie nieuweGoals).
+   Voorbeeld bekijken zonder iets op te slaan: ?scherm=<id>&sjabloon=<id>, en &proef=1 voor proefwedstrijden met doelpunten. */
 import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, collection, onSnapshot } from './firebase.js?v=20261011g';
 import { plaatjeOk, veiligeLink } from './toernooi-logica.js?v=20261125w';
-import { sorteer } from './clubscherm-logica.js?v=20261125w';
+import { sorteer, nieuweGoals, goalKeuze } from './clubscherm-logica.js?v=20261126q';
+import { sjabloonId, laadSjabloon } from './tv-sjablonen.js?v=20261126q';
+import { maakSpeler, tvModel, proefProgramma, PROEF_DIAS } from './tv-speler.js?v=20261126q';
 import { stijl as stijlLive } from './live-boot.js?v=20261126n';
 import { tvStijl, tvKleur, tvZet, bordHtml, logoHtml, tikHtml, diaHtml, sponsHtml, voetHtml } from './tv-stijl.js?v=20261126n';
 
@@ -37,7 +44,8 @@ export async function bootSchermPagina(tvId){
   el.innerHTML = melding('Even geduld', 'Het scherm wordt geladen…');
   try { await authKlaar(); await sessie(false); }
   catch { el.innerHTML = melding('Laden is niet gelukt', 'Controleer je verbinding en ververs de pagina.'); return; }
-  const st = { d: null, items: [], tik: 0, hersteld: false };
+  const st = { d: null, items: [], tik: 0, hersteld: false, gezien: new Map(), speler: null, T: null, laadt: '', kapot: '' };
+  const qs = new URLSearchParams(location.search), kiesSjabloon = qs.get('sjabloon') || '', proef = qs.get('proef') === '1';
   let stops = [];
   function luister(){
     stops.push(onSnapshot(doc(db, 'clubTv', tvId), s => {
@@ -62,9 +70,35 @@ export async function bootSchermPagina(tvId){
   const dia = x => `<section class="lv-kaart lv-dia ${x.soort === 'sponsor' ? 'sponsor' : ''}">${x.soort === 'sponsor' ? `<small class="lv-zacht">${x.pakket === 'hoofd' ? 'Onze hoofdsponsor' : 'Met dank aan onze sponsor'}</small>` : ''}${plaatjeOk(x.img) ? `<div class="lv-dia-img"><img src="${esc(x.img)}" alt=""></div>` : ''}${x.titel ? `<h2>${esc(x.titel)}</h2>` : ''}${x.tekst ? `<p>${esc(x.tekst)}</p>` : ''}</section>`;
   const balk = (lijst, klik) => lijst.length ? `<div class="lv-sponsors">${lijst.map(x => { const b = plaatjeOk(x.img) ? `<img src="${esc(x.img)}" alt="${esc(x.titel)}">` : `<b>${esc(x.titel)}</b>`, l = veiligeLink(x.link); return l && klik ? `<a href="${esc(l)}" target="_blank" rel="noopener sponsored">${b}</a>` : `<span>${b}</span>`; }).join('')}</div>` : '';
 
+  /* Doelpunt op het tactisch bord: een balk over het midden van het scherm. De sjablonen hebben hun eigen moment. */
+  function bordGoal(g){
+    document.querySelector('.ks-goal')?.remove();
+    const b = document.createElement('div'); b.className = 'ks-goal';
+    b.innerHTML = `<div><b>Goal!</b><span>${esc(g.team)}</span><p><span>${esc(g.a)}</span><strong>${esc(g.stand)}</strong><span>${esc(g.b)}</span></p>${g.veld ? `<small>${esc(g.veld)}</small>` : ''}</div>`;
+    document.body.appendChild(b); setTimeout(() => b.remove(), 9000);
+  }
+  function stopSpeler(){ if (!st.speler) return; st.speler.stop(); st.speler = null; document.documentElement.classList.remove('ts-html'); document.getElementById('tsSjabloon')?.remove(); }
+
   function teken(){
-    const d = st.d; if (!d) return;
+    let d = st.d; if (!d) return;
+    if (proef) d = { ...d, datum: vandaag(), programma: proefProgramma(new Date(), st.tik) };
     const tv = breed(), isVandaag = d.datum === vandaag();
+    const goals = nieuweGoals(st.gezien, isVandaag ? (d.programma || []).filter(w => d.uit !== false || w.thuis) : [], goalKeuze(d.goals));
+    const sj = sjabloonId(kiesSjabloon || d.sjabloon);
+    if (tv && sj !== 'bord' && st.kapot !== sj){
+      if (st.T?.id !== sj && st.laadt !== sj){
+        st.laadt = sj;
+        laadSjabloon(sj).then(T => { st.T = T; st.laadt = ''; teken(); }).catch(e => { console.error('[Cluppie] sjabloon', sj, e); st.kapot = sj; st.laadt = ''; teken(); });
+      }
+      if (!st.T) return;                       /* het eerste sjabloon is nog onderweg: de laadtekst blijft staan */
+      if (!st.speler){ st.speler = maakSpeler(el); document.documentElement.classList.add('ts-html'); document.documentElement.classList.remove('lv-tv-html'); }
+      const items = (proef && !st.items.length ? PROEF_DIAS : st.items).map(x => ({ ...x, img: plaatjeOk(x.img) ? x.img : '' }));
+      st.speler.zet(st.T, tvModel({ ...d, logo: plaatjeOk(d.logo) ? d.logo : '', programma: isVandaag ? d.programma : [] }, items, new Date()));
+      goals.forEach(g => st.speler.goal(g));
+      return;
+    }
+    stopSpeler();
+    if (tv) goals.slice(0, 1).forEach(bordGoal);
     const alles = isVandaag ? (d.programma || []).filter(w => d.uit !== false || w.thuis) : [];
     const spons = st.items.filter(x => x.soort === 'sponsor' && (x.titel || x.img)), dias = st.items.filter(x => x.titel || x.tekst || x.img);
     const logo = plaatjeOk(d.logo) ? `<img class="lv-logo" src="${esc(d.logo)}" alt="">` : '', kleur = /^#[0-9a-f]{6}$/i.test(d.kleur || '') ? ` style="--accent:${d.kleur}"` : '';
@@ -110,6 +144,14 @@ function stijl(){
 .ks-wed{grid-template-columns:92px minmax(0,1fr) 58px minmax(0,1fr)}
 .ks-af{opacity:.55}.ks-af .lv-wed-a,.ks-af .lv-wed-b{text-decoration:line-through}
 .lv-tv .ks-prog{flex:1}.lv-tv .ks-prog .kb-wed{grid-template-columns:6.4em minmax(0,1fr) 3.8em minmax(0,1fr)}
+.ks-goal{position:fixed;inset:0;z-index:500;display:grid;place-items:center;background:rgba(5,6,10,.82);color:#fff;text-align:center;animation:ksGoal 9s both;pointer-events:none}
+.ks-goal b{display:block;font-family:var(--font-display);font-weight:800;text-transform:uppercase;font-size:22vw;line-height:.8;animation:ksGoalK .8s cubic-bezier(.2,1.4,.4,1) both}
+.ks-goal div>span{display:block;font-family:var(--font-display);font-weight:800;text-transform:uppercase;font-size:4vw;margin:3vh 0 2vh}
+.ks-goal p{margin:0;display:flex;align-items:center;justify-content:center;gap:1.5vw;font-size:2.6vw;font-weight:600}
+.ks-goal strong{background:#fff;color:#111;border-radius:.3em;padding:.05em .5em;font-family:var(--font-display);font-weight:800;font-size:1.6em}
+.ks-goal small{display:block;margin-top:2vh;font-size:1.6vw;opacity:.75}
+@keyframes ksGoal{0%{opacity:0}4%,94%{opacity:1}100%{opacity:0}}
+@keyframes ksGoalK{from{transform:scale(2.2) rotate(-5deg);opacity:0}}
 @media (max-width:420px){.ks-wed{grid-template-columns:78px minmax(0,1fr) 46px minmax(0,1fr)}}`;
   document.head.appendChild(s);
 }

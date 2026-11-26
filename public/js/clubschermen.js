@@ -9,11 +9,12 @@
    Opslag: clubs/{club}/sponsoren/{id} (met bedrag en notitie) en de openbare kopie in
    clubTv/{tvId} + clubTv/{tvId}/schermen/{id}. Krijgt alles van activiteiten.js via ctx. */
 import { db, doc, collection, query, where, getDocs, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261126p';
+import { S, esc, meld } from './state.js?v=20261126q';
 import { ico } from './icons.js?v=20261116t';
 import { liveId, MAX_SCHERMEN } from './toernooi-logica.js?v=20261125w';
 import { kleinPlaatje } from './plaatje.js?v=20261125w';
-import * as C from './clubscherm-logica.js?v=20261125w';
+import * as C from './clubscherm-logica.js?v=20261126q';
+import { SJABLONEN, sjabloonId } from './tv-sjablonen.js?v=20261126q';
 
 const cs = { clubId: '', tv: undefined, items: null, stop: null, qrVoor: '', qr: '', bezig: false };
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -61,6 +62,7 @@ export function htmlSchermen(ctx){
   const v = vandaag(), items = C.sorteer((cs.items || []).map(x => ({ id: x.id, ...C.schoonItem(x) }))), tv = cs.tv, aan = !!tv?.open;
   const sponsors = items.filter(x => x.soort === 'sponsor'), eigen = items.filter(x => x.soort === 'scherm'), tot = C.sponsorTotaal(items, v), vol = items.length >= C.MAX_ITEMS;
   const link = tv?.id ? schermLink(tv.id) : '';
+  const sj = SJABLONEN.find(x => x.id === sjabloonId(tv?.sjabloon)) || SJABLONEN[0];
   if (aan && cs.qrVoor !== tv.id){ cs.qrVoor = tv.id; cs.qr = ''; qrSvg(link).then(svg => { cs.qr = svg; ctx.herteken(); }).catch(() => {}); }
   const veld = (id, k, w, o = {}) => `<input class="ac-in ${o.klasse || ''}" type="${o.type || 'text'}" data-cs-veld="${esc(id)}.${k}" value="${esc(w ?? '')}" placeholder="${esc(o.ph || '')}" ${o.extra || ''}>`;
   const rij = x => { const oud = C.verlopen(x, v), bijna = C.bijnaVerlopen(x, v);
@@ -74,13 +76,19 @@ export function htmlSchermen(ctx){
           ${veld(x.id, 'notitie', x.notitie, { ph: 'Notitie voor het bestuur (niet op tv), bv. contactpersoon of afspraak', extra: 'maxlength="200"' })}` : ''}
         <div class="ac-rij"><label class="ac-schak"><input type="checkbox" data-cs-veld="${esc(x.id)}.tv" ${x.tv ? 'checked' : ''}> Op de kantine-tv</label>${x.img ? `<span class="ac-groei"></span><button class="knop licht klein" data-cs="plaatje-weg" data-id="${esc(x.id)}">Afbeelding weg</button>` : ''}</div></div></div>`; };
   return `${ctx.kop('Kantine-tv en sponsoren', S.club?.naam || '')}
-    <div class="ac-paneel"><h3>Kantine-tv</h3><p class="ac-zacht">Zet deze pagina op de tv in de kantine. Hij toont het wedstrijdprogramma van vandaag met veld en kleedkamer, de uitslagen, je sponsoren en eigen schermen. De pagina werkt zichzelf bij; het programma komt elke tien minuten uit de wedstrijden van de teams.</p>
+    <div class="ac-paneel"><h3>Kantine-tv</h3><p class="ac-zacht">Zet deze pagina op de tv in de kantine. Hij toont het wedstrijdprogramma van vandaag met veld en kleedkamer, de standen en uitslagen, je sponsoren en eigen schermen, in het sjabloon dat je kiest. De pagina werkt zichzelf bij; het programma komt elke tien minuten uit de wedstrijden van de teams.</p>
       ${cs.tv === undefined ? '<p class="ac-zacht">Laden…</p>' : aan ? `<div class="tn-live"><div class="tn-qr">${cs.qr || '<span class="ac-zacht">QR-code maken…</span>'}</div>
           <div class="tn-live-t"><input class="ac-in" readonly value="${esc(link)}" aria-label="Link naar de kantine-tv" onfocus="this.select()">
             <div class="ac-acties"><a class="knop vol klein" href="${esc(link)}" target="_blank" rel="noopener">Tv-pagina openen</a><button class="knop licht klein" data-cs="kopieer">Link kopiëren</button><button class="knop licht klein" data-cs="programma" ${cs.bezig ? 'disabled' : ''}>Programma nu bijwerken</button><span class="ac-groei"></span><button class="knop licht klein" data-cs="tv-uit">Tv uitzetten</button></div>
             <p class="ac-zacht">${tv.datum === v ? `Vandaag ${(tv.programma || []).length} ${(tv.programma || []).length === 1 ? 'wedstrijd' : 'wedstrijden'} op het scherm.` : 'Het programma van vandaag staat er nog niet op.'} Open de link in de browser van de tv, of scan de code met een telefoon die je op de tv aansluit.</p>
             <label class="ac-label">Mededeling onderin het scherm</label><input class="ac-in" data-cs-tv="mededeling" maxlength="200" value="${esc(tv.mededeling || '')}" placeholder="Bijvoorbeeld: Zaterdag 12 december kerstbingo in de kantine">
-            <label class="ac-schak"><input type="checkbox" data-cs-tv="uit" ${tv.uit !== false ? 'checked' : ''}> Ook uitwedstrijden tonen</label></div></div>`
+            <label class="ac-schak"><input type="checkbox" data-cs-tv="uit" ${tv.uit !== false ? 'checked' : ''}> Ook uitwedstrijden tonen</label>
+            <label class="ac-label" for="csSjabloon">Sjabloon: hoe het scherm eruitziet</label>
+            <div class="ac-rij"><select class="ac-in ac-groei" id="csSjabloon" data-cs-tv="sjabloon">${SJABLONEN.map(x => opt(x.id, x.naam, x.id === sj.id)).join('')}</select><a class="knop licht klein" href="${esc(`${link}&sjabloon=${sj.id}&proef=1`)}" target="_blank" rel="noopener">Voorbeeld bekijken</a></div>
+            <p class="ac-zacht">${esc(sj.kort)} Je keuze staat meteen op de tv. Het voorbeeld laat het sjabloon zien met proefwedstrijden en een doelpunt.</p>
+            <label class="ac-label" for="csGoals">Doelpunt groot in beeld</label>
+            <select class="ac-in" id="csGoals" data-cs-tv="goals">${Object.entries(C.GOAL_KEUZES).map(([k, n]) => opt(k, n, C.goalKeuze(tv.goals) === k)).join('')}</select>
+            <p class="ac-zacht">Valt er een doelpunt, dan komt dat een paar seconden groot in beeld, met team en stand en zonder namen van spelers. Dit werkt bij wedstrijden waarvan de coach de stand bijhoudt in de app.</p></div></div>`
         : `<div class="ac-acties"><button class="knop vol" data-cs="tv-aan">Kantine-tv aanzetten</button></div>${tv?.id ? '<p class="ac-zacht">De tv staat uit. Aanzetten geeft dezelfde link als eerst.</p>' : ''}`}</div>
     <div class="ac-paneel"><h3>Sponsoren ${sponsors.length ? `<small class="ac-zacht">· ${tot.actief} actief${tot.bedrag ? `, € ${tot.bedrag.toLocaleString('nl-NL')} per jaar` : ''}${tot.verlopen ? `, ${tot.verlopen} verlopen` : ''}${tot.bijna ? `, ${tot.bijna} loopt bijna af` : ''}</small>` : ''}</h3>
       <p class="ac-zacht">Per sponsor het pakket, het bedrag en tot wanneer de afspraak loopt. Bedrag en notitie ziet alleen het bestuur. Na de einddatum verdwijnt de sponsor vanzelf van de tv. Hoofdsponsoren staan vooraan.</p>
@@ -112,7 +120,7 @@ export async function klikSchermen(ctx, b){
       const tid = cs.tv?.id || liveId();
       try {
         const p = await leesProgramma();
-        const data = { club: ctx.clubId, open: true, ...C.tvKopie({ ...clubInfo(), mededeling: cs.tv?.mededeling || '', uit: cs.tv?.uit, ...p }), bijgewerktMs: Date.now(), programmaMs: Date.now() };
+        const data = { club: ctx.clubId, open: true, ...C.tvKopie({ ...clubInfo(), mededeling: cs.tv?.mededeling || '', uit: cs.tv?.uit, sjabloon: cs.tv?.sjabloon, goals: cs.tv?.goals, ...p }), bijgewerktMs: Date.now(), programmaMs: Date.now() };
         await setDoc(doc(db, 'clubTv', tid), data);
         cs.tv = { id: tid, ...data }; await zetAllesOpenbaar();
       } catch (e){ console.error('[schermen] tv aan', e); return meld(e?.code === 'permission-denied' ? 'De tv kan nog niet aan: de regels zijn nog niet gepubliceerd.' : 'Aanzetten mislukt.'); }
@@ -125,7 +133,7 @@ export async function klikSchermen(ctx, b){
     }
     case 'programma': {
       cs.bezig = true; ctx.herteken();
-      try { const p = await leesProgramma(); await updateDoc(doc(db, 'clubTv', cs.tv.id), { ...p, ...C.tvKopie({ ...clubInfo(), mededeling: cs.tv.mededeling, uit: cs.tv.uit, ...p }), bijgewerktMs: Date.now(), programmaMs: Date.now() }); Object.assign(cs.tv, p); await zetAllesOpenbaar(); meld(`${p.programma.length} ${p.programma.length === 1 ? 'wedstrijd' : 'wedstrijden'} op het scherm`); }
+      try { const p = await leesProgramma(); await updateDoc(doc(db, 'clubTv', cs.tv.id), { ...p, ...C.tvKopie({ ...clubInfo(), mededeling: cs.tv.mededeling, uit: cs.tv.uit, sjabloon: cs.tv.sjabloon, goals: cs.tv.goals, ...p }), bijgewerktMs: Date.now(), programmaMs: Date.now() }); Object.assign(cs.tv, p); await zetAllesOpenbaar(); meld(`${p.programma.length} ${p.programma.length === 1 ? 'wedstrijd' : 'wedstrijden'} op het scherm`); }
       catch (e){ console.error('[schermen] programma', e); meld('Bijwerken mislukt.'); }
       cs.bezig = false; return ctx.herteken();
     }
@@ -149,8 +157,8 @@ export async function wijzigSchermen(ctx, el){
     await bewaarItem(ctx, id, { [k]: w }); return true;
   }
   if (el.matches('[data-cs-tv]') && cs.tv?.id){
-    const k = el.dataset.csTv, w = el.type === 'checkbox' ? el.checked : String(el.value || '').replace(/\s+/g, ' ').trim().slice(0, 200);
-    try { await updateDoc(doc(db, 'clubTv', cs.tv.id), { [k]: w, ...clubInfoKopie(), bijgewerktMs: Date.now() }); cs.tv[k] = w; ctx.opgeslagen?.(); } catch { meld('Opslaan mislukt.'); }
+    const k = el.dataset.csTv, w = el.type === 'checkbox' ? el.checked : k === 'sjabloon' ? sjabloonId(el.value) : k === 'goals' ? C.goalKeuze(el.value) : String(el.value || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+    try { await updateDoc(doc(db, 'clubTv', cs.tv.id), { [k]: w, ...clubInfoKopie(), bijgewerktMs: Date.now() }); cs.tv[k] = w; ctx.opgeslagen?.(); if (k === 'sjabloon') ctx.herteken(); } catch { meld('Opslaan mislukt.'); }
     return true;
   }
   return false;

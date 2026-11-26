@@ -1,0 +1,9 @@
+/* Lettertypen voor de tv-sjablonen (kantine-tv). Zelf gehost, OFL-licentie; alleen geladen op de tv-pagina. */
+@font-face{font-family:'Barlow Condensed';font-style:normal;font-weight:900;font-display:swap;src:url('barlow-condensed-latin-900-normal.woff2') format('woff2');}
+@font-face{font-family:'Barlow Condensed';font-style:italic;font-weight:900;font-display:swap;src:url('barlow-condensed-latin-900-italic.woff2') format('woff2');}
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:700;font-display:swap;src:url('jetbrains-mono-latin-700-normal.woff2') format('woff2');}
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:800;font-display:swap;src:url('jetbrains-mono-latin-800-normal.woff2') format('woff2');}
+@font-face{font-family:'Doto';font-style:normal;font-weight:900;font-display:swap;src:url('doto-latin-900-normal.woff2') format('woff2');}
+@font-face{font-family:'Instrument Serif';font-style:normal;font-weight:400;font-display:swap;src:url('instrument-serif-latin-400-normal.woff2') format('woff2');}
+@font-face{font-family:'Instrument Serif';font-style:italic;font-weight:400;font-display:swap;src:url('instrument-serif-latin-400-italic.woff2') format('woff2');}
+@font-face{font-family:'Permanent Marker';font-style:normal;font-weight:400;font-display:swap;src:url('permanent-marker-latin-400-normal.woff2') format('woff2');}
