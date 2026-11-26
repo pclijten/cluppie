@@ -12,7 +12,7 @@
    club-evaluaties.js) — de rest van de app heeft deze library nooit
    nodig, dus pas ophalen op het moment dat een trainer echt een
    training opent. */
-import { meld, bewaakTerug, vangnetStilTerugAlsNodig } from './state.js?v=20261127v';
+import { meld, bewaakTerug, vangnetStilTerugAlsNodig } from './state.js?v=20261127y';
 
 const PDFJS_BASE = 'vendor/pdfjs-3/';   // zelf gehost (AVG: geen CDN-verbinding)
 

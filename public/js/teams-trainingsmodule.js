@@ -18,27 +18,26 @@
    Tabblad: 'trainingsmodule'. Importeert NIET uit teams.js (geen kringimport); teams.js geeft
    zetTeamTab mee aan koppelTrainingsmodule(). */
 import { db, collection, addDoc, setDoc, getDoc, getDocs, deleteDoc, doc, functions, httpsCallable, serverTimestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261127v';
-import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } from './config.js?v=20261127v';
-import { aiAan, aiDoel } from './clubconfig.js?v=20261127v';
+import { S, esc, meld } from './state.js?v=20261127y';
+import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } from './config.js?v=20261127y';
+import { aiAan, aiDoel } from './clubconfig.js?v=20261127y';
 import { ico } from './icons.js?v=20261127b';
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261126g';
-import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261126g';
-import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, kiesDuur, SLOT_NAAM, groepsindeling, opbouwVoor, WEER } from './trainingsplanner.js?v=20261127v';
+import { BIEB, basisGeladen, laadBasis, vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261127y';
+import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, kiesDuur, SLOT_NAAM, groepsindeling, opbouwVoor, WEER } from './trainingsplanner.js?v=20261127y';
 import { MATERIAAL, MATERIAAL_NAAM, PRESETS, presetVan, VELDEN, schoonContext, behoefte, haalbaar, valtAf, tipTekst } from './trainingscontext-logica.js?v=20261019a';
 import { htmlZevenVelden, STANDAARD_OPEN } from './oefenkaart.js?v=20261127p';
 import { maak3DBlok, heeftWebGL } from './scene3d.js?v=20261126p';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
 import { TERUGBLIK_VRAGEN, zetAntwoord, terugblikKlaar, terugblikSamenvatting, signaalVormBewaard, signaalVormGewisseld, signaalTerugblik, signaalMateriaal, signaalGat, gatRedenen } from './leren-logica.js?v=20261019b';
-import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261127v';
+import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261127y';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261121b';
-import { positieWeek, seizoensweekOp, weekKalender, standaardVrij, maandagVan, seizoenStartJaar } from './seizoensplan-logica.js?v=20261127v';
-import { trainingenRef } from './seizoensplan-trainingen.js?v=20261127v';
-import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261127v';
-import { oefeningVan, geplandeTraining, vormIdsVan, rondBlok } from './seizoensplan-club.js?v=20261127v';
-import { onderdeelAan } from './onderdelen.js?v=20261127v';
+import { positieWeek, seizoensweekOp, weekKalender, standaardVrij, maandagVan, seizoenStartJaar } from './seizoensplan-logica.js?v=20261127y';
+import { trainingenRef } from './seizoensplan-trainingen.js?v=20261127y';
+import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261127y';
+import { oefeningVan, geplandeTraining, vormIdsVan, rondBlok } from './seizoensplan-club.js?v=20261127y';
+import { onderdeelAan } from './onderdelen.js?v=20261127y';
 /* [20261116h] de speelwijze als rode draad: leerdoel, coachwoorden, vormen die het principe trainen en de regel in het partijspel */
-import { speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad } from './speelwijze.js?v=20261127v';
+import { speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad } from './speelwijze.js?v=20261127y';
 import { rodeDraad, principe as principeOpId, principeVoorThema, principeVanVorm, LESOPBOUW } from './speelwijze-logica.js?v=20261127p';
 import { htmlDraadKaart, htmlPrincipeChip } from './speelwijze-html.js?v=20261127p';
 
@@ -147,6 +146,16 @@ function maak(){
 
 /* ---------- HTML ---------- */
 export function htmlTrainingsmodule(){
+  /* [20261127y] zonder de basis van de bibliotheek valt er nog niets samen te stellen: eerst laden, dan tekenen */
+  if (!basisGeladen()){
+    laadBasis().then(() => { if (!document.getElementById('tmRoot')) return; bereidVoor(); teken(); })
+      .catch(() => { const r = document.getElementById('tmRoot'); if (r) r.innerHTML = '<div class="tm-info">De trainingen konden niet laden. Controleer je verbinding.</div>'; });
+    return `<div id="tmRoot" class="tm"><div class="tm-info">Trainingen laden…</div></div>`;
+  }
+  bereidVoor();
+  return `<div id="tmRoot" class="tm">${htmlInhoud()}</div>`;
+}
+function bereidVoor(){
   const t = staat();
   if (S._tmVoorinvul){ Object.assign(t, S._tmVoorinvul); t.duur = kiesDuur(t.duur); t.week = isoVan(datumUit(t.datum)).week; t.nHand = false; t.bewaardId = null; if (!('vervangt' in S._tmVoorinvul)) t.vervangt = zoekGepland(t.datum)?.id || null; S._tmVoorinvul = null; maak(); }
   if (!t.plan) maak();
@@ -161,7 +170,6 @@ export function htmlTrainingsmodule(){
   if (!speelwijzeGeladen()) laadSpeelwijze().then(() => { const u = staat(); if (!speelwijzeNu()) return; if (u.bewaardId) markeerSpeelwijze(u.plan); else maak(); teken(); }).catch(() => {});
   if (!t.lijst) laadBewaard();
   if (!t.cxGeladen) laadContext();
-  return `<div id="tmRoot" class="tm">${htmlInhoud()}</div>`;
 }
 /* [20261113b] Indeling: instellingen (links op desktop, vast in beeld), de training als tijdlijn
    (rechts), bewaarde trainingen onder de instellingen. Op de telefoon onder elkaar zoals altijd. */
@@ -371,7 +379,7 @@ async function bewaar(){
   const t = staat(), p = t.plan; if (!p || t.bewaardId) return;
   try {
     const ref = await addDoc(collection(db, 'teams', S.teamId, 'trainingsplannen'), {
-      profiel: { ...p.profiel }, knop: { ...t.knop }, bibliotheekVersie: BIBLIOTHEEK.versie,
+      profiel: { ...p.profiel }, knop: { ...t.knop }, bibliotheekVersie: BIEB.versie,
       onderdelen: p.onderdelen.map(o => ({ slot: o.slot, minuten: o.minuten, vormId: o.vormId })), afsluitingId: p.afsluiting?.vormId || null,
       context: schoonContext(t.cx), seizoen: S.huidigSeizoen || SEIZOEN_FALLBACK, door: S.user?.uid || null, gemaaktMs: Date.now(),
       ...(t.vervangt ? { vervangt: t.vervangt } : {}),

@@ -8,7 +8,7 @@
    Gebruikt dezelfde overlay-aanpak en terug-bewaking als pdf-viewer.js, zodat de
    Android-terugknop / veeg-terug de weergave sluit i.p.v. de app te verlaten. */
 
-import { bewaakTerug, vangnetStilTerugAlsNodig, esc, terugLaag } from './state.js?v=20261127v';
+import { bewaakTerug, vangnetStilTerugAlsNodig, esc, terugLaag } from './state.js?v=20261127y';
 import { principe as principeOpId } from './speelwijze-logica.js?v=20261127p';
 import { htmlPrincipeChip } from './speelwijze-html.js?v=20261127p';
 import { maak3DBlok, heeftWebGL } from './scene3d.js?v=20261126p';
@@ -48,7 +48,7 @@ export function sluitTrainingWeergave(){
   _overlay.classList.remove('open');
   _overlay.querySelector('.trw-stage').innerHTML = '';
   _overlay.querySelector('.tl-start').hidden = true; _overlay.querySelector('.tl-live').hidden = true; _overlay.classList.remove('tl-loopt');
-  import('./training-tijdlijn.js?v=20261127v').then(m => m.sluitUitzet()).catch(() => {});
+  import('./training-tijdlijn.js?v=20261127y').then(m => m.sluitUitzet()).catch(() => {});
   _overlay._beurt = (_overlay._beurt || 0) + 1;                 /* een open-aanroep die nog laadt, vervalt */
   if (_stopVandaag){ _stopVandaag(); _stopVandaag = null; }
   // notitie-knop uit de balk verwijderen zodat een volgende training schoon start
@@ -58,10 +58,10 @@ export function sluitTrainingWeergave(){
   // ruimt de deel-knop al op zijn eigen manier op).
   const nb = _overlay.querySelector('.trw-notitie-knop:not(.trw-deel-knop)');
   if (nb) nb.remove();
-  import('./training-aantekeningen.js?v=20261127v').then(m => m.resetAantekeningen()).catch(() => {});
-  import('./training-video.js?v=20261127v').then(m => m.resetTrainingVideos()).catch(() => {});
-  import('./training-tactiek.js?v=20261127v').then(m => m.resetTrainingTactiek()).catch(() => {});
-  import('./training-delen.js?v=20261127v').then(m => m.resetTrainingDelen()).catch(() => {});
+  import('./training-aantekeningen.js?v=20261127y').then(m => m.resetAantekeningen()).catch(() => {});
+  import('./training-video.js?v=20261127y').then(m => m.resetTrainingVideos()).catch(() => {});
+  import('./training-tactiek.js?v=20261127y').then(m => m.resetTrainingTactiek()).catch(() => {});
+  import('./training-delen.js?v=20261127y').then(m => m.resetTrainingDelen()).catch(() => {});
   vangnetStilTerugAlsNodig(wasOpen);
 }
 
@@ -218,7 +218,7 @@ async function zet3D(el){
   if (el._blok || el._bezig || !el.isConnected || !kan3D()) return;
   el._bezig = true;
   try {
-    const { vormOpId } = await import('./bibliotheek.js?v=20261126g');
+    const { vormOpId } = await import('./bibliotheek.js?v=20261127y');
     const v = vormOpId(el.dataset.trwVorm);
     if (!v){ el.classList.remove('wacht'); el.style.minHeight = ''; return; }      /* vorm bestaat niet meer: de tekening blijft */
     if (el.isConnected && el._inBeeld && !el._blok) plaats3D(el, maak3DBlok(v, v.veld));
@@ -271,14 +271,14 @@ export async function openTrainingWeergave({ titel, meta, oefeningen, diagramUrl
 
   let TV = null;
   if (vandaag && teamId){
-    try { TV = await import('./training-vandaag.js?v=20261127v'); } catch (e){ TV = null; }
+    try { TV = await import('./training-vandaag.js?v=20261127y'); } catch (e){ TV = null; }
     if (el._beurt !== beurt) return;
   }
   /* [20261120k] de tijdlijn: fase, duur en veld komen uit de vorm in de bibliotheek (als die er is) */
   let TL = null, vormVan = () => null;
-  try { TL = await import('./training-tijdlijn.js?v=20261127v'); } catch (e){ TL = null; }
+  try { TL = await import('./training-tijdlijn.js?v=20261127y'); } catch (e){ TL = null; }
   if (TL && (oefeningen || []).some(o => o?.bron?.vormId)){
-    try { const B = await import('./bibliotheek.js?v=20261126g'); vormVan = B.vormOpId; } catch (e){ /* zonder bibliotheek: tijdlijn zonder fase en veld */ }
+    try { const B = await import('./bibliotheek.js?v=20261127y'); vormVan = B.vormOpId; } catch (e){ /* zonder bibliotheek: tijdlijn zonder fase en veld */ }
   }
   if (el._beurt !== beurt) return;
   const desk = () => document.documentElement.classList.contains('desk') && window.matchMedia?.('(min-width:1100px)').matches;
@@ -292,10 +292,10 @@ export async function openTrainingWeergave({ titel, meta, oefeningen, diagramUrl
      precies zoals bij sluiten, en dan opnieuw koppelen aan de nieuwe oefeningen. */
   const lagen = async (opnieuw) => {
     const [aant, vid, tac, del] = await Promise.all([
-      import('./training-aantekeningen.js?v=20261127v').catch(() => null),
-      import('./training-video.js?v=20261127v').catch(() => null),
-      import('./training-tactiek.js?v=20261127v').catch(() => null),
-      import('./training-delen.js?v=20261127v').catch(() => null),
+      import('./training-aantekeningen.js?v=20261127y').catch(() => null),
+      import('./training-video.js?v=20261127y').catch(() => null),
+      import('./training-tactiek.js?v=20261127y').catch(() => null),
+      import('./training-delen.js?v=20261127y').catch(() => null),
     ]);
     if (el._beurt !== beurt || !el.classList.contains('open')) return;
     const veilig = f => { try { f(); } catch (e){ console.warn('[training] laag koppelen mislukt', e); } };

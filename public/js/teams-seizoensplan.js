@@ -19,21 +19,20 @@
 
    Tabblad: 'seizoensplan'. Importeert NIET uit teams.js; teams.js geeft zetTeamTab mee. */
 import { db, doc, collection, getDoc, getDocs, setDoc, addDoc, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261127v';
-import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261127v';
-import { aiAan, aiDoel } from './clubconfig.js?v=20261127v';
-import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261127v';
-import { trainingenVanPlan, planVoorTeam } from './seizoensplan-club.js?v=20261127v';
-import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261127v';
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261126g';
-import { vormen, laadBibliotheek } from './bibliotheek.js?v=20261126g';
-import { FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261127v';
+import { S, esc, meld } from './state.js?v=20261127y';
+import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261127y';
+import { aiAan, aiDoel } from './clubconfig.js?v=20261127y';
+import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261127y';
+import { trainingenVanPlan, planVoorTeam } from './seizoensplan-club.js?v=20261127y';
+import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261127y';
+import { BIEB, basisGeladen, laadBasis, vormen, laadBibliotheek } from './bibliotheek.js?v=20261127y';
+import { FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261127y';
 import {
   MODELLEN, ACCENTEN, maakSeizoensplan, weekKalender, herreken, standaardVrij, maandagVan, beschikbareThemas, themaVolgorde,
   valideerBlokken, positieOp, positieWeek, teamSignalen, stelBijsturingVoor, pasVoorstelToe, speelwijzeExtra, seizoenStartJaar as seizoenJaar,
-} from './seizoensplan-logica.js?v=20261127v';
+} from './seizoensplan-logica.js?v=20261127y';
 /* [20261116h] de speelwijze als rode draad: weegt mee in de themavolgorde en staat bij elk blok */
-import { speelstijlNu, speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad, speelwijzeBron } from './speelwijze.js?v=20261127v';
+import { speelstijlNu, speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad, speelwijzeBron } from './speelwijze.js?v=20261127y';
 import { speelwijzeVan, stijlVoorPlan, dekking, principeVoorThema, rodeDraad } from './speelwijze-logica.js?v=20261127p';
 import { htmlDraadKaart, htmlDekking, htmlPrincipeChip } from './speelwijze-html.js?v=20261127p';
 
@@ -82,7 +81,7 @@ function uitDoc(d){
 }
 function naarDoc(plan){
   return { model: plan.model, params: plan.params, blokken: plan.blokken.map(b => { const { van, tot, vanafWeek, totWeek, fasen, ...rest } = b; return Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== undefined)); }),
-    bibliotheekVersie: BIBLIOTHEEK.versie, bijgewerktMs: Date.now() };
+    bibliotheekVersie: BIEB.versie, bijgewerktMs: Date.now() };
 }
 function deelS(){ S._spPlan = planVan() ? { teamId: S.teamId, plan: planVan() } : null; }
 
@@ -94,6 +93,7 @@ export function laadSeizoensplan(){
 }
 async function laadNu(s){
   try {
+    await laadBasis();   /* [20261127y] het clubplan rekent met de vormen */
     const snap = await getDoc(planRef());
     if (snap.exists() && snap.data().params){ const { speelstijl, ...pr } = snap.data().params; s.eigen = uitDoc(snap.data()); s.plan = s.eigen; s.form = { ...s.form, ...pr, model: snap.data().model, speelwijze: speelstijl !== null }; s.tab = s.tab === 'opzet' ? 'jaarlijn' : s.tab; deelS(); }
     if (S.team?.club){
@@ -119,6 +119,11 @@ export { laadSeizoensplan as laadSeizoensplanVoorTeam };
 /* ---------- HTML ---------- */
 export function htmlSeizoensplan(){
   const s = staat();
+  if (!basisGeladen()){
+    laadBasis().then(() => { if (document.getElementById('spRoot')) teken(); }).catch(() => {});
+    if (!s.geladen) laadSeizoensplan();
+    return `<div id="spRoot" class="tm sp"><div class="tm-info">Seizoensplan laden…</div></div>`;
+  }
   if (!s.geladen) laadSeizoensplan();
   if (!speelwijzeGeladen()) laadSpeelwijze().then(() => teken()).catch(() => {});
   return `<div id="spRoot" class="tm sp">${htmlInhoud()}</div>`;
@@ -286,7 +291,7 @@ function maakVanForm(blokkenUitAI){
     herreken(blokken, det.kal);
     blokken.forEach(b => { if (!b.waarom) b.waarom = `Voorgesteld door de AI binnen model “${MODELLEN[f.model].naam}” en gecontroleerd door de app.`; });
   }
-  return { teamId: S.teamId, model: f.model, params, kal: det.kal, blokken, trainingsweken: det.trainingsweken, bibliotheekVersie: BIBLIOTHEEK.versie };
+  return { teamId: S.teamId, model: f.model, params, kal: det.kal, blokken, trainingsweken: det.trainingsweken, bibliotheekVersie: BIEB.versie };
 }
 async function bewaarPlan(plan){
   const s = staat();

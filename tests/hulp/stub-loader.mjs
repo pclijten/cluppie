@@ -19,3 +19,16 @@ globalThis.history ??= { pushState: leeg, replaceState: leeg };
 globalThis.location ??= { origin: 'https://www.cluppie.io', pathname: '/', search: '', hash: '' };
 try { globalThis.navigator ??= { userAgent: 'node' }; } catch (e) {}
 globalThis.matchMedia ??= () => ({ matches: false, addEventListener: leeg });
+
+/* [20261127y] De basis van de trainingsbibliotheek laadt in de app pas als hij nodig is (laadBasis()).
+   De tests rekenen erop dat hij er meteen is: hier vooraf laden, voor de module zonder ?v= (zoals tests hem
+   importeren) en met de ?v= waarmee de app-modules hem importeren. */
+{
+  const fs = await import('node:fs');
+  const bron = fs.readFileSync(new URL('../../public/js/trainingsplanner.js', import.meta.url), 'utf8');
+  const v = (/bibliotheek\.js\?v=([0-9a-z]+)/.exec(bron) || [])[1];
+  for (const q of ['', ...(v ? [`?v=${v}`] : [])]){
+    const m = await import(new URL(`../../public/js/bibliotheek.js${q}`, import.meta.url).href);
+    await m.laadBasis();
+  }
+}
