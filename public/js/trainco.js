@@ -21,14 +21,14 @@
    Rechten staan in firestore.rules (zie TRAININGSCOORDINATOR-RULES.md); dit
    bestand levert alleen de weergave. */
 import { auth, db, signOut, collection, query, where, onSnapshot, getDocs } from './firebase.js?v=20261011g';
-import { S, esc, bewaakTerug, doeTerug } from './state.js?v=20261127r';
-import { BOUWEN, isoWeek, youtubeId, youtubeThumb, youtubeWatch } from './config.js?v=20261127r';
-import { bouwVanTeam, eigenBouwenVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261127r';
-import { oefHtml, diagramVoorOefening, openLightbox } from './training-weergave.js?v=20261127r';
-import { logoImgVoorDoc } from './clubconfig.js?v=20261127r';
+import { S, esc, bewaakTerug, doeTerug } from './state.js?v=20261127t';
+import { BOUWEN, isoWeek, youtubeId, youtubeThumb, youtubeWatch } from './config.js?v=20261127t';
+import { bouwVanTeam, eigenBouwenVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261127t';
+import { oefHtml, diagramVoorOefening, openLightbox } from './training-weergave.js?v=20261127t';
+import { logoImgVoorDoc } from './clubconfig.js?v=20261127t';
 import { rolNaam as clubRolNaam } from './rolnamen.js?v=20261120c';   /* [20261120c] eigen rolnamen van de club */
 import { ico } from './icons.js?v=20261127b';
-import { momentenVanTeam, DAGEN_LANG, DAGEN_KORT } from './trainingsmomenten.js?v=20261127r';
+import { momentenVanTeam, DAGEN_LANG, DAGEN_KORT } from './trainingsmomenten.js?v=20261127t';
 
 const T = {
   club: null, teams: [], trainingen: [], videos: [], laden: { teams: true, trainingen: true }, fout: '',

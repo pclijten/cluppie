@@ -9,10 +9,10 @@
    vrijwilligersBank/{id}/aanmeldingen (naam en contact, alleen clubbeheer en de aanmelder zelf).
    Krijgt alles van activiteiten.js via ctx. */
 import { db, doc, collection, query, where, getDocs, setDoc, updateDoc, deleteDoc, deleteField, onSnapshot } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261127r';
+import { S, esc, meld } from './state.js?v=20261127t';
 import { ico } from './icons.js?v=20261127b';
-import { liveId } from './toernooi-logica.js?v=20261127r';
-import * as V from './vrijwilligers-logica.js?v=20261127r';
+import { liveId } from './toernooi-logica.js?v=20261127t';
+import * as V from './vrijwilligers-logica.js?v=20261127t';
 
 const vb = { clubId: '', bank: undefined, aanm: null, stops: [], qrVoor: '', qr: '', filter: '' };
 const opt = (w, t, sel) => `<option value="${esc(w)}"${sel ? ' selected' : ''}>${esc(t)}</option>`;

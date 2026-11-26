@@ -18,7 +18,7 @@
    zonder dat de coach alle tabbladen hoeft te sluiten.
    ================================================================ */
 
-const CACHE_VERSIE = 'cluppie-v20261127r';
+const CACHE_VERSIE = 'cluppie-v20261127t';
 
 /* Minimale schil die we bij installatie alvast klaarzetten. De overige
    bestanden (JS-modules, iconen, fonts van gstatic) worden vanzelf
