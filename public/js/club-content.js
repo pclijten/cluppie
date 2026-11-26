@@ -8,11 +8,11 @@
    Zichtbaar voor elke clubbeheerder (isBeheerder(), zie club.js). De echte
    afdwinging van wie waar mag schrijven staat in de Firestore-regels. */
 import { ico } from './icons.js?v=20261126w';
-import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261127a';
+import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261127c';
 import {
   startContentAdminListener, opslaanContent, verwijderContent, seedContentNaarFirestore, kopieerStandaardNaarClub
-} from './content.js?v=20261127a';
-import { kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261127a';
+} from './content.js?v=20261127c';
+import { kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261127c';
 
 const scope = () => (S._contentScope === 'globaal' && isPlatformBeheerder()) ? 'globaal' : 'club';
 const categorieLabel = () => ({
@@ -142,7 +142,7 @@ export function koppelClubContent(v, herteken){
     catch(e){ meld('Kopiëren mislukt: ' + (e.code || e.message)); }
   });
   v.querySelector('#btnContentNieuw')?.addEventListener('click', () => modalContentBewerk(null));
-  v.querySelector('#btnBeleidsplan')?.addEventListener('click', () => import('./club-beleidsplan.js?v=20261127a').then(m => m.openBeleidsplanImport()));
+  v.querySelector('#btnBeleidsplan')?.addEventListener('click', () => import('./club-beleidsplan.js?v=20261127c').then(m => m.openBeleidsplanImport()));
   v.querySelector('#btnContentSeed')?.addEventListener('click', async () => {
     meld('Bezig met seeden…');
     try {
