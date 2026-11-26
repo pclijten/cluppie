@@ -19,21 +19,21 @@
 
    Tabblad: 'seizoensplan'. Importeert NIET uit teams.js; teams.js geeft zetTeamTab mee. */
 import { db, doc, collection, getDoc, getDocs, setDoc, addDoc, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261126z';
-import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261126z';
-import { aiAan, aiDoel } from './clubconfig.js?v=20261126z';
-import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261126z';
-import { trainingenVanPlan, planVoorTeam } from './seizoensplan-club.js?v=20261126z';
-import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261126z';
+import { S, esc, meld } from './state.js?v=20261127a';
+import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261127a';
+import { aiAan, aiDoel } from './clubconfig.js?v=20261127a';
+import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261127a';
+import { trainingenVanPlan, planVoorTeam } from './seizoensplan-club.js?v=20261127a';
+import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261127a';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261126g';
 import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261126g';
-import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261126z';
+import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261127a';
 import {
   MODELLEN, ACCENTEN, maakSeizoensplan, weekKalender, herreken, standaardVrij, maandagVan, beschikbareThemas, themaVolgorde,
   valideerBlokken, positieOp, positieWeek, teamSignalen, stelBijsturingVoor, pasVoorstelToe, speelwijzeExtra, seizoenStartJaar as seizoenJaar,
-} from './seizoensplan-logica.js?v=20261126z';
+} from './seizoensplan-logica.js?v=20261127a';
 /* [20261116h] de speelwijze als rode draad: weegt mee in de themavolgorde en staat bij elk blok */
-import { speelstijlNu, speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad, speelwijzeBron } from './speelwijze.js?v=20261126z';
+import { speelstijlNu, speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad, speelwijzeBron } from './speelwijze.js?v=20261127a';
 import { speelwijzeVan, stijlVoorPlan, dekking, principeVoorThema, rodeDraad } from './speelwijze-logica.js?v=20261116j';
 import { htmlDraadKaart, htmlDekking, htmlPrincipeChip } from './speelwijze-html.js?v=20261116j';
 

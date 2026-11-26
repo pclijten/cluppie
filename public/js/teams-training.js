@@ -8,19 +8,19 @@ import {
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, speler, initialen, openModal, sluitModal, toon, isBeheerder
-} from './state.js?v=20261126z';
-import { telGebruik } from './tracker.js?v=20261126z';
-import { voorbeeldTeamcode } from './clubconfig.js?v=20261126z';
+} from './state.js?v=20261127a';
+import { telGebruik } from './tracker.js?v=20261127a';
+import { voorbeeldTeamcode } from './clubconfig.js?v=20261127a';
 import { ico } from './icons.js?v=20261126w';
 
 import {
   CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, youtubeId, youtubeThumb, youtubeWatch,
   SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo, isoWeek,
   catLabel,
-} from './config.js?v=20261126z';
-import { onderdeelAan } from './onderdelen.js?v=20261126z';
-import { htmlKompas } from './teams-leerlijn.js?v=20261126z';
-import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261126z';
+} from './config.js?v=20261127a';
+import { onderdeelAan } from './onderdelen.js?v=20261127a';
+import { htmlKompas } from './teams-leerlijn.js?v=20261127a';
+import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261127a';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
 import { spelersOpTraining } from './uitleen-regels.js?v=20261113b';
 import {
@@ -651,6 +651,7 @@ export function htmlInstellingen(){
     </div>
     <div class="kaart">
       <div class="sectie-kop" style="margin-top:0">Mijn account</div>
+      <div id="iPushPlek"></div>
       <div id="iKlikPlek"></div>
       <button class="knop licht vol" id="iPrivacy">Privacy &amp; mijn gegevens</button>
     </div>

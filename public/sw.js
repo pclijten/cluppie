@@ -18,7 +18,7 @@
    zonder dat de coach alle tabbladen hoeft te sluiten.
    ================================================================ */
 
-const CACHE_VERSIE = 'cluppie-v20261126z';
+const CACHE_VERSIE = 'cluppie-v20261127a';
 
 /* Minimale schil die we bij installatie alvast klaarzetten. De overige
    bestanden (JS-modules, iconen, fonts van gstatic) worden vanzelf
@@ -126,7 +126,7 @@ self.addEventListener('push', (e) => {
   const titel = d.titel || 'Teamkamer';
   const opties = { body: d.tekst || '', icon: 'icons/icon-192.png', badge: 'icons/icon-192.png',
     tag: d.tag || undefined, renotify: !!d.tag, data: { url: d.url || 'kamer.html' } };
-  e.waitUntil(Promise.all([self.registration.showNotification(titel, opties), badgeErbij()]));
+  e.waitUntil(Promise.all([self.registration.showNotification(titel, opties), d.badge === '0' ? null : badgeErbij()]));
 });
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
@@ -135,10 +135,14 @@ self.addEventListener('notificationclick', (e) => {
   const url = doel.origin === self.location.origin ? doel.href : new URL('kamer.html', self.location.href).href;
   e.waitUntil((async () => {
     const lijst = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    const kamer = lijst.find(c => new URL(c.url).pathname.endsWith('/kamer.html'));
-    if (kamer){
-      try { await kamer.focus(); } catch (_){ /* geen focus */ }
-      try { return await kamer.navigate(url); } catch (_){ /* niet gestuurd door deze worker */ }
+    /* een open venster van dezelfde pagina (teamkamer of trainersapp) hergebruiken */
+    const pad = (u) => { const p = new URL(u).pathname; return p.endsWith('/') ? p + 'index.html' : p; };
+    const open = lijst.find(c => pad(c.url) === pad(url));
+    if (open){
+      try { await open.focus(); } catch (_){ /* geen focus */ }
+      /* de teamkamer springt naar de poll; de trainersapp toont het bericht al bovenaan, die alleen naar voren */
+      if (pad(url).endsWith('/kamer.html') && open.url !== url){ try { return await open.navigate(url); } catch (_){ /* niet gestuurd door deze worker */ } }
+      return;
     }
     return self.clients.openWindow(url);
   })());

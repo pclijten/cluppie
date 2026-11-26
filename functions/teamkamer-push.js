@@ -67,7 +67,8 @@ async function stuur(db, uids, m){
     } catch (e){ logger.warn('[kamerPush] tokens lezen', e.message || e); }
   }
   if (!tokens.length) return { ouders: 0, toestellen: 0 };
-  const data = { titel: String(m.titel), tekst: String(m.tekst), url: String(m.url), tag: String(m.tag || '') };
+  /* badge: '0' = geen cijfer op het app-icoon (meldingen voor trainers; de trainersapp houdt geen teller bij) */
+  const data = { titel: String(m.titel), tekst: String(m.tekst), url: String(m.url), tag: String(m.tag || ''), badge: m.badge === false ? '0' : '1' };
   let goed = 0; const bereikt = new Set();
   try {
     const messaging = require('firebase-admin/messaging').getMessaging();

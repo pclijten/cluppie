@@ -207,6 +207,7 @@ exports.verhuisLogin = require('./verhuizing').verhuisLogin;
 exports.bewaarOpruimen = require('./bewaartermijn').bewaarOpruimen;
 /* [20261116m] Teamkamer: ouders en spelers (kopie, toegang, polls). Zie functions/teamkamer.js. */
 Object.assign(exports, require('./teamkamer').functies);
+exports.clubBericht = require('./bericht-push').clubBericht;   // [20261126m] pushmelding naar trainers bij een bericht van de club
 
 /* ==================== 2. AI-FUNCTIES ==================== */
 
