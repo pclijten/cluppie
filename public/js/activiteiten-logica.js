@@ -402,14 +402,73 @@ export function jsonExport(act, { diensten = null, aanmeldingen = [] } = {}){
 export function jsonLees(tekstIn){
   let o;
   try { o = JSON.parse(String(tekstIn || '').replace(/^\ufeff/, '')); } catch { return { fout: 'Dit is geen geldig JSON-bestand.' }; }
-  if (o?.soort === 'cluppie-activiteit' && o.activiteit && typeof o.activiteit === 'object'){
+  if (o?.soort === 'cluppie-activiteit'){
+    if (Number(o.versie) > 1) return { fout: 'Dit bestand komt uit een nieuwere versie van Cluppie. Ververs de app en probeer het opnieuw.' };
     const a = o.activiteit;
+    if (!a || typeof a !== 'object' || Array.isArray(a)) return { fout: 'In dit bestand staat geen activiteit.' };
     if (!tekst(a.naam)) return { fout: 'De activiteit heeft geen naam.' };
-    return { soort: 'activiteit', data: a, diensten: o.diensten && typeof o.diensten === 'object' ? o.diensten : {} };
+    const diensten = o.diensten && typeof o.diensten === 'object' && !Array.isArray(o.diensten) ? o.diensten : {};
+    return { soort: 'activiteit', data: a, diensten, inhoud: importInhoud(a, diensten) };
   }
   const sj = o?.soort === 'cluppie-sjabloon' ? o.sjabloon : o;
   const f = sjabloonFouten(sj);
   return f.length ? { fout: f.join(' ') } : { soort: 'sjabloon', data: sj };
+}
+
+/* ---------- [20261127m] activiteit uit een bestand (bv. van een andere club) ----------
+   Het bestand komt van buiten. Alleen bekende velden gaan mee, met de grenzen van de app, en alleen ids die als
+   veldnaam in Firestore kunnen (geen punten). Nooit mee: comiteUids en uid's (die geven toegang), teams van de
+   andere club, de deellink, wie het maakte, aanmeldingen. Het toernooi schoont toernooi-logica.js (schoonToernooi). */
+const num = (v, min, max) => (v === null || v === undefined || v === '' || typeof v === 'boolean' ? null : getal(v, min, max));
+const goedId = id => /^[\w-]{1,40}$/.test(String(id || ''));
+const isMap = m => !!m && typeof m === 'object' && !Array.isArray(m);
+const schoonMap = (m, max, maak) => Object.fromEntries(Object.entries(isMap(m) ? m : {}).filter(([id, x]) => goedId(id) && isMap(x)).slice(0, max)
+  .map(([id, x], i) => [id, { ...maak(x, id), volg: num(x.volg, 0, 9999) ?? i }]));
+const prog = p => ({ tijd: isTijd(p.tijd) ? p.tijd : '', duur: num(p.duur, 0, 1440) ?? 0, wat: tekst(p.wat, 120), waar: tekst(p.waar, 60), wie: tekst(p.wie, 60) });
+const naarOnderwerp = x => (goedId(x.onderwerp) ? { onderwerp: x.onderwerp } : {});
+const veiligUrl = v => { const u = String(v ?? '').trim().slice(0, 500); return /^https:\/\/[^\s"'<>]+$/i.test(u) ? u : ''; };
+export function importInhoud(a = {}, diensten = {}){
+  const n = m => Object.keys(isMap(m) ? m : {}).length, t = isMap(a.toernooi) ? a.toernooi : {};
+  return { taken: n(a.taken), comite: n(a.comite), programma: n(a.programma), diensten: n(diensten) || (Array.isArray(a.dienstenSjabloon) ? a.dienstenSjabloon.length : 0),
+    clubs: n(t.clubs), teams: n(t.teams), poules: n(t.poules), wedstrijden: Array.isArray(t.schema) ? t.schema.length : 0 };
+}
+export function schoonImport(a = {}, diensten = null){
+  const fasen = Array.isArray(a.fasen) && a.fasen.length && a.fasen.every(f => isMap(f) && goedId(f.id)) ? a.fasen.slice(0, 10).map(f => ({ id: f.id, naam: tekst(f.naam, 40) || f.id })) : FASEN.map(f => ({ ...f }));
+  const comite = schoonMap(a.comite, MAX.comite, l => ({ naam: tekst(l.naam, 60), rol: tekst(l.rol, 40) }));
+  for (const [id, l] of Object.entries(comite)) if (!l.naam) delete comite[id];
+  const lid = v => (comite[v] ? v : '');
+  const tabs = Object.fromEntries(TABS.filter(([id]) => typeof a.tabs?.[id] === 'boolean').map(([id]) => [id, a.tabs[id]]));
+  const antw = m => Object.fromEntries(Object.entries(isMap(m) ? m : {}).filter(([k, v]) => goedId(k) && typeof v === 'string').slice(0, 12).map(([k, v]) => [k, lang(v, 1000)]));
+  const uit = {
+    naam: tekst(a.naam, 80) || 'Activiteit', type: tekst(a.type, 40) || 'eigen', sjabloon: tekst(a.sjabloon, 40), datum: isIso(a.datum) ? a.datum : '',
+    start: isTijd(a.start) ? a.start : '', eind: isTijd(a.eind) ? a.eind : '', locatie: tekst(a.locatie, 80), omschrijving: lang(a.omschrijving, 600), status: 'concept',
+    tabs: { ...STD_TABS, ...tabs }, comite, comiteUids: [], rollen: (Array.isArray(a.rollen) ? a.rollen : []).map(r => tekst(r, 40)).filter(Boolean).slice(0, 20), fasen,
+    taken: schoonMap(a.taken, MAX.taken, t => ({ titel: tekst(t.titel, 200) || 'Taak', fase: fasen.some(f => f.id === t.fase) ? t.fase : faseVan(Number(t.d)),
+      eigenaar: lid(t.eigenaar), d: num(t.d, -365, 730), datum: isIso(t.datum) ? t.datum : '',
+      status: STATUS_TAAK[t.status] ? t.status : 'open', notitie: lang(t.notitie, 1000), tip: tekst(t.tip, 400), rol: tekst(t.rol, 40), ...naarOnderwerp(t), ...(isMap(t.antw) ? { antw: antw(t.antw) } : {}) })),
+    programma: schoonMap(a.programma, MAX.programma, prog), programmaB: schoonMap(a.programmaB, MAX.programma, prog),
+    planB: { tekst: lang(a.planB?.tekst, 600), actief: false }, vertraging: 0,
+    materiaal: schoonMap(a.materiaal, MAX.materiaal, m => ({ naam: tekst(m.naam, 80) || 'Spullen', aantal: Number(m.aantal) > 0 ? num(m.aantal, 1, 99999) : null, wie: comite[m.wie] ? m.wie : tekst(m.wie, 60), klaar: !!m.klaar, ...naarOnderwerp(m) })),
+    berichten: schoonMap(a.berichten, MAX.berichten, b => ({ d: num(b.d, -365, 730) ?? 0, titel: tekst(b.titel, 80), tekst: lang(b.tekst, 1000), kanaal: KANALEN[b.kanaal] ? b.kanaal : 'whatsapp', geplaatstMs: null })),
+    budget: schoonMap(a.budget, MAX.budget, p => ({ naam: tekst(p.naam, 60) || 'Post', soort: p.soort === 'in' ? 'in' : 'uit', begroot: num(p.begroot, 0, 1e7) ?? 0, werkelijk: num(p.werkelijk, 0, 1e7), ...naarOnderwerp(p) })),
+    documenten: schoonMap(a.documenten, MAX.documenten, d => ({ naam: tekst(d.naam, 80) || 'Document', url: veiligUrl(d.url) })),
+    checks: schoonMap(a.checks, MAX.checks, c => ({ titel: tekst(c.titel, 160), klaar: !!c.klaar })),
+    deelnemers: { verwacht: num(a.deelnemers?.verwacht, 0, 100000), notitie: lang(a.deelnemers?.notitie, 600) },
+    evaluatie: { goed: lang(a.evaluatie?.goed, 600), beter: lang(a.evaluatie?.beter, 600), tips: Object.fromEntries(Object.entries(isMap(a.evaluatie?.tips) ? a.evaluatie.tips : {}).filter(([k, v]) => goedId(k) && typeof v === 'string').slice(0, MAX.taken).map(([k, v]) => [k, tekst(v, 300)])) },
+    teams: [], agenda: false, kamer: false, deelId: '',
+  };
+  for (const id of Object.keys(uit.documenten)) if (!uit.documenten[id].url) delete uit.documenten[id];
+  for (const id of Object.keys(uit.checks)) if (!uit.checks[id].titel) delete uit.checks[id];
+  if (isMap(a.onderwerpen)) uit.onderwerpen = Object.fromEntries(Object.entries(a.onderwerpen).filter(([id, o]) => goedId(id) && isMap(o)).slice(0, 20).map(([id, o]) => [id, {
+    ...(o.naam ? { naam: tekst(o.naam, 60) } : {}), ...(o.icoon && goedId(o.icoon) ? { icoon: o.icoon } : {}), ...(lid(o.eigenaar) ? { eigenaar: o.eigenaar } : {}),
+    ...(Number.isFinite(Number(o.volg)) ? { volg: num(o.volg, 0, 9999) } : {}), ...(o.eigen ? { eigen: true } : {}), ...(o.weg === true ? { weg: true } : {}),
+    vragen: Object.fromEntries(Object.entries(isMap(o.vragen) ? o.vragen : {}).filter(([vid, v]) => goedId(vid) && isMap(v)).slice(0, 15).map(([vid, v]) => [vid,
+      v.weg === true ? { weg: true } : { ...(v.vraag ? { vraag: tekst(v.vraag, 120), ph: tekst(v.ph, 120), volg: num(v.volg, 0, 9999) ?? 100 } : {}), antwoord: lang(v.antwoord, 1000) }])),
+  }]));
+  const bronDiensten = isMap(diensten) && Object.keys(diensten).length ? gesorteerd(diensten) : (Array.isArray(a.dienstenSjabloon) ? a.dienstenSjabloon : []);
+  uit.dienstenSjabloon = bronDiensten.filter(isMap).slice(0, MAX.diensten).map(d => ({ naam: tekst(d.naam, 40) || 'Dienst', start: isTijd(d.start) ? d.start : '', eind: isTijd(d.eind) ? d.eind : '',
+    plek: tekst(d.plek, 40), nodig: num(d.nodig, 0, 99) ?? 0, ...(d.wat ? { wat: dienstWat(d.wat) } : {}) }));
+  return uit;
 }
 export const jsonSjabloon = sj => JSON.stringify({ soort: 'cluppie-sjabloon', versie: 1, sjabloon: sj }, null, 2);
 

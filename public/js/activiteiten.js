@@ -24,16 +24,17 @@
    Rekenwerk, export en import: activiteiten-logica.js (getest). Sjablonen: activiteit-sjablonen.js. */
 import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, deleteField, query, where, onSnapshot,
   serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261127m';
+import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261127n';
 import { ico } from './icons.js?v=20261127b';
 import { SJABLONEN, sjabloonVan } from './activiteit-sjablonen.js?v=20261125w';
-import * as L from './activiteiten-logica.js?v=20261126y';
-import * as D from './draaiboek-logica.js?v=20261127d';
+import * as L from './activiteiten-logica.js?v=20261127n';
+import * as D from './draaiboek-logica.js?v=20261127n';
 import { docxBestanden } from './draaiboek-docx.js?v=20261127b';
-import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261127m';
-import * as TN from './activiteit-toernooi.js?v=20261127m';
-import * as CS from './clubschermen.js?v=20261127m';
-import * as VB from './vrijwilligers.js?v=20261127m';
+import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261127n';
+import * as TN from './activiteit-toernooi.js?v=20261127n';
+import { schoonToernooi } from './toernooi-logica.js?v=20261127n';
+import * as CS from './clubschermen.js?v=20261127n';
+import * as VB from './vrijwilligers.js?v=20261127n';
 
 let A = null;
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -214,7 +215,7 @@ function htmlLijst(){
       <span class="ac-kaart-t"><b>${esc(a.naam || 'Activiteit')}</b><small>${esc([L.aftelTekst(o.dagenTot), L.STATUS_ACT[a.status] || '', a.locatie].filter(Boolean).join(' · '))}</small>
       ${o.taken.totaal ? `<span class="ac-balk"><i style="width:${o.taken.pct}%"></i></span><small>${o.taken.klaar} van ${o.taken.totaal} taken klaar${o.taken.telaat.length ? ` · <em class="rood">${o.taken.telaat.length} te laat</em>` : ''}</small>` : ''}</span></button>`;
   };
-  return `${kop('Activiteiten', S.club?.naam || '', `<button class="knop vol" data-ac="nieuw">${ico('action-add', 18)} Nieuwe activiteit</button>`)}
+  return `${kop('Activiteiten', S.club?.naam || '', `${isAdmin() ? `<label class="knop licht" title="Een activiteit of toernooi uit een bestand (JSON), bijvoorbeeld van een andere club">${ico('admin-upload', 18)} Inlezen<input type="file" accept=".json,application/json" data-ac-bestand="json" hidden></label>` : ''}<button class="knop vol" data-ac="nieuw">${ico('action-add', 18)} Nieuwe activiteit</button>`)}
     <p class="ac-zacht">Organiseer clubactiviteiten met een draaiboek dat terugplant vanaf de datum, vrijwilligersdiensten met een open link en een live dagprogramma. ${isAdmin() ? '' : 'Je ziet de activiteiten waarvan je in het comité zit.'}</p>
     ${isAdmin() ? `<div class="ac-extra"><button class="ac-extra-k" data-ac="extra" data-id="vrijwilligers">${ico('team-members', 22)}<span><b>Vrijwilligers</b><small>Waar zoekt de club mensen voor? Taken met een vaste omschrijving en een open aanmeldpagina.</small></span></button>
       <button class="ac-extra-k" data-ac="extra" data-id="schermen">${ico('communication-announcement', 22)}<span><b>Kantine-tv en sponsoren</b><small>Het programma van vandaag op de tv in de kantine, met de sponsoren van dit seizoen.</small></span></button></div>` : ''}
@@ -687,19 +688,35 @@ function vensterNieuw(){
 }
 function vensterGegevens(bron){
   A._bron = bron;
-  const naam = bron.soort === 'kopie' ? bron.act.naam : bron.sj?.naam || '';
-  A.venster = `<h2>${esc(bron.soort === 'kopie' ? 'Kopie van ' + bron.act.naam : bron.sj?.naam || 'Nieuwe activiteit')}</h2>
+  const kopie = bron.soort === 'kopie', bestand = bron.soort === 'bestand';
+  const naam = kopie || bestand ? bron.act.naam : bron.sj?.naam || '';
+  const n = bron.inhoud || {}, tel = (x, een, meer) => (x ? `${x} ${x === 1 ? een : meer}` : '');
+  const wat = bestand ? [tel(n.taken, 'taak', 'taken'), tel(n.programma, 'programmapunt', 'programmapunten'), tel(n.diensten, 'vrijwilligersdienst', 'vrijwilligersdiensten'),
+    tel(n.clubs, 'club', 'clubs'), tel(n.teams, 'team', 'teams'), tel(n.wedstrijden, 'wedstrijd', 'wedstrijden')].filter(Boolean).join(', ') : '';
+  A.venster = `<h2>${esc(kopie ? 'Kopie van ' + bron.act.naam : bestand ? 'Inlezen: ' + bron.act.naam : bron.sj?.naam || 'Nieuwe activiteit')}</h2>
+    ${bestand && wat ? `<p class="ac-zacht">In dit bestand: ${esc(wat)}.</p>` : ''}
     <label class="ac-label">Naam</label><input class="ac-in" data-kies="naam" value="${esc(naam)}" maxlength="80">
-    <label class="ac-label">Datum</label>${datumVeld('data-kies="datum"', '')}
-    ${bron.soort === 'kopie' ? '<label class="ac-schak"><input type="checkbox" data-kies="mensen" checked> <span><b>Comité en eigenaren meenemen</b></span></label>' : ''}
-    <p class="ac-zacht">${bron.soort === 'kopie' ? 'Taken staan weer open, vaste datums schuiven mee en de tips uit de evaluatie staan bij de taken.' : 'De taken worden teruggerekend vanaf deze datum.'}</p>
+    <label class="ac-label">Datum</label>${datumVeld('data-kies="datum"', bestand && L.isIso(bron.act.datum) ? bron.act.datum : '')}
+    ${kopie ? '<label class="ac-schak"><input type="checkbox" data-kies="mensen" checked> <span><b>Comité en eigenaren meenemen</b></span></label>' : ''}
+    ${bestand && n.comite ? '<label class="ac-schak"><input type="checkbox" data-kies="mensen"> <span><b>Comité en eigenaren uit het bestand meenemen</b><small class="ac-zacht"> Komt het bestand van een andere club? Laat dit uit en zet je eigen mensen erin.</small></span></label>' : ''}
+    ${bestand && (n.teams || n.wedstrijden) ? '<label class="ac-schak"><input type="checkbox" data-kies="indeling" checked> <span><b>Teams, poules en speelschema meenemen</b><small class="ac-zacht"> Zonder spelers en uitslagen.</small></span></label>' : ''}
+    <p class="ac-zacht">${kopie ? 'Taken staan weer open, vaste datums schuiven mee en de tips uit de evaluatie staan bij de taken.' : bestand ? 'Er komt een nieuwe activiteit. Taken staan open, vaste datums schuiven mee met de datum. Teams van de club, aanmeldingen en links uit het bestand gaan niet mee.' : 'De taken worden teruggerekend vanaf deze datum.'}</p>
     <div class="ac-acties"><button class="knop licht" data-ac="venster-dicht">Annuleren</button><span class="ac-groei"></span><button class="knop vol" data-ac="nieuw-maak">Aanmaken</button></div>`;
   teken();
 }
 async function maakNieuw(){
   const b = A._bron, naam = A.el.querySelector('[data-kies="naam"]')?.value || '', datum = A.el.querySelector('[data-kies="datum"]')?.value || '';
   let data;
-  if (b.soort === 'kopie') data = L.kopie(b.act, { naam, datum, door: uid(), zonderMensen: !A.el.querySelector('[data-kies="mensen"]')?.checked });
+  const mensen = !!A.el.querySelector('[data-kies="mensen"]')?.checked;
+  if (b.soort === 'kopie') data = L.kopie(b.act, { naam, datum, door: uid(), zonderMensen: !mensen });
+  else if (b.soort === 'bestand'){
+    /* [20261127m] uit een bestand: eerst alles opschonen (het komt van buiten), dan als kopie op de nieuwe datum */
+    const schoon = L.schoonImport(b.act, b.diensten);
+    data = L.kopie(schoon, { naam, datum, door: uid(), zonderMensen: !mensen });
+    delete data.vorige;
+    if (b.act.toernooi && typeof b.act.toernooi === 'object') data.toernooi = schoonToernooi(b.act.toernooi, { indeling: !!A.el.querySelector('[data-kies="indeling"]')?.checked });
+    else delete data.toernooi;
+  }
   else data = L.vanSjabloon(b.sj, { naam, datum, door: uid() });
   const dienstenOud = b.soort === 'kopie' ? b.diensten : null;
   delete data.id;
@@ -967,7 +984,7 @@ async function klik(e){
     case 'kopieer': return kopieKlembord(b.dataset.tekst);
     case 'teams-alle': return zet({ teams: (S.clubTeams || []).filter(x => x && x.id && !x.gearchiveerd).map(x => x.id).slice(0, L.MAX.teams) });
     case 'teams-geen': return zet({ teams: [] });
-    case 'veldplanner': return import('./veldplanner.js?v=20261127m').then(m => m.openVeldplanner(A.clubId));
+    case 'veldplanner': return import('./veldplanner.js?v=20261127n').then(m => m.openVeldplanner(A.clubId));
     case 'aflasten': return vensterAflasten();
     case 'aflasten-ja': return aflasten();
     case 'bericht-plaats': return plaatsBericht(id);
@@ -1121,8 +1138,8 @@ async function leesBestand(inp){
     }
     return vensterGegevens({ soort: 'sjabloon', sj: r.data });
   }
-  /* een hele activiteit: als kopie, zonder mensen (die horen bij een andere club of een ander jaar) */
-  return vensterGegevens({ soort: 'kopie', act: r.data, diensten: r.diensten });
+  /* een hele activiteit (bv. van een andere club): wordt een nieuwe activiteit, opgeschoond bij het aanmaken */
+  return vensterGegevens({ soort: 'bestand', act: r.data, diensten: r.diensten, inhoud: r.inhoud });
 }
 
 /* ---------- AI-concept ---------- */
