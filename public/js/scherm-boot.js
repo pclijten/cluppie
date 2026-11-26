@@ -11,12 +11,12 @@
    tactisch bord hieronder; elk ander sjabloon speelt tv-speler.js af. Een doelpunt (de stand van een wedstrijd gaat
    omhoog) geeft een melding over het hele scherm; clubTv.goals zegt voor welke wedstrijden (zie nieuweGoals).
    Voorbeeld bekijken zonder iets op te slaan: ?scherm=<id>&sjabloon=<id>, en &proef=1 voor proefwedstrijden met doelpunten. */
-import { auth, db, signOut, onAuthStateChanged, doc, collection, onSnapshot, getDoc } from './firebase.js?v=20261011g';
+import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, collection, onSnapshot, getDoc } from './firebase.js?v=20261011g';
 import { plaatjeOk, veiligeLink } from './toernooi-logica.js?v=20261127v';
 import { sorteer, nieuweGoals, goalKeuze, evenementId, evenementTv } from './clubscherm-logica.js?v=20261127v';
 import { sjabloonId, laadSjabloon } from './tv-sjablonen.js?v=20261127v';
 import { maakSpeler, tvModel, proefProgramma, PROEF_DIAS, standWissel, goalBand, goalStijl } from './tv-speler.js?v=20261127v';
-import { stijl as stijlLive } from './live-boot.js?v=20261127w';
+import { stijl as stijlLive } from './live-boot.js?v=20261127x';
 import { tvStijl, tvKleur, tvZet, bordHtml, logoHtml, tikHtml, diaHtml, sponsHtml, voetHtml } from './tv-stijl.js?v=20261126n';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -29,7 +29,9 @@ async function sessie(forceer){
   }
   /* [20261127w] Niet meer anoniem inloggen: een open live pagina of tv is zonder inloggen te lezen. Firebase staat
      ~100 nieuwe anonieme accounts per uur per IP-adres toe, en op een toernooi zit iedereen op dezelfde clubwifi.
-     Wie al in de app is ingelogd (comité, tv-beheer), houdt die sessie en ziet ook een dichte pagina. */
+     Wie al in de app is ingelogd (comité, tv-beheer), houdt die sessie en ziet ook een dichte pagina.
+     Alleen als lezen geweigerd wordt (forceer: oude rules, of een dichte pagina) toch anoniem inloggen. */
+  if (forceer && !auth.currentUser) await signInAnonymously(auth);
 }
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const nuMin = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
@@ -46,7 +48,10 @@ export async function bootSchermNaam(naam){
   const n = String(naam || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30);
   try {
     await authKlaar(); await sessie(false);
-    const s = n ? await getDoc(doc(db, 'tvNamen', n)) : null, tv = s?.exists() ? s.data().tv : '';
+    const lees = () => getDoc(doc(db, 'tvNamen', n));
+    let s = null;
+    if (n) try { s = await lees(); } catch (e){ if (e?.code !== 'permission-denied') throw e; await sessie(true); s = await lees(); }
+    const tv = s?.exists() ? s.data().tv : '';
     if (!tv){ el.innerHTML = melding('Deze link werkt niet (meer)', 'Vraag het bestuur om de juiste link.'); return; }
     return bootSchermPagina(tv);
   } catch { el.innerHTML = melding('Laden is niet gelukt', 'Controleer je verbinding en ververs de pagina.'); }
