@@ -8,7 +8,7 @@
    toernooiLive/{id} lezen (firestore.rules). Geen spelersnamen, niets om in te vullen.
    De pagina werkt zichzelf bij (onSnapshot); het comité vult de uitslagen in via Activiteiten. */
 import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, onSnapshot } from './firebase.js?v=20261011g';
-import * as T from './toernooi-logica.js?v=20261127n';
+import * as T from './toernooi-logica.js?v=20261127r';
 import { tvStijl, tvKleur, tvZet, bordHtml, logoHtml, tikHtml, diaHtml, sponsHtml, voetHtml } from './tv-stijl.js?v=20261126n';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -76,8 +76,10 @@ export async function bootLivePagina(liveId, { tv = false } = {}){
       <table class="lv-stand"><thead><tr><th></th><th>Team</th><th>G</th>${groot ? '<th>W</th><th>GL</th><th>V</th>' : ''}<th>DS</th><th>P</th></tr></thead><tbody>
       ${rijen.map((r, i) => `<tr class="${st.team === r.id ? 'mijn' : ''}"><td>${i + 1}</td><td>${esc(r.naam)}</td><td>${r.g}</td>${groot ? `<td>${r.w}</td><td>${r.gl}</td><td>${r.v}</td>` : ''}<td>${r.saldo > 0 ? '+' : ''}${r.saldo}</td><td><b>${r.pnt}</b></td></tr>`).join('')}</tbody></table></section>` : ''; };
   /* Finales (knock-out) bovenaan de stand, met wie er nog in zit */
-  const koKaart = d => { const ws = (d.schema || []).filter(w => w.ko).sort((a, b) => T.naarMin(a.t) - T.naarMin(b.t));
-    return ws.length ? `<section class="lv-kaart"><h2>🏆 Finales</h2>${ws.map(w => wed(w, { tijd: true })).join('')}${ws.some(w => st.d.uitslag?.[w.id]?.w) ? '<p class="lv-zacht">* na strafschoppen</p>' : ''}</section>` : ''; };
+  const koKaart = d => { const ws = (d.schema || []).filter(w => w.ko), groepen = [...new Set(ws.map(w => w.ko))];
+    return groepen.map(g => { const lijst = ws.filter(w => w.ko === g), naamG = groepen.length > 1 ? (lijst[0].titel || '').split(' · ')[1] || '' : '';
+      const boom = T.boomHtml(lijst, { esc, naam: (w, z) => z === 'a' ? naamA(w) : naamB(w), veld: w => veld(w.v), uitslag: w => d.uitslag?.[w.id], mijn: st.team });
+      return boom ? `<section class="lv-kaart"><h2>🏆 Finales${naamG ? ` <small>${esc(naamG)}</small>` : ''}</h2>${boom}</section>` : ''; }).join(''); };
   const isVandaag = () => !st.d.datum || st.d.datum === vandaag();
   const logo = d => T.plaatjeOk(d.logo) ? `<img class="lv-logo" src="${esc(d.logo)}" alt="">` : '';
   const accent = d => /^#[0-9a-f]{6}$/i.test(d.kleur || '') ? ` style="--accent:${d.kleur}"` : '';
@@ -105,7 +107,7 @@ export async function bootLivePagina(liveId, { tv = false } = {}){
         ${ns.nu.length ? `<section class="lv-kaart"><h2><i class="lv-live"></i>Nu op het veld <small>${esc(ns.nuT)}</small></h2>${ns.nu.map(w => wed(w)).join('')}</section>` : ''}
         ${ns.straks.length ? `<section class="lv-kaart"><h2>${ns.begonnen ? 'Hierna' : 'Eerste wedstrijden'} <small>${esc(ns.straksT)}</small></h2>${ns.straks.map(w => wed(w)).join('')}</section>` : ''}
         ${!ns.nu.length && !ns.straks.length ? `<section class="lv-kaart"><p>${ns.klaar ? 'Het toernooi is afgelopen. Bekijk de eindstand.' : (d.schema || []).length ? `Het toernooi is op ${esc(datumLang(d.datum))}. Het schema staat klaar.` : 'Het speelschema volgt nog.'}</p></section>` : ''}`,
-      schema: () => schema.length ? `<section class="lv-kaart">${[...new Set(schema.map(w => w.t))].map(t => `<h3>${esc(t)}</h3>${schema.filter(w => w.t === t).map(w => wed(w)).join('')}`).join('')}</section>` : '<section class="lv-kaart"><p>Nog geen wedstrijden.</p></section>',
+      schema: () => schema.length ? `<section class="lv-kaart">${[...new Set(schema.map(w => w.t))].map(t => `<h3>${esc(t)}</h3>${schema.filter(w => w.t === t).map(w => wed(w)).join('')}`).join('')}${d.prijs?.van ? `<h3>${esc(d.prijs.van)}</h3><p>🏆 <b>Prijsuitreiking</b></p>` : ''}</section>` : '<section class="lv-kaart"><p>Nog geen wedstrijden.</p></section>',
       stand: () => (koKaart(d) + poules.filter(p => !mijn || p.id === mijn.poule).map(p => standTabel(p.id, true)).join('')) || '<section class="lv-kaart"><p>Nog geen stand.</p></section>',
       info: () => `<section class="lv-kaart">${med.map(m => `<div class="lv-med"><small>${esc(new Date(m.ms).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }))}</small><p>${esc(m.tekst)}</p></div>`).join('') || '<p>Nog geen mededelingen.</p>'}</section>
         ${teams.some(t => t.kk) ? `<section class="lv-kaart"><h2>Kleedkamers</h2>${teams.filter(t => t.kk && (!st.team || t.id === st.team)).map(t => `<div class="lv-rij"><span>${esc(t.naam)}</span><b>${esc(t.kk)}</b></div>`).join('')}</section>` : ''}`,
@@ -203,6 +205,7 @@ export function stijl(){
 .lv-dia p{font-size:var(--t-lg,18px);white-space:pre-line}
 .lv-kop{display:flex;align-items:center;gap:12px}.lv-kop>div{min-width:0}
 .lv-logo{width:56px;height:56px;object-fit:contain;flex-shrink:0;border-radius:10px;background:#fff;padding:3px}
+${T.BOOM_CSS}
 .lv-voet{text-align:center;color:var(--ink-2);font-size:var(--t-xs,12px);margin:8px 0 0}
 @media (max-width:420px){.lv-wed{grid-template-columns:52px minmax(0,1fr) 50px minmax(0,1fr)}}`;
   document.head.appendChild(s);

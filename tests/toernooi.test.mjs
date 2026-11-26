@@ -201,4 +201,25 @@ ok(T.euro(15) === '€ 15,-' && T.euro(12.5) === '€ 12,50' && T.bedrag('1e9') 
   gelijk(T.schoonToernooi(null), {}, 'toernooi-import: leeg');
 }
 
+
+// automatisch indelen: poules, speeltijd en prijsuitreiking [20261127p]
+{
+  const teams = {}; let i = 0; for (const c of ['c1', 'c2', 'c3', 'c4']) for (let k = 0; k < 3; k++){ teams['t' + i] = { naam: c + '-' + k, club: c, volg: i }; i++; }
+  const t = { start: '09:00', eind: '13:00', wissel: 3, prijs: 15, velden: { v1: { naam: 'V1', volg: 1 }, v2: { naam: 'V2', volg: 2 }, v3: { naam: 'V3', volg: 3 } }, teams };
+  const r = T.autoIndeling(t);
+  ok(r.past && T.naarMin(r.klaar) <= 13 * 60 && r.prijs.tot === r.klaar, 'auto: past binnen de tijd, met prijsuitreiking');
+  ok(Object.keys(r.teamPoule).length === 12 && Object.keys(r.poules).length >= 2, 'auto: alle teams in een poule');
+  const per = {}; for (const [tid, p] of Object.entries(r.teamPoule)) (per[p] ||= []).push(teams[tid].club);
+  ok(Object.values(per).every(l => Math.max(...['c1', 'c2', 'c3', 'c4'].map(c => l.filter(x => x === c).length)) <= 2), 'auto: clubs gespreid over de poules');
+  ok(Math.max(...Object.values(per).map(l => l.length)) - Math.min(...Object.values(per).map(l => l.length)) <= 1, 'auto: poules even groot');
+  ok(r.schema.some(w => w.fase === 'finale'), 'auto: met finale');
+  const kort = T.autoIndeling({ ...t, eind: '10:30' });
+  ok(kort.past && kort.duur < r.duur, 'auto: minder tijd geeft kortere wedstrijden');
+  const krap = T.autoIndeling({ ...t, eind: '09:20' });
+  ok(!krap.past && krap.waarschuwingen.length === 1, 'auto: past niet, met uitleg');
+  ok(T.autoIndeling({ ...t, duur: 8, duurVast: true }).duur === 8, 'auto: vaste speeltijd');
+  ok(!T.autoIndeling({ ...t, autoKo: false }).schema.some(w => w.ko), 'auto: zonder finales');
+  ok(T.autoIndeling({ ...t, eind: '' }).schema === undefined, 'auto: eindtijd nodig');
+  ok(T.prijsuitreiking({ ...t, prijs: 0, schema: r.schema }) === null && T.liveKopie({ toernooi: { ...t, duur: r.duur, schema: r.schema } }).prijs.van === r.prijs.van, 'prijsuitreiking op de live pagina');
+}
 console.log(`toernooi: ${n} controles geslaagd`);
