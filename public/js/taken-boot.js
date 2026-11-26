@@ -8,8 +8,8 @@
    aanmelding maken onder het vaste id <uid>_<taak>. Contactgegevens leest alleen het clubbeheer en
    dit toestel zelf (firestore.rules). */
 import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, collection, query, where, setDoc, deleteDoc, onSnapshot } from './firebase.js?v=20261011g';
-import * as V from './vrijwilligers-logica.js?v=20261125w';
-import { plaatjeOk } from './toernooi-logica.js?v=20261125w';
+import * as V from './vrijwilligers-logica.js?v=20261127f';
+import { plaatjeOk } from './toernooi-logica.js?v=20261127f';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const SLEUTEL = 'cluppieVrijwilligerContact';
