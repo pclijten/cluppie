@@ -121,6 +121,7 @@ export function maakSpeler(el){
         stage.className = `ts-stage ts-${T.id}`; kaderNu = ''; beeldNu = ''; sleutelNu = ''; scenes.replaceChildren(); wissel = Date.now();
       }
       stage.style.setProperty('--club', m.kleur); stage.style.setProperty('--club-ink', inktOp(m.kleur));
+      stage.classList.toggle('ts-licht', inktOp(m.kleur) !== '#ffffff');   /* lichte clubkleur: een sjabloon kan daar rekening mee houden */
       teken(ander);
     },
     goal(g){ if (wachtrij.length < 4) wachtrij.push(g); toonGoal(); },

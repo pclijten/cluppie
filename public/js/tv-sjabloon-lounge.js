@@ -32,6 +32,8 @@ export default {
 .lo-licht i:nth-child(1){width:1000px;height:800px;left:1100px;top:100px;background:var(--club)}
 .lo-licht i:nth-child(2){width:800px;height:700px;left:300px;top:800px;background:color-mix(in oklab,var(--club) 45%,#d89a4a);animation-duration:34s}
 .lo-licht i:nth-child(3){width:600px;height:600px;left:1700px;top:1000px;background:#1d3b4a;animation-duration:30s}
+/* Bij een lichte clubkleur (geel, wit) dimt het licht, anders valt de witte tekst weg. */
+.ts-licht .lo-licht i:nth-child(1){background:color-mix(in oklab,var(--club) 48%,#0b0a0e)}.ts-licht .lo-licht i:nth-child(2){background:color-mix(in oklab,var(--club) 30%,#5a3a1a)}
 @keyframes loZweef{to{transform:translate(-220px,140px) scale(1.2)}}
 .lo-top{left:120px;right:120px;top:64px;display:flex;justify-content:space-between;align-items:baseline;gap:40px;font:600 22px/1.3 var(--ts-body);letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.75)}
 .lo-top b{font:400 70px/1 'Instrument Serif',Georgia,serif;letter-spacing:0;color:#fff;flex:none}

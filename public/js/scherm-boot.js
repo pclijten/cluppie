@@ -144,7 +144,7 @@ function stijl(){
 .ks-wed{grid-template-columns:92px minmax(0,1fr) 58px minmax(0,1fr)}
 .ks-af{opacity:.55}.ks-af .lv-wed-a,.ks-af .lv-wed-b{text-decoration:line-through}
 .lv-tv .ks-prog{flex:1}.lv-tv .ks-prog .kb-wed{grid-template-columns:6.4em minmax(0,1fr) 3.8em minmax(0,1fr)}
-.ks-goal{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:rgba(5,6,10,.82);color:#fff;text-align:center;animation:ksGoal 9s both;pointer-events:none}
+.ks-goal{position:fixed;inset:0;z-index:500;display:grid;place-items:center;background:rgba(5,6,10,.82);color:#fff;text-align:center;animation:ksGoal 9s both;pointer-events:none}
 .ks-goal b{display:block;font-family:var(--font-display);font-weight:800;text-transform:uppercase;font-size:22vw;line-height:.8;animation:ksGoalK .8s cubic-bezier(.2,1.4,.4,1) both}
 .ks-goal div>span{display:block;font-family:var(--font-display);font-weight:800;text-transform:uppercase;font-size:4vw;margin:3vh 0 2vh}
 .ks-goal p{margin:0;display:flex;align-items:center;justify-content:center;gap:1.5vw;font-size:2.6vw;font-weight:600}

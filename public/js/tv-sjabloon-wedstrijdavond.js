@@ -41,7 +41,7 @@ export default {
 .wa-leeg{background:rgba(8,10,18,.78);border-left:8px solid var(--club);padding:40px 30px;font:600 36px/1.3 var(--ts-body)}
 .wa-rij{height:92px;display:grid;grid-template-columns:118px minmax(0,1fr) 230px 170px;gap:0 12px;align-items:center;background:rgba(8,10,18,.78);border-left:8px solid var(--club);padding:0 24px}
 .wa-rij .t{font:800 44px/1 var(--ts-display)}
-.wa-rij .m{display:flex;gap:16px;align-items:center;font:600 30px/1.1 var(--ts-body);min-width:0}.wa-rij .m>b{flex:0 1 auto}.wa-rij .m>.vs{flex:none}.wa-rij .m>span:last-child{flex:1 1 auto}
+.wa-rij .m{display:flex;gap:16px;align-items:center;font:600 30px/1.1 var(--ts-body);min-width:0}.wa-rij .m>b{flex:0 1 auto;min-width:min-content;max-width:48%}.wa-rij .m>.vs{flex:none}.wa-rij .m>span:last-child{flex:1 1 auto}
 .wa-rij .m b{font:800 40px/1.1 var(--ts-display);text-transform:uppercase}
 .wa-rij .vs{background:#fff;color:#0b0d14;font:800 36px/52px var(--ts-display);min-width:92px;text-align:center;padding:0 8px}
 .wa-rij .vs.leeg{background:transparent;color:#8d94a3;box-shadow:inset 0 0 0 2px #3a4150}
@@ -85,8 +85,8 @@ export default {
 @keyframes waVeeg{to{transform:translateX(150%) skewX(-22deg)}}
 .wa-goal{position:absolute;inset:0;background:#070910;animation:waGoalBg .4s both}
 .wa-goal>i{position:absolute;top:-20%;height:140%;width:46%;background:var(--club);transform:skewX(-22deg);animation:waGoalBaan .7s cubic-bezier(.2,.8,.2,1) both}
-.wa-goal>i:nth-child(1){left:-12%}.wa-goal>i:nth-child(2){right:-12%;background:#fff;opacity:.08;animation-delay:.1s}
-.wa-goal .in{position:absolute;left:270px;right:270px;top:120px}
+.wa-goal>i:nth-child(1){left:-12%;background:linear-gradient(90deg,var(--club),var(--club-d))}.wa-goal>i:nth-child(2){right:-12%;background:#fff;opacity:.08;animation-delay:.1s}
+.wa-goal .in{position:absolute;left:270px;right:270px;top:120px;text-shadow:0 4px 30px rgba(0,0,0,.75)}.wa-goal .wa-bug{text-shadow:none}
 .wa-goal .k{font:900 330px/.8 var(--ts-display);font-style:italic;text-transform:uppercase;animation:waGoalK .8s cubic-bezier(.2,1.4,.4,1) .25s both;text-shadow:0 20px 60px rgba(0,0,0,.5)}
 .wa-goal .w{font:800 64px/1.1 var(--ts-display);text-transform:uppercase;margin:24px 0 10px;animation:waOp .6s .6s both}
 .wa-goal .wa-bug{animation:waIn .6s .8s both}

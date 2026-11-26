@@ -102,6 +102,7 @@ Kleuren: `var(--club)`, `var(--club-ink)` (leesbare tekstkleur op de clubkleur),
 3. **Lange namen.** Gebruik `maat()` of de klasse `ts-kap` bij namen van teams en sponsoren. Test met
    "Roda JC Kerkrade JO17-2".
 4. **Lichte clubkleur.** Tekst op de clubkleur krijgt `var(--club-ink)`, nooit vast wit.
+   Bij een lichte clubkleur (geel, wit) krijgt het podium de klasse `ts-licht`; daarmee kun je een vlak dimmen.
 5. **Geen bestanden van buiten.** Lettertypes en beelden komen van de eigen site.
 6. **Lege dag.** `programma` krijgt ook een lege lijst; laat dan een nette regel zien.
 
