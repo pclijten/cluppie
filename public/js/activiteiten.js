@@ -24,16 +24,16 @@
    Rekenwerk, export en import: activiteiten-logica.js (getest). Sjablonen: activiteit-sjablonen.js. */
 import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, deleteField, query, where, onSnapshot,
   serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261127b';
+import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261127c';
 import { ico } from './icons.js?v=20261127b';
 import { SJABLONEN, sjabloonVan } from './activiteit-sjablonen.js?v=20261125w';
 import * as L from './activiteiten-logica.js?v=20261126y';
-import * as D from './draaiboek-logica.js?v=20261127b';
+import * as D from './draaiboek-logica.js?v=20261127c';
 import { docxBestanden } from './draaiboek-docx.js?v=20261127b';
-import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261127b';
-import * as TN from './activiteit-toernooi.js?v=20261127b';
-import * as CS from './clubschermen.js?v=20261127b';
-import * as VB from './vrijwilligers.js?v=20261127b';
+import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261127c';
+import * as TN from './activiteit-toernooi.js?v=20261127c';
+import * as CS from './clubschermen.js?v=20261127c';
+import * as VB from './vrijwilligers.js?v=20261127c';
 
 let A = null;
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -593,8 +593,9 @@ function htmlSpullen(oid){
   const a = A.act, mat = oid ? D.regelsVan(a.materiaal, oid, a, 'spullen') : L.gesorteerd(a.materiaal), leden = L.gesorteerd(a.comite);
   return `<div class="ac-paneel"><h3>${oid === 'kantine' ? 'Inkooplijst' : 'Spullen'}</h3>${mat.map(m => `<div class="ac-rij"><input type="checkbox" data-veld="materiaal.${esc(m.id)}.klaar" data-bool ${m.klaar ? 'checked' : ''} aria-label="Klaar">
       ${veld(`materiaal.${m.id}.naam`, m.naam, { klasse: 'ac-groei', ph: 'Wat' })}${veld(`materiaal.${m.id}.aantal`, m.aantal ?? '', { type: 'number', ph: 'Aantal', extra: 'data-num min="0" inputmode="numeric"', klasse: 'getal' })}
-      <select class="ac-in smal" data-veld="materiaal.${esc(m.id)}.wie">${opt('', 'Wie regelt het?')}${leden.map(l => opt(l.id, l.naam, m.wie === l.id)).join('')}</select>
+      <input class="ac-in smal" data-veld="materiaal.${esc(m.id)}.wie" data-wie list="ac-wie-lijst" maxlength="60" placeholder="Wie neemt mee?" aria-label="Wie neemt mee" value="${esc(a.comite?.[m.wie]?.naam || m.wie || '')}">
       <button class="ac-x" data-ac="regel-weg" data-pad="materiaal.${esc(m.id)}" aria-label="Weg">✕</button></div>`).join('') || '<p class="ac-zacht">Nog niets op de lijst.</p>'}
+    <datalist id="ac-wie-lijst">${leden.map(l => `<option value="${esc(l.naam)}">`).join('')}</datalist>
     <div class="ac-acties"><button class="knop licht klein" data-ac="regel-nieuw" data-soort="materiaal" data-ow="${esc(oid || '')}">${ico('action-add', 16)} Regel</button></div></div>`;
 }
 function htmlChecks(){
@@ -966,7 +967,7 @@ async function klik(e){
     case 'kopieer': return kopieKlembord(b.dataset.tekst);
     case 'teams-alle': return zet({ teams: (S.clubTeams || []).filter(x => x && x.id && !x.gearchiveerd).map(x => x.id).slice(0, L.MAX.teams) });
     case 'teams-geen': return zet({ teams: [] });
-    case 'veldplanner': return import('./veldplanner.js?v=20261127b').then(m => m.openVeldplanner(A.clubId));
+    case 'veldplanner': return import('./veldplanner.js?v=20261127c').then(m => m.openVeldplanner(A.clubId));
     case 'aflasten': return vensterAflasten();
     case 'aflasten-ja': return aflasten();
     case 'bericht-plaats': return plaatsBericht(id);
@@ -998,6 +999,8 @@ async function wijzig(e){
   if (t.matches('[data-aanwezig]')){ try { await updateDoc(doc(db, 'activiteitDeel', A.act.deelId, 'aanmeldingen', t.dataset.aanwezig), { aanwezig: t.checked }); } catch { meld('Opslaan mislukt.'); } return; }
   if (!t.matches('[data-veld]')) return;
   const pad = t.dataset.veld;
+  /* [20261127c] wie neemt mee: een comitélid (opgeslagen als id) of een zelf getypte naam */
+  if (t.hasAttribute('data-wie')) return zet({ [pad]: D.wieNaarWaarde(t.value, A.act) });
   let w = t.type === 'checkbox' ? t.checked : t.value;
   if (t.hasAttribute('data-num')) w = String(w).trim() === '' ? null : Number(String(w).replace(',', '.'));
   if (typeof w === 'number' && !Number.isFinite(w)) return meld('Dat is geen getal');

@@ -237,7 +237,7 @@ function blokDelen(a, o, blok, opts){
         L.isIso(a.datum) ? L.datumKort(L.plusDagen(a.datum, -(Number(x.d) || 0))) : L.dTekst(x.d), x.titel || '', L.KANALEN[x.kanaal] || '']) }] : [];
     }
     case 'spullen': { const m = regelsVan(a.materiaal, o.id, a, 'spullen');
-      return m.length ? [{ soort: 'kop', tekst: o.id === 'kantine' ? 'Inkooplijst' : 'Spullen' }, { soort: 'tabel', vink: true, kop: ['', 'Wat', 'Aantal', 'Wie'], rijen: m.map(x => [x.klaar ? '☑' : '☐', x.naam || '', x.aantal ?? '', lid(x.wie)]) }] : []; }
+      return m.length ? [{ soort: 'kop', tekst: o.id === 'kantine' ? 'Inkooplijst' : 'Spullen' }, { soort: 'tabel', vink: true, kop: ['', 'Wat', 'Aantal', 'Wie'], rijen: m.map(x => [x.klaar ? '☑' : '☐', x.naam || '', x.aantal ?? '', wieNaam(x.wie, a)]) }] : []; }
     case 'veiligheid': { const c = L.gesorteerd(a.checks);
       return c.length ? [{ soort: 'kop', tekst: 'Checklist' }, { soort: 'tabel', vink: true, kop: ['', 'Punt'], rijen: c.map(x => [x.klaar ? '☑' : '☐', x.titel || '']) }] : []; }
     case 'kosten': { const r = regelsVan(a.budget, o.id, a, 'kosten');
@@ -250,4 +250,17 @@ function blokDelen(a, o, blok, opts){
       return rijen.length ? [{ soort: 'kop', tekst: 'Evaluatie' }, { soort: 'dl', rijen }] : []; }
   }
   return [];
+}
+
+/* [20261127c] "Wie neemt mee" bij spullen: een comitélid (id) of een zelf getypte naam. */
+export const WIE_MAX = 60;
+export function wieNaarWaarde(invoer, act){
+  const t = String(invoer ?? '').replace(/\s+/g, ' ').trim().slice(0, WIE_MAX);
+  if (!t) return '';
+  const lid = Object.entries(act?.comite || {}).find(([, l]) => String(l?.naam || '').trim().toLowerCase() === t.toLowerCase());
+  return lid ? lid[0] : t;
+}
+export function wieNaam(wie, act){
+  if (!wie) return '';
+  return act?.comite?.[wie]?.naam || String(wie);
 }
