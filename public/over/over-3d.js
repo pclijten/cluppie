@@ -51,7 +51,7 @@
   };
   const GEO = {
     lijf: new THREE.CapsuleGeometry(0.34, 0.75, 6, 16), hoofd: new THREE.SphereGeometry(0.24, 20, 16),
-    pion: new THREE.ConeGeometry(0.34, 0.85, 20), pionVoet: new THREE.BoxGeometry(0.86, 0.07, 0.86), hoedje: new THREE.CylinderGeometry(0.13, 0.42, 0.2, 20), bal: new THREE.SphereGeometry(0.22, 32, 24), paal: new THREE.CylinderGeometry(0.06, 0.06, 1, 10),
+    pion: new THREE.ConeGeometry(0.34, 0.85, 20), pionVoet: new THREE.BoxGeometry(0.86, 0.07, 0.86), hoedje: new THREE.CylinderGeometry(0.13, 0.42, 0.2, 20), bal: new THREE.SphereGeometry(0.22, 32, 24), balKlein: new THREE.SphereGeometry(0.15, 24, 18), paal: new THREE.CylinderGeometry(0.06, 0.06, 1, 10),
   };
   const MAT = {
     huid: new THREE.MeshStandardMaterial({ color: KLEUR.huid, roughness: 0.7 }),
@@ -62,6 +62,7 @@
     hoedje: new THREE.MeshStandardMaterial({ color: KLEUR.geel, roughness: 0.6 }),
     wit: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 }),
     bal: new THREE.MeshStandardMaterial({ map: balTex, roughness: 0.45 }),
+    balGlad: new THREE.MeshStandardMaterial({ color: 0xf7f7f3, roughness: 0.4 }),   /* hockeybal: klein en zonder vijfhoeken */
     krijt: new THREE.MeshBasicMaterial({ color: KLEUR.krijt }),
   };
 
@@ -164,7 +165,8 @@
 
     /* ballen: de spelbal, en bij "iedereen een bal" een bal bij elke eigen speler */
     const ballen = [];
-    const maakBal = (x, z) => { const m = new THREE.Mesh(GEO.bal, MAT.bal); m.castShadow = true; m.userData.thuis = new THREE.Vector3(x, 0.22, z); scene.add(m); ballen.push(m); return m; };
+    const hockey = document.documentElement.getAttribute('data-sport') === 'hockey';   /* [20261126p] */
+    const maakBal = (x, z) => { const m = new THREE.Mesh(hockey ? GEO.balKlein : GEO.bal, hockey ? MAT.balGlad : MAT.bal); m.castShadow = true; m.userData.thuis = new THREE.Vector3(x, 0.22, z); scene.add(m); ballen.push(m); return m; };
     let spelbal = null;
     if (t.bal){ const p = pos(t.bal[0], t.bal[1]); const op = spelers.find(s => s.userData.thuis.distanceTo(p) < 1.2); spelbal = maakBal(p.x + (op ? 0.55 : 0), p.z + (op ? -0.35 : 0)); }
     if (t.iedereenBal) spelers.forEach((s, i) => { if (soortVan((t.spelers[i] || {}).kant) === 'eigen') maakBal(s.userData.thuis.x + 0.5, s.userData.thuis.z - 0.3); });

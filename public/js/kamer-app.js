@@ -529,7 +529,7 @@ async function openOefening(v){
   document.body.appendChild(achter); speler = achter; achter.querySelector('[data-sluit]').focus(); legNet();
   const doel = achter.querySelector('#tk-oef3d');
   try {
-    const [{ BIBLIOTHEEK }, S3] = await Promise.all([import('./trainingsbibliotheek.js?v=20261126g'), import('./scene3d.js?v=20261121b')]);
+    const [{ BIBLIOTHEEK }, S3] = await Promise.all([import('./trainingsbibliotheek.js?v=20261126g'), import('./scene3d.js?v=20261126p')]);
     if (speler !== achter) return;
     const vorm = BIBLIOTHEEK.vormen.find(x => x.id === v.vormId);
     doel.textContent = '';
@@ -808,7 +808,7 @@ wortel.addEventListener('click', async (ev) => {
       A.thuisOpen = true; teken();
       const doel = document.getElementById('tk-thuis'); if (!doel) return;
       doel.textContent = 'Oefening laden…';
-      const [{ BIBLIOTHEEK }, S3] = await Promise.all([import('./trainingsbibliotheek.js?v=20261126g'), import('./scene3d.js?v=20261121b')]);
+      const [{ BIBLIOTHEEK }, S3] = await Promise.all([import('./trainingsbibliotheek.js?v=20261126g'), import('./scene3d.js?v=20261126p')]);
       const vorm = BIBLIOTHEEK.vormen.find(v => v.id === A.kamer.thuis.vormId);
       doel.textContent = '';
       if (!vorm){ doel.textContent = 'Deze oefening is niet meer beschikbaar.'; return; }
