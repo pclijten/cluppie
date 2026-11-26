@@ -7,8 +7,8 @@
    Importeert niets uit teams.js (geen kringverwijzing): teams.js geeft renderTeam mee aan
    koppelTeamkamer(). state.js is niet aangeraakt. */
 import { db, functions, httpsCallable, doc, collection, addDoc, setDoc, updateDoc, deleteDoc, getDocs, query, where, onSnapshot, Timestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261127f';
-import * as K from './kamer-logica.js?v=20261125m';
+import { S, esc, meld } from './state.js?v=20261127k';
+import * as K from './kamer-logica.js?v=20261127k';
 import { actieveSport } from './sporten.js?v=20261126g';   /* [20261126g] alleen oefenstof van de eigen sport */
 
 const roep = (naam, data) => httpsCallable(functions, naam)(data || {}).then(r => r.data);
@@ -20,9 +20,21 @@ export const teamkamerZichtbaar = (team = S.team) => K.teamkamerMag(team, S._clu
 const mag = (k) => K.optiesVan(S.team, S._clubPlatform, S._teamkamerLosOpties)[k] === true;
 const inst = () => { const k = (S.team && S.team.teamkamer) || {}; return { aan: k.aan === true, namen: k.namen !== false, uitslag: k.uitslag === true, live: k.live === true,
   trainingen: k.trainingen === true, opstellingAltijd: k.opstellingAltijd === true, stats: { aan: false, ...(k.stats || {}) }, lijn: Array.isArray(k.lijn) ? k.lijn : [], thuis: k.thuis || null,
-  thuisVideos: (Array.isArray(k.thuisVideos) ? k.thuisVideos : []).map(K.thuisVideo).filter(Boolean) }; };
+  thuisVideos: (Array.isArray(k.thuisVideos) ? k.thuisVideos : []).map(kamerVideo).filter(Boolean),
+  videoCats: (Array.isArray(k.videoCats) ? k.videoCats : []).filter(c => typeof c === 'string' && c).slice(0, K.MAX_VIDEO_CATS) }; };
+/* [20261126v] een gedeelde video zoals hij op het teamdocument staat: titel en bron (K.thuisVideo), plus categorie en
+   wanneer hij gedeeld werd. Het vinkje voor de pushmelding (melding) en wie deelde (door) gaan alleen mee bij het toevoegen. */
+function kamerVideo(v){
+  const x = K.thuisVideo(v); if (!x) return null;
+  if (typeof v.cat === 'string' && v.cat) x.cat = v.cat.slice(0, 30);
+  if (Number(v.ms) > 0) x.ms = Number(v.ms);
+  return x;
+}
 /* video's die de club met dit team deelde (S.videos, zie teams.js), als kandidaat voor Thuis oefenen */
-const clubVideos = () => (S.videos || []).filter(v => (v.teams || []).includes(S.teamId)).map(v => K.thuisVideo(v)).filter(Boolean);
+const clubVideos = () => (S.videos || []).filter(v => (v.teams || []).includes(S.teamId))
+  .map(v => { const x = K.thuisVideo(v); return x ? { ...x, clubCat: String(v.categorieNaam || '').slice(0, 30), plek: Number.isFinite(v.categorieVolgorde) ? v.categorieVolgorde : 999,
+    volg: Number.isFinite(v.volgorde) ? v.volgorde : -((v.gemaakt && v.gemaakt.seconds) || 0) } : null; }).filter(Boolean)
+  .sort((a, b) => a.plek - b.plek || a.volg - b.volg);
 const zelfdeVideo = (a, b) => (a.yt && a.yt === b.yt) || (a.url && a.url === b.url);
 const eigenSpelers = () => (S._eigenSpelers && S._eigenSpelers.length ? S._eigenSpelers : (S.spelers || [])).filter(p => p && !p.gearchiveerd && p.naam)
   .slice().sort((a, b) => (Number(a.nummer) || 999) - (Number(b.nummer) || 999) || String(a.naam).localeCompare(String(b.naam), 'nl'));
@@ -52,7 +64,7 @@ async function doeSync(){
   const i = inst();
   if (!i.aan) return;
   if (i.trainingen && mag('trainingen')){
-    const { trainingenPerWeek } = await import('./teams-training.js?v=20261127f');
+    const { trainingenPerWeek } = await import('./teams-training.js?v=20261127k');
     if (S.teamId !== teamId) return;
     const vandaag = K.vandaagIso(), items = {};
     for (const g of trainingenPerWeek().komend) for (const x of g.items){
@@ -62,7 +74,7 @@ async function doeSync(){
     await lever(teamId, 'trainingen', { items });
   }
   if (i.stats.aan && mag('stats') && (S.spelers || []).length){
-    const [A, O] = await Promise.all([import('./analyse.js?v=20261127f'), import('./opkomst.js?v=20260922c')]);
+    const [A, O] = await Promise.all([import('./analyse.js?v=20261127k'), import('./opkomst.js?v=20260922c')]);
     if (S.teamId !== teamId) return;
     const sz = S.huidigSeizoen, ditSeizoen = (x) => !sz || !x.seizoen || x.seizoen === sz;
     const spelers = K.statsVoorOuders(eigenSpelers(), (S.wedstrijden || []).filter(ditSeizoen), (S.presentie || []).filter(ditSeizoen),
@@ -232,23 +244,12 @@ function htmlInstellingen(){
     ${ws.length && mag('opstelling') ? `<section class="tk-kaart" style="gap:4px"><div class="tk-label">Opstelling delen</div>
       ${ws.map(w => sw(`${K.hoofdletter(K.datumKort(w.datum))}${w.tegenstander ? ', ' + w.tegenstander : ''}`, w.deelOpstelling === true ? 'Ouders zien de opstelling van de eerste periode' : 'Staat uit tot jij hem aanzet', w.deelOpstelling === true, `data-tk="opstelling" data-id="${esc(w.id)}"`)).join('')}</section>` : ''}
     ${mag('thuis') ? `<section class="tk-kaart"><h2 class="tk-label">Thuis oefenen</h2>
-      <div class="tk-klein tk-zacht">Wat spelers thuis kunnen doen: één oefening in 3D en tot ${K.MAX_THUIS_VIDEOS} video's.</div>
+      <div class="tk-klein tk-zacht">Eén oefening die spelers thuis in 3D bekijken.</div>
       <h3 class="tk-veldnaam">Oefening in 3D</h3>
       ${i.thuis ? `<div class="tk-rij"><span class="tk-vet" style="text-align:left">${esc(i.thuis.naam || i.thuis.vormId)}</span><button class="tk-knop licht klein" data-tk="thuisweg">Haal weg</button></div>` : ''}
       <div class="tk-veld"><label for="tk-zoek">${i.thuis ? 'Kies een andere oefening' : 'Zoek een oefening'}</label><input class="tk-invoer" id="tk-zoek" data-tkf="zoek" value="${esc(M.zoek)}" placeholder="Bijvoorbeeld: dribbelen"></div>
       <div id="tk-treffers" style="display:flex;flex-direction:column;gap:8px">${treffers.map(trefferHtml).join('')}</div>
-      <h3 class="tk-veldnaam tk-lijn">Video's</h3>
-      ${i.thuisVideos.map((v, n) => `<div class="tk-video-rij">${videoBeeld(v)}<span class="tk-vet tk-item-tekst">${esc(v.titel)}<span class="tk-klein tk-zacht" style="display:block;font-weight:400">${v.yt ? 'YouTube' : 'Video van de club'}</span></span>
-        <button class="tk-knop licht klein" data-tk="videoweg" data-n="${n}">Haal weg</button></div>`).join('') || '<div class="tk-zacht">Nog geen video. Plak een YouTube-link of kies een video van de club.</div>'}
-      ${i.thuisVideos.length < K.MAX_THUIS_VIDEOS ? `
-      <div class="tk-veld"><label for="tk-yt">YouTube-link</label><input class="tk-invoer" id="tk-yt" type="url" inputmode="url" autocomplete="off" placeholder="https://www.youtube.com/watch?v=..."></div>
-      <div class="tk-veld"><label for="tk-yt-titel">Titel voor de spelers</label><input class="tk-invoer" id="tk-yt-titel" maxlength="80" autocomplete="off" placeholder="Bijvoorbeeld: kappen en draaien"></div>
-      <button class="tk-knop licht" data-tk="videoplus">Voeg de video toe</button>
-      ${(() => { const kies = clubVideos().filter(v => !i.thuisVideos.some(x => zelfdeVideo(x, v)));
-        return kies.length ? `<div class="tk-veld"><span class="tk-veldnaam">Of kies een video van de club</span>
-          ${kies.slice(0, 12).map(v => `<button class="tk-video-rij tk-video-kies" data-tk="videoclub" data-yt="${esc(v.yt || '')}" data-url="${esc(v.url || '')}" data-titel="${esc(v.titel)}">${videoBeeld(v)}<span class="tk-item-tekst tk-vet">${esc(v.titel)}</span><span class="tk-klein tk-zacht">Voeg toe</span></button>`).join('')}</div>`
-          : (S.team && S.team.club ? `<div class="tk-klein tk-zacht">Video's die de club met dit team deelt (Training, Video's) kun je hier ook kiezen.</div>` : ''); })()}` : `<div class="tk-klein tk-zacht">Het maximum van ${K.MAX_THUIS_VIDEOS} video's is bereikt.</div>`}
-      <div class="tk-klein tk-zacht">Kies alleen video's die kinderen zonder toezicht mogen zien, en geen beelden waarop spelers herkenbaar zijn.</div></section>` : ''}
+      <div class="tk-rij tk-lijn"><span class="tk-klein tk-zacht" style="text-align:left">Video's deel je onder Video's${i.thuisVideos.length ? ` (nu ${i.thuisVideos.length} gedeeld)` : ''}.</span><button class="tk-knop licht klein" data-tk="sub" data-id="videos">Naar Video's</button></div></section>` : ''}
     ${mag('lijn') ? `<section class="tk-kaart"><div class="tk-label">Zo moedigen wij aan</div><div class="tk-klein tk-zacht">Drie afspraken voor langs de lijn. Ouders zien ze rond een wedstrijd. Leeg laten geeft de standaardtekst.</div>
       ${lijn.map((r, n) => `<input class="tk-invoer" data-tklijn="${n}" maxlength="90" value="${esc(r)}" aria-label="Afspraak ${n + 1}" placeholder="Afspraak ${n + 1}">`).join('')}
       <button class="tk-knop licht" data-tk="lijn">Bewaar de afspraken</button></section>` : ''}
@@ -259,20 +260,90 @@ function htmlInstellingen(){
     <section class="tk-kaart"><button class="tk-knop licht" data-tk="ververs">Werk de teamkamer nu bij</button>
       <button class="tk-knop licht" data-tk="uit">Zet de teamkamer uit</button><div class="tk-klein tk-zacht">Uitzetten sluit de teamkamer voor iedereen. Polls en mededelingen blijven bewaard tot je hem weer aanzet.</div></section>`;
 }
+/* ==================== [20261126v] Video's delen in de teamkamer ====================
+   De trainer deelt video's van de club (Team, Video's) of een YouTube-link met ouders en spelers, en deelt ze in
+   in eigen categorieën (teamkamer.videoCats). Een video van de club krijgt standaard dezelfde categorie als bij de
+   club; bestaat die in de teamkamer nog niet, dan komt hij erbij. Ouders zien de video's in de tab Video's. */
+const CLUBCAT = '_club';
+function htmlVideos(){
+  const i = inst(), cats = i.videoCats, vol = i.thuisVideos.length >= K.MAX_THUIS_VIDEOS;
+  const groepen = K.videoGroepen(i.thuisVideos, cats), indexVan = (v) => i.thuisVideos.findIndex(x => K.videoSleutel(x) === K.videoSleutel(v));
+  const kies = clubVideos().filter(v => !i.thuisVideos.some(x => zelfdeVideo(x, v)));
+  const perClubCat = new Map(); for (const v of kies){ const k = v.clubCat || ''; if (!perClubCat.has(k)) perClubCat.set(k, []); perClubCat.get(k).push(v); }
+  const nieuwCat = M.videoCat === undefined ? CLUBCAT : M.videoCat;
+  const vm = M.kamer && M.kamer.videoMelding;
+  const catSelect = (huidig, attr, metClub) => `<select class="tk-invoer" ${attr}>${metClub ? `<option value="${CLUBCAT}" ${huidig === CLUBCAT ? 'selected' : ''}>Zoals bij de club</option>` : ''}
+    <option value="" ${huidig === '' ? 'selected' : ''}>Geen categorie</option>${cats.map(c => `<option value="${esc(c)}" ${huidig === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select>`;
+  return `<section class="tk-kaart"><h2 class="tk-label">Video's in de teamkamer</h2>
+      <div class="tk-klein tk-zacht">Ouders en spelers zien deze video's in de teamkamer, onder Video's, per categorie. ${i.thuisVideos.length} van ${K.MAX_THUIS_VIDEOS} gedeeld.</div>
+      ${vm && vm.ms && Date.now() - vm.ms < 7 * 864e5 ? `<div class="tk-klein tk-zacht">Laatste melding over ${vm.aantal === 1 ? 'een video' : vm.aantal + " video's"}: ${vm.ouders ? `naar ${ouders(vm.ouders)}` : 'nog geen ouder heeft meldingen aan'}.</div>` : ''}</section>
+    <section class="tk-kaart"><h2 class="tk-label">Categorieën</h2>
+      <div class="tk-klein tk-zacht">Bijvoorbeeld Thuis oefenen, Techniek of Uitleg voor ouders. Ouders zien ze in deze volgorde.</div>
+      ${cats.map((c, n) => `<div class="tk-rij"><span class="tk-vet" style="text-align:left;flex:1">${esc(c)} <span class="tk-klein tk-zacht" style="font-weight:400">${i.thuisVideos.filter(v => v.cat === c).length}</span></span>
+        ${n ? `<button class="tk-knop licht klein" data-tk="vcatop" data-n="${n}" aria-label="${esc(c)} hoger">Hoger</button>` : ''}<button class="tk-knop licht klein" data-tk="vcatweg" data-n="${n}" aria-label="${esc(c)} verwijderen">Verwijder</button></div>`).join('') || '<div class="tk-zacht">Nog geen categorieën. Zonder categorieën staan alle video\'s in één lijst.</div>'}
+      ${cats.length < K.MAX_VIDEO_CATS ? `<div class="tk-met-knop"><input class="tk-invoer" id="tk-vcat" maxlength="30" autocomplete="off" placeholder="Nieuwe categorie" aria-label="Nieuwe categorie"><button class="tk-knop licht klein" data-tk="vcatplus">Voeg toe</button></div>` : ''}</section>
+    <section class="tk-kaart"><h2 class="tk-label">Gedeeld</h2>
+      ${groepen.map(g => `${g.naam ? `<h3 class="tk-veldnaam">${esc(g.naam)}</h3>` : ''}${g.videos.map(v => { const n = indexVan(v);
+        return `<div class="tk-video-rij tk-video-beheer">${videoBeeld(v)}<span class="tk-item-tekst"><span class="tk-vet" style="display:block">${esc(v.titel)}</span>
+          ${cats.length ? catSelect(v.cat && cats.includes(v.cat) ? v.cat : '', `data-tkvcat="${n}" aria-label="Categorie van ${esc(v.titel)}"`, false) : `<span class="tk-klein tk-zacht">${v.yt ? 'YouTube' : 'Video van de club'}</span>`}</span>
+          <button class="tk-knop licht klein" data-tk="videoweg" data-n="${n}">Haal weg</button></div>`; }).join('')}`).join('') || '<div class="tk-zacht">Nog geen video\'s gedeeld. Kies hieronder een video van de club of plak een YouTube-link.</div>'}</section>
+    ${vol ? `<div class="tk-melding"><span>Het maximum van ${K.MAX_THUIS_VIDEOS} video's is bereikt. Haal er eerst een weg.</span></div>` : `<section class="tk-kaart"><h2 class="tk-label">Video delen</h2>
+      <div class="tk-veld"><label for="tk-vnieuwcat">In categorie</label>${catSelect(nieuwCat, 'id="tk-vnieuwcat" data-tkf="videocat"', true)}</div>
+      <label class="tk-vink"><input type="checkbox" id="tk-vmelding" ${M.videoMelding === false ? '' : 'checked'}><span>Stuur een pushmelding naar ouders die meldingen aan hebben</span></label>
+      ${[...perClubCat.entries()].map(([naam, vids]) => `<h3 class="tk-veldnaam tk-lijn">${esc(naam || (perClubCat.size > 1 ? 'Overige video\'s van de club' : 'Video\'s van de club'))}</h3>
+        ${vids.map(v => `<button class="tk-video-rij tk-video-kies" data-tk="videoclub" data-yt="${esc(v.yt || '')}" data-url="${esc(v.url || '')}" data-titel="${esc(v.titel)}" data-clubcat="${esc(v.clubCat)}">${videoBeeld(v)}<span class="tk-item-tekst tk-vet">${esc(v.titel)}</span><span class="tk-klein tk-zacht">Deel</span></button>`).join('')}`).join('')
+        || (S.team && S.team.club ? (clubVideos().length ? '<div class="tk-klein tk-zacht">Alle video\'s van de club staan er al in.</div>' : '<div class="tk-klein tk-zacht">De club deelt nog geen video\'s met dit team (Club, Video\'s).</div>') : '')}
+      <h3 class="tk-veldnaam tk-lijn">YouTube-link</h3>
+      <div class="tk-veld"><label for="tk-yt">Link</label><input class="tk-invoer" id="tk-yt" type="url" inputmode="url" autocomplete="off" placeholder="https://www.youtube.com/watch?v=..."></div>
+      <div class="tk-veld"><label for="tk-yt-titel">Titel voor ouders en spelers</label><input class="tk-invoer" id="tk-yt-titel" maxlength="80" autocomplete="off" placeholder="Bijvoorbeeld: kappen en draaien"></div>
+      <button class="tk-knop licht" data-tk="videoplus">Deel de video</button>
+      <div class="tk-klein tk-zacht">Kies alleen video's die kinderen zonder toezicht mogen zien, en geen beelden waarop spelers herkenbaar zijn.</div></section>`}`;
+}
+/* [20261126v] één video delen (vanuit dit scherm of vanuit Team, Video's). cat = naam van een categorie, CLUBCAT = die
+   van de club (komt erbij als hij nog niet bestaat en er plek is), '' = geen. Geeft de tekst voor de melding terug. */
+async function deelVideo(v, cat, melding){
+  const i = inst(), nu = i.thuisVideos;
+  if (nu.length >= K.MAX_THUIS_VIDEOS) throw new Error(`Maximaal ${K.MAX_THUIS_VIDEOS} video's`);
+  const x = K.thuisVideo(v);
+  if (!x) throw new Error('Plak een geldige YouTube-link');
+  if (nu.some(y => zelfdeVideo(y, x))) throw new Error('Deze video staat er al');
+  let cats = i.videoCats, naam = cat === CLUBCAT ? String(v.clubCat || '').trim() : String(cat || '');
+  if (naam && !cats.includes(naam)){
+    const r = K.catErbij(cats, naam);
+    if (r.cats) cats = r.cats; naam = r.naam && (r.cats || cats).includes(r.naam) ? r.naam : '';
+  }
+  const nieuw = { ...x, ...(naam ? { cat: naam } : {}), ms: Date.now(), ...(melding ? { melding: true, door: S.user.uid } : {}) };
+  await zetInst({ thuisVideos: [...nu, nieuw], ...(cats !== i.videoCats ? { videoCats: cats } : {}) });
+  return `Gedeeld in de teamkamer${naam ? ', bij ' + naam : ''}${melding ? '. Ouders met meldingen aan krijgen bericht.' : ''}`;
+}
+/* [20261126v] voor Team, Video's: staat deze video van de club in de teamkamer? null = de teamkamer staat (hier) niet aan */
+export function videoInKamer(vid){
+  if (!S.team || !teamkamerZichtbaar() || !inst().aan || !mag('thuis')) return null;
+  const x = K.thuisVideo(vid); if (!x) return null;
+  return inst().thuisVideos.some(y => zelfdeVideo(y, x));
+}
+export async function wisselVideoInKamer(vid){
+  const x = K.thuisVideo(vid); if (!x) return;
+  const nu = inst().thuisVideos, n = nu.findIndex(y => zelfdeVideo(y, x));
+  try {
+    if (n >= 0){ nu.splice(n, 1); await zetInst({ thuisVideos: nu }); meld('Uit de teamkamer gehaald'); }
+    else meld(await deelVideo({ ...vid, clubCat: vid.categorieNaam || '' }, CLUBCAT, true));
+  } catch (e){ meld((e && e.message) || 'Dat lukte niet.'); }
+}
 const videoBeeld = (v) => `<span class="tk-video-beeld">${v.yt ? `<img src="${esc(K.ytThumb(v.yt))}" alt="" loading="lazy">` : ''}</span>`;
 const trefferHtml = (v) => `<button class="tk-knop licht klein" style="justify-content:flex-start" data-tk="thuis" data-id="${esc(v.id)}">${esc(v.naam)}</button>`;
 export function htmlTeamkamer(){
   if (!teamkamerZichtbaar()) return '<div class="kaart leeg">De teamkamer staat niet aan voor deze club.</div>';
   if (M.teamId !== S.teamId) start(S.teamId);
   if (!inst().aan) return `<div class="tkb">${htmlUit()}</div>`;
-  const subs = [['toegang', 'Toegang'], ...(mag('polls') ? [['polls', 'Polls']] : []), ...(mag('berichten') ? [['berichten', 'Mededelingen']] : []), ['instellingen', 'Instellingen']];
+  const subs = [['toegang', 'Toegang'], ...(mag('polls') ? [['polls', 'Polls']] : []), ...(mag('berichten') ? [['berichten', 'Mededelingen']] : []), ...(mag('thuis') ? [['videos', "Video's"]] : []), ['instellingen', 'Instellingen']];
   if (!subs.some(s => s[0] === M.sub)) M.sub = 'toegang';
   const wacht = M.aanvragen.length;
   return `<div class="tkb" style="display:flex;flex-direction:column;gap:12px">
     <div class="tk-seg">${subs.map(s => `<button type="button" data-tk="sub" data-id="${s[0]}" aria-pressed="${M.sub === s[0]}">${s[1]}${s[0] === 'toegang' && wacht ? ` (${wacht})` : ''}</button>`).join('')}</div>
     ${M.kamer && M.kamer.aan === true ? '' : '<div class="tk-melding"><span>De teamkamer wordt klaargezet. Duurt dit langer dan een minuut, kies dan Instellingen en "Werk de teamkamer nu bij".</span></div>'}
     ${M.sub === 'polls' ? htmlPollForm() + K.sorteerPolls(M.polls).map(htmlPollBeheer).join('')
-      : M.sub === 'berichten' ? htmlBerichten() : M.sub === 'instellingen' ? htmlInstellingen() : htmlToegang()}</div>`;
+      : M.sub === 'berichten' ? htmlBerichten() : M.sub === 'videos' ? htmlVideos() : M.sub === 'instellingen' ? htmlInstellingen() : htmlToegang()}</div>`;
 }
 /* kort blok voor de wedstrijdvoorbereiding: polls bij deze wedstrijd */
 export function htmlPollsBijWedstrijd(w){
@@ -328,6 +399,13 @@ export function koppelTeamkamer(v, { renderTeam }){
     const t = ev.target;
     if (t.dataset.tkstat){ try { await zetInst({ stats: { ...inst().stats, [t.dataset.tkstat]: t.checked } }); syncTeamkamer(true); } catch (x){ meld('Dat lukte niet.'); } return; }
     if (t.dataset.tkf === 'wedstrijdId' && M.form){ M.form.wedstrijdId = t.value; renderTeam(); }
+    if (t.dataset.tkf === 'videocat'){ M.videoCat = t.value; return; }
+    if (t.id === 'tk-vmelding'){ M.videoMelding = t.checked; return; }
+    if (t.dataset.tkvcat !== undefined){
+      const nu = inst().thuisVideos, v = nu[Number(t.dataset.tkvcat)]; if (!v) return;
+      if (t.value) v.cat = t.value; else delete v.cat;
+      try { await zetInst({ thuisVideos: nu }); meld(t.value ? 'Verplaatst naar ' + t.value : 'Zonder categorie'); renderTeam(); } catch (x){ meld('Dat lukte niet.'); }
+    }
   });
   root.addEventListener('click', async (ev) => {
     const b = ev.target.closest('[data-tk]'); if (!b) return;
@@ -399,14 +477,25 @@ export function koppelTeamkamer(v, { renderTeam }){
       if (a === 'thuis'){ const vorm = (M.vormen || []).find(x => x.id === id); await zetInst({ thuis: { vormId: id, naam: vorm ? vorm.naam : '' } }); M.zoek = ''; meld('Thuisoefening gekozen'); return renderTeam(); }
       if (a === 'thuisweg'){ await zetInst({ thuis: null }); return renderTeam(); }
       if (a === 'videoplus' || a === 'videoclub'){
-        const nu = inst().thuisVideos;
-        if (nu.length >= K.MAX_THUIS_VIDEOS) return meld(`Maximaal ${K.MAX_THUIS_VIDEOS} video's`);
-        const nieuw = a === 'videoclub' ? K.thuisVideo({ yt: b.dataset.yt, url: b.dataset.url, bron: b.dataset.yt ? '' : 'upload', titel: b.dataset.titel })
-          : K.thuisVideo({ url: root.querySelector('#tk-yt')?.value, titel: root.querySelector('#tk-yt-titel')?.value });
-        if (!nieuw) return meld('Plak een geldige YouTube-link');
-        if (nu.some(x => zelfdeVideo(x, nieuw))) return meld('Deze video staat er al');
+        const melding = root.querySelector('#tk-vmelding')?.checked !== false, cat = M.videoCat === undefined ? CLUBCAT : M.videoCat;
+        const v = a === 'videoclub' ? { yt: b.dataset.yt, url: b.dataset.url, bron: b.dataset.yt ? '' : 'upload', titel: b.dataset.titel, clubCat: b.dataset.clubcat }
+          : { url: root.querySelector('#tk-yt')?.value, titel: root.querySelector('#tk-yt-titel')?.value };
+        if (a === 'videoplus' && !String(v.titel || '').trim()) return meld('Geef de video een titel');
         b.disabled = true;
-        await zetInst({ thuisVideos: [...nu, nieuw] }); meld('Video toegevoegd aan Thuis oefenen'); return renderTeam();
+        try { meld(await deelVideo(v, cat, melding)); } catch (x){ b.disabled = false; return meld(x.message || 'Dat lukte niet.'); }
+        return renderTeam();
+      }
+      if (a === 'vcatplus'){
+        const r = K.catErbij(inst().videoCats, root.querySelector('#tk-vcat')?.value);
+        if (r.fout) return meld(r.fout);
+        await zetInst({ videoCats: r.cats }); return renderTeam();
+      }
+      if (a === 'vcatop'){ const c = inst().videoCats, n = Number(b.dataset.n); if (n > 0){ [c[n - 1], c[n]] = [c[n], c[n - 1]]; await zetInst({ videoCats: c }); } return renderTeam(); }
+      if (a === 'vcatweg'){
+        const c = inst().videoCats, n = Number(b.dataset.n), naam = c[n], nu = inst().thuisVideos, erin = nu.filter(v => v.cat === naam).length;
+        if (erin && !confirm(`"${naam}" verwijderen? ${erin === 1 ? 'De video blijft' : "De " + erin + " video's blijven"} gedeeld, zonder categorie.`)) return;
+        c.splice(n, 1); nu.forEach(v => { if (v.cat === naam) delete v.cat; });
+        await zetInst({ videoCats: c, thuisVideos: nu }); return renderTeam();
       }
       if (a === 'videoweg'){ const nu = inst().thuisVideos; nu.splice(Number(b.dataset.n), 1); await zetInst({ thuisVideos: nu }); return renderTeam(); }
       if (a === 'lijn'){

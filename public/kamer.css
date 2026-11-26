@@ -165,6 +165,9 @@ select.tk-invoer{padding-right:var(--space-xs)}
 .tk-nr{width:52px;height:52px;border-radius:var(--radius);background:var(--accent-vlak);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:var(--t-4xl);flex:none}
 
 /* thuis oefenen: video's */
+.tk-vcats{display:flex;flex-wrap:wrap;gap:var(--space-xs)}
+.tk-vcats .tk-chip{padding:0 var(--space-sm)}
+.tk-video-beheer .tk-invoer{min-height:40px;margin-top:4px;font-size:var(--t-sm, var(--t-md))}
 .tk-video-rij{display:flex;align-items:center;gap:var(--space-sm);min-height:56px;width:100%;text-align:left}
 .tk-video-kies, .tk-video-speel{padding:6px;border:1px solid var(--hair);border-radius:var(--r-s);background:var(--surface-2);color:var(--ink);font-size:var(--t-base);cursor:pointer}
 .tk-video-beeld{position:relative;width:72px;height:44px;border-radius:var(--r-xs);overflow:hidden;flex:none;background:var(--zwart);display:block}

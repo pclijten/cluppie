@@ -9,7 +9,7 @@
      bericht klaar, Cluppie verstuurt en bewaart niets. */
 import { auth, db, functions, httpsCallable, signInAnonymously, signOut, onAuthStateChanged, signInWithEmailAndPassword,
   createUserWithEmailAndPassword, sendEmailVerification, collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, where, onSnapshot } from './firebase.js?v=20261011g';
-import * as K from './kamer-logica.js?v=20261125m';
+import * as K from './kamer-logica.js?v=20261127k';
 import * as P from './kamer-push.js?v=20261126z';
 
 const wortel = document.getElementById('tk');
@@ -19,10 +19,10 @@ const bewaar = { get: (k) => { try { return localStorage.getItem(k) || ''; } cat
   set: (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch { /* geen opslag */ } } };
 
 const A = { scherm: 'laden', fout: '', bezig: false, user: null, link: null, lid: null, teamId: '', teams: [], kind: '',
-  kamer: null, agenda: [], polls: [], berichten: [], gezin: {}, stats: {}, stemmen: {}, stemGeteld: {}, stemWacht: {}, gelezen: 0, weer: {}, tab: qs.get('poll') ? 'polls' : 'vandaag',
+  kamer: null, agenda: [], polls: [], berichten: [], gezin: {}, stats: {}, stemmen: {}, stemGeteld: {}, stemWacht: {}, gelezen: 0, weer: {}, tab: qs.get('poll') ? 'polls' : qs.get('tab') === 'videos' ? 'videos' : 'vandaag', videoCat: '', videoGezien: 0, videoNieuwVanaf: 0,
   open: '', blad: null, code: null, thuisOpen: false, subs: [], hulp: {}, hulpAan: false, hulpSubs: {} };
 let naarPoll = qs.get('poll') || '';                   /* [20261116p] link uit WhatsApp: één keer naar die poll schuiven */
-const TABNAAM = { vandaag: 'Vandaag', agenda: 'Agenda', polls: 'Polls', kind: 'Mijn kind' };
+const TABNAAM = { vandaag: 'Vandaag', agenda: 'Agenda', polls: 'Polls', videos: "Video's", kind: 'Mijn kind' };
 if (qs.get('k')) bewaar.set('tkCode', K.schoonCode(qs.get('k'), 12));
 /* [20261126m] een tik op een pushmelding opent het team van die melding (?team=) */
 if (qs.get('team') && /^[A-Za-z0-9_-]{1,64}$/.test(qs.get('team'))) bewaar.set('tkTeam', qs.get('team'));
@@ -36,6 +36,7 @@ const ICO = {
   mens: '<circle cx="12" cy="8" r="4"></circle><path d="M4 20c0-4 4-6 8-6s8 2 8 6"></path>',
   bel: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"></path><path d="M10 21h4"></path>',
   slot: '<rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path>',
+  video: '<rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M10 9.5l5 2.5-5 2.5z"></path>',
   plek: '<path d="M12 21s7-6 7-11a7 7 0 0 0-14 0c0 5 7 11 7 11z"></path><circle cx="12" cy="10" r="2.5"></circle>',
 };
 const ico = (n, klein) => `<svg class="tk-ico${klein ? ' klein' : ''}" viewBox="0 0 24 24" aria-hidden="true">${ICO[n]}</svg>`;
@@ -151,6 +152,24 @@ const zichtbarePolls = () => (mag('polls') ? K.sorteerPolls(A.polls) : []);
 const metEigen = (p) => K.pollMetEigen(p, kindId(), A.stemGeteld[p.id], A.stemmen[p.id]);
 const nieuweBerichten = () => (mag('berichten') ? K.nieuweBerichten(A.berichten, A.gelezen) : []);
 const nogStemmen = () => K.nogStemmen(zichtbarePolls(), A.stemmen, rol());
+/* [20261126v] video's die de trainer deelde (Thuis oefenen en de tab Video's), en hoeveel daarvan nieuw zijn */
+const kamerVideos = () => (mag('thuis') ? (A.kamer?.thuisVideos || []).filter(v => v && (v.yt || v.url)) : []);
+const nieuweVideos = () => (A.tab === 'videos' ? 0 : K.nieuweVideosSinds(kamerVideos(), A.videoGezien));
+function videosGezien(){
+  const max = Math.max(0, ...kamerVideos().map(v => Number(v.ms) || 0));
+  if (max > A.videoGezien){ A.videoGezien = max; bewaar.set('tkVideo:' + A.teamId, String(max)); }
+}
+const videoKaart = (v, nieuw) => `<button class="tk-video-rij tk-video-speel" data-doe="video" data-k="${e(K.videoSleutel(v))}"><span class="tk-video-beeld">${v.yt ? `<img src="${e(K.ytThumb(v.yt))}" alt="" loading="lazy">` : ''}</span>
+  <span class="tk-item-tekst tk-vet">${e(v.titel || 'Video')}</span>${nieuw ? '<span class="tk-klein tk-vet tk-ok">Nieuw</span>' : '<span class="tk-klein tk-zacht">Bekijk</span>'}</button>`;
+function htmlVideos(){
+  const groepen = K.videoGroepen(kamerVideos(), A.kamer?.videoCats), vanaf = A.videoNieuwVanaf;
+  if (!groepen.length) return '<section class="tk-kaart"><p class="tk-zacht" style="margin:0">De trainer heeft nog geen video\'s gedeeld.</p></section>';
+  const met = groepen.length > 1 || groepen[0].naam, cat = groepen.some(g => g.naam === A.videoCat) ? A.videoCat : '';
+  const chips = met ? `<div class="tk-vcats" role="group" aria-label="Categorie"><button class="tk-chip" data-doe="videocat" data-cat="" aria-pressed="${cat === ''}">Alle</button>${groepen.map(g => `<button class="tk-chip" data-doe="videocat" data-cat="${e(g.naam)}" aria-pressed="${cat === g.naam}">${e(g.naam)} <span class="tk-zacht">${g.videos.length}</span></button>`).join('')}</div>` : '';
+  return `${chips}${groepen.filter(g => !cat || g.naam === cat).map(g => `<section class="tk-kaart" style="gap:8px">${g.naam ? `<h2 class="tk-label">${e(g.naam)}</h2>` : ''}
+    ${g.videos.map(v => videoKaart(v, Number(v.ms) > vanaf && vanaf > 0)).join('')}</section>`).join('')}
+    <p class="tk-klein tk-zacht" style="margin:0">Gekozen door de trainer. YouTube-video's spelen zonder aanbevelingen van andere kanalen.</p>`;
+}
 
 /* [20261116r] eigen kind: erbij, afwezig, of niet geselecteerd voor deze wedstrijd (dat laatste ziet alleen het eigen gezin) */
 const status = (i) => K.eigenStatus(i, kindId(), (A.gezin[kindId()] || {}).nietMee);
@@ -301,7 +320,7 @@ function htmlVandaag(){
     ${htmlPushTip()}`;
   const wedstrijdSnel = kom.find(i => i.soort === 'wedstrijd' && K.binnenDagen(i.datum, vandaag, 2));
   const wedstrijdWeek = kom.find(i => i.soort === 'wedstrijd' && K.binnenDagen(i.datum, vandaag, 7));
-  const videos = (A.kamer?.thuisVideos || []).filter(v => v && (v.yt || v.url));
+  const videos = kamerVideos().slice().sort((a, b) => (Number(b.ms) || 0) - (Number(a.ms) || 0));
   /* [20261116r] daarna: de volgende training en de volgende wedstrijd, voor zover ze hierboven niet al staan */
   const rest = kom.filter(i => i !== eerst && i !== wedstrijdWeek);
   const daarna = [rest.find(i => i.soort === 'training'), rest.find(i => i.soort === 'wedstrijd'), rest.find(i => i.soort === 'activiteit' && K.binnenDagen(i.datum, vandaag, 21))].filter(Boolean).sort((a, b) => a.datum.localeCompare(b.datum));
@@ -318,8 +337,8 @@ function htmlVandaag(){
       ${A.kamer?.thuis ? `<div class="tk-vet">${e(A.kamer.thuis.naam || 'Oefening van de week')}</div>
       <div id="tk-thuis" class="tk-3d" ${A.thuisOpen ? '' : 'hidden'}></div>
       ${A.thuisOpen ? '' : '<button class="tk-knop licht" data-doe="thuis">Bekijk de oefening in 3D</button>'}` : ''}
-      ${videos.map((v, n) => `<button class="tk-video-rij tk-video-speel" data-doe="video" data-n="${n}"><span class="tk-video-beeld">${v.yt ? `<img src="${e(K.ytThumb(v.yt))}" alt="" loading="lazy">` : ''}</span>
-        <span class="tk-item-tekst tk-vet">${e(v.titel || 'Video')}</span><span class="tk-klein tk-zacht">Bekijk</span></button>`).join('')}</section>` : ''}
+      ${videos.slice(0, 3).map(v => videoKaart(v, Number(v.ms) > A.videoGezien && A.videoGezien > 0)).join('')}
+      ${videos.length > 3 || (A.kamer?.videoCats || []).length ? `<button class="tk-knop licht" data-doe="tab" data-tab="videos">Alle video's (${videos.length})</button>` : ''}</section>` : ''}
     ${wedstrijdSnel && (A.kamer?.lijn || []).length ? `<section class="tk-kaart" style="gap:6px"><h2 class="tk-label">Zo moedigen wij aan</h2>${A.kamer.lijn.map(r => `<div>${e(r)}</div>`).join('')}</section>` : ''}
     ${rol() === 'speler' ? `<div class="tk-melding">${ico('slot', true)}<span>Je ouder beheert je toegang. Chatten kan hier niet.</span></div>` : ''}</div>`;
 }
@@ -390,7 +409,7 @@ function htmlPush(){
   if (st === 'geweigerd') return `<section class="tk-kaart"><h2 class="tk-label">Meldingen op dit toestel</h2><p class="tk-klein tk-zacht" style="margin:0">Meldingen zijn geblokkeerd. Zet ze aan in de instellingen van je telefoon of browser (bij Cluppie of www.cluppie.io) en kom dan hier terug.</p></section>`;
   const aan = st === 'aan';
   return `<section class="tk-kaart" style="flex-direction:row;align-items:center"><div style="flex:1"><div class="tk-vet" id="lbl-push">Meldingen op dit toestel</div>
-    <div class="tk-klein tk-zacht">${aan ? 'Je krijgt een melding als de trainer een poll of mededeling plaatst.' : 'Krijg een melding bij een nieuwe poll of mededeling van de trainer.'}</div></div>
+    <div class="tk-klein tk-zacht">${aan ? 'Je krijgt een melding als de trainer een poll, mededeling of video plaatst.' : 'Krijg een melding bij een nieuwe poll, mededeling of video van de trainer.'}</div></div>
     <button class="tk-sw" role="switch" aria-checked="${aan}" aria-labelledby="lbl-push" data-doe="${aan ? 'pushuit' : 'pushaan'}" ${A.bezig ? 'disabled' : ''}></button></section>`;
 }
 function htmlPushTip(){
@@ -459,13 +478,14 @@ function htmlBlad(){
 }
 function htmlKamer(){
   if (!A.kamer) return smal(`${merk}<div class="tk-inhoud"><p class="tk-zacht">Laden…</p></div>`);
-  const tabs = [['vandaag', 'Vandaag', 'huis'], ['agenda', 'Agenda', 'agenda'], ...(mag('polls') ? [['polls', 'Polls', 'poll']] : []), ['kind', isOuder() ? 'Mijn kind' : 'Ik', 'mens']];
+  const tabs = [['vandaag', 'Vandaag', 'huis'], ['agenda', 'Agenda', 'agenda'], ...(mag('polls') ? [['polls', 'Polls', 'poll']] : []), ...(kamerVideos().length ? [['videos', "Video's", 'video']] : []), ['kind', isOuder() ? 'Mijn kind' : 'Ik', 'mens']];
   const tab = tabs.some(t => t[0] === A.tab) ? A.tab : 'vandaag';
-  const inhoud = tab === 'agenda' ? htmlAgenda() : tab === 'polls' ? htmlPolls() : tab === 'kind' ? htmlKind() : htmlVandaag();
-  const teller = { vandaag: nieuweBerichten().length, polls: nogStemmen().length };
-  const tellerTekst = { vandaag: 'nieuwe mededelingen', polls: 'polls waar je nog op stemt' };
+  if (tab === 'videos') videosGezien();
+  const inhoud = tab === 'agenda' ? htmlAgenda() : tab === 'polls' ? htmlPolls() : tab === 'videos' ? htmlVideos() : tab === 'kind' ? htmlKind() : htmlVandaag();
+  const teller = { vandaag: nieuweBerichten().length, polls: nogStemmen().length, videos: nieuweVideos() };
+  const tellerTekst = { vandaag: 'nieuwe mededelingen', polls: 'polls waar je nog op stemt', videos: "nieuwe video's" };
   const knoppen = tabs.map(t => `<button data-doe="tab" data-tab="${t[0]}" aria-current="${tab === t[0]}"${teller[t[0]] ? ` aria-label="${t[1]}, ${teller[t[0]]} ${tellerTekst[t[0]]}"` : ''}><span class="tk-ico-vak">${ico(t[2])}${teller[t[0]] ? `<i class="tk-badge">${teller[t[0]]}</i>` : ''}</span><span>${t[1]}</span></button>`).join('');
-  try { const n = teller.vandaag + teller.polls; document.title = (n ? `(${n}) ` : '') + 'Teamkamer · Cluppie'; P.badge(n); } catch { /* geen titel */ }
+  try { const n = teller.vandaag + teller.polls + teller.videos; document.title = (n ? `(${n}) ` : '') + 'Teamkamer · Cluppie'; P.badge(n); } catch { /* geen titel */ }
   const ander = A.teams.length > 1 ? '<button class="tk-knop licht klein" data-doe="wisselteam">Ander team</button>' : '';
   const team = A.kamer.teamNaam || 'Team', club = A.kamer.clubNaam || 'Teamkamer';
   /* op de computer: zijbalk en kruimelpad zoals in de app; op de telefoon: kop en balk onderaan */
@@ -615,11 +635,15 @@ function openKamer(teamId, lid){
   stopSubs();
   bewaar.set('tkTeam', teamId);
   Object.assign(A, { scherm: 'kamer', teamId, lid, kamer: null, agenda: [], polls: [], berichten: [], gezin: {}, stats: {}, stemmen: {}, stemGeteld: {}, stemWacht: {}, weer: {}, dicht: false, fout: '',
-    gelezen: Number(bewaar.get('tkGelezen:' + teamId)) || 0 });
+    gelezen: Number(bewaar.get('tkGelezen:' + teamId)) || 0, videoGezien: Number(bewaar.get('tkVideo:' + teamId)) || 0, videoCat: '' });
+  A.videoNieuwVanaf = A.videoGezien;
   const basis = doc(db, 'teamkamer', teamId);
   const mis = () => { stopSubs(); zet({ scherm: 'geen', dicht: true }); };
   A.subs.push(onSnapshot(doc(basis, 'kamerleden', A.user.uid), s => { if (!s.exists()) mis(); else { A.lid = s.data(); teken(); } }, mis));
-  A.subs.push(onSnapshot(basis, s => { const k = s.data(); if (!k || k.aan !== true) return mis(); A.kamer = k; hulpSync(); teken(); weerHalen(); }, mis));
+  A.subs.push(onSnapshot(basis, s => { const k = s.data(); if (!k || k.aan !== true) return mis(); A.kamer = k;
+    /* [20261126v] de eerste keer op dit toestel: wat er al stond telt niet als nieuw */
+    if (!A.videoGezien && !bewaar.get('tkVideo:' + teamId) && A.tab !== 'videos'){ videosGezien(); A.videoNieuwVanaf = A.videoGezien; }
+    hulpSync(); teken(); weerHalen(); }, mis));
   A.subs.push(onSnapshot(collection(basis, 'agenda'), s => { A.agenda = s.docs.map(d => ({ id: d.id, ...d.data() })); teken(); weerHalen(); }, () => {}));
   A.subs.push(onSnapshot(collection(basis, 'berichten'), s => { A.berichten = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.ms || 0) - (a.ms || 0)); teken(); }, () => {}));
   A.subs.push(onSnapshot(collection(basis, 'polls'), s => { A.polls = s.docs.map(d => ({ id: d.id, ...d.data() })); stemmenIngehaald(); teken(); eigenStemmen(); }, () => {}));
@@ -776,8 +800,9 @@ wortel.addEventListener('click', async (ev) => {
   if (doe === 'sluitblad' && ev.target !== b) return;            /* tik in het blad zelf sluit niet */
   try {
     legNet();
-    if (doe === 'tab') return zet({ tab: b.dataset.tab, open: '' });
-    if (doe === 'video'){ const v = (A.kamer?.thuisVideos || []).filter(x => x && (x.yt || x.url))[Number(b.dataset.n)]; if (v) openSpeler(v); return; }
+    if (doe === 'tab'){ if (b.dataset.tab === 'videos' && A.tab !== 'videos') A.videoNieuwVanaf = A.videoGezien; return zet({ tab: b.dataset.tab, open: '' }); }
+    if (doe === 'video'){ const v = kamerVideos().find(x => K.videoSleutel(x) === b.dataset.k); if (v) openSpeler(v); return; }
+    if (doe === 'videocat') return zet({ videoCat: b.dataset.cat || '' });
     if (doe === 'oef3d'){ const i = A.agenda.find(x => x.id === b.dataset.id), v = i && i.training && i.training.vormen[Number(b.dataset.n)]; if (v) openOefening(v); return; }
     if (doe === 'kopieercode'){ await navigator.clipboard.writeText(K.toonCode(A.code)); return toast('Code gekopieerd'); }
     if (doe === 'open') return zet({ open: A.open === b.dataset.id ? '' : b.dataset.id });

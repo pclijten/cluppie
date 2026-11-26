@@ -135,7 +135,10 @@ const kamerTeam = onDocumentWritten({ document: 'teams/{teamId}', region: REGIO 
   const voor = event.data.before.data(), na = event.data.after.data();
   if (L.teamSleutel(voor) === L.teamSleutel(na)) return;
   if (!L.inst(voor).aan && !L.inst(na).aan) return;
-  await bouwKamer(getFirestore(), event.params.teamId);
+  const db = getFirestore(), r = await bouwKamer(db, event.params.teamId);
+  /* [20261126v] net gedeelde video's met een vinkje voor een melding: één pushmelding voor allemaal samen */
+  const nieuw = r && r.aan ? L.nieuweVideos(voor, na) : [];
+  if (nieuw.length) await meldVideos(db, event.params.teamId, nieuw);
 });
 const kamerSpeler = onDocumentWritten({ document: 'teams/{teamId}/spelers/{spelerId}', region: REGIO }, async (event) => {
   const voor = event.data.before.data(), na = event.data.after.data();
@@ -350,6 +353,16 @@ async function meldPoll(db, teamId, pollId, poll, soort, ref){
     const r = await P.stuur(db, uids, P.melding(soort, { teamNaam: kamer.teamNaam, teamId, id: pollId, vraag: poll.vraag }));
     await ref.update(soort === 'poll' ? { meldingBereik: r.ouders } : { herinnerBereik: r.ouders });
   } catch (e){ logger.warn('[kamerPush] poll ' + teamId + '/' + pollId, e.message || e); }
+}
+async function meldVideos(db, teamId, videos){
+  try {
+    const kamer = await kamerAan(db, teamId);
+    if (!kamer || kamer.mag?.thuis !== true) return;
+    const leden = (await ledenVanTeam(db, teamId)).map(d => ({ id: d.id, ...d.data() }));
+    const uids = P.ontvangers(leden, { behalve: videos[0].door || '' });
+    const r = await P.stuur(db, uids, P.melding('video', { teamNaam: kamer.teamNaam, teamId, titels: videos.map(v => v.titel) }));
+    await db.doc(`teamkamer/${teamId}`).set({ videoMelding: { ms: Date.now(), ouders: r.ouders, aantal: videos.length } }, { merge: true });
+  } catch (e){ logger.warn('[kamerPush] video ' + teamId, e.message || e); }
 }
 const kamerBericht = onDocumentCreated({ document: 'teamkamer/{teamId}/berichten/{berichtId}', region: REGIO }, async (event) => {
   const b = event.data && event.data.data();

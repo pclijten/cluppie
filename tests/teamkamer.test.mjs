@@ -314,7 +314,22 @@ const metVideos = { ...team, teamkamer: { aan: true, thuisVideos: [{ titel: 'Kap
 const kv = L.kamerDoc(metVideos, { naam: 'x', platformModules: { teamkamer: true, teamkamerOpties: { thuis: true } } }, spelers, {}, null);
 assert.deepEqual(kv.thuisVideos, [{ titel: 'Kappen', yt: 'dQw4w9WgXcQ' }, { titel: 'Eigen clip', url: opslag }], 'alleen YouTube en de eigen opslag komen in de kopie'); n++;
 ok(L.kamerDoc(metVideos, { naam: 'x', platformModules: { teamkamer: true } }, spelers, {}, null).thuisVideos.length === 0, 'thuis uit bij de eindbaas: geen video\'s');
-ok(L.kamerDoc({ ...team, teamkamer: { aan: true, thuisVideos: Array.from({ length: 9 }, () => ({ yt: 'dQw4w9WgXcQ' })) } }, { naam: 'x', platformModules: { teamkamer: true, teamkamerOpties: { thuis: true } } }, spelers, {}, null).thuisVideos.length === K.MAX_THUIS_VIDEOS, 'maximaal zes video\'s');
+ok(L.kamerDoc({ ...team, teamkamer: { aan: true, thuisVideos: Array.from({ length: 45 }, () => ({ yt: 'dQw4w9WgXcQ' })) } }, { naam: 'x', platformModules: { teamkamer: true, teamkamerOpties: { thuis: true } } }, spelers, {}, null).thuisVideos.length === K.MAX_THUIS_VIDEOS && K.MAX_THUIS_VIDEOS === L.MAX_THUIS_VIDEOS, 'maximaal 40 video\'s, zelfde grens in app en server');
+/* [20261126v] categorieën van de trainer en wanneer een video gedeeld werd */
+const metCats = L.kamerDoc({ ...team, teamkamer: { aan: true, videoCats: ['Techniek', ' techniek ', '', 'Uitleg', 7, 'x'.repeat(50)], thuisVideos: [{ titel: 'A', yt: 'dQw4w9WgXcQ', cat: 'Techniek', ms: 5, melding: true, door: 'c1' }, { titel: 'B', url: opslag, cat: 'Bestaat niet', ms: 'x' }] } },
+  { naam: 'x', platformModules: { teamkamer: true, teamkamerOpties: { thuis: true } } }, spelers, {}, null);
+assert.deepEqual(metCats.videoCats, ['Techniek', 'Uitleg', 'x'.repeat(30)], 'categorieën: opgeschoond, niet dubbel'); n++;
+assert.deepEqual(metCats.thuisVideos, [{ titel: 'A', yt: 'dQw4w9WgXcQ', cat: 'Techniek', ms: 5 }, { titel: 'B', url: opslag }], 'video: alleen een bestaande categorie en ms; melding en door niet in de kopie'); n++;
+ok(L.kamerDoc({ ...team, teamkamer: { aan: true, videoCats: ['Techniek'] } }, { naam: 'x', platformModules: { teamkamer: true } }, spelers, {}, null).videoCats.length === 0, 'categorieën: niet als thuis uit staat');
+const tv = (lijst) => ({ teamkamer: { aan: true, videoCats: ['Techniek'], thuisVideos: lijst } });
+const oudV = { titel: 'Oud', yt: 'dQw4w9WgXcQ', melding: true }, nieuwV = { titel: 'Nieuw', yt: 'abcdefghijk', melding: true, door: 'c1' };
+assert.deepEqual(L.nieuweVideos(tv([oudV]), tv([oudV, nieuwV, { titel: 'Stil', yt: 'abcdefghijl' }, { titel: 'Fout', url: 'https://x.nl', melding: true }])), [{ titel: 'Nieuw', door: 'c1' }], 'nieuwe video\'s: alleen nieuw, met vinkje en geldig'); n++;
+ok(L.nieuweVideos(tv([oudV, nieuwV]), tv([{ ...nieuwV, cat: 'Techniek' }, oudV])).length === 0 && L.nieuweVideos(undefined, tv([])).length === 0, 'nieuwe video\'s: verplaatsen of herschikken geeft geen melding');
+const gr = K.videoGroepen([{ titel: 'a', yt: 'a', cat: 'Uitleg', ms: 1 }, { titel: 'b', yt: 'b', ms: 3 }, { titel: 'c', yt: 'c', cat: 'Techniek', ms: 2 }, { titel: 'd', yt: 'd', cat: 'Techniek', ms: 9 }, { titel: 'e' }], ['Techniek', 'Uitleg', 'Leeg']);
+ok(gr.map(g => g.naam + ':' + g.videos.map(v => v.titel).join('')).join('|') === 'Techniek:dc|Uitleg:a|Overig:b', 'ouders: per categorie in de volgorde van de trainer, nieuwste eerst, lege categorie weg, zonder categorie onder Overig');
+ok(K.videoGroepen([{ titel: 'b', yt: 'b' }], []).map(g => g.naam).join() === '' && K.nieuweVideosSinds([{ ms: 5 }, { ms: 9 }, {}], 5) === 1, 'ouders: zonder categorieën één lijst; nieuw = gedeeld na het laatste bezoek');
+ok(K.catErbij(['Techniek'], '  Uitleg   ouders ').naam === 'Uitleg ouders' && K.catErbij(['Techniek'], 'TECHNIEK').fout && K.catErbij(['Techniek'], 'TECHNIEK').naam === 'Techniek'
+  && K.catErbij(Array.from({ length: 12 }, (x, i) => 'c' + i), 'nog een').fout && K.catErbij([], ' ').fout, 'categorie erbij: opgeschoond, niet dubbel, hooguit 12');
 ok(K.youtubeId('https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=3') === 'dQw4w9WgXcQ' && K.youtubeId('https://youtu.be/dQw4w9WgXcQ') === 'dQw4w9WgXcQ' && K.youtubeId('https://www.youtube.com/shorts/dQw4w9WgXcQ') === 'dQw4w9WgXcQ' && K.youtubeId('https://voorbeeld.nl') === '', 'YouTube-links herkennen');
 assert.deepEqual(K.thuisVideo({ url: 'https://youtu.be/dQw4w9WgXcQ', titel: ' Kappen ' }), { titel: 'Kappen', yt: 'dQw4w9WgXcQ' }); n++;
 assert.deepEqual(K.thuisVideo({ bron: 'upload', url: opslag, titel: 'Clip' }), { titel: 'Clip', url: opslag }); n++;
@@ -427,6 +442,8 @@ const pm = P.melding('poll', { teamNaam: 'JO9-1', teamId: 't1', id: 'q 1', vraag
 ok(pm.titel === 'Nieuwe poll · JO9-1' && pm.tekst === 'Wie rijdt zaterdag?' && pm.url === 'https://www.cluppie.io/kamer.html?team=t1&poll=q%201' && pm.tag === 'poll-q 1', 'push: tekst en link van een poll');
 const bm = P.melding('bericht', { teamNaam: '', teamId: 't1', id: 'b1', tekst: 'x'.repeat(300) });
 ok(bm.titel === 'Mededeling · je team' && bm.tekst.length === 160 && bm.tekst.endsWith('…') && bm.url.endsWith('?team=t1'), 'push: mededeling ingekort, zonder teamnaam');
+const vm1 = P.melding('video', { teamNaam: 'JO9-1', teamId: 't1', titels: ['Kappen en draaien'] }), vm2 = P.melding('video', { teamNaam: 'JO9-1', teamId: 't1', titels: ['A', 'B'] });
+ok(vm1.titel === 'Nieuwe video · JO9-1' && vm1.tekst === 'Kappen en draaien' && vm1.url.endsWith('?team=t1&tab=videos') && vm2.titel === "Nieuwe video's · JO9-1" && vm2.tekst === 'A, B', 'push: tekst en link bij een gedeelde video');
 ok(P.melding('herinnering', { teamNaam: 'JO9-1', teamId: 't1', id: 'q1', vraag: 'V' }).titel === 'Je stem is nodig · JO9-1', 'push: herinnering');
 const nuMs = Date.now();
 ok(P.herinnerMag({ status: 'open' }, { status: 'open', herinnerMs: nuMs }, nuMs) && !P.herinnerMag({ status: 'open', herinnerMs: nuMs - 3600000 }, { status: 'open', herinnerMs: nuMs }, nuMs)
@@ -468,6 +485,18 @@ store.set('teamkamer/tp', { aan: true, teamNaam: 'JO9-1', mag: { polls: true, be
 verstuurd.length = 0;
 await F.kamerBericht({ params: { teamId: 'tp', berichtId: 'm3' }, data: { data: () => bericht, ref: fake.db.doc('teamkamer/tp/berichten/m3') } });
 ok(verstuurd.length === 0, 'push: geen melding als mededelingen uit staan');
+/* [20261126v] video gedeeld in de teamkamer: één melding via de team-trigger, alleen voor nieuwe video's met vinkje */
+const tvTeam = (lijst) => ({ naam: 'JO9-3', club: 'c1', leden: { coach: true }, teamkamer: { aan: true, videoCats: ['Techniek'], thuisVideos: lijst } });
+store.set('teams/tv1', tvTeam([{ titel: 'Kappen', yt: 'dQw4w9WgXcQ', cat: 'Techniek', ms: 1, melding: true, door: 'coach' }]));
+store.set('teamkamer/tv1/kamerleden/u1', { ...pl[0] });
+store.set('teamkamer/tv1/kamerleden/coach', { ...pl[4] });
+verstuurd.length = 0;
+await F.kamerTeam(event('teams/tv1', tvTeam([]), store.get('teams/tv1'), { teamId: 'tv1' }));
+ok(verstuurd.length === 1 && verstuurd[0].tokens.join() === 'tok-u1' && verstuurd[0].data.titel === 'Nieuwe video · JO9-3' && verstuurd[0].data.url.endsWith('&tab=videos')
+  && store.get('teamkamer/tv1').videoMelding.ouders === 1 && store.get('teamkamer/tv1').thuisVideos[0].cat === 'Techniek', 'push: nieuwe video met vinkje naar de ouders, niet naar wie deelde; bereik terug voor de trainer');
+verstuurd.length = 0;
+await F.kamerTeam(event('teams/tv1', tvTeam([{ titel: 'Kappen', yt: 'dQw4w9WgXcQ' }]), { ...store.get('teams/tv1'), teamkamer: { ...store.get('teams/tv1').teamkamer, videoCats: ['Techniek', 'Uitleg'] } }, { teamId: 'tv1' }));
+ok(verstuurd.length === 0, 'push: geen melding als er alleen een categorie bijkomt');
 
 /* ---------- [20261126m] berichten van de club: pushmelding naar trainers ---------- */
 const B = require('../functions/bericht-push.js');

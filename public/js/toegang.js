@@ -12,10 +12,10 @@ import {
   auth, db, functions, httpsCallable,
   collection, doc, getDoc, getDocs, query, where
 } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261127f';
+import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261127k';
 import { stuurVerificatieMail } from './verificatie.js?v=20261020e';
-import { bewaar } from './club-instellingen.js?v=20261127f';
-import { effectief } from './clubconfig.js?v=20261127f';
+import { bewaar } from './club-instellingen.js?v=20261127k';
+import { effectief } from './clubconfig.js?v=20261127k';
 
 export const PRIVACY_VERSIE = '2026-10';
 const roep = (naam, data) => httpsCallable(functions, naam)(data || {}).then(r => r.data);
@@ -307,7 +307,7 @@ export async function koppelToegang(v, herteken){
     klaar(() => roep('verwijderLid', { clubId, uid: b.dataset.lidWeg }), b, 'Uitgeschreven');
   });
 
-  q('#pvVoLees')?.addEventListener('click', () => import('./club.js?v=20261127f').then(m => m.modalVerwerkersovereenkomst()));
+  q('#pvVoLees')?.addEventListener('click', () => import('./club.js?v=20261127k').then(m => m.modalVerwerkersovereenkomst()));
   q('#pvOpslaan').onclick = (e) => klaar(async () => {
     const wijz = [
       ['privacy.contactNaam', q('#pvNaam').value.trim()], ['privacy.contactEmail', q('#pvMail').value.trim()],

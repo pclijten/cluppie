@@ -55,19 +55,51 @@ const ALLES_AAN = Object.fromEntries(OPTIES.map(k => [k, true]));
 /* ---------- instellingen van het team (teams/{id}.teamkamer; de coach schrijft die zelf) ----------
    mag = wat de eindbaas toestaat: een keuze van de coach telt alleen als de eindbaas die mogelijkheid aan heeft. */
 /* Video's bij "Thuis oefenen": van YouTube alleen de video-id, een eigen video alleen uit de opslag van
-   Cluppie (clubs/{clubId}/videos). Zelfde regels als public/js/kamer-logica.js. */
-const MAX_THUIS_VIDEOS = 6;
-function thuisVideos(lijst){
+   Cluppie (clubs/{clubId}/videos). Zelfde regels als public/js/kamer-logica.js.
+   [20261126v] De trainer deelt nu ook video's van de club (Team, Video's) in de teamkamer, tot 40, met
+   categorieën die hij zelf maakt (teamkamer.videoCats, namen). Per video: cat (een naam uit die lijst) en
+   ms (wanneer gedeeld, voor "nieuw" bij ouders). Ouders zien ze in de tab Video's. */
+const MAX_THUIS_VIDEOS = 40, MAX_VIDEO_CATS = 12;
+function videoCats(lijst){
   if (!Array.isArray(lijst)) return [];
+  const uit = [], gezien = new Set();
+  for (const c of lijst){
+    const naam = str(c, 30), sleutel = naam.toLowerCase();
+    if (!naam || gezien.has(sleutel)) continue;
+    gezien.add(sleutel); uit.push(naam);
+    if (uit.length >= MAX_VIDEO_CATS) break;
+  }
+  return uit;
+}
+const videoSleutel = (v) => (v && typeof v === 'object' ? (typeof v.yt === 'string' && v.yt ? 'yt:' + v.yt : typeof v.url === 'string' && v.url ? 'url:' + v.url : '') : '');
+function thuisVideos(lijst, cats){
+  if (!Array.isArray(lijst)) return [];
+  const bekend = new Set(Array.isArray(cats) ? cats : []);
   const uit = [];
   for (const v of lijst){
     if (!v || typeof v !== 'object') continue;
     const titel = str(v.titel, 80) || 'Video';
-    if (typeof v.yt === 'string' && /^[A-Za-z0-9_-]{11}$/.test(v.yt)) uit.push({ titel, yt: v.yt });
-    else if (typeof v.url === 'string' && v.url.length < 900 && /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/[a-z0-9.-]+\/o\/clubs%2F/.test(v.url)) uit.push({ titel, url: v.url });
+    let x = null;
+    if (typeof v.yt === 'string' && /^[A-Za-z0-9_-]{11}$/.test(v.yt)) x = { titel, yt: v.yt };
+    else if (typeof v.url === 'string' && v.url.length < 900 && /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/[a-z0-9.-]+\/o\/clubs%2F/.test(v.url)) x = { titel, url: v.url };
+    if (!x) continue;
+    const cat = str(v.cat, 30), ms = Math.round(Number(v.ms));
+    if (cat && bekend.has(cat)) x.cat = cat;
+    if (Number.isFinite(ms) && ms > 0) x.ms = ms;
+    uit.push(x);
     if (uit.length >= MAX_THUIS_VIDEOS) break;
   }
   return uit;
+}
+/* [20261126v] welke video's zijn net gedeeld met een pushmelding erbij (melding: true)? Vergelijkt de lijst op het
+   teamdocument voor en na een wijziging; een video die er al stond telt niet, ook niet als hij van categorie wisselt. */
+function nieuweVideos(voorTeam, naTeam){
+  const lijst = (t) => (t && t.teamkamer && Array.isArray(t.teamkamer.thuisVideos) ? t.teamkamer.thuisVideos : []);
+  const oud = new Set(lijst(voorTeam).map(videoSleutel).filter(Boolean));
+  const cats = videoCats(naTeam && naTeam.teamkamer && naTeam.teamkamer.videoCats);
+  const goed = new Set(thuisVideos(lijst(naTeam), cats).map(videoSleutel));
+  return lijst(naTeam).filter(v => v && v.melding === true && goed.has(videoSleutel(v)) && !oud.has(videoSleutel(v)))
+    .map(v => ({ titel: str(v.titel, 80) || 'Video', door: str(v.door, 128) }));
 }
 /* [20261116r] welke cijfers van het eigen kind mag een ouder zien? null = geen. Speeltijd is een eigen vinkje. */
 const STATS_SOORTEN = ['wedstrijden', 'speeltijd', 'doelpunten', 'opkomst', 'kaarten'];
@@ -128,7 +160,8 @@ function inst(team, mag = ALLES_AAN){
     lijn: mag.lijn === true ? (lijn.length ? lijn : LIJN_STANDAARD) : [],
     thuis: mag.thuis === true && k.thuis && typeof k.thuis.vormId === 'string' && k.thuis.vormId
       ? { vormId: str(k.thuis.vormId, 60), naam: str(k.thuis.naam, 80) } : null,
-    thuisVideos: mag.thuis === true ? thuisVideos(k.thuisVideos) : [],
+    videoCats: mag.thuis === true ? videoCats(k.videoCats) : [],
+    thuisVideos: mag.thuis === true ? thuisVideos(k.thuisVideos, videoCats(k.videoCats)) : [],
   };
 }
 /* Mag dit team een teamkamer hebben? De eindbaas zet het per club aan (platformModules.teamkamer);
@@ -173,7 +206,7 @@ function kamerDoc(team, club, spelers, verborgen, platform){
     mag,                                   /* wat de eindbaas toestaat: de rules en de pagina van ouders lezen dit */
     namen: i.namen, uitslag: i.uitslag, live: i.live,
     opstellingAltijd: i.opstellingAltijd, trainingen: i.trainingen, stats: !!i.stats,
-    lijn: i.lijn, thuis: i.thuis, thuisVideos: i.thuisVideos,
+    lijn: i.lijn, thuis: i.thuis, thuisVideos: i.thuisVideos, videoCats: i.videoCats,
     plek: mag.weer && Number.isFinite(lat) && Number.isFinite(lon) && loc.lat != null && loc.lon != null ? { lat, lon } : null,
     spelers: kamerSpelers(spelers, verborgen, i.namen),
     aantal: spelers.filter(spelerActief).length,
@@ -297,6 +330,6 @@ module.exports = {
   BEURT_SOORTEN, LIJN_STANDAARD, MAX_VOLWASSENEN, MAX_TOESTELLEN, KINDCODE_MINUTEN,
   plusDagen, weekdag, vandaagNL, seizoenEindeMs, voornaam,
   OPTIES, ALLES_AAN, opties, inst, toegestaan, teamSleutel, spelerActief, kamerSpelers, spelerSleutel, kamerDoc,
-  projectWedstrijd, vasteAfwezig, momenten, projectTrainingen, STATS_SOORTEN, statsKeuze, schoonStats, schoonTraining, nietMee, selectieSleutel,
+  projectWedstrijd, vasteAfwezig, momenten, projectTrainingen, STATS_SOORTEN, statsKeuze, MAX_THUIS_VIDEOS, MAX_VIDEO_CATS, videoCats, thuisVideos, nieuweVideos, schoonStats, schoonTraining, nietMee, selectieSleutel,
   pollGeldig, stemGeldig, telStemmen, beurtenVan, schoonKind, lidId,
 };
