@@ -19,15 +19,14 @@
    spelers- of teamgegevens. Spelersnamen staan alleen op het scherm van de
    coach en nooit in de deeltekst. */
 import { db, doc, setDoc, updateDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal, isBeheerder } from './state.js?v=20261127k';
+import { S, esc, meld, openModal, sluitModal, isBeheerder } from './state.js?v=20261127m';
 import { ico } from './icons.js?v=20261127b';
-import { telGebruik, telNav } from './tracker.js?v=20261127k';
-import { plekHtml, routeUrl, presentieWedstrijd, afwezigTekst, opstellingKlaar, isAfgelast } from './nu-scherm.js?v=20261127k';
-import { htmlPollsBijWedstrijd, openPollVoorWedstrijd, zetDeelOpstelling } from './kamer-beheer.js?v=20261127k';   /* [20261116m] polls bij een wedstrijd */
-import { veldkaartInlineHtml, vulVeldkaarten } from './veldkaart.js?v=20261127k';
+import { telGebruik, telNav } from './tracker.js?v=20261127m';
+import { plekHtml, routeUrl, presentieWedstrijd, afwezigTekst, opstellingKlaar, isAfgelast } from './nu-scherm.js?v=20261127m';
+import { htmlPollsBijWedstrijd, openPollVoorWedstrijd, zetDeelOpstelling } from './kamer-beheer.js?v=20261127m';   /* [20261116m] polls bij een wedstrijd */
+import { veldkaartInlineHtml, vulVeldkaarten } from './veldkaart.js?v=20261127m';
 
 const p2 = n => String(n).padStart(2, '0');
-const isoVan = d => `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
 const DAG_LANG = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'];
 const MAAND = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
 const hoofd = s => s.charAt(0).toUpperCase() + s.slice(1);
@@ -615,7 +614,7 @@ function koppel(body){
     if (adv){
       const id = adv.dataset.vbAdvies;
       sluitModal();
-      const m = await import('./wedstrijd.js?v=20261127k');
+      const m = await import('./wedstrijd.js?v=20261127m');
       m.openWedstrijdMetAdvies(id);
       return;
     }
@@ -623,7 +622,7 @@ function koppel(body){
     if (wd){
       const id = wd.dataset.vbWedstrijd;
       sluitModal();
-      const m = await import('./wedstrijd.js?v=20261127k');
+      const m = await import('./wedstrijd.js?v=20261127m');
       m.openWedstrijd(id);
       return;
     }

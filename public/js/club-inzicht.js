@@ -9,7 +9,7 @@
    AVG: teamniveau overal; de coach-namenlijst alleen voor beheerders.
    ====================================================================== */
 
-import { esc, isBeheerder, terugLaag } from './state.js?v=20261127k';
+import { esc, isBeheerder, terugLaag } from './state.js?v=20261127m';
 import { ico } from './icons.js?v=20261127b';
 
 /* ---------- kleine formatteerhelpers ---------- */
@@ -327,7 +327,6 @@ export function openRapport(soort, stats){
 }
 
 /* ---------- rapport-HTML-generatie ---------- */
-function fmtUur(sec){ const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60); return h?`${h}u ${String(m).padStart(2,'0')}m`:`${m}m`; }
 
 // gedeelde <style> voor alle rapporten (los, want het draait in een iframe)
 const RAPPORT_CSS = `

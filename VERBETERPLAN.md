@@ -18,7 +18,7 @@ Werkwijze blijft: impactanalyse → mockup → akkoord → productie. Alles hier
 **Risico:** porten blijft handwerk. Elke ASV-release kost een vergelijking en een kans op vergeten.
 
 **Advies**
-1. *Kort:* een vergelijkingsscript (`tests/pariteit.mjs`) dat bij elke port de functienamen en `UPDATES`-titels van beide repo's naast elkaar legt. Vandaag handmatig gedaan; als script kost het 15 minuten per port minder.
+1. *Kort:* een vergelijkingsscript (`tools/pariteit.mjs`) dat bij elke port de functienamen en `UPDATES`-titels van beide repo's naast elkaar legt. Vandaag handmatig gedaan; als script kost het 15 minuten per port minder.
 2. *Structureel (aanbevolen):* ASV'33 wordt de eerste tenant op cluppie.io zodra rules en functions getest zijn. Dan is er één codebase en verdwijnt porten. De clubconfig dekt nu alles wat ASV'33-specifiek was (kompas, beleidsplan, domeinen, kleuren).
 3. Twee typefouten die bij het porten zijn hersteld staan nog in ASV'33 (`aria-label` van `#presentieLater`, losse `"` bij "Geen toekomstige afmeldingen").
 
