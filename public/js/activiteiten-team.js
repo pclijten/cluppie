@@ -6,7 +6,7 @@
    Met één knop maakt de coach een deelnemerslijstje (Lijstjes, sjabloon 'aanwezig') voor zijn team.
    Dit bestand importeert niets uit teams.js (geen kringverwijzing): teams.js geeft openLijst mee. */
 import { db, collection, addDoc, query, where, onSnapshot } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261127r';
+import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261127t';
 
 /* luisteren zolang het team open is; stop() via S.unsub.activiteiten (stopUnsubs in teams.js) */
 export function luisterActiviteiten(teamId, clubId, klaar){
