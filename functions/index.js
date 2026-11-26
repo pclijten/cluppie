@@ -366,6 +366,59 @@ exports.activiteitConceptAI = onCall(
   }
 );
 
+/* ---------- 2a3. ACTIVITEITEN: TOERNOOI LATEN NAKIJKEN [20261127s] ====================
+   De vaste regels in de app (public/js/toernooi-controle.js) vinden de harde fouten. Claude kijkt daarnaast naar wat
+   regels niet zien: eerlijke poules (JO11-1 en JO11-2 niet samen), het programma voor de jongsten, wachttijden.
+   Mag ook een andere poule voorstellen voor een paar teams; de app controleert dat voorstel (schoonAiAntwoord).
+   Alleen team-, poule- en veldnamen en tijden gaan mee, geen spelers; namen van clubleden worden eruit gehaald. */
+const TOERNOOI_CONTROLE_SYSTEEM = `Je helpt een vrijwillig comité van een Nederlandse amateurvoetbalclub een jeugdtoernooi te plannen.
+Je krijgt de planning als JSON: tijden, velden, poules met teams, finales, per team het aantal wedstrijden en wachttijden,
+kleedkamers, en onder "alGevonden" wat de vaste controle van de app al heeft gevonden.
+
+Geef ALLEEN één JSON-object terug, zonder uitleg en zonder codeblok:
+{"punten": [{"niveau": "waarsch"|"tip", "tekst": string}],
+ "indeling": [{"team": exacte teamnaam, "naar": exacte poulenaam, "waarom": string}]}
+
+Regels:
+- Herhaal NIETS uit "alGevonden" en verzin geen fouten die de getallen niet laten zien.
+- Kijk naar wat vaste regels niet zien: zijn de poules qua sterkte eerlijk (bij teamnamen als JO11-1, JO11-2, MO13-1:
+  een lager nummer is meestal sterker; zet de sterkste teams liefst niet samen in één poule), zitten teams van dezelfde
+  club samen, past de speeltijd bij de leeftijd (bv. O7/O8 korter dan O12), is de dag niet te lang voor de jongsten,
+  wachten sommige teams veel langer dan andere, is er tijd voor eten of omkleden, is de prijsuitreiking logisch.
+- Hoogstens 6 punten, elk één of twee korte zinnen, in gewoon Nederlands, tutoyeren is niet nodig.
+- "indeling" alleen als het de poules duidelijk eerlijker maakt, hoogstens 6 verplaatsingen, en houd de poules even groot
+  (verplaats dan in paren: team X naar poule B en team Y naar poule A). Anders een lege lijst.
+- Noem nooit namen van personen.`;
+
+exports.toernooiControleAI = onCall(
+  { region: REGIO, secrets: [ANTHROPIC_API_KEY], cors: true, timeoutSeconds: 90 },
+  async (request) => {
+    const { clubId, rol, sport } = await vereisAI(request);
+    const club = (await getFirestore().doc(PADEN.club(clubId)).get()).data() || {};
+    if (club.platformModules?.activiteiten !== true) throw new HttpsError('failed-precondition', 'Activiteiten staat niet aan voor deze club.');
+    const s = request.data?.samenvatting;
+    if (!s || typeof s !== 'object' || Array.isArray(s)) throw new HttpsError('invalid-argument', 'Geen planning ontvangen.');
+    const json = JSON.stringify(s);
+    if (json.length > 30000) throw new HttpsError('invalid-argument', 'De planning is te groot om na te kijken.');
+    const namen = await namenVoorScrub(clubId, request.auth.uid, rol);
+    const { tekst } = await claude({
+      apiKey: ANTHROPIC_API_KEY.value(),
+      system: [{ type: 'text', text: voorSport(TOERNOOI_CONTROLE_SYSTEEM, sport), cache_control: { type: 'ephemeral' } }],
+      messages: [{ role: 'user', content: `De planning:\n${scrubPII(json, namen)}` }],
+      maxTokens: 1500, temperature: 0.2, metaTerug: true,
+    });
+    const begin = tekst.indexOf('{'), eind = tekst.lastIndexOf('}');
+    let a = null;
+    try { a = JSON.parse(tekst.slice(begin, eind + 1)); } catch { a = null; }
+    if (!a || typeof a !== 'object') throw new HttpsError('internal', 'Het antwoord kwam niet goed terug. Probeer het opnieuw.');
+    const kort = (v, n) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
+    return {
+      punten: (Array.isArray(a.punten) ? a.punten : []).slice(0, 8).map(p => ({ niveau: p?.niveau === 'waarsch' ? 'waarsch' : 'tip', tekst: kort(p?.tekst, 300) })).filter(p => p.tekst),
+      indeling: (Array.isArray(a.indeling) ? a.indeling : []).slice(0, 8).map(x => ({ team: kort(x?.team, 40), naar: kort(x?.naar, 40), waarom: kort(x?.waarom, 200) })).filter(x => x.team && x.naar),
+    };
+  }
+);
+
 /* ---------- 2b. AI-WEDSTRIJDVERSLAG ==================== */
 
 const VERSLAG_SYSTEEM = `Je schrijft korte, levendige wedstrijdverslagen voor een jeugdvoetbalteam,

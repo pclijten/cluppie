@@ -183,8 +183,11 @@ export function rondes(teamIds, dubbel = false){
 /* Plan alle poules over de veldjes. Elke tijdstap (duur + wissel) krijgt elk veldje één wedstrijd uit een
    poule die dat veldje mag gebruiken. Een team speelt nooit twee keer tegelijk en (als rust aan staat) liefst
    niet twee keer achter elkaar. Poules met de meeste wedstrijden over gaan voor.
+   streng [20261127s]: met rust aan nooit twee keer achter elkaar; dan blijft een veldje of een hele ronde liever leeg
+   (een rustronde). Alleen als na een lege ronde nog steeds niets past, mag het toch. Duurt langer; autoIndeling
+   probeert het eerst zo en neemt het als het binnen de tijd past.
    Geeft { schema, eind, waarschuwingen }. */
-export function planSchema(t = {}){
+export function planSchema(t = {}, { streng = false } = {}){
   const o = opzet(t), stap = o.duur + o.wissel, begin = naarMin(o.start);
   const vj = veldjes(t), poules = gesorteerd(t.poules), teams = t.teams || {};
   const waarschuwingen = [];
@@ -199,15 +202,18 @@ export function planSchema(t = {}){
     rij.set(p.id, { p, mag: new Set(mag), wachtrij: r.flatMap((ronde, ri) => ronde.map(([a, b]) => ({ a, b, r: ri + 1 }))), startMin: naarMin(p.start) ?? begin });
   }
   const schema = [], laatst = new Map();
-  let s = 0;
+  let s = 0, leegVorige = false;
   const nogIets = () => [...rij.values()].some(x => x.wachtrij.length);
   while (nogIets() && s < 400 && schema.length < MAX.schema){
-    const tijd = begin + s * stap, bezig = new Set();
+    const tijd = begin + s * stap, bezig = new Set(), voor = schema.length;
+    for (const fase of streng && o.rust ? ['streng', 'los'] : ['gewoon']){
+    if (fase === 'los' && (schema.length > voor || !leegVorige)) break;
     for (const v of vj){
+      if (schema.some(w => w.t === naarTijd(tijd) && w.v === v.id)) continue;
       const kandidaten = [...rij.values()].filter(x => x.wachtrij.length && x.mag.has(v.id) && x.startMin <= tijd)
         .sort((x, y) => y.wachtrij.length / y.mag.size - x.wachtrij.length / x.mag.size);
       let gekozen = null;
-      for (const strikt of o.rust ? [true, false] : [false]){
+      for (const strikt of fase === 'streng' ? [true] : fase === 'los' ? [false] : o.rust ? [true, false] : [false]){
         for (const x of kandidaten){
           const i = x.wachtrij.findIndex(w => !bezig.has(w.a) && !bezig.has(w.b) && (!strikt || (laatst.get(w.a) !== s - 1 && laatst.get(w.b) !== s - 1)));
           if (i >= 0){ gekozen = { x, w: x.wachtrij.splice(i, 1)[0] }; break; }
@@ -219,10 +225,12 @@ export function planSchema(t = {}){
       bezig.add(w.a); bezig.add(w.b); laatst.set(w.a, s); laatst.set(w.b, s);
       schema.push({ id: `w${schema.length + 1}`, p: x.p.id, a: w.a, b: w.b, v: v.id, t: naarTijd(tijd), r: w.r, fase: 'poule' });
     }
+    }
+    leegVorige = schema.length === voor;
     s++;
   }
   if (nogIets()) waarschuwingen.push('Niet alles past: te veel wedstrijden voor de velden.');
-  planKo(t, schema, { begin, stap, vj, waarschuwingen });
+  planKo(t, schema, { begin, stap, vj, waarschuwingen, rust: o.rust });
   const eind = schema.length ? naarTijd(Math.max(...schema.map(w => naarMin(w.t))) + o.duur) : o.start;
   return { schema, eind, waarschuwingen };
 }
@@ -513,8 +521,11 @@ export function koOpzet(t = {}, g = {}){
   }
   return uit;
 }
-/* Knock-out inplannen na de poules: elke ronde na de vorige, op de velden van die poules. */
-function planKo(t, schema, { begin, stap, vj, waarschuwingen }){
+/* Knock-out inplannen na de poules: elke ronde na de vorige, op de velden van die poules.
+   [20261127s] Met rust aan blijft er één ronde tussen: wie de laatste poulewedstrijd of de vorige finaleronde speelde,
+   hoeft dan niet meteen weer (dat bleek bij het proefdraaien, zie toernooi-controle.js). */
+function planKo(t, schema, { begin, stap, vj, waarschuwingen, rust = false }){
+  const tussen = rust ? 2 : 1;
   const slotVan = w => Math.round((naarMin(w.t) - begin) / stap), bezet = new Set(schema.map(w => `${slotVan(w)}|${w.v}`));
   for (const g of koGroepen(t)){
     const lijst = koOpzet(t, g); if (!lijst.length) continue;
@@ -522,7 +533,7 @@ function planKo(t, schema, { begin, stap, vj, waarschuwingen }){
     if (!pouleW.length){ waarschuwingen.push(`${g.naam || 'Knock-out'}: de poules hebben nog geen wedstrijden.`); continue; }
     const mag = [...new Set(g.poules.flatMap(pid => { const v = t.poules[pid]?.velden; return Array.isArray(v) && v.length ? v : vj.map(x => x.id); }))].filter(id => vj.some(v => v.id === id));
     const velden = vj.filter(v => mag.includes(v.id));
-    let vanaf = Math.max(...pouleW.map(slotVan)) + 1;
+    let vanaf = Math.max(...pouleW.map(slotVan)) + tussen;
     const eigenStart = naarMin(g.start); if (eigenStart != null) vanaf = Math.max(vanaf, Math.ceil((eigenStart - begin) / stap));
     const kleur = g.poules[0] || '', rondes = [...new Set(lijst.map(w => w.ronde))].sort((a, b) => a - b);
     for (const r of rondes){
@@ -536,7 +547,7 @@ function planKo(t, schema, { begin, stap, vj, waarschuwingen }){
           break;
         }
       }
-      vanaf = hoogste + 1;
+      vanaf = hoogste + tussen;
     }
   }
 }
@@ -677,20 +688,29 @@ export function autoIndeling(t = {}, { maxDuur = 20, minDuur = 6 } = {}){
     const poules = Object.fromEntries(pids.map((id, i) => [id, { naam: p === 1 ? 'Poule' : pouleNaam(i), kleur: KLEUREN[i % KLEUREN.length], volg: i + 1, velden: [] }]));
     const teamPoule = Object.fromEntries(Object.entries(verdeling).map(([tid, i]) => [tid, pids[i]]));
     const ko = o.autoKo ? { ak: { naam: 'Finales', poules: pids, ronde: p === 1 ? 2 : p === 2 ? 4 : 8, plaats3: p > 1, overige: false, volg: 1 } } : {};
+    let gevonden = false;
     for (const duur of duren){
       const t2 = { ...t, duur, poules, ko, teams: Object.fromEntries(Object.entries(teams).map(([id, x]) => [id, { ...x, poule: teamPoule[id] }])) };
-      const r = planSchema(t2); if (!r.schema.length) continue;
+      /* met rust aan eerst zonder achter elkaar spelen; past dat niet, dan zoals altijd */
+      let r = o.rust ? planSchema(t2, { streng: true }) : null;
+      if (r){ const pr0 = prijsuitreiking({ ...t2, schema: r.schema }); if (r.waarschuwingen.some(w => /past/.test(w)) || naarMin(pr0 ? pr0.tot : r.eind) > grens) r = null; }
+      r ||= planSchema(t2); if (!r.schema.length) continue;
       const pr = prijsuitreiking({ ...t2, schema: r.schema }), klaar = naarMin(pr ? pr.tot : r.eind), alles = !r.waarschuwingen.some(w => /past/.test(w));
       const plan = { poules, teamPoule, duur, ko, schema: r.schema, eind: r.eind, prijs: pr, klaar: naarTijd(klaar), past: alles && klaar <= grens, over: klaar - grens, waarschuwingen: r.waarschuwingen };
       plan.speelmin = Math.round(r.schema.length * 2 * duur / n);
-      if (plan.past){ (passend ||= []).push(plan); break; }  /* langste speeltijd die past voor dit aantal poules */
+      plan.zonderRust = o.rust ? Object.values(teamRooster({ ...t2, schema: r.schema })).reduce((m, x) => m + x.achterElkaar, 0) : 0;
+      /* langste speeltijd die past voor dit aantal poules; met rust aan zoeken we daarna nog door naar de langste die
+         zonder achter elkaar spelen past (die kan korter zijn) */
+      if (plan.past){ if (!plan.zonderRust || !gevonden){ (passend ||= []).push(plan); gevonden = true; } if (!plan.zonderRust) break; continue; }
       if (!beste || plan.over < beste.over) beste = plan;
     }
   }
   /* Van wat past: de meeste speelminuten per team, met liefst wedstrijden van 10 minuten of langer en poules van 3 of meer. */
   if (passend){
     const goed = x => (x.duur >= Math.min(10, o.duurVast ? o.duur : 10) ? 2 : 0) + (n / Object.keys(x.poules).length >= Math.min(3, n) ? 1 : 0);
-    const plan = passend.sort((a, b) => goed(b) - goed(a) || b.speelmin - a.speelmin || Object.keys(a.poules).length - Object.keys(b.poules).length)[0];
+    /* [20261127s] met rust aan: liever een plan waarin teams niet vaak achter elkaar spelen (minder dan één keer per team) */
+    const rust = x => x.zonderRust >= n ? 1 : 0;
+    const plan = passend.sort((a, b) => goed(b) - goed(a) || rust(a) - rust(b) || b.speelmin - a.speelmin || Object.keys(a.poules).length - Object.keys(b.poules).length)[0];
     return { ...plan, waarschuwingen: [] };
   }
   if (!beste) return fout('Er past niets. Voeg velden toe of kies een latere eindtijd.');

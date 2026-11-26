@@ -10,14 +10,14 @@
      clubs/{id}/seizoensplannen/{planId}/toewijzingen/{teamId}  { planVersie, aantal, overgeslagen, status, door, toegewezenMs }
      trainingen/{id}  — gegenereerd door toewijzen (bron 'seizoensplan', seizoensplanId, teams:[teamId])
    Alle writes merge:true. Rechten zelf staan in de rules; dit scherm toont alleen wat mag. */
-import { S, esc, meld } from './state.js?v=20261127t';
+import { S, esc, meld } from './state.js?v=20261127v';
 import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteField, serverTimestamp } from './firebase.js?v=20261011g';
-import { bouwNaam, catLabel, SEIZOEN_FALLBACK, leeftijdVanCategorie, LEERCURVE } from './config.js?v=20261127t';
+import { bouwNaam, catLabel, SEIZOEN_FALLBACK, leeftijdVanCategorie, LEERCURVE } from './config.js?v=20261127v';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261126g';
 import { vormen, laadBibliotheek } from './bibliotheek.js?v=20261126g';
-import { MODELLEN, ACCENTEN, beschikbareThemas, maandagVan, standaardVrij, weekKalender, seizoenStartJaar } from './seizoensplan-logica.js?v=20261127t';
-import { rechtenVoor, magVoorBouw, teamsVoorPlan, planVoorTeam, trainingDocs, uitrolPlan, spelersVoorPlanner, duurVoorLeeftijd, JEUGDBOUWEN } from './seizoensplan-club.js?v=20261127t';
-import { bestaandeTrainingen, voerUit } from './seizoensplan-trainingen.js?v=20261127t';
+import { MODELLEN, ACCENTEN, beschikbareThemas, maandagVan, standaardVrij, weekKalender, seizoenStartJaar } from './seizoensplan-logica.js?v=20261127v';
+import { rechtenVoor, magVoorBouw, teamsVoorPlan, planVoorTeam, trainingDocs, uitrolPlan, spelersVoorPlanner, duurVoorLeeftijd, JEUGDBOUWEN } from './seizoensplan-club.js?v=20261127v';
+import { bestaandeTrainingen, voerUit } from './seizoensplan-trainingen.js?v=20261127v';
 /* [20261116h] de speelwijze van de club weegt mee in het plan (momentopname in params.speelstijl) */
 import { speelwijzeVan, stijlVoorPlan, dekking, principeVoorThema } from './speelwijze-logica.js?v=20261127p';
 import { htmlDekking, htmlPrincipeChip } from './speelwijze-html.js?v=20261127p';

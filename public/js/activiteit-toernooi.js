@@ -10,11 +10,12 @@
 
    Opslag: veld `toernooi` in de activiteit (zie toernooi-logica.js). Geen rules-wijziging nodig.
    Dit bestand krijgt alles van activiteiten.js via ctx en importeert dat bestand niet. */
-import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, deleteField } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261127t';
+import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, deleteField, functions, httpsCallable } from './firebase.js?v=20261011g';
+import { S, esc, meld } from './state.js?v=20261127v';
 import { ico } from './icons.js?v=20261127b';
-import * as T from './toernooi-logica.js?v=20261127t';
-import { kleinPlaatje } from './plaatje.js?v=20261127t';
+import * as T from './toernooi-logica.js?v=20261127v';
+import * as C from './toernooi-controle.js?v=20261127v';
+import { kleinPlaatje } from './plaatje.js?v=20261127v';
 
 const clubInfo = () => ({ clubNaam: S.club?.naam || '', logo: S.club?.instellingen?.identiteit?.logo || '', kleur: S.club?.instellingen?.identiteit?.kleur || '' });
 const opt = (w, t, sel) => `<option value="${esc(w)}"${sel ? ' selected' : ''}>${esc(t)}</option>`;
@@ -44,10 +45,104 @@ export function htmlToernooi(ctx){
   if (!st.club && !st.clubLaden) laadClub(ctx.clubId).then(() => ctx.herteken());
   const inhoud = { opzet: htmlOpzet, spelers: htmlSpelers, teams: htmlTeams, schema: htmlSchema, kk: htmlKk, uitslagen: htmlUitslagen, live: htmlLive, inschrijven: htmlInschrijven }[st.sub] || htmlOpzet;
   const nT = Object.keys(t.teams || {}).length, nS = Object.keys(t.spelers || {}).length, nW = (t.schema || []).length;
+  st.controle = C.controleer(t, controleOpties(a));
   return `<div class="ac-balkje"><div class="ac-schakel tn-sub">${SUB.map(([id, n]) => `<button class="${st.sub === id ? 'aan' : ''}" data-tn="sub" data-id="${id}">${n}</button>`).join('')}</div></div>
+    ${htmlControleBalk(t, st.controle)}
     <p class="ac-zacht">${[`${Object.keys(t.velden || {}).length} ${Object.keys(t.velden || {}).length === 1 ? 'veld' : 'velden'}`, `${nS} spelers`, `${nT} teams`, nW ? `${nW} wedstrijden, ${T.gespeeld(t)} gespeeld` : 'nog geen schema'].join(' · ')}</p>
     ${inhoud(ctx, a, t)}`;
 }
+
+/* ---------- controle en proefdraaien [20261127s] (rekenwerk in toernooi-controle.js) ---------- */
+const controleOpties = a => ({ blokken: st.club?.blokken || null, datum: a?.datum || '', clubVelden: st.club?.velden || null, programma: a?.programma || null });
+const aiAan = () => S.club?.platformModules?.ai === true;
+const TAB_NAAM = Object.fromEntries(SUB);
+const NIV_ICO = { fout: '⛔', waarsch: '⚠️', tip: '💡' };
+function htmlControleBalk(t, lijst){
+  const n = C.telling(lijst), heeftSchema = (t.schema || []).length > 0, eerste = lijst.find(p => p.niveau !== 'tip');
+  const kop = n.fout ? `${n.fout} ${n.fout === 1 ? 'fout' : 'fouten'} in de planning${n.waarsch ? `, ${n.waarsch} om op te letten` : ''}`
+    : n.waarsch ? `Geen fouten, wel ${n.waarsch} ${n.waarsch === 1 ? 'punt' : 'punten'} om op te letten` : `Geen fouten gevonden${n.tip ? ` · ${n.tip} ${n.tip === 1 ? 'tip' : 'tips'}` : ''}`;
+  return `<div class="tn-ctrl ${n.fout ? 'fout' : n.waarsch ? 'waarsch' : 'ok'}" role="status"><span class="tn-ctrl-ico" aria-hidden="true">${n.fout ? '⛔' : n.waarsch ? '⚠️' : '✓'}</span>
+    <span class="tn-ctrl-t"><b>${esc(kop)}</b>${eerste ? `<small>${esc(eerste.tekst)}</small>` : '<small>Cluppie controleert de indeling, het schema, de finales en de kleedkamers terwijl je plant.</small>'}</span>
+    <span class="tn-ctrl-k">${lijst.length ? `<button class="knop licht klein" data-tn="controle">Bekijk ${lijst.length === 1 ? 'punt' : `alle ${lijst.length}`}</button>` : ''}
+    <button class="knop vol klein" data-tn="proef" ${heeftSchema ? '' : 'disabled title="Maak eerst het schema"'}>▶ Proefdraaien</button></span></div>`;
+}
+const htmlPunt = (p, { hoeVaak = 0, keer = 0, knop = true } = {}) => `<div class="tn-punt ${p.niveau}"><span class="tn-punt-i" title="${esc(C.NIVEAUS[p.niveau])}">${NIV_ICO[p.niveau]}</span>
+  <span class="ac-groei"><small class="tn-punt-g">${esc(C.NIVEAUS[p.niveau])} · ${esc(p.groep)}${hoeVaak && keer ? ` · ${hoeVaak >= keer ? 'elke keer' : `${hoeVaak} van de ${keer} keer`}` : ''}</small>${esc(p.tekst)}</span>
+  ${knop && p.tab && TAB_NAAM[p.tab] ? `<button class="knop licht klein" data-tn="ga" data-id="${esc(p.tab)}">Naar ${esc(TAB_NAAM[p.tab])}</button>` : ''}</div>`;
+function htmlControleVenster(){
+  const a = st.ctx?.actNu?.() || st.ctx?.act || {}, t = a.toernooi || {}, lijst = C.controleer(t, controleOpties(a)), n = C.telling(lijst);
+  const ai = st.ai, aiDeel = !aiAan() ? '<p class="ac-zacht">AI laten meekijken kan als AI voor de club aan staat (instelling van de eindbaas).</p>'
+    : `<div class="ac-paneel tn-ai"><h3>🤖 AI laten meekijken</h3><p class="ac-zacht">De vaste regels hierboven zijn altijd leidend. De AI kijkt daarnaast naar wat regels niet zien: zijn de poules eerlijk verdeeld (bijvoorbeeld JO11-1 en JO11-2 niet samen), past het programma bij de leeftijd, hoe lang wachten teams. Alleen team- en poulenamen en tijden gaan mee, geen spelers.</p>
+      ${st.aiBezig ? `<p>${ico('action-loading', 16)} Even kijken…</p>` : ai ? `${ai.punten.map(p => htmlPunt(p, { knop: false })).join('') || '<p class="ac-zacht">De AI ziet niets bijzonders.</p>'}
+        ${ai.indeling.length ? `<h4 class="tn-h4">Voorstel voor de indeling</h4>${ai.indeling.map((x, i) => `<div class="ac-rij tn-punt tip"><span class="ac-groei"><b>${esc(naamTeam(t, x.team))}</b> naar <b>${esc(t.poules?.[x.poule]?.naam || '?')}</b><small class="ac-zacht"> ${esc(x.waarom)}</small></span><button class="knop licht klein" data-tn="ai-zet" data-id="${i}">Toepassen</button></div>`).join('')}
+          <div class="ac-acties"><button class="knop licht klein" data-tn="ai-zet" data-id="alles">Alles toepassen</button><span class="ac-zacht">${(t.schema || []).length ? 'Het schema wordt daarna opnieuw gepland.' : ''}</span></div>` : ''}
+        <div class="ac-acties"><button class="knop licht klein" data-tn="ai-controle">Opnieuw laten kijken</button></div>`
+      : '<div class="ac-acties"><button class="knop licht klein" data-tn="ai-controle">Laat AI meekijken</button></div>'}</div>`;
+  return `<h2>Controle van de planning</h2>
+    <p class="ac-zacht">${lijst.length ? `${n.fout} ${n.fout === 1 ? 'fout' : 'fouten'}, ${n.waarsch} om op te letten, ${n.tip} ${n.tip === 1 ? 'tip' : 'tips'}.` : 'Geen fouten gevonden in de opzet, de indeling, het schema, de finales en de kleedkamers.'} Wil je zien hoe de dag loopt? Gebruik Proefdraaien.</p>
+    ${lijst.map(p => htmlPunt(p)).join('')}
+    ${aiDeel}
+    <div class="ac-acties"><button class="knop licht" data-ac="venster-dicht">Sluiten</button><span class="ac-groei"></span><button class="knop vol" data-tn="proef" ${(t.schema || []).length ? '' : 'disabled'}>▶ Proefdraaien</button></div>`;
+}
+function htmlProefVenster(){
+  const a = st.ctx?.actNu?.() || st.ctx?.act || {}, t = a.toernooi || {}, o = T.opzet(t);
+  const r = C.proefdraaien(t, { keer: 150, zaad: st.zaad || 1, opties: controleOpties(a) });
+  if (!r.voorbeeld) return `<h2>Proefdraaien</h2><p>Maak eerst het schema, dan kan Cluppie het toernooi naspelen.</p><div class="ac-acties"><button class="knop vol" data-ac="venster-dicht">Sluiten</button></div>`;
+  const ernstig = [...r.problemen, ...r.controle].filter(p => p.niveau !== 'tip'), v = r.voorbeeld, s = r.stats, sim = { ...t, uitslag: v.uitslag };
+  const vj = Object.fromEntries(T.veldjes(t).map(x => [x.id, x.naam])), laat = o.eind && s.prijs && T.naarMin(s.prijs.tot) > T.naarMin(o.eind);
+  const medaille = x => `${['🥇', '🥈', '🥉'][x.plaats - 1] || x.plaats + '.'} ${esc(naamTeam(t, x.id))}`;
+  const bomen = T.koGroepen(t).map(g => T.boomHtml(v.schema.filter(w => w.ko === g.id), { esc, naam: (w, z) => naamW(t, w, z), veld: w => vj[w.v] || '', uitslag: w => v.uitslag[w.id], kop: g.naam || 'Finales' })).join('');
+  const tijden = [...new Set(v.schema.map(w => w.t))].sort((x, y) => T.naarMin(x) - T.naarMin(y));
+  return `<h2>Proefdraaien</h2>
+    <p class="ac-zacht">Cluppie heeft het toernooi ${r.keer} keer gespeeld met willekeurige uitslagen, met doorschuiven naar de finales tot en met de prijsuitreiking. Er is niets opgeslagen.</p>
+    <div class="tn-ctrl ${ernstig.some(p => p.niveau === 'fout') ? 'fout' : ernstig.length ? 'waarsch' : 'ok'}"><span class="tn-ctrl-ico">${ernstig.some(p => p.niveau === 'fout') ? '⛔' : ernstig.length ? '⚠️' : '✓'}</span>
+      <span class="tn-ctrl-t"><b>${ernstig.length ? `${ernstig.length} ${ernstig.length === 1 ? 'probleem' : 'problemen'} gevonden` : 'Alles loopt goed, van de eerste wedstrijd tot de prijsuitreiking'}</b></span></div>
+    ${r.problemen.map(p => htmlPunt(p, { hoeVaak: p.hoeVaak, keer: r.keer })).join('')}
+    ${r.controle.length ? `<details class="tn-details" ${r.problemen.length ? '' : 'open'}><summary>Uit de controle (${r.controle.length})</summary>${r.controle.map(p => htmlPunt(p)).join('')}</details>` : ''}
+    <h3>Zo kan de dag lopen</h3>
+    <div class="ac-chips"><span class="ac-chip aan">${s.wedstrijden} wedstrijden${s.finales ? `, waarvan ${s.finales} ${s.finales === 1 ? 'finale' : 'finalewedstrijden'}` : ''}</span><span class="ac-chip aan">${esc(s.begin)} – ${esc(s.eind)}</span>
+      ${s.prijs ? `<span class="ac-chip ${laat ? 'tn-fout' : 'aan'}">🏆 Prijsuitreiking ${esc(s.prijs.van)}–${esc(s.prijs.tot)}${laat ? ` (na ${esc(o.eind)})` : ''}</span>` : ''}
+      <span class="ac-chip aan">Elk team ${s.minPoule === s.maxPoule ? s.minPoule : `${s.minPoule} tot ${s.maxPoule}`} poulewedstrijden</span></div>
+    ${v.podia.filter(p => p.plaatsen.length).map(p => `<p class="bm-podium">${esc(p.naam)}: ${p.plaatsen.slice(0, 3).map(medaille).join(' ')}</p>`).join('')}
+    ${v.winnaars.map(w => `<p class="bm-podium">${esc(w.naam)}: ${w.stand.slice(0, 3).map((x, i) => medaille({ plaats: i + 1, id: x.id })).join(' ')}</p>`).join('')}
+    ${bomen ? `<div class="ac-paneel">${bomen}</div>` : ''}
+    <details class="tn-details"><summary>Standen na de poules</summary><div class="tn-standen">${T.gesorteerd(t.poules).map(p => { const rij = T.stand(sim, p.id); return rij.length ? `<div><b>${esc(p.naam)}</b><table class="tn-stand"><tbody>${rij.map((x, i) => `<tr><td>${i + 1}</td><td>${esc(x.naam)}</td><td>${x.g}</td><td>${x.saldo > 0 ? '+' : ''}${x.saldo}</td><td><b>${x.pnt}</b></td></tr>`).join('')}</tbody></table></div>` : ''; }).join('')}</div></details>
+    <details class="tn-details"><summary>Alle wedstrijden met de uitslagen van deze proef</summary>${tijden.map(tijd => `<h4 class="tn-h4">${esc(tijd)}</h4>${v.schema.filter(w => w.t === tijd).map(w => { const u = v.uitslag[w.id];
+      return `<div class="ac-rij tn-proefrij"><span class="ac-zacht">${esc(vj[w.v] || '')}</span><span class="ac-groei">${w.ko ? `<i>${esc(T.koTitel(t, w))}</i> ` : ''}${esc(naamW(t, w, 'a'))} – ${esc(naamW(t, w, 'b'))}</span><b>${u ? `${u.a}–${u.b}${u.w ? ' (pen.)' : ''}` : '—'}</b></div>`; }).join('')}`).join('')}
+      ${s.prijs ? `<h4 class="tn-h4">${esc(s.prijs.van)}</h4><p>🏆 Prijsuitreiking</p>` : ''}</details>
+    <div class="ac-acties"><button class="knop licht" data-ac="venster-dicht">Sluiten</button><span class="ac-groei"></span><button class="knop licht" data-tn="proef-nog">Nog een keer</button></div>`;
+}
+/* AI kijkt mee (functions: toernooiControleAI). Alleen als AI aan staat voor de club. */
+async function aiControle(ctx){
+  const a = ctx.actNu?.() || ctx.act, t = a.toernooi || {};
+  st.aiBezig = true; st.ai = null; ctx.venster(htmlControleVenster);
+  try {
+    const r = await httpsCallable(functions, 'toernooiControleAI')({ clubId: ctx.clubId, samenvatting: C.aiSamenvatting(t, C.controleer(t, controleOpties(a)), { naam: a.naam, datum: a.datum }) });
+    st.ai = C.schoonAiAntwoord(r.data, t);
+  } catch (e){
+    console.error('[toernooi] ai', e);
+    meld(e?.code === 'functions/failed-precondition' ? 'AI staat uit voor deze club.' : e?.code === 'functions/resource-exhausted' ? 'De AI-limiet van deze maand is bereikt.' : e?.code === 'functions/not-found' ? 'De AI-controle is nog niet uitgerold.' : 'De AI kon nu niet meekijken. Probeer het zo opnieuw.');
+  }
+  st.aiBezig = false; ctx.venster(htmlControleVenster);
+}
+async function aiIndeling(ctx, welke){
+  const a = ctx.actNu?.() || ctx.act, t = a.toernooi || {}, lijst = (st.ai?.indeling || []).filter((x, i) => welke === 'alles' || String(i) === welke)
+    .filter(x => t.teams?.[x.team] && t.poules?.[x.poule]);
+  if (!lijst.length) return;
+  const teams = Object.fromEntries(Object.entries(t.teams).map(([id, x]) => [id, { ...x }])), patch = {};
+  for (const x of lijst){ teams[x.team].poule = x.poule; patch[`toernooi.teams.${x.team}.poule`] = x.poule; }
+  const heeftUitslag = Object.values(t.uitslag || {}).some(T.heeftUitslag);
+  if ((t.schema || []).length && !heeftUitslag){
+    const r = T.planSchema({ ...t, teams });
+    if (r.schema.length) Object.assign(patch, { 'toernooi.schema': r.schema, 'toernooi.uitslag': {}, 'toernooi.gepland': Date.now(), ...prijsInProgramma(a, T.prijsuitreiking({ ...t, teams, schema: r.schema })) });
+  }
+  st.ai.indeling = st.ai.indeling.filter(x => !lijst.includes(x));
+  await ctx.zet(patch); ctx.venster(htmlControleVenster);
+  meld(`${lijst.length} ${lijst.length === 1 ? 'team' : 'teams'} verplaatst${patch['toernooi.schema'] ? ', schema opnieuw gepland' : heeftUitslag ? '. Er staan al uitslagen: plan het schema zelf opnieuw' : ''}`);
+}
+/* Na het plannen meteen laten weten of er nog iets mis is. */
+const naControle = (a, t) => { const n = C.telling(C.controleer(t, controleOpties(a))); return n.fout ? `. Let op: ${n.fout} ${n.fout === 1 ? 'fout' : 'fouten'}, zie bovenaan` : n.waarsch ? `. ${n.waarsch} ${n.waarsch === 1 ? 'punt' : 'punten'} om op te letten, zie bovenaan` : ''; };
+
 const veld = (pad, waarde, { type = 'text', ph = '', klasse = '', extra = '' } = {}) =>
   `<input class="ac-in ${klasse}" type="${type}" data-veld="toernooi.${esc(pad)}" value="${esc(waarde ?? '')}" placeholder="${esc(ph)}" ${extra}>`;
 const getal = (pad, waarde, extra = '') => veld(pad, waarde, { type: 'number', klasse: 'getal', extra: `data-num inputmode="numeric" ${extra}` });
@@ -178,11 +273,12 @@ function htmlSchema(ctx, a, t){
   const vrijeTijden = []; for (let m = T.naarMin(tijden[0]); m <= T.naarMin(tijden[tijden.length - 1]) + T.slot(t); m += T.slot(t)) vrijeTijden.push(T.naarTijd(m));
   const alle = [...new Set([...tijden, ...vrijeTijden])].sort((x, y) => T.naarMin(x) - T.naarMin(y));
   const op = Object.fromEntries(schema.map(w => [`${w.t}|${w.v}`, w]));
+  const probleem = new Map(); for (const p of st.controle || []) if (p.niveau !== 'tip') for (const id of p.wed) probleem.set(id, [...(probleem.get(id) || []), p.tekst]);
   const rooster = T.teamRooster(t), teams = T.gesorteerd(t.teams);
   const krap = teams.filter(tm => rooster[tm.id]?.achterElkaar > 0);
   const grid = `<div class="tn-grid-buiten"><table class="tn-grid"><thead><tr><th></th>${vj.map(v => `<th>${esc(v.naam)}</th>`).join('')}</tr></thead><tbody>
     ${alle.map(tijd => `<tr><th>${esc(tijd)}</th>${vj.map(v => { const w = op[`${tijd}|${v.id}`], u = w && t.uitslag?.[w.id];
-      return `<td><button class="tn-cel ${w ? 'vol' : ''} ${w?.ko ? 'ko' : ''} ${st.gekozen && w?.id === st.gekozen ? 'gekozen' : ''} ${st.teamFilter && w && ![w.a, w.b].includes(st.teamFilter) ? 'dim' : ''}" data-tn="cel" data-t="${esc(tijd)}" data-v="${esc(v.id)}" ${w ? `data-id="${esc(w.id)}" data-tn-sleep="${esc(w.id)}" draggable="true" style="--pk:${esc(kleurPoule(t, w.p))}"` : ''}>${w ? `${w.ko ? `<i>${esc(T.koTitel(t, w))}</i>` : ''}<b>${esc(naamW(t, w, 'a'))}</b><b>${esc(naamW(t, w, 'b'))}</b>${u && u.a != null && u.a !== '' ? `<small>${esc(u.a)}–${esc(u.b)}</small>` : ''}` : '<small>vrij</small>'}</button></td>`; }).join('')}</tr>`).join('')}</tbody></table></div>`;
+      return `<td><button class="tn-cel ${w ? 'vol' : ''} ${w?.ko ? 'ko' : ''} ${st.gekozen && w?.id === st.gekozen ? 'gekozen' : ''} ${st.teamFilter && w && ![w.a, w.b].includes(st.teamFilter) ? 'dim' : ''} ${w && probleem.has(w.id) ? 'probleem' : ''}" data-tn="cel" data-t="${esc(tijd)}" data-v="${esc(v.id)}" ${w ? `data-id="${esc(w.id)}" data-tn-sleep="${esc(w.id)}" draggable="true" style="--pk:${esc(kleurPoule(t, w.p))}"${probleem.has(w.id) ? ` title="${esc(probleem.get(w.id).join(' '))}"` : ''}` : ''}>${w ? `${w.ko ? `<i>${esc(T.koTitel(t, w))}</i>` : ''}<b>${esc(naamW(t, w, 'a'))}</b><b>${esc(naamW(t, w, 'b'))}</b>${u && u.a != null && u.a !== '' ? `<small>${esc(u.a)}–${esc(u.b)}</small>` : ''}` : '<small>vrij</small>'}</button></td>`; }).join('')}</tr>`).join('')}</tbody></table></div>`;
   return `${kop}<div class="ac-paneel"><div class="ac-rij"><h3 class="ac-groei">Per veld</h3><select class="ac-in smal" data-tn-filter>${opt('', 'Alle teams')}${teams.map(tm => opt(tm.id, tm.naam, st.teamFilter === tm.id)).join('')}</select></div>${grid}
       <div class="ac-chips">${T.gesorteerd(t.poules).map(p => `<span class="ac-chip"><span class="tn-stip" style="--pk:${esc(p.kleur || '#999')}"></span>${esc(p.naam)}</span>`).join('')}</div></div>
     ${htmlBomen(t)}
@@ -239,6 +335,12 @@ export async function klikToernooi(ctx, b){
   const actie = b.dataset.tn, id = b.dataset.id, a = ctx.act, t = a.toernooi || {}, zet = ctx.zet;
   switch (actie){
     case 'sub': st.sub = id; st.gekozen = ''; return ctx.herteken();
+    case 'controle': return ctx.venster(htmlControleVenster);
+    case 'proef': st.zaad = st.zaad || (Date.now() >>> 0); return ctx.venster(htmlProefVenster);
+    case 'proef-nog': st.zaad = (Date.now() >>> 0); return ctx.venster(htmlProefVenster);
+    case 'ga': st.sub = id; st.gekozen = ''; ctx.sluitVenster(); return ctx.herteken();
+    case 'ai-controle': return aiControle(ctx);
+    case 'ai-zet': return aiIndeling(ctx, id);
     case 'veld-nieuw': return zet({ [`toernooi.velden.${T.nieuwId('v')}`]: { naam: `Veld ${Object.keys(t.velden || {}).length + 1}`, delen: 1, volg: T.volgende(t.velden) } });
     case 'velden-club': {
       const club = await laadClub(ctx.clubId), patch = {}; let v = T.volgende(t.velden);
@@ -328,7 +430,7 @@ export async function klikToernooi(ctx, b){
       const pr = T.prijsuitreiking({ ...t, schema: r.schema }), grens = T.opzet(t).eind, klaar = pr ? pr.tot : r.eind;
       if (grens && T.naarMin(klaar) > T.naarMin(grens)) st.waarsch = [...r.waarschuwingen, `Het toernooi is klaar om ${klaar}, later dan ${grens}. Kort de speeltijd in, voeg een veld toe of gebruik Opzet › Voorstel maken.`];
       await zet({ 'toernooi.schema': r.schema, 'toernooi.uitslag': {}, 'toernooi.gepland': Date.now(), ...prijsInProgramma(a, pr) });
-      return meld(`${r.schema.length} wedstrijden gepland, klaar om ${klaar}`);
+      return meld(`${r.schema.length} wedstrijden gepland, klaar om ${klaar}${naControle(a, { ...t, schema: r.schema, uitslag: {} })}`);
     }
     case 'cel': {
       if (!st.gekozen){ if (id){ st.gekozen = id; ctx.herteken(); } return; }
@@ -416,7 +518,7 @@ export async function klikToernooi(ctx, b){
       return zet({ [`toernooi.schermen.${T.nieuwId('x')}`]: { soort: id === 'sponsor' ? 'sponsor' : 'scherm', titel: '', tekst: '', volg: T.volgende(t.schermen), tv: true, tel: true } }); }
     case 'scherm-club': {
       let lijst = [];
-      try { lijst = await (await import('./clubschermen.js?v=20261127t')).clubSponsoren(ctx.clubId); }
+      try { lijst = await (await import('./clubschermen.js?v=20261127v')).clubSponsoren(ctx.clubId); }
       catch { return meld('De sponsoren van de club zijn alleen te lezen door de clubbeheerder.'); }
       if (!lijst.length) return meld('De club heeft nog geen sponsoren. Zet ze in Activiteiten › Kantine-tv en sponsoren.');
       const heeft = new Set(Object.values(t.schermen || {}).map(x => String(x?.titel || '').toLowerCase())), patch = {};
@@ -441,8 +543,12 @@ export async function klikToernooi(ctx, b){
       st.auto = r;
       const perPoule = Object.entries(r.poules).map(([pid, p]) => ({ p, teams: Object.entries(r.teamPoule).filter(([, x]) => x === pid).map(([tid]) => naamTeam(t, tid)) }));
       const nKo = r.schema.filter(w => w.ko).length;
+      /* het voorstel meteen controleren en proefdraaien, voordat iemand het overneemt */
+      const t2 = { ...t, poules: r.poules, ko: r.ko, duur: r.duur, schema: r.schema, uitslag: {}, teams: Object.fromEntries(Object.entries(t.teams || {}).map(([tid, x]) => [tid, { ...x, poule: r.teamPoule[tid] }])) };
+      const proef = C.proefdraaien(t2, { keer: 60, zaad: 7, opties: controleOpties(a) }), ernstig = [...proef.problemen, ...proef.controle].filter(p => p.niveau !== 'tip');
       return ctx.venster(`<h2>Voorstel voor het toernooi</h2>
         ${r.past ? '' : `<div class="ac-melding">${ico('action-warning', 18)} <span>${esc(r.waarschuwingen[0])}</span></div>`}
+        <div class="tn-ctrl ${ernstig.some(p => p.niveau === 'fout') ? 'fout' : ernstig.length ? 'waarsch' : 'ok'}"><span class="tn-ctrl-ico">${ernstig.some(p => p.niveau === 'fout') ? '⛔' : ernstig.length ? '⚠️' : '✓'}</span><span class="tn-ctrl-t"><b>${ernstig.length ? `Proefgedraaid: ${ernstig.length} ${ernstig.length === 1 ? 'punt' : 'punten'}` : 'Proefgedraaid: alles loopt goed tot en met de prijsuitreiking'}</b>${ernstig.slice(0, 3).map(p => `<small>${NIV_ICO[p.niveau]} ${esc(p.tekst)}</small>`).join('')}</span></div>
         <div class="ac-chips"><span class="ac-chip aan">${Object.keys(r.poules).length} ${Object.keys(r.poules).length === 1 ? 'poule' : 'poules'}</span><span class="ac-chip aan">${r.duur} min per wedstrijd</span><span class="ac-chip aan">${r.schema.length} wedstrijden${nKo ? `, waarvan ${nKo} finales` : ''}</span><span class="ac-chip aan">${esc(T.opzet(t).start)} – ${esc(r.eind)}</span>${r.prijs ? `<span class="ac-chip aan">Prijsuitreiking ${esc(r.prijs.van)}</span>` : ''}<span class="ac-chip aan">Klaar om ${esc(r.klaar)}</span></div>
         ${perPoule.map(x => `<div class="ac-paneel tn-team" style="--pk:${esc(x.p.kleur)}"><b>${esc(x.p.naam)}</b> <small class="ac-zacht">${x.teams.length} teams</small><p class="ac-zacht">${x.teams.map(esc).join(', ')}</p></div>`).join('')}
         <p class="ac-zacht">Elk team speelt ongeveer ${r.speelmin} minuten. ${Object.keys(t.poules || {}).length || (t.schema || []).length ? '<b>Overnemen vervangt de huidige poules, het schema en de uitslagen.</b>' : ''} Daarna kun je alles nog aanpassen en wedstrijden verslepen.</p>
@@ -462,7 +568,7 @@ export async function klikToernooi(ctx, b){
         ...prijsInProgramma(a, r.prijs) });
       st.auto = null; st.waarsch = r.waarschuwingen; ctx.sluitVenster();
       await zet(patch); st.sub = 'schema'; ctx.herteken();
-      return meld(`${r.schema.length} wedstrijden gepland${r.prijs ? `, prijsuitreiking om ${r.prijs.van}` : ''}`);
+      return meld(`${r.schema.length} wedstrijden gepland${r.prijs ? `, prijsuitreiking om ${r.prijs.van}` : ''}${naControle(ctx.actNu?.() || a, ctx.actNu?.()?.toernooi || t)}`);
     }
     case 'ko-nieuw': {
       if (Object.keys(t.ko || {}).length >= T.MAX_KO) return meld(`Maximaal ${T.MAX_KO} knock-outs.`);
@@ -638,7 +744,7 @@ function koppelSlepen(el){
   });
   el.addEventListener('dragend', () => { st.sleep = ''; doelUit(); });
 }
-export function resetToernooi(){ st.sub = 'opzet'; st.zoek = ''; st.gekozen = ''; st.teamFilter = ''; st.waarsch = null; st.club = null; st.clubLaden = null; st.qrVoor = ''; st.qrSvg = ''; ins.stop?.(); ins.stop = null; ins.id = ''; ins.lijst = null; ins.qrVoor = ''; ins.qr = ''; }
+export function resetToernooi(){ st.ai = null; st.aiBezig = false; st.zaad = 0; st.sub = 'opzet'; st.zoek = ''; st.gekozen = ''; st.teamFilter = ''; st.waarsch = null; st.club = null; st.clubLaden = null; st.qrVoor = ''; st.qrSvg = ''; ins.stop?.(); ins.stop = null; ins.id = ''; ins.lijst = null; ins.qrVoor = ''; ins.qr = ''; }
 
 /* Excel (.xlsx) lezen met de meegeleverde ExcelJS (zelfde bestand als de export van Evaluaties). */
 let _excel = null;
@@ -901,6 +1007,21 @@ ${T.BOOM_CSS}
 
 /* ---------- stijl ---------- */
 export const TOERNOOI_CSS = `
+.tn-ctrl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-radius:var(--r-m,12px);margin:0 0 var(--space-sm,10px);border:1px solid var(--hair);background:var(--card)}
+.tn-ctrl.ok{border-color:color-mix(in srgb,var(--ok,#16a34a) 45%,var(--hair));background:color-mix(in srgb,var(--ok,#16a34a) 8%,var(--card))}
+.tn-ctrl.waarsch{border-color:var(--amber-lijn,#f59e0b);background:var(--amber-bg,#fff7e6)}
+.tn-ctrl.fout{border-color:color-mix(in srgb,var(--rood,#dc2626) 55%,var(--hair));background:color-mix(in srgb,var(--rood,#dc2626) 9%,var(--card))}
+.tn-ctrl-ico{font-size:20px;line-height:1;flex-shrink:0}.tn-ctrl.ok .tn-ctrl-ico{color:var(--ok,#16a34a);font-weight:800}
+.tn-ctrl-t{flex:1 1 220px;min-width:0;display:flex;flex-direction:column;gap:2px}.tn-ctrl-t small{color:var(--ink-2);font-size:var(--t-sm,14px)}
+.tn-ctrl-k{display:flex;gap:6px;flex-wrap:wrap}
+.tn-punt{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--hair)}
+.tn-punt-i{font-size:18px;line-height:1.3;flex-shrink:0}.tn-punt-g{display:block;font-size:var(--t-xs,12px);color:var(--ink-2);font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.tn-punt .knop{flex-shrink:0}
+.tn-details{margin:8px 0}.tn-details summary{cursor:pointer;font-weight:700;padding:6px 0}
+.tn-proefrij{font-size:var(--t-sm,14px)}.tn-proefrij i{font-style:normal;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-2)}
+.tn-ai{margin-top:var(--space-sm,10px)}
+@media (max-width:720px){.tn-punt{flex-wrap:wrap}.tn-punt .ac-groei{flex:1 1 calc(100% - 40px)}.tn-punt .knop{margin-left:28px}.tn-ctrl-k{width:100%}}
+.tn-cel.probleem{border-color:var(--rood,#dc2626);box-shadow:0 0 0 2px color-mix(in srgb,var(--rood,#dc2626) 35%,transparent)}
 .tn-catrij{flex-wrap:wrap}.tn-mini{display:flex;align-items:center;gap:4px;font-size:var(--t-sm,14px);color:var(--ink-2)}
 .tn-ins{padding:10px 0;border-top:1px solid var(--hair);display:flex;flex-direction:column;gap:4px}.tn-ins p{margin:0}.tn-ins.afgewezen{opacity:.6}
 .tn-ins .ac-acties{flex-wrap:wrap;align-items:center}

@@ -213,7 +213,7 @@ ok(T.euro(15) === '€ 15,-' && T.euro(12.5) === '€ 12,50' && T.bedrag('1e9') 
   ok(Object.values(per).every(l => Math.max(...['c1', 'c2', 'c3', 'c4'].map(c => l.filter(x => x === c).length)) <= 2), 'auto: clubs gespreid over de poules');
   ok(Math.max(...Object.values(per).map(l => l.length)) - Math.min(...Object.values(per).map(l => l.length)) <= 1, 'auto: poules even groot');
   ok(r.schema.some(w => w.fase === 'finale'), 'auto: met finale');
-  const kort = T.autoIndeling({ ...t, eind: '10:30' });
+  const kort = T.autoIndeling({ ...t, eind: '11:00' });
   ok(kort.past && kort.duur < r.duur, 'auto: minder tijd geeft kortere wedstrijden');
   const krap = T.autoIndeling({ ...t, eind: '09:20' });
   ok(!krap.past && krap.waarschuwingen.length === 1, 'auto: past niet, met uitleg');
