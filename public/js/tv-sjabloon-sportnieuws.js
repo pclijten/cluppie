@@ -1,6 +1,6 @@
 /* TV-SJABLOON "SPORTNIEUWS" [20261126q]: een vast nieuwskader. Het hoofdvenster wisselt; de live standen rechts en de
    lopende banden onderin blijven altijd staan. Bij een doelpunt schiet er een rode balk in. Zie docs/tv-sjablonen.md. */
-import { esc, maat, maatWoord, stip, klok, beeld, lint, label, bovenSponsor } from './tv-speler.js?v=20261126r';
+import { esc, maat, maatWoord, stip, klok, beeld, lint, label, bovenSponsor } from './tv-speler.js?v=20261126s';
 
 export default {
   id: 'sportnieuws', per: 7, duur: 12000,

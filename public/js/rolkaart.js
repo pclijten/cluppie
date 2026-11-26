@@ -8,7 +8,7 @@
 
    [20261121a] Ook voor de clubbeheerder (ook wie later als medebeheerder aansluit), en elke kaart heeft
    een knop naar het scherm waar die rol begint. In de handleiding staat dezelfde tekst onder "Rollen in de club". */
-import { S, esc, openModal, sluitModal } from './state.js?v=20261126r';
+import { S, esc, openModal, sluitModal } from './state.js?v=20261126s';
 import { db, doc, getDoc, setDoc } from './firebase.js?v=20261011g';
 
 export const ROLKAARTEN = {
@@ -113,13 +113,13 @@ export async function toonRolkaartZoNodig(){
 
 /* Het scherm waar de rol begint. Lukt het niet (bijv. de club is nog niet geladen), dan blijft de gebruiker waar hij is. */
 async function naarRol(rol){
-  if (rol === 'admin'){ const c = (S.clubs || []).find(x => x.admins && x.admins[S.user.uid]); if (c) (await import('./club.js?v=20261126r')).openClub(c.id); return; }
+  if (rol === 'admin'){ const c = (S.clubs || []).find(x => x.admins && x.admins[S.user.uid]); if (c) (await import('./club.js?v=20261126s')).openClub(c.id); return; }
   if (rol === 'bouw' || rol === 'eigenbouw'){
     const b = (S.coordinatorBouwen || []).find(x => x && !!x.eigen === (rol === 'eigenbouw'));
-    if (b) (await import('./bouw-hub.js?v=20261126r')).openBouwHub(b.clubId, b.bouw);
+    if (b) (await import('./bouw-hub.js?v=20261126s')).openBouwHub(b.clubId, b.bouw);
     return;
   }
-  if (rol === 'trainco'){ const c = (S.traincoClubs || [])[0]; if (c) (await import('./trainco.js?v=20261126r')).openVanuitApp(c.id); }
+  if (rol === 'trainco'){ const c = (S.traincoClubs || [])[0]; if (c) (await import('./trainco.js?v=20261126s')).openVanuitApp(c.id); }
 }
 
 /* Korte vertraging: de rollen komen binnen via losse listeners. */

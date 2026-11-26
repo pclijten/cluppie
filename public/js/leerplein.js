@@ -17,10 +17,10 @@
    Afgestemd op JO12/JO13-niveau.
    ========================================================================== */
 
-import { esc, spelerNr, bewaakTerug, vangnetStilTerugAlsNodig, terugLaag } from './state.js?v=20261126r';
-import { LEERCURVE, bouwSlots } from './config.js?v=20261126r';
+import { esc, spelerNr, bewaakTerug, vangnetStilTerugAlsNodig, terugLaag } from './state.js?v=20261126s';
+import { LEERCURVE, bouwSlots } from './config.js?v=20261126s';
 import { LEERINHOUD } from './leerinhoud.js?v=20261110a';
-import { telNav } from './tracker.js?v=20261126r';
+import { telNav } from './tracker.js?v=20261126s';
 import { sportVeld } from './sporten.js?v=20261126g';   /* [20261125z] veld uit het sportprofiel */
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -299,5 +299,5 @@ function overnemenOpKladbord(){
   telNav('leerplein:overnemen', 'tegel');
   const w = _w;
   sluitLeerplein();
-  import('./tactiekbord.js?v=20261126r').then(m => m.openBordMet(w, objecten, tekeningen, naam));
+  import('./tactiekbord.js?v=20261126s').then(m => m.openBordMet(w, objecten, tekeningen, naam));
 }

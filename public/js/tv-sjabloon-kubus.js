@@ -1,6 +1,6 @@
 /* TV-SJABLOON "KUBUS" [20261126q]: glazen panelen op een kubus die bij elke wissel een kwartslag draait.
    Naam, klok en de mededeling onderaan blijven staan. Zie docs/tv-sjablonen.md. */
-import { esc, maat, maatWoord, stip, lint, klok, beeld, bovenSponsor, label } from './tv-speler.js?v=20261126r';
+import { esc, maat, maatWoord, stip, lint, klok, beeld, bovenSponsor, label } from './tv-speler.js?v=20261126s';
 
 const rij = r => `<div class="ku-m ${r.status}"><b>${esc(r.tijd || '–')}</b><div><span>${esc(r.a)} – ${esc(r.b)}</span><small class="ts-kap">${esc(r.plek)}</small></div>${r.score ? `<em>${esc(r.score)}</em>` : `<em class="l">${esc(label(r))}</em>`}</div>`;
 const top = m => m.top ? `<div class="ku-top"><span>Straks · ${esc(m.top.tijd)}${m.top.plek ? ' · ' + esc(m.top.plek) : ''}</span><b style="${maat(m.top.a + m.top.b, 54, 22)}">${esc(m.top.a)} – ${esc(m.top.b)}</b></div>` : '';
