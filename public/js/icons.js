@@ -131,6 +131,11 @@ const PATHS = {
   'action-sort': '<path d="M7 20V4.6"/><path d="M3.6 8 7 4.6 10.4 8"/><path d="M17 4v15.4"/><path d="M13.6 16 17 19.4 20.4 16"/>',
   'action-warning': '<path d="M12 4.2 21 19.4H3z"/><path d="M12 10v4.2"/><circle cx="12" cy="17" r="0.7" fill="currentColor" stroke="none"/>',
   'action-whatsapp': '<path d="M4 20l1.3-3.9A7.5 7.5 0 1 1 8.1 18.7z"/><path d="M9 9.2c.2-.5.4-.5.7-.5h.5c.2 0 .4 0 .6.5l.7 1.6c.1.2 0 .4-.1.5l-.5.6c-.1.1-.2.3-.1.5a5 5 0 0 0 2.4 2.2c.2.1.4 0 .5-.1l.5-.6c.1-.2.3-.2.5-.1l1.6.8c.2.1.3.3.3.5v.5c0 .5-.4.9-.9 1a3 3 0 0 1-1.5 0 8.4 8.4 0 0 1-5.2-5c-.2-.6-.4-1.3-.3-1.9z"/>',
+  // — activiteit (draaiboek per onderwerp) —
+  'activiteit-kantine': '<path d="M5 9.5h11v4.2a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"/><path d="M16 11h1.4a2.4 2.4 0 0 1 0 4.8H15.6"/><path d="M8.6 3.8c-.7.9-.7 1.8 0 2.7M12.2 3.8c-.7.9-.7 1.8 0 2.7"/>',
+  'activiteit-veiligheid': '<path d="M12 3.4 19 6v5.6c0 4.1-2.9 7.3-7 9-4.1-1.7-7-4.9-7-9V6z"/><path d="M12 9v5.6M9.2 11.8h5.6"/>',
+  'activiteit-budget': '<circle cx="12" cy="12" r="8.6"/><path d="M15.2 8.7a3.9 3.9 0 1 0 0 6.6"/><path d="M7.6 10.9h5.2M7.6 13.1h5.2"/>',
+  'activiteit-afronding': '<path d="M5.6 20.6V3.8"/><path d="M5.6 4.4h11.6l-2.2 3.6 2.2 3.6H5.6"/>',
   // — map —
   'map': '<path d="M3.5 8.2 6 4.8h5.6l2 3.4H20a.7.7 0 0 1 .7.7v9.3a1 1 0 0 1-1 1H4.3a1 1 0 0 1-1-1V8.9a.7.7 0 0 1 .2-.7z"/>',
   // — stats —
