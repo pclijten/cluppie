@@ -1,4 +1,9 @@
 [
+  { "datum": "2026-11-26", "titel": "Video's delen in de Teamkamer", "punten": [
+    "Deel video's van de club, zoals de 4Skills-uitlegvideo's, met ouders en spelers in de Teamkamer. Bij Team, Video's tik je op Teamkamer naast een video, of kies onder Teamkamer de nieuwe knop Video's.",
+    "Maak je eigen categorieën, bijvoorbeeld Thuis oefenen, Techniek of Uitleg voor ouders. Een video van de club komt standaard in dezelfde categorie als bij de club.",
+    "Ouders en spelers zien de video's in een eigen tab Video's, per categorie, met een teller voor wat nieuw is. Ouders met meldingen aan krijgen een pushmelding bij een nieuwe video."
+  ]},
   { "datum": "2026-11-24", "titel": "Zien wie een video heeft bekeken", "punten": [
     "Voor clubbeheerders: bij elke video onder Club, Video's staat nu hoeveel trainers hem hebben geopend. Tik erop en je ziet per team wie hem wel en wie hem nog niet heeft bekeken.",
     "Trainers: de beheerder ziet alleen dat je een video hebt geopend en wanneer, niet of je hem hebt uitgekeken."

@@ -220,7 +220,7 @@ export const binnenDagen = (datum, vandaag, n) => { const a = d12(vandaag), b = 
 /* ---------- thuis oefenen: video's (YouTube of een video die de club in Cluppie zette) ----------
    Zelfde regels als functions/teamkamer-logica.js: van YouTube bewaren we alleen de video-id, een eigen
    video moet in de opslag van Cluppie staan. Iets anders komt niet in de teamkamer. */
-export const MAX_THUIS_VIDEOS = 6;
+export const MAX_THUIS_VIDEOS = 40, MAX_VIDEO_CATS = 12;
 export function youtubeId(url){
   const m = String(url || '').match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:[^ #]*&)?v=|embed\/|shorts\/|live\/))([A-Za-z0-9_-]{11})/);
   return m ? m[1] : '';
@@ -233,6 +233,28 @@ export function thuisVideo(v){
   if (yt) return { titel: titel || 'Video', yt };
   if (v && isCluppieVideo(v.url)) return { titel: titel || 'Video', url: String(v.url) };
   return null;
+}
+/* [20261126v] video's in de teamkamer, per categorie van de trainer (teamkamer.videoCats). Volgorde: de categorieën
+   zoals de trainer ze zette, daarna "Overig" (zonder categorie). Binnen een categorie het nieuwst gedeelde eerst. */
+export const videoSleutel = (v) => (v ? (v.yt ? 'yt:' + v.yt : v.url ? 'url:' + v.url : '') : '');
+export function videoGroepen(videos, cats){
+  const lijst = (Array.isArray(videos) ? videos : []).filter(v => v && (v.yt || v.url));
+  const namen = (Array.isArray(cats) ? cats : []).filter(c => typeof c === 'string' && c);
+  const opMs = (a, b) => (Number(b.ms) || 0) - (Number(a.ms) || 0);
+  const groepen = namen.map(naam => ({ naam, videos: lijst.filter(v => v.cat === naam).sort(opMs) })).filter(g => g.videos.length);
+  const overig = lijst.filter(v => !v.cat || !namen.includes(v.cat)).sort(opMs);
+  if (overig.length) groepen.push({ naam: groepen.length ? 'Overig' : '', videos: overig });
+  return groepen;
+}
+/* hoeveel video's zijn er gedeeld sinds de ouder de tab Video's het laatst opende (gezien = ms) */
+export const nieuweVideosSinds = (videos, gezien) => (Array.isArray(videos) ? videos : []).filter(v => v && Number(v.ms) > (Number(gezien) || 0)).length;
+/* een nieuwe categorie: opgeschoond, niet dubbel (hoofdletters tellen niet), hooguit MAX_VIDEO_CATS */
+export function catErbij(cats, naam){
+  const n = String(naam || '').replace(/\s+/g, ' ').trim().slice(0, 30), lijst = Array.isArray(cats) ? cats : [];
+  if (!n) return { fout: 'Typ eerst een naam' };
+  if (lijst.some(c => c.toLowerCase() === n.toLowerCase())) return { fout: 'Deze categorie bestaat al', naam: lijst.find(c => c.toLowerCase() === n.toLowerCase()) };
+  if (lijst.length >= MAX_VIDEO_CATS) return { fout: `Maximaal ${MAX_VIDEO_CATS} categorieën` };
+  return { cats: [...lijst, n], naam: n };
 }
 export const ytEmbed = (id) => `https://www.youtube-nocookie.com/embed/${id}?rel=0&playsinline=1`;
 export const ytThumb = (id) => `https://img.youtube.com/vi/${id}/mqdefault.jpg`;
@@ -276,7 +298,7 @@ export const OPTIES = [
   ['uitslag', 'Uitslag', 'De trainer mag de uitslag tonen, de dag na de wedstrijd.'],
   ['live', 'Live stand', 'De trainer mag de stand tijdens de wedstrijd tonen, zonder namen.'],
   ['opstelling', 'Opstelling delen', 'De trainer mag per wedstrijd de opstelling delen.'],
-  ['thuis', 'Thuis oefenen', 'De trainer kiest een oefening die spelers thuis in 3D bekijken.'],
+  ['thuis', "Thuis oefenen en video's", "De trainer kiest een oefening die spelers thuis in 3D bekijken, en deelt video's van de club in categorieën."],
   ['lijn', 'Zo moedigen wij aan', 'Drie afspraken voor langs de lijn, rond een wedstrijd.'],
   ['agenda', 'Agenda-bestand', 'Ouders zetten trainingen en wedstrijden in hun eigen agenda.'],
   ['weer', 'Weerbericht', 'Het weer bij de club op de wedstrijddag (via Open-Meteo).'],

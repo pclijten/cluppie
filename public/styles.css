@@ -525,6 +525,9 @@ textarea.invoer{font-family:inherit;line-height:1.5;resize:vertical;min-height:6
 .video-rij .v-meta{font-size:var(--t-xs);margin-top:var(--space-3xs);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .video-rij .acties{display:flex;gap:var(--space-2xs);flex-shrink:0}
 .video-rij .acties button{width:32px;height:32px;border-radius:var(--r-s);font-size:var(--t-md)}
+/* [20261126v] video in de Teamkamer zetten (Team, Video's) */
+.video-rij .acties .rij-kamer{width:auto;min-height:32px;padding:0 var(--space-xs);display:inline-flex;align-items:center;gap:var(--space-3xs);font-size:var(--t-xs);font-weight:600;border:1px solid var(--line-d);background:none;color:var(--ink-2);cursor:pointer}
+.video-rij .acties .rij-kamer.aan{color:var(--ok) !important;border-color:currentColor}
 .training-rij .ico{width:38px;height:38px;border-radius:var(--r-s);background:color-mix(in srgb, var(--accent) 12%, transparent);color:var(--uit);display:flex;align-items:center;justify-content:center;font-size:var(--t-xl);flex-shrink:0;font-weight:700;font-family:var(--font-display)}
 .training-rij .ico.knvb{background:color-mix(in srgb, var(--ok) 14%, transparent);color:var(--ok);font-size:var(--t-xs);letter-spacing:.2px}
 .training-rij .ico.overig{background:color-mix(in srgb, var(--warn) 14%, transparent);color:var(--warn)}

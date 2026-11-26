@@ -22,10 +22,17 @@ const kort = (s, n) => {
   return t.length > n ? t.slice(0, n - 1).trimEnd() + '…' : t;
 };
 
-/* PURE (getest): de tekst van een melding. soort: 'poll' | 'herinnering' | 'bericht' */
+/* PURE (getest): de tekst van een melding. soort: 'poll' | 'herinnering' | 'bericht' | 'video' */
 function melding(soort, o = {}){
   const team = kort(o.teamNaam, 40) || 'je team';
   const enc = encodeURIComponent;
+  /* [20261126v] de trainer deelt een of meer video's in de teamkamer (o.titels) */
+  if (soort === 'video'){
+    const titels = (o.titels || []).map(t => kort(t, 80)).filter(Boolean);
+    return { titel: `${titels.length > 1 ? 'Nieuwe video\'s' : 'Nieuwe video'} · ${team}`,
+      tekst: titels.length > 1 ? kort(titels.join(', '), 160) : (titels[0] || 'De trainer deelde een video.'),
+      url: `${KAMER_URL}?team=${enc(o.teamId || '')}&tab=videos`, tag: 'video-' + (o.teamId || '') };
+  }
   if (soort === 'bericht') return { titel: `Mededeling · ${team}`, tekst: kort(o.tekst, 160) || 'Er staat een nieuwe mededeling klaar.',
     url: `${KAMER_URL}?team=${enc(o.teamId || '')}`, tag: 'bericht-' + (o.id || '') };
   const url = `${KAMER_URL}?team=${enc(o.teamId || '')}&poll=${enc(o.id || '')}`;

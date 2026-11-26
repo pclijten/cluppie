@@ -8,19 +8,20 @@ import {
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, speler, initialen, openModal, sluitModal, toon, isBeheerder
-} from './state.js?v=20261127f';
-import { telGebruik } from './tracker.js?v=20261127f';
-import { voorbeeldTeamcode } from './clubconfig.js?v=20261127f';
+} from './state.js?v=20261127k';
+import { telGebruik } from './tracker.js?v=20261127k';
+import { videoInKamer } from './kamer-beheer.js?v=20261127k';   /* [20261126v] video delen in de teamkamer */
+import { voorbeeldTeamcode } from './clubconfig.js?v=20261127k';
 import { ico } from './icons.js?v=20261127b';
 
 import {
   CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, youtubeId, youtubeThumb, youtubeWatch,
   SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo, isoWeek,
   catLabel,
-} from './config.js?v=20261127f';
-import { onderdeelAan } from './onderdelen.js?v=20261127f';
-import { htmlKompas } from './teams-leerlijn.js?v=20261127f';
-import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261127f';
+} from './config.js?v=20261127k';
+import { onderdeelAan } from './onderdelen.js?v=20261127k';
+import { htmlKompas } from './teams-leerlijn.js?v=20261127k';
+import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261127k';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
 import { spelersOpTraining } from './uitleen-regels.js?v=20261113b';
 import {
@@ -598,6 +599,7 @@ function videoRijHtml(vid, nr){
       <div class="v"><div class="v-titel">${esc(vid.titel || 'Video')}</div>
         <div class="v-meta">${vid.clubNaam ? esc(vid.clubNaam) : (upload ? 'Eigen video' : 'YouTube')}</div></div>
       <div class="acties">
+        ${(() => { const k = videoInKamer(vid); return k === null ? '' : `<button class="rij-wa rij-kamer${k ? ' aan' : ''}" data-kamer-video="${esc(vid.id || '')}" aria-pressed="${k}" title="${k ? 'Staat in de Teamkamer. Tik om weg te halen' : 'Deel in de Teamkamer voor ouders en spelers'}">${k ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M12 10v6M9 13h6"/></svg>'}<span class="rij-kamer-t">${k ? 'In Teamkamer' : 'Teamkamer'}</span></button>`; })()}
         <button class="rij-wa" data-deel-video="${esc(href)}" data-deel-type="${upload ? 'upload' : 'youtube'}" data-deel-titel="${esc(vid.titel || 'Video')}" title="Delen via WhatsApp">${ico('action-whatsapp',18)}</button>
       </div>
     </div>`;
