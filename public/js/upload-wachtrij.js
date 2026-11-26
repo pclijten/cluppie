@@ -23,9 +23,9 @@
 import {
   db, storage, collection, addDoc, serverTimestamp, sRef, uploadBytes, getDownloadURL, deleteObject
 } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261127k';
-import { telGebruik } from './tracker.js?v=20261127k';
-import { pdfProfielNu, pdfOmzettenAan } from './clubconfig.js?v=20261127k';
+import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261127m';
+import { telGebruik } from './tracker.js?v=20261127m';
+import { pdfProfielNu, pdfOmzettenAan } from './clubconfig.js?v=20261127m';
 
 /* [20261013c] AI-model per upload. Alleen een sleutel; de Cloud Function
    structureerTraining koppelt die aan een model (whitelist). */
@@ -229,7 +229,7 @@ const waarschuw = e => { e.preventDefault(); e.returnValue = ''; };
 const MAX_TEGELIJK = 3;
 let actief = 0;
 let aiBelofte = null;
-const aiModule = () => (aiBelofte ||= import('./training-ai.js?v=20261127k'));
+const aiModule = () => (aiBelofte ||= import('./training-ai.js?v=20261127m'));
 
 function volgende(){
   for (const job of jobs){

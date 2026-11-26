@@ -14,7 +14,7 @@
 import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, collection, onSnapshot, getDoc } from './firebase.js?v=20261011g';
 import { plaatjeOk, veiligeLink } from './toernooi-logica.js?v=20261127f';
 import { sorteer, nieuweGoals, goalKeuze, evenementId, evenementTv } from './clubscherm-logica.js?v=20261127f';
-import { sjabloonId, laadSjabloon } from './tv-sjablonen.js?v=20261127f';
+import { sjabloonId, laadSjabloon } from './tv-sjablonen.js?v=20261127m';
 import { maakSpeler, tvModel, proefProgramma, PROEF_DIAS, standWissel, goalBand, goalStijl } from './tv-speler.js?v=20261127f';
 import { stijl as stijlLive } from './live-boot.js?v=20261127f';
 import { tvStijl, tvKleur, tvZet, bordHtml, logoHtml, tikHtml, diaHtml, sponsHtml, voetHtml } from './tv-stijl.js?v=20261126n';

@@ -34,7 +34,7 @@ const LADERS = {
   veldkaart: () => import('./tv-sjabloon-veldkaart.js?v=20261127f'),
   sportnieuws: () => import('./tv-sjabloon-sportnieuws.js?v=20261127f'),
   lichtkrant: () => import('./tv-sjabloon-lichtkrant.js?v=20261127f'),
-  plakboek: () => import('./tv-sjabloon-plakboek.js?v=20261127f'),
+  plakboek: () => import('./tv-sjabloon-plakboek.js?v=20261127m'),
   kubus: () => import('./tv-sjabloon-kubus.js?v=20261127f'),
   lounge: () => import('./tv-sjabloon-lounge.js?v=20261127f'),
 };
