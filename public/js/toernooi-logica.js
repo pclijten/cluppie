@@ -39,6 +39,7 @@ export function opzet(t = {}){
     duur: getal(t.duur, 12, 4, 90), wissel: getal(t.wissel, 3, 0, 30), rust: t.rust !== false,
     groepOp: Array.isArray(t.groepOp) ? t.groepOp.filter(g => GROEP_OP[g]) : ['team'],
     grootte: getal(t.grootte, 7, 2, 18),
+    eind: naarMin(t.eind) != null ? t.eind : '', prijs: getal(t.prijs, 15, 0, 120), duurVast: t.duurVast === true, autoKo: t.autoKo !== false,
   };
 }
 export const slot = t => { const o = opzet(t); return o.duur + o.wissel; };
@@ -388,6 +389,7 @@ export function liveKopie(act = {}, { clubNaam = '', logo = '', kleur = '' } = {
     mededelingen: mededelingen(t),
     schermen: schermen(t),
     planB: act.planB?.actief === true ? tekst(act.planB.tekst, 300) : '',
+    prijs: prijsuitreiking(t),
   };
 }
 export const mededelingen = t => Object.entries(t?.mededelingen || {}).filter(([, m]) => m && m.tekst).map(([id, m]) => ({ id, tekst: String(m.tekst).slice(0, 280), ms: Number(m.ms) || 0 }))
@@ -623,3 +625,120 @@ export function schoonToernooi(t = {}, { indeling = true } = {}){
     }).filter(w => w.ko || (w.a && w.b));
   return uit;
 }
+
+/* ---------- automatisch indelen: poules, speeltijd en prijsuitreiking [20261127p] ----------
+   Alleen teams opgeven, plus begin- en eindtijd: Cluppie kiest het aantal poules en de speeltijd zo dat alles
+   (met finales als dat aan staat) en de prijsuitreiking binnen de tijd past. Zo min mogelijk poules, dan
+   spelen teams het meest. Teams van dezelfde club komen zoveel mogelijk in verschillende poules. */
+export const PAUZE_PRIJS = 5;  /* minuten tussen de laatste wedstrijd en de prijsuitreiking */
+export function prijsuitreiking(t = {}){
+  const o = opzet(t), schema = t.schema || [];
+  if (!o.prijs || !schema.length) return null;
+  const van = Math.max(...schema.map(w => naarMin(w.t))) + o.duur + PAUZE_PRIJS;
+  return { van: naarTijd(van), tot: naarTijd(van + o.prijs) };
+}
+/* Verdeel de teams over `aantal` poules: even groot, clubs zoveel mogelijk gespreid. Geeft { teamId: index }. */
+export function verdeelPoules(teams = {}, aantal = 2){
+  const lijst = Object.entries(teams).filter(([, x]) => x && typeof x === 'object').sort((a, b) => (a[1].volg ?? 0) - (b[1].volg ?? 0));
+  const n = Math.max(1, Math.min(aantal, lijst.length)), vak = Array.from({ length: n }, () => []), uit = {};
+  const perClub = new Map(); for (const [id, x] of lijst){ const k = x.club || `los-${id}`; if (!perClub.has(k)) perClub.set(k, []); perClub.get(k).push(id); }
+  const groepen = [...perClub.entries()].sort((a, b) => b[1].length - a[1].length);
+  for (const [k, ids] of groepen) for (const id of ids){
+    const min = Math.min(...vak.map(v => v.length));
+    const kies = vak.map((v, i) => ({ i, n: v.length, zelf: v.filter(x => (teams[x].club || `los-${x}`) === k).length }))
+      .filter(x => x.n === min || x.n < min + 1).sort((a, b) => a.zelf - b.zelf || a.n - b.n || a.i - b.i)[0];
+    vak[kies.i].push(id); uit[id] = kies.i;
+  }
+  return uit;
+}
+const pouleNaam = i => `Poule ${String.fromCharCode(65 + (i % 26))}${i >= 26 ? Math.floor(i / 26) + 1 : ''}`;
+/* Probeer aantallen poules en speeltijden; geeft het beste plan, of het minst slechte met een waarschuwing.
+   { poules: { pId: {naam,kleur,volg,velden:[]} }, teamPoule: { teamId: pId }, duur, ko, schema, eind, prijs, past, waarschuwingen } */
+export function autoIndeling(t = {}, { maxDuur = 20, minDuur = 6 } = {}){
+  const o = opzet(t), teams = t.teams || {}, n = Object.keys(teams).length, vj = veldjes(t);
+  const fout = w => ({ past: false, waarschuwingen: [w] });
+  if (n < 2) return fout('Voeg eerst minstens twee teams toe.');
+  if (!vj.length) return fout('Kies eerst de velden.');
+  const grens = naarMin(o.eind), begin = naarMin(o.start);
+  if (grens == null) return fout('Vul in hoe laat het toernooi klaar moet zijn.');
+  if (grens <= begin) return fout('De eindtijd moet na de begintijd liggen.');
+  const duren = o.duurVast ? [o.duur] : Array.from({ length: maxDuur - minDuur + 1 }, (_, i) => maxDuur - i);
+  let beste = null, passend = null;
+  for (let p = 1; p <= Math.max(1, Math.floor(n / 2)); p++){
+    if (p > 1 && n / p < 2) break;
+    const verdeling = verdeelPoules(teams, p), pids = Array.from({ length: p }, (_, i) => `ap${i + 1}`);
+    const poules = Object.fromEntries(pids.map((id, i) => [id, { naam: p === 1 ? 'Poule' : pouleNaam(i), kleur: KLEUREN[i % KLEUREN.length], volg: i + 1, velden: [] }]));
+    const teamPoule = Object.fromEntries(Object.entries(verdeling).map(([tid, i]) => [tid, pids[i]]));
+    const ko = o.autoKo ? { ak: { naam: 'Finales', poules: pids, ronde: p === 1 ? 2 : p === 2 ? 4 : 8, plaats3: p > 1, overige: false, volg: 1 } } : {};
+    for (const duur of duren){
+      const t2 = { ...t, duur, poules, ko, teams: Object.fromEntries(Object.entries(teams).map(([id, x]) => [id, { ...x, poule: teamPoule[id] }])) };
+      const r = planSchema(t2); if (!r.schema.length) continue;
+      const pr = prijsuitreiking({ ...t2, schema: r.schema }), klaar = naarMin(pr ? pr.tot : r.eind), alles = !r.waarschuwingen.some(w => /past/.test(w));
+      const plan = { poules, teamPoule, duur, ko, schema: r.schema, eind: r.eind, prijs: pr, klaar: naarTijd(klaar), past: alles && klaar <= grens, over: klaar - grens, waarschuwingen: r.waarschuwingen };
+      plan.speelmin = Math.round(r.schema.length * 2 * duur / n);
+      if (plan.past){ (passend ||= []).push(plan); break; }  /* langste speeltijd die past voor dit aantal poules */
+      if (!beste || plan.over < beste.over) beste = plan;
+    }
+  }
+  /* Van wat past: de meeste speelminuten per team, met liefst wedstrijden van 10 minuten of langer en poules van 3 of meer. */
+  if (passend){
+    const goed = x => (x.duur >= Math.min(10, o.duurVast ? o.duur : 10) ? 2 : 0) + (n / Object.keys(x.poules).length >= Math.min(3, n) ? 1 : 0);
+    const plan = passend.sort((a, b) => goed(b) - goed(a) || b.speelmin - a.speelmin || Object.keys(a.poules).length - Object.keys(b.poules).length)[0];
+    return { ...plan, waarschuwingen: [] };
+  }
+  if (!beste) return fout('Er past niets. Voeg velden toe of kies een latere eindtijd.');
+  return { ...beste, past: false, waarschuwingen: [`Het past niet helemaal: klaar om ${beste.klaar}, ${beste.over} minuten te laat. Voeg een veld toe, splits een veld in helften, kies een latere eindtijd of zet de finales uit.`] };
+}
+
+/* ---------- wedstrijdboom van de knock-out [20261127] ----------
+   De finales als boom: links en rechts de kwart- en halve finales, in het midden de finale. Eén functie voor de
+   planner, de live pagina en de PDF; wie hem gebruikt geeft zelf door hoe een naam, veld en uitslag te vinden zijn. */
+const boomNr = w => Number(String(w.id || '').split('-').pop().slice(1)) || 1;
+export function koBoom(ws = []){
+  const op = f => ws.filter(w => w.fase === f).sort((a, b) => boomNr(a) - boomNr(b));
+  const kw = op('kwart'), hv = op('halve'), finale = op('finale')[0] || null, half = Math.ceil(kw.length / 2);
+  return { links: [kw.slice(0, half), hv.slice(0, 1)].filter(l => l.length), rechts: [hv.slice(1, 2), kw.slice(half)].filter(l => l.length),
+    finale, brons: op('brons')[0] || null, plaats: ws.filter(w => w.fase === 'plaats').sort((a, b) => boomNr(a) - boomNr(b)) };
+}
+const BOOM_TITEL = { kwart: 'Kwartfinale', halve: 'Halve finale' };
+export function boomHtml(ws, { esc, naam, veld = () => '', uitslag = () => null, mijn = '', kop = '', podium = '' }){
+  const b = koBoom(ws); if (!b.finale) return '';
+  const kaart = (w, klasse = '', titel = '') => { const u = uitslag(w), heeft = heeftUitslag(u), z = winnaar(u);
+    const rij = k => `<div class="bm-t${z === k ? ' bm-wint' : ''}${w[k] ? '' : ' bm-leeg'}${mijn && w[k] === mijn ? ' bm-mijn' : ''}"><span>${esc(naam(w, k))}</span><b>${heeft ? esc(u[k]) : ''}</b></div>`;
+    return `<div class="bm-w ${klasse}">${titel ? `<i>${esc(titel)}</i>` : ''}<small>${esc([w.t, veld(w)].filter(Boolean).join(' · '))}${u?.w ? ' · na strafschoppen' : ''}</small>${rij('a')}${rij('b')}</div>`; };
+  const kol = (lijst, kant, i, n) => `<div class="bm-kol ${kant}${lijst.length > 1 ? ' bm-paar' : ''}"><h4>${BOOM_TITEL[lijst[0].fase] || ''}</h4><div class="bm-lijst">${lijst.map(w => kaart(w, (kant === 'bm-links' ? i > 0 : i < n - 1) ? 'bm-in' : '')).join('')}</div></div>`;
+  const onder = [b.brons ? kaart(b.brons, 'bm-los', 'Om plaats 3') : '', ...b.plaats.map(w => kaart(w, 'bm-los', `Om plaats ${w.plaats || ''}${w.plaats ? ' en ' + (w.plaats + 1) : ''}`.trim()))].filter(Boolean);
+  return `<div class="bm-blok">${kop ? `<h3 class="bm-kop">🏆 ${esc(kop)}</h3>` : ''}<div class="bm-rol"><div class="bm" style="--bmk:${b.links.length + b.rechts.length + 1}">
+      ${b.links.map((l, i) => kol(l, 'bm-links', i, b.links.length)).join('')}
+      <div class="bm-kol bm-midden"><h4>🏆 Finale</h4><div class="bm-lijst">${kaart(b.finale, `bm-finale${b.links.length ? ' bm-in' : ''}`)}</div></div>
+      ${b.rechts.map((l, i) => kol(l, 'bm-rechts', i, b.rechts.length)).join('')}</div></div>
+    ${onder.length ? `<div class="bm-onder">${onder.join('')}</div>` : ''}${podium}</div>`;
+}
+export const BOOM_CSS = `
+.bm-blok{display:flex;flex-direction:column;gap:10px;--bml:var(--bmc,var(--accent,#E20613))}
+.bm-kop{margin:0;font-size:15px;font-weight:800}
+.bm-rol{overflow-x:auto;padding-bottom:2px}
+.bm{display:flex;gap:20px;align-items:stretch;min-width:calc(var(--bmk,3)*128px + (var(--bmk,3) - 1)*20px)}
+.bm-kol{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:6px}
+.bm-kol h4{margin:0;text-align:center;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-2,#666);min-height:14px}
+.bm-kol.bm-midden h4{color:var(--bml)}
+.bm-lijst{flex:1;position:relative;display:flex;flex-direction:column;justify-content:space-around;gap:10px}
+.bm-w{position:relative;background:var(--bg,#f6f7f9);border:1.5px solid var(--hair,#d9dce1);border-radius:10px;padding:5px 8px 6px;display:flex;flex-direction:column;gap:2px;font-size:13px;line-height:1.25;color:var(--ink,#14161a);break-inside:avoid}
+.bm-w small{font-size:10px;color:var(--ink-2,#666);font-variant-numeric:tabular-nums}
+.bm-w i{font-style:normal;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--bml)}
+.bm-t{display:flex;justify-content:space-between;gap:6px;align-items:baseline}
+.bm-t span{min-width:0;overflow-wrap:anywhere;font-weight:600}.bm-t b{font-variant-numeric:tabular-nums;min-width:14px;text-align:right}
+.bm-t.bm-wint span,.bm-t.bm-wint b{font-weight:800}.bm-t.bm-wint b{color:var(--bml)}
+.bm-t.bm-leeg span{font-weight:400;font-style:italic;color:var(--ink-2,#666)}
+.bm-t.bm-mijn span{text-decoration:underline;text-decoration-color:var(--bml);text-decoration-thickness:2px}
+.bm-w.bm-finale{border:2px solid var(--bml);background:color-mix(in srgb,var(--bml) 9%,var(--card,#fff));padding:8px 10px;font-size:14px}
+.bm-w::before,.bm-w::after,.bm-kol.bm-paar .bm-lijst::after{content:'';position:absolute;background:var(--bml);opacity:.55}
+.bm-w::before,.bm-w::after{top:50%;height:2px;width:0;margin-top:-1px}
+.bm-kol.bm-links .bm-w::after{right:-11.5px;width:10px}.bm-kol.bm-rechts .bm-w::before{left:-11.5px;width:10px}
+.bm-kol.bm-links .bm-w.bm-in::before,.bm-w.bm-finale.bm-in::before{left:-11.5px;width:10px}
+.bm-kol.bm-rechts .bm-w.bm-in::after,.bm-w.bm-finale.bm-in::after{right:-11.5px;width:10px}
+.bm-kol.bm-paar .bm-lijst::after{top:25%;bottom:25%;width:2px}
+.bm-kol.bm-links.bm-paar .bm-lijst::after{right:-11px}.bm-kol.bm-rechts.bm-paar .bm-lijst::after{left:-11px}
+.bm-onder{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.bm-onder .bm-w{flex:0 1 220px}
+.bm-podium{display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:center;margin:0;font-weight:800}`;

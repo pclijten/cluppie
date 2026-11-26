@@ -13,9 +13,9 @@
    trainingToegang-sessie dan ook niet meer toe. */
 import { auth, db, signInAnonymously, doc, getDoc, setDoc,
          collection, getDocs, query, where } from './firebase.js?v=20261011g';
-import { esc } from './state.js?v=20261127p';
-import { afwezigRedenInfo } from './config.js?v=20261127p';
-import { oefHtml } from './training-weergave.js?v=20261127p';
+import { esc } from './state.js?v=20261127r';
+import { afwezigRedenInfo } from './config.js?v=20261127r';
+import { oefHtml } from './training-weergave.js?v=20261127r';
 
 function schermHtml(inhoud){
   return `<div style="max-width:var(--app-w,540px);margin:0 auto;min-height:100%;padding:20px 16px calc(40px + env(safe-area-inset-bottom));box-sizing:border-box">${inhoud}</div>`;

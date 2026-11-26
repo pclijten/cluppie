@@ -8,7 +8,7 @@
    onder het vaste id <uid>_<0-9>. Contactgegevens leest alleen het comité en dit toestel zelf
    (firestore.rules). Online betalen zit er niet in: de club zet er een betaallink of rekeningnummer bij. */
 import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, collection, query, where, setDoc, deleteDoc, onSnapshot } from './firebase.js?v=20261011g';
-import * as T from './toernooi-logica.js?v=20261127n';
+import * as T from './toernooi-logica.js?v=20261127r';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const SLEUTEL = 'cluppieInschrijfContact';

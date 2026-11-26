@@ -11,10 +11,10 @@
    Opslag: veld `toernooi` in de activiteit (zie toernooi-logica.js). Geen rules-wijziging nodig.
    Dit bestand krijgt alles van activiteiten.js via ctx en importeert dat bestand niet. */
 import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, deleteField } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261127p';
+import { S, esc, meld } from './state.js?v=20261127r';
 import { ico } from './icons.js?v=20261127b';
-import * as T from './toernooi-logica.js?v=20261127n';
-import { kleinPlaatje } from './plaatje.js?v=20261127n';
+import * as T from './toernooi-logica.js?v=20261127r';
+import { kleinPlaatje } from './plaatje.js?v=20261127r';
 
 const clubInfo = () => ({ clubNaam: S.club?.naam || '', logo: S.club?.instellingen?.identiteit?.logo || '', kleur: S.club?.instellingen?.identiteit?.kleur || '' });
 const opt = (w, t, sel) => `<option value="${esc(w)}"${sel ? ' selected' : ''}>${esc(t)}</option>`;
@@ -62,10 +62,17 @@ function htmlOpzet(ctx, a, t){
   const nogClub = (club?.velden || []).filter(v => !velden.some(x => x.clubVeld === v.id));
   const eind = (t.schema || []).length ? T.planSchema(t).eind : '';
   const conflicten = club && a.datum ? T.veldConflicten(club.blokken, { datum: a.datum, van: o.start, tot: eind || T.naarTijd(T.naarMin(o.start) + 240), velden: velden.map(v => v.clubVeld).filter(Boolean) }) : [];
-  return `<div class="ac-paneel"><h3>Wie doen er mee</h3><p class="ac-zacht">Bepaalt de woorden in de planner, op de inschrijfpagina en op de live pagina. Kies Scholen voor een schooltoernooi en Bedrijven voor een bedrijventoernooi.</p>
+  const pr = T.prijsuitreiking(t), nTeams = Object.keys(t.teams || {}).length;
+  return `<div class="ac-paneel tn-auto"><h3>Tijden en automatisch indelen</h3><p class="ac-zacht">Geef alleen de teams op (tab Teams), de velden, en hoe laat het toernooi begint en klaar moet zijn. Cluppie maakt de poules, kiest de speeltijd en plant alle wedstrijden, de finales en de prijsuitreiking. Je ziet het voorstel eerst.</p>
+      <div class="tn-rij"><label>Eerste wedstrijd ${veld('start', o.start, { type: 'time' })}</label><label>Klaar om ${veld('eind', o.eind, { type: 'time' })}</label><label>Prijsuitreiking (min) ${getal('prijs', o.prijs, 'min="0" max="120"')}</label></div>
+      <div class="tn-rij"><label class="ac-schak"><input type="checkbox" data-veld="toernooi.autoKo" data-bool ${o.autoKo ? 'checked' : ''}> Met finales na de poules</label>
+        <label class="ac-schak"><input type="checkbox" data-veld="toernooi.duurVast" data-bool ${o.duurVast ? 'checked' : ''}> Speeltijd vast op ${o.duur} minuten (anders kiest Cluppie de langste die past)</label></div>
+      <div class="ac-acties"><button class="knop vol klein" data-tn="auto" ${nTeams >= 2 && velden.length && o.eind ? '' : 'disabled'}>Voorstel maken</button><span class="ac-zacht">${nTeams < 2 ? 'Voeg eerst teams toe bij Teams.' : !velden.length ? 'Kies hieronder eerst de velden.' : !o.eind ? 'Vul in hoe laat het klaar moet zijn.' : `${nTeams} teams, ${vj.length} ${vj.length === 1 ? 'veld' : 'velden'}`}</span></div></div>
+    <div class="ac-paneel"><h3>Wie doen er mee</h3><p class="ac-zacht">Bepaalt de woorden in de planner, op de inschrijfpagina en op de live pagina. Kies Scholen voor een schooltoernooi en Bedrijven voor een bedrijventoernooi.</p>
       <select class="ac-in" data-veld="toernooi.deelnemers" aria-label="Wie doen er mee">${Object.entries(T.SOORTEN).map(([k, x]) => opt(k, x.naam, T.soort(t) === k)).join('')}</select></div>
-    <div class="ac-paneel"><h3>Tijden</h3>
-      <div class="tn-rij"><label>Eerste wedstrijd ${veld('start', o.start, { type: 'time' })}</label><label>Speeltijd (min) ${getal('duur', o.duur, 'min="4" max="90"')}</label><label>Wisseltijd (min) ${getal('wissel', o.wissel, 'min="0" max="30"')}</label></div>
+    <div class="ac-paneel"><h3>Speeltijd</h3>
+      <div class="tn-rij"><label>Speeltijd (min) ${getal('duur', o.duur, 'min="4" max="90"')}</label><label>Wisseltijd (min) ${getal('wissel', o.wissel, 'min="0" max="30"')}</label></div>
+      <p class="ac-zacht">${(t.schema || []).length ? 'Verander je de eerste wedstrijd, dan schuift het hele schema mee.' : 'Klaar om is inclusief de prijsuitreiking. Prijsuitreiking 0 = geen.'}${pr ? ` Prijsuitreiking nu om <b>${esc(pr.van)}</b>, klaar om <b>${esc(pr.tot)}</b>.` : ''}${pr && o.eind && T.naarMin(pr.tot) > T.naarMin(o.eind) ? ` <b class="tn-waarsch">Dat is later dan ${esc(o.eind)}.</b>` : ''}</p>
       <label class="ac-schak"><input type="checkbox" data-veld="toernooi.rust" data-bool ${o.rust ? 'checked' : ''}> <span><b>Rust tussen wedstrijden</b><small class="ac-zacht"> Een team speelt liefst niet twee keer achter elkaar.</small></span></label></div>
     <div class="ac-paneel"><h3>Velden</h3><p class="ac-zacht">Splits een veld in twee of vier veldjes voor de kleintjes. Elk veldje speelt tegelijk.</p>
       ${velden.map(v => `<div class="ac-rij">${veld(`velden.${v.id}.naam`, v.naam, { klasse: 'ac-groei' })}
@@ -79,7 +86,7 @@ function htmlOpzet(ctx, a, t){
         return `<div class="tn-poule" style="--pk:${esc(p.kleur || '#999')}"><div class="ac-rij"><input class="tn-kleur" type="color" data-veld="toernooi.poules.${esc(p.id)}.kleur" value="${esc(p.kleur || '#999999')}" aria-label="Kleur">${veld(`poules.${p.id}.naam`, p.naam, { klasse: 'ac-groei vet' })}
           <span class="ac-zacht">${n} teams · ${n * (n - 1) / 2 * (p.dubbel ? 2 : 1)} wedstr.</span><button class="ac-x" data-tn="poule-weg" data-id="${esc(p.id)}" aria-label="Poule weg">✕</button></div>
           <div class="ac-chips">${vj.map(v => `<label class="ac-chip ${mag.has(v.id) ? 'aan' : ''}"><input type="checkbox" data-tn-pveld="${esc(p.id)}" value="${esc(v.id)}" ${mag.has(v.id) ? 'checked' : ''}> ${esc(v.naam)}</label>`).join('')}<span class="ac-zacht">${mag.size ? '' : 'Alle velden'}</span></div>
-          <div class="tn-rij"><label>Begint om ${veld(`poules.${p.id}.start`, p.start || '', { type: 'time' })}</label><label class="ac-schak"><input type="checkbox" data-veld="toernooi.poules.${esc(p.id)}.dubbel" data-bool ${p.dubbel ? 'checked' : ''}> Uit en thuis</label></div></div>`; }).join('') || '<p class="ac-zacht">Nog geen poules. Maak ze hier, of laat ze maken bij Teams › Voorstel.</p>'}
+          <div class="tn-rij"><label>Begint om ${veld(`poules.${p.id}.start`, p.start && T.naarMin(p.start) > T.naarMin(o.start) ? p.start : o.start, { type: 'time' })}</label><label class="ac-schak"><input type="checkbox" data-veld="toernooi.poules.${esc(p.id)}.dubbel" data-bool ${p.dubbel ? 'checked' : ''}> Uit en thuis</label></div></div>`; }).join('') || '<p class="ac-zacht">Nog geen poules. Maak ze hier, of laat ze maken bij Teams › Voorstel.</p>'}
       <div class="ac-acties"><button class="knop licht klein" data-tn="poule-nieuw">${ico('action-add', 16)} Poule</button></div></div>
     ${htmlKoOpzet(t, poules)}`;
 }
@@ -129,11 +136,15 @@ function htmlTeams(ctx, a, t){
       <div class="ac-chips">${Object.entries(T.GROEP_OP).map(([k, n]) => `<label class="ac-chip ${o.groepOp.includes(k) ? 'aan' : ''}"><input type="checkbox" data-tn-groep="${k}" ${o.groepOp.includes(k) ? 'checked' : ''}> ${esc(n)}</label>`).join('')}</div>
       <div class="tn-rij"><label>Spelers per team ${getal('grootte', o.grootte, 'min="2" max="18"')}</label><label class="ac-schak"><input type="checkbox" data-tn-pp checked> Per groep een poule</label></div>
       <div class="ac-acties"><button class="knop vol klein" data-tn="voorstel" ${nVrij ? '' : 'disabled'}>Voorstel maken</button></div></div>
-    <div class="ac-paneel"><h3>${esc(SO.naam.split(' (')[0])}</h3><p class="ac-zacht">Voeg de ${esc(SO.meer)} toe die meedoen en geef ze teams. Gastteams hebben geen spelerslijst nodig. Met Inschrijven melden ze zichzelf aan.</p>
+    <div class="ac-paneel"><h3>${esc(SO.naam.split(' (')[0])}</h3><p class="ac-zacht">Voeg de ${esc(SO.meer)} toe die meedoen, geef ze teams en kies per team de poule. Gastteams hebben geen spelerslijst nodig. Met Inschrijven melden ze zichzelf aan.</p>
       ${T.gesorteerd(t.clubs).map(c => { const n = teams.filter(tm => tm.club === c.id).length;
-        return `<div class="ac-rij tn-clubrij">${veld(`clubs.${c.id}.naam`, c.naam, { klasse: 'ac-groei vet' })}<span class="ac-zacht">${n} ${n === 1 ? 'team' : 'teams'}</span>
-          <select class="ac-in smal" data-tn-clubteam="${esc(c.id)}" aria-label="Team toevoegen">${opt('', '+ team in poule…')}${poules.map(p => opt(p.id, p.naam)).join('')}${opt('-', 'zonder poule')}</select>
-          <button class="ac-x" data-tn="club-weg" data-id="${esc(c.id)}" aria-label="Weg">✕</button></div>`; }).join('') || `<p class="ac-zacht">Nog geen ${esc(SO.meer)}.</p>`}
+        return `<div class="tn-club"><div class="ac-rij tn-clubrij">${veld(`clubs.${c.id}.naam`, c.naam, { klasse: 'ac-groei vet' })}<span class="ac-zacht">${n} ${n === 1 ? 'team' : 'teams'}</span>
+          <button class="knop licht klein" data-tn="club-team" data-id="${esc(c.id)}">${ico('action-add', 16)} Team</button>
+          <button class="ac-x" data-tn="club-weg" data-id="${esc(c.id)}" aria-label="${esc(SO.Een)} weg">✕</button></div>
+          ${teams.filter(tm => tm.club === c.id).map(tm => `<div class="ac-rij tn-clubteam" style="--pk:${esc(kleurPoule(t, tm.poule))}"><span class="tn-stip"></span>${veld(`teams.${tm.id}.naam`, tm.naam, { klasse: 'ac-groei', extra: 'maxlength="40" aria-label="Teamnaam"' })}
+            <select class="ac-in smal ${tm.poule && t.poules?.[tm.poule] ? '' : 'tn-leeg'}" data-veld="toernooi.teams.${esc(tm.id)}.poule" aria-label="Poule van ${esc(tm.naam)}">${opt('', 'Poule kiezen…', !t.poules?.[tm.poule])}${poules.map(p => opt(p.id, p.naam, tm.poule === p.id)).join('')}</select>
+            <button class="ac-x" data-tn="team-weg" data-id="${esc(tm.id)}" aria-label="Team weg">✕</button></div>`).join('')}</div>`; }).join('') || `<p class="ac-zacht">Nog geen ${esc(SO.meer)}.</p>`}
+      ${teams.length >= 2 ? `<p class="ac-zacht">${teams.some(tm => !t.poules?.[tm.poule]) ? `${teams.filter(tm => !t.poules?.[tm.poule]).length} teams hebben nog geen poule. ` : ''}Geen zin om zelf poules te kiezen? Laat Cluppie het doen bij <b>Opzet › Voorstel maken</b>.</p>` : ''}
       <div class="ac-acties"><button class="knop licht klein" data-tn="club-nieuw">${ico('action-add', 16)} ${esc(SO.Een)}</button><button class="knop licht klein" data-tn="teams-plak">Lijst plakken (${esc(SO.een)}, team, poule)</button></div></div>
     ${fout.length ? `<div class="ac-melding">${ico('action-warning', 18)} <span><b>${fout.length} ${fout.length === 1 ? 'speler past' : 'spelers passen'} niet bij de regels van hun team.</b> Zie de rode teams hieronder.</span></div>` : ''}
     ${teams.map(tm => {
@@ -156,10 +167,11 @@ function htmlTeams(ctx, a, t){
 }
 
 function htmlSchema(ctx, a, t){
-  const vj = T.veldjes(t), schema = T.metKo(t), o = T.opzet(t);
+  const vj = T.veldjes(t), schema = T.metKo(t), o = T.opzet(t), pr = T.prijsuitreiking(t);
   const kop = `<div class="ac-paneel"><div class="ac-rij"><span class="ac-groei">${schema.length ? `<b>${schema.length} wedstrijden</b>, van ${esc(o.start)} tot ${esc(T.naarTijd(Math.max(...schema.map(w => T.naarMin(w.t))) + o.duur))}` : 'Nog geen schema.'}</span>
       <button class="knop vol klein" data-tn="plan">${schema.length ? 'Opnieuw plannen' : 'Schema maken'}</button></div>
       ${st.waarsch?.length ? `<div class="ac-melding">${ico('action-warning', 18)} <span>${st.waarsch.map(esc).join(' ')}</span></div>` : ''}
+      ${pr ? `<p class="tn-prijs">🏆 Prijsuitreiking om <b>${esc(pr.van)}</b>, klaar om <b>${esc(pr.tot)}</b>${o.eind && T.naarMin(pr.tot) > T.naarMin(o.eind) ? ` <span class="tn-waarsch">(later dan ${esc(o.eind)})</span>` : ''}</p>` : ''}
       ${schema.length ? '<p class="ac-zacht">Sleep een wedstrijd naar een andere plek om te ruilen of te verplaatsen. Op de telefoon: tik op een wedstrijd en daarna op de nieuwe plek.</p>' : ''}</div>`;
   if (!schema.length) return kop;
   const tijden = [...new Set(schema.map(w => w.t))].sort((x, y) => T.naarMin(x) - T.naarMin(y));
@@ -173,6 +185,7 @@ function htmlSchema(ctx, a, t){
       return `<td><button class="tn-cel ${w ? 'vol' : ''} ${w?.ko ? 'ko' : ''} ${st.gekozen && w?.id === st.gekozen ? 'gekozen' : ''} ${st.teamFilter && w && ![w.a, w.b].includes(st.teamFilter) ? 'dim' : ''}" data-tn="cel" data-t="${esc(tijd)}" data-v="${esc(v.id)}" ${w ? `data-id="${esc(w.id)}" data-tn-sleep="${esc(w.id)}" draggable="true" style="--pk:${esc(kleurPoule(t, w.p))}"` : ''}>${w ? `${w.ko ? `<i>${esc(T.koTitel(t, w))}</i>` : ''}<b>${esc(naamW(t, w, 'a'))}</b><b>${esc(naamW(t, w, 'b'))}</b>${u && u.a != null && u.a !== '' ? `<small>${esc(u.a)}–${esc(u.b)}</small>` : ''}` : '<small>vrij</small>'}</button></td>`; }).join('')}</tr>`).join('')}</tbody></table></div>`;
   return `${kop}<div class="ac-paneel"><div class="ac-rij"><h3 class="ac-groei">Per veld</h3><select class="ac-in smal" data-tn-filter>${opt('', 'Alle teams')}${teams.map(tm => opt(tm.id, tm.naam, st.teamFilter === tm.id)).join('')}</select></div>${grid}
       <div class="ac-chips">${T.gesorteerd(t.poules).map(p => `<span class="ac-chip"><span class="tn-stip" style="--pk:${esc(p.kleur || '#999')}"></span>${esc(p.naam)}</span>`).join('')}</div></div>
+    ${htmlBomen(t)}
     ${st.teamFilter && rooster[st.teamFilter] ? `<div class="ac-paneel"><h3>${esc(naamTeam(t, st.teamFilter))}</h3>${rooster[st.teamFilter].wedstrijden.map(w => `<div class="ac-rij"><span class="ac-tijd">${esc(w.t)}</span><span class="ac-groei">${esc(naamW(t, w, 'a'))} – ${esc(naamW(t, w, 'b'))}</span><span class="ac-zacht">${esc(vj.find(v => v.id === w.v)?.naam || '')}</span></div>`).join('')}
       <p class="ac-zacht">Eerste wedstrijd ${esc(rooster[st.teamFilter].eerste)}, klaar om ${esc(rooster[st.teamFilter].laatste)}. Langste wachttijd ${rooster[st.teamFilter].langsteWacht} min.</p></div>` : ''}
     ${krap.length ? `<p class="ac-zacht">Achter elkaar spelen (te weinig velden of teams voor rust): ${krap.map(tm => `${esc(tm.naam)} (${rooster[tm.id].achterElkaar}×)`).join(', ')}.</p>` : ''}`;
@@ -204,19 +217,21 @@ function htmlUitslagen(ctx, a, t){
         <span>–</span><input class="ac-in tn-score" type="number" min="0" max="99" inputmode="numeric" data-num data-veld="toernooi.uitslag.${esc(w.id)}.b" value="${esc(u.b ?? '')}" aria-label="Doelpunten ${esc(naamW(t, w, 'b'))}" ${open ? '' : 'disabled'}>
         <span class="tn-uit-b ${w.ko && !w.b ? 'leeg' : ''}">${esc(naamW(t, w, 'b'))}</span>
         ${gelijk ? `<label class="tn-uit-pen">Gelijk. Wie wint na strafschoppen? <select class="ac-in smal" data-veld="toernooi.uitslag.${esc(w.id)}.w">${opt('', 'kies…', !u.w)}${opt('a', naamW(t, w, 'a'), u.w === 'a')}${opt('b', naamW(t, w, 'b'), u.w === 'b')}</select></label>` : ''}</div>`; }).join('')}`).join('')}</div>
-    <div class="tn-standen">${htmlStanden(t)}</div></div>`;
+    <div class="tn-standen">${htmlStanden(t)}</div></div><div class="tn-bomen">${htmlBomen(t)}</div>`;
+}
+/* De finales als wedstrijdboom (zie boomHtml in toernooi-logica.js), per knock-outgroep. */
+function htmlBomen(t, { paneel = true } = {}){
+  const ko = T.metKo(t).filter(w => w.ko), vj = Object.fromEntries(T.veldjes(t).map(v => [v.id, v.naam]));
+  return T.koGroepen(t).map(g => { const ws = ko.filter(w => w.ko === g.id), eind = T.koUitslag(t, g.id);
+    const boom = T.boomHtml(ws, { esc, naam: (w, z) => naamW(t, w, z), veld: w => vj[w.v] || '', uitslag: w => t.uitslag?.[w.id], kop: g.naam || 'Finales',
+      podium: eind.length ? `<p class="bm-podium">${eind.slice(0, 3).map(x => `<span>${['🥇', '🥈', '🥉'][x.plaats - 1] || x.plaats + '.'} ${esc(naamTeam(t, x.id))}</span>`).join('')}</p>` : '' });
+    return boom ? (paneel ? `<div class="ac-paneel">${boom}</div>` : boom) : ''; }).join('');
 }
 /* Standen per poule en de knock-out. Wordt ook los bijgewerkt tijdens het typen van een score. */
 function htmlStanden(t){
   const poules = T.gesorteerd(t.poules).map(p => { const rijen = T.stand(t, p.id), klaar = T.pouleKlaar(t, p.id); return rijen.length ? `<div class="ac-paneel"><h3><span class="tn-stip" style="--pk:${esc(p.kleur || '#999')}"></span>${esc(p.naam)}${klaar ? ' <small class="ac-zacht">· klaar</small>' : ''}</h3>
       <table class="tn-stand"><thead><tr><th></th><th>Team</th><th>G</th><th>W</th><th>GL</th><th>V</th><th>DS</th><th>P</th></tr></thead><tbody>${rijen.map((r, i) => `<tr><td>${i + 1}</td><td>${esc(r.naam)}</td><td>${r.g}</td><td>${r.w}</td><td>${r.gl}</td><td>${r.v}</td><td>${r.saldo > 0 ? '+' : ''}${r.saldo}</td><td><b>${r.pnt}</b></td></tr>`).join('')}</tbody></table></div>` : ''; }).join('');
-  const ko = T.metKo(t).filter(w => w.ko);
-  const groepen = T.koGroepen(t).filter(g => ko.some(w => w.ko === g.id)).map(g => { const ws = ko.filter(w => w.ko === g.id).sort((x, y) => T.naarMin(x.t) - T.naarMin(y.t)), eind = T.koUitslag(t, g.id);
-    return `<div class="ac-paneel"><h3>🏆 ${esc(g.naam || 'Knock-out')}</h3>${ws.map(w => { const u = t.uitslag?.[w.id], z = T.winnaar(u);
-      return `<div class="tn-kow"><small>${esc(w.t)} · ${esc(T.koTitel(t, w).split(' · ')[0])}</small><span class="${z === 'a' ? 'wint' : ''} ${w.a ? '' : 'leeg'}">${esc(naamW(t, w, 'a'))}</span><b>${T.heeftUitslag(u) ? `${esc(u.a)}–${esc(u.b)}${u.w ? '*' : ''}` : '–'}</b><span class="${z === 'b' ? 'wint' : ''} ${w.b ? '' : 'leeg'}">${esc(naamW(t, w, 'b'))}</span></div>`; }).join('')}
-      ${eind.length ? `<p class="tn-eind">${eind.slice(0, 3).map(x => `<span>${['🥇', '🥈', '🥉'][x.plaats - 1] || x.plaats + '.'} ${esc(naamTeam(t, x.id))}</span>`).join('')}</p>` : ''}
-      ${ws.some(w => t.uitslag?.[w.id]?.w) ? '<p class="ac-zacht">* na strafschoppen</p>' : ''}</div>`; }).join('');
-  return poules + groepen;
+  return poules;
 }
 
 /* ---------- klikken en wijzigen ---------- */
@@ -310,8 +325,10 @@ export async function klikToernooi(ctx, b){
       if (Object.keys(t.uitslag || {}).length && !confirm('Er staan al uitslagen. Opnieuw plannen gooit die weg. Doorgaan?')) return;
       const r = T.planSchema(t); st.waarsch = r.waarschuwingen; st.gekozen = '';
       if (!r.schema.length){ ctx.herteken(); return meld(r.waarschuwingen[0] || 'Niets te plannen.'); }
-      await zet({ 'toernooi.schema': r.schema, 'toernooi.uitslag': {}, 'toernooi.gepland': Date.now() });
-      return meld(`${r.schema.length} wedstrijden gepland, klaar om ${r.eind}`);
+      const pr = T.prijsuitreiking({ ...t, schema: r.schema }), grens = T.opzet(t).eind, klaar = pr ? pr.tot : r.eind;
+      if (grens && T.naarMin(klaar) > T.naarMin(grens)) st.waarsch = [...r.waarschuwingen, `Het toernooi is klaar om ${klaar}, later dan ${grens}. Kort de speeltijd in, voeg een veld toe of gebruik Opzet › Voorstel maken.`];
+      await zet({ 'toernooi.schema': r.schema, 'toernooi.uitslag': {}, 'toernooi.gepland': Date.now(), ...prijsInProgramma(a, pr) });
+      return meld(`${r.schema.length} wedstrijden gepland, klaar om ${klaar}`);
     }
     case 'cel': {
       if (!st.gekozen){ if (id){ st.gekozen = id; ctx.herteken(); } return; }
@@ -399,7 +416,7 @@ export async function klikToernooi(ctx, b){
       return zet({ [`toernooi.schermen.${T.nieuwId('x')}`]: { soort: id === 'sponsor' ? 'sponsor' : 'scherm', titel: '', tekst: '', volg: T.volgende(t.schermen), tv: true, tel: true } }); }
     case 'scherm-club': {
       let lijst = [];
-      try { lijst = await (await import('./clubschermen.js?v=20261127p')).clubSponsoren(ctx.clubId); }
+      try { lijst = await (await import('./clubschermen.js?v=20261127r')).clubSponsoren(ctx.clubId); }
       catch { return meld('De sponsoren van de club zijn alleen te lezen door de clubbeheerder.'); }
       if (!lijst.length) return meld('De club heeft nog geen sponsoren. Zet ze in Activiteiten › Kantine-tv en sponsoren.');
       const heeft = new Set(Object.values(t.schermen || {}).map(x => String(x?.titel || '').toLowerCase())), patch = {};
@@ -413,6 +430,40 @@ export async function klikToernooi(ctx, b){
     case 'scherm-weg': return zet({ [`toernooi.schermen.${id}`]: deleteField() });
     case 'scherm-plaatje-weg': return zet({ [`toernooi.schermen.${id}.img`]: deleteField() });
     case 'med-weg': return zet({ [`toernooi.mededelingen.${id}`]: deleteField() });
+    case 'club-team': {
+      if (Object.keys(t.teams || {}).length >= T.MAX.teams) return meld('Het maximum aantal teams is bereikt.');
+      const club = t.clubs?.[id], n = Object.values(t.teams || {}).filter(tm => tm.club === id).length;
+      return zet({ [`toernooi.teams.${T.nieuwId('t')}`]: { naam: `${club?.naam || 'Team'}${n ? ' ' + (n + 1) : ''}`.slice(0, 40), poule: '', club: id, volg: T.volgende(t.teams), gast: true, eisen: {} } });
+    }
+    case 'auto': {
+      const r = T.autoIndeling(t);
+      if (!r.schema) return meld(r.waarschuwingen[0]);
+      st.auto = r;
+      const perPoule = Object.entries(r.poules).map(([pid, p]) => ({ p, teams: Object.entries(r.teamPoule).filter(([, x]) => x === pid).map(([tid]) => naamTeam(t, tid)) }));
+      const nKo = r.schema.filter(w => w.ko).length;
+      return ctx.venster(`<h2>Voorstel voor het toernooi</h2>
+        ${r.past ? '' : `<div class="ac-melding">${ico('action-warning', 18)} <span>${esc(r.waarschuwingen[0])}</span></div>`}
+        <div class="ac-chips"><span class="ac-chip aan">${Object.keys(r.poules).length} ${Object.keys(r.poules).length === 1 ? 'poule' : 'poules'}</span><span class="ac-chip aan">${r.duur} min per wedstrijd</span><span class="ac-chip aan">${r.schema.length} wedstrijden${nKo ? `, waarvan ${nKo} finales` : ''}</span><span class="ac-chip aan">${esc(T.opzet(t).start)} – ${esc(r.eind)}</span>${r.prijs ? `<span class="ac-chip aan">Prijsuitreiking ${esc(r.prijs.van)}</span>` : ''}<span class="ac-chip aan">Klaar om ${esc(r.klaar)}</span></div>
+        ${perPoule.map(x => `<div class="ac-paneel tn-team" style="--pk:${esc(x.p.kleur)}"><b>${esc(x.p.naam)}</b> <small class="ac-zacht">${x.teams.length} teams</small><p class="ac-zacht">${x.teams.map(esc).join(', ')}</p></div>`).join('')}
+        <p class="ac-zacht">Elk team speelt ongeveer ${r.speelmin} minuten. ${Object.keys(t.poules || {}).length || (t.schema || []).length ? '<b>Overnemen vervangt de huidige poules, het schema en de uitslagen.</b>' : ''} Daarna kun je alles nog aanpassen en wedstrijden verslepen.</p>
+        <div class="ac-acties"><button class="knop licht" data-ac="venster-dicht">Annuleren</button><span class="ac-groei"></span><button class="knop vol" data-tn="auto-ja">Overnemen</button></div>`);
+    }
+    case 'auto-ja': {
+      const r = st.auto; if (!r?.schema) return;
+      if (Object.keys(t.uitslag || {}).length && !confirm('Er staan al uitslagen. Die gaan weg. Doorgaan?')) return;
+      const map = {}, poules = {}, patch = {};
+      for (const [oud, p] of Object.entries(r.poules)){ map[oud] = T.nieuwId('p') + oud; poules[map[oud]] = p; }
+      const gid = T.nieuwId('g');
+      for (const [tid, pid] of Object.entries(r.teamPoule)) patch[`toernooi.teams.${tid}.poule`] = map[pid];
+      const bron = b => b?.p ? { ...b, p: map[b.p] } : b?.w ? { ...b, w: b.w.replace(/^ak-/, gid + '-') } : b;
+      Object.assign(patch, { 'toernooi.poules': poules, 'toernooi.duur': r.duur, 'toernooi.uitslag': {}, 'toernooi.gepland': Date.now(),
+        'toernooi.ko': r.ko.ak ? { [gid]: { ...r.ko.ak, poules: r.ko.ak.poules.map(x => map[x]) } } : {},
+        'toernooi.schema': r.schema.map(w => ({ ...w, p: map[w.p] || w.p, ...(w.ko ? { id: w.id.replace(/^ak-/, gid + '-'), ko: gid, ka: bron(w.ka), kb: bron(w.kb) } : {}) })),
+        ...prijsInProgramma(a, r.prijs) });
+      st.auto = null; st.waarsch = r.waarschuwingen; ctx.sluitVenster();
+      await zet(patch); st.sub = 'schema'; ctx.herteken();
+      return meld(`${r.schema.length} wedstrijden gepland${r.prijs ? `, prijsuitreiking om ${r.prijs.van}` : ''}`);
+    }
     case 'ko-nieuw': {
       if (Object.keys(t.ko || {}).length >= T.MAX_KO) return meld(`Maximaal ${T.MAX_KO} knock-outs.`);
       const al = new Set(Object.values(t.ko || {}).flatMap(g => g?.poules || [])), vrij = T.gesorteerd(t.poules).filter(p => !al.has(p.id));
@@ -438,6 +489,12 @@ export async function klikToernooi(ctx, b){
       return zet(patch);
     }
   }
+}
+/* De prijsuitreiking ook in het Dagprogramma (één vaste regel, die meeschuift met het schema). */
+function prijsInProgramma(a, pr){
+  if (!pr) return a.programma?.tnprijs ? { 'programma.tnprijs': deleteField() } : {};
+  const oud = a.programma?.tnprijs, duur = T.naarMin(pr.tot) - T.naarMin(pr.van);
+  return { 'programma.tnprijs': { wat: 'Prijsuitreiking', waar: '', wie: '', volg: 999, ...(oud || {}), tijd: pr.van, duur } };
 }
 const jaarUitCategorie = (tm, datum) => {
   const n = Number(/(\d{1,2})/.exec(String(tm?.categorie || tm?.naam || ''))?.[1]);
@@ -491,6 +548,26 @@ export async function wijzigToernooi(ctx, el){
     el.checked ? set.add(el.value) : set.delete(el.value);
     await ctx.zet({ [`toernooi.poules.${pid}.velden`]: [...set] }); return true;
   }
+  if (el.dataset.veld === 'toernooi.start' && T.naarMin(el.value) != null){
+    const oud = T.naarMin(T.opzet(t).start), d = T.naarMin(el.value) - oud, patch = { 'toernooi.start': el.value };
+    if (d && (t.schema || []).length){
+      const schuif = x => T.naarTijd(T.naarMin(x) + d);
+      patch['toernooi.schema'] = t.schema.map(w => ({ ...w, t: schuif(w.t) }));
+      for (const [pid, p] of Object.entries(t.poules || {})) if (T.naarMin(p.start) != null) patch[`toernooi.poules.${pid}.start`] = schuif(p.start);
+      for (const [gid, g] of Object.entries(t.ko || {})) if (T.naarMin(g.start) != null) patch[`toernooi.ko.${gid}.start`] = schuif(g.start);
+      Object.assign(patch, prijsInProgramma(a, T.prijsuitreiking({ ...t, start: el.value, schema: patch['toernooi.schema'] })));
+    }
+    await ctx.zet(patch); ctx.herteken();
+    /* zolang de cursor nog in een vak staat wordt het scherm niet hertekend: de poules alvast bijwerken */
+    for (const i of ctx.el.querySelectorAll('[data-veld^="toernooi.poules."][data-veld$=".start"]')){ const pid = i.dataset.veld.split('.')[2], ps = patch[`toernooi.poules.${pid}.start`] || t.poules?.[pid]?.start;
+      i.value = ps && T.naarMin(ps) > T.naarMin(el.value) ? ps : el.value; }
+    if (d && (t.schema || []).length) meld(`Het schema begint nu om ${el.value}`);
+    return true;
+  }
+  if (el.dataset.veld === 'toernooi.prijs' && (t.schema || []).length){
+    const n = el.value === '' ? 0 : Number(el.value); if (!Number.isFinite(n) || n < 0) return true;
+    await ctx.zet({ 'toernooi.prijs': n, ...prijsInProgramma(a, T.prijsuitreiking({ ...t, prijs: n })) }); return true;
+  }
   if (el.matches('[data-tn-kop]')){
     const gid = el.dataset.tnKop, set = new Set(t.ko?.[gid]?.poules || []);
     el.checked ? set.add(el.value) : set.delete(el.value);
@@ -507,12 +584,6 @@ export async function wijzigToernooi(ctx, el){
   }
   if (el.matches('[data-tn-erbij]')){
     if (el.value) await ctx.zet({ [`toernooi.spelers.${el.value}.tt`]: el.dataset.tnErbij }); return true;
-  }
-  if (el.matches('[data-tn-clubteam]')){
-    const cid = el.dataset.tnClubteam, pid = el.value; if (!pid) return true;
-    const club = t.clubs?.[cid], n = Object.values(t.teams || {}).filter(tm => tm.club === cid).length;
-    await ctx.zet({ [`toernooi.teams.${T.nieuwId('t')}`]: { naam: `${club?.naam || 'Team'}${n ? ' ' + (n + 1) : ''}`.slice(0, 40), poule: pid === '-' ? '' : pid, club: cid, volg: T.volgende(t.teams), gast: true, eisen: {} } });
-    return true;
   }
   if (el.matches('[data-tn-filter]')){ st.teamFilter = el.value; ctx.herteken(); return true; }
   if (el.matches('[data-tn-pp]')) return true;
@@ -535,6 +606,7 @@ function standBijTypen(ctx, el){
     uitslag[wid] = { ...(uitslag[wid] || {}), [z]: i.value === '' ? null : Number(i.value) };
   }
   const box = ctx.el.querySelector('.tn-standen'); if (box) box.innerHTML = htmlStanden({ ...t0, uitslag });
+  const bomen = ctx.el.querySelector('.tn-bomen'); if (bomen) bomen.innerHTML = htmlBomen({ ...t0, uitslag });
   const pad = el.dataset.veld, w = el.value === '' ? null : Number(el.value);
   if (w != null && (!Number.isFinite(w) || w < 0 || w > 99)) return;
   clearTimeout(st.scoreT[pad]);
@@ -754,16 +826,13 @@ function printHtml(a, qr = ''){
   const poules = T.gesorteerd(t.poules), teams = T.gesorteerd(t.teams);
   const datum = a.datum ? new Date(a.datum + 'T12:00').toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '';
   const logo = T.plaatjeOk(ci.logo) ? `<img class="vk-logo" src="${esc(ci.logo)}" alt="">` : `<div class="vk-logo vk-letter">${esc((ci.clubNaam || a.naam || 'C').trim()[0] || 'C')}</div>`;
-  const feiten = [schema.length ? `${esc(o.start)} – ${esc(eind)}` : '', `${teams.length} teams`, `${poules.length} ${poules.length === 1 ? 'poule' : 'poules'}`, gebruikt.length ? `${gebruikt.length} ${gebruikt.length === 1 ? 'veld' : 'velden'}` : '', `${o.duur} min per wedstrijd`].filter(Boolean);
+  const prU = T.prijsuitreiking(t);
+  const feiten = [schema.length ? `${esc(o.start)} – ${esc(eind)}` : '', `${teams.length} teams`, `${poules.length} ${poules.length === 1 ? 'poule' : 'poules'}`, gebruikt.length ? `${gebruikt.length} ${gebruikt.length === 1 ? 'veld' : 'velden'}` : '', `${o.duur} min per wedstrijd`, prU ? `Prijsuitreiking ${esc(prU.van)}` : ''].filter(Boolean);
   const cel = w => { if (!w) return '<td class="vk-vrij"></td>'; const u = t.uitslag?.[w.id];
     return `<td><div class="vk-w ${w.ko ? 'ko' : ''}" style="--pk:${esc(kleurPoule(t, w.p))}">${w.ko ? `<i>${esc(T.koTitel(t, w).split(' · ')[0])}</i>` : ''}<span>${esc(naamW(t, w, 'a'))}</span><span>${esc(naamW(t, w, 'b'))}</span>${T.heeftUitslag(u) ? `<b>${esc(u.a)} – ${esc(u.b)}</b>` : ''}</div></td>`; };
   const klein = gebruikt.length > 6 ? ' klein' : '';
   const standen = poules.map(p => { const r = T.stand(t, p.id); return r.some(x => x.g) ? `<div class="vk-kaart" style="--pk:${esc(p.kleur || '#999')}"><h3>Stand ${esc(p.naam)}</h3><table class="vk-tab"><tr><th></th><th>Team</th><th>G</th><th>W</th><th>GL</th><th>V</th><th>DS</th><th>P</th></tr>${r.map((x, i) => `<tr><td>${i + 1}</td><td>${esc(x.naam)}</td><td>${x.g}</td><td>${x.w}</td><td>${x.gl}</td><td>${x.v}</td><td>${x.saldo > 0 ? '+' : ''}${x.saldo}</td><td><b>${x.pnt}</b></td></tr>`).join('')}</table></div>` : ''; }).join('');
-  const ko = T.koGroepen(t).map(g => { const ws = schema.filter(w => w.ko === g.id).sort((x, y) => T.naarMin(x.t) - T.naarMin(y.t)); if (!ws.length) return '';
-    const eindst = T.koUitslag(t, g.id);
-    return `<div class="vk-kaart" style="--pk:${esc(kleurPoule(t, g.poules[0]))}"><h3>🏆 ${esc(g.naam || 'Finales')}</h3>${ws.map(w => { const u = t.uitslag?.[w.id];
-      return `<div class="vk-ko"><small>${esc(w.t)} · ${esc(vj.find(v => v.id === w.v)?.naam || '')} · ${esc(T.koTitel(t, w).split(' · ')[0])}</small><span>${esc(naamW(t, w, 'a'))}</span><b>${T.heeftUitslag(u) ? `${esc(u.a)} – ${esc(u.b)}` : '–'}</b><span>${esc(naamW(t, w, 'b'))}</span></div>`; }).join('')}
-      ${eindst.length ? `<p class="vk-podium">${eindst.slice(0, 3).map(x => `<span>${['🥇', '🥈', '🥉'][x.plaats - 1]} ${esc(naamTeam(t, x.id))}</span>`).join('')}</p>` : ''}</div>`; }).join('');
+  const ko = htmlBomen(t, { paneel: false });
   return `<style>
 @page{size:A4 landscape;margin:9mm}
 body{margin:0!important;font-family:system-ui,-apple-system,'Segoe UI',sans-serif!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;color:#14161a}
@@ -805,11 +874,10 @@ body{margin:0!important;font-family:system-ui,-apple-system,'Segoe UI',sans-seri
 .vk-tab th,.vk-tab td{padding:3px 4px;border:0;border-bottom:1px solid #eee;text-align:center;color:#14161a}
 .vk-tab th{font-size:9px;color:#666}.vk-tab td:nth-child(2),.vk-tab th:nth-child(2){text-align:left}
 .vk-team td:first-child{font-weight:700}.vk-team td,.vk-team th{text-align:left!important}
-.vk-ko{display:grid;grid-template-columns:1fr auto 1fr;gap:1px 8px;align-items:center;padding:4px 0;border-bottom:1px solid #eee;font-size:11px}
-.vk-ko small{grid-column:1/-1;color:#666;font-size:9px}.vk-ko span{font-weight:700}.vk-ko span:first-of-type{text-align:right}
-.vk-podium{display:flex;flex-wrap:wrap;gap:4px 12px;margin:6px 0 0;font-weight:800;font-size:12px}
 .vk-onder{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:8px;border-top:2px solid var(--c);font-size:10px;color:#555}
 .vk-onder b{color:var(--c)}
+.vk-boom{--bmc:var(--c);display:flex;flex-direction:column;gap:14px}.vk-boom .bm-blok{break-inside:avoid}
+${T.BOOM_CSS}
 </style>
 <div class="vk">
   <header class="vk-kop">${logo}<div class="vk-titel"><small>${esc(ci.clubNaam || '')}</small><h1>${esc(a.naam || 'Toernooi')}</h1><p>${esc([datum, a.locatie].filter(Boolean).join(' · '))}</p></div>
@@ -824,7 +892,8 @@ body{margin:0!important;font-family:system-ui,-apple-system,'Segoe UI',sans-seri
     <div class="vk-raster">${poules.map(p => { const ts = teams.filter(tm => tm.poule === p.id); return ts.length ? `<div class="vk-kaart" style="--pk:${esc(p.kleur || '#999')}"><h3>${esc(p.naam)}</h3><table class="vk-tab vk-team"><tr><th>Team</th><th>Kleedkamer</th><th>Eerste</th><th>Klaar</th></tr>
       ${ts.map(tm => `<tr><td>${esc(tm.naam)}</td><td>${esc(T.kkNaam(t, T.kkVanTeam(t, tm.id, plan)) || '–')}</td><td>${esc(rooster[tm.id]?.eerste || '')}</td><td>${esc(rooster[tm.id]?.laatste || '')}</td></tr>`).join('')}</table></div>` : ''; }).join('')}
       ${teams.some(tm => !tm.poule) ? `<div class="vk-kaart" style="--pk:#999"><h3>Zonder poule</h3><table class="vk-tab vk-team">${teams.filter(tm => !tm.poule).map(tm => `<tr><td>${esc(tm.naam)}</td><td>${esc(T.kkNaam(t, T.kkVanTeam(t, tm.id, plan)) || '–')}</td></tr>`).join('')}</table></div>` : ''}</div>
-    ${standen || ko ? `<h2>Standen en finales</h2><div class="vk-raster">${standen}${ko}</div>` : ''}
+    ${ko ? `<h2>Finales</h2><div class="vk-boom">${ko}</div>` : ''}
+    ${standen ? `<h2>Standen</h2><div class="vk-raster">${standen}</div>` : ''}
     <div class="vk-onder"><span><b>${esc(ci.clubNaam || '')}</b>${ci.clubNaam ? ' · ' : ''}${esc(a.naam || '')}</span><span>Gemaakt met Cluppie · ${esc(new Date().toLocaleDateString('nl-NL'))}</span></div>
   </div>
 </div>`;
@@ -844,6 +913,11 @@ export const TOERNOOI_CSS = `
 .tn-scherm-v{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
 .tn-scherm-v .ac-rij{flex-wrap:wrap}
 .tn-clubrij{flex-wrap:wrap}
+.tn-club{padding:6px 0;border-bottom:1px solid var(--hair);display:flex;flex-direction:column;gap:4px}
+.tn-clubteam{padding-left:14px}.tn-clubteam select{flex:0 0 190px}.tn-clubteam select.tn-leeg{border-style:dashed;color:var(--ink-2)}
+.tn-auto{border:1.5px solid color-mix(in srgb,var(--accent) 45%,var(--hair))}
+.tn-prijs{margin:6px 0 0;font-size:var(--t-sm)}
+@media (max-width:600px){.tn-clubteam{flex-wrap:wrap;padding-left:0}.tn-clubteam select{flex:1 1 0}}
 @media (max-width:600px){.tn-clubrij>.ac-in:first-child{flex:1 1 100%}.tn-clubrij>select{flex:1 1 0;min-width:0}}
 .tn-sub{flex-wrap:wrap}
 .tn-rij{display:flex;flex-wrap:wrap;gap:var(--space-xs) var(--space-sm);align-items:flex-end}
@@ -878,12 +952,10 @@ export const TOERNOOI_CSS = `
 .tn-kkrij{flex-wrap:wrap}.tn-kk-kies{flex:0 1 330px;min-width:240px;width:auto}
 @media (max-width:600px){.tn-kkrij>.ac-in:first-child{flex:1 1 100%}.tn-kk-kies{flex:1 1 100%}}
 .tn-uit-titel{grid-column:1/-1;font-size:var(--t-xs);font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--pk);margin-top:4px}
-.tn-uit .leeg,.tn-kow .leeg{color:var(--ink-2);font-weight:400;font-style:italic}
+.tn-uit .leeg{color:var(--ink-2);font-weight:400;font-style:italic}
 .tn-uit-pen{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:var(--t-sm);color:var(--ink-2)}
-.tn-kow{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:2px 8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--hair)}
-.tn-kow small{grid-column:1/-1;color:var(--ink-2);font-size:var(--t-xs)}.tn-kow span:first-of-type{text-align:right}.tn-kow b{font-variant-numeric:tabular-nums}
-.tn-kow .wint{font-weight:700}
-.tn-eind{display:flex;flex-wrap:wrap;gap:6px 14px;margin:6px 0 0;font-weight:600}
+.tn-bomen{display:flex;flex-direction:column;gap:var(--space-sm);margin-top:var(--space-sm)}.tn-bomen:empty{display:none}
+${T.BOOM_CSS}
 .tn-twee{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:var(--space-sm);align-items:start}
 .tn-standen{display:flex;flex-direction:column;gap:var(--space-sm)}
 .tn-uit{display:grid;grid-template-columns:70px minmax(0,1fr) 54px 10px 54px minmax(0,1fr);gap:6px;align-items:center;border-left:4px solid var(--pk);padding:4px 0 4px 8px}

@@ -1,6 +1,6 @@
 /* TV-SJABLOON "PLAKBOEK" [20261126q]: kaartjes met tape, stickers en stift op papier. Alles valt van boven in beeld
    en valt er onderaan weer uit. Zie docs/tv-sjablonen.md. */
-import { esc, standWissel, maat, maatWoord, klok, beeld } from './tv-speler.js?v=20261127n';
+import { esc, standWissel, maat, maatWoord, klok, beeld } from './tv-speler.js?v=20261127r';
 
 const R = [-2, 1.5, -1, 2, -1.5, 1];
 const streep = '<svg viewBox="0 0 620 26"><path d="M4 18 C 120 4, 240 26, 360 12 S 560 8, 616 16" fill="none" stroke="var(--club)" stroke-width="7" stroke-linecap="round"/></svg>';
