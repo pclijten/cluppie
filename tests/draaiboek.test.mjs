@@ -96,4 +96,13 @@ for (const tag of ['w:p', 'w:tbl', 'w:tr', 'w:tc']){
   const open = (xml.match(new RegExp(`<${tag}[ >]`, 'g')) || []).length, dicht = (xml.match(new RegExp(`</${tag}>`, 'g')) || []).length;
   gelijk(open, dicht, `${tag} open = dicht`);
 }
+/* wie neemt mee: comitélid of eigen naam */
+{ const act = { comite: { u1: { naam: 'Kees Jansen' } } };
+  gelijk(D.wieNaarWaarde('  kees   jansen ', act), 'u1', 'naam van comitélid wordt id');
+  gelijk(D.wieNaarWaarde('Opa van Daan', act), 'Opa van Daan', 'eigen naam blijft tekst');
+  gelijk(D.wieNaarWaarde('   ', act), '');
+  gelijk(D.wieNaarWaarde('x'.repeat(99), act).length, D.WIE_MAX);
+  gelijk(D.wieNaam('u1', act), 'Kees Jansen'); gelijk(D.wieNaam('Opa van Daan', act), 'Opa van Daan'); gelijk(D.wieNaam('', act), '');
+  const d = D.draaiboekDoc({ ...act, naam: 'T', materiaal: { m1: { naam: 'Ballen', wie: 'Opa van Daan', volg: 1 } } }, { vandaag: '2026-11-26' });
+  ok(JSON.stringify(d).includes('Opa van Daan'), 'eigen naam in het draaiboek'); }
 console.log(`draaiboek: ${n} controles in orde`);
