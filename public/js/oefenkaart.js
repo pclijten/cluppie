@@ -4,7 +4,7 @@
    Puur: geen DOM, geen Firestore, geen state.js (testbaar in node, zie tests/zeven-velden.test.mjs).
    zevenVelden() levert per veld een korte samenvatting (voor de dichte regel) en de HTML (voor het open veld). */
 import { MATERIAAL_NAAM } from './trainingscontext-logica.js?v=20261019a';
-import { stappen3D } from './scene3d.js?v=20261121b';
+import { stappen3D } from './scene3d.js?v=20261126p';
 
 export const VELD_NAMEN = [['doel', 'Doel'], ['tijd', 'Tijdbestek'], ['mat', 'Benodigdheden'], ['uitleg', 'Uitleg'], ['diff', 'Differentiatie'], ['coach', 'Coachmomenten'], ['spel', 'Spelvormen']];
 export const TIJDEN = [5, 10, 15, 20];

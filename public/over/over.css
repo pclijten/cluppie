@@ -425,3 +425,44 @@ h3 { font-size: var(--text-title); line-height: 1.05; }
   .ingangen__grid { row-gap: var(--space-lg); }
 }
 .ingangen { scroll-margin-top: 5rem; }
+
+/* ---------- sportkeuze [20261126p]: de pagina volgt de gekozen sport ---------- */
+html[data-sport="voetbal"] [data-alleen]:not([data-alleen~="voetbal"]),
+html[data-sport="hockey"] [data-alleen]:not([data-alleen~="hockey"]),
+html[data-sport="volleybal"] [data-alleen]:not([data-alleen~="volleybal"]),
+html[data-sport="korfbal"] [data-alleen]:not([data-alleen~="korfbal"]) { display: none !important; }
+
+.sportkeuze { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin: var(--space-md) 0 var(--space-lg); }
+.sportknop { display: grid; gap: 2px; min-height: 48px; padding: 8px 16px; text-align: left; border: 1px solid color-mix(in oklab, var(--color-ink) 22%, transparent); border-radius: var(--radius-input); background: transparent; color: var(--color-ink); font: inherit; cursor: pointer; transition: background-color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out); }
+.sportknop__naam { font-family: var(--font-display); font-weight: var(--display-weight); font-size: var(--text-lg); line-height: 1; text-transform: uppercase; letter-spacing: var(--tracking-display); }
+.sportknop__status { font-size: var(--text-xs); color: var(--color-ink-2); }
+.sportknop:hover { border-color: var(--color-accent); }
+.sportknop:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.sportknop[aria-pressed="true"] { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-accent-ink); }
+.sportknop[aria-pressed="true"] .sportknop__status { color: inherit; opacity: .85; }
+
+.feit { display: flex; flex-direction: column; gap: 6px; padding: var(--space-lg); border: 1px solid color-mix(in oklab, var(--color-ink) 14%, transparent); border-top: 3px solid var(--color-accent); border-radius: var(--radius-card); background: var(--color-paper-2); }
+.feit__kop { font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--color-ink-2); }
+.feit__groot { font-family: var(--font-display); font-weight: var(--display-weight); font-size: var(--text-xl); line-height: 1.05; text-transform: uppercase; letter-spacing: var(--tracking-display); text-wrap: balance; }
+.feit__tekst { font-size: var(--text-sm); color: var(--color-ink-2); }
+.sporten h2 { margin-bottom: var(--space-lg); }
+
+/* een getekend veld waar bij voetbal een foto staat: zelfde bord als de tekeningen */
+.veldplaat { display: grid; overflow: hidden; background: var(--color-field); color: var(--color-chalk); }
+.veldplaat__svg { display: block; width: 100%; height: 100%; }
+.veldplaat__svg--gras { height: auto; border-radius: 12px; color: var(--color-chalk); }
+.vp-gras { fill: var(--color-field-2); }
+.veldplaat__svg [stroke="currentColor"] { stroke-opacity: .6; }
+.vp-eigen { fill: var(--color-accent); stroke: var(--color-chalk); stroke-width: 2; }
+.vp-tegen { fill: var(--color-opp); stroke: var(--color-chalk); stroke-width: 2; }
+.vp-keeper { fill: var(--color-keeper); stroke: var(--color-chalk); stroke-width: 2; }
+.vp-korf { fill: none; stroke: var(--color-cone); stroke-width: 4; }
+.vp-pass { fill: none; stroke: var(--color-chalk); stroke-width: 2.5; stroke-dasharray: 2 9; stroke-linecap: round; }
+
+.pilotblok { display: grid; gap: var(--space-md); justify-items: start; max-width: 62ch; padding: var(--space-lg); border: 1px dashed color-mix(in oklab, var(--color-ink) 30%, transparent); border-radius: var(--radius-card); }
+.pilotblok p { margin: 0; }
+.pilotregel { color: var(--color-ink-2); font-style: italic; }
+@media (prefers-reduced-motion: reduce) { .sportknop { transition: none; } }
+/* de vijfhoeken horen bij een voetbal; bij een andere sport is de getekende bal glad */
+html:not([data-sport="voetbal"]) .tv-balvlak { display: none; }
+@media (max-width: 30rem) { .sportkeuze { display: grid; grid-template-columns: 1fr 1fr; } }
