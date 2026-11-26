@@ -6,14 +6,15 @@
    comitéleden tegelijk kunnen werken):
      { start:'09:00', duur:12, wissel:3, rust:true, groepOp:['team'], grootte:7,
        velden:  { vId: { naam, clubVeld, delen:1|2|4, volg } },
-       kk:      { kId: { naam, plekken, volg } },
+       kk:      { kId: { naam, plekken, delen:1|2, volg } },               delen 2 = linker- en rechterhelft
+       ko:      { gId: { naam, poules:[pId], ronde:2|4|8, plaats3, overige, start, volg } },  knock-out na de poules
        poules:  { pId: { naam, kleur, volg, velden:[veldjeId], start, dubbel, finale } },
        clubs:   { cId: { naam, volg } },                                verenigingen (ook de eigen club)
        mededelingen: { mId: { tekst, ms } }, liveId, live:true|false,
        teams:   { tId: { naam, poule, club, volg, gast, kk, eisen:{ geslacht:''|'m'|'v', van, tot, bron:[eigen teamnaam] } } },
        spelers: { sId: { naam, jaar, geslacht, bron, tt } },          tt = toernooiteam
-       schema:  [{ id, p, a, b, v, t, r, fase }],                    gegenereerd, in één keer geschreven
-       uitslag: { wedId: { a, b } } }
+       schema:  [{ id, p, a, b, v, t, r, fase, ko, ka, kb, nr, plaats }],  gegenereerd; knock-out: a/b leeg, ka/kb = bron
+       uitslag: { wedId: { a, b, w } } }                              w = 'a'|'b': winnaar na strafschoppen (knock-out)
    Spelers: alleen naam, geboortejaar, geslacht en eigen team. Geen adressen of telefoonnummers. */
 
 export const MAX = { velden: 16, kk: 30, poules: 24, teams: 160, spelers: 1200, schema: 900 };
@@ -220,6 +221,7 @@ export function planSchema(t = {}){
     s++;
   }
   if (nogIets()) waarschuwingen.push('Niet alles past: te veel wedstrijden voor de velden.');
+  planKo(t, schema, { begin, stap, vj, waarschuwingen });
   const eind = schema.length ? naarTijd(Math.max(...schema.map(w => naarMin(w.t))) + o.duur) : o.start;
   return { schema, eind, waarschuwingen };
 }
@@ -228,7 +230,7 @@ export function planSchema(t = {}){
 export function teamRooster(t = {}){
   const o = opzet(t), uit = {};
   for (const w of t.schema || []){
-    for (const id of [w.a, w.b]){ (uit[id] ||= []).push(w); }
+    for (const id of [w.a, w.b]) if (id) (uit[id] ||= []).push(w);
   }
   return Object.fromEntries(Object.entries(uit).map(([id, ws]) => {
     ws.sort((x, y) => naarMin(x.t) - naarMin(y.t));
@@ -247,7 +249,7 @@ export function verplaats(schema, wedId, { t, v }){
   const oud = { t: w.t, v: w.v };
   w.t = t; w.v = v; if (ander){ ander.t = oud.t; ander.v = oud.v; }
   for (const x of [w, ander].filter(Boolean)){
-    const tegelijk = lijst.filter(y => y.id !== x.id && y.t === x.t && [y.a, y.b].some(id => id === x.a || id === x.b));
+    const tegelijk = lijst.filter(y => y.id !== x.id && y.t === x.t && [y.a, y.b].some(id => id && (id === x.a || id === x.b)));
     if (tegelijk.length) return { schema: lijst, fout: 'Dan speelt een team twee wedstrijden tegelijk.' };
   }
   return { schema: lijst, fout: '' };
@@ -258,21 +260,44 @@ export function verplaats(schema, wedId, { t, v }){
    Een kleedkamer heeft `plekken` teams tegelijk. Handmatig gekozen (team.kk) blijft staan.
    Geeft { kk: { teamId: kkId }, tekort: [teamId], drukte: { kkId: max } }. */
 export function planKleedkamers(t = {}, { voor = 30, na = 20 } = {}){
-  const kks = gesorteerd(t.kk), rooster = teamRooster(t), o = opzet(t);
+  const kks = kkDelen(t), rooster = teamRooster(t), o = opzet(t);
   const venster = id => { const r = rooster[id]; return r ? [naarMin(r.eerste) - voor, naarMin(r.laatste) + na] : null; };
   const bezet = Object.fromEntries(kks.map(k => [k.id, []]));
   const uit = {}, tekort = [];
   const past = (kId, [b, e]) => bezet[kId] && bezet[kId].filter(([x, y]) => x < e && b < y).length < Math.max(1, Number(kks.find(k => k.id === kId)?.plekken) || 2);
   const teams = Object.entries(t.teams || {}).filter(([id]) => rooster[id]);
-  for (const [id, tm] of teams){ const vs = venster(id); if (tm.kk && bezet[tm.kk] && vs){ bezet[tm.kk].push(vs); uit[id] = tm.kk; } }
+  for (const [id, tm] of teams){ const vs = venster(id), k = tm.kk && !bezet[tm.kk] && bezet[`${tm.kk}~L`] ? `${tm.kk}~L` : tm.kk; if (k && bezet[k] && vs){ bezet[k].push(vs); uit[id] = k; } }
   for (const [id] of teams.filter(([id, tm]) => !uit[id]).sort((a, b) => naarMin(rooster[a[0]].eerste) - naarMin(rooster[b[0]].eerste))){
     const vs = venster(id);
     const k = kks.find(k => past(k.id, vs));
     if (k){ bezet[k.id].push(vs); uit[id] = k.id; } else tekort.push(id);
   }
   const drukte = Object.fromEntries(Object.entries(bezet).map(([k, l]) => [k, l.reduce((m, [b]) => Math.max(m, l.filter(([x, y]) => x <= b && b < y).length), 0)]));
+  for (const k of gesorteerd(t.kk)) if (drukte[k.id] == null) drukte[k.id] = Math.max(0, ...kks.filter(x => x.kk === k.id).map(x => drukte[x.id] || 0));
   return { kk: uit, tekort, drukte, duur: o.duur };
 }
+
+/* Een kleedkamer kan in een linker- en rechterhelft (delen: 2). Elke helft is dan een eigen plek in de indeling,
+   met `plekken` teams per helft. Id van een helft: `${kkId}~L` of `${kkId}~R`. */
+export function kkDelen(t = {}){
+  const uit = [];
+  for (const k of gesorteerd(t.kk)){
+    if (Number(k.delen) === 2) for (const [z, n] of [['L', 'links'], ['R', 'rechts']]) uit.push({ id: `${k.id}~${z}`, kk: k.id, naam: `${k.naam || 'Kleedkamer'} ${n}`, plekken: k.plekken });
+    else uit.push({ id: k.id, kk: k.id, naam: k.naam || 'Kleedkamer', plekken: k.plekken });
+  }
+  return uit;
+}
+/* Naam van een kleedkamer of helft (team.kk mag een helft zijn; staat de kleedkamer niet meer in helften, dan de hele). */
+export function kkNaam(t = {}, id){
+  if (!id) return '';
+  const [k, z] = String(id).split('~'), x = t.kk?.[k]; if (!x) return '';
+  return z && Number(x.delen) === 2 ? `${x.naam || 'Kleedkamer'} ${z === 'L' ? 'links' : 'rechts'}` : String(x.naam || 'Kleedkamer');
+}
+/* De kleedkamer van een team: zelf gekozen, anders de automatische. */
+export const kkVanTeam = (t, teamId, plan) => {
+  const eigen = t.teams?.[teamId]?.kk, ok = eigen && kkDelen(t).some(x => x.id === eigen);
+  return ok ? eigen : (plan || planKleedkamers(t)).kk[teamId] || '';
+};
 
 /* ---------- velden van de club ---------- */
 /* Trainingen of andere blokken uit de Veldplanner die op die dag en tijd op een gekozen veld staan. */
@@ -305,15 +330,16 @@ const csvCel = v => { const s = String(v ?? ''); return /[";\n\r]/.test(s) ? `"$
 const csv = (kop, rijen) => '﻿' + [kop, ...rijen].map(r => r.map(csvCel).join(';')).join('\r\n');
 export function csvSchema(t = {}){
   const vn = Object.fromEntries(veldjes(t).map(v => [v.id, v.naam])), tn = id => t.teams?.[id]?.naam || '?', pn = id => t.poules?.[id]?.naam || '';
+  const ko = Object.fromEntries(metKo(t).filter(w => w.ko).map(w => [w.id, w]));
   return csv(['Tijd', 'Veld', 'Poule', 'Thuis', 'Uit', 'Uitslag'], [...(t.schema || [])].sort((a, b) => naarMin(a.t) - naarMin(b.t) || String(vn[a.v]).localeCompare(String(vn[b.v]), 'nl', { numeric: true }))
-    .map(w => { const u = t.uitslag?.[w.id]; return [w.t, vn[w.v] || '', pn(w.p), tn(w.a), tn(w.b), u && u.a != null && u.b != null && u.a !== '' ? `${u.a}-${u.b}` : '']; }));
+    .map(w => { const u = t.uitslag?.[w.id], k = ko[w.id] || w; return [w.t, vn[w.v] || '', w.ko ? koTitel(t, w) : pn(w.p), w.ko ? (tn(k.a) !== '?' ? tn(k.a) : k.la) : tn(w.a), w.ko ? (tn(k.b) !== '?' ? tn(k.b) : k.lb) : tn(w.b), u && u.a != null && u.b != null && u.a !== '' ? `${u.a}-${u.b}${u.w ? ' (' + (u.w === 'a' ? 'thuis' : 'uit') + ' wint na strafschoppen)' : ''}` : '']; }));
 }
 export function csvTeams(t = {}){
-  const kk = planKleedkamers(t).kk, kn = id => t.kk?.[id]?.naam || '';
+  const plan = planKleedkamers(t);
   return csv(['Team', soortTekst(t).Een, 'Poule', 'Kleedkamer', 'Speler', 'Geboortejaar', 'Geslacht', 'Eigen team'],
     gesorteerd(t.teams).flatMap(tm => {
       const sp = Object.values(t.spelers || {}).filter(s => s.tt === tm.id);
-      const basis = [tm.naam, t.clubs?.[tm.club]?.naam || '', t.poules?.[tm.poule]?.naam || '', kn(tm.kk || kk[tm.id])];
+      const basis = [tm.naam, t.clubs?.[tm.club]?.naam || '', t.poules?.[tm.poule]?.naam || '', kkNaam(t, kkVanTeam(t, tm.id, plan))];
       return sp.length ? sp.map(s => [...basis, s.naam, s.jaar || '', s.geslacht ? GESLACHT[s.geslacht] : '', s.bron || '']) : [[...basis, '', '', '', '']];
     }));
 }
@@ -349,15 +375,16 @@ export const liveId = () => Array.from({ length: 20 }, () => 'abcdefghjkmnpqrstu
 /* logo en clubkleur voor de openbare pagina's (live, tv, inschrijven) */
 export const clubUiterlijk = (logo, kleur) => ({ logo: plaatjeOk(logo) ? logo : '', kleur: /^#[0-9a-f]{6}$/i.test(kleur || '') ? kleur : '' });
 export function liveKopie(act = {}, { clubNaam = '', logo = '', kleur = '' } = {}){
-  const t = act.toernooi || {}, o = opzet(t), kk = planKleedkamers(t).kk;
+  const t = act.toernooi || {}, o = opzet(t), plan = planKleedkamers(t);
   return {
     naam: tekst(act.naam, 80), datum: act.datum || '', locatie: tekst(act.locatie, 80), clubNaam: tekst(clubNaam, 80), ...clubUiterlijk(logo, kleur),
     start: o.start, duur: o.duur, wissel: o.wissel,
     veldjes: veldjes(t).map(v => ({ id: v.id, naam: v.naam })),
     poules: Object.fromEntries(gesorteerd(t.poules).map(p => [p.id, { naam: tekst(p.naam, 40), kleur: /^#[0-9a-f]{6}$/i.test(p.kleur || '') ? p.kleur : '#999999', volg: p.volg ?? 0 }])),
-    teams: Object.fromEntries(gesorteerd(t.teams).map(tm => [tm.id, { naam: tekst(tm.naam, 40), poule: tm.poule || '', club: tekst(clubVanTeam(t, tm.id), 40), kk: tekst(t.kk?.[tm.kk || kk[tm.id]]?.naam || '', 40), volg: tm.volg ?? 0 }])),
-    schema: (t.schema || []).slice(0, MAX.schema).map(w => ({ id: w.id, p: w.p, a: w.a, b: w.b, v: w.v, t: w.t, fase: w.fase || 'poule' })),
-    uitslag: Object.fromEntries(Object.entries(t.uitslag || {}).filter(([, u]) => u && u.a != null && u.b != null && u.a !== '' && u.b !== '').map(([id, u]) => [id, { a: Number(u.a), b: Number(u.b) }])),
+    teams: Object.fromEntries(gesorteerd(t.teams).map(tm => [tm.id, { naam: tekst(tm.naam, 40), poule: tm.poule || '', club: tekst(clubVanTeam(t, tm.id), 40), kk: tekst(kkNaam(t, kkVanTeam(t, tm.id, plan)), 40), volg: tm.volg ?? 0 }])),
+    schema: metKo(t).slice(0, MAX.schema).map(w => ({ id: w.id, p: w.p, a: w.a || '', b: w.b || '', v: w.v, t: w.t, fase: w.fase || 'poule',
+      ...(w.ko ? { ko: w.ko, titel: tekst(koTitel(t, w), 60), la: tekst(w.la, 40), lb: tekst(w.lb, 40) } : {}) })),
+    uitslag: Object.fromEntries(Object.entries(t.uitslag || {}).filter(([, u]) => heeftUitslag(u)).map(([id, u]) => [id, { a: Number(u.a), b: Number(u.b), ...(u.w === 'a' || u.w === 'b' ? { w: u.w } : {}) }])),
     mededelingen: mededelingen(t),
     schermen: schermen(t),
     planB: act.planB?.actief === true ? tekst(act.planB.tekst, 300) : '',
@@ -432,4 +459,117 @@ export function inschrijfTotaal(lijst = [], t = {}){
   const cats = Object.fromEntries(inschrijfCats(t).map(c => [c.id, c])), mee = lijst.filter(a => a.status === 'toegelaten');
   return { n: lijst.length, nieuw: lijst.filter(a => !a.status || a.status === 'nieuw').length, toegelaten: mee.length,
     verwacht: mee.reduce((s, a) => s + (cats[a.cat]?.prijs || 0), 0), betaald: mee.filter(a => a.betaald).reduce((s, a) => s + (cats[a.cat]?.prijs || 0), 0) };
+}
+
+/* ---------- knock-out: kruisfinales, finale en plaatsingswedstrijden [20261127f] ----------
+   Een knock-outgroep hoort bij een of meer poules (bv. Poule A en B samen). Na de poules spelen de besten
+   kruislings: 2 teams = finale, 4 = halve finales (A1–B2, B1–A2) en finale, 8 = kwartfinales erbij.
+   plaats3: wedstrijd om plaats 3. overige: de rest speelt om de plaatsen (A3–B3, A4–B4, …).
+   De wedstrijden staan in het schema met lege a/b en een bron (ka/kb): { p, r } = plaats r in poule p,
+   { w, win } = winnaar (win:true) of verliezer van wedstrijd w. metKo() vult de teams in zodra het kan. */
+export const KO_RONDES = { 2: 'Finale (nummers 1)', 4: 'Halve finales en finale', 8: 'Kwartfinales, halve finales en finale' };
+export const MAX_KO = 12;
+export const heeftUitslag = u => !!u && u.a !== '' && u.b !== '' && u.a != null && u.b != null && Number.isFinite(Number(u.a)) && Number.isFinite(Number(u.b));
+const nTeams = (t, pid) => Object.values(t.teams || {}).filter(x => x?.poule === pid).length;
+export function koGroepen(t = {}){
+  return gesorteerd(t.ko).slice(0, MAX_KO).map(g => ({ ...g, poules: (Array.isArray(g.poules) ? g.poules : []).filter(p => t.poules?.[p]) }));
+}
+export function koOpzet(t = {}, g = {}){
+  const ps = gesorteerd(t.poules).filter(p => (g.poules || []).includes(p.id) && nTeams(t, p.id) >= 2);
+  if (!ps.length) return [];
+  const totaal = ps.reduce((n, p) => n + nTeams(t, p.id), 0), maxR = Math.max(...ps.map(p => nTeams(t, p.id)));
+  let n = [2, 4, 8].includes(Number(g.ronde)) ? Number(g.ronde) : 4;
+  while (n > totaal) n /= 2;
+  if (n < 2) return [];
+  const seeds = [];
+  for (let r = 1; r <= maxR && seeds.length < n; r++) for (const p of ps) if (r <= nTeams(t, p.id) && seeds.length < n) seeds.push({ p: p.id, r });
+  const paren = { 2: [[0, 1]], 4: [[0, 3], [1, 2]], 8: [[0, 7], [3, 4], [1, 6], [2, 5]] }[n].map(([i, j]) => [seeds[i], seeds[j]]);
+  /* niet tegen een team uit de eigen poule in de eerste ronde, als dat kan */
+  for (let i = 0; i < paren.length; i++) if (paren[i][0].p === paren[i][1].p) for (let j = 0; j < paren.length; j++){
+    if (j !== i && paren[j][1].p !== paren[i][0].p && paren[i][1].p !== paren[j][0].p){ [paren[i][1], paren[j][1]] = [paren[j][1], paren[i][1]]; break; }
+  }
+  const id = s => `${g.id}-${s}`, uit = [], eerste = { 2: 'finale', 4: 'halve', 8: 'kwart' }[n];
+  paren.forEach(([a, b], i) => uit.push({ id: id(eerste === 'finale' ? 'f' : `${eerste[0]}${i + 1}`), fase: eerste, nr: i + 1, ronde: 1, ka: a, kb: b }));
+  if (n === 8) for (let i = 0; i < 2; i++) uit.push({ id: id(`h${i + 1}`), fase: 'halve', nr: i + 1, ronde: 2, ka: { w: id(`k${2 * i + 1}`), win: true }, kb: { w: id(`k${2 * i + 2}`), win: true } });
+  if (n >= 4){
+    const r = n === 8 ? 3 : 2;
+    if (g.plaats3 !== false) uit.push({ id: id('b'), fase: 'brons', nr: 1, ronde: r, ka: { w: id('h1'), win: false }, kb: { w: id('h2'), win: false } });
+    uit.push({ id: id('f'), fase: 'finale', nr: 1, ronde: r, ka: { w: id('h1'), win: true }, kb: { w: id('h2'), win: true } });
+  }
+  if (g.overige){
+    const rest = [];
+    for (let r = 1; r <= maxR; r++) for (const p of ps) if (r <= nTeams(t, p.id) && !seeds.some(s => s.p === p.id && s.r === r)) rest.push({ p: p.id, r });
+    let plaats = n + 1;
+    for (let i = 0, k = 1; i + 1 < rest.length; i += 2, k++, plaats += 2) uit.push({ id: id(`p${k}`), fase: 'plaats', nr: k, ronde: 1, plaats, ka: rest[i], kb: rest[i + 1] });
+  }
+  return uit;
+}
+/* Knock-out inplannen na de poules: elke ronde na de vorige, op de velden van die poules. */
+function planKo(t, schema, { begin, stap, vj, waarschuwingen }){
+  const slotVan = w => Math.round((naarMin(w.t) - begin) / stap), bezet = new Set(schema.map(w => `${slotVan(w)}|${w.v}`));
+  for (const g of koGroepen(t)){
+    const lijst = koOpzet(t, g); if (!lijst.length) continue;
+    const pouleW = schema.filter(w => g.poules.includes(w.p) && w.fase === 'poule');
+    if (!pouleW.length){ waarschuwingen.push(`${g.naam || 'Knock-out'}: de poules hebben nog geen wedstrijden.`); continue; }
+    const mag = [...new Set(g.poules.flatMap(pid => { const v = t.poules[pid]?.velden; return Array.isArray(v) && v.length ? v : vj.map(x => x.id); }))].filter(id => vj.some(v => v.id === id));
+    const velden = vj.filter(v => mag.includes(v.id));
+    let vanaf = Math.max(...pouleW.map(slotVan)) + 1;
+    const eigenStart = naarMin(g.start); if (eigenStart != null) vanaf = Math.max(vanaf, Math.ceil((eigenStart - begin) / stap));
+    const kleur = g.poules[0] || '', rondes = [...new Set(lijst.map(w => w.ronde))].sort((a, b) => a - b);
+    for (const r of rondes){
+      let hoogste = vanaf;
+      for (const w of lijst.filter(x => x.ronde === r)){
+        let geplaatst = false;
+        for (let s = vanaf; s < vanaf + 200 && !geplaatst; s++) for (const v of velden){
+          if (bezet.has(`${s}|${v.id}`)) continue;
+          bezet.add(`${s}|${v.id}`); hoogste = Math.max(hoogste, s); geplaatst = true;
+          schema.push({ id: w.id, p: kleur, a: '', b: '', v: v.id, t: naarTijd(begin + s * stap), r: 100 + r, fase: w.fase, ko: g.id, nr: w.nr, ka: w.ka, kb: w.kb, ...(w.plaats ? { plaats: w.plaats } : {}) });
+          break;
+        }
+      }
+      vanaf = hoogste + 1;
+    }
+  }
+}
+export const pouleKlaar = (t, pid) => { const ws = (t.schema || []).filter(w => w.p === pid && (w.fase || 'poule') === 'poule'); return ws.length > 0 && ws.every(w => heeftUitslag(t.uitslag?.[w.id])); };
+/* 'a', 'b' of '' (nog geen uitslag, of gelijk zonder winnaar na strafschoppen) */
+export function winnaar(u){
+  if (!heeftUitslag(u)) return '';
+  const a = Number(u.a), b = Number(u.b);
+  return a > b ? 'a' : b > a ? 'b' : u.w === 'a' || u.w === 'b' ? u.w : '';
+}
+const KORT = { k: 'KF', h: 'HF' };
+export function bronTekst(t = {}, bron){
+  if (!bron) return '';
+  if (bron.p) return `${bron.r}e ${t.poules?.[bron.p]?.naam || 'poule'}`;
+  const s = String(bron.w || '').split('-').pop();
+  return `${bron.win ? 'Winnaar' : 'Verliezer'} ${KORT[s[0]] ? KORT[s[0]] + s.slice(1) : 'finale'}`;
+}
+export function koTitel(t = {}, w = {}){
+  const g = t.ko?.[w.ko], meer = Object.keys(t.ko || {}).length > 1 && g?.naam ? ` · ${g.naam}` : '';
+  const n = { kwart: `Kwartfinale ${w.nr || ''}`, halve: `Halve finale ${w.nr || ''}`, finale: 'Finale', brons: 'Om plaats 3', plaats: `Om plaats ${w.plaats || ''} en ${(w.plaats || 0) + 1}` }[w.fase] || '';
+  return (n.trim() || 'Knock-out') + meer;
+}
+/* Het schema met de teams van de knock-out ingevuld (a/b) zodra de poule klaar is of de vorige wedstrijd een winnaar heeft,
+   en met la/lb: wat er staat zolang het team nog niet bekend is ("1e Poule A", "Winnaar HF1"). */
+export function metKo(t = {}){
+  const schema = (t.schema || []).map(w => ({ ...w })), op = Object.fromEntries(schema.map(w => [w.id, w])), standen = {};
+  const los = (bron, diepte = 0) => {
+    if (!bron || diepte > 8) return '';
+    if (bron.p){ if (!pouleKlaar(t, bron.p)) return ''; return (standen[bron.p] ||= stand(t, bron.p))[(Number(bron.r) || 0) - 1]?.id || ''; }
+    const w = op[bron.w]; if (!w) return '';
+    const a = w.ka ? los(w.ka, diepte + 1) : w.a, b = w.kb ? los(w.kb, diepte + 1) : w.b, z = winnaar(t.uitslag?.[w.id]);
+    if (!a || !b || !z) return '';
+    return (z === 'a') === !!bron.win ? a : b;
+  };
+  for (const w of schema) if (w.ko){ w.a = los(w.ka); w.b = los(w.kb); w.la = bronTekst(t, w.ka); w.lb = bronTekst(t, w.kb); }
+  return schema;
+}
+/* Eindklassering van een knock-outgroep, voor zover bekend: [{ plaats, id }] */
+export function koUitslag(t = {}, gid){
+  const ws = metKo(t).filter(w => w.ko === gid), uit = [];
+  const zet = (w, p) => { const z = winnaar(t.uitslag?.[w?.id]); if (!w || !z || !w.a || !w.b) return; uit.push({ plaats: p, id: z === 'a' ? w.a : w.b }, { plaats: p + 1, id: z === 'a' ? w.b : w.a }); };
+  zet(ws.find(w => w.fase === 'finale'), 1); zet(ws.find(w => w.fase === 'brons'), 3);
+  for (const w of ws.filter(x => x.fase === 'plaats')) zet(w, w.plaats);
+  return uit.sort((a, b) => a.plaats - b.plaats);
 }

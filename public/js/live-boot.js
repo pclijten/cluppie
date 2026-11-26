@@ -61,17 +61,23 @@ export async function bootLivePagina(liveId, { tv = false } = {}){
     } catch { /* zonder QR */ }
   }
 
-  const naam = id => st.d.teams?.[id]?.naam || '?';
+  const naam = (id, nog = '?') => st.d.teams?.[id]?.naam || nog || '?';
+  /* knock-out: zolang het team nog niet bekend is staat er "1e Poule A" of "Winnaar HF1" (la/lb) */
+  const naamA = w => naam(w.a, w.la), naamB = w => naam(w.b, w.lb);
+  const titel = w => w.titel ? `<i class="lv-ko">${esc(w.titel)}</i>` : '';
   const veld = id => (st.d.veldjes || []).find(v => v.id === id)?.naam || '';
   const kleur = p => st.d.poules?.[p]?.kleur || '#999';
-  const uit = w => { const u = st.d.uitslag?.[w.id]; return u ? `${u.a} – ${u.b}` : ''; };
+  const uit = w => { const u = st.d.uitslag?.[w.id]; return u ? `${u.a} – ${u.b}${u.w ? '*' : ''}` : ''; };
   const wed = (w, { tijd = false } = {}) => `<div class="lv-wed ${st.team && [w.a, w.b].includes(st.team) ? 'mijn' : ''}" style="--pk:${esc(kleur(w.p))}">
-      <span class="lv-wed-v">${tijd ? `<b>${esc(w.t)}</b>` : ''}${esc(veld(w.v))}</span><span class="lv-wed-a">${esc(naam(w.a))}</span>
-      <span class="lv-wed-u ${uit(w) ? 'klaar' : ''}">${esc(uit(w) || '–')}</span><span class="lv-wed-b">${esc(naam(w.b))}</span></div>`;
+      <span class="lv-wed-v">${tijd ? `<b>${esc(w.t)}</b>` : ''}${esc(veld(w.v))}${titel(w)}</span><span class="lv-wed-a">${esc(naamA(w))}</span>
+      <span class="lv-wed-u ${uit(w) ? 'klaar' : ''}">${esc(uit(w) || '–')}</span><span class="lv-wed-b">${esc(naamB(w))}</span></div>`;
   const standTabel = (pid, groot) => { const rijen = T.stand(st.d, pid), p = st.d.poules[pid];
     return rijen.length ? `<section class="lv-kaart"><h2><i class="lv-stip" style="--pk:${esc(p?.kleur || '#999')}"></i>${esc(p?.naam || 'Poule')}</h2>
       <table class="lv-stand"><thead><tr><th></th><th>Team</th><th>G</th>${groot ? '<th>W</th><th>GL</th><th>V</th>' : ''}<th>DS</th><th>P</th></tr></thead><tbody>
       ${rijen.map((r, i) => `<tr class="${st.team === r.id ? 'mijn' : ''}"><td>${i + 1}</td><td>${esc(r.naam)}</td><td>${r.g}</td>${groot ? `<td>${r.w}</td><td>${r.gl}</td><td>${r.v}</td>` : ''}<td>${r.saldo > 0 ? '+' : ''}${r.saldo}</td><td><b>${r.pnt}</b></td></tr>`).join('')}</tbody></table></section>` : ''; };
+  /* Finales (knock-out) bovenaan de stand, met wie er nog in zit */
+  const koKaart = d => { const ws = (d.schema || []).filter(w => w.ko).sort((a, b) => T.naarMin(a.t) - T.naarMin(b.t));
+    return ws.length ? `<section class="lv-kaart"><h2>🏆 Finales</h2>${ws.map(w => wed(w, { tijd: true })).join('')}${ws.some(w => st.d.uitslag?.[w.id]?.w) ? '<p class="lv-zacht">* na strafschoppen</p>' : ''}</section>` : ''; };
   const isVandaag = () => !st.d.datum || st.d.datum === vandaag();
   const logo = d => T.plaatjeOk(d.logo) ? `<img class="lv-logo" src="${esc(d.logo)}" alt="">` : '';
   const accent = d => /^#[0-9a-f]{6}$/i.test(d.kleur || '') ? ` style="--accent:${d.kleur}"` : '';
@@ -95,12 +101,12 @@ export async function bootLivePagina(liveId, { tv = false } = {}){
     const alle = schermen('tel'), eigen = alle.filter(x => x.soort !== 'sponsor'), spons = alle.filter(x => x.soort === 'sponsor');
     const tabs = [['nu', 'Nu'], ['schema', 'Schema'], ['stand', 'Stand'], ['info', `Mededelingen${med.length ? ` (${med.length})` : ''}`]];
     const inhoud = {
-      nu: () => `${mijn ? `<section class="lv-kaart lv-mijn"><h2>${esc(mijn.naam)}</h2>${mijnVolgende ? `<p>Volgende wedstrijd om <b>${esc(mijnVolgende.t)}</b> op <b>${esc(veld(mijnVolgende.v))}</b>, tegen <b>${esc(naam(mijnVolgende.a === st.team ? mijnVolgende.b : mijnVolgende.a))}</b>.</p>` : '<p>Geen wedstrijden meer.</p>'}${mijn.kk ? `<p class="lv-zacht">Kleedkamer: ${esc(mijn.kk)}</p>` : ''}</section>` : ''}
+      nu: () => `${mijn ? `<section class="lv-kaart lv-mijn"><h2>${esc(mijn.naam)}</h2>${mijnVolgende ? `<p>Volgende wedstrijd om <b>${esc(mijnVolgende.t)}</b> op <b>${esc(veld(mijnVolgende.v))}</b>, tegen <b>${esc(mijnVolgende.a === st.team ? naamB(mijnVolgende) : naamA(mijnVolgende))}</b>.</p>` : '<p>Geen wedstrijden meer.</p>'}${mijn.kk ? `<p class="lv-zacht">Kleedkamer: ${esc(mijn.kk)}</p>` : ''}</section>` : ''}
         ${ns.nu.length ? `<section class="lv-kaart"><h2><i class="lv-live"></i>Nu op het veld <small>${esc(ns.nuT)}</small></h2>${ns.nu.map(w => wed(w)).join('')}</section>` : ''}
         ${ns.straks.length ? `<section class="lv-kaart"><h2>${ns.begonnen ? 'Hierna' : 'Eerste wedstrijden'} <small>${esc(ns.straksT)}</small></h2>${ns.straks.map(w => wed(w)).join('')}</section>` : ''}
         ${!ns.nu.length && !ns.straks.length ? `<section class="lv-kaart"><p>${ns.klaar ? 'Het toernooi is afgelopen. Bekijk de eindstand.' : (d.schema || []).length ? `Het toernooi is op ${esc(datumLang(d.datum))}. Het schema staat klaar.` : 'Het speelschema volgt nog.'}</p></section>` : ''}`,
       schema: () => schema.length ? `<section class="lv-kaart">${[...new Set(schema.map(w => w.t))].map(t => `<h3>${esc(t)}</h3>${schema.filter(w => w.t === t).map(w => wed(w)).join('')}`).join('')}</section>` : '<section class="lv-kaart"><p>Nog geen wedstrijden.</p></section>',
-      stand: () => poules.filter(p => !mijn || p.id === mijn.poule).map(p => standTabel(p.id, true)).join('') || '<section class="lv-kaart"><p>Nog geen stand.</p></section>',
+      stand: () => (koKaart(d) + poules.filter(p => !mijn || p.id === mijn.poule).map(p => standTabel(p.id, true)).join('')) || '<section class="lv-kaart"><p>Nog geen stand.</p></section>',
       info: () => `<section class="lv-kaart">${med.map(m => `<div class="lv-med"><small>${esc(new Date(m.ms).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }))}</small><p>${esc(m.tekst)}</p></div>`).join('') || '<p>Nog geen mededelingen.</p>'}</section>
         ${teams.some(t => t.kk) ? `<section class="lv-kaart"><h2>Kleedkamers</h2>${teams.filter(t => t.kk && (!st.team || t.id === st.team)).map(t => `<div class="lv-rij"><span>${esc(t.naam)}</span><b>${esc(t.kk)}</b></div>`).join('')}</section>` : ''}`,
     }[st.tab] || (() => '');
@@ -115,8 +121,8 @@ export async function bootLivePagina(liveId, { tv = false } = {}){
 
   /* Tv: links wat er nu en straks speelt, rechts wisselend de standen en de dia's (elke 12 seconden). */
   const tvWed = (w, { tijd = false } = {}) => `<div class="kb-wed" style="--pk:${esc(kleur(w.p))}" data-tv-k="${esc(w.id)}" data-tv-stand="${esc(uit(w))}">
-      <span class="kb-wed-v">${tijd ? `<b>${esc(w.t)}</b>` : ''}${esc(veld(w.v))}</span><span class="kb-wed-a">${esc(naam(w.a))}</span>
-      <span class="kb-wed-u ${uit(w) ? 'klaar' : ''}">${esc(uit(w) || 'vs')}</span><span class="kb-wed-b">${esc(naam(w.b))}</span></div>`;
+      <span class="kb-wed-v">${tijd ? `<b>${esc(w.t)}</b>` : ''}${esc(veld(w.v))}${titel(w)}</span><span class="kb-wed-a">${esc(naamA(w))}</span>
+      <span class="kb-wed-u ${uit(w) ? 'klaar' : ''}">${esc(uit(w) || 'vs')}</span><span class="kb-wed-b">${esc(naamB(w))}</span></div>`;
   const tvStand = pid => { const rijen = T.stand(st.d, pid), p = st.d.poules[pid];
     return rijen.length ? `<section class="kb-paneel"><h2><i class="kb-stip" style="--pk:${esc(p?.kleur || '#999')}"></i>${esc(p?.naam || 'Poule')}</h2>
       <table class="kb-stand"><thead><tr><th></th><th>Team</th><th>G</th><th>W</th><th>GL</th><th>V</th><th>DS</th><th>P</th></tr></thead><tbody>
@@ -173,6 +179,7 @@ export function stijl(){
 .lv-wed.mijn{background:color-mix(in srgb,var(--accent) 12%,transparent)}
 .lv-wed-v{font-size:var(--t-xs,12px);color:var(--ink-2);display:flex;flex-direction:column}
 .lv-wed-v b{color:var(--ink);font-variant-numeric:tabular-nums}
+.lv-ko{font-style:normal;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--pk)}
 .lv-wed-a{text-align:right;font-weight:600;overflow-wrap:anywhere}.lv-wed-b{font-weight:600;overflow-wrap:anywhere}
 .lv-wed-u{text-align:center;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
 .lv-wed-u.klaar{background:var(--ink);color:var(--bg);border-radius:8px;padding:3px 0;font-weight:700}
