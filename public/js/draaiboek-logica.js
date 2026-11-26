@@ -13,7 +13,7 @@
      materiaal/budget.<id>.onderwerp  bij welk onderwerp een regel hoort (anders het standaardonderwerp)
    Daarnaast: draaiboekDoc() maakt het hele draaiboek als document (leesweergave, PDF en Word).
    Getest in tests/draaiboek.test.mjs. */
-import * as L from './activiteiten-logica.js?v=20261127m';
+import * as L from './activiteiten-logica.js?v=20261127n';
 
 /* ---------- onderwerpen ---------- */
 /* blokken: wat er onder de afspraken staat. Elk blok hoort bij een tabblad dat in 'Onderdelen' uit kan. */
