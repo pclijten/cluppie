@@ -11,7 +11,7 @@
    tactisch bord hieronder; elk ander sjabloon speelt tv-speler.js af. Een doelpunt (de stand van een wedstrijd gaat
    omhoog) geeft een melding over het hele scherm; clubTv.goals zegt voor welke wedstrijden (zie nieuweGoals).
    Voorbeeld bekijken zonder iets op te slaan: ?scherm=<id>&sjabloon=<id>, en &proef=1 voor proefwedstrijden met doelpunten. */
-import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, collection, onSnapshot } from './firebase.js?v=20261011g';
+import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, collection, onSnapshot, getDoc } from './firebase.js?v=20261011g';
 import { plaatjeOk, veiligeLink } from './toernooi-logica.js?v=20261125w';
 import { sorteer, nieuweGoals, goalKeuze, evenementId, evenementTv } from './clubscherm-logica.js?v=20261126v';
 import { sjabloonId, laadSjabloon } from './tv-sjablonen.js?v=20261126v';
@@ -35,6 +35,20 @@ const min = t => /^\d{1,2}:\d{2}$/.test(t || '') ? Number(t.split(':')[0]) * 60 
 const melding = (titel, tekst) => `<div class="lv lv-midden"><h1>${esc(titel)}</h1><p>${esc(tekst)}</p></div>`;
 const PER = 8;      /* wedstrijden per pagina op de tv */
 
+/* [20261127b] Korte link (?kantine=mifano): tvNamen/{naam} zegt welke tv het is. */
+export async function bootSchermNaam(naam){
+  const el = document.getElementById('deel');
+  if (!el) return;
+  stijlLive(); stijl(); tvStijl(); el.style.display = 'block';
+  el.innerHTML = melding('Even geduld', 'Het scherm wordt geladen…');
+  const n = String(naam || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30);
+  try {
+    await authKlaar(); await sessie(false);
+    const s = n ? await getDoc(doc(db, 'tvNamen', n)) : null, tv = s?.exists() ? s.data().tv : '';
+    if (!tv){ el.innerHTML = melding('Deze link werkt niet (meer)', 'Vraag het bestuur om de juiste link.'); return; }
+    return bootSchermPagina(tv);
+  } catch { el.innerHTML = melding('Laden is niet gelukt', 'Controleer je verbinding en ververs de pagina.'); }
+}
 export async function bootSchermPagina(tvId){
   const el = document.getElementById('deel');
   if (!el) return;

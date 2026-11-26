@@ -7,9 +7,9 @@
    Delen: "Afdrukken of pdf" zet alleen het blad op papier (zelfde aanpak als de pdf-viewer: een eigen
    afdrukvel, de rest van de app verborgen). "Deel samenvatting" is er alleen voor het team: een korte
    tekst zonder namen van spelers. Een speler deel je alleen als afdruk, binnen de club. */
-import { S, esc, meld, openModal } from './state.js?v=20261127a';
-import { SEIZOEN_FALLBACK } from './config.js?v=20261127a';
-import { analyseWedstrijd, speeltijdReserve } from './analyse.js?v=20261127a';
+import { S, esc, meld, openModal } from './state.js?v=20261127b';
+import { SEIZOEN_FALLBACK } from './config.js?v=20261127b';
+import { analyseWedstrijd, speeltijdReserve } from './analyse.js?v=20261127b';
 import { opkomstVoor } from './opkomst.js?v=20260922c';
 import { teamOverzicht, teamRegels, deelTekstTeam, spelerOverzicht, spelerRegels } from './jaaroverzicht-logica.js?v=20261122a';
 
@@ -119,12 +119,12 @@ function druk(o){
   document.body.appendChild(vel);
   document.documentElement.classList.add('jo-printen');
   window.addEventListener('afterprint', ruimOp, { once: true });
-  import('./tracker.js?v=20261127a').then(m => m.telGebruik('jaaroverzicht_' + o.soort)).catch(() => {});
+  import('./tracker.js?v=20261127b').then(m => m.telGebruik('jaaroverzicht_' + o.soort)).catch(() => {});
   try { window.print(); } catch (e){ ruimOp(); meld('Afdrukken lukt niet op dit apparaat'); }
 }
 async function deel(o){
   const tekst = deelTekstTeam(o);
-  import('./tracker.js?v=20261127a').then(m => m.telGebruik('jaaroverzicht_deel')).catch(() => {});
+  import('./tracker.js?v=20261127b').then(m => m.telGebruik('jaaroverzicht_deel')).catch(() => {});
   if (navigator.share){
     try { await navigator.share({ text: tekst }); return; }
     catch (e){ if (e && e.name === 'AbortError') return; }

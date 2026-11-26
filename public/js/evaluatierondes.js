@@ -17,9 +17,9 @@
    Dit bestand importeert niets uit club.js of teams*.js (geen kringimport):
    club.js geeft een klein api-object mee voor hertekenen en berichten. */
 import { db, collection, doc, getDocs, query, where, updateDoc, addDoc, serverTimestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261127a';
-import { SEIZOEN_FALLBACK } from './config.js?v=20261127a';
-import { priveBeoordelingenVan } from './beoordelingen-prive.js?v=20261127a';
+import { S, esc, meld } from './state.js?v=20261127b';
+import { SEIZOEN_FALLBACK } from './config.js?v=20261127b';
+import { priveBeoordelingenVan } from './beoordelingen-prive.js?v=20261127b';
 import { ico } from './icons.js?v=20261126w';
 
 /* ---------- pure hulpjes (ook gebruikt door team-hub, bouw-hub, desktop) ---------- */
