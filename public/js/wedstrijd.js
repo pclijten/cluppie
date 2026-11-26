@@ -7,7 +7,7 @@ import {
   openModal, sluitModal, toon, stopUnsubs, modAan, bewaarPositie, terugLaag, terugLaagWeg, doeTerug, isBeheerder
 } from './state.js?v=20261127m';
 import {
-  FORMATIES, LIJN_NAAM, bouwSlots, slotLijn, catInfo, isToernooi,
+  FORMATIES, bouwSlots, catInfo, isToernooi,
   parseFormatie, formatieBestaat, formatieNamen, aantalVeldspelers,
   tijdstrafSec, KAART_ICOON, KAART_NAAM,
   periodeNaam, periodeNrs, periodeLabel, toernooiWnr, periodeOmschrijving,
@@ -15,10 +15,10 @@ import {
   WISSEL_REDENEN, wisselReden, AFWEZIG_REDENEN, afwezigRedenInfo, slotPositieNaam,
   catLabel,
 } from './config.js?v=20261127m';
-import { kwartGespeeld, effectieveLineup, verwisselSlots, analyseKwart, analyseWedstrijd, speeltijdReserve, disciplinaireTijd, WISSEL_BEURT, analyseKwartVerwacht, analyseWedstrijdVerwacht } from './analyse.js?v=20261127m';
+import { kwartGespeeld, effectieveLineup, verwisselSlots, analyseKwart, analyseWedstrijd, speeltijdReserve, WISSEL_BEURT, analyseKwartVerwacht, analyseWedstrijdVerwacht } from './analyse.js?v=20261127m';
 import { ico } from './icons.js?v=20261127b';
 import { laadClubgids, zoekTegenstanders, plekVoor, pouleTeamnamen, clubVanTeam } from './clubgids.js?v=20261127m';
-import { aiAan, eigenClubTokens, voorbeeldTegenstander, beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261127m';
+import { aiAan, eigenClubTokens, voorbeeldTegenstander, beleidsplanNaam } from './clubconfig.js?v=20261127m';
 
 import { telGebruik, telNav } from './tracker.js?v=20261127m';
 import { opkomstVoor, teltMee, MIN_OPKOMST_TRAININGEN } from './opkomst.js?v=20260922c';

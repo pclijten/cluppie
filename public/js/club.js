@@ -1,14 +1,14 @@
 import {
-  db, storage, collection, doc, addDoc, deleteDoc, updateDoc, deleteField, getDoc, setDoc, getDocs,
-  query, where, onSnapshot, serverTimestamp, documentId, writeBatch,
+  db, storage, collection, doc, addDoc, deleteDoc, updateDoc, deleteField, getDoc, getDocs,
+  query, where, onSnapshot, serverTimestamp, writeBatch,
   sRef, uploadBytes, getDownloadURL, deleteObject,
   functions, httpsCallable
 } from './firebase.js?v=20261011g';
 import { teamsOpId } from './teams-ophalen.js?v=20261011g';
 import {
-  S, $, $$, esc, meld, nieuweCode, teamCode, clubAfkorting, openModal, sluitModal, toon, stopUnsubs, initialen, isBeheerder
+  S, $, $$, esc, meld, teamCode, openModal, sluitModal, toon, stopUnsubs, initialen, isBeheerder
 } from './state.js?v=20261127m';
-import { ACTIEF, DOC_CATEGORIEEN, docCategorieenAlle, CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, BOUWEN, bouwVanCategorie, bouwNaam, youtubeId, youtubeThumb, youtubeWatch, SEIZOEN_FALLBACK, GEBRUIK_CATEGORIEEN, gebruikEventLabel, catLabel } from './config.js?v=20261127m';
+import { ACTIEF, DOC_CATEGORIEEN, docCategorieenAlle, catInfo, BOUWEN, bouwVanCategorie, bouwNaam, youtubeId, youtubeThumb, youtubeWatch, SEIZOEN_FALLBACK, GEBRUIK_CATEGORIEEN, catLabel } from './config.js?v=20261127m';
 import { teltMee } from './opkomst.js?v=20260922c';
 import { htmlDiagramHerstel, koppelDiagramHerstel } from './training-herstel.js?v=20261127m';
 import { uploadHulpHtml, uploadFout, UPLOAD_HULP } from './upload-hulp.js?v=20261113c';

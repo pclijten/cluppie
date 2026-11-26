@@ -27,16 +27,16 @@ export const SJABLONEN = [
 ];
 
 const LADERS = {
-  wedstrijdavond: () => import('./tv-sjabloon-wedstrijdavond.js?v=20261127m'),
-  vertrekhal: () => import('./tv-sjabloon-vertrekhal.js?v=20261127m'),
-  affiche: () => import('./tv-sjabloon-affiche.js?v=20261127m'),
-  bento: () => import('./tv-sjabloon-bento.js?v=20261127m'),
-  veldkaart: () => import('./tv-sjabloon-veldkaart.js?v=20261127m'),
-  sportnieuws: () => import('./tv-sjabloon-sportnieuws.js?v=20261127m'),
-  lichtkrant: () => import('./tv-sjabloon-lichtkrant.js?v=20261127m'),
+  wedstrijdavond: () => import('./tv-sjabloon-wedstrijdavond.js?v=20261127f'),
+  vertrekhal: () => import('./tv-sjabloon-vertrekhal.js?v=20261127f'),
+  affiche: () => import('./tv-sjabloon-affiche.js?v=20261127f'),
+  bento: () => import('./tv-sjabloon-bento.js?v=20261127f'),
+  veldkaart: () => import('./tv-sjabloon-veldkaart.js?v=20261127f'),
+  sportnieuws: () => import('./tv-sjabloon-sportnieuws.js?v=20261127f'),
+  lichtkrant: () => import('./tv-sjabloon-lichtkrant.js?v=20261127f'),
   plakboek: () => import('./tv-sjabloon-plakboek.js?v=20261127m'),
-  kubus: () => import('./tv-sjabloon-kubus.js?v=20261127m'),
-  lounge: () => import('./tv-sjabloon-lounge.js?v=20261127m'),
+  kubus: () => import('./tv-sjabloon-kubus.js?v=20261127f'),
+  lounge: () => import('./tv-sjabloon-lounge.js?v=20261127f'),
 };
 
 /* Een onbekende of weggehaalde id valt terug op het tactisch bord. */

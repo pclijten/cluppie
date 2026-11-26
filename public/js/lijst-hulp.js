@@ -61,7 +61,6 @@ const svg = (pad, maat = 16, dikte = 2) => `<svg width="${maat}" height="${maat}
 const I_MIN = svg('<path d="M6 12h12"/>');
 const I_PLUS = svg('<path d="M6 12h12M12 6v12"/>');
 const I_X = svg('<path d="M6 6l12 12M18 6L6 18"/>');
-const I_HUIS = svg('<path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/>', 18, 1.8);
 const I_LINK = svg('<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>', 18, 1.8);
 const I_SLOT = svg('<rect x="4.6" y="10.4" width="14.8" height="9.8" rx="2.4"/><path d="M8 10.4V8a4 4 0 0 1 8 0v2.4"/><circle cx="12" cy="15.2" r="1.4" fill="currentColor" stroke="none"/>', 20, 1.8);
 /* [20261118a] Lijstjes-pop-ups als paneel: op desktop schuift het van rechts

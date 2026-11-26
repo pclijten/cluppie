@@ -1,16 +1,16 @@
 import {
   db, collection, doc, addDoc, deleteDoc, updateDoc, deleteField,
-  setDoc, getDoc, getDocs, query, where, onSnapshot, serverTimestamp
+  setDoc, getDocs, query, where, onSnapshot, serverTimestamp
 } from './firebase.js?v=20261011g';
 import {
-  S, $, $$, esc, meld, datumNL, teamCode, clubAfkorting, speler, isBeheerder, isPlatformBeheerder,
+  S, $, $$, esc, meld, datumNL, teamCode, clubAfkorting, speler, isPlatformBeheerder,
   openModal, sluitModal, toon, stopUnsubs, bewaakTerug, modAan, doeTerug, terugLaag,
   bewaarPositie, leesPositie, wisPositie
 } from './state.js?v=20261127m';
 import {
   CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, bouwVanCategorie, BOUWEN,
   knvbSeizoenLabel, SEIZOEN_FALLBACK, knvbKalenderVoorTeam, speeldagDatum,
-  kompasIndexVoorWeek, afwezigRedenInfo, youtubeId, youtubeWatch,
+  afwezigRedenInfo, youtubeId, youtubeWatch,
   catLabel,
 } from './config.js?v=20261127m';
 import { kompasTips, startContentListener } from './content.js?v=20261127m';
@@ -51,7 +51,7 @@ import {
   modalUitlenen, trekUitleningIn, modalLeenOverlay, definitiefOverzetten, herberekenDossier,
   modalGast, verwijderGast, modalKoppelGast, modalNotitie, startRondeFlow,
 } from './teams-spelers.js?v=20261127m';
-import { htmlKompas, toonThemaInfo, toonKompasInfo, kompasItems, kompasStartIndex } from './teams-leerlijn.js?v=20261127m';
+import { toonThemaInfo, toonKompasInfo, kompasItems, kompasStartIndex } from './teams-leerlijn.js?v=20261127m';
 import { modalTeamEvaluatie, htmlStatsTab, htmlTeamEvaluatieDashboard, htmlSeizoenFilter } from './teams-evaluatie.js?v=20261127m';
 import {
   htmlTeamTrainingen, htmlPresentieTraining, htmlTeamVideos, htmlInstellingen,
@@ -1063,10 +1063,6 @@ export function openTeam(teamId, beginTab = 'hub', opties = {}){
       else if (d.id === 'clubagenda') S.pouleClubagenda = d.data();  // [20261116o] clubactiviteiten uit Sportlink
       else if (d.id === 'uitslagen') S.pouleUitslagen = d.data();
       else if (d.id === 'programma') S.pouleProgramma = d.data();
-      // [20261114] periodestanden, beker en clubagenda (Sportlink-sync)
-      else if (d.id === 'periode') S.poulePeriode = d.data();
-      else if (d.id === 'beker') S.pouleBeker = d.data();
-      else if (d.id === 'clubagenda') S.pouleClubagenda = d.data();
     });
     // Nieuw team/poule geladen → speelronde-index resetten zodat htmlPoule
     // opnieuw op de eerstvolgende ronde opent.
@@ -1559,16 +1555,6 @@ function htmlPouleInhoud(metPeriode = true){
   return subtabs + (sub==='stand' ? standHtml : progHtml);
 }
 
-/* [20261114] Stand-tabel, gedeeld door Stand, Periode en Beker. */
-function standTabel(rijen){
-  return `<div class="stand"><table>
-      <thead><tr><th>#</th><th>Team</th><th>G</th><th>W</th><th>GL</th><th>V</th><th>DS</th><th>Ptn</th></tr></thead>
-      <tbody>${rijen.map(r => `
-        <tr class="${r.eigen?'eigen':''}">
-          <td class="pos">${r.positie||''}</td><td>${esc(r.team||'')}</td><td>${r.gespeeld||0}</td><td>${r.gewonnen||0}</td>
-          <td>${r.gelijk||0}</td><td>${r.verloren||0}</td><td>${r.saldo>0?'+':''}${r.saldo||0}</td><td class="pnt">${r.punten||0}</td>
-        </tr>`).join('')}</tbody></table></div>`;
-}
 
 /* [20261113] Passend startscherm: bij draaien/venstermaat opnieuw passen, en ook
    wanneer de team-view terug in beeld komt zonder nieuwe render (bv. na een wedstrijd). */

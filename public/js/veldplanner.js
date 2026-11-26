@@ -34,7 +34,7 @@ import { S, esc, meld } from './state.js?v=20261127m';
 import { ico } from './icons.js?v=20261127b';
 import { bouwVanTeam } from './bouw-indeling.js?v=20261127m';
 import { momentenVanTeam } from './trainingsmomenten.js?v=20261127m';
-import { STANDAARD_VAKKEN, NODIG, MAAT_NAAM, KK_VOOR, KK_NA, MAX_EIGEN, naarMin, naarTijd, overlapt, rondKwartier,
+import { NODIG, MAAT_NAAM, KK_VOOR, KK_NA, MAX_EIGEN, naarMin, naarTijd, rondKwartier,
   vakkenVan, vakUit, deelVan, deelTekst, meters, banenVan, stukken, maatVanCategorie, duurVanCategorie,
   zoekVrijVak, vrijeKleedkamers, stapel, controleer, nogInTePlannen, schoonRooster, schoonKleedkamers, schoonVak,
   kleedkamersVoorstel, SOORTEN, MAX_OBJECTEN, schoonObjecten, meterTussen, verschuif, vlakUitHoeken } from './veldplanner-logica.js?v=20261124v';

@@ -30,7 +30,7 @@
 
 import { kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261127m';
 import { db, doc, getDoc, setDoc } from './firebase.js?v=20261011g';
-import { S, $, $$, esc, meld, modAan, toon, terugLaag } from './state.js?v=20261127m';
+import { S, $, esc, meld, modAan, toon, terugLaag } from './state.js?v=20261127m';
 
 /* ---------- Rollen ----------
    Iedere rol krijgt alleen hoofdstukken waarvan de 'rollen'-set de rol bevat.
@@ -71,7 +71,6 @@ function rolSet(){
    coach zit al in een tabblad), dan pakt naarTab() de directe fallback. */
 function tabKnop(tab){ return document.querySelector(`#view-team [data-hub-open="${tab}"], .onderbalk button[data-tab="${tab}"]`); }
 function meerTegel(sub){ return document.querySelector(`[data-meer-open="${sub}"], #view-team [data-hub-open="${sub}"]`); }
-function huidigeTeamTab(){ return S.teamTab; }
 function inTeamView(){ return !!document.querySelector('#view-team.actief'); }
 
 /* Schakel programmatisch naar een team-tab en wacht tot de wissel écht rond is.

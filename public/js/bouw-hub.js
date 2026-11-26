@@ -22,14 +22,14 @@
    schermen hergebruikt (huidigeContext.data) — geen dubbele reads. */
 import { teamsOpId } from './teams-ophalen.js?v=20261011g';
 import { pasClubConfigToe } from './clubconfig.js?v=20261127m';
-import { S, esc, meld, openModal, sluitModal, isBeheerder, terugLaag } from './state.js?v=20261127m';
+import { S, esc, openModal, sluitModal, isBeheerder, terugLaag } from './state.js?v=20261127m';
 import {
-  db, collection, doc, getDoc, getDocs, addDoc, query, where, documentId, serverTimestamp
+  db, collection, doc, getDoc, getDocs, query, where
 } from './firebase.js?v=20261011g';
 /* [20261120m] Rechtstreeks uit de Firebase-SDK (zelfde URL als firebase.js, dus
    dezelfde Firestore-instantie); firebase.js zelf blijft ongewijzigd. */
 import { getDocFromCache, getDocsFromCache } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import { BOUWEN, bouwNaam, SKILLS, SEIZOEN_FALLBACK, TEAM_CATEGORIEEN, niveauKleur, catLabel, TEAM_TAGS } from './config.js?v=20261127m';
+import { BOUWEN, bouwNaam, SKILLS, SEIZOEN_FALLBACK, catLabel, TEAM_TAGS } from './config.js?v=20261127m';
 import { TE_GROEPEN, TE_NIV, TE_FOCUS_LADDER, TE_STEM, teDoelIco, teVervolg, teLeeftijd, teCriteriaVoor, teScores, teIsNieuw, teGroepWaarden, teKleur, teCijfer, teZinnen } from './team-evaluatie-criteria.js?v=20261127b';
 import { ico } from './icons.js?v=20261127b';
 import { trekUitleningIn, definitiefOverzetten, wijzigUitlening } from './teams-spelers.js?v=20261127m';
@@ -630,7 +630,6 @@ function aandachtSignalen(){
 }
 
 /* ==================== Radar (gedeeld door dashboard + evaluaties) ==================== */
-const RADAR_KLEUREN = ['var(--accent)','var(--ok)','var(--warn)','#5B8DEF','#B47CE5','#E56CA5'];
 function radarSVGAssen(values, asLabels, {size=150, labels=true, color='var(--accent)', compare=null, compareColor='var(--ink-2)', gestippeld=true} = {}){
   const n = asLabels.length;
   const R = size/2 - (labels?26:4), cx=size/2, cy=size/2;
@@ -660,25 +659,6 @@ function radarLegende(a, b){
     <span><span style="display:inline-block;width:10px;height:10px;border-radius:var(--r-2xs);background:var(--accent);margin-right:var(--space-2xs)"></span>${esc(a)}</span>
     <span><span style="display:inline-block;width:10px;height:10px;border-radius:var(--r-2xs);border:1.6px dashed var(--ink-2);margin-right:var(--space-2xs)"></span>${esc(b)}</span>
   </div>`;
-}
-/* Overlay-radar: alle teams in één chart, elk in een eigen kleur, i.p.v. losse
-   radartjes per team — zo vergelijk je in één oogopslag waar de bouw sterk/
-   zwak staat. */
-function radarOverlaySVG(reeksen, {size=190} = {}){
-  const R = size/2 - 30, cx=size/2, cy=size/2;
-  const pt=(i,f)=>{ const a=(-90+i*(360/DOM.length))*Math.PI/180; return [cx+R*f*Math.cos(a), cy+R*f*Math.sin(a)]; };
-  let grid = '';
-  [0.33,0.66,1].forEach(f => { grid += `<polygon points="${DOM.map((_,i)=>pt(i,f).join(',')).join(' ')}" fill="none" stroke="var(--line-d)" stroke-width="1"/>`; });
-  DOM.forEach((_,i) => { const [x,y]=pt(i,1); grid += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="var(--line-d)" stroke-width="1"/>`; });
-  let lab = '';
-  DOM.forEach((d,i) => { const [x,y]=pt(i,1.16); lab += `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" font-size="10" font-weight="700" fill="var(--ink-2)">${esc(DOM_LABEL[d])}</text>`; });
-  let lagen = '';
-  reeksen.forEach((r,i) => {
-    const kleur = RADAR_KLEUREN[i % RADAR_KLEUREN.length];
-    const data = r.waarden.map((v,j) => pt(j,v/5).join(',')).join(' ');
-    lagen += `<polygon points="${data}" fill="${kleur}" fill-opacity=".08" stroke="${kleur}" stroke-width="2"/>`;
-  });
-  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${grid}${lagen}${lab}</svg>`;
 }
 
 /* Meest recente vólledige (dus radar-geschikte) evaluatie van het hele team,

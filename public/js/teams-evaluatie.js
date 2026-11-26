@@ -11,7 +11,7 @@ import {
 import {
   S, $, $$, esc, meld, datumNL, openModal, sluitModal, toon, modAan
 } from './state.js?v=20261127m';
-import { NIVEAUS, niveauKleur, TEAM_CATEGORIEEN, TEAM_TAGS, teamCategorie, SEIZOEN_FALLBACK } from './config.js?v=20261127m';
+import { SEIZOEN_FALLBACK } from './config.js?v=20261127m';
 import {
   TE_GROEPEN, TE_NIV, TE_FOCUS_LADDER, TE_STEM, teDoelIco, teLeeftijd, teCriteriaVoor, teCriterium, teZichtbaar, teZinnen, teFaseLabel,
   teScores, teIsNieuw, teGem, teGroepWaarden, teCritGemiddelden, teLaagste, teKleur, teCijfer, teBlokVoorDatum,

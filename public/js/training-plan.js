@@ -31,7 +31,7 @@
    club.js levert via `ctx` wat hier nodig is maar daar woont (groepen,
    bouwen, het preview-scherm, renderClub), zodat er geen kringimport ontstaat. */
 import { db, doc, writeBatch } from './firebase.js?v=20261011g';
-import { S, $, esc, meld, openModal, sluitModal } from './state.js?v=20261127m';
+import { $, esc, meld, openModal, sluitModal } from './state.js?v=20261127m';
 import {
   voegToeAanWachtrij, voegConceptToe, bewaarConcept, conceptNaarRij, verwijderJob, bestandenVanJob, htmlModelKeuze
 } from './upload-wachtrij.js?v=20261127m';

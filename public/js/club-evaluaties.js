@@ -6,19 +6,13 @@
    library (ExcelJS via CDN) nodig heeft die de rest van de app nooit gebruikt. */
 import { db, collection, getDocs, query, where } from './firebase.js?v=20261011g';
 import { S, esc, meld, openModal } from './state.js?v=20261127m';
-import { TEAM_CATEGORIEEN, SKILLS } from './config.js?v=20261127m';
+import { SKILLS } from './config.js?v=20261127m';
 import { priveBeoordelingenVan } from './beoordelingen-prive.js?v=20261127m';
 import { TE_CRITERIA, TE_NIV, teLeeftijd, teZichtbaar, teScores, teCritGemiddelden, teLaagste, teIsNieuw } from './team-evaluatie-criteria.js?v=20261127b';
 /* [20261119c] Kolommen = de onderdelen van de nieuwe teamevaluatie. Per team
    tellen alleen de onderdelen die bij de leeftijd horen; oude evaluaties
    tellen mee via teScores(). Geen totaalcijfer meer. */
 
-/* korte kolomkoppen voor de heatmap — TEAM_CATEGORIEEN.naam is te lang voor
-   een tabelkop; alleen hier lokaal gebruikt, config.js blijft de brontekst. */
-const KORT_LABEL = {
-  inzet:'Inzet', samenwerking:'Samen-werking', taken:'Taken', opbouw:'Opbouw',
-  omschakeling:'Omscha-keling', druk:'Druk', plezier:'Plezier', coachbaar:'Coach-baar',
-};
 
 /* dark-theme kleurschaal (zelfde 5 tinten als --n1..--n5 in styles.css) */
 const KLEUR_SCHAAL = ['#F0565B','#F59C4A','#F2C94C','#7DCB6A','#35C47A'];

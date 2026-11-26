@@ -8,8 +8,8 @@
    eigen teams opent desktop.js in de gewone teamschermen.
    Tekent in een eigen view (#view-dkbouw) binnen #app.
 =============================================================== */
-import { S, $, esc, meld, isBeheerder, toon, terugView } from './state.js?v=20261127m';
-import { BOUWEN, NIVEAUS, niveauKleur, bouwVanCategorie } from './config.js?v=20261127m';
+import { S, $, esc, isBeheerder, toon, terugView } from './state.js?v=20261127m';
+import { BOUWEN, bouwVanCategorie } from './config.js?v=20261127m';
 import { ico } from './icons.js?v=20261127b';
 import { analyseWedstrijd } from './analyse.js?v=20261127m';
 import { laadBouwData, zetBouwContext, presentiePctTeam, presentiePctWedstrijdTeam, uitslagenTeam, modalNieuweUitleningVanuitBouw, splitsUitleningen, leenKaartInfo } from './bouw-hub.js?v=20261127m';

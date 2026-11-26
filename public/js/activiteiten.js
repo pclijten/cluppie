@@ -32,7 +32,6 @@ import * as D from './draaiboek-logica.js?v=20261127m';
 import { docxBestanden } from './draaiboek-docx.js?v=20261127b';
 import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261127m';
 import * as TN from './activiteit-toernooi.js?v=20261127m';
-import { schoonToernooi } from './toernooi-logica.js?v=20261127m';
 import * as CS from './clubschermen.js?v=20261127m';
 import * as VB from './vrijwilligers.js?v=20261127m';
 

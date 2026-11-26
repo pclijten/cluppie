@@ -8,7 +8,7 @@ import { teamsOpId } from './teams-ophalen.js?v=20261011g';
 import { beleidsplanNaam, cfg } from './clubconfig.js?v=20261127m';
 import {
   db, collection, doc, addDoc, deleteDoc, updateDoc, setDoc,
-  getDoc, getDocs, query, where, serverTimestamp, documentId, deleteField,
+  getDoc, getDocs, query, where, deleteField,
   functions, httpsCallable
 } from './firebase.js?v=20261011g';
 import {

@@ -4,7 +4,7 @@
    presentie bijhouden (incl. eigen/geplande dagen), en teaminstellingen
    (naam wijzigen, teamcode, uitnodigen — modalUitnodig komt uit club.js). */
 import {
-  db, collection, doc, addDoc, deleteDoc, updateDoc, setDoc, getDocs, query, where, serverTimestamp, functions, httpsCallable
+  db, collection, doc, addDoc, deleteDoc, updateDoc, setDoc, serverTimestamp, functions, httpsCallable
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, speler, initialen, openModal, sluitModal, toon, isBeheerder
@@ -25,7 +25,7 @@ import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261127m';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20260922c';
 import { spelersOpTraining } from './uitleen-regels.js?v=20261113b';
 import {
-  MAX_WEKEN, weekdagVan, plusDagen, eersteOpDag, regelDatums, actieveRegels, vastOp, vastePrefill, redenVanRegel
+  MAX_WEKEN, plusDagen, eersteOpDag, regelDatums, actieveRegels, vastOp, vastePrefill, redenVanRegel
 } from './vaste-afmeldingen.js?v=20261013a';
 
 /* ---------- Afgelaste training (banner + WhatsApp-deeltekst) ----------

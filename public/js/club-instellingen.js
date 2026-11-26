@@ -13,7 +13,7 @@ import { ico } from './icons.js?v=20261127b';
 import {
   db, doc, collection, addDoc, updateDoc, setDoc, deleteDoc, getDoc, getDocs, query, where, writeBatch, serverTimestamp
 } from './firebase.js?v=20261011g';
-import { S, $, esc, meld, openModal, sluitModal, nieuweCode, isPlatformBeheerder } from './state.js?v=20261127m';
+import { S, $, esc, meld, openModal, sluitModal, nieuweCode } from './state.js?v=20261127m';
 import { ACTIEF, SEIZOEN_FALLBACK, parseFormatie, aantalVeldspelers, SKILLS, LEERCURVE, catLabel } from './config.js?v=20261127m';
 import {
   effectief, isLegacy, mergeLijst, LIJST_DEFS, ORIGINEEL, NEUTRAAL, CLUPPIE_LOGO, ICOONNAMEN,

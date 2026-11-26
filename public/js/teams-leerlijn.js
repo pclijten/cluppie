@@ -9,7 +9,7 @@
    CONTENTBEHEER in het clubdashboard. Structurele data (thema/vanaf/domein)
    blijft in config.js staan; dat verandert niet via het contentbeheer-tabblad. */
 import { S, $, esc, openModal, modAan } from './state.js?v=20261127m';
-import { skillDomein, leercurveThema, isoWeek, kompasIndexVoorWeek,
+import { skillDomein, leercurveThema, isoWeek, 
          LEERCURVE, leercurveRelevant, catLabel } from './config.js?v=20261127m';
 import { contentVoorThema, kompasTips } from './content.js?v=20261127m';
 import { beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261127m';
