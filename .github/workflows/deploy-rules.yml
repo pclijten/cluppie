@@ -1,0 +1,37 @@
+# [20261127w] Firestore-rules en -indexen publiceren vanuit GitHub, na de rules-tests in de emulator.
+# Handmatig te starten (Actions > Deploy Firestore-rules > Run workflow). Storage-rules gaan nog via
+# tools/deploy-alles.ps1 op de pc, omdat de bucket-koppeling (firebase target:apply) daar lokaal staat.
+name: Deploy Firestore-rules
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: deploy-rules
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - name: Rules-tests (emulator)
+        run: npm run test:rules
+      - name: Inloggen bij Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      - name: Rules en indexen deployen
+        run: |
+          npx --yes firebase-tools@latest deploy \
+            --only firestore:rules,firestore:indexes \
+            --project "${{ secrets.FIREBASE_PROJECT_ID }}" \
+            --non-interactive
