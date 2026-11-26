@@ -1,6 +1,6 @@
 /* TV-SJABLOON "WEDSTRIJDAVOND" [20261126q]: voetbal-tv met scorebalk, lower third en schuine kleurvlakken.
    Overgang: drie schuine banen vegen over het beeld. Zie docs/tv-sjablonen.md en tv-speler.js. */
-import { esc, maat, maatWoord, stip, klok, beeld, label, bovenSponsor } from './tv-speler.js?v=20261126u';
+import { esc, standWissel, maat, maatWoord, stip, klok, beeld, label, bovenSponsor } from './tv-speler.js?v=20261126v';
 
 const logo = m => m.logo ? `<span class="wa-logo"><img src="${esc(m.logo)}" alt=""></span>` : '<span class="wa-streep"></span>';
 const rij = (r, i) => `<div class="wa-rij ts-a ${r.status}" style="--i:${i + 1}"><span class="t">${esc(r.tijd || '–')}</span>
@@ -21,7 +21,7 @@ export default {
   dia: (m, x) => `<div class="ts-abs wa-sp ts-a ${x.soort}"><div class="e">${esc(bovenSponsor(x) || m.club)}</div>${beeld(x, 'ts-beeld wa-img')}<div class="n" style="${maatWoord(x.titel, x.img ? 110 : 190, x.img ? 16 : 11)}">${esc(x.titel)}</div>${x.tekst ? `<div class="r">${esc(x.tekst)}</div>` : ''}</div>
     <div class="ts-abs wa-ook">${m.sponsors.filter(s => s !== x).slice(0, 4).map((s, i) => `<div class="ts-a ts-kap" style="--i:${i + 2}">${esc(s.titel)}</div>`).join('')}</div>`,
   goal: (m, g) => `<div class="wa-goal"><i></i><i></i><div class="in"><div class="k">Goal!</div><div class="w">${esc(g.team)}</div>
-    <div class="wa-bug"><div class="h"><span class="ts-kap">${esc(g.a)}</span></div><div class="s">${esc(g.stand)}</div><div class="u"><span class="ts-kap">${esc(g.b)}</span></div></div>${g.veld ? `<div class="p">${esc(g.veld)}</div>` : ''}</div></div>`,
+    <div class="wa-bug"><div class="h"><span class="ts-kap">${esc(g.a)}</span></div><div class="s">${standWissel(g)}</div><div class="u"><span class="ts-kap">${esc(g.b)}</span></div></div>${g.veld ? `<div class="p">${esc(g.veld)}</div>` : ''}</div></div>`,
   fx: () => `<div class="wa-veeg" style="--i:0;background:var(--club)"></div><div class="wa-veeg" style="--i:1;background:#fff"></div><div class="wa-veeg" style="--i:2;background:#0b0d14"></div>`,
   css: `
 .ts-wedstrijdavond{background:radial-gradient(1300px 900px at 88% 0%,color-mix(in oklab,var(--club) 50%,#0a0c14),#070910 70%)}

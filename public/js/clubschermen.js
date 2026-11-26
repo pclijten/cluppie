@@ -8,13 +8,13 @@
 
    Opslag: clubs/{club}/sponsoren/{id} (met bedrag en notitie) en de openbare kopie in
    clubTv/{tvId} + clubTv/{tvId}/schermen/{id}. Krijgt alles van activiteiten.js via ctx. */
-import { db, doc, collection, query, where, getDocs, addDoc, setDoc, updateDoc, deleteDoc, deleteField, onSnapshot } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261126u';
+import { db, doc, collection, query, where, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, deleteField, onSnapshot } from './firebase.js?v=20261011g';
+import { S, esc, meld } from './state.js?v=20261126v';
 import { ico } from './icons.js?v=20261116t';
 import { liveId, MAX_SCHERMEN } from './toernooi-logica.js?v=20261125w';
 import { kleinPlaatje } from './plaatje.js?v=20261125w';
-import * as C from './clubscherm-logica.js?v=20261126t';
-import { SJABLONEN, sjabloonId } from './tv-sjablonen.js?v=20261126u';
+import * as C from './clubscherm-logica.js?v=20261126v';
+import { SJABLONEN, sjabloonId } from './tv-sjablonen.js?v=20261126v';
 
 const cs = { tvbZoek: '', keuze: {}, vast: 'auto', proef: null, clubId: '', tv: undefined, items: null, stop: null, qrVoor: '', qr: '', bezig: false };
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -54,7 +54,17 @@ async function leesProgramma(){
     try { const s = await getDocs(query(collection(db, 'teams', t.id, 'wedstrijden'), where('datum', '==', datum))); perTeam[t.id] = s.docs.map(d => d.data()); }
     catch { perTeam[t.id] = []; }
   }));
-  return { datum, programma: C.bouwProgramma(teams, perTeam, datum) };
+  /* Namen bij doelpunten, alleen als de club dat aan heeft staan: de spelers die vandaag scoorden of aangaven. */
+  let namen = null;
+  if (cs.tv?.namen === true){
+    namen = {};
+    await Promise.all(teams.map(async t => {
+      const ids = [...new Set((perTeam[t.id] || []).flatMap(w => (Array.isArray(w.goals) ? w.goals : []).flatMap(g => g?.type === 'voor' ? [g.pid, g.assist] : [])).filter(x => typeof x === 'string' && x))].slice(0, 40);
+      const lijst = await Promise.all(ids.map(id => getDoc(doc(db, 'teams', t.id, 'spelers', id)).then(d => [id, d.exists() ? String(d.data()?.naam || '') : '']).catch(() => [id, ''])));
+      if (lijst.length) namen[t.id] = Object.fromEntries(lijst);
+    }));
+  }
+  return { datum, programma: C.bouwProgramma(teams, perTeam, datum, namen) };
 }
 
 /* ---------- wie beheert de tv ---------- */
@@ -88,7 +98,7 @@ const DIA_UITLEG = {
   auto: ['Vanzelf', 'Zo draait de tv: het programma (in pagina\'s), de standen en uitslagen, en daartussen je sponsoren en eigen schermen. Elke dia staat zo\'n twaalf seconden.'],
   programma: ['Programma', 'De wedstrijden van vandaag met tijd, teams, veld en kleedkamer. Die komen vanzelf uit de wedstrijden van alle teams van de club: uit Sportlink en ook de wedstrijden die een trainer zelf in de app aanmaakt.'],
   uitslagen: ['Standen', 'Wedstrijden die bezig of gespeeld zijn, met de stand. Houdt de trainer de wedstrijd bij in de app, dan staat elk doelpunt binnen een paar seconden op de tv. Anders komt de uitslag uit Sportlink.'],
-  goal: ['Doelpunt', 'Bij een doelpunt komt dit een paar seconden groot in beeld, met team en stand en zonder namen van spelers. Hieronder kies je voor welke wedstrijden.'],
+  goal: ['Doelpunt', 'Bij een doelpunt springt de stand zichtbaar om en komt het groot in beeld: team, minuut, veld en bij meer doelpunten de tijdlijn van de wedstrijd. De voornaam van de maker en de assist alleen als je dat aanzet. Hiernaast kies je voor welke wedstrijden.'],
 };
 const RAND_UITLEG = 'Altijd in beeld: de naam, het logo en de kleur van de club (uit de clubinstellingen), de datum en de klok, en onderin je mededeling.';
 function beeldSrc(tv, aan, proef){
@@ -146,6 +156,9 @@ export function htmlSchermen(ctx){
       <label class="ac-label">Mededeling onderin het scherm</label><input class="ac-in" data-cs-tv="mededeling" maxlength="200" value="${esc(tv.mededeling || '')}" placeholder="Bijvoorbeeld: Zaterdag 12 december kerstbingo in de kantine">` : ''}
       <label class="ac-label" for="csGoals">Doelpunt groot in beeld</label>
       <select class="ac-in" id="csGoals" data-cs-tv="goals">${Object.entries(C.GOAL_KEUZES).map(([k, n]) => opt(k, n, C.goalKeuze(tv?.goals ?? cs.keuze.goals) === k)).join('')}</select>
+      <p class="ac-zacht">De stand springt zichtbaar om, met de minuut, het veld en bij meer doelpunten een tijdlijn van de wedstrijd. Scoren er teams tegelijk, dan komen de doelpunten na elkaar, elk even lang. Dit werkt als de trainer de wedstrijd met de klok bijhoudt in de app. Doelpunten die achteraf worden ingevoerd geven geen melding.</p>
+      ${aan ? `<label class="ac-schak"><input type="checkbox" data-cs-tv="namen" ${tv.namen === true ? 'checked' : ''}> Voornaam van de doelpuntenmaker en de assist tonen</label>
+      <p class="ac-zacht">Staat uit tot je het aanzet. De tv-pagina is openbaar voor wie de link heeft en het gaat vaak om kinderen, dus stem dit af binnen de club. Er komt alleen een voornaam op het scherm, alleen van het eigen team.</p>` : ''}
       <label class="ac-label" for="csEvenement">Evenement op de tv</label>
       <select class="ac-in" id="csEvenement" data-cs-tv="evenement">${opt('', 'Geen: het wedstrijdprogramma van vandaag', !ev)}${evs.map(x => opt(x.id, `${x.naam}${x.datum ? ' · ' + datumKort(x.datum) : ''}`, x.id === ev)).join('')}${ev && !evs.some(x => x.id === ev) ? opt(ev, 'Een toernooi waarvan de live pagina uit staat', true) : ''}</select>
       <p class="ac-zacht">${evs.length ? 'Op de dag van het toernooi toont de tv het schema, de uitslagen, de mededelingen en de sponsoren van het toernooi, in je sjabloon. Op andere dagen gewoon het wedstrijdprogramma.' : 'Zet bij een toernooi de live pagina aan, dan kun je het hier kiezen. De tv toont het toernooi dan op de dag zelf.'}</p></div>`;
@@ -227,7 +240,7 @@ export async function klikSchermen(ctx, b){
       try {
         /* Een tv-beheerder ziet niet alle teams; dan vult de Cloud Function het programma binnen tien minuten. */
         const p = ctx.isAdmin ? await leesProgramma() : { datum: '', programma: [] };
-        const data = { club: ctx.clubId, open: true, ...C.tvKopie({ ...clubInfo(), mededeling: cs.tv?.mededeling || '', uit: cs.tv?.uit, sjabloon: cs.tv?.sjabloon ?? cs.keuze.sjabloon, goals: cs.tv?.goals ?? cs.keuze.goals, evenement: cs.tv?.evenement ?? cs.keuze.evenement, ...p }), bijgewerktMs: Date.now(), programmaMs: Date.now() };
+        const data = { club: ctx.clubId, open: true, ...C.tvKopie({ ...clubInfo(), mededeling: cs.tv?.mededeling || '', uit: cs.tv?.uit, sjabloon: cs.tv?.sjabloon ?? cs.keuze.sjabloon, goals: cs.tv?.goals ?? cs.keuze.goals, evenement: cs.tv?.evenement ?? cs.keuze.evenement, namen: cs.tv?.namen === true, ...p }), bijgewerktMs: Date.now(), programmaMs: Date.now() };
         await setDoc(doc(db, 'clubTv', tid), data);
         cs.tv = { id: tid, ...data }; await zetAllesOpenbaar();
       } catch (e){ console.error('[schermen] tv aan', e); return meld(e?.code === 'permission-denied' ? 'De tv kan nog niet aan: de regels zijn nog niet gepubliceerd.' : 'Aanzetten mislukt.'); }
@@ -240,7 +253,7 @@ export async function klikSchermen(ctx, b){
     }
     case 'programma': {
       cs.bezig = true; ctx.herteken();
-      try { const p = await leesProgramma(); await updateDoc(doc(db, 'clubTv', cs.tv.id), { ...p, ...C.tvKopie({ ...clubInfo(), mededeling: cs.tv.mededeling, uit: cs.tv.uit, sjabloon: cs.tv.sjabloon, goals: cs.tv.goals, evenement: cs.tv.evenement, ...p }), bijgewerktMs: Date.now(), programmaMs: Date.now() }); Object.assign(cs.tv, p); await zetAllesOpenbaar(); meld(`${p.programma.length} ${p.programma.length === 1 ? 'wedstrijd' : 'wedstrijden'} op het scherm`); }
+      try { const p = await leesProgramma(); await updateDoc(doc(db, 'clubTv', cs.tv.id), { ...p, ...C.tvKopie({ ...clubInfo(), mededeling: cs.tv.mededeling, uit: cs.tv.uit, sjabloon: cs.tv.sjabloon, goals: cs.tv.goals, evenement: cs.tv.evenement, namen: cs.tv.namen === true, ...p }), bijgewerktMs: Date.now(), programmaMs: Date.now() }); Object.assign(cs.tv, p); await zetAllesOpenbaar(); meld(`${p.programma.length} ${p.programma.length === 1 ? 'wedstrijd' : 'wedstrijden'} op het scherm`); }
       catch (e){ console.error('[schermen] programma', e); meld('Bijwerken mislukt.'); }
       cs.bezig = false; return ctx.herteken();
     }
@@ -270,7 +283,10 @@ export async function wijzigSchermen(ctx, el){
   }
   if (el.matches('[data-cs-tv]') && cs.tv?.id){
     const k = el.dataset.csTv, w = el.type === 'checkbox' ? el.checked : k === 'sjabloon' ? sjabloonId(el.value) : k === 'goals' ? C.goalKeuze(el.value) : k === 'evenement' ? C.evenementId(el.value) : String(el.value || '').replace(/\s+/g, ' ').trim().slice(0, 200);
-    try { await updateDoc(doc(db, 'clubTv', cs.tv.id), { [k]: w, ...clubInfoKopie(), bijgewerktMs: Date.now() }); cs.tv[k] = w; ctx.opgeslagen?.(); if (k === 'sjabloon' || k === 'evenement') ctx.herteken(); } catch { meld('Opslaan mislukt.'); }
+    try { await updateDoc(doc(db, 'clubTv', cs.tv.id), { [k]: w, ...clubInfoKopie(), bijgewerktMs: Date.now() }); cs.tv[k] = w; ctx.opgeslagen?.(); if (k === 'sjabloon' || k === 'evenement') ctx.herteken();
+      /* namen aan of uit: het programma meteen opnieuw opbouwen, zodat de namen erbij komen of verdwijnen */
+      if (k === 'namen' && ctx.isAdmin && cs.tv.open){ const p = await leesProgramma(); await updateDoc(doc(db, 'clubTv', cs.tv.id), { ...p, programmaMs: Date.now() }); Object.assign(cs.tv, p); }
+    } catch { meld('Opslaan mislukt.'); }
     return true;
   }
   return false;

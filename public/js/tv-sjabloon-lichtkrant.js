@@ -1,6 +1,6 @@
 /* TV-SJABLOON "LICHTKRANT" [20261126q]: een LED-scorebord met neon. Gloed, knipperende live-stand en een glitch als overgang.
    Puntjesletters lezen minder goed bij lange tekst, dus de regels zijn kort. Zie docs/tv-sjablonen.md. */
-import { esc, maat, maatWoord, klok, beeld, lint, bovenSponsor } from './tv-speler.js?v=20261126u';
+import { esc, standWissel, maat, maatWoord, klok, beeld, lint, bovenSponsor } from './tv-speler.js?v=20261126v';
 
 const led = s => esc(String(s ?? '').toUpperCase().replace(/[–—]/g, '-'));
 const st = r => r.status === 'live' ? '<span class="g">LIVE</span>' : r.status === 'af' ? '<span class="rd">AFGELAST</span>' : r.status === 'klaar' ? 'EINDE' : led(r.veld || (r.thuis ? '' : 'UIT'));
@@ -16,7 +16,7 @@ export default {
     <div class="lk-tm lk-led"><span class="ts-kap">${led(l.a)}</span><span class="ts-kap">${led(l.b)}</span></div>
     <div class="lk-rs lk-led">${rest.map(r => `<div><span class="ts-kap">${led(r.eigen)}</span><span class="${r.status === 'live' ? 'g' : ''}">${led(r.score || '0-0')}</span></div>`).join('')}</div></div>`; },
   dia: (m, x) => `<div class="lk-in lk-dia">${bovenSponsor(x) ? `<div class="lk-h">${esc(bovenSponsor(x))}</div>` : ''}${beeld(x, 'ts-beeld lk-img')}<div class="lk-neon neon" style="${maatWoord(x.titel, x.img ? 130 : 230, x.img ? 14 : 9)}">${esc(x.titel)}</div>${x.tekst ? `<div class="lk-tekst lk-led">${led(x.tekst)}</div>` : ''}</div>`,
-  goal: (m, g) => `<div class="lk-goal"><div class="lk-rand"></div><div class="k">Goal</div><div class="s lk-led">${led(g.stand)}</div>
+  goal: (m, g) => `<div class="lk-goal"><div class="lk-rand"></div><div class="k">Goal</div><div class="s lk-led">${standWissel(g, led, '-')}</div>
     <div class="w lk-led ts-kap">${led(g.team)}</div><div class="t lk-led ts-kap">${led(g.a)} - ${led(g.b)}${g.veld ? ' · ' + led(g.veld) : ''}</div><div class="lk-scan"></div></div>`,
   fx: () => `<div class="lk-lijn"></div>`,
   css: `

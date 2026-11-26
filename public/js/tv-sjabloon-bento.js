@@ -1,6 +1,6 @@
 /* TV-SJABLOON "BENTO" [20261126q]: alles tegelijk in een raster van tegels; bij een wissel kantelen de tegels om.
    De klok blijft staan. Zie docs/tv-sjablonen.md. */
-import { esc, maat, maatWoord, stip, klok, beeld, bovenSponsor } from './tv-speler.js?v=20261126u';
+import { esc, standWissel, maat, maatWoord, stip, klok, beeld, bovenSponsor } from './tv-speler.js?v=20261126v';
 
 const tegel = (gebied, i, klasse, html) => `<div class="be-t ${klasse}" style="grid-area:${gebied};--i:${i}">${html}</div>`;
 const liveTegel = m => tegel('live', 1, '', m.live.length
@@ -24,7 +24,7 @@ export default {
     ${[...m.live, ...m.klaar].slice(0, 6).map(r => `<div class="be-r ${r.status}"><b>${esc(r.score || '0–0')}</b><span><span class="ts-kap">${esc(r.a)} – ${esc(r.b)}</span><small>${r.status === 'live' ? 'Nu bezig' + (r.veld ? ' · ' + esc(r.veld) : '') : 'Afgelopen'}</small></span><em>${r.status === 'live' ? 'live' : 'einde'}</em></div>`).join('')}`) + rest(m, null, 1),
   dia: (m, x) => tegel('big', 0, 'wit be-groot be-show', `<div class="lb">${esc(bovenSponsor(x) || m.club)}</div>${x.img ? beeld(x, 'be-plaat') : ''}<div class="n" style="${maatWoord(x.titel, x.img ? 110 : 190, x.img ? 14 : 9)}">${esc(x.titel)}</div>${x.tekst ? `<p>${esc(x.tekst)}</p>` : ''}`) + rest(m, x, 2),
   goal: (m, g) => `<div class="be-goal"><div class="be-t club a"><div class="lb">${stip} Doelpunt${g.veld ? ' · ' + esc(g.veld) : ''}</div><b>Goal!</b><span style="${maat(g.team, 90, 16)}">${esc(g.team)}</span></div>
-    <div class="be-t wit b"><div class="lb">Stand</div><b>${esc(g.stand)}</b><span class="ts-kap">${esc(g.a)} – ${esc(g.b)}</span></div></div>`,
+    <div class="be-t wit b"><div class="lb">Stand</div><b>${standWissel(g)}</b><span class="ts-kap">${esc(g.a)} – ${esc(g.b)}</span></div></div>`,
   css: `
 .ts-bento{background:#0c0d10}
 .ts-bento .ts-scene{padding:44px;display:grid;grid-template-columns:1.15fr 1.15fr 1fr 1fr;grid-template-rows:1fr 1fr 1fr;gap:24px;grid-template-areas:"big big live klok" "big big live next" "big big spons med"}
@@ -67,7 +67,8 @@ export default {
 .be-goal .a b{font:900 420px/.8 var(--ts-display);text-transform:uppercase;animation:beBons .9s cubic-bezier(.3,1.5,.5,1) .5s both}
 .be-goal .a span{font:800 90px/1 var(--ts-display);text-transform:uppercase;margin-top:20px}
 .be-goal .b b{font:900 330px/.8 var(--ts-display)}
-.be-goal .b span{font:600 34px/1.3 var(--ts-body);margin-top:20px}
+.be-goal .b>span{font:600 34px/1.3 var(--ts-body);margin-top:20px}
+.ts-metband .be-goal{padding-bottom:242px}.ts-metband .be-goal .a b{font-size:340px}.ts-metband .be-goal .b b{font-size:280px}
 @keyframes beBons{from{transform:scale(.4);opacity:0}}
 `,
 };

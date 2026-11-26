@@ -2,7 +2,7 @@
    gebruikt wordt krijgt een eigen veldje met de wedstrijd die er nu speelt of straks begint.
    De velden komen uit het programma (het veld dat bij de wedstrijd is ingevuld); er hoeft niets ingesteld te worden.
    Overgang: de krijtlijnen tekenen zichzelf en een pass schiet over het beeld. Zie docs/tv-sjablonen.md. */
-import { esc, maat, maatWoord, stip, klok, beeld, bovenSponsor } from './tv-speler.js?v=20261126u';
+import { esc, standWissel, maat, maatWoord, stip, klok, beeld, bovenSponsor } from './tv-speler.js?v=20261126v';
 
 /* Een voetbalveld in lijnen. i: volgorde waarin de lijnen verschijnen. */
 function veld(x, y, w, h, i = 0){
@@ -42,7 +42,7 @@ export default {
   dia: (m, x) => `<div class="ts-abs vdk-mid"><svg viewBox="0 0 1920 800" preserveAspectRatio="xMidYMid meet">${veld(110, 20, 1700, 760)}<circle class="vdk-ln" style="--i:3" cx="960" cy="400" r="330"/></svg>
     <div class="vdk-sp ts-a" style="--i:1">${bovenSponsor(x) ? `<div class="e">${esc(bovenSponsor(x))}</div>` : ''}${beeld(x, 'ts-beeld vdk-img')}<div class="n" style="${maatWoord(x.titel, x.img ? 100 : 170, x.img ? 16 : 10)}">${esc(x.titel)}</div>${x.tekst ? `<div class="r">${esc(x.tekst)}</div>` : ''}</div></div>`,
   goal: (m, g) => `<div class="vdk-goal"><div class="vdk-bord"></div><svg viewBox="0 0 1920 1080">${veld(-500, 90, 2300, 900)}<path class="vdk-krijt" d="M 300 860 Q 760 420 1180 560"/><path class="vdk-krijt b" d="M 1180 560 Q 1500 360 1700 520"/><circle class="vdk-doel" cx="1700" cy="520" r="26"/><circle class="vdk-golf" cx="1700" cy="520" r="26"/></svg>
-    <div class="t"><b>Goal!</b><div class="w" style="${maat(g.team, 90, 20)}">${esc(g.team)}</div><div class="s"><span class="ts-kap">${esc(g.a)}</span><strong>${esc(g.stand)}</strong><span class="ts-kap">${esc(g.b)}</span></div>${g.veld ? `<div class="p">${esc(g.veld)}</div>` : ''}</div></div>`,
+    <div class="t"><b>Goal!</b><div class="w" style="${maat(g.team, 90, 20)}">${esc(g.team)}</div><div class="s"><span class="ts-kap">${esc(g.a)}</span><strong>${standWissel(g)}</strong><span class="ts-kap">${esc(g.b)}</span></div>${g.veld ? `<div class="p">${esc(g.veld)}</div>` : ''}</div></div>`,
   fx: () => `<svg class="vdk-pass" viewBox="0 0 1920 1080"><path d="M 120 1000 Q 700 200 1820 160"/></svg><div class="vdk-bal"></div>`,
   css: `
 .ts-veldkaart{background:var(--club-dd)}

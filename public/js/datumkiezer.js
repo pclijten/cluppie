@@ -8,7 +8,7 @@
    Kiezen zet de waarde in de verborgen input en stuurt een bubbelende 'change', zodat de
    bestaande change-afhandeling (data-veld, data-kies …) gewoon werkt.
    Zonder afhankelijkheden: alleen esc uit state.js. */
-import { esc } from './state.js?v=20261126u';
+import { esc } from './state.js?v=20261126v';
 
 const MAANDEN = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
 const DAGEN = ['ma', 'di', 'wo', 'do', 'vr', 'za', 'zo'];

@@ -1,6 +1,6 @@
 /* TV-SJABLOON "PLAKBOEK" [20261126q]: kaartjes met tape, stickers en stift op papier. Alles valt van boven in beeld
    en valt er onderaan weer uit. Zie docs/tv-sjablonen.md. */
-import { esc, maat, maatWoord, klok, beeld, bovenSponsor } from './tv-speler.js?v=20261126u';
+import { esc, standWissel, maat, maatWoord, klok, beeld, bovenSponsor } from './tv-speler.js?v=20261126v';
 
 const R = [-2, 1.5, -1, 2, -1.5, 1];
 const streep = '<svg viewBox="0 0 620 26"><path d="M4 18 C 120 4, 240 26, 360 12 S 560 8, 616 16" fill="none" stroke="var(--club)" stroke-width="7" stroke-linecap="round"/></svg>';
@@ -26,7 +26,7 @@ export default {
       + `<div class="pb-dank pb-a" style="--r:-3deg;--i:1;${maat(x.tekst, 84, 34)}">${esc(x.tekst || (x.soort === 'sponsor' ? 'Dank je wel!' : ''))}</div>`
       + (x.soort === 'sponsor' ? ook.map((s, i) => `<div class="pb-kl pb-a ts-kap" style="left:${920 + (i % 2) * 440}px;top:${600 + Math.floor(i / 2) * 130}px;--r:${[3, -2, -3, 2][i]}deg;--i:${i + 2}">${esc(s.titel)}</div>`).join('') : ''); },
   goal: (m, g) => `<div class="pb-goal"><div class="pb-raster"></div>
-    <div class="pb-pol pb-g1" style="--r:-4deg"><div class="pb-foto">${ster}<div class="g"><b>Goal!</b><span>${esc(g.stand)}</span></div></div><div class="cap ts-kap">${esc(g.team)} scoort!</div></div>
+    <div class="pb-pol pb-g1" style="--r:-4deg"><div class="pb-foto">${ster}<div class="g"><b>Goal!</b><span>${standWissel(g)}</span></div></div><div class="cap ts-kap">${esc(g.team)} scoort!</div></div>
     <div class="pb-gt pb-g2" style="--r:2deg"><span>${esc(g.veld || 'Doelpunt')}</span><b style="${maat(g.a, 110, 12)}">${esc(g.a)}</b><i>${esc(g.stand)}</i><b style="${maat(g.b, 110, 12)}">${esc(g.b)}</b></div></div>`,
   css: `
 .ts-plakboek,.pb-goal{background:#e8e6e1;color:#111;font-family:var(--ts-display)}
@@ -74,6 +74,7 @@ export default {
 .pb-goal{position:absolute;inset:0}
 .pb-g1{left:120px;top:150px;animation:pbVal .9s cubic-bezier(.3,1.45,.5,1) both}
 .pb-g1 .pb-foto svg{width:900px;height:900px;animation:pbDraai 9s linear infinite}
+.ts-metband .pb-g1{top:40px}.ts-metband .pb-gt{top:110px}
 .pb-g1 .g b{font-size:210px}.pb-g1 .g span{font-size:150px}
 @keyframes pbDraai{to{transform:rotate(360deg)}}
 .pb-gt{position:absolute;left:1040px;top:200px;width:760px;background:#fff;border:6px solid #111;box-shadow:14px 14px 0 #111;padding:40px 44px;display:flex;flex-direction:column;gap:10px;transform:rotate(var(--r));animation:pbVal .9s cubic-bezier(.3,1.45,.5,1) .25s both}
