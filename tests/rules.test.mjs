@@ -763,12 +763,15 @@ test('toernooi live: iedereen met de link leest, alleen het comité schrijft, di
   await assertFails(setDoc(doc(kijker, 'toernooiLive/l1'), live));                                                       // anoniem schrijft niet
   await assertSucceeds(setDoc(doc(coach, 'toernooiLive/l1'), live));
   await assertSucceeds(getDoc(doc(kijker, 'toernooiLive/l1')));
+  await assertSucceeds(getDoc(doc(gast(), 'toernooiLive/l1')));                                                         // [20261127w] open: ook zonder inloggen
+  await assertFails(getDocs(collection(gast(), 'toernooiLive')));
   await assertFails(getDocs(collection(kijker, 'toernooiLive')));                                                        // niet opsommen
   await assertFails(updateDoc(doc(kijker, 'toernooiLive/l1'), { 'uitslag.w1': { a: 9, b: 0 } }));                          // kijker vult geen uitslag in
   await assertSucceeds(updateDoc(doc(a, 'toernooiLive/l1'), { 'uitslag.w1': { a: 2, b: 1 } }));
   await assertFails(updateDoc(doc(coach, 'toernooiLive/l1'), { actId: 'anders' }));                                       // niet omhangen
   await assertSucceeds(setDoc(doc(coach, 'toernooiLive/l1'), { open: false }, { merge: true }));
   await assertFails(getDoc(doc(kijker, 'toernooiLive/l1')));                                                             // dicht
+  await assertFails(getDoc(doc(gast(), 'toernooiLive/l1')));
   await assertSucceeds(getDoc(doc(coach, 'toernooiLive/l1')));
   await assertSucceeds(deleteDoc(doc(a, 'toernooiLive/l1')));
 });
@@ -818,6 +821,10 @@ test('kantine-tv en sponsoren: bedragen alleen voor clubbeheer, de tv is openbaa
   await assertSucceeds(setDoc(doc(a, 'clubTv/tv1/schermen/s1'), { soort: 'sponsor', titel: 'Bakker' }));
   await assertSucceeds(getDoc(doc(kijker, 'clubTv/tv1')));
   await assertSucceeds(getDocs(collection(kijker, 'clubTv/tv1/schermen')));
+  await assertSucceeds(getDoc(doc(gast(), 'clubTv/tv1')));                                                                // [20261127w] open: ook zonder inloggen
+  await assertSucceeds(getDocs(collection(gast(), 'clubTv/tv1/schermen')));
+  await assertFails(getDocs(collection(gast(), 'clubTv')));
+  await assertFails(setDoc(doc(gast(), 'clubTv/tv1/schermen/s8'), { titel: 'reclame' }));
   await assertFails(getDocs(collection(kijker, 'clubTv')));
   await assertSucceeds(getDocs(query(collection(a, 'clubTv'), where('club', '==', 'A'))));                               // beheer vindt de eigen tv
   await assertFails(setDoc(doc(kijker, 'clubTv/tv1/schermen/s9'), { titel: 'reclame' }));
@@ -826,6 +833,8 @@ test('kantine-tv en sponsoren: bedragen alleen voor clubbeheer, de tv is openbaa
   await assertSucceeds(updateDoc(doc(a, 'clubTv/tv1'), { open: false }));
   await assertFails(getDoc(doc(kijker, 'clubTv/tv1')));
   await assertFails(getDocs(collection(kijker, 'clubTv/tv1/schermen')));
+  await assertFails(getDoc(doc(gast(), 'clubTv/tv1')));
+  await assertFails(getDocs(collection(gast(), 'clubTv/tv1/schermen')));
 });
 test('kantine-tv: de clubbeheerder wijst tv-beheerders aan', async () => {
   const a = als('adminA'), tvb = als('coordA');

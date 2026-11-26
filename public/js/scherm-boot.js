@@ -11,12 +11,12 @@
    tactisch bord hieronder; elk ander sjabloon speelt tv-speler.js af. Een doelpunt (de stand van een wedstrijd gaat
    omhoog) geeft een melding over het hele scherm; clubTv.goals zegt voor welke wedstrijden (zie nieuweGoals).
    Voorbeeld bekijken zonder iets op te slaan: ?scherm=<id>&sjabloon=<id>, en &proef=1 voor proefwedstrijden met doelpunten. */
-import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, collection, onSnapshot, getDoc } from './firebase.js?v=20261011g';
+import { auth, db, signOut, onAuthStateChanged, doc, collection, onSnapshot, getDoc } from './firebase.js?v=20261011g';
 import { plaatjeOk, veiligeLink } from './toernooi-logica.js?v=20261127v';
 import { sorteer, nieuweGoals, goalKeuze, evenementId, evenementTv } from './clubscherm-logica.js?v=20261127v';
 import { sjabloonId, laadSjabloon } from './tv-sjablonen.js?v=20261127v';
 import { maakSpeler, tvModel, proefProgramma, PROEF_DIAS, standWissel, goalBand, goalStijl } from './tv-speler.js?v=20261127v';
-import { stijl as stijlLive } from './live-boot.js?v=20261127v';
+import { stijl as stijlLive } from './live-boot.js?v=20261127w';
 import { tvStijl, tvKleur, tvZet, bordHtml, logoHtml, tikHtml, diaHtml, sponsHtml, voetHtml } from './tv-stijl.js?v=20261126n';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -27,7 +27,9 @@ async function sessie(forceer){
     try { await u.getIdToken(!!forceer); return; }
     catch (e){ if (e?.code === 'auth/network-request-failed') return; if (auth.currentUser?.isAnonymous){ try { await signOut(auth); } catch { /* dan maar zo */ } } }
   }
-  if (!auth.currentUser) await signInAnonymously(auth);
+  /* [20261127w] Niet meer anoniem inloggen: een open live pagina of tv is zonder inloggen te lezen. Firebase staat
+     ~100 nieuwe anonieme accounts per uur per IP-adres toe, en op een toernooi zit iedereen op dezelfde clubwifi.
+     Wie al in de app is ingelogd (comité, tv-beheer), houdt die sessie en ziet ook een dichte pagina. */
 }
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const nuMin = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
@@ -106,11 +108,11 @@ export async function bootSchermPagina(tvId){
   /* een tv die dagen aan staat: elke nacht verversen, zodat een nieuwe versie van de pagina meekomt */
   if (!ontwerp) setInterval(() => { const d = new Date(); if (d.getHours() === 4 && d.getMinutes() < 2) location.reload(); }, 60000);
   /* Staat er een nieuwe versie van Cluppie online, dan ververst de tv zichzelf binnen een kwartier (niet pas 's nachts). */
-  const mijnVersie = (document.querySelector('script[src*="js/main.js"]')?.getAttribute('src') || '').split('v=')[1] || '';
+  const mijnVersie = (document.querySelector('script[src*="js/start.js"]')?.getAttribute('src') || '').split('v=')[1] || '';
   if (mijnVersie && !ontwerp) setInterval(async () => {
     try {
       const r = await fetch(`index.html?nieuw=${Date.now()}`, { cache: 'no-store' }); if (!r.ok) return;
-      const v = (/js\/main\.js\?v=([0-9a-z]+)/.exec(await r.text()) || [])[1];
+      const v = (/js\/start\.js\?v=([0-9a-z]+)/.exec(await r.text()) || [])[1];
       if (v && v !== mijnVersie) location.reload();
     } catch { /* geen verbinding: volgende keer */ }
   }, 15 * 60000);

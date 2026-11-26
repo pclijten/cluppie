@@ -746,7 +746,9 @@ service cloud.firestore {
        schrijven alleen het comité van die activiteit. */
     match /toernooiLive/{liveId} {
       function liveBeheer(d) { return d.get('club', null) is string && d.get('actId', null) is string && magActiviteit(d.club, d.actId); }
-      allow get: if ingelogd() && (resource.data.get('open', false) == true || liveBeheer(resource.data));
+      /* [20261127w] Open live pagina's zijn leesbaar zonder inloggen: anoniem inloggen haalde op clubwifi
+         (één IP-adres) de grens van ~100 nieuwe accounts per uur. Dicht = alleen het comité. */
+      allow get: if resource.data.get('open', false) == true || (ingelogd() && liveBeheer(resource.data));
       allow list: if false;
       allow create: if echt() && liveBeheer(request.resource.data)
         && request.resource.data.get('schema', []) is list && request.resource.data.get('schema', []).size() <= 900;
@@ -799,7 +801,8 @@ service cloud.firestore {
        anoniem. Geen persoonsgegevens. Clubbeheer vindt de eigen tv met where('club', '==', clubId). */
     match /clubTv/{tvId} {
       function tvBeheer(d) { return d.get('club', null) is string && isTvBeheerder(d.club); }
-      allow get: if ingelogd() && (resource.data.get('open', false) == true || tvBeheer(resource.data));
+      /* [20261127w] Een open tv is leesbaar zonder inloggen (zie toernooiLive). */
+      allow get: if resource.data.get('open', false) == true || (ingelogd() && tvBeheer(resource.data));
       allow list: if echt() && tvBeheer(resource.data);
       allow create: if tvBeheer(request.resource.data) && activiteitenAan(request.resource.data.club);
       allow update: if tvBeheer(resource.data) && activiteitenAan(resource.data.club)
@@ -808,14 +811,14 @@ service cloud.firestore {
       allow delete: if tvBeheer(resource.data);
       match /schermen/{sid} {
         function tv() { return get(/databases/$(database)/documents/clubTv/$(tvId)).data; }
-        allow read: if ingelogd() && (tv().get('open', false) == true || tvBeheer(tv()));
+        allow read: if tv().get('open', false) == true || (ingelogd() && tvBeheer(tv()));
         allow write: if tvBeheer(tv()) && activiteitenAan(tv().club);
       }
     }
     /* [20261127b] Korte link naar de kantine-tv (/tv/<naam>): tvNamen/{naam} = { tv, club, ms }. Iedereen met de link
        leest hem (ook anoniem); alleen tv-beheer van de club maakt hem, voor de eigen tv, en haalt hem weg. */
     match /tvNamen/{naam} {
-      allow get: if ingelogd();
+      allow get: if true;
       allow create: if naam.matches('^[a-z0-9][a-z0-9-]{2,29}$')
         && request.resource.data.keys().hasOnly(['tv', 'club', 'ms'])
         && request.resource.data.tv is string && request.resource.data.club is string

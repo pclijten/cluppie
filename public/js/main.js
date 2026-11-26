@@ -8,7 +8,7 @@ import {
 import { startTeams, openTeam, renderTeam, verlaatTeamView, teamTabTerug } from './teams.js?v=20261127v';
 import { sluitWedstrijd } from './wedstrijd.js?v=20261127v';
 import { initChatbot } from './chatbot.js?v=20261127v';
-import { bewaakVersie } from './versie-wacht.js?v=20261126r';
+import { bewaakVersie } from './versie-wacht.js?v=20261127w';
 
 /* [20260921] Training gedeeld met een ouder (?deel=<id>): volledig losse,
    sterk vereenvoudigde flow — geen normale login, geen navigatie, alleen de
@@ -44,16 +44,16 @@ if (_deelId){
   import('./activiteit-boot.js?v=20261127n').then(m => m.bootActiviteitPagina(_actId));
 } else if (_liveId){
   document.getElementById('opstart')?.remove();
-  import('./live-boot.js?v=20261127v').then(m => m.bootLivePagina(_liveId, { tv: _zoek.get('tv') === '1' }));
+  import('./live-boot.js?v=20261127w').then(m => m.bootLivePagina(_liveId, { tv: _zoek.get('tv') === '1' }));
 } else if (_insId){
   document.getElementById('opstart')?.remove();
   import('./inschrijf-boot.js?v=20261127v').then(m => m.bootInschrijfPagina(_insId));
 } else if (_schermId){
   document.getElementById('opstart')?.remove();
-  import('./scherm-boot.js?v=20261127v').then(m => m.bootSchermPagina(_schermId));
+  import('./scherm-boot.js?v=20261127w').then(m => m.bootSchermPagina(_schermId));
 } else if (_kantine){
   document.getElementById('opstart')?.remove();
-  import('./scherm-boot.js?v=20261127v').then(m => m.bootSchermNaam(_kantine));
+  import('./scherm-boot.js?v=20261127w').then(m => m.bootSchermNaam(_kantine));
 } else if (_takenId){
   document.getElementById('opstart')?.remove();
   import('./taken-boot.js?v=20261127v').then(m => m.bootTakenPagina(_takenId));

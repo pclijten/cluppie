@@ -15,15 +15,17 @@ const WEG_MIN_MS = 30 * 1000;            // zo lang weg geweest telt als "terugk
 const SLEUTEL = 'cluppieVersieHerladen';
 
 function eigenVersie(){
-  const s = document.querySelector('script[src*="main.js?v="]');
-  return (s?.getAttribute('src') || '').match(/main\.js\?v=([0-9a-z]+)/)?.[1] || '';
+  /* [20261127w] index.html laadt nu start.js (die laadt main.js). Elke nieuwe versie van main.js geeft ook
+     start.js een nieuwe ?v=, dus de versie van start.js is de versie van de app. */
+  const s = document.querySelector('script[src*="start.js?v="]');
+  return (s?.getAttribute('src') || '').match(/start\.js\?v=([0-9a-z]+)/)?.[1] || '';
 }
 
 async function serverVersie(){
   try {
     const r = await fetch('index.html', { cache: 'no-store' });
     if (!r.ok) return '';
-    return (await r.text()).match(/js\/main\.js\?v=([0-9a-z]+)/)?.[1] || '';
+    return (await r.text()).match(/js\/start\.js\?v=([0-9a-z]+)/)?.[1] || '';
   } catch { return ''; }       // offline of trage lijn: niets doen
 }
 
