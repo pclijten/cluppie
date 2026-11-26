@@ -7,7 +7,7 @@
    Zelfde opzet als activiteit-boot.js: anoniem inloggen en alleen het ene document
    toernooiLive/{id} lezen (firestore.rules). Geen spelersnamen, niets om in te vullen.
    De pagina werkt zichzelf bij (onSnapshot); het comité vult de uitslagen in via Activiteiten. */
-import { auth, db, signOut, onAuthStateChanged, doc, onSnapshot } from './firebase.js?v=20261011g';
+import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, onSnapshot } from './firebase.js?v=20261011g';
 import * as T from './toernooi-logica.js?v=20261127v';
 import { tvStijl, tvKleur, tvZet, bordHtml, logoHtml, tikHtml, diaHtml, sponsHtml, voetHtml } from './tv-stijl.js?v=20261126n';
 
@@ -22,7 +22,9 @@ async function sessie(forceer){
   }
   /* [20261127w] Niet meer anoniem inloggen: een open live pagina of tv is zonder inloggen te lezen. Firebase staat
      ~100 nieuwe anonieme accounts per uur per IP-adres toe, en op een toernooi zit iedereen op dezelfde clubwifi.
-     Wie al in de app is ingelogd (comité, tv-beheer), houdt die sessie en ziet ook een dichte pagina. */
+     Wie al in de app is ingelogd (comité, tv-beheer), houdt die sessie en ziet ook een dichte pagina.
+     Alleen als lezen geweigerd wordt (forceer: oude rules, of een dichte pagina) toch anoniem inloggen. */
+  if (forceer && !auth.currentUser) await signInAnonymously(auth);
 }
 const nuMin = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };

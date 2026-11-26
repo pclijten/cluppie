@@ -13,10 +13,10 @@ const PAGINAS = [
   ['deel', () => import('./deel-boot.js?v=20261127v').then(m => m.bootDeelPagina(zoek.get('deel')))],
   ['hulp', () => import('./hulp-boot.js?v=20261118b').then(m => m.bootHulpPagina(zoek.get('hulp')))],
   ['act', () => import('./activiteit-boot.js?v=20261127n').then(m => m.bootActiviteitPagina(zoek.get('act')))],
-  ['live', () => import('./live-boot.js?v=20261127w').then(m => m.bootLivePagina(zoek.get('live'), { tv: zoek.get('tv') === '1' }))],
+  ['live', () => import('./live-boot.js?v=20261127x').then(m => m.bootLivePagina(zoek.get('live'), { tv: zoek.get('tv') === '1' }))],
   ['inschrijf', () => import('./inschrijf-boot.js?v=20261127v').then(m => m.bootInschrijfPagina(zoek.get('inschrijf')))],
-  ['scherm', () => import('./scherm-boot.js?v=20261127w').then(m => m.bootSchermPagina(zoek.get('scherm')))],
-  ['kantine', () => import('./scherm-boot.js?v=20261127w').then(m => m.bootSchermNaam(zoek.get('kantine')))],
+  ['scherm', () => import('./scherm-boot.js?v=20261127x').then(m => m.bootSchermPagina(zoek.get('scherm')))],
+  ['kantine', () => import('./scherm-boot.js?v=20261127x').then(m => m.bootSchermNaam(zoek.get('kantine')))],
   ['taken', () => import('./taken-boot.js?v=20261127v').then(m => m.bootTakenPagina(zoek.get('taken')))],
 ];
 const pagina = PAGINAS.find(([p]) => zoek.get(p));
@@ -28,5 +28,5 @@ if (pagina){
     if (el){ el.style.display = 'block'; el.innerHTML = '<div style="padding:40px 20px;text-align:center;font-family:system-ui"><h1>Laden is niet gelukt</h1><p>Controleer je verbinding en ververs de pagina.</p></div>'; }
   });
 } else {
-  import('./main.js?v=20261127w');
+  import('./main.js?v=20261127x');
 }
