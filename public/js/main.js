@@ -29,6 +29,8 @@ const _liveId = _zoek.get('live');
 const _insId = _zoek.get('inschrijf');
 /* [20261125w] Kantine-tv (?scherm=<id>): programma van vandaag, sponsoren en eigen schermen van de club. Zie js/scherm-boot.js. */
 const _schermId = _zoek.get('scherm');
+/* [20261127b] Korte link naar de kantine-tv (/tv/<naam>, via 404.html naar ?kantine=<naam>). Zie js/scherm-boot.js. */
+const _kantine = _zoek.get('kantine');
 /* [20261125w] Vrijwilligersbank (?taken=<id>): openstaande taken van de club, aanmelden zonder account. Zie js/taken-boot.js. */
 const _takenId = _zoek.get('taken');
 if (_deelId){
@@ -48,7 +50,10 @@ if (_deelId){
   import('./inschrijf-boot.js?v=20261125w').then(m => m.bootInschrijfPagina(_insId));
 } else if (_schermId){
   document.getElementById('opstart')?.remove();
-  import('./scherm-boot.js?v=20261126v').then(m => m.bootSchermPagina(_schermId));
+  import('./scherm-boot.js?v=20261127c').then(m => m.bootSchermPagina(_schermId));
+} else if (_kantine){
+  document.getElementById('opstart')?.remove();
+  import('./scherm-boot.js?v=20261127c').then(m => m.bootSchermNaam(_kantine));
 } else if (_takenId){
   document.getElementById('opstart')?.remove();
   import('./taken-boot.js?v=20261125w').then(m => m.bootTakenPagina(_takenId));
