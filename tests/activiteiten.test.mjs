@@ -123,4 +123,16 @@ const sc = A.schoonConcept({ naam: 'Disco', taken: [{ t: 'DJ boeken', d: 400 }, 
 gelijk(sc.taken, [{ t: 'DJ boeken', d: 365, rol: '', tip: '' }]); gelijk(sc.programma[0].tijd, ''); gelijk(sc.diensten[0].nodig, 50); gelijk(sc.berichten[0].kanaal, 'whatsapp');
 gelijk(A.sjabloonFouten(sc), []);
 
+/* [20261126y] wat wordt er van de vrijwilliger verwacht */
+gelijk(A.voorzetWat('Kantine').bron, 'standaard'); ok(A.voorzetWat('Scheidsrechter').tekst.includes('fluit'));
+gelijk(A.voorzetWat('Iets heel anders'), { tekst: '', bron: '' });
+const bank = { v1: { titel: 'Kantinedienst', wat: 'Bardienst draaien.', stappen: ['Kassa openen', 'Koffie zetten'], contact: 'Els' }, v2: { titel: 'Leeg' } };
+const vb = A.voorzetWat('kantine', bank); gelijk(vb.bron, 'bank'); gelijk(vb.tekst, 'Bardienst draaien.\n- Kassa openen\n- Koffie zetten\nVragen? Els.');
+gelijk(A.bankTaakVoor('Leeg', bank), null);
+gelijk(A.dienstWat('x'.repeat(900)).length, A.WAT_MAX);
+const dm = Object.values(A.dienstenNaarMap([{ naam: 'Opbouw', nodig: 2, wat: 'Doelen neerzetten' }, { naam: 'Bar', nodig: 1 }]));
+gelijk(dm[0].wat, 'Doelen neerzetten'); ok(!('wat' in dm[1]));
+gelijk(A.alsSjabloon({ naam: 'X' }, { diensten: { d1: { naam: 'Opbouw', start: '08:00', eind: '09:00', plek: '', nodig: 2, wat: 'Tenten' } } }).diensten[0].wat, 'Tenten');
+ok(A.csvDiensten({ d1: { naam: 'Opbouw', nodig: 1, wat: 'Tenten opzetten' } }, []).includes('Tenten opzetten'));
+
 console.log(`activiteiten: ${n} controles geslaagd`);

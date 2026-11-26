@@ -24,14 +24,14 @@
    Rekenwerk, export en import: activiteiten-logica.js (getest). Sjablonen: activiteit-sjablonen.js. */
 import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, deleteField, query, where, onSnapshot,
   serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261126x';
+import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261126y';
 import { ico } from './icons.js?v=20261126w';
 import { SJABLONEN, sjabloonVan } from './activiteit-sjablonen.js?v=20261125w';
-import * as L from './activiteiten-logica.js?v=20261125w';
-import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261126x';
-import * as TN from './activiteit-toernooi.js?v=20261126x';
-import * as CS from './clubschermen.js?v=20261126x';
-import * as VB from './vrijwilligers.js?v=20261126x';
+import * as L from './activiteiten-logica.js?v=20261126y';
+import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261126y';
+import * as TN from './activiteit-toernooi.js?v=20261126y';
+import * as CS from './clubschermen.js?v=20261126y';
+import * as VB from './vrijwilligers.js?v=20261126y';
 
 let A = null;
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -392,8 +392,23 @@ function htmlMensen(){
 }
 
 /* Vrijwilligers */
+/* [20261126y] Wat wordt er van de vrijwilliger verwacht? Staat ook op de inschrijfpagina. */
+function laadBankTaken(){
+  if (A.bankTaken !== undefined) return;
+  A.bankTaken = null;
+  getDocs(query(collection(db, 'vrijwilligersBank'), where('club', '==', A.clubId)))
+    .then(s => { if (!A) return; A.bankTaken = s.docs[0]?.data()?.taken || {}; if (A.tab === 'vrijwilligers' && !A.venster) hertekenZacht(); })
+    .catch(() => { if (A) A.bankTaken = {}; });
+}
+function dienstWatVeld(d){
+  const vz = d.wat ? null : L.voorzetWat(d.naam, A.bankTaken);
+  return `<div class="ac-dienst-wat"><textarea class="ac-in" data-veld="d:${esc(d.id)}.wat" rows="${d.wat ? Math.min(6, Math.max(2, Math.ceil(d.wat.length / 90) + (d.wat.match(/\n/g) || []).length)) : 2}" maxlength="${L.WAT_MAX}"
+      placeholder="Wat wordt er van de vrijwilliger verwacht? Bijvoorbeeld wat je doet, wat je meeneemt en bij wie je je meldt." aria-label="Wat wordt er verwacht bij ${esc(d.naam)}">${esc(d.wat || '')}</textarea>
+    ${vz?.tekst ? `<button class="knop klein licht" data-ac="dienst-voorzet" data-id="${esc(d.id)}" title="${esc(vz.tekst)}">${vz.bron === 'bank' ? 'Neem over uit vrijwilligersbank' : 'Voorzet invullen'}</button>` : ''}</div>`;
+}
 function htmlVrijwilligers(){
   const a = A.act;
+  laadBankTaken();
   if (!a.deelId || !A.deel) return `<div class="ac-paneel ac-midden"><h3>Vrijwilligersdiensten</h3><p>Zet diensten klaar (kantine, scheidsrechter, opbouw…). Vrijwilligers schrijven zich in via een link, zonder account. Ze zien alleen de diensten en voornamen.</p>
     ${(a.dienstenSjabloon || []).length ? `<p class="ac-zacht">Het draaiboek stelt ${a.dienstenSjabloon.length} diensten voor.</p>` : ''}<button class="knop vol" data-ac="deel-aan">Diensten klaarzetten</button></div>`;
   const ds = L.telDiensten(A.deel.diensten, A.aanm), link = deelLink(a.deelId), op = a.datum === vandaag();
@@ -405,6 +420,7 @@ function htmlVrijwilligers(){
       <div class="ac-dienst-kop">${veld(`d:${d.id}.naam`, d.naam, { klasse: 'vet' })}${veld(`d:${d.id}.start`, d.start, { type: 'time' })}<span>–</span>${veld(`d:${d.id}.eind`, d.eind, { type: 'time' })}
         ${veld(`d:${d.id}.plek`, d.plek, { ph: 'Plek', klasse: 'smal' })}<label class="ac-nodig">nodig ${veld(`d:${d.id}.nodig`, d.nodig, { type: 'number', extra: 'data-num min="0" max="50" inputmode="numeric"', klasse: 'getal' })}</label>
         <button class="ac-x" data-ac="dienst-weg" data-id="${esc(d.id)}" aria-label="Dienst weg">✕</button></div>
+      ${dienstWatVeld(d)}
       <div class="ac-namen">${wie.map(x => `<span class="ac-chip ${x.aanwezig ? 'aan' : ''}">${op ? `<input type="checkbox" data-aanwezig="${esc(x.id)}" ${x.aanwezig ? 'checked' : ''} aria-label="Aanwezig">` : ''}${esc(x.naam)} <button class="ac-x" data-ac="aanm-weg" data-id="${esc(x.id)}" aria-label="Weghalen">✕</button></span>`).join('')}
         ${Array.from({ length: d.tekort }, () => '<span class="ac-chip leeg">open</span>').join('')}
         <span class="ac-toevoeg klein"><input class="ac-in smal" data-kies="aanm-${esc(d.id)}" placeholder="Naam" maxlength="24"><button class="knop klein licht" data-ac="aanm-nieuw" data-id="${esc(d.id)}">+</button></span></div></div>`; }).join('')}
@@ -533,7 +549,7 @@ async function maakNieuw(){
   else data = L.vanSjabloon(b.sj, { naam, datum, door: uid() });
   const dienstenOud = b.soort === 'kopie' ? b.diensten : null;
   delete data.id;
-  if (b.soort === 'kopie' && dienstenOud) data.dienstenSjabloon = L.gesorteerd(dienstenOud).map(({ naam: n, start, eind, plek, nodig }) => ({ naam: n, start, eind, plek, nodig }));
+  if (b.soort === 'kopie' && dienstenOud) data.dienstenSjabloon = L.gesorteerd(dienstenOud).map(({ naam: n, start, eind, plek, nodig, wat }) => ({ naam: n, start, eind, plek, nodig, ...(wat ? { wat } : {}) }));
   try {
     const ref = await addDoc(collection(db, 'clubs', A.clubId, 'activiteiten'), data);
     A.venster = null; A.tab = 'overzicht';
@@ -590,7 +606,7 @@ function printen(body){
   d.open(); d.write(`<!doctype html><html lang="nl"><head><meta charset="utf-8"><title>${esc(A.act?.naam || 'Activiteit')}</title><style>
     body{font:12px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;color:#111;margin:18mm 14mm}h1{font-size:22px;margin:0 0 2px}h2{font-size:15px;margin:18px 0 6px;border-bottom:2px solid #111;padding-bottom:2px}
     .sub{color:#555;margin-bottom:10px}table{width:100%;border-collapse:collapse;margin:4px 0 8px}th,td{text-align:left;padding:4px 6px;border-bottom:1px solid #ccc;vertical-align:top}th{font-size:11px;color:#555}
-    .k{width:16px}.vak{display:inline-block;width:11px;height:11px;border:1.5px solid #111;border-radius:2px}.tip{color:#555;font-style:italic}.lijn{border-bottom:1px solid #999;height:22px}
+    .k{width:16px}.vak{display:inline-block;width:11px;height:11px;border:1.5px solid #111;border-radius:2px}.tip{color:#555;font-style:italic}.lijn{border-bottom:1px solid #999;height:22px}.wat{white-space:pre-line;margin:0 0 4px;color:#333}td small{white-space:pre-line}
     .voet{margin-top:24px;color:#777;font-size:10px}@page{margin:12mm}</style></head><body>${body}<p class="voet">Gemaakt met Cluppie · ${esc(new Date().toLocaleString('nl-NL'))}</p></body></html>`);
   d.close();
   setTimeout(() => { try { f.contentWindow.focus(); f.contentWindow.print(); } catch { meld('Printen lukt niet in deze browser.'); } setTimeout(() => f.remove(), 60000); }, 250);
@@ -607,7 +623,7 @@ function htmlPrintDraaiboek(){
       <td>${esc(L.datumKort(L.taakDatum(x, a.datum)))}</td><td>${esc(x.titel)}${x.notitie ? `<br><small>${esc(x.notitie)}</small>` : ''}${x.tip ? `<br><small class="tip">Tip: ${esc(x.tip)}</small>` : ''}</td><td>${esc(lid(x.eigenaar) || x.rol || '')}</td><td>${esc(fase[x.fase] || '')}</td></tr>`).join('')}</table>
     ${prog.length ? `<h2>Dagprogramma${a.planB?.actief ? ' (plan B)' : ''}</h2><table><tr><th>Tijd</th><th>Wat</th><th>Waar</th><th>Wie</th></tr>${prog.map(p => `<tr><td>${esc(p.tijdNu)}–${esc(p.eindNu)}</td><td>${esc(p.wat)}</td><td>${esc(p.waar || '')}</td><td>${esc(p.wie || '')}</td></tr>`).join('')}</table>` : ''}
     ${a.planB?.tekst ? `<h2>Plan B</h2><p>${esc(a.planB.tekst)}</p>` : ''}
-    ${ds ? `<h2>Vrijwilligers</h2><table><tr><th>Dienst</th><th>Tijd</th><th>Plek</th><th>Wie</th></tr>${ds.lijst.map(d => `<tr><td>${esc(d.naam)}</td><td>${esc(d.start)}–${esc(d.eind)}</td><td>${esc(d.plek || '')}</td><td>${esc(A.aanm.filter(x => x.dienst === d.id).map(x => x.naam).join(', '))}${d.tekort ? ` <b>(nog ${d.tekort})</b>` : ''}</td></tr>`).join('')}</table>` : ''}
+    ${ds ? `<h2>Vrijwilligers</h2><table><tr><th>Dienst</th><th>Tijd</th><th>Plek</th><th>Wie</th></tr>${ds.lijst.map(d => `<tr><td>${esc(d.naam)}${d.wat ? `<br><small>${esc(d.wat)}</small>` : ''}</td><td>${esc(d.start)}–${esc(d.eind)}</td><td>${esc(d.plek || '')}</td><td>${esc(A.aanm.filter(x => x.dienst === d.id).map(x => x.naam).join(', '))}${d.tekort ? ` <b>(nog ${d.tekort})</b>` : ''}</td></tr>`).join('')}</table>` : ''}
     ${Object.keys(a.materiaal || {}).length ? `<h2>Spullen</h2><table>${L.gesorteerd(a.materiaal).map(m => `<tr><td class="k"><span class="vak">${m.klaar ? '✓' : ''}</span></td><td>${esc(m.naam)}</td><td>${esc(m.aantal ?? '')}</td><td>${esc(lid(m.wie))}</td></tr>`).join('')}</table>` : ''}
     ${Object.keys(a.checks || {}).length ? `<h2>Veiligheid</h2><table>${L.gesorteerd(a.checks).map(c => `<tr><td class="k"><span class="vak">${c.klaar ? '✓' : ''}</span></td><td>${esc(c.titel)}</td></tr>`).join('')}</table>` : ''}
     ${t.uitBegroot || t.inBegroot ? `<h2>Budget</h2><table><tr><th>Post</th><th>Begroot</th><th>Werkelijk</th></tr>${L.gesorteerd(a.budget).map(p => `<tr><td>${p.soort === 'in' ? '+ ' : '− '}${esc(p.naam)}</td><td>${L.euro(p.begroot)}</td><td>${p.werkelijk != null ? L.euro(p.werkelijk) : ''}</td></tr>`).join('')}
@@ -617,7 +633,7 @@ function htmlPrintDraaiboek(){
 function htmlPrintRooster(){
   const a = A.act, ds = L.telDiensten(A.deel?.diensten, A.aanm);
   return `<h1>Vrijwilligers · ${esc(a.naam)}</h1><div class="sub">${esc([L.datumLang(a.datum), a.locatie].filter(Boolean).join(' · '))}</div>
-    ${ds.lijst.map(d => { const wie = A.aanm.filter(x => x.dienst === d.id); return `<h2>${esc(d.naam)} · ${esc(d.start)}–${esc(d.eind)}${d.plek ? ' · ' + esc(d.plek) : ''}</h2><table>
+    ${ds.lijst.map(d => { const wie = A.aanm.filter(x => x.dienst === d.id); return `<h2>${esc(d.naam)} · ${esc(d.start)}–${esc(d.eind)}${d.plek ? ' · ' + esc(d.plek) : ''}</h2>${d.wat ? `<p class="wat">${esc(d.wat)}</p>` : ''}<table>
       ${wie.map(x => `<tr><td class="k"><span class="vak"></span></td><td>${esc(x.naam)}</td></tr>`).join('')}${Array.from({ length: d.tekort }, () => '<tr><td class="k"><span class="vak"></span></td><td class="lijn"></td></tr>').join('')}</table>`; }).join('')}`;
 }
 
@@ -703,6 +719,11 @@ async function klik(e){
     }
     case 'deel-aan': return zetDeelAan();
     case 'dienst-nieuw': return zetDeel({ [`diensten.${L.nieuwId('d')}`]: { naam: 'Nieuwe dienst', start: a.start || '', eind: a.eind || '', plek: '', nodig: 2, volg: volgende(A.deel?.diensten) } });
+    case 'dienst-voorzet': {
+      const d = A.deel?.diensten?.[id], vz = d ? L.voorzetWat(d.naam, A.bankTaken) : null;
+      if (!vz?.tekst) return;
+      return zetDeel({ [`diensten.${id}.wat`]: vz.tekst });
+    }
     case 'dienst-weg': {
       if (A.aanm.some(x => x.dienst === id) && !confirm('Er staan mensen ingeschreven. Dienst toch weghalen?')) return;
       return zetDeel({ [`diensten.${id}`]: deleteField() });
@@ -718,7 +739,7 @@ async function klik(e){
     case 'kopieer': return kopieKlembord(b.dataset.tekst);
     case 'teams-alle': return zet({ teams: (S.clubTeams || []).filter(x => x && x.id && !x.gearchiveerd).map(x => x.id).slice(0, L.MAX.teams) });
     case 'teams-geen': return zet({ teams: [] });
-    case 'veldplanner': return import('./veldplanner.js?v=20261126x').then(m => m.openVeldplanner(A.clubId));
+    case 'veldplanner': return import('./veldplanner.js?v=20261126y').then(m => m.openVeldplanner(A.clubId));
     case 'aflasten': return vensterAflasten();
     case 'aflasten-ja': return aflasten();
     case 'bericht-plaats': return plaatsBericht(id);
@@ -753,7 +774,7 @@ async function wijzig(e){
   if (t.hasAttribute('data-num')) w = String(w).trim() === '' ? null : Number(String(w).replace(',', '.'));
   if (typeof w === 'number' && !Number.isFinite(w)) return meld('Dat is geen getal');
   if (typeof w === 'string') w = w.slice(0, t.tagName === 'TEXTAREA' ? 2000 : 300);
-  if (pad.startsWith('d:')) return zetDeel({ [`diensten.${pad.slice(2)}`]: w });
+  if (pad.startsWith('d:')) return zetDeel({ [`diensten.${pad.slice(2)}`]: pad.endsWith('.wat') ? L.dienstWat(w) : w });
   if (/^taken\.[^.]+\.datum$/.test(pad) && w && !L.isIso(w)) return;
   if (pad === 'datum' && w && !L.isIso(w)) return;
   const patch = { [pad]: w };
@@ -999,6 +1020,10 @@ textarea.ac-in{resize:vertical}
 .ac-dienst-kop .ac-in[type=time]{width:110px}
 .ac-dienst-kop .ac-in.vet{flex:1;min-width:140px}
 .ac-nodig{display:flex;align-items:center;gap:4px;font-size:var(--t-xs);color:var(--ink-2)}
+.ac-dienst-wat{display:flex;gap:6px;align-items:flex-start;margin:6px 0 8px}
+.ac-dienst-wat textarea{flex:1;min-height:0;font-size:14px}
+.ac-dienst-wat .knop{flex:none;white-space:nowrap}
+@media (max-width:640px){.ac-dienst-wat{flex-direction:column;align-items:stretch}}
 .ac-namen{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .ac-schak{display:flex;gap:10px;align-items:flex-start;padding:6px 0;cursor:pointer}
 .ac-schak input{margin-top:4px;width:20px;height:20px;flex-shrink:0}

@@ -3,8 +3,8 @@ import {
   signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail,
   collection, doc, addDoc, setDoc, getDoc, serverTimestamp, increment, functions, httpsCallable
 } from './firebase.js?v=20261011g';
-import { S, $, meld } from './state.js?v=20261126x';
-import { startTracker } from './tracker.js?v=20261126x';
+import { S, $, meld } from './state.js?v=20261126y';
+import { startTracker } from './tracker.js?v=20261126y';
 import { stuurVerificatieMail } from './verificatie.js?v=20261020e';
 
 /* ====================================================================
@@ -213,7 +213,7 @@ export async function joinMetCode(code, naam = null){
   }
   if (res.status === 'aanvraag'){
     S._aanvraagVerstuurd = { club: res.clubNaam, team: res.naam };
-    import('./toegang.js?v=20261126x').then(m => m.toonAanvraagVerstuurd(res));
+    import('./toegang.js?v=20261126y').then(m => m.toonAanvraagVerstuurd(res));
     return null;
   }
   if (!res.teamId){ if (res.clubNaam) meld('Gekoppeld aan ' + res.clubNaam); return null; }

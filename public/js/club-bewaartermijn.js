@@ -23,11 +23,11 @@
    Rekenregels: bewaartermijn-logica.js (getest). Schrijven: alles onder teams/{id}/… mag de clubbeheerder
    volgens de bestaande rules (magSchrijven); de keuze en "laatst opgeruimd" staan in
    clubs/{id}.instellingen.privacy.bewaar. */
-import { S, esc, meld, openModal } from './state.js?v=20261126x';
+import { S, esc, meld, openModal } from './state.js?v=20261126y';
 import { db, collection, doc, getDocs, writeBatch, functions, httpsCallable } from './firebase.js?v=20261011g';
 import { ico } from './icons.js?v=20261126w';
-import { SEIZOEN_FALLBACK } from './config.js?v=20261126x';
-import { bewaar } from './club-instellingen.js?v=20261126x';
+import { SEIZOEN_FALLBACK } from './config.js?v=20261126y';
+import { bewaar } from './club-instellingen.js?v=20261126y';
 import { STANDAARD, KEUZES_SPELERS, KEUZES_SEIZOENEN, SEIZOEN_COLLECTIES, schoonBewaar, sorteerSpelers, seizoenVerlopen, seizoenStart, oudsteBewaard,
   presentieZonder, datumNL, seizoenLabel, tellingTekst, laatstTekst } from './bewaartermijn-logica.js?v=20261122a';
 
