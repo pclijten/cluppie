@@ -9,7 +9,7 @@
    Opslag: clubs/{club}/sponsoren/{id} (met bedrag en notitie) en de openbare kopie in
    clubTv/{tvId} + clubTv/{tvId}/schermen/{id}. Krijgt alles van activiteiten.js via ctx. */
 import { db, doc, collection, query, where, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, deleteField, onSnapshot } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261127b';
+import { S, esc, meld } from './state.js?v=20261127c';
 import { ico } from './icons.js?v=20261127b';
 import { liveId, MAX_SCHERMEN } from './toernooi-logica.js?v=20261125w';
 import { kleinPlaatje } from './plaatje.js?v=20261125w';
@@ -20,6 +20,12 @@ const cs = { tvbZoek: '', keuze: {}, vast: 'auto', proef: null, clubId: '', tv: 
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const opt = (w, t, sel) => `<option value="${esc(w)}"${sel ? ' selected' : ''}>${esc(t)}</option>`;
 export const schermLink = id => `${location.origin}${location.pathname.replace(/[^/]*$/, '')}?scherm=${encodeURIComponent(id)}`;
+/* [20261127b] Korte link: de club kiest een naam (www.cluppie.io/tv/mifano). tvNamen/{naam} wijst naar de tv; 404.html stuurt
+   /tv/<naam> door naar ?kantine=<naam>. De lange link blijft werken. */
+const korteLink = naam => `${location.origin}/tv/${naam}`;
+const tvLink = tv => tv?.korteNaam ? korteLink(tv.korteNaam) : schermLink(tv.id);
+const schoneNaam = w => String(w || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30);
+const naamVoorstel = () => schoneNaam(S.club?.naam || '');
 const datumKort = d => { const x = new Date(d + 'T12:00'); return isNaN(x) ? d : x.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' }); };
 const clubInfo = () => ({ clubNaam: S.club?.naam || '', logo: S.club?.instellingen?.identiteit?.logo || '', kleur: S.club?.instellingen?.identiteit?.kleur || '' });
 
@@ -116,7 +122,7 @@ export function htmlSchermen(ctx){
   laad(ctx);
   const v = vandaag(), items = C.sorteer((cs.items || []).map(x => ({ id: x.id, ...C.schoonItem(x) }))), tv = cs.tv, aan = !!tv?.open;
   const sponsors = items.filter(x => x.soort === 'sponsor'), eigen = items.filter(x => x.soort === 'scherm'), tot = C.sponsorTotaal(items, v), vol = items.length >= C.MAX_ITEMS;
-  const link = tv?.id ? schermLink(tv.id) : '';
+  const link = tv?.id ? tvLink(tv) : '';
   const sj = SJABLONEN.find(x => x.id === sjabloonNu()) || SJABLONEN[0];
   const evs = ctx.evenementen?.() || [], ev = C.evenementId(tv?.evenement ?? cs.keuze.evenement);
   const vandaagProg = aan && tv.datum === v ? (tv.programma || []) : [];
@@ -136,12 +142,14 @@ export function htmlSchermen(ctx){
     <p class="ac-zacht cs-uitleg-rand">${esc(RAND_UITLEG)}</p>`;
 
   /* links: instellingen */
-  if (aan && cs.qrVoor !== tv.id){ cs.qrVoor = tv.id; cs.qr = ''; qrSvg(link).then(svg => { cs.qr = svg; ctx.herteken(); }).catch(() => {}); }
+  if (aan && cs.qrVoor !== link){ cs.qrVoor = link; cs.qr = ''; qrSvg(link).then(svg => { cs.qr = svg; ctx.herteken(); }).catch(() => {}); }
   const tvPaneel = `<div class="ac-paneel"><h3>Kantine-tv ${aan ? '<span class="tn-st toegelaten">Aan</span>' : tv ? '<span class="tn-st">Uit</span>' : ''}</h3>
       ${cs.tv === undefined ? '<p class="ac-zacht">Laden…</p>' : aan ? `<div class="tn-live"><div class="tn-qr">${cs.qr || '<span class="ac-zacht">QR-code maken…</span>'}</div>
           <div class="tn-live-t"><input class="ac-in" readonly value="${esc(link)}" aria-label="Link naar de kantine-tv" onfocus="this.select()">
             <div class="ac-acties"><a class="knop vol klein" href="${esc(link)}" target="_blank" rel="noopener">Tv-pagina openen</a><button class="knop licht klein" data-cs="kopieer">Link kopiëren</button>${ctx.isAdmin ? `<button class="knop licht klein" data-cs="programma" ${cs.bezig ? 'disabled' : ''}>Programma nu bijwerken</button>` : ''}<span class="ac-groei"></span><button class="knop licht klein" data-cs="tv-uit">Tv uitzetten</button></div>
-            <p class="ac-zacht">Open de link in de browser van de tv, of scan de code met een telefoon die je op de tv aansluit.</p></div></div>`
+            <p class="ac-zacht">Open de link in de browser van de tv, of scan de code met een telefoon die je op de tv aansluit.</p>
+            <label class="cs-kort"><span>Korte link</span><span class="cs-kort-v"><span class="ac-zacht">${esc(location.host)}/tv/</span><input class="ac-in" data-cs-kort value="${esc(tv.korteNaam || '')}" placeholder="${esc(naamVoorstel() || 'clubnaam')}" maxlength="30" autocomplete="off" spellcheck="false" aria-label="Korte naam voor de link"></span></label>
+            <p class="ac-zacht">Makkelijk over te typen op de tv: kleine letters, cijfers en streepjes. ${tv.korteNaam ? 'De lange link blijft ook werken.' : 'Typ een naam en klik ernaast.'}</p></div></div>`
         : `<p class="ac-zacht">Zet de tv aan als je tevreden bent over het ontwerp. Je krijgt dan een link en een QR-code voor de tv in de kantine.</p><div class="ac-acties"><button class="knop vol" data-cs="tv-aan">Kantine-tv aanzetten</button></div>${tv?.id ? '<p class="ac-zacht">Aanzetten geeft dezelfde link als eerst.</p>' : ''}`}</div>`;
   const kaart = x => `<button class="cs-sj ${x.id === sj.id ? 'aan' : ''}" data-cs="sjabloon" data-id="${esc(x.id)}" aria-pressed="${x.id === sj.id}"><b>${esc(x.naam)}</b><small>${esc(x.kort)}</small></button>`;
   const sjPaneel = `<div class="ac-paneel"><h3>1. Kies een sjabloon</h3>
@@ -234,7 +242,7 @@ export async function klikSchermen(ctx, b){
       cs.vast = id === cs.vast && id.startsWith('dia:') ? 'auto' : id; naarBeeld({ vast: vastBericht() }); return ctx.herteken();
     }
     case 'bron': cs.proef = id === 'proef'; return ctx.herteken();
-    case 'kopieer': return ctx.kopieer(schermLink(cs.tv.id), 'Link gekopieerd');
+    case 'kopieer': return ctx.kopieer(tvLink(cs.tv), 'Link gekopieerd');
     case 'tv-aan': {
       const tid = cs.tv?.id || liveId();
       try {
@@ -278,6 +286,7 @@ export async function wijzigSchermen(ctx, el){
     await bewaarItem(ctx, id, { [k]: w }); return true;
   }
   /* Nog geen tv aangemaakt: sjabloon en doelpunten onthouden tot de tv aangaat. */
+  if (el.matches('[data-cs-kort]') && cs.tv?.id){ await zetKorteNaam(ctx, el.value); return true; }
   if (el.matches('[data-cs-tv="sjabloon"],[data-cs-tv="goals"],[data-cs-tv="evenement"]') && !cs.tv?.id){
     const k = el.dataset.csTv; cs.keuze[k] = k === 'sjabloon' ? sjabloonId(el.value) : k === 'evenement' ? C.evenementId(el.value) : C.goalKeuze(el.value); ctx.herteken(); return true;
   }
@@ -290,6 +299,22 @@ export async function wijzigSchermen(ctx, el){
     return true;
   }
   return false;
+}
+async function zetKorteNaam(ctx, waarde){
+  const naam = schoneNaam(waarde), oud = cs.tv.korteNaam || '';
+  if (naam === oud) return ctx.herteken();
+  if (naam && naam.length < 3) return meld('Kies een naam van minstens 3 tekens.');
+  try {
+    if (naam){
+      const bestaand = await getDoc(doc(db, 'tvNamen', naam));
+      if (bestaand.exists() && bestaand.data().tv !== cs.tv.id) return meld(`De naam "${naam}" is al in gebruik. Kies een andere.`);
+      if (!bestaand.exists()) await setDoc(doc(db, 'tvNamen', naam), { tv: cs.tv.id, club: ctx.clubId, ms: Date.now() });
+    }
+    await updateDoc(doc(db, 'clubTv', cs.tv.id), { korteNaam: naam, bijgewerktMs: Date.now() });
+    if (oud) await deleteDoc(doc(db, 'tvNamen', oud)).catch(() => {});
+    cs.tv.korteNaam = naam; meld(naam ? `Korte link: ${korteLink(naam).replace(/^https?:\/\//, '')}` : 'Korte link weggehaald');
+  } catch (e){ console.error('[schermen] korte naam', e); meld(e?.code === 'permission-denied' ? 'Opslaan mag nog niet: de regels zijn nog niet gepubliceerd.' : 'Opslaan mislukt.'); }
+  ctx.herteken();
 }
 const clubInfoKopie = () => { const k = C.tvKopie(clubInfo()); return { clubNaam: k.clubNaam, logo: k.logo, kleur: k.kleur }; };
 
@@ -316,6 +341,8 @@ export const SCHERM_CSS = `
 .cs-sj{display:flex;flex-direction:column;gap:3px;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid var(--line-d);background:var(--surface-2);color:var(--ink);font:inherit;cursor:pointer;min-height:64px}
 .cs-sj b{font-size:var(--t-sm)}.cs-sj small{font-size:12px;color:var(--ink-2,var(--ink));opacity:.75;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .cs-sj.aan{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent);background:var(--card)}
+.cs-kort{display:flex;flex-direction:column;gap:4px;font-size:var(--t-sm);font-weight:600;margin-top:4px}
+.cs-kort-v{display:flex;align-items:center;gap:2px;font-weight:400;min-width:0}.cs-kort-v .ac-in{flex:1 1 auto;min-width:0}
 .cs-prog{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;max-height:240px;overflow:auto}
 .cs-prog li{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:8px;font-size:var(--t-sm);padding:4px 0;border-bottom:1px solid var(--hair)}
 .cs-prog em{font-style:normal;font-weight:700}
