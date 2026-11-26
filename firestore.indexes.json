@@ -97,6 +97,24 @@
           "arrayConfig": "CONTAINS"
         }
       ]
+    },
+    {
+      "collectionGroup": "berichten",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "club",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "teams",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "gemaakt",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [

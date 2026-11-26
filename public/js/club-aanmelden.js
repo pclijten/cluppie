@@ -4,11 +4,11 @@
    Server: functions/aanmelding.js (meldClubAan). Link om te delen: https://www.cluppie.io/?aanmelden */
 
 import { db, doc, getDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261127y';
-import { DISTRICTEN } from './clubconfig.js?v=20261127y';
-import { koppelClubSuggesties } from './clubgids.js?v=20261127y';
+import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261127z';
+import { DISTRICTEN } from './clubconfig.js?v=20261127z';
+import { koppelClubSuggesties } from './clubgids.js?v=20261127z';
 import { openSporten, meerdereSporten, sportProfiel } from './sporten.js?v=20261126g';   /* [20261126f] sport bij aanmelden */
-import { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } from './sportlink-clubinfo.js?v=20261127y';
+import { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } from './sportlink-clubinfo.js?v=20261127z';
 
 export async function laadMijnAanmelding(el){
   if (!el || !S.user) return;
