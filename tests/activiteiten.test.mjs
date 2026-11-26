@@ -135,4 +135,27 @@ gelijk(dm[0].wat, 'Doelen neerzetten'); ok(!('wat' in dm[1]));
 gelijk(A.alsSjabloon({ naam: 'X' }, { diensten: { d1: { naam: 'Opbouw', start: '08:00', eind: '09:00', plek: '', nodig: 2, wat: 'Tenten' } } }).diensten[0].wat, 'Tenten');
 ok(A.csvDiensten({ d1: { naam: 'Opbouw', nodig: 1, wat: 'Tenten opzetten' } }, []).includes('Tenten opzetten'));
 
+/* [20261127m] activiteit uit een bestand van een andere club: opschonen, geen toegang of koppelingen meenemen */
+{
+  const bestand = JSON.stringify({ soort: 'cluppie-activiteit', versie: 1, diensten: { d1: { naam: 'Kantine', start: '08:00', eind: '12:00', nodig: 3, wat: 'Bar', volg: 0 } }, aanmeldingen: [{ dienst: 'd1', naam: 'Anna' }],
+    activiteit: { naam: 'Toernooi', datum: '2027-05-05', comiteUids: ['vreemd'], teams: ['teamAndereClub'], deelId: 'oud', gemaaktDoor: 'iemand', agenda: true, kamer: true, onbekend: 'weg',
+      comite: { l1: { naam: 'Piet', rol: 'Voorzitter', uid: 'u-geheim' }, 'a.b': { naam: 'Punt' } },
+      taken: { t1: { titel: 'Prijzen bestellen', d: 28, eigenaar: 'l1', status: 'klaar', antw: { waar: 'Winkel' }, onderwerp: 'kantine' }, 'x.y': { titel: 'Punt in id' }, t2: { titel: 'Eigenaar weg', eigenaar: 'zzz', d: '' } },
+      budget: { u1: { naam: 'Prijzen', soort: 'uit', begroot: 100, werkelijk: null } }, documenten: { o1: { naam: 'Gevaar', url: 'javascript:alert(1)' }, o2: { naam: 'Reglement', url: 'https://voorbeeld.example/r.pdf' } },
+      onderwerpen: { kantine: { eigenaar: 'l1', vragen: { leverancier: { antwoord: 'Groothandel' } } } } } });
+  const r = A.jsonLees(bestand);
+  gelijk(r.soort, 'activiteit'); gelijk(r.inhoud.taken, 3); gelijk(r.inhoud.diensten, 1);
+  const s = A.schoonImport(r.data, r.diensten);
+  gelijk(s.comiteUids, []); gelijk(s.teams, []); gelijk(s.deelId, ''); ok(!s.agenda && !s.kamer); ok(!('onbekend' in s) && !('gemaaktDoor' in s));
+  ok(!('uid' in s.comite.l1) && !s.comite['a.b'] && !s.taken['x.y'], 'geen uid en geen ids met een punt');
+  gelijk(s.taken.t1.eigenaar, 'l1'); gelijk(s.taken.t2.eigenaar, ''); gelijk(s.taken.t2.d, null); gelijk(s.taken.t1.antw.waar, 'Winkel'); gelijk(s.taken.t1.onderwerp, 'kantine');
+  gelijk(s.budget.u1.werkelijk, null); ok(!s.documenten.o1 && s.documenten.o2, 'alleen https-links');
+  gelijk(s.onderwerpen.kantine.eigenaar, 'l1'); gelijk(s.onderwerpen.kantine.vragen.leverancier.antwoord, 'Groothandel');
+  gelijk(s.dienstenSjabloon, [{ naam: 'Kantine', start: '08:00', eind: '12:00', plek: '', nodig: 3, wat: 'Bar' }]);
+  const k = A.kopie(s, { naam: 'Ons toernooi', datum: '2027-06-01', door: 'ik', zonderMensen: true });
+  gelijk(k.comite, {}); gelijk(k.taken.t1.eigenaar, ''); gelijk(k.taken.t1.status, 'open'); gelijk(k.gemaaktDoor, 'ik');
+  ok(A.jsonLees(JSON.stringify({ soort: 'cluppie-activiteit', versie: 2, activiteit: { naam: 'x' } })).fout, 'nieuwere versie');
+  ok(A.jsonLees(JSON.stringify({ soort: 'cluppie-activiteit', versie: 1, activiteit: [] })).fout, 'geen activiteit');
+}
+
 console.log(`activiteiten: ${n} controles geslaagd`);

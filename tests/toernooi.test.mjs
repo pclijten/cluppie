@@ -180,4 +180,25 @@ ok(T.euro(15) === '€ 15,-' && T.euro(12.5) === '€ 12,50' && T.bedrag('1e9') 
   ok(new Set(Object.values(p.kk)).size === 2 && p.tekort.length === 1, 'kk: één team per helft');
   ok(T.kkNaam(t, 'k1~R') === 'Kleedkamer 1 rechts' && T.kkNaam({ kk: { k1: { naam: 'K' } } }, 'k1~R') === 'K', 'kk: naam van een helft');
 }
+// [20261127m] toernooi uit een bestand van een andere club
+{
+  const t = { start: '09:00', duur: 10, wissel: 2, velden: { v1: { naam: 'Veld 1', delen: 2, clubVeld: 'cv' }, 'v.x': { naam: 'Punt' } }, kk: { k1: { naam: 'KK 1', plekken: 2, delen: 2, clubKk: 'ck' } },
+    poules: { pA: { naam: 'A', kleur: '#E20613', velden: ['v1~A', 'v9'] } }, ko: { g1: { naam: 'Finale', poules: ['pA', 'pZ'], ronde: 2 } },
+    clubs: { c1: { naam: 'SV Een' }, c2: { naam: 'SV Twee' } }, teams: { t1: { naam: 'Een', poule: 'pA', club: 'c1', kk: 'k1~L', eisen: { bron: ['JO11-1'] } }, t2: { naam: 'Twee', poule: 'pA', club: 'c2' }, t3: { naam: 'Drie', poule: 'pA', club: 'c9' } },
+    spelers: { s1: { naam: 'Kind', jaar: 2016 } }, uitslag: { w1: { a: 1, b: 0 } }, liveId: 'geheim', inschrijfId: 'geheim2', mededelingen: { m1: { tekst: 'x' } },
+    inschrijf: { open: true, tot: '2027-01-01', contactMail: 'a@b.nl', cats: { g: { naam: 'JO11', prijs: 25, poule: 'pA' } } }, schermen: { x1: { soort: 'sponsor', titel: 'Bakker', link: 'javascript:x', img: 'data:text/html,x' } } };
+  t.schema = [...T.planSchema(t).schema, { id: 'kapot', a: 't1', b: 't2', v: 'v9', t: '09:00' }];
+  const s = T.schoonToernooi(t);
+  ok(!s.spelers && !s.liveId && !s.inschrijfId && !s.mededelingen, 'toernooi-import: geen spelers, links of mededelingen');
+  gelijk(s.uitslag, {}, 'toernooi-import: geen uitslagen'); ok(!s.velden['v.x'] && !('clubVeld' in s.velden.v1) && !('clubKk' in s.kk.k1), 'toernooi-import: geen koppeling met de andere club');
+  gelijk(s.poules.pA.velden, ['v1~A'], 'toernooi-import: alleen bestaande veldjes'); gelijk(s.ko.g1.poules, ['pA'], 'toernooi-import: alleen bestaande poules');
+  gelijk(s.teams.t1.kk, 'k1~L', 'toernooi-import: kleedkamerhelft'); gelijk(s.teams.t3.club, '', 'toernooi-import: onbekende club'); gelijk(s.teams.t1.eisen, {}, 'toernooi-import: eigen teamnamen weg');
+  gelijk(s.inschrijf.open, false, 'toernooi-import: inschrijven dicht'); ok(!('contactMail' in s.inschrijf), 'toernooi-import: geen contact van de andere club');
+  gelijk(s.schermen.x1.link, '', 'toernooi-import: onveilige link weg'); ok(!s.schermen.x1.img, 'toernooi-import: alleen plaatjes');
+  ok(s.schema.length === t.schema.length - 1 && !s.schema.some(w => w.id === 'kapot'), 'toernooi-import: schema zonder kapotte wedstrijd');
+  ok(s.schema.filter(w => w.ko).every(w => !w.a && !w.b && w.ka && w.kb), 'toernooi-import: knock-out met bron');
+  const z = T.schoonToernooi(t, { indeling: false }); ok(!z.teams && !z.schema && z.clubs.c1, 'toernooi-import: zonder indeling');
+  gelijk(T.schoonToernooi(null), {}, 'toernooi-import: leeg');
+}
+
 console.log(`toernooi: ${n} controles geslaagd`);

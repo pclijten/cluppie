@@ -573,3 +573,53 @@ export function koUitslag(t = {}, gid){
   for (const w of ws.filter(x => x.fase === 'plaats')) zet(w, w.plaats);
   return uit.sort((a, b) => a.plaats - b.plaats);
 }
+
+/* ---------- toernooi uit een bestand van een andere club [20261127m] ----------
+   Een geëxporteerde activiteit (JSON) kan een andere club inlezen. Wat erin staat komt van buiten: alleen bekende
+   velden gaan mee, met dezelfde grenzen als in de app, en ids die als veldnaam in Firestore kunnen staan.
+   Nooit mee: spelers (namen van kinderen), uitslagen, mededelingen, de live- en inschrijflink en koppelingen
+   met velden of kleedkamers van de andere club (clubVeld, clubKk). indeling: teams en speelschema ook mee. */
+const goedId = id => /^[\w-]{1,40}$/.test(String(id || ''));
+const isTijd = s => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(s || ''));
+const map = (m, max, maak) => Object.fromEntries(Object.entries(m && typeof m === 'object' && !Array.isArray(m) ? m : {})
+  .filter(([id, x]) => goedId(id) && x && typeof x === 'object' && !Array.isArray(x)).slice(0, max).map(([id, x], i) => [id, { ...maak(x, id), volg: getal(x.volg, i, 0, 9999) }]));
+const bron = b => !b || typeof b !== 'object' ? null : goedId(b.p) ? { p: b.p, r: getal(b.r, 1, 1, 99) } : goedId(b.w) ? { w: b.w, win: !!b.win } : null;
+export function schoonToernooi(t = {}, { indeling = true } = {}){
+  if (!t || typeof t !== 'object' || Array.isArray(t)) return {};
+  const o = opzet(t);
+  const uit = { start: o.start, duur: o.duur, wissel: o.wissel, rust: o.rust, groepOp: o.groepOp, grootte: o.grootte };
+  if (SOORTEN[t.deelnemers]) uit.deelnemers = t.deelnemers;
+  uit.velden = map(t.velden, MAX.velden, v => ({ naam: tekst(v.naam, 40) || 'Veld', delen: [1, 2, 4].includes(Number(v.delen)) ? Number(v.delen) : 1 }));
+  const vj = new Set(veldjes(uit).map(v => v.id));
+  uit.kk = map(t.kk, MAX.kk, k => ({ naam: tekst(k.naam, 40) || 'Kleedkamer', plekken: getal(k.plekken, 2, 1, 12), ...(Number(k.delen) === 2 ? { delen: 2 } : {}) }));
+  uit.poules = map(t.poules, MAX.poules, p => ({ naam: tekst(p.naam, 40) || 'Poule', kleur: /^#[0-9a-f]{6}$/i.test(p.kleur || '') ? p.kleur : KLEUREN[0],
+    velden: (Array.isArray(p.velden) ? p.velden : []).filter(v => vj.has(v)).slice(0, 64), ...(isTijd(p.start) ? { start: p.start } : {}), ...(p.dubbel ? { dubbel: true } : {}) }));
+  uit.ko = map(t.ko, MAX_KO, g => ({ naam: tekst(g.naam, 40) || 'Finales', poules: (Array.isArray(g.poules) ? g.poules : []).filter(p => uit.poules[p]).slice(0, MAX.poules),
+    ronde: [2, 4, 8].includes(Number(g.ronde)) ? Number(g.ronde) : 4, plaats3: g.plaats3 !== false, overige: !!g.overige, ...(isTijd(g.start) ? { start: g.start } : {}) }));
+  uit.clubs = map(t.clubs, MAX.teams, c => ({ naam: tekst(c.naam, 60) || 'Club' }));
+  const kks = new Set(kkDelen(uit).map(k => k.id));
+  if (t.inschrijf && typeof t.inschrijf === 'object'){
+    const i = t.inschrijf;
+    uit.inschrijf = { open: false, tot: '', tekst: String(i.tekst ?? '').trim().slice(0, 600),
+      cats: map(i.cats, MAX_CATS, c => ({ naam: tekst(c.naam, 40) || 'Categorie', max: getal(c.max, 0, 0, 200), prijs: bedrag(c.prijs), poule: uit.poules[c.poule] ? c.poule : '' })) };
+  }
+  uit.schermen = map(t.schermen, MAX_SCHERMEN, x => ({ soort: x.soort === 'sponsor' ? 'sponsor' : 'scherm', titel: tekst(x.titel, 60), tekst: String(x.tekst ?? '').trim().slice(0, 300),
+    link: veiligeLink(x.link), ...(plaatjeOk(x.img) ? { img: x.img } : {}), tv: x.tv !== false, tel: x.tel !== false }));
+  if (!indeling) return uit;
+  uit.uitslag = {};
+  uit.teams = map(t.teams, MAX.teams, (x) => {
+    const e = x.eisen && typeof x.eisen === 'object' ? x.eisen : {};
+    const eisen = { ...(['m', 'v'].includes(e.geslacht) ? { geslacht: e.geslacht } : {}), ...(jaarUit(e.van) ? { van: jaarUit(e.van) } : {}), ...(jaarUit(e.tot) ? { tot: jaarUit(e.tot) } : {}) };
+    return { naam: tekst(x.naam, 40) || 'Team', poule: uit.poules[x.poule] ? x.poule : '', club: uit.clubs[x.club] ? x.club : '', gast: !!x.gast, kk: kks.has(x.kk) ? x.kk : '', eisen };
+  });
+  const ids = new Set();
+  uit.schema = (Array.isArray(t.schema) ? t.schema : []).filter(w => w && typeof w === 'object' && goedId(w.id) && vj.has(w.v) && isTijd(w.t) && !ids.has(w.id) && ids.add(w.id))
+    .slice(0, MAX.schema).map(w => {
+      const ko = goedId(w.ko) && uit.ko[w.ko] ? w.ko : '';
+      const team = id => (!ko && uit.teams[id] ? id : '');
+      return { id: w.id, p: uit.poules[w.p] ? w.p : '', a: team(w.a), b: team(w.b), v: w.v, t: w.t, r: getal(w.r, 1, 1, 999),
+        fase: ['poule', 'kwart', 'halve', 'brons', 'finale', 'plaats'].includes(w.fase) ? w.fase : 'poule',
+        ...(ko ? { ko, nr: getal(w.nr, 1, 1, 99), ka: bron(w.ka), kb: bron(w.kb), ...(w.plaats ? { plaats: getal(w.plaats, 5, 1, 999) } : {}) } : {}) };
+    }).filter(w => w.ko || (w.a && w.b));
+  return uit;
+}
