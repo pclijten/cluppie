@@ -72,10 +72,29 @@ export function csvSponsoren(lijst = [], vandaag = ''){
   return '﻿' + [['Sponsor', 'Pakket', 'Bedrag per jaar', 'Loopt tot', 'Status', 'Website', 'Notitie'], ...rijen].map(r => r.map(csvCel).join(';')).join('\r\n');
 }
 /* De openbare kop van de tv: clubnaam, logo, kleur, mededeling en het programma. */
-export function tvKopie({ clubNaam = '', logo = '', kleur = '', mededeling = '', uit = true, datum = '', programma = [], sjabloon = '', goals = '' } = {}){
+export function tvKopie({ clubNaam = '', logo = '', kleur = '', mededeling = '', uit = true, datum = '', programma = [], sjabloon = '', goals = '', evenement = '' } = {}){
   return { clubNaam: tekst(clubNaam, 80), logo: plaatjeOk(logo) ? logo : '', kleur: /^#[0-9a-f]{6}$/i.test(kleur || '') ? kleur : '', mededeling: tekst(mededeling, 200),
     uit: uit !== false, datum: isIso(datum) ? datum : '', programma: (Array.isArray(programma) ? programma : []).slice(0, MAX_PROGRAMMA),
-    sjabloon: /^[a-z0-9-]{1,30}$/.test(sjabloon || '') ? sjabloon : 'bord', goals: goalKeuze(goals) };
+    sjabloon: /^[a-z0-9-]{1,30}$/.test(sjabloon || '') ? sjabloon : 'bord', goals: goalKeuze(goals), evenement: evenementId(evenement) };
+}
+/* [20261126r] Een evenement (toernooi) op de kantine-tv: de id van de live pagina (toernooiLive/{id}), of leeg. */
+export const evenementId = v => /^[a-z0-9]{10,40}$/.test(String(v || '')) ? String(v) : '';
+/* Zet de live pagina van een toernooi om naar wat de tv kent: programmaregels, een mededeling en dia's.
+   Alleen op de dag van het toernooi (vandaag: JJJJ-MM-DD); anders null, dan toont de tv het gewone programma. */
+export function evenementTv(live, vandaag){
+  if (!live || live.open !== true || (live.datum && live.datum !== vandaag)) return null;
+  const teams = live.teams || {}, velden = Object.fromEntries((live.veldjes || []).map(v => [v.id, v.naam])), poules = live.poules || {};
+  const duur = (Number(live.duur) || 12) + (Number(live.wissel) || 0), uitslag = live.uitslag || {};
+  const programma = (Array.isArray(live.schema) ? live.schema : []).filter(w => isTijd(w.t))
+    .map(w => { const u = uitslag[w.id], p = poules[w.p]?.naam;
+      return { tijd: w.t, thuis: true, a: tekst(teams[w.a]?.naam || 'Nog onbekend', 40), b: tekst(teams[w.b]?.naam || 'Nog onbekend', 40),
+        veld: tekst([velden[w.v], p].filter(Boolean).join(' · '), 60), kk: '', duur,
+        stand: u ? `${u.a} - ${u.b}` : '', eind: !!u, bezig: false }; })
+    .sort((x, y) => min(x.tijd) - min(y.tijd)).slice(0, MAX_PROGRAMMA);
+  const med = live.planB || (Array.isArray(live.mededelingen) && live.mededelingen[0]?.tekst) || '';
+  const items = (Array.isArray(live.schermen) ? live.schermen : []).filter(x => x && x.tv !== false && (x.titel || x.tekst || x.img))
+    .map(x => ({ id: 'ev-' + x.id, soort: x.soort === 'sponsor' ? 'sponsor' : 'scherm', pakket: 'sponsor', titel: tekst(x.titel, 60), tekst: tekst(x.tekst, 240), img: plaatjeOk(x.img) ? x.img : '' }));
+  return { naam: tekst(live.naam, 80), programma, mededeling: tekst(med, 200), items };
 }
 
 /* ---------- tv: status van een wedstrijd en doelpunten ---------- */
@@ -89,7 +108,7 @@ export function rijStatus(r = {}, nuMin = 0){
   if (r.afgelast) return 'af';
   const t = min(r.tijd), heeftTijd = t !== 9999;
   if (r.eind === true || (r.eind === undefined && r.stand) || (r.stand && heeftTijd && nuMin > t + 150)) return 'klaar';
-  if (r.bezig || r.stand || (r.thuis && heeftTijd && t <= nuMin && nuMin < t + 105)) return 'live';
+  if (r.bezig || r.stand || (r.thuis && heeftTijd && t <= nuMin && nuMin < t + (Number(r.duur) || 105))) return 'live';
   return !heeftTijd || nuMin < t ? 'straks' : 'voorbij';
 }
 /* Vergelijkt het programma met wat de tv al gezien had (gezien: Map sleutel -> stand) en geeft de nieuwe doelpunten.

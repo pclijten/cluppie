@@ -1,6 +1,6 @@
 /* TV-SJABLOON "VERTREKHAL" [20261126q]: een klapbord zoals op het station. Elke letter klapt om, rij voor rij.
    Alles staat in letterblokjes; een logo van een sponsor komt op zijn eigen dia in een wit vlak. Zie docs/tv-sjablonen.md. */
-import { esc, klok, beeld, bovenSponsor } from './tv-speler.js?v=20261126q';
+import { esc, klok, beeld, bovenSponsor } from './tv-speler.js?v=20261126r';
 
 const schoon = s => String(s ?? '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[–—]/g, '-').replace(/[^A-Z0-9 .,:!?'&+\-\/·]/g, ' ');
 /* Een tekst als rij blokjes van vaste lengte; te lang wordt afgekapt, te kort aangevuld met lege blokjes. */

@@ -112,3 +112,10 @@ De coach houdt de stand bij in de app. De functie `kantineTvWedstrijd` zet een n
 van de tv. De tv-pagina vergelijkt de stand met de vorige (`nieuweGoals` in `clubscherm-logica.js`) en roept bij een
 doelpunt `goal(m, g)` van het sjabloon aan. Een uitslag die achteraf wordt ingevuld of een correctie naar beneden geeft
 geen melding.
+
+## Evenement op de tv
+
+Bij de instellingen kiest de club een toernooi waarvan de live pagina aan staat (`clubTv/{id}.evenement` = de id van
+`toernooiLive/{id}`). Op de dag van dat toernooi zet `evenementTv` in `clubscherm-logica.js` het schema, de uitslagen, de
+mededelingen en de sponsoren van het toernooi om naar het gewone model. De sjablonen hoeven daar niets voor te doen.
+Op andere dagen, of als de live pagina uit staat, toont de tv het gewone wedstrijdprogramma.

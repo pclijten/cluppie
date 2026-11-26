@@ -13,14 +13,15 @@ import { S, esc, meld } from './state.js?v=20261126r';
 import { ico } from './icons.js?v=20261116t';
 import { liveId, MAX_SCHERMEN } from './toernooi-logica.js?v=20261125w';
 import { kleinPlaatje } from './plaatje.js?v=20261125w';
-import * as C from './clubscherm-logica.js?v=20261126q';
-import { SJABLONEN, sjabloonId } from './tv-sjablonen.js?v=20261126q';
+import * as C from './clubscherm-logica.js?v=20261126r';
+import { SJABLONEN, sjabloonId } from './tv-sjablonen.js?v=20261126r';
 
 const cs = { keuze: {}, clubId: '', tv: undefined, items: null, stop: null, qrVoor: '', qr: '', bezig: false };
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const opt = (w, t, sel) => `<option value="${esc(w)}"${sel ? ' selected' : ''}>${esc(t)}</option>`;
 export const schermLink = id => `${location.origin}${location.pathname.replace(/[^/]*$/, '')}?scherm=${encodeURIComponent(id)}`;
 /* Voorbeeld van een sjabloon. Zonder tv (nog niet aangemaakt) een voorbeeld zonder gegevens van de club, met naam en kleur in de link. */
+const datumKort = d => { const x = new Date(d + 'T12:00'); return isNaN(x) ? d : x.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' }); };
 const voorbeeld = (tv, sj) => tv?.id ? `${schermLink(tv.id)}&sjabloon=${sj}&proef=1`
   : `${schermLink('voorbeeld')}&sjabloon=${sj}&proef=1&naam=${encodeURIComponent(clubInfo().clubNaam)}&kleur=${encodeURIComponent(clubInfo().kleur)}`;
 const clubInfo = () => ({ clubNaam: S.club?.naam || '', logo: S.club?.instellingen?.identiteit?.logo || '', kleur: S.club?.instellingen?.identiteit?.kleur || '' });
@@ -66,9 +67,13 @@ export function htmlSchermen(ctx){
   const sponsors = items.filter(x => x.soort === 'sponsor'), eigen = items.filter(x => x.soort === 'scherm'), tot = C.sponsorTotaal(items, v), vol = items.length >= C.MAX_ITEMS;
   const link = tv?.id ? schermLink(tv.id) : '';
   const sj = SJABLONEN.find(x => x.id === sjabloonId(tv?.sjabloon ?? cs.keuze.sjabloon)) || SJABLONEN[0];
+  const evs = ctx.evenementen?.() || [], ev = C.evenementId(tv?.evenement ?? cs.keuze.evenement);
   const keuze = `<label class="ac-label" for="csSjabloon">Sjabloon: hoe het scherm eruitziet</label>
             <div class="ac-rij"><select class="ac-in ac-groei" id="csSjabloon" data-cs-tv="sjabloon">${SJABLONEN.map(x => opt(x.id, x.naam, x.id === sj.id)).join('')}</select><a class="knop licht klein" href="${esc(voorbeeld(tv, sj.id))}" target="_blank" rel="noopener">Voorbeeld bekijken</a></div>
             <p class="ac-zacht">${esc(sj.kort)} ${aan ? 'Je keuze staat meteen op de tv.' : 'Je keuze blijft bewaard en staat er meteen op zodra je de tv aanzet.'} Het voorbeeld laat het sjabloon zien met proefwedstrijden en een doelpunt.</p>
+            <label class="ac-label" for="csEvenement">Evenement op de tv</label>
+            <select class="ac-in" id="csEvenement" data-cs-tv="evenement">${opt('', 'Geen: het wedstrijdprogramma van vandaag', !ev)}${evs.map(x => opt(x.id, `${x.naam}${x.datum ? ' · ' + datumKort(x.datum) : ''}`, x.id === ev)).join('')}${ev && !evs.some(x => x.id === ev) ? opt(ev, 'Een toernooi waarvan de live pagina uit staat', true) : ''}</select>
+            <p class="ac-zacht">${evs.length ? 'Op de dag van het toernooi toont de tv het schema, de uitslagen, de mededelingen en de sponsoren van het toernooi, in je sjabloon. Op andere dagen gewoon het wedstrijdprogramma.' : 'Zet bij een toernooi de live pagina aan, dan kun je het hier kiezen. De tv toont het toernooi dan op de dag zelf.'}</p>
             <label class="ac-label" for="csGoals">Doelpunt groot in beeld</label>
             <select class="ac-in" id="csGoals" data-cs-tv="goals">${Object.entries(C.GOAL_KEUZES).map(([k, n]) => opt(k, n, C.goalKeuze(tv?.goals ?? cs.keuze.goals) === k)).join('')}</select>
             <p class="ac-zacht">Valt er een doelpunt, dan komt dat een paar seconden groot in beeld, met team en stand en zonder namen van spelers. Dit werkt bij wedstrijden waarvan de coach de stand bijhoudt in de app.</p>`;
@@ -124,7 +129,7 @@ export async function klikSchermen(ctx, b){
       const tid = cs.tv?.id || liveId();
       try {
         const p = await leesProgramma();
-        const data = { club: ctx.clubId, open: true, ...C.tvKopie({ ...clubInfo(), mededeling: cs.tv?.mededeling || '', uit: cs.tv?.uit, sjabloon: cs.tv?.sjabloon ?? cs.keuze.sjabloon, goals: cs.tv?.goals ?? cs.keuze.goals, ...p }), bijgewerktMs: Date.now(), programmaMs: Date.now() };
+        const data = { club: ctx.clubId, open: true, ...C.tvKopie({ ...clubInfo(), mededeling: cs.tv?.mededeling || '', uit: cs.tv?.uit, sjabloon: cs.tv?.sjabloon ?? cs.keuze.sjabloon, goals: cs.tv?.goals ?? cs.keuze.goals, evenement: cs.tv?.evenement ?? cs.keuze.evenement, ...p }), bijgewerktMs: Date.now(), programmaMs: Date.now() };
         await setDoc(doc(db, 'clubTv', tid), data);
         cs.tv = { id: tid, ...data }; await zetAllesOpenbaar();
       } catch (e){ console.error('[schermen] tv aan', e); return meld(e?.code === 'permission-denied' ? 'De tv kan nog niet aan: de regels zijn nog niet gepubliceerd.' : 'Aanzetten mislukt.'); }
@@ -137,7 +142,7 @@ export async function klikSchermen(ctx, b){
     }
     case 'programma': {
       cs.bezig = true; ctx.herteken();
-      try { const p = await leesProgramma(); await updateDoc(doc(db, 'clubTv', cs.tv.id), { ...p, ...C.tvKopie({ ...clubInfo(), mededeling: cs.tv.mededeling, uit: cs.tv.uit, sjabloon: cs.tv.sjabloon, goals: cs.tv.goals, ...p }), bijgewerktMs: Date.now(), programmaMs: Date.now() }); Object.assign(cs.tv, p); await zetAllesOpenbaar(); meld(`${p.programma.length} ${p.programma.length === 1 ? 'wedstrijd' : 'wedstrijden'} op het scherm`); }
+      try { const p = await leesProgramma(); await updateDoc(doc(db, 'clubTv', cs.tv.id), { ...p, ...C.tvKopie({ ...clubInfo(), mededeling: cs.tv.mededeling, uit: cs.tv.uit, sjabloon: cs.tv.sjabloon, goals: cs.tv.goals, evenement: cs.tv.evenement, ...p }), bijgewerktMs: Date.now(), programmaMs: Date.now() }); Object.assign(cs.tv, p); await zetAllesOpenbaar(); meld(`${p.programma.length} ${p.programma.length === 1 ? 'wedstrijd' : 'wedstrijden'} op het scherm`); }
       catch (e){ console.error('[schermen] programma', e); meld('Bijwerken mislukt.'); }
       cs.bezig = false; return ctx.herteken();
     }
@@ -161,12 +166,12 @@ export async function wijzigSchermen(ctx, el){
     await bewaarItem(ctx, id, { [k]: w }); return true;
   }
   /* Nog geen tv aangemaakt: sjabloon en doelpunten onthouden tot de tv aangaat. */
-  if (el.matches('[data-cs-tv="sjabloon"],[data-cs-tv="goals"]') && !cs.tv?.id){
-    const k = el.dataset.csTv; cs.keuze[k] = k === 'sjabloon' ? sjabloonId(el.value) : C.goalKeuze(el.value); ctx.herteken(); return true;
+  if (el.matches('[data-cs-tv="sjabloon"],[data-cs-tv="goals"],[data-cs-tv="evenement"]') && !cs.tv?.id){
+    const k = el.dataset.csTv; cs.keuze[k] = k === 'sjabloon' ? sjabloonId(el.value) : k === 'evenement' ? C.evenementId(el.value) : C.goalKeuze(el.value); ctx.herteken(); return true;
   }
   if (el.matches('[data-cs-tv]') && cs.tv?.id){
-    const k = el.dataset.csTv, w = el.type === 'checkbox' ? el.checked : k === 'sjabloon' ? sjabloonId(el.value) : k === 'goals' ? C.goalKeuze(el.value) : String(el.value || '').replace(/\s+/g, ' ').trim().slice(0, 200);
-    try { await updateDoc(doc(db, 'clubTv', cs.tv.id), { [k]: w, ...clubInfoKopie(), bijgewerktMs: Date.now() }); cs.tv[k] = w; ctx.opgeslagen?.(); if (k === 'sjabloon') ctx.herteken(); } catch { meld('Opslaan mislukt.'); }
+    const k = el.dataset.csTv, w = el.type === 'checkbox' ? el.checked : k === 'sjabloon' ? sjabloonId(el.value) : k === 'goals' ? C.goalKeuze(el.value) : k === 'evenement' ? C.evenementId(el.value) : String(el.value || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+    try { await updateDoc(doc(db, 'clubTv', cs.tv.id), { [k]: w, ...clubInfoKopie(), bijgewerktMs: Date.now() }); cs.tv[k] = w; ctx.opgeslagen?.(); if (k === 'sjabloon' || k === 'evenement') ctx.herteken(); } catch { meld('Opslaan mislukt.'); }
     return true;
   }
   return false;

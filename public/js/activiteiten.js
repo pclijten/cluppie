@@ -44,7 +44,9 @@ const tnCtx = () => ({ act: A.act, actNu: () => A?.act, actId: A.id, clubId: A.c
   download, bestandsnaam, printen, csvLees: L.csvLees });
 /* Clubbrede onderdelen naast de activiteiten: de kantine-tv met sponsoren en de vrijwilligersbank. */
 const extraCtx = () => ({ clubId: A.clubId, herteken: () => { if (A?.extra) hertekenZacht(); }, kop: (titel, sub) => kop(titel, sub), kopieer: kopieKlembord, waLink, download, printen,
-  venster: html => { A.venster = html; teken(); }, sluitVenster, opgeslagen: toonOpgeslagen });
+  venster: html => { A.venster = html; teken(); }, sluitVenster, opgeslagen: toonOpgeslagen,
+  /* toernooien met een live pagina, voor 'evenement op de kantine-tv' */
+  evenementen: () => (A.lijst || []).filter(a => a.toernooi?.live && a.toernooi?.liveId && a.status !== 'geannuleerd').map(a => ({ id: a.toernooi.liveId, naam: a.naam || 'Toernooi', datum: a.datum || '' })) });
 const aiAan = () => S.club?.platformModules?.ai === true;
 const actRef = id => doc(db, 'clubs', A.clubId, 'activiteiten', id);
 const deelLink = id => `${location.origin}${location.pathname.replace(/[^/]*$/, '')}?act=${encodeURIComponent(id)}`;
