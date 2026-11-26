@@ -7,7 +7,7 @@
    Importeert niets uit teams.js (geen kringverwijzing): teams.js geeft renderTeam mee aan
    koppelTeamkamer(). state.js is niet aangeraakt. */
 import { db, functions, httpsCallable, doc, collection, addDoc, setDoc, updateDoc, deleteDoc, getDocs, query, where, onSnapshot, Timestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261126x';
+import { S, esc, meld } from './state.js?v=20261126z';
 import * as K from './kamer-logica.js?v=20261125m';
 import { actieveSport } from './sporten.js?v=20261126g';   /* [20261126g] alleen oefenstof van de eigen sport */
 
@@ -52,7 +52,7 @@ async function doeSync(){
   const i = inst();
   if (!i.aan) return;
   if (i.trainingen && mag('trainingen')){
-    const { trainingenPerWeek } = await import('./teams-training.js?v=20261126x');
+    const { trainingenPerWeek } = await import('./teams-training.js?v=20261126z');
     if (S.teamId !== teamId) return;
     const vandaag = K.vandaagIso(), items = {};
     for (const g of trainingenPerWeek().komend) for (const x of g.items){
@@ -62,7 +62,7 @@ async function doeSync(){
     await lever(teamId, 'trainingen', { items });
   }
   if (i.stats.aan && mag('stats') && (S.spelers || []).length){
-    const [A, O] = await Promise.all([import('./analyse.js?v=20261126x'), import('./opkomst.js?v=20260922c')]);
+    const [A, O] = await Promise.all([import('./analyse.js?v=20261126z'), import('./opkomst.js?v=20260922c')]);
     if (S.teamId !== teamId) return;
     const sz = S.huidigSeizoen, ditSeizoen = (x) => !sz || !x.seizoen || x.seizoen === sz;
     const spelers = K.statsVoorOuders(eigenSpelers(), (S.wedstrijden || []).filter(ditSeizoen), (S.presentie || []).filter(ditSeizoen),
@@ -109,7 +109,7 @@ function nieuwForm(sjId = 'rijden', wedstrijdId){
   const w = sj.wedstrijd ? (ws.find(x => x.id === wedstrijdId) || ws[0] || null) : null;
   const sluit = w ? (() => { const d = new Date(w.datum + 'T12:00:00'); d.setDate(d.getDate() - 1); return K.vandaagIso(d) < K.vandaagIso() ? K.vandaagIso() : K.vandaagIso(d); })()
     : (() => { const d = new Date(); d.setDate(d.getDate() + 7); return K.vandaagIso(d); })();
-  return { soort: sj.id, vraag: sj.vraag(w), opties: [...sj.opties], wedstrijdId: w ? w.id : '', meer: sj.meer === true, namen: true, spelers: false, nodig: sj.nodig || 4, sluit };
+  return { soort: sj.id, vraag: sj.vraag(w), opties: [...sj.opties], wedstrijdId: w ? w.id : '', meer: sj.meer === true, namen: true, spelers: false, nodig: sj.nodig || 4, sluit, melding: true };
 }
 export function openPollVoorWedstrijd(wedstrijdId, soort = 'rijden'){ M.sub = 'polls'; M.form = nieuwForm(soort, wedstrijdId); }
 
@@ -168,10 +168,22 @@ function htmlPollForm(){
     ${f.soort === 'rijden' ? `<div class="tk-veld"><label for="tk-nodig">Auto's nodig</label><input class="tk-invoer" id="tk-nodig" data-tkf="nodig" type="number" inputmode="numeric" min="1" max="9" value="${esc(f.nodig)}"></div>` : ''}
     <div>${sw('Meer antwoorden mogelijk', 'Een gezin kiest er meer dan één', f.meer, 'data-tk="fsw" data-veld="meer"')}
       ${sw('Namen zichtbaar voor ouders', f.namen ? 'Ouders zien wie wat koos (de voornaam van het kind)' : 'Ouders zien alleen aantallen; jij ziet wie wat koos', f.namen, 'data-tk="fsw" data-veld="namen"')}
-      ${sw('Spelers mogen ook stemmen', 'Eén stem per gezin: de laatste geldt', f.spelers, 'data-tk="fsw" data-veld="spelers"')}</div>
+      ${sw('Spelers mogen ook stemmen', 'Eén stem per gezin: de laatste geldt', f.spelers, 'data-tk="fsw" data-veld="spelers"')}
+      ${sw('Stuur een pushmelding', 'Ouders die meldingen aanzetten in de teamkamer krijgen bericht op hun telefoon', f.melding !== false, 'data-tk="fsw" data-veld="melding"')}</div>
     <div class="tk-veld"><label for="tk-sluit">Sluit op</label><input class="tk-invoer" id="tk-sluit" data-tkf="sluit" type="date" value="${esc(f.sluit)}" min="${K.vandaagIso()}"></div>
     <button class="tk-knop" data-tk="plaatspoll">Plaats poll</button>
     <p class="tk-klein tk-zacht" style="margin:0">Voor wie er kan komen maak je geen poll: afmelden gaat via de groepsapp.</p></section>`;
+}
+/* [20261126m] pushmeldingen: wat de server terugschreef (meldingBereik, herinnerBereik), en hooguit één herinnering per zes uur */
+const HERINNER_MS = 6 * 3600000;
+const herinnerKan = (p) => !p.herinnerMs || Date.now() - Number(p.herinnerMs) >= HERINNER_MS;
+const ouders = (n) => `${n} ${n === 1 ? 'ouder' : 'ouders'}`;
+function meldRegel(x){
+  const r = [];
+  if (typeof x.meldingBereik === 'number') r.push(x.meldingBereik ? `Pushmelding naar ${ouders(x.meldingBereik)}` : 'Pushmelding verstuurd, maar nog geen ouder heeft meldingen aan');
+  else if (x.melding === true) r.push('Pushmelding wordt verstuurd…');
+  if (typeof x.herinnerBereik === 'number') r.push(`herinnering naar ${ouders(x.herinnerBereik)}`);
+  return r.length ? `<div class="tk-klein tk-zacht">${esc(r.join(', '))}</div>` : '';
 }
 function htmlPollBeheer(p){
   const sp = eigenSpelers(), spelersMap = Object.fromEntries(sp.map(x => [x.id, { n: voornaam(x) }]));
@@ -183,6 +195,9 @@ function htmlPollBeheer(p){
     ${w.opties.map(o => `<div class="tk-rij" style="align-items:flex-start"><span class="tk-zacht" style="text-align:left">${esc(o.tekst)}</span><span><b>${o.aantal}</b>${w.open && wie(o.id) ? `<div class="tk-klein">${esc(wie(o.id))}</div>` : (o.namen ? `<div class="tk-klein">${esc(o.namen)}</div>` : '')}</span></div>`).join('')}
     <div class="tk-rij tk-lijn"><span class="tk-zacht">Gestemd</span><span class="tk-vet">${w.gestemd} van ${sp.length} gezinnen</span></div>
     ${w.open && niet.length ? `<div class="tk-rij" style="align-items:flex-start"><span class="tk-zacht" style="white-space:nowrap">Nog niet</span><span>${esc(niet.map(naamVan).join(', '))}</span></div><div class="tk-klein tk-zacht">Wie nog niet stemde zie alleen jij.</div>` : ''}
+    ${meldRegel(p)}
+    ${w.open && niet.length ? (herinnerKan(p) ? `<button class="tk-knop licht klein" data-tk="herinner" data-id="${esc(p.id)}">Herinner wie nog niet stemde</button>`
+      : '<div class="tk-klein tk-zacht">Herinnering verstuurd. Over zes uur kan het weer.</div>') : ''}
     <div class="tk-twee">${w.open ? `<a class="tk-knop licht klein" href="${esc(K.waUrl(K.pollTekst(p.vraag, p.id)))}" target="_blank" rel="noopener">Deel in WhatsApp</a><button class="tk-knop licht klein" data-tk="sluitpoll" data-id="${esc(p.id)}">Sluit poll</button>`
       : `<button class="tk-knop licht klein" data-tk="heropen" data-id="${esc(p.id)}">Heropen</button><button class="tk-knop licht klein" data-tk="wispoll" data-id="${esc(p.id)}">Verwijder</button>`}</div></section>`;
 }
@@ -190,9 +205,11 @@ function htmlBerichten(){
   return `<section class="tk-kaart"><label class="tk-label" for="tk-bericht">Nieuwe mededeling</label>
       <textarea class="tk-invoer" id="tk-bericht" maxlength="600" placeholder="Bijvoorbeeld: donderdag trainen we op veld 3."></textarea>
       <div class="tk-klein tk-zacht">Ouders en spelers kunnen niet reageren. Zet geen namen of gezondheid van spelers in je bericht.</div>
+      <label class="tk-vink"><input type="checkbox" id="tk-bericht-melding" ${M.berichtMelding === false ? '' : 'checked'}><span>Stuur een pushmelding naar ouders die meldingen aan hebben</span></label>
       <button class="tk-knop" data-tk="plaatsbericht">Plaats mededeling</button></section>
     ${M.berichten.map(b => `<section class="tk-kaart" style="gap:6px"><p style="margin:0;white-space:pre-line">${esc(b.tekst)}</p>
       <div class="tk-klein tk-zacht">${esc([b.datum && K.datumLang(b.datum), b.door].filter(Boolean).join(', door '))}</div>
+      ${meldRegel(b)}
       <div class="tk-twee"><a class="tk-knop licht klein" href="${esc(K.waUrl(K.berichtTekst()))}" target="_blank" rel="noopener">Meld het in WhatsApp</a><button class="tk-knop licht klein" data-tk="wisbericht" data-id="${esc(b.id)}">Verwijder</button></div></section>`).join('')}`;
 }
 function htmlInstellingen(){
@@ -346,8 +363,13 @@ export function koppelTeamkamer(v, { renderTeam }){
         if (r.fout) return meld(r.fout);
         if (!f.sluit || f.sluit < K.vandaagIso()) return meld('Kies een sluitdatum vanaf vandaag');
         b.disabled = true;
-        await addDoc(collection(basis, 'polls'), { ...r.poll, sluitDatum: f.sluit, sluitOp: Timestamp.fromDate(new Date(f.sluit + 'T20:00:00')), gemaaktDoor: S.user.uid, gemaaktMs: Date.now() });
-        M.form = null; meld('Poll geplaatst. Deel de link in de groepsapp.'); return renderTeam();
+        await addDoc(collection(basis, 'polls'), { ...r.poll, sluitDatum: f.sluit, sluitOp: Timestamp.fromDate(new Date(f.sluit + 'T20:00:00')), gemaaktDoor: S.user.uid, gemaaktMs: Date.now(), melding: f.melding !== false });
+        M.form = null; meld(f.melding !== false ? 'Poll geplaatst. Ouders met meldingen aan krijgen bericht.' : 'Poll geplaatst. Deel de link in de groepsapp.'); return renderTeam();
+      }
+      if (a === 'herinner'){
+        const p = M.polls.find(x => x.id === id);
+        if (!p || !herinnerKan(p)) return meld('Je stuurde net al een herinnering');
+        b.disabled = true; await updateDoc(doc(basis, 'polls', id), { herinnerMs: Date.now() }); return meld('Herinnering verstuurd naar wie nog niet stemde');
       }
       if (a === 'sluitpoll'){ await updateDoc(doc(basis, 'polls', id), { status: 'gesloten' }); return meld('Poll gesloten'); }
       if (a === 'heropen'){
@@ -357,9 +379,10 @@ export function koppelTeamkamer(v, { renderTeam }){
       if (a === 'wispoll'){ if (!confirm('Deze poll verwijderen?')) return; await deleteDoc(doc(basis, 'polls', id)); return meld('Poll verwijderd'); }
       if (a === 'plaatsbericht'){
         const tekst = (root.querySelector('#tk-bericht')?.value || '').trim().slice(0, 600);
+        const melding = root.querySelector('#tk-bericht-melding')?.checked !== false; M.berichtMelding = melding;
         if (!tekst) return meld('Typ eerst je mededeling');
         b.disabled = true;
-        await addDoc(collection(basis, 'berichten'), { tekst, door: String(S.user.displayName || '').trim().split(/\s+/)[0] || '', datum: K.vandaagIso(), ms: Date.now(), doorUid: S.user.uid });
+        await addDoc(collection(basis, 'berichten'), { tekst, door: String(S.user.displayName || '').trim().split(/\s+/)[0] || '', datum: K.vandaagIso(), ms: Date.now(), doorUid: S.user.uid, melding });
         meld('Mededeling geplaatst'); return renderTeam();
       }
       if (a === 'wisbericht'){ if (!confirm('Deze mededeling verwijderen?')) return; return deleteDoc(doc(basis, 'berichten', id)); }

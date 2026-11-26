@@ -13,14 +13,14 @@
    per ongeluk wordt overschreven. Dit bestand importeert niets uit club.js
    (geen kringimport): club.js geeft een api-object mee. */
 import { db, doc, updateDoc } from './firebase.js?v=20261011g';
-import { S, esc, meld, modAan } from './state.js?v=20261126x';
-import { BOUWEN, catLabel } from './config.js?v=20261126x';
-import { kompasNaam } from './clubconfig.js?v=20261126x';
-import { onderdeelAan, doorPlatformUit, werkwijzeVan } from './onderdelen.js?v=20261126x';
+import { S, esc, meld, modAan } from './state.js?v=20261126z';
+import { BOUWEN, catLabel } from './config.js?v=20261126z';
+import { kompasNaam } from './clubconfig.js?v=20261126z';
+import { onderdeelAan, doorPlatformUit, werkwijzeVan } from './onderdelen.js?v=20261126z';
 import { ico } from './icons.js?v=20261126w';
-import { momentenVanTeam, htmlMomentenKaart, koppelMomentenKaart, DAGEN_KORT } from './trainingsmomenten.js?v=20261126x';
-import { verwijderCoach } from './trainco-beheer.js?v=20261126x';
-import { eigenBouwenVanTeam, bouwVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261126x';
+import { momentenVanTeam, htmlMomentenKaart, koppelMomentenKaart, DAGEN_KORT } from './trainingsmomenten.js?v=20261126z';
+import { verwijderCoach } from './trainco-beheer.js?v=20261126z';
+import { eigenBouwenVanTeam, bouwVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261126z';
 
 /* [sleutel, naam, kort, icoon, uitleg] — 'lijstjes' was eerder niet door de beheerder te regelen */
 export const MODULE_DEFS = [

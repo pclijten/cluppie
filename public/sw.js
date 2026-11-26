@@ -18,7 +18,7 @@
    zonder dat de coach alle tabbladen hoeft te sluiten.
    ================================================================ */
 
-const CACHE_VERSIE = 'cluppie-v20261126x';
+const CACHE_VERSIE = 'cluppie-v20261126z';
 
 /* Minimale schil die we bij installatie alvast klaarzetten. De overige
    bestanden (JS-modules, iconen, fonts van gstatic) worden vanzelf
@@ -104,4 +104,42 @@ self.addEventListener('fetch', (e) => {
       if (uitCache) geef(uitCache);
     }, NAV_WACHT_MS);
   }));
+});
+
+/* [20261126m] Pushmeldingen van de teamkamer (functions/teamkamer-push.js). Het bericht heeft alleen data
+   (titel, tekst, url, tag); deze worker toont de melding zelf, zodat hij er overal hetzelfde uitziet.
+   Op het app-icoon komt er één bij het getal dat de teamkamer zelf bijhoudt (js/kamer-push.js). */
+async function badgeErbij(){
+  try {
+    if (!self.navigator || !('setAppBadge' in self.navigator)) return;
+    const c = await caches.open('teamkamer-teller');
+    const r = await c.match('teller');
+    const n = (r ? Number(await r.text()) || 0 : 0) + 1;
+    await c.put('teller', new Response(String(n)));
+    await self.navigator.setAppBadge(n);
+  } catch (_){ /* geen badge */ }
+}
+self.addEventListener('push', (e) => {
+  let p = {};
+  try { p = e.data ? e.data.json() : {}; } catch (_){ p = { data: { tekst: e.data ? e.data.text() : '' } }; }
+  const d = (p && p.data) || p || {};
+  const titel = d.titel || 'Teamkamer';
+  const opties = { body: d.tekst || '', icon: 'icons/icon-192.png', badge: 'icons/icon-192.png',
+    tag: d.tag || undefined, renotify: !!d.tag, data: { url: d.url || 'kamer.html' } };
+  e.waitUntil(Promise.all([self.registration.showNotification(titel, opties), badgeErbij()]));
+});
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const doel = new URL((e.notification.data && e.notification.data.url) || 'kamer.html', self.location.href);
+  /* alleen naar de eigen site */
+  const url = doel.origin === self.location.origin ? doel.href : new URL('kamer.html', self.location.href).href;
+  e.waitUntil((async () => {
+    const lijst = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const kamer = lijst.find(c => new URL(c.url).pathname.endsWith('/kamer.html'));
+    if (kamer){
+      try { await kamer.focus(); } catch (_){ /* geen focus */ }
+      try { return await kamer.navigate(url); } catch (_){ /* niet gestuurd door deze worker */ }
+    }
+    return self.clients.openWindow(url);
+  })());
 });
