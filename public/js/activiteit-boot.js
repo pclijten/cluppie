@@ -7,7 +7,7 @@
    aanmeldingen lezen, per dienst één eigen aanmelding maken of weghalen. Niets anders van de club.
    Wie wat mag: firestore.rules, blok activiteitDeel. Alleen voornamen, geen telefoonnummers. */
 import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, collection, setDoc, deleteDoc, onSnapshot } from './firebase.js?v=20261011g';
-import { NAAM_MAX, telDiensten, botstMet, datumLang, schoneNaam, ics } from './activiteiten-logica.js?v=20261125w';
+import { NAAM_MAX, telDiensten, botstMet, datumLang, schoneNaam, ics } from './activiteiten-logica.js?v=20261126y';
 
 const NAAM_SLEUTEL = 'cluppieHulpNaam';            /* zelfde als Trainingshulp: je vult je naam één keer in */
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -75,7 +75,7 @@ export async function bootActiviteitPagina(deelId){
       el.innerHTML = `<div class="hp">
         <div><div class="hp-label">${esc([d.clubNaam, datumLang(d.datum)].filter(Boolean).join(' · '))}</div>
           <h1 class="hp-h1">Help je mee bij ${esc(d.titel || 'de activiteit')}?</h1>
-          <p class="hp-intro">${esc([d.start ? 'Vanaf ' + d.start : '', d.locatie].filter(Boolean).join(', '))}${d.start || d.locatie ? '. ' : ''}Kies een of meer diensten. Het comité legt op de dag uit wat je doet.</p></div>
+          <p class="hp-intro">${esc([d.start ? 'Vanaf ' + d.start : '', d.locatie].filter(Boolean).join(', '))}${d.start || d.locatie ? '. ' : ''}Kies een of meer diensten. ${Object.values(d.diensten || {}).some(x => x?.wat) ? 'Bij de diensten staat wat je doet.' : 'Het comité legt op de dag uit wat je doet.'}</p></div>
         <div class="veldgroep"><label for="hpNaam">Je voornaam</label>
           <input class="invoer hp-naam" id="hpNaam" type="text" value="${esc(st.naam)}" placeholder="bv. Sandra" maxlength="${NAAM_MAX}" autocomplete="given-name" autocapitalize="words">
           <div class="hp-waarschuw" id="hpWaarschuw" role="alert" hidden></div></div>
@@ -100,7 +100,7 @@ export async function bootActiviteitPagina(deelId){
       const tekst = (namen.length ? namen.join(', ') : 'Nog niemand') + (vrij ? ` · nog ${vrij} ${vrij === 1 ? 'plek' : 'plekken'}` : '');
       const actie = mij ? `<button class="knop hp-knop" data-af="${esc(d.id)}">Afmelden</button>` : vrij ? `<button class="knop fluo hp-knop" data-help="${esc(d.id)}">Ik help</button>` : `<span class="hp-vol">${I_VINK} Vol</span>`;
       return `<div class="hp-rij ${mij ? 'ik' : ''}"><span class="lj-dag"><b>${esc(d.start || '–')}</b><small>${esc(d.eind ? 'tot ' + d.eind : '')}</small></span>
-        <span class="hp-t"><b>${esc(d.naam)}${d.plek ? ` <span class="lh-tijd">${esc(d.plek)}</span>` : ''}</b><small>${esc(tekst)}</small></span>${actie}</div>`;
+        <span class="hp-t"><b>${esc(d.naam)}${d.plek ? ` <span class="lh-tijd">${esc(d.plek)}</span>` : ''}</b>${d.wat ? `<span class="hp-wat">${esc(d.wat)}</span>` : ''}<small>${esc(tekst)}</small></span>${actie}</div>`;
     }).join('') : '<div class="kaart leeg">Er staan nog geen diensten open.</div>';
     const n = ik.size, dank = el.querySelector('#hpDank');
     if (dank){ dank.hidden = !n; dank.textContent = n ? `Bedankt! Je staat ingeschreven voor ${n} ${n === 1 ? 'dienst' : 'diensten'}. Het comité ziet het direct.` : ''; }

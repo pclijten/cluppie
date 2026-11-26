@@ -21,25 +21,25 @@
    wordt ÉÉN keer per team opgehaald bij het openen en daarna door alle
    schermen hergebruikt (huidigeContext.data) — geen dubbele reads. */
 import { teamsOpId } from './teams-ophalen.js?v=20261011g';
-import { pasClubConfigToe } from './clubconfig.js?v=20261126w';
-import { S, esc, meld, openModal, sluitModal, isBeheerder, terugLaag } from './state.js?v=20261126w';
+import { pasClubConfigToe } from './clubconfig.js?v=20261126y';
+import { S, esc, meld, openModal, sluitModal, isBeheerder, terugLaag } from './state.js?v=20261126y';
 import {
   db, collection, doc, getDoc, getDocs, addDoc, query, where, documentId, serverTimestamp
 } from './firebase.js?v=20261011g';
 /* [20261120m] Rechtstreeks uit de Firebase-SDK (zelfde URL als firebase.js, dus
    dezelfde Firestore-instantie); firebase.js zelf blijft ongewijzigd. */
 import { getDocFromCache, getDocsFromCache } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import { BOUWEN, bouwNaam, SKILLS, SEIZOEN_FALLBACK, TEAM_CATEGORIEEN, niveauKleur, catLabel, TEAM_TAGS } from './config.js?v=20261126w';
+import { BOUWEN, bouwNaam, SKILLS, SEIZOEN_FALLBACK, TEAM_CATEGORIEEN, niveauKleur, catLabel, TEAM_TAGS } from './config.js?v=20261126y';
 import { TE_GROEPEN, TE_NIV, TE_FOCUS_LADDER, TE_STEM, teDoelIco, teVervolg, teLeeftijd, teCriteriaVoor, teScores, teIsNieuw, teGroepWaarden, teKleur, teCijfer, teZinnen } from './team-evaluatie-criteria.js?v=20261126w';
 import { ico } from './icons.js?v=20261126w';
-import { trekUitleningIn, definitiefOverzetten, wijzigUitlening } from './teams-spelers.js?v=20261126w';
-import { openUitleenForm } from './uitleen-form.js?v=20261126w';
+import { trekUitleningIn, definitiefOverzetten, wijzigUitlening } from './teams-spelers.js?v=20261126y';
+import { openUitleenForm } from './uitleen-form.js?v=20261126y';
 import { vandaagLokaal, plusDagen, leenActief, leenStatus, leenSoortLabel, leenOmschrijving } from './uitleen-regels.js?v=20261113b';
-import { telGebruik } from './tracker.js?v=20261126w';
-import { analyseWedstrijd } from './analyse.js?v=20261126w';
+import { telGebruik } from './tracker.js?v=20261126y';
+import { analyseWedstrijd } from './analyse.js?v=20261126y';
 import { opkomstVoor, MIN_OPKOMST_TRAININGEN } from './opkomst.js?v=20260922c';
-import { rondesVan, rondeStatusTeam } from './evaluatierondes.js?v=20261126w';
-import { priveBeoordelingenVan } from './beoordelingen-prive.js?v=20261126w';
+import { rondesVan, rondeStatusTeam } from './evaluatierondes.js?v=20261126y';
+import { priveBeoordelingenVan } from './beoordelingen-prive.js?v=20261126y';
 
 /* [20260929a] Voortgang van de "verplichte" evaluatie per team: de lopende
    evaluatieronde van de club als die er is, anders (zoals voorheen) de
@@ -220,7 +220,7 @@ export async function openBouwHub(clubId, bouw, isHerbezoek){
      lijn met de desktop. Lukt het laden daarvan niet, dan valt hij terug op
      het oude overlay-dashboard hieronder. */
   if (!isHerbezoek && !window.matchMedia('(min-width:1100px) and (min-height:520px)').matches){
-    try { const m = await import('./mobiel-bouw.js?v=20261126w'); await m.openMobielBouw(clubId, bouw); return; }
+    try { const m = await import('./mobiel-bouw.js?v=20261126y'); await m.openMobielBouw(clubId, bouw); return; }
     catch(e){ console.warn('[Cluppie] mobiele bouw-omgeving niet geladen, terug naar het oude dashboard', e); }
   }
   const el = bouwLaag();
@@ -911,7 +911,7 @@ function renderTeamsScherm(){
   inhoud.querySelectorAll('[data-bh-open-team]').forEach(b => {
     b.onclick = async () => {
       sluitBouwHub(); toonTerugPil();
-      const m = await import('./teams.js?v=20261126w');
+      const m = await import('./teams.js?v=20261126y');
       m.openTeam(b.dataset.bhOpenTeam);
     };
   });
