@@ -9,12 +9,12 @@
    Opslag: clubs/{club}/sponsoren/{id} (met bedrag en notitie) en de openbare kopie in
    clubTv/{tvId} + clubTv/{tvId}/schermen/{id}. Krijgt alles van activiteiten.js via ctx. */
 import { db, doc, collection, query, where, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, deleteField, onSnapshot } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261127r';
+import { S, esc, meld } from './state.js?v=20261127u';
 import { ico } from './icons.js?v=20261127b';
-import { liveId, MAX_SCHERMEN } from './toernooi-logica.js?v=20261127r';
-import { kleinPlaatje } from './plaatje.js?v=20261127r';
-import * as C from './clubscherm-logica.js?v=20261127r';
-import { SJABLONEN, sjabloonId } from './tv-sjablonen.js?v=20261127r';
+import { liveId, MAX_SCHERMEN } from './toernooi-logica.js?v=20261127u';
+import { kleinPlaatje } from './plaatje.js?v=20261127u';
+import * as C from './clubscherm-logica.js?v=20261127u';
+import { SJABLONEN, sjabloonId } from './tv-sjablonen.js?v=20261127u';
 
 const cs = { tvbZoek: '', keuze: {}, vast: 'auto', proef: null, clubId: '', tv: undefined, items: null, stop: null, qrVoor: '', qr: '', bezig: false };
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };

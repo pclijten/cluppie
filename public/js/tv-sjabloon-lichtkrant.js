@@ -1,6 +1,6 @@
 /* TV-SJABLOON "LICHTKRANT" [20261126q]: een LED-scorebord met neon. Gloed, knipperende live-stand en een glitch als overgang.
    Puntjesletters lezen minder goed bij lange tekst, dus de regels zijn kort. Zie docs/tv-sjablonen.md. */
-import { esc, standWissel, maat, maatWoord, klok, beeld, lint, bovenSponsor } from './tv-speler.js?v=20261127r';
+import { esc, standWissel, maat, maatWoord, klok, beeld, lint, bovenSponsor } from './tv-speler.js?v=20261127u';
 
 const led = s => esc(String(s ?? '').toUpperCase().replace(/[–—]/g, '-'));
 const st = r => r.status === 'live' ? '<span class="g">LIVE</span>' : r.status === 'af' ? '<span class="rd">AFGELAST</span>' : r.status === 'klaar' ? 'EINDE' : led(r.veld || (r.thuis ? '' : 'UIT'));

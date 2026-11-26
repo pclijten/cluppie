@@ -2,7 +2,7 @@
    gebruikt wordt krijgt een eigen veldje met de wedstrijd die er nu speelt of straks begint.
    De velden komen uit het programma (het veld dat bij de wedstrijd is ingevuld); er hoeft niets ingesteld te worden.
    Overgang: de krijtlijnen tekenen zichzelf en een pass schiet over het beeld. Zie docs/tv-sjablonen.md. */
-import { esc, standWissel, maat, maatWoord, stip, klok, beeld, bovenSponsor } from './tv-speler.js?v=20261127r';
+import { esc, standWissel, maat, maatWoord, stip, klok, beeld, bovenSponsor } from './tv-speler.js?v=20261127u';
 
 /* Een voetbalveld in lijnen. i: volgorde waarin de lijnen verschijnen. */
 function veld(x, y, w, h, i = 0){

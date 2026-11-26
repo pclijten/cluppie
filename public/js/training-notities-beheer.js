@@ -20,8 +20,8 @@ import {
   db, collection, doc, query, where, getDocs, getDoc, setDoc, serverTimestamp,
   functions, httpsCallable
 } from './firebase.js?v=20261011g';
-import { S, esc, isBeheerder, bewaakTerug, vangnetStilTerugAlsNodig, terugLaag } from './state.js?v=20261127r';
-import { blokId } from './training-aantekeningen.js?v=20261127r';
+import { S, esc, isBeheerder, bewaakTerug, vangnetStilTerugAlsNodig, terugLaag } from './state.js?v=20261127u';
+import { blokId } from './training-aantekeningen.js?v=20261127u';
 
 let _overlay = null;
 
