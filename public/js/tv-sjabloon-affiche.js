@@ -1,7 +1,7 @@
 /* TV-SJABLOON "AFFICHE" [20261126q]: één boodschap per dia in enorme letters, als een campagneposter.
    Overgang: een nieuw kleurvlak schuift van onder over het oude, de regels rijzen uit een masker.
    Dit is het eenvoudigste sjabloon: een goed begin voor een nieuw. Zie docs/tv-sjablonen.md. */
-import { esc, maat, stip, klok, beeld, lint, bovenSponsor } from './tv-speler.js?v=20261126t';
+import { esc, maat, stip, klok, beeld, lint, bovenSponsor } from './tv-speler.js?v=20261126u';
 
 const regel = (html, i, extra = '') => `<span class="ts-regel"><span style="--i:${i};${extra}">${html}</span></span>`;
 const onder = r => r.status === 'live' ? `Nu bezig: ${esc(r.score || '0–0')}` : r.status === 'af' ? 'Afgelast' : r.status === 'klaar' ? `Gespeeld: ${esc(r.score)}` : esc(r.plek);

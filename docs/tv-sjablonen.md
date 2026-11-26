@@ -131,3 +131,13 @@ Een tv-beheerder:
 - bouwt het programma niet zelf op. Dat doet de Cloud Function, omdat een tv-beheerder niet de wedstrijden van alle teams kan lezen.
 
 Na een merge die `firestore.rules` wijzigt moeten de regels opnieuw gedeployd worden (`tools/deploy-alles.ps1`).
+
+## Ontwerpen in de app
+
+Bij Kantine-tv en sponsoren staat rechts (op een telefoon bovenaan) de tv-pagina zelf, verkleind: een iframe met `&tv=1&ontwerp=1`.
+- Met de tv aan zie je wat er nu echt op de tv staat; met "Proefwedstrijden" (of als de tv uit staat) dezelfde opmaak met proefwedstrijden.
+- Een sjabloon kiezen, een dia vasthouden (Programma, Standen, een sponsor of eigen scherm) of een proefdoelpunt gaat met `postMessage({ cluppieTv: 1, sjabloon, vast, goal })` naar het beeld, zonder dat het opnieuw laadt. Alleen berichten van dezelfde site tellen.
+- `activiteiten.js` ververst in dit scherm alleen de delen met `data-cs-deel`, zodat het iframe blijft staan (`hertekenSchermen`).
+- In de ontwerpweergave ververst de tv-pagina zichzelf niet (geen nieuwe-versiecontrole, geen herstart om 4 uur).
+
+Wedstrijden die een trainer zelf in de app aanmaakt, staan op de dag zelf vanzelf op de tv (de Cloud Function leest alle `teams/{id}/wedstrijden` van de club). Houdt de trainer de wedstrijd bij, dan zet `kantineTvWedstrijd` elke nieuwe stand meteen op de tv.

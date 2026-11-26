@@ -69,7 +69,7 @@ export function diaReeks(m, per = 6){
 
 export function maakSpeler(el){
   stijl();
-  let T = null, m = null, tik = 0, beeldNu = '', kaderNu = '', sleutelNu = '', wissel = 0, goalTot = 0;
+  let T = null, m = null, tik = 0, beeldNu = '', kaderNu = '', sleutelNu = '', wissel = 0, goalTot = 0, vast = null;
   const wachtrij = [];
   el.innerHTML = `<div class="ts-kast"><div class="ts-stage"><div class="ts-kader"></div><div class="ts-scenes"></div><div class="ts-fx"></div><div class="ts-goal"></div></div></div>`;
   const stage = el.querySelector('.ts-stage'), kader = stage.querySelector('.ts-kader'), scenes = stage.querySelector('.ts-scenes'), fx = stage.querySelector('.ts-fx'), goalEl = stage.querySelector('.ts-goal');
@@ -87,7 +87,7 @@ export function maakSpeler(el){
     if (!T || !m) return;
     const k = T.kader(m);
     if (k !== kaderNu){ kaderNu = k; kader.innerHTML = k; }
-    const reeks = diaReeks(m, T.per || 6), dia = reeks[tik % reeks.length];
+    const reeks = diaReeks(m, T.per || 6), dia = (vast && kiesVast(reeks)) || reeks[tik % reeks.length];
     const sleutel = dia.soort + (dia.van ?? '') + (dia.x?.id ?? dia.x?.titel ?? ''), html = diaHtml(dia);
     const nieuweDia = metOvergang || sleutel !== sleutelNu;
     if (!nieuweDia && html === beeldNu){ zetKlok(); return; }
@@ -101,6 +101,11 @@ export function maakSpeler(el){
     scenes.appendChild(scene);
     zetKlok();
   }
+  /* Ontwerpen in de app: één soort dia vasthouden (programma, uitslagen, of een sponsor of eigen scherm op id). */
+  function kiesVast(reeks){
+    if (vast.soort === 'dia') return reeks.find(d => d.soort === 'dia' && d.x.id === vast.id) || (m.dias.find(x => x.id === vast.id) ? { soort: 'dia', x: m.dias.find(x => x.id === vast.id) } : null);
+    return reeks.find(d => d.soort === vast.soort) || reeks.find(d => d.soort === 'programma');
+  }
   function volgende(){ tik++; wissel = Date.now(); teken(true); }
   function toonGoal(){
     if (!T || !m || Date.now() < goalTot || !wachtrij.length) return;
@@ -109,7 +114,7 @@ export function maakSpeler(el){
     goalEl.innerHTML = T.goal(m, g); goalEl.classList.remove('aan'); void goalEl.offsetWidth; goalEl.classList.add('aan');
     setTimeout(() => { goalEl.classList.remove('aan'); goalEl.innerHTML = ''; wissel = Date.now(); toonGoal(); }, 9000);
   }
-  const lus = setInterval(() => { if (T && m && Date.now() >= goalTot && Date.now() - wissel >= (T.duur || 12000)) volgende(); }, 500);
+  const lus = setInterval(() => { if (T && m && !vast && Date.now() >= goalTot && Date.now() - wissel >= (T.duur || 12000)) volgende(); }, 500);
 
   return {
     /* Nieuw sjabloon of nieuwe gegevens. */
@@ -125,6 +130,8 @@ export function maakSpeler(el){
       teken(ander);
     },
     goal(g){ if (wachtrij.length < 4) wachtrij.push(g); toonGoal(); },
+    /* null: de dia's wisselen weer vanzelf. */
+    vast(keuze){ vast = keuze && keuze.soort ? keuze : null; teken(true); },
     stop(){ clearInterval(lus); clearInterval(klokTimer); removeEventListener('resize', schaal); },
   };
 }

@@ -14,8 +14,8 @@
 import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, collection, onSnapshot } from './firebase.js?v=20261011g';
 import { plaatjeOk, veiligeLink } from './toernooi-logica.js?v=20261125w';
 import { sorteer, nieuweGoals, goalKeuze, evenementId, evenementTv } from './clubscherm-logica.js?v=20261126t';
-import { sjabloonId, laadSjabloon } from './tv-sjablonen.js?v=20261126t';
-import { maakSpeler, tvModel, proefProgramma, PROEF_DIAS } from './tv-speler.js?v=20261126t';
+import { sjabloonId, laadSjabloon } from './tv-sjablonen.js?v=20261126u';
+import { maakSpeler, tvModel, proefProgramma, PROEF_DIAS } from './tv-speler.js?v=20261126u';
 import { stijl as stijlLive } from './live-boot.js?v=20261126n';
 import { tvStijl, tvKleur, tvZet, bordHtml, logoHtml, tikHtml, diaHtml, sponsHtml, voetHtml } from './tv-stijl.js?v=20261126n';
 
@@ -50,7 +50,19 @@ export async function bootSchermPagina(tvId){
   const alleenVoorbeeld = tvId === 'voorbeeld' && proef;
   if (!alleenVoorbeeld) try { await authKlaar(); await sessie(false); }
   catch { el.innerHTML = melding('Laden is niet gelukt', 'Controleer je verbinding en ververs de pagina.'); return; }
-  const st = { evId: '', evStop: null, ev: null, d: null, items: [], tik: 0, hersteld: false, gezien: new Map(), speler: null, T: null, laadt: '', kapot: '' };
+  const st = { evId: '', evStop: null, ev: null, d: null, items: [], tik: 0, hersteld: false, gezien: new Map(), speler: null, T: null, laadt: '', kapot: '',
+    sjabloon: '', vast: null, vastOp: null, goalProef: false };
+  /* [20261126u] Ontwerpen in de app (&ontwerp=1): de instellingen sturen het gekozen sjabloon, welke dia blijft staan
+     en een proefdoelpunt, zonder dat er iets wordt opgeslagen of de pagina opnieuw laadt. Alleen van dezelfde site. */
+  const ontwerp = qs.get('ontwerp') === '1';
+  if (ontwerp) addEventListener('message', e => {
+    const b = e.data;
+    if (e.origin !== location.origin || !b || b.cluppieTv !== 1) return;
+    if (typeof b.sjabloon === 'string') st.sjabloon = sjabloonId(b.sjabloon);
+    if ('vast' in b){ st.vast = b.vast && typeof b.vast.soort === 'string' ? { soort: b.vast.soort, id: String(b.vast.id || '') } : null; st.vastOp = null; }
+    if (b.goal) st.goalProef = true;
+    if (st.d) teken();
+  });
   let stops = [];
   function luister(){
     stops.push(onSnapshot(doc(db, 'clubTv', tvId), s => {
@@ -78,10 +90,10 @@ export async function bootSchermPagina(tvId){
   setInterval(() => { st.tik++; if (st.d) teken(); }, 12000);
   addEventListener('resize', () => { if (st.d) teken(); });
   /* een tv die dagen aan staat: elke nacht verversen, zodat een nieuwe versie van de pagina meekomt */
-  setInterval(() => { const d = new Date(); if (d.getHours() === 4 && d.getMinutes() < 2) location.reload(); }, 60000);
+  if (!ontwerp) setInterval(() => { const d = new Date(); if (d.getHours() === 4 && d.getMinutes() < 2) location.reload(); }, 60000);
   /* Staat er een nieuwe versie van Cluppie online, dan ververst de tv zichzelf binnen een kwartier (niet pas 's nachts). */
   const mijnVersie = (document.querySelector('script[src*="js/main.js"]')?.getAttribute('src') || '').split('v=')[1] || '';
-  if (mijnVersie) setInterval(async () => {
+  if (mijnVersie && !ontwerp) setInterval(async () => {
     try {
       const r = await fetch(`index.html?nieuw=${Date.now()}`, { cache: 'no-store' }); if (!r.ok) return;
       const v = (/js\/main\.js\?v=([0-9a-z]+)/.exec(await r.text()) || [])[1];
@@ -112,7 +124,14 @@ export async function bootSchermPagina(tvId){
     if (proef) d = { ...d, datum: vandaag(), programma: proefProgramma(new Date(), st.tik) };
     const tv = breed(), isVandaag = d.datum === vandaag();
     const goals = nieuweGoals(st.gezien, isVandaag ? (d.programma || []).filter(w => d.uit !== false || w.thuis) : [], goalKeuze(d.goals));
-    const sj = sjabloonId(kiesSjabloon || d.sjabloon);
+    const sj = sjabloonId(st.sjabloon || kiesSjabloon || d.sjabloon);
+    /* Proefdoelpunt vanuit het ontwerpscherm: op de eerste wedstrijd die niet is afgelast. */
+    if (st.goalProef){
+      st.goalProef = false;
+      const w = (isVandaag ? d.programma || [] : []).find(x => !x.afgelast) || { a: d.clubNaam || 'Thuis', b: 'Gasten', thuis: true, veld: 'Veld 1' };
+      const [x, y] = /^\d+\s*-\s*\d+$/.test(w.stand || '') ? w.stand.split('-').map(n => Number(n)) : [0, 0];
+      goals.push({ sleutel: 'proef', a: w.a, b: w.b, stand: `${x + 1}–${y}`, kant: 'a', team: w.a, eigen: !!w.thuis, thuis: !!w.thuis, veld: w.veld || '' });
+    }
     if (tv && sj !== 'bord' && st.kapot !== sj){
       if (st.T?.id !== sj && st.laadt !== sj){
         st.laadt = sj;
@@ -122,6 +141,7 @@ export async function bootSchermPagina(tvId){
       if (!st.speler){ st.speler = maakSpeler(el); document.documentElement.classList.add('ts-html'); document.documentElement.classList.remove('lv-tv-html'); }
       const items = (proef && !eigenItems.length ? PROEF_DIAS : eigenItems).map(x => ({ ...x, img: plaatjeOk(x.img) ? x.img : '' }));
       st.speler.zet(st.T, tvModel({ ...d, logo: plaatjeOk(d.logo) ? d.logo : '', programma: isVandaag ? d.programma : [] }, items, new Date()));
+      if (st.vastOp !== st.speler){ st.vastOp = st.speler; st.speler.vast(st.vast); }
       goals.forEach(g => st.speler.goal(g));
       return;
     }
@@ -142,7 +162,8 @@ export async function bootSchermPagina(tvId){
     /* tv: links het programma (de pagina waar we nu zijn eerst), rechts wisselend een dia; zonder dia's twee kolommen programma */
     const n = nuMin(), komend = alles.findIndex(w => min(w.tijd) + 100 >= n), start = Math.max(0, komend < 0 ? alles.length - PER : komend);
     const kolommen = dias.length ? 1 : 2, perBeeld = PER * kolommen, paginas = Math.max(1, Math.ceil(Math.max(0, alles.length - start) / perBeeld)), pag = st.tik % paginas;
-    const deel = alles.slice(start + pag * perBeeld, start + pag * perBeeld + perBeeld), beurt = dias.length ? dias[st.tik % dias.length] : null;
+    const vastDia = st.vast?.soort === 'dia' ? dias.find(x => x.id === st.vast.id) : null;
+    const deel = alles.slice(start + pag * perBeeld, start + pag * perBeeld + perBeeld), beurt = vastDia || (dias.length ? dias[st.tik % dias.length] : null);
     const tvRij = w => { const bezig = isVandaag && !w.afgelast && !w.stand && w.thuis && min(w.tijd) <= n && n < min(w.tijd) + 90;
       return `<div class="kb-wed ${w.afgelast ? 'af' : ''} ${bezig ? 'bezig' : ''}" style="--pk:${w.thuis ? 'var(--tv-wit)' : 'rgba(255,255,255,.28)'}" data-tv-k="${esc([w.tijd, w.a, w.b].join('|'))}" data-tv-stand="${esc(w.stand || '')}">
       <span class="kb-wed-v"><b>${esc(w.tijd || '–')}</b>${esc(w.afgelast ? 'Afgelast' : [w.veld, w.kk ? 'kk ' + w.kk : ''].filter(Boolean).join(' · ') || (w.thuis ? '' : 'uit'))}</span>
