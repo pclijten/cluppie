@@ -1,13 +1,13 @@
 import './datum-invoer.js?v=20261021a';
 import { auth, onAuthStateChanged } from './firebase.js?v=20261011g';
 import { verhuisLogin } from './verhuis-login.js?v=20261122c';
-import { S, $, initModalSluiten, meld, initTerugknop, initGlobaleFoutafhandeling } from './state.js?v=20261126g';
+import { S, $, initModalSluiten, meld, initTerugknop, initGlobaleFoutafhandeling } from './state.js?v=20261126p';
 import {
   initAuthUI, checkUitnodiging, handelPendingJoin, verwerkDeeplink, registreerLogin
-} from './auth.js?v=20261126g';
-import { startTeams, openTeam, renderTeam, verlaatTeamView, teamTabTerug } from './teams.js?v=20261126g';
-import { sluitWedstrijd } from './wedstrijd.js?v=20261126g';
-import { initChatbot } from './chatbot.js?v=20261126g';
+} from './auth.js?v=20261126p';
+import { startTeams, openTeam, renderTeam, verlaatTeamView, teamTabTerug } from './teams.js?v=20261126p';
+import { sluitWedstrijd } from './wedstrijd.js?v=20261126p';
+import { initChatbot } from './chatbot.js?v=20261126p';
 
 /* [20260921] Training gedeeld met een ouder (?deel=<id>): volledig losse,
    sterk vereenvoudigde flow — geen normale login, geen navigatie, alleen de
@@ -32,7 +32,7 @@ const _schermId = _zoek.get('scherm');
 const _takenId = _zoek.get('taken');
 if (_deelId){
   document.getElementById('opstart')?.remove();
-  import('./deel-boot.js?v=20261126g').then(m => m.bootDeelPagina(_deelId));
+  import('./deel-boot.js?v=20261126p').then(m => m.bootDeelPagina(_deelId));
 } else if (_hulpId){
   document.getElementById('opstart')?.remove();
   import('./hulp-boot.js?v=20261118b').then(m => m.bootHulpPagina(_hulpId));
@@ -47,7 +47,7 @@ if (_deelId){
   import('./inschrijf-boot.js?v=20261125w').then(m => m.bootInschrijfPagina(_insId));
 } else if (_schermId){
   document.getElementById('opstart')?.remove();
-  import('./scherm-boot.js?v=20261126n').then(m => m.bootSchermPagina(_schermId));
+  import('./scherm-boot.js?v=20261126p').then(m => m.bootSchermPagina(_schermId));
 } else if (_takenId){
   document.getElementById('opstart')?.remove();
   import('./taken-boot.js?v=20261125w').then(m => m.bootTakenPagina(_takenId));
@@ -57,7 +57,7 @@ if (_deelId){
    dynamisch laden scheelt elke jeugdcoach het downloaden/parsen van het
    hele adminscherm. Eén keer geladen blijft de module door de browser
    gecached, dus latere aanroepen zijn instant. */
-const openClubLazy = id => import('./club.js?v=20261126g').then(m => m.openClub(id));
+const openClubLazy = id => import('./club.js?v=20261126p').then(m => m.openClub(id));
 
 /* knoppen en modal-gedrag één keer registreren */
 initModalSluiten();
@@ -87,8 +87,8 @@ function verbergOpstart(){
 S._navRerender       = renderTeam;
 S._navTeamTabTerug   = teamTabTerug;
 S._navVerlaatTeam    = verlaatTeamView;
-S._navVerlaatClub    = () => import('./club.js?v=20261126g').then(m => m.verlaatClubView());
-S._navClubTerug      = () => import('./club.js?v=20261126g').then(m => m.clubTerugEen());
+S._navVerlaatClub    = () => import('./club.js?v=20261126p').then(m => m.verlaatClubView());
+S._navClubTerug      = () => import('./club.js?v=20261126p').then(m => m.clubTerugEen());
 S._navTerugWedstrijd = sluitWedstrijd;
 initTerugknop();
 
@@ -99,7 +99,7 @@ initTerugknop();
 const _deskMq = window.matchMedia('(min-width:1100px) and (min-height:520px)');
 function _laadDesktop(){
   if (!_deskMq.matches) return;
-  import('./desktop.js?v=20261126g')
+  import('./desktop.js?v=20261126p')
     .then(m => m.initDesktop(_deskMq))
     .catch(e => console.warn('[Cluppie] desktop-schil niet geladen', e));
 }
@@ -121,7 +121,7 @@ onAuthStateChanged(auth, async user => {
     /* [20261113d] beheerlaag van de trainingsbibliotheek (klein, één keer per sessie) */
     import('./bibliotheek.js?v=20261126g').then(m => m.laadBibliotheek()).catch(() => {});
     if (new URLSearchParams(location.search).get('trainco')){
-      import('./trainco.js?v=20261126g').then(m => m.bootVoorbeeld(user)).catch(() => {});
+      import('./trainco.js?v=20261126p').then(m => m.bootVoorbeeld(user)).catch(() => {});
     }
 
     /* Hulp-chatbot: paneel klaarzetten. Openen gebeurt via de "Hulpchat"-tegel
@@ -133,7 +133,7 @@ onAuthStateChanged(auth, async user => {
 
     /* AVG-onboarding: eerst kennisname van de privacyregels, en e-mailverificatie voor wachtwoord-accounts */
     try {
-      const tg = await import('./toegang.js?v=20261126g');
+      const tg = await import('./toegang.js?v=20261126p');
       await tg.zorgKennisname();
       if (tg.eerstVerifierenNodig()) tg.toonVerificatieHint();
     } catch(e){ console.warn('[Cluppie] onboarding-controle overgeslagen', e); }

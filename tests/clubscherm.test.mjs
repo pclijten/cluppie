@@ -42,5 +42,39 @@ ok(csv.includes('Bakkerij Jansen;Hoofdsponsor;750;2027-06-30;actief') && csv.inc
 const k = C.tvKopie({ clubNaam: 'SV Demo', logo: 'http://x', kleur: '#0055aa', mededeling: ' Welkom ', datum: '2026-11-28', programma: p });
 ok(k.logo === '' && k.kleur === '#0055aa' && k.mededeling === 'Welkom' && k.programma.length === 3 && k.uit === true, 'openbare kop van de tv');
 
+/* stand tijdens de wedstrijd en doelpunten op de tv */
+const kw = (b1, r1, b2 = 0, r2 = false) => ({ 1: { klok: { base: b1, running: r1 } }, 2: { klok: { base: b2, running: r2 } } });
+const g = (...t) => t.map(type => ({ type, pid: 'geheim' }));
+ok(JSON.stringify(C.standVan({ thuis: true })) === JSON.stringify({ stand: '', eind: false, bezig: false }), 'nog niet begonnen: geen stand');
+ok(C.standVan({ thuis: true, goals: [], kwarten: kw(120, true) }).stand === '0 - 0' && C.standVan({ thuis: true, kwarten: kw(120, true) }).bezig === true, 'klok loopt: 0 - 0 en bezig');
+ok(C.standVan({ thuis: true, goals: g('voor', 'voor', 'tegen'), kwarten: kw(1500, false, 300, true) }).stand === '2 - 1', 'thuis: voor - tegen');
+ok(C.standVan({ thuis: false, goals: g('voor', 'voor', 'tegen'), kwarten: kw(1500, false, 300, true) }).stand === '1 - 2', 'uit: stand blijft thuis - uit');
+const af = C.standVan({ thuis: true, goals: g('voor'), kwarten: kw(1500, false, 1500, false) });
+ok(af.eind === true && af.bezig === false && af.stand === '1 - 0', 'laatste periode gespeeld en klok stil: afgelopen');
+ok(C.standVan({ thuis: true, goals: g('voor'), uitslag: '3-1' }).stand === '3 - 1', 'de uitslag uit Sportlink gaat voor');
+for (const w of [{ thuis: true, goals: g('voor', 'tegen'), kwarten: kw(100, true) }, { thuis: false, uitslag: '0-2' }, {}])
+  ok(JSON.stringify(F.standVan(w)) === JSON.stringify(C.standVan(w)), 'de Cloud Function rekent de stand hetzelfde uit');
+const live = C.programmaRij({ naam: 'JO11-1' }, { datum: '2026-11-28', aftrap: '10:30', tegenstander: 'Minor', thuis: true, goals: g('voor'), kwarten: kw(600, true) });
+ok(live.stand === '1 - 0' && live.bezig === true && live.eind === false && !JSON.stringify(live).includes('geheim'), 'regel met tussenstand, zonder spelers');
+ok(C.rijStatus(live, 640) === 'live' && C.rijStatus({ ...live, eind: true, bezig: false }, 700) === 'klaar' && C.rijStatus({ tijd: '12:00', afgelast: true }, 0) === 'af', 'status live, klaar, afgelast');
+ok(C.rijStatus({ tijd: '12:00', thuis: true }, 600) === 'straks' && C.rijStatus({ tijd: '12:00', thuis: true }, 730) === 'live' && C.rijStatus({ tijd: '12:00', thuis: false }, 730) === 'voorbij', 'zonder gegevens: thuis op tijd, uit onbekend');
+ok(C.rijStatus({ tijd: '09:00', stand: '2 - 2' }, 600) === 'klaar', 'oude regel met stand is afgelopen');
+
+const thuisRij = { tijd: '10:30', a: 'JO11-1', b: 'Minor', thuis: true, veld: 'Veld 1', stand: '', eind: false }, uitRij = { tijd: '11:00', a: 'Hulsberg', b: 'JO13-1', thuis: false, stand: '0 - 0', eind: false };
+const gezien = new Map();
+ok(C.nieuweGoals(gezien, [{ ...thuisRij, stand: '1 - 0' }, uitRij], 'alle').length === 0, 'eerste keer zien: geen melding');
+let gl = C.nieuweGoals(gezien, [{ ...thuisRij, stand: '2 - 0' }, { ...uitRij, stand: '0 - 1' }], 'park');
+ok(gl.length === 1 && gl[0].team === 'JO11-1' && gl[0].eigen === true && gl[0].stand === '2–0' && gl[0].veld === 'Veld 1', 'park: alleen de goal op het eigen sportpark');
+gl = C.nieuweGoals(gezien, [{ ...thuisRij, stand: '2 - 1' }, { ...uitRij, stand: '0 - 2' }], 'alle');
+ok(gl.length === 2 && gl[0].eigen === false && gl[0].team === 'Minor' && gl[1].eigen === true && gl[1].team === 'JO13-1', 'alle: ook uit, en wie scoorde');
+ok(C.nieuweGoals(gezien, [{ ...thuisRij, stand: '3 - 1' }], 'uit').length === 0, 'melding uit');
+ok(C.nieuweGoals(gezien, [{ ...thuisRij, stand: '2 - 1' }], 'alle').length === 0 && C.nieuweGoals(gezien, [{ ...thuisRij, stand: '2 - 1' }], 'alle').length === 0, 'correctie naar beneden en geen verandering: geen melding');
+const g2 = new Map(); C.nieuweGoals(g2, [thuisRij], 'alle');
+ok(C.nieuweGoals(g2, [{ ...thuisRij, stand: '1 - 0', eind: true }], 'alle').length === 0, 'uitslag achteraf: geen melding');
+const g3 = new Map(); C.nieuweGoals(g3, [thuisRij], 'alle');
+ok(C.nieuweGoals(g3, [{ ...thuisRij, stand: '1 - 0' }], 'alle').length === 1, 'eerste doelpunt van een wedstrijd die al op het scherm stond');
+ok(C.goalKeuze('x') === 'park' && C.tvKopie({ sjabloon: 'kubus', goals: 'alle' }).sjabloon === 'kubus' && C.tvKopie({ sjabloon: '<x>' }).sjabloon === 'bord' && C.tvKopie({}).goals === 'park', 'sjabloon en goal-keuze in de openbare kop');
+ok(F.regelAnders({ datum: F.vandaagNL(), goals: [] }, { datum: F.vandaagNL(), goals: g('voor') }, F.vandaagNL()) === true && F.regelAnders({ datum: F.vandaagNL(), goals: g('voor'), selectie: [1] }, { datum: F.vandaagNL(), goals: g('voor'), selectie: [1, 2] }, F.vandaagNL()) === false && F.regelAnders({ datum: '2020-01-01' }, { datum: '2020-01-01', goals: g('voor') }, F.vandaagNL()) === false, 'functie: alleen bij een andere regel van vandaag');
+
 console.log(mis ? `clubscherm: ${mis} van ${n} MIS` : `clubscherm: ${n} controles geslaagd`);
 process.exit(mis ? 1 : 0);

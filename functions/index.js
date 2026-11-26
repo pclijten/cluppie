@@ -198,6 +198,7 @@ exports.verificatieMail = require('./verificatie-mail').verificatieMail;   // e-
 Object.assign(exports, require('./mail-beheer').maakFuncties({ isPlatformBeheerder: require('./platform').isPlatformBeheerder }));
 exports.verstuurMail = require('./mail').verstuurMail;   // SMTP-verzending van `mail/{id}` (vervangt de Trigger Email-extensie)
 exports.kantineTv = require('./kantine-tv').kantineTv;   // [20261125w] programma van vandaag op de kantine-tv (clubTv/{id}), elke tien minuten
+exports.kantineTvWedstrijd = require('./kantine-tv').kantineTvWedstrijd;   // [20261126p] stand en doelpunten direct naar de kantine-tv zodra de coach ze bijhoudt
 /* [20261011h] speler overzetten / seizoensovergang in één transactie (functions/overdracht.js) */
 exports.zetSpelerOver = require('./overdracht').zetSpelerOver;
 /* [20261122c] wie van het oude adres van een verhuisde club komt, is op cluppie.io meteen ingelogd. Zie functions/verhuizing.js. */
