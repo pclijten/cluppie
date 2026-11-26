@@ -1,6 +1,6 @@
-/* TV-SJABLOON "WEDSTRIJDAVOND" [20261126p]: voetbal-tv met scorebalk, lower third en schuine kleurvlakken.
+/* TV-SJABLOON "WEDSTRIJDAVOND" [20261126q]: voetbal-tv met scorebalk, lower third en schuine kleurvlakken.
    Overgang: drie schuine banen vegen over het beeld. Zie docs/tv-sjablonen.md en tv-speler.js. */
-import { esc, maat, maatWoord, stip, klok, beeld, label, bovenSponsor } from './tv-speler.js?v=20261126p';
+import { esc, maat, maatWoord, stip, klok, beeld, label, bovenSponsor } from './tv-speler.js?v=20261126q';
 
 const logo = m => m.logo ? `<span class="wa-logo"><img src="${esc(m.logo)}" alt=""></span>` : '<span class="wa-streep"></span>';
 const rij = (r, i) => `<div class="wa-rij ts-a ${r.status}" style="--i:${i + 1}"><span class="t">${esc(r.tijd || '–')}</span>

@@ -1,8 +1,8 @@
-/* TV-SJABLOON "VELDKAART" [20261126p]: het tactisch bord als plattegrond van het sportpark. Elk veld dat vandaag
+/* TV-SJABLOON "VELDKAART" [20261126q]: het tactisch bord als plattegrond van het sportpark. Elk veld dat vandaag
    gebruikt wordt krijgt een eigen veldje met de wedstrijd die er nu speelt of straks begint.
    De velden komen uit het programma (het veld dat bij de wedstrijd is ingevuld); er hoeft niets ingesteld te worden.
    Overgang: de krijtlijnen tekenen zichzelf en een pass schiet over het beeld. Zie docs/tv-sjablonen.md. */
-import { esc, maat, maatWoord, stip, klok, beeld, bovenSponsor } from './tv-speler.js?v=20261126p';
+import { esc, maat, maatWoord, stip, klok, beeld, bovenSponsor } from './tv-speler.js?v=20261126q';
 
 /* Een voetbalveld in lijnen. i: volgorde waarin de lijnen verschijnen. */
 function veld(x, y, w, h, i = 0){

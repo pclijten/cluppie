@@ -9,12 +9,12 @@
    Opslag: clubs/{club}/sponsoren/{id} (met bedrag en notitie) en de openbare kopie in
    clubTv/{tvId} + clubTv/{tvId}/schermen/{id}. Krijgt alles van activiteiten.js via ctx. */
 import { db, doc, collection, query, where, getDocs, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261126p';
+import { S, esc, meld } from './state.js?v=20261126q';
 import { ico } from './icons.js?v=20261116t';
 import { liveId, MAX_SCHERMEN } from './toernooi-logica.js?v=20261125w';
 import { kleinPlaatje } from './plaatje.js?v=20261125w';
-import * as C from './clubscherm-logica.js?v=20261126p';
-import { SJABLONEN, sjabloonId } from './tv-sjablonen.js?v=20261126p';
+import * as C from './clubscherm-logica.js?v=20261126q';
+import { SJABLONEN, sjabloonId } from './tv-sjablonen.js?v=20261126q';
 
 const cs = { clubId: '', tv: undefined, items: null, stop: null, qrVoor: '', qr: '', bezig: false };
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };

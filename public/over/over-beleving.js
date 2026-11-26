@@ -75,14 +75,18 @@ if (gsap && ScrollTrigger && !rustig) {
     scrollTrigger: { trigger: '.pijlers', start: 'top 85%', once: true },
   });
 
-  /* ---------- "bijna 170" telt op ---------- */
+  /* ---------- het getal telt op (de tekst staat in de pagina en volgt de sport) ---------- */
   const getal = document.querySelector('.cijfer__getal');
   if (getal) {
-    const teller = { n: 0 };
     ScrollTrigger.create({
       trigger: getal, start: 'top 85%', once: true,
-      onEnter: () => gsap.to(teller, { n: 170, duration: 1.6, ease: 'power3.out', snap: { n: 1 },
-        onUpdate: () => { getal.textContent = 'bijna ' + teller.n; } }),
+      onEnter: () => {
+        const m = getal.textContent.match(/^(\D*)(\d+)(.*)$/);
+        if (!m) return;                       /* pilotsport: geen getal, dus niets te tellen */
+        const sport = document.documentElement.getAttribute('data-sport'), teller = { n: 0 };
+        gsap.to(teller, { n: +m[2], duration: 1.6, ease: 'power3.out', snap: { n: 1 },
+          onUpdate: () => { if (document.documentElement.getAttribute('data-sport') === sport) getal.textContent = m[1] + teller.n + m[3]; } });
+      },
     });
   }
 
@@ -107,13 +111,14 @@ if (gsap && ScrollTrigger && !rustig) {
     rond.prepend(loper);
     const illo = new Zdog.Illustration({ element: loper.querySelector('canvas'), zoom: 3.6 });
     const bol = new Zdog.Anchor({ addTo: illo });
-    new Zdog.Shape({ addTo: bol, stroke: 30, color: '#f4f4ef' });
+    const basis = new Zdog.Shape({ addTo: bol, stroke: 30, color: '#f4f4ef' });
+    const voetVlakken = [];
     /* twaalf zwarte vijfhoeken op de plekken van een echte voetbal (de hoekpunten van een icosaëder) */
     const vlak = n => {
       const ry = Math.atan2(n[0], n[2]), rx = -Math.asin(n[1]);
       const buiten = new Zdog.Group({ addTo: bol, rotate: { y: ry } });
       const binnen = new Zdog.Group({ addTo: buiten, rotate: { x: rx } });
-      new Zdog.Polygon({ addTo: binnen, sides: 5, radius: 5.2, stroke: 1, fill: true, color: '#1b1f24', translate: { z: 14.6 } });
+      voetVlakken.push(new Zdog.Polygon({ addTo: binnen, sides: 5, radius: 5.2, stroke: 1, fill: true, color: '#1b1f24', translate: { z: 14.6 } }));
     };
     const h = Math.atan(0.5);
     vlak([0, 1, 0]); vlak([0, -1, 0]);
@@ -122,6 +127,22 @@ if (gsap && ScrollTrigger && !rustig) {
       vlak([Math.cos(h) * Math.sin(f1), Math.sin(h), Math.cos(h) * Math.cos(f1)]);
       vlak([Math.cos(h) * Math.sin(f2), -Math.sin(h), Math.cos(h) * Math.cos(f2)]);
     }
+    /* [20261126p] de bal volgt de sport van de pagina: voetbal met vijfhoeken, hockey klein en glad,
+       volleybal met gekleurde banen, korfbal geel met naden */
+    const baan = (kleur, rot, dikte) => new Zdog.Ellipse({ addTo: bol, diameter: 29, stroke: dikte, color: kleur, rotate: rot, visible: false });
+    const volleyBanen = [baan('#2f6fd0', {}, 5), baan('#f2c230', { x: Zdog.TAU / 4 }, 5), baan('#2f6fd0', { y: Zdog.TAU / 4 }, 5)];
+    const korfNaden = [baan('#1b1f24', {}, 1.6), baan('#1b1f24', { x: Zdog.TAU / 4 }, 1.6), baan('#1b1f24', { y: Zdog.TAU / 4 }, 1.6)];
+    let balSport = null;
+    const kleedBal = () => {
+      const sport = document.documentElement.getAttribute('data-sport') || 'voetbal';
+      if (sport === balSport) return;
+      balSport = sport;
+      voetVlakken.forEach(v => { v.visible = sport === 'voetbal'; });
+      volleyBanen.forEach(v => { v.visible = sport === 'volleybal'; });
+      korfNaden.forEach(v => { v.visible = sport === 'korfbal'; });
+      basis.color = sport === 'korfbal' ? '#f2c230' : '#f4f4ef';
+      illo.zoom = sport === 'hockey' ? 2.1 : 3.6;
+    };
     const zetStand = s => {
       if (rond.dataset.stand === String(s)) return;
       rond.dataset.stand = s;
@@ -136,7 +157,9 @@ if (gsap && ScrollTrigger && !rustig) {
       }
       return 324;
     };
+    let laatsteP = 0;
     const zet = p => {
+      laatsteP = p; kleedBal();
       const hoek = hoekVan(p);
       loper.style.rotate = hoek + 'deg';
       /* rollen: de bal draait in de looprichting, evenredig met de afgelegde weg */
@@ -146,6 +169,7 @@ if (gsap && ScrollTrigger && !rustig) {
       zetStand(p < 0.34 ? 1 : p < 0.67 ? 2 : 3);
     };
     zet(0);
+    new MutationObserver(() => zet(laatsteP)).observe(document.documentElement, { attributes: true, attributeFilter: ['data-sport'] });
     /* brede schermen: de cirkel blijft staan tot de bal rond is; het zaterdag-verhaal wisselt op zijn plek */
     mm.add('(min-width: 60rem)', () => {
       const sectie = document.querySelector('.cirkel');

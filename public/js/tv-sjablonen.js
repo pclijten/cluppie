@@ -1,4 +1,4 @@
-/* ==================== TV-SJABLONEN: DE LIJST [20261126p] ====================
+/* ==================== TV-SJABLONEN: DE LIJST [20261126q] ====================
    De sjablonen waaruit een club kiest voor de kantine-tv (Activiteiten › Kantine-tv en sponsoren).
    'bord' is het tactisch bord uit tv-stijl.js; de andere staan elk in een eigen bestand tv-sjabloon-<id>.js
    en worden pas geladen als een tv ze nodig heeft.
@@ -27,16 +27,16 @@ export const SJABLONEN = [
 ];
 
 const LADERS = {
-  wedstrijdavond: () => import('./tv-sjabloon-wedstrijdavond.js?v=20261126p'),
-  vertrekhal: () => import('./tv-sjabloon-vertrekhal.js?v=20261126p'),
-  affiche: () => import('./tv-sjabloon-affiche.js?v=20261126p'),
-  bento: () => import('./tv-sjabloon-bento.js?v=20261126p'),
-  veldkaart: () => import('./tv-sjabloon-veldkaart.js?v=20261126p'),
-  sportnieuws: () => import('./tv-sjabloon-sportnieuws.js?v=20261126p'),
-  lichtkrant: () => import('./tv-sjabloon-lichtkrant.js?v=20261126p'),
-  plakboek: () => import('./tv-sjabloon-plakboek.js?v=20261126p'),
-  kubus: () => import('./tv-sjabloon-kubus.js?v=20261126p'),
-  lounge: () => import('./tv-sjabloon-lounge.js?v=20261126p'),
+  wedstrijdavond: () => import('./tv-sjabloon-wedstrijdavond.js?v=20261126q'),
+  vertrekhal: () => import('./tv-sjabloon-vertrekhal.js?v=20261126q'),
+  affiche: () => import('./tv-sjabloon-affiche.js?v=20261126q'),
+  bento: () => import('./tv-sjabloon-bento.js?v=20261126q'),
+  veldkaart: () => import('./tv-sjabloon-veldkaart.js?v=20261126q'),
+  sportnieuws: () => import('./tv-sjabloon-sportnieuws.js?v=20261126q'),
+  lichtkrant: () => import('./tv-sjabloon-lichtkrant.js?v=20261126q'),
+  plakboek: () => import('./tv-sjabloon-plakboek.js?v=20261126q'),
+  kubus: () => import('./tv-sjabloon-kubus.js?v=20261126q'),
+  lounge: () => import('./tv-sjabloon-lounge.js?v=20261126q'),
 };
 
 /* Een onbekende of weggehaalde id valt terug op het tactisch bord. */

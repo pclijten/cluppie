@@ -13,9 +13,9 @@
    Voorbeeld bekijken zonder iets op te slaan: ?scherm=<id>&sjabloon=<id>, en &proef=1 voor proefwedstrijden met doelpunten. */
 import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, collection, onSnapshot } from './firebase.js?v=20261011g';
 import { plaatjeOk, veiligeLink } from './toernooi-logica.js?v=20261125w';
-import { sorteer, nieuweGoals, goalKeuze } from './clubscherm-logica.js?v=20261126p';
-import { sjabloonId, laadSjabloon } from './tv-sjablonen.js?v=20261126p';
-import { maakSpeler, tvModel, proefProgramma, PROEF_DIAS } from './tv-speler.js?v=20261126p';
+import { sorteer, nieuweGoals, goalKeuze } from './clubscherm-logica.js?v=20261126q';
+import { sjabloonId, laadSjabloon } from './tv-sjablonen.js?v=20261126q';
+import { maakSpeler, tvModel, proefProgramma, PROEF_DIAS } from './tv-speler.js?v=20261126q';
 import { stijl as stijlLive } from './live-boot.js?v=20261126n';
 import { tvStijl, tvKleur, tvZet, bordHtml, logoHtml, tikHtml, diaHtml, sponsHtml, voetHtml } from './tv-stijl.js?v=20261126n';
 

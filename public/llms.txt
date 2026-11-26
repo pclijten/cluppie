@@ -1,31 +1,40 @@
 # Cluppie
 
-> Cluppie is een Nederlandstalige webapp (PWA) voor jeugdvoetbal bij amateurclubs: voor jeugdtrainers, coördinatoren, het hoofd jeugdopleiding en de technische commissie. Trainers maken opstellingen, bewaken eerlijke speeltijd, evalueren wedstrijden en maken trainingen die passen bij hun team; de club legt speelstijl, leerlijn en seizoensplan vast voor de hele jeugdopleiding. Website: https://www.cluppie.io
+> Cluppie is een Nederlandstalige webapp (PWA) voor jeugdvoetbal en jeugdhockey bij amateurclubs: voor jeugdtrainers, coördinatoren, het hoofd jeugdopleiding, de technische commissie en het bestuur. Trainers maken opstellingen, bewaken eerlijke speeltijd, evalueren wedstrijden en maken trainingen die passen bij hun team; de club legt speelstijl, leerlijn en seizoensplan vast voor de hele jeugdopleiding, en organiseert toernooien en clubactiviteiten met vrijwilligers, een kantine-tv en sponsoren. Website: https://www.cluppie.io
 
 Cluppie zit in de opstartfase (najaar 2026). Clubs en trainers die nu instappen, gebruiken Cluppie een half jaar gratis. Daarna betaalt een club een vast bedrag per seizoen naar het aantal jeugdteams: € 349 (tot en met 10 teams), € 595 (11 tot en met 25) of € 895 (26 of meer), exclusief btw. Een trainer met alleen zijn eigen team blijft gratis. Het wordt gebouwd samen met de trainers en jeugdopleidingen die het gebruiken; maatwerk per club is mogelijk. Contact: paul@cluppie.io
+
+## Sporten
+
+- Voetbal (KNVB) en hockey (KNHB) zijn open voor iedereen. Voetbal heeft ruim 370 eigen oefenvormen, hockey 48, elk in 3D, met leerblokken en een seizoensplan per bouw.
+- Volleybal (Nevobo) en korfbal (KNKV) starten als pilot met een club: opstelling, speeltijd, Teamkamer en rollen werken, de oefenstof bouwen we samen met de eerste clubs.
+- Per sport gelden de spelvormen, regels, kaarten, posities en woorden van de bond.
 
 ## Voor wie
 
 - Jeugdtrainer of coach: opstelling, wissels, speeltijd, evaluatie en trainingen op de telefoon langs het veld. Een trainer kan ook zonder club beginnen met zijn eigen team; sluit de club later aan, dan gaat het team mee.
 - Bouwcoördinator, trainingscoördinator, hoofd jeugdopleiding: overzicht over alle teams van een bouw of de club, één seizoensplan, per week zicht op wat elk team traint en hoe teams en spelers zich ontwikkelen.
 - Technische commissie en bestuur: zien hoe het jeugdbeleidsplan in de praktijk landt, seizoen na seizoen. Kennis over een team blijft bewaard als een trainer stopt.
+- Comités en vrijwilligers: een toernooi, kamp of clubdag organiseren met een draaiboek. Een comitélid ziet alleen de eigen activiteiten.
+- Bezoekers, gastclubs, scholen en bedrijven: zonder account een team inschrijven, een toernooi live volgen of zich aanmelden als vrijwilliger.
 
 ## Wat Cluppie doet
 
 - Wedstrijddag: opstelling per kwart of helft, wissels slepen, klok en periodes volgens de KNVB-categorie, speeltijd per speler, doelpunten en kaarten, toernooimodus, formaten van 4 tegen 4 tot 11 tegen 11.
 - Evalueren: teamevaluatie na de wedstrijd (eerst het wedstrijddoel, daarna per onderdeel), spelersbeoordeling op vijf domeinen (technisch, tactisch, fysiek, mentaal, gedrag), leerpunten per speler, groeicurves per team, automatisch een passend trainingsthema.
-- Trainen: een training maken uit ruim 370 eigen oefenvormen voor O6 tot en met O19, elk in 3D met het spelverloop in stappen, coachmomenten en een makkelijkere en moeilijkere versie. De planner houdt rekening met aantal spelers, materiaal, een half veld en het weer. Een bestaande training past zich met de balk Vandaag aan het aantal spelers en het weer aan, zonder dat het plan verandert. Eigen trainingsschema's van de club kunnen als PDF worden ingeladen.
+- Trainen: een training maken uit ruim 370 eigen voetbalvormen voor O6 tot en met O19 (of 48 hockeyvormen), elk in 3D met het spelverloop in stappen, coachmomenten en een makkelijkere en moeilijkere versie. De planner houdt rekening met aantal spelers, materiaal, een half veld en het weer. Een bestaande training past zich met de balk Vandaag aan het aantal spelers en het weer aan, zonder dat het plan verandert. Eigen trainingsschema's van de club kunnen als PDF worden ingeladen.
 - Plannen: seizoensplan per bouw of voor de hele club, met één tik klaargezet bij de teams. De club kiest de werkwijze: "Club stuurt" (coördinatoren maken trainingen en plan) of "Trainers vrij".
 - Speelwijze en coachmodel: de club legt vast hoe ze wil voetballen, in de vier momenten van het spel. Het principe van de week komt terug in het seizoensplan, in elke training en in de evaluatie na de wedstrijd. De trainer bouwt daarbinnen zijn eigen manier van coachen op.
 - Teamkamer voor ouders en spelers: agenda, wie erbij is, mededelingen en polls (wie rijdt, wie wast, fruit). De trainer keurt elke ouder goed; een speler komt binnen met een code van de eigen ouder. Staat standaard uit en wordt per club aangezet.
-- Club beheren: teams en wedstrijden rechtstreeks uit Sportlink, coaches uitnodigen met een persoonlijke link, spelers uitlenen tussen teams, documenten en berichten delen, clubbreed evaluatieoverzicht met Excel-export, eigen logo en kleuren.
+- Club beheren: teams en wedstrijden rechtstreeks uit Sportlink (hockey: teams plakken uit LISA), coaches uitnodigen met een persoonlijke link, spelers uitlenen tussen teams, documenten en berichten delen, clubbreed evaluatieoverzicht met Excel-export, eigen logo en kleuren, een uitlegvideo bovenaan het startscherm van de teams (met wie hem bekeek), en een veldplanner die de trainingen over velden en kleedkamers verdeelt (nog als concept, per club aan te zetten).
+- Activiteiten (per club aan te zetten): draaiboeken die terugplannen vanaf de datum, een comité, vrijwilligersdiensten, budget en evaluatie. Toernooiplanner met poules, speelschema over meerdere velden, kleedkamers en finales; online inschrijven per categorie met wachtlijst en inschrijfgeld, ook voor scholen en bedrijven; een live pagina voor telefoon en tv. Kantine-tv met de wedstrijden van vandaag, sponsoren per seizoen en een vrijwilligersbank met per taak wat je precies doet.
 - Techniek: werkt in de browser op telefoon en laptop, toe te voegen aan het beginscherm, werkt offline door langs de lijn. Inloggen met Google of e-mail; geen installatie uit een appwinkel nodig.
 
 ## Wat Cluppie niet doet
 
 - Geen betalingen (contributie, boetes, teampot).
 - Geen chat met ouders: ouders en spelers kunnen meekijken in de Teamkamer, maar praten en afmelden blijft in de groepsapp.
-- Geen ledenadministratie: die blijft in Sportlink.
+- Geen ledenadministratie: die blijft in Sportlink of LISA.
 
 ## Privacy
 

@@ -1,4 +1,4 @@
-/* ==================== TV-SPELER [20261126p] ====================
+/* ==================== TV-SPELER [20261126q] ====================
    Speelt een tv-sjabloon af (tv-sjabloon-<id>.js, lijst in tv-sjablonen.js) op de kantine-tv.
    De speler doet alles wat voor elk sjabloon gelijk is; een sjabloon levert alleen html en css.
 
@@ -8,7 +8,7 @@
    - Verandert er iets terwijl een dia staat (een stand, een mededeling), dan wordt alleen dat deel ververst, zonder overgang.
    - goal(g) legt het doelpunt-moment van het sjabloon over het beeld; de dia's wachten zolang.
    Wat een sjabloon moet leveren staat in docs/tv-sjablonen.md. */
-import { rijStatus } from './clubscherm-logica.js?v=20261126p';
+import { rijStatus } from './clubscherm-logica.js?v=20261126q';
 
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 /* Lettergrootte die krimpt als de tekst langer is dan `tekens`: voor namen van sponsoren en teams in grote letters. */

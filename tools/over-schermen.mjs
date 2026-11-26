@@ -5,11 +5,15 @@
      node tools/over-schermen.mjs [http://localhost:5002] [--donker] [--licht] [--alleen=naam,naam]
    Zonder --donker/--licht worden beide gemaakt. Nodig: puppeteer-core en Chrome
    (npm i -g puppeteer-core, of zet PUPPETEER_PAD naar een map met puppeteer-core).
-   Schrijft naar public/over/app/<naam>.jpg (licht) en <naam>-donker.jpg (donker). */
+   Schrijft naar public/over/app/<naam>.jpg (licht) en <naam>-donker.jpg (donker).
+   --sport=hockey maakt de schermen van die sport (demo met &sport=) in public/over/app/<sport>/;
+   de Teamkamer is voor elke sport gelijk en wordt dan overgeslagen.
+   FIREBASE_PAD=<map van het npm-pakket firebase>: laadt de Firebase-bestanden van gstatic.com lokaal,
+   voor een omgeving waar dat adres dicht staat. */
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 
 const require = createRequire(import.meta.url);
 let puppeteer;
@@ -26,7 +30,11 @@ const themas = args.includes('--donker') || args.includes('--licht')
   ? ['licht', 'donker'].filter(t => args.includes('--' + t)) : ['licht', 'donker'];
 /* --alleen=naam,naam maakt alleen die schermen opnieuw */
 const ALLEEN = (args.find(a => a.startsWith('--alleen=')) || '').slice(9).split(',').filter(Boolean);
-const UIT = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'over', 'app');
+const SPORT = (args.find(a => a.startsWith('--sport=')) || '').slice(8);
+const UIT = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'over', 'app', ...(SPORT ? [SPORT] : []));
+mkdirSync(UIT, { recursive: true });
+const DEMO = '/index.html?demo' + (SPORT ? '=trainer&sport=' + SPORT : '');
+const FIREBASE_PAD = process.env.FIREBASE_PAD || '';
 const wacht = ms => new Promise(r => setTimeout(r, ms));
 const TEAM = 'demo-o11-2';
 
@@ -77,12 +85,23 @@ async function openTab(pg, tab){
   }, TEAM, tab);
 }
 
-async function nieuwePagina(browser, thema, telefoon, adres = '/index.html?demo'){
+async function nieuwePagina(browser, thema, telefoon, adres = DEMO){
   /* elke opname een eigen, schone sessie: de app onthoudt anders waar de vorige opname was */
   const ctx = await browser.createBrowserContext();
   const pg = await ctx.newPage();
   pg.sluit = () => ctx.close();
   pg.on('pageerror', e => console.warn('  [pagina]', e.message));
+  if (process.env.OVER_DEBUG) pg.on('console', m => { if (m.type() !== 'log') console.warn('  [console]', m.text().slice(0, 200)); });
+  if (FIREBASE_PAD){
+    await pg.setBypassServiceWorker(true);   /* anders vangt de service worker het verzoek af */
+    await pg.setRequestInterception(true);
+    pg.on('request', rq => {
+      const m = rq.url().match(/^https:\/\/www\.gstatic\.com\/firebasejs\/[^/]+\/([\w.-]+\.js)$/);
+      const f = m && join(FIREBASE_PAD, m[1]);
+      if (f && existsSync(f)) rq.respond({ status: 200, contentType: 'application/javascript', headers: { 'access-control-allow-origin': '*' }, body: readFileSync(f) });
+      else rq.continue();
+    });
+  }
   await pg.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: thema === 'donker' ? 'dark' : 'light' }, { name: 'prefers-reduced-motion', value: 'reduce' }]);
   if (telefoon) await pg.setViewport({ width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   else await pg.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
@@ -91,7 +110,7 @@ async function nieuwePagina(browser, thema, telefoon, adres = '/index.html?demo'
   return pg;
 }
 
-const browser = await puppeteer.launch({ executablePath: CHROME, headless: true });
+const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: process.env.GEEN_SANDBOX ? ['--no-sandbox'] : [] });
 for (const thema of themas){
   const achter = thema === 'donker' ? '-donker' : '';
   for (const [naam, klik] of LAPTOP){
@@ -103,6 +122,7 @@ for (const thema of themas){
   }
   for (const [naam, stap, adres] of TELEFOON){
     if (ALLEEN.length && !ALLEEN.includes(naam)) continue;
+    if (SPORT && adres) continue;
     const pg = await nieuwePagina(browser, thema, true, adres);
     if (stap){ await stap(pg); await wacht(3000); }
     await pg.screenshot({ path: join(UIT, naam + achter + '.jpg'), type: 'jpeg', quality: 82 });

@@ -76,7 +76,7 @@ const kantineTv = onSchedule(
   }
 );
 
-/* [20261126p] Doelpunten direct op de tv. De coach houdt de stand bij in de app (teams/{t}/wedstrijden/{w}.goals);
+/* [20261126q] Doelpunten direct op de tv. De coach houdt de stand bij in de app (teams/{t}/wedstrijden/{w}.goals);
    wachten op de ronde van tien minuten is te traag voor een goal-melding. Verandert de regel van een wedstrijd
    van vandaag (stand, tijd, veld, kleedkamer, afgelast), dan werken we de open tv's van die club meteen bij.
    Elke andere wijziging (opstelling, wissels) verandert de regel niet en stopt hier zonder iets te lezen. */
