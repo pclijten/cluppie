@@ -119,7 +119,6 @@ export const TE_GROEPEN = [
 ];
 export const TE_CRITERIA = TE_GROEPEN.flatMap(g => g.crit.map(c => ({ ...c, groep: g.id, groepKleur: g.kleur })));
 export const teCriterium = id => TE_CRITERIA.find(c => c.id === id) || null;
-export const teGroep = id => TE_GROEPEN.find(g => g.id === id) || null;
 export const teZichtbaar = (c, lft) => lft >= c.vanaf && (!c.tot || lft <= c.tot);
 export const teCriteriaVoor = lft => TE_CRITERIA.filter(c => teZichtbaar(c, lft));
 export const teZinnen = (c, lft) => (c.zTeam && lft >= 12) ? c.zTeam : c.z;
@@ -188,7 +187,6 @@ export function teLaagste(scores, lft){
   return l;
 }
 export const teKleur = v => v == null ? 'var(--surface-2)' : `var(--n${Math.max(1, Math.min(5, Math.round(v)))})`;
-export const teKleurHex = v => v == null ? null : ['#F0565B','#F59C4A','#F2C94C','#7DCB6A','#35C47A'][Math.max(1, Math.min(5, Math.round(v))) - 1];
 export const teCijfer = v => v == null ? '–' : v.toFixed(1).replace('.', ',');
 
 /* ---------- Blok bij een wedstrijddatum (oefenstof van de trainingscoördinator) ----------

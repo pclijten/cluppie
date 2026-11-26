@@ -28,11 +28,11 @@
 
    Een club-document zonder instellingen.v krijgt de neutrale standaard totdat de
    beheerder de waarden in Instellingen "vastlegt". */
-import { S, clubAfkorting } from './state.js?v=20261127n';
-import * as C from './config.js?v=20261127n';
+import { S, clubAfkorting } from './state.js?v=20261127p';
+import * as C from './config.js?v=20261127p';
 import { zetActieveSport, actieveSport, sportProfiel, SPORTEN, STANDAARD_SPORT } from './sporten.js?v=20261126g';   /* [20261125y] sportprofiel stap 3 */
 import { db, doc, getDoc } from './firebase.js?v=20261011g';
-import { zetContentClub } from './content.js?v=20261127n';
+import { zetContentClub } from './content.js?v=20261127p';
 import { weerVanTeam } from './snelstart-logica.js?v=20261122a';
 import { schoonProfiel as schoonPdfProfiel } from './pdf-profiel.js?v=20261115e';
 
@@ -62,7 +62,6 @@ export const DISTRICTEN = [
   { id: 'zuid1',  naam: 'Zuid I', ingebouwd: true },
   { id: 'zuid2',  naam: 'Zuid II', ingebouwd: true },
 ];
-export const districtNaam = id => (id === 'zuid' ? 'Zuid I / II' : (DISTRICTEN.find(d => d.id === id) || {}).naam || (id === 'eigen' ? 'Eigen kalender' : id || ''));
 export const districtId = id => (id === 'zuid' || !id ? 'zuid1' : id);
 /* Document-id van een platformkalender: "2026-27_zuid1" (zuid → zuid1 en zuid2 delen dezelfde kalender via zuid1). */
 export const kalenderId = (seizoen, district) => String(seizoen).replace(/[^0-9]+/g, '-').replace(/^-|-$/g, '') + '_' + (district === 'zuid2' ? 'zuid1' : districtId(district));
@@ -202,7 +201,6 @@ try {
   if (m && m.clubId){ LOGO_CACHE[m.clubId] = veiligUrl(m.logo) || CLUPPIE_LOGO; NAAM_CACHE[m.clubId] = m.naam || ''; }
 } catch (e) {}
 
-export function huidigeClubId(){ return HUIDIG ? HUIDIG.clubId : null; }
 export function cfg(){ return HUIDIG ? HUIDIG.eff : diep(NEUTRAAL, {}); }
 
 /* [20261126a] Sport wisselen (stap 5): de standaard van de sport in config.js en in ORIG zetten.
@@ -234,7 +232,7 @@ export function pasClubConfigToe(club){
     leiding: { admins: club.admins || {}, hoofdJeugd: club.hoofdJeugd || {}, bouwCoordinatoren: club.bouwCoordinatoren || {},
       eigenBouwen: Array.isArray(club.eigenBouwen) ? club.eigenBouwen : [] } };
   /* [20261116b] eenmalige uitleg voor het hoofd jeugdopleiding (rolkaart.js) */
-  if (S.user && club.hoofdJeugd && club.hoofdJeugd[S.user.uid] === true) import('./rolkaart.js?v=20261127n').then(m => m.planRolkaart()).catch(() => {});
+  if (S.user && club.hoofdJeugd && club.hoofdJeugd[S.user.uid] === true) import('./rolkaart.js?v=20261127p').then(m => m.planRolkaart()).catch(() => {});
   /* [20261021] maximale videogrootte: alleen de eindbaas (platformModules.maxVideoMB); buiten de handtekening zoals S._clubPlatform */
   { const pv = Number(club.platformModules && club.platformModules.maxVideoMB);
     C.ACTIEF.maxVideoMB = pv > 0 ? pv : C.ACTIEF_STANDAARD.maxVideoMB; }
@@ -428,7 +426,6 @@ export function clubAfk(club){
   const ingesteld = String((eff.identiteit && eff.identiteit.afkorting) || '').trim();
   return ingesteld || clubAfkorting(naam);   // zonder instelling: afgeleid uit de clubnaam
 }
-export function clubNaamNu(){ return HUIDIG ? HUIDIG.naam : ''; }
 export function kompasNaam(){ return (cfg().identiteit.kompasNaam || 'Club-kompas').trim(); }
 export function beleidsplanNaam(){ return (cfg().identiteit.beleidsplanNaam || 'jeugdbeleidsplan').trim(); }
 /* [20261021] AI staat standaard uit en wordt alleen door de eindbaas aangezet (clubs/{id}.platformModules.ai) */

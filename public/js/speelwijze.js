@@ -11,17 +11,17 @@
 
    Importeert NIET uit teams.js of teams-seizoensplan.js (geen kringimport): het plan van het team leest hij uit
    S._spPlan, en teams.js geeft zetTeamTab mee. */
-import { S, esc, meld } from './state.js?v=20261127n';
+import { S, esc, meld } from './state.js?v=20261127p';
 import { db, doc, getDoc, setDoc, deleteDoc } from './firebase.js?v=20261011g';
-import { leeftijdVanCategorie, catLabel } from './config.js?v=20261127n';
-import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261127n';
+import { leeftijdVanCategorie, catLabel } from './config.js?v=20261127p';
+import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261127p';
 import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261126g';
-import { positieOp, positieWeek } from './seizoensplan-logica.js?v=20261127n';
-import { rechtenVoor } from './seizoensplan-club.js?v=20261127n';
+import { positieOp, positieWeek } from './seizoensplan-logica.js?v=20261127p';
+import { rechtenVoor } from './seizoensplan-club.js?v=20261127p';
 import { maak3DBlok } from './scene3d.js?v=20261126p';
-import * as L from './speelstijl-logica.js?v=20261019e';
-import { speelwijzeVan, perMoment, rodeDraad, dekking, vormenPerPrincipe, principeVoorThema, huidigUitStijl, MOMENTEN } from './speelwijze-logica.js?v=20261116j';
-import { htmlDraadKaart, htmlWiel, htmlPrincipe, htmlLater, htmlSchuiven } from './speelwijze-html.js?v=20261116j';
+import * as L from './speelstijl-logica.js?v=20261127p';
+import { speelwijzeVan, perMoment, rodeDraad, dekking, vormenPerPrincipe, principeVoorThema, huidigUitStijl, MOMENTEN } from './speelwijze-logica.js?v=20261127p';
+import { htmlDraadKaart, htmlWiel, htmlPrincipe, htmlLater, htmlSchuiven } from './speelwijze-html.js?v=20261127p';
 
 const vandaagIso = () => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`; };
 const leeftijd = () => leeftijdVanCategorie(S.team?.categorie);
@@ -274,6 +274,4 @@ export function wedstrijdvraagNu(thema){
   return p ? { vraag: p.vraag, principe: p } : null;
 }
 
-/* Voor andere schermen: is er voor dit thema een principe? */
-export const principeNu = thema => principeVoorThema(speelwijzeNu(), thema);
 export { MOMENTEN };

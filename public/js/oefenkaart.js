@@ -6,7 +6,6 @@
 import { MATERIAAL_NAAM } from './trainingscontext-logica.js?v=20261019a';
 import { stappen3D } from './scene3d.js?v=20261126p';
 
-export const VELD_NAMEN = [['doel', 'Doel'], ['tijd', 'Tijdbestek'], ['mat', 'Benodigdheden'], ['uitleg', 'Uitleg'], ['diff', 'Differentiatie'], ['coach', 'Coachmomenten'], ['spel', 'Spelvormen']];
 export const TIJDEN = [5, 10, 15, 20];
 export const STANDAARD_OPEN = 'uitleg';
 

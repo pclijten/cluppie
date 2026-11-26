@@ -51,7 +51,6 @@ export function wedstrijdInfo(w){
     route: (r => /^https:\/\/www\.google\.com\/maps\//.test(r) ? r : '')(eigen.accommodatie ? (eigen.route || '') : (sl.route || '')),
   };
 }
-export const heeftInfo = w => { const i = wedstrijdInfo(w); return !!(i.accommodatie || i.verzamel.t || i.vertrek.t); };
 
 /* Korte plekregel voor de wedstrijdlijst: "Sportpark De Kempen · veld 3". */
 export function plekKort(w){

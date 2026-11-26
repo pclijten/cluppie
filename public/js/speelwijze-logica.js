@@ -18,7 +18,7 @@
    dan de speelwijze, dan de trainer. Een principe waarvoor een team te jong is, stuurt dus niets.
 
    Zonder imports uit de app: scherm, planner en tests gebruiken deze module los van elkaar. */
-import { DIMS, DIM_IDS, REFS, FASEN, statusVan } from './speelstijl-logica.js?v=20261019e';
+import { DIMS, DIM_IDS, REFS, FASEN, statusVan } from './speelstijl-logica.js?v=20261127p';
 
 /* ---------- de vier momenten van het spel ---------- */
 export const MOMENTEN = [

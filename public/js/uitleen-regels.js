@@ -104,15 +104,6 @@ export function leenActief(u, vandaag = vandaagLokaal()){
   if (u.beeindigd) return false;
   return !u.tot || u.tot >= vandaag;
 }
-/* Valt deze datum binnen de periode van de uitlening? */
-export function inPeriode(u, datum){
-  if (isOud(u)) return true;
-  if (!datum) return true;
-  const v = vanafVan(u);
-  if (v && datum < v) return false;
-  if (u.tot && datum > u.tot) return false;
-  return true;
-}
 const conflictKeuze = (u, datum) => (u?.conflicten || {})[datum] || 'beide';
 
 /* ---------- Ontvangend team ---------- */

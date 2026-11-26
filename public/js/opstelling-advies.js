@@ -24,17 +24,17 @@
    Opgeroepen vanuit wedstrijd.js (openOpstellingAdvies). Opslaan en hertekenen
    gebeurt via de callback van wedstrijd.js, zodat er één schrijfpad blijft. */
 import { db, doc, updateDoc } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal, spelerNaam, spelerNr } from './state.js?v=20261127n';
+import { S, esc, meld, openModal, sluitModal, spelerNaam, spelerNr } from './state.js?v=20261127p';
 import {
   bouwSlots, positieNaam, formatieNamen, isToernooi,
   POSITIE_GROEPEN, afwezigRedenInfo
-} from './config.js?v=20261127n';
-import { analyseWedstrijd, speeltijdReserve } from './analyse.js?v=20261127n';
+} from './config.js?v=20261127p';
+import { analyseWedstrijd, speeltijdReserve } from './analyse.js?v=20261127p';
 import { opkomstVoor, MIN_OPKOMST_TRAININGEN } from './opkomst.js?v=20260922c';
-import { spelersOpWedstrijd } from './uitleen-regels.js?v=20261113b';
-import { TE_GROEPEN, teScores, teLaagste, teLeeftijd } from './team-evaluatie-criteria.js?v=20261127b';
+import { spelersOpWedstrijd } from './uitleen-regels.js?v=20261127p';
+import { TE_GROEPEN, teScores, teLaagste, teLeeftijd } from './team-evaluatie-criteria.js?v=20261127p';
 import { ico } from './icons.js?v=20261127b';
-import { telGebruik } from './tracker.js?v=20261127n';
+import { telGebruik } from './tracker.js?v=20261127p';
 import { sportWoord } from './sporten.js?v=20261126g';   /* [20261125y] sportprofiel stap 3: woorden uit het profiel */
 
 const VERSIE = 1;

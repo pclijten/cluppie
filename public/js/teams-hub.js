@@ -11,23 +11,23 @@
    alleen HTML + de opslaghulpjes voor de wedstrijd-presentie. Het importeert
    bewust NIET terug uit teams.js (geen circulaire import). */
 import { db, doc, updateDoc, deleteField } from './firebase.js?v=20261011g';
-import { S, esc, meld, datumNL, modAan, openModal } from './state.js?v=20261127n';
-import { AFWEZIG_REDENEN, afwezigRedenInfo, catLabel } from './config.js?v=20261127n';
+import { S, esc, meld, datumNL, modAan, openModal } from './state.js?v=20261127p';
+import { AFWEZIG_REDENEN, afwezigRedenInfo, catLabel } from './config.js?v=20261127p';
 import { ico } from './icons.js?v=20261127b';
-import { logoImg, primaireClubId } from './clubconfig.js?v=20261127n';
-import { analyseWedstrijd, WISSEL_BEURT } from './analyse.js?v=20261127n';
-import { telGebruik } from './tracker.js?v=20261127n';
-import { ongelezenBerichten } from './berichten.js?v=20261127n';
-import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261127n';
-import { toernooiBezig } from './teams-toernooi.js?v=20261127n';
-import { htmlRondeBalk } from './evaluatierondes.js?v=20261127n';
-import { onderdeelAan } from './onderdelen.js?v=20261127n';
+import { logoImg, primaireClubId } from './clubconfig.js?v=20261127p';
+import { analyseWedstrijd, WISSEL_BEURT } from './analyse.js?v=20261127p';
+import { telGebruik } from './tracker.js?v=20261127p';
+import { ongelezenBerichten } from './berichten.js?v=20261127p';
+import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261127p';
+import { toernooiBezig } from './teams-toernooi.js?v=20261127p';
+import { htmlRondeBalk } from './evaluatierondes.js?v=20261127p';
+import { onderdeelAan } from './onderdelen.js?v=20261127p';
 import { teamkamerMag } from './kamer-logica.js?v=20261127k';
-import { eersteStappenPlaats } from './snelstart.js?v=20261127n';
-import { htmlNu } from './nu-scherm.js?v=20261127n';
-import { spelersOpWedstrijd, effectieveSelectie, leenErbijNa } from './uitleen-regels.js?v=20261113b';
-import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261127n';
-import { isAfgelast, telMee, soortPill, wedstrijdInfo, htmlAfgelastBanner, afgelastMeldingen, deelTekst } from './wedstrijd-status.js?v=20261116t';
+import { eersteStappenPlaats } from './snelstart.js?v=20261127p';
+import { htmlNu } from './nu-scherm.js?v=20261127p';
+import { spelersOpWedstrijd, effectieveSelectie, leenErbijNa } from './uitleen-regels.js?v=20261127p';
+import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261127p';
+import { isAfgelast, telMee, soortPill, wedstrijdInfo, htmlAfgelastBanner, afgelastMeldingen, deelTekst } from './wedstrijd-status.js?v=20261127p';
 
 
 /* ---------- Hulpjes ---------- */

@@ -25,13 +25,13 @@
    Cijfers, beoordelingen en opkomst tellen over alle teams in de bouw, zodat
    een verhuisde speler zijn historie houdt. Geen extra reads, behalve één
    getDoc per verhuizing (vers spelerdocument). */
-import { S, esc, meld } from './state.js?v=20261127n';
+import { S, esc, meld } from './state.js?v=20261127p';
 import { db, doc, collection, getDoc, writeBatch, serverTimestamp } from './firebase.js?v=20261011g';
-import { bouwLeenSnapshot } from './teams-spelers.js?v=20261127n';
-import { SKILLS, POSITIE_GROEPEN } from './config.js?v=20261127n';
-import { analyseWedstrijd, speeltijdReserve } from './analyse.js?v=20261127n';
+import { bouwLeenSnapshot } from './teams-spelers.js?v=20261127p';
+import { SKILLS, POSITIE_GROEPEN } from './config.js?v=20261127p';
+import { analyseWedstrijd, speeltijdReserve } from './analyse.js?v=20261127p';
 import { opkomstVoor } from './opkomst.js?v=20260922c';
-import { teLeeftijd, teCriteriaVoor, teScores } from './team-evaluatie-criteria.js?v=20261127b';
+import { teLeeftijd, teCriteriaVoor, teScores } from './team-evaluatie-criteria.js?v=20261127p';
 
 /* ---------- basis ---------- */
 export function isSelectieBouw(ctx){
@@ -529,5 +529,3 @@ async function doorvoeren(ctx, root){
   hertekenLijst(root, ctx);
   meld(fout ? `${ok} doorgevoerd, ${fout} mislukt. ${laatsteFout}` : `${ok} spelers staan nu in het gekozen team`);
 }
-/* Voor Club → Instellingen: staat de selectie-optie aan voor deze bouw? */
-export function selectieStandaard(eb){ return eb?.selectie === true || (eb?.selectie == null && /selectie/i.test(eb?.naam || '')); }

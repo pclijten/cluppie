@@ -7,8 +7,8 @@
      htmlSchuiven()   de acht keuzes van de speelstijl als schuiven tussen kant A en kant B
    Klikken regelt het scherm zelf via data-attributen (data-sw-moment, data-sw-principe, data-draad, data-sw-drie).
    Kleuren van de momenten komen uit speelwijze-logica (MOMENTEN) en zijn nooit de enige aanwijzing: er staat altijd tekst bij. */
-import { DIMS, statusVan } from './speelstijl-logica.js?v=20261019e';
-import { MOMENTEN, perMoment, bouwVanLeeftijd, laterTekst, momentVan } from './speelwijze-logica.js?v=20261116j';
+import { DIMS, statusVan } from './speelstijl-logica.js?v=20261127p';
+import { MOMENTEN, perMoment, bouwVanLeeftijd, laterTekst, momentVan } from './speelwijze-logica.js?v=20261127p';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const BOUW_NAAM = { onder: 'Onderbouw', midden: 'Middenbouw', boven: 'Bovenbouw' };

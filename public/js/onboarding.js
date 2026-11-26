@@ -28,18 +28,15 @@
    verder niets aan de engine te veranderen (zie beheeromgeving-notities
    onderaan). */
 
-import { kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261127n';
+import { kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261127p';
 import { db, doc, getDoc, setDoc } from './firebase.js?v=20261011g';
-import { S, $, esc, meld, modAan, toon, terugLaag } from './state.js?v=20261127n';
+import { S, $, esc, meld, modAan, toon, terugLaag } from './state.js?v=20261127p';
 
 /* ---------- Rollen ----------
    Iedere rol krijgt alleen hoofdstukken waarvan de 'rollen'-set de rol bevat.
    'coach' is de brede default (trainer/leider/coördinator draaien in dezelfde
    schermen); 'kijker' is speler/ouder/vrijwilliger (alleen-lezen); 'beheerder'
    krijgt daarbovenop het clubdashboard. */
-export const ONBOARDING_ROLLEN = [
-  { id:'coach',     emoji:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="4.5" width="14" height="16" rx="2.2"/><path d="M9 3.2h6v3H9z"/><path d="M8.8 11.4h6.4"/><path d="M8.8 15.4h4"/></svg>', naam:'Coach / trainer', desc:'Opstelling, training, beoordelen' },
-];
 /* Er is nog maar één rol: coach/trainer (dekt ook leider). Het rollen-veld op de
    stappen blijft staan zodat de engine ongewijzigd werkt en de tour later weer
    uitgebreid kan worden, maar de rolSet levert altijd de coach-set. */
@@ -86,7 +83,7 @@ function naarTab(tab){
       // Onderbalk niet in beeld (bv. wedstrijdscherm of teamsoverzicht):
       // zet de tab direct, render en toon de team-view expliciet.
       S.teamTab = tab;
-      import('./teams.js?v=20261127n').then(m => { m.renderTeam?.(); toon('team'); });
+      import('./teams.js?v=20261127p').then(m => { m.renderTeam?.(); toon('team'); });
     }
     const t0 = performance.now();
     (function wacht(){
@@ -159,7 +156,7 @@ async function zorgWedstrijdOpen(){
   const eersteId = (S.wedstrijden[0]||{}).id;
   if (!eersteId) return false;
   let m;
-  try { m = await import('./wedstrijd.js?v=20261127n'); }
+  try { m = await import('./wedstrijd.js?v=20261127p'); }
   catch(e){ console.warn('[ob] kon wedstrijd.js niet laden', e); return false; }
   m.openWedstrijd?.(eersteId);
   await wachtOpElement(() => document.querySelector('#view-wedstrijd.actief'), 2000);
@@ -171,7 +168,7 @@ async function zorgWedstrijdOpen(){
 async function verlaatWedstrijd(){
   if (!wedstrijdOpen()) return;
   try {
-    const m = await import('./wedstrijd.js?v=20261127n');
+    const m = await import('./wedstrijd.js?v=20261127p');
     m.sluitWedstrijd?.('wedstrijden');
   } catch(e){
     console.warn('[ob] sluitWedstrijd faalde, val terug op terugknop', e);
@@ -203,7 +200,7 @@ export const ONBOARDING_STAPPEN = [
     opdracht:'Open een team',
     voor:async () => {
       if (!document.querySelector('#view-teams.actief')){
-        try { const t = await import('./teams.js?v=20261127n'); t.startTeams?.(); } catch(e){ console.warn('[ob] teams.js laadfout', e); }
+        try { const t = await import('./teams.js?v=20261127p'); t.startTeams?.(); } catch(e){ console.warn('[ob] teams.js laadfout', e); }
         await wachtOpElement(() => document.querySelector('#view-teams.actief'));
       }
     },
@@ -459,7 +456,7 @@ export const ONBOARDING_STAPPEN = [
     hfd:'instellingen', hfdNaam:'Uitnodigen', emoji:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="8" r="3.1"/><path d="M3.6 19.6a6.4 6.4 0 0 1 12 0"/><path d="M18.6 5v5.4"/><path d="M15.9 7.7h5.4"/></svg>', rollen:['coach'],
     titel:'Coaches uitnodigen',
     tekst:'Met <b>Coach uitnodigen</b> maak je een persoonlijke link voor een collega-coach. Deel hem via WhatsApp; hij is 14 dagen geldig.',
-    voor:async () => { S.teamTab = 'instellingen'; const m = await import('./teams.js?v=20261127n'); m.renderTeam?.();
+    voor:async () => { S.teamTab = 'instellingen'; const m = await import('./teams.js?v=20261127p'); m.renderTeam?.();
       await wachtOpElement(() => document.querySelector('#view-team #deelLink, #view-team #deelCode')); },
     doel:() => document.querySelector('#view-team #deelLink, #view-team #deelCode'),
     optioneelAls:() => !document.querySelector('#view-team #deelLink, #view-team #deelCode'),

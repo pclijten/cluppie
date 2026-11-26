@@ -15,9 +15,9 @@
    welke knoppen/schermen tonen we — de eigenlijke afdwinging staat in de
    rules. Een coördinator die ook zelf coach is, blijft dat gewoon; beide
    rollen tellen los van elkaar mee. */
-import { S, esc, meld, openModal, sluitModal, initialen } from './state.js?v=20261127n';
+import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261127p';
 import { db, doc, updateDoc, deleteField } from './firebase.js?v=20261011g';
-import { BOUWEN, bouwNaam } from './config.js?v=20261127n';
+import { BOUWEN, bouwNaam } from './config.js?v=20261127p';
 import { rolNaam as clubRolNaam } from './rolnamen.js?v=20261120c';   /* [20261120c] eigen rolnamen van de club */
 
 /* ---------- Rechten-check (zelfde patroon als isBeheerder() in state.js) ---------- */
@@ -31,7 +31,6 @@ export function bouwenVanCoordinator(){
   if (!S.user || !S.club?.bouwCoordinatoren) return [];
   return BOUWEN.map(b => b.id).filter(id => isBouwCoordinator(id));
 }
-export function isCoordinatorEnigeBouw(){ return bouwenVanCoordinator().length > 0; }
 
 /* ---------- Admin-scherm: coördinatoren aanwijzen ----------
    Wordt gerenderd binnen htmlClubInstel() in club.js. `teams` is dezelfde
@@ -47,28 +46,6 @@ function kandidaten(teams){
   return [...map.entries()].map(([uid, naam]) => ({uid, naam})).sort((a,b) => a.naam.localeCompare(b.naam));
 }
 
-export function htmlCoordinatorenBeheer(teams){
-  const info = S.club.bouwCoordinatorenInfo || {};
-  const blok = (b) => {
-    const uids = Object.keys(S.club.bouwCoordinatoren?.[b.id] || {});
-    return `
-      <div class="kaart u-mb-sm">
-        <div class="veldlabel u-mt-0">${esc(b.naam)}</div>
-        ${uids.length ? uids.map(uid => `
-          <div class="lid-rij" data-coord-rij="${b.id}|${uid}">
-            <div class="lid-avatar">${esc(initialen(info[uid]?.naam || '?'))}</div>
-            <div class="lid-naam">${esc(info[uid]?.naam || 'Onbekende coach')}</div>
-            <button class="lid-weg" data-coord-weg="${b.id}|${uid}" aria-label="Verwijderen als coördinator">✕</button>
-          </div>`).join('')
-        : `<p class="u-t-sm u-zacht" style="margin:var(--space-3xs) 0 var(--space-xs)">Nog geen coördinator aangewezen.</p>`}
-        <button class="knop licht klein" data-coord-toevoegen="${b.id}" style="margin-top:var(--space-2xs)">+ Coördinator toevoegen</button>
-      </div>`;
-  };
-  return `
-    <div class="sectie-kop u-t-sm"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3.5 8.2 6 4.8h5.6l2 3.4H20a.7.7 0 0 1 .7.7v9.3a1 1 0 0 1-1 1H4.3a1 1 0 0 1-1-1V8.9a.7.7 0 0 1 .2-.7z"/></svg> Bouwcoördinatoren</div>
-    <p class="u-t-sm u-zacht u-lh-ruim" style="margin:0 0 var(--space-sm)">Een coördinator ziet en beheert alle teams binnen zijn bouw, precies als een coach, inclusief beoordelingen en notities. Iemand kan daarnaast gewoon coach van een eigen team blijven.</p>
-    ${BOUWEN.map(blok).join('')}`;
-}
 
 export function koppelCoordinatorenBeheer(v, teams){
   v.querySelectorAll('[data-coord-toevoegen]').forEach(btn => {

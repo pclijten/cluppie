@@ -5,8 +5,8 @@
    Pas bij minimaal 3 deelnemers verschijnen er cijfers. Server: functions/platform.js. */
 
 import { db, doc, getDoc } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261127n';
-import { bewaar } from './club-instellingen.js?v=20261127n';
+import { S, esc, meld } from './state.js?v=20261127p';
+import { bewaar } from './club-instellingen.js?v=20261127p';
 
 const METRICS = [
   ['evaluaties', 'Beoordelingen', 'per team, 30 dagen'],
@@ -16,7 +16,6 @@ const METRICS = [
   ['actiefPct', 'Actieve coaches', '% van alle coaches, 30 dagen'],
 ];
 
-export function htmlVergelijkPlek(){ return '<div id="inzVergelijk"><div class="kaart leeg">Laden…</div></div>'; }
 
 export async function vulVergelijk(root, herteken){
   const el = root.querySelector('#inzVergelijk'); if (!el) return;

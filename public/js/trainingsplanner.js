@@ -5,10 +5,10 @@
    daarna alleen de uitleg personaliseren; de keuze en controle gebeuren hier.
    ========================================================================== */
 
-import { LEERCURVE } from './config.js?v=20261127n';
+import { LEERCURVE } from './config.js?v=20261127p';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261126g';
 import { haalbaar, MATERIAAL_NAAM, MAX_INTENSITEIT_VOOR_WEDSTRIJD, dagVoorWedstrijd, ruimteM2 } from './trainingscontext-logica.js?v=20261019a';
-import { vormBonus, principeVoorThema, principeVanVorm } from './speelwijze-logica.js?v=20261116j';
+import { vormBonus, principeVoorThema, principeVanVorm } from './speelwijze-logica.js?v=20261127p';
 import { actieveSport, sportProfiel } from './sporten.js?v=20261126g';   /* [20261126g] leerblokken per sport */
 export { LEERCURVE };
 
@@ -31,7 +31,6 @@ export const OPBOUW = {
 };
 /* Oude trainingsduren (90 minuten) en losse waarden komen uit bij de dichtstbijzijnde keuze. */
 export const kiesDuur = (d) => { d = Number(d) || 60; return d <= 52 ? 45 : d <= 67 ? 60 : 75; };
-export const overgangMinuten = (duur) => { const o = OPBOUW[kiesDuur(duur)].overgang; return o.ontvangst + o.tussen + o.afsluiting; };
 function s(slot, minuten){ return { slot, minuten }; }
 
 /* ───────────── Weer ───────────── */
