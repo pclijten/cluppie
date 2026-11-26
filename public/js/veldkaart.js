@@ -47,10 +47,10 @@
      clubnaam   OpenStreetMap Nominatim (alleen de zoektekst, bij Zoek)
    Geen GPS of locatie van de gebruiker. */
 import { db, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, collection, getDocs, query, where, serverTimestamp, storage, sRef, uploadBytes, getDownloadURL } from './firebase.js?v=20261011g';
-import { S, esc, meld, isBeheerder } from './state.js?v=20261126t';
+import { S, esc, meld, isBeheerder } from './state.js?v=20261126u';
 import { ico } from './icons.js?v=20261116t';
-import { telGebruik } from './tracker.js?v=20261126t';
-import { catInfo } from './config.js?v=20261126t';
+import { telGebruik } from './tracker.js?v=20261126u';
+import { catInfo } from './config.js?v=20261126u';
 import { sportVeld } from './sporten.js?v=20261126g';   /* [20261125z] veld uit het sportprofiel */
 const kaartCirkel = () => { const c = sportVeld().kaart?.cirkel; return !c ? '' : c === 18 ? '<i class="vk-l-cirkel"></i>' : `<i class="vk-l-cirkel" style="width:${c}%"></i>`; };
 

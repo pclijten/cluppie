@@ -24,14 +24,14 @@
    Rekenwerk, export en import: activiteiten-logica.js (getest). Sjablonen: activiteit-sjablonen.js. */
 import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, deleteField, query, where, onSnapshot,
   serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261126t';
+import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261126u';
 import { ico } from './icons.js?v=20261116t';
 import { SJABLONEN, sjabloonVan } from './activiteit-sjablonen.js?v=20261125w';
 import * as L from './activiteiten-logica.js?v=20261125w';
-import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261126t';
-import * as TN from './activiteit-toernooi.js?v=20261126t';
-import * as CS from './clubschermen.js?v=20261126t';
-import * as VB from './vrijwilligers.js?v=20261126t';
+import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261126u';
+import * as TN from './activiteit-toernooi.js?v=20261126u';
+import * as CS from './clubschermen.js?v=20261126u';
+import * as VB from './vrijwilligers.js?v=20261126u';
 
 let A = null;
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -174,9 +174,22 @@ const volgende = map => Object.values(map || {}).reduce((m, x) => Math.max(m, Nu
 function teken(){
   if (!A) return;
   const scroll = A.el.querySelector('.ac-app')?.scrollTop || 0;
+  if (!A.live && !A.id && A.extra === 'schermen' && hertekenSchermen()) return;
   if (A.live && A.act) A.el.innerHTML = htmlLive();
   else A.el.innerHTML = `<div class="ac-app">${A.id ? (A.act ? htmlAct() : `<div class="ac-leeg">${ico('action-loading', 20)} Laden…</div>`) : A.extra === 'schermen' ? CS.htmlSchermen(extraCtx()) : A.extra === 'vrijwilligers' ? VB.htmlVrijwilligers(extraCtx()) : htmlLijst()}</div>${A.venster ? `<div class="ac-venster" data-ac="venster-achter"><div class="ac-blad" role="dialog" aria-modal="true">${typeof A.venster === 'function' ? A.venster() : A.venster}</div></div>` : ''}`;
   const app = A.el.querySelector('.ac-app'); if (app) app.scrollTop = scroll;
+  if (!A.live && !A.id && A.extra === 'schermen') CS.naTekenSchermen(A.el);
+}
+/* [20261126u] Kantine-tv: het beeld van de tv (een iframe) mag bij elke wijziging niet opnieuw laden.
+   Staat het er al met dezelfde bron, dan vervangen we alleen de delen eromheen (data-cs-deel). */
+function hertekenSchermen(){
+  const oud = A.el.querySelector(':scope > .ac-app > .cs-app'); if (!oud?.querySelector('iframe')) return false;
+  const t = document.createElement('template'); t.innerHTML = CS.htmlSchermen(extraCtx());
+  const nieuw = t.content.querySelector('.cs-app'); if (!nieuw || nieuw.dataset.csSrc !== oud.dataset.csSrc) return false;
+  oud.querySelectorAll('[data-cs-deel]').forEach(d => { const n = nieuw.querySelector(`[data-cs-deel="${d.dataset.csDeel}"]`); if (n && n.innerHTML !== d.innerHTML) d.innerHTML = n.innerHTML; });
+  A.el.querySelector(':scope > .ac-venster')?.remove();
+  if (A.venster) A.el.insertAdjacentHTML('beforeend', `<div class="ac-venster" data-ac="venster-achter"><div class="ac-blad" role="dialog" aria-modal="true">${typeof A.venster === 'function' ? A.venster() : A.venster}</div></div>`);
+  return true;
 }
 function kop(titel, sub, acties = ''){
   return `<header class="ac-kop"><button class="ac-terug" data-ac="${A.id ? 'terug' : A.extra ? 'extra-terug' : 'sluit'}" aria-label="Terug">‹</button>
@@ -705,7 +718,7 @@ async function klik(e){
     case 'kopieer': return kopieKlembord(b.dataset.tekst);
     case 'teams-alle': return zet({ teams: (S.clubTeams || []).filter(x => x && x.id && !x.gearchiveerd).map(x => x.id).slice(0, L.MAX.teams) });
     case 'teams-geen': return zet({ teams: [] });
-    case 'veldplanner': return import('./veldplanner.js?v=20261126t').then(m => m.openVeldplanner(A.clubId));
+    case 'veldplanner': return import('./veldplanner.js?v=20261126u').then(m => m.openVeldplanner(A.clubId));
     case 'aflasten': return vensterAflasten();
     case 'aflasten-ja': return aflasten();
     case 'bericht-plaats': return plaatsBericht(id);
