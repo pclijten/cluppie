@@ -19,7 +19,7 @@
    zien ze gewoon in hun instellingen en onder Content.
 ==================================================================== */
 import { db, doc, getDoc, setDoc, updateDoc, deleteDoc, deleteField, serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { esc, meld } from './state.js?v=20261126z';
+import { esc, meld } from './state.js?v=20261126y';
 import { ico } from './icons.js?v=20261126w';
 import { leegSpeelstijl, schoonSp, vragenVoorAI, kandidatenSamenvoegen, zonderDocument, keuzeVan, telling, uitkomstVan, speelstijlManco, antwoordTekst, onderwerpVan,
   vraagOpId, speelstijlVragenTekst, speelwijzeRegels, vragenVoor, DEELN, LEEFTIJDEN, REFS } from './clubprofiel-speelstijl.js?v=20261120j';   /* [20261120j] speelwijze via de vragenlijst */
@@ -139,8 +139,8 @@ async function fotoNaarTekst(file, clubId){
 async function leesBestand(file, clubId, voortgang = () => {}){
   const naam = file.name || '';
   if (/\.pdf$/i.test(naam) || file.type === 'application/pdf'){
-    const { laadPdfJs } = await import('./pdf-viewer.js?v=20261126z');
-    const { regelsUitTekstItems } = await import('./training-ai.js?v=20261126z');
+    const { laadPdfJs } = await import('./pdf-viewer.js?v=20261126y');
+    const { regelsUitTekstItems } = await import('./training-ai.js?v=20261126y');
     await laadPdfJs();
     const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
     /* [20261121c] eerst van elke pagina de tekstlaag: zo weten we vooraf hoeveel pagina's een scan zijn, en

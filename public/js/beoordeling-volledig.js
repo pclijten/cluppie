@@ -21,7 +21,7 @@
    Deze module is een blad: ze importeert alleen icons.js en config.js, zodat
    een wijziging hier geen grote versie-cascade geeft. */
 import { ico } from './icons.js?v=20261126w';
-import { SKILLS, leeftijdVanCategorie } from './config.js?v=20261126z';
+import { SKILLS, leeftijdVanCategorie } from './config.js?v=20261126y';
 import { teRadarSvg } from './team-evaluatie-criteria.js?v=20261126w';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

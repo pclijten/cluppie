@@ -211,14 +211,50 @@ export function vanSjabloon(sj, opts = {}){
     budget: naarMap(sj.budget, 'u', p => ({ naam: tekst(p.naam, 60), soort: p.soort === 'in' ? 'in' : 'uit', begroot: Number(p.begroot) || 0, werkelijk: null })),
     documenten: {},
     checks: naarMap(sj.checks, 'c', c => ({ titel: tekst(typeof c === 'string' ? c : c.titel, 160), klaar: false })),
-    dienstenSjabloon: (sj.diensten || []).map(d => ({ naam: tekst(d.naam, 40), start: isTijd(d.start) ? d.start : '', eind: isTijd(d.eind) ? d.eind : '', plek: tekst(d.plek || '', 40), nodig: Math.max(0, Number(d.nodig) || 0) })),
+    dienstenSjabloon: (sj.diensten || []).map(d => ({ naam: tekst(d.naam, 40), start: isTijd(d.start) ? d.start : '', eind: isTijd(d.eind) ? d.eind : '', plek: tekst(d.plek || '', 40), nodig: Math.max(0, Number(d.nodig) || 0), ...(d.wat ? { wat: dienstWat(d.wat) } : {}) })),
     teams: [], agenda: false, kamer: false, deelnemers: { verwacht: null, notitie: '' },
     ...(['school', 'bedrijf', 'vrij'].includes(sj.deelnemers) ? { toernooi: { deelnemers: sj.deelnemers } } : {}),
     deelId: '', evaluatie: { goed: '', beter: '', tips: {} },
     seizoen: seizoenVan(datum), gemaaktDoor: opts.door || '', gemaaktMs: opts.nu || Date.now(), bijgewerktMs: opts.nu || Date.now(),
   };
 }
-export function dienstenNaarMap(lijst){ return naarMap(lijst, 'd', d => ({ naam: tekst(d.naam, 40), start: d.start || '', eind: d.eind || '', plek: tekst(d.plek || '', 40), nodig: Math.max(0, Number(d.nodig) || 0) })); }
+export function dienstenNaarMap(lijst){ return naarMap(lijst, 'd', d => ({ naam: tekst(d.naam, 40), start: d.start || '', eind: d.eind || '', plek: tekst(d.plek || '', 40), nodig: Math.max(0, Number(d.nodig) || 0), ...(d.wat ? { wat: dienstWat(d.wat) } : {}) })); }
+
+/* ---------- [20261126y] wat wordt er van de vrijwilliger verwacht? ----------
+   Elke dienst kan een korte omschrijving hebben (dienst.wat). Die staat op de inschrijfpagina (?act=),
+   in het rooster en het draaiboek. Een voorzet komt uit de vrijwilligersbank van de club (taak met dezelfde
+   naam) of anders uit de standaardteksten hieronder. */
+export const WAT_MAX = 500;
+export const dienstWat = v => lang(v, WAT_MAX);
+export const STANDAARD_WAT = [
+  [/opbouw|klaarzetten/i, 'Je helpt het terrein klaarzetten: doelen en pionnen op de velden, tafels, tenten en banners neerzetten. Meld je bij aankomst bij het comité, die vertelt wat waar moet. Trek kleding aan die vies mag worden.'],
+  [/afbouw|opruim/i, 'Na afloop ruim je samen op: doelen en materiaal terug naar het hok, tafels en tenten afbreken, afval rapen. Meestal ben je binnen een uur klaar.'],
+  [/kantine|bar|koffie|catering/i, 'Je staat achter de bar of in de keuken: koffie, thee en fris schenken, broodjes of patat klaarmaken en afrekenen. Je hoeft het niet te kunnen, iemand van de kantine legt het uit. Handen wassen en haren vast.'],
+  [/scheids|arbit|spelleid/i, 'Je fluit of leidt een of meer wedstrijden. Je krijgt het schema, een fluitje en een hesje bij de wedstrijdtafel. Bij de jongste teams help je vooral het spel op gang te houden; niemand verwacht dat je de spelregels uit je hoofd kent.'],
+  [/wedstrijdtafel|jury|uitslag|tafel/i, 'Je zit aan de wedstrijdtafel: je houdt de tijd bij, geeft het begin- en eindsignaal en verwerkt de uitslagen. Je werkt met een laptop of telefoon en een schema op papier.'],
+  [/ehbo|bhv|eerste hulp/i, 'Je bent aanspreekpunt bij kleine ongelukjes: koelen, pleisters, tape. Neem je EHBO- of BHV-diploma mee als je dat hebt. De EHBO-koffer staat in de kantine. Bel 112 bij iets ernstigs en waarschuw het comité.'],
+  [/parkeer|verkeer|ontvangst|welkom|kassa|entree/i, 'Je vangt bezoekers en teams op bij de ingang: je wijst de weg naar de kleedkamers en velden, en houdt de parkeerplaats en de toegang vrij. Je krijgt een hesje.'],
+  [/kleedkamer|schoonma/i, 'Je houdt de kleedkamers bij: deuren openen en sluiten volgens het schema, tussendoor even vegen en kijken of er niets is blijven liggen.'],
+  [/foto|video|media/i, 'Je maakt foto’s of korte filmpjes van de dag voor de clubsite en social media. Fotografeer alleen kinderen die op de lijst mogen staan; het comité geeft je die lijst.'],
+];
+export function standaardWat(naam){ const n = String(naam || ''); const r = STANDAARD_WAT.find(([re]) => re.test(n)); return r ? r[1] : ''; }
+/* Taak uit de vrijwilligersbank die bij de dienstnaam past (gelijke of bevattende titel) */
+export function bankTaakVoor(naam, taken){
+  const n = String(naam || '').trim().toLowerCase(); if (!n) return null;
+  const lijst = Object.values(taken || {}).filter(t => t && typeof t === 'object' && t.titel && (t.wat || (t.stappen || []).length));
+  const t = (x) => String(x.titel).trim().toLowerCase();
+  return lijst.find(x => t(x) === n) || lijst.find(x => t(x).includes(n) || n.includes(t(x))) || null;
+}
+export function bankWat(taak){
+  if (!taak) return '';
+  const stappen = (Array.isArray(taak.stappen) ? taak.stappen : []).filter(Boolean).map(s => `- ${s}`).join('\n');
+  return dienstWat([taak.wat || '', stappen, taak.contact ? `Vragen? ${taak.contact}.` : ''].filter(Boolean).join('\n'));
+}
+/* De voorzet voor een dienst: eerst de clubbank, dan de standaardtekst. { tekst, bron: 'bank'|'standaard'|'' } */
+export function voorzetWat(naam, bankTaken){
+  const b = bankWat(bankTaakVoor(naam, bankTaken)); if (b) return { tekst: b, bron: 'bank' };
+  const s = standaardWat(naam); return s ? { tekst: s, bron: 'standaard' } : { tekst: '', bron: '' };
+}
 
 /* Kopie van een eerdere activiteit (bv. vorig jaar) op een nieuwe datum. Taken staan weer open,
    vaste datums schuiven mee, en de tips uit de evaluatie komen bij de taak te staan: het clubgeheugen. */
@@ -262,7 +298,7 @@ export function alsSjabloon(act, { naam, diensten } = {}){
     })),
     programma: gesorteerd(act.programma).map(({ tijd, duur, wat, waar, wie }) => ({ tijd, duur, wat, waar, wie })),
     planB: { tekst: act.planB?.tekst || '', programma: gesorteerd(act.programmaB).map(({ tijd, duur, wat, waar, wie }) => ({ tijd, duur, wat, waar, wie })) },
-    diensten: (diensten ? gesorteerd(diensten) : act.dienstenSjabloon || []).map(({ naam, start, eind, plek, nodig }) => ({ naam, start, eind, plek, nodig })),
+    diensten: (diensten ? gesorteerd(diensten) : act.dienstenSjabloon || []).map(({ naam, start, eind, plek, nodig, wat }) => ({ naam, start, eind, plek, nodig, ...(wat ? { wat } : {}) })),
     materiaal: gesorteerd(act.materiaal).map(({ naam, aantal }) => ({ naam, aantal })),
     berichten: gesorteerd(act.berichten).map(({ d, titel, tekst: t, kanaal }) => ({ d, titel, tekst: t, kanaal })),
     budget: gesorteerd(act.budget).map(({ naam, soort, begroot, werkelijk }) => ({ naam, soort, begroot: Number(werkelijk) > 0 ? Number(werkelijk) : Number(begroot) || 0 })),
@@ -319,9 +355,9 @@ export function csvDiensten(diensten, aanmeldingen){
   const rijen = [];
   for (const d of ds.lijst){
     const namen = (aanmeldingen || []).filter(a => a.dienst === d.id).map(a => a.naam);
-    rijen.push([d.naam, d.start || '', d.eind || '', d.plek || '', d.nodig, d.aantal, namen.join(', ')]);
+    rijen.push([d.naam, d.start || '', d.eind || '', d.plek || '', d.nodig, d.aantal, namen.join(', '), d.wat || '']);
   }
-  return csv(['Dienst', 'Van', 'Tot', 'Plek', 'Nodig', 'Ingeschreven', 'Wie (voornaam)'], rijen);
+  return csv(['Dienst', 'Van', 'Tot', 'Plek', 'Nodig', 'Ingeschreven', 'Wie (voornaam)', 'Wat je doet'], rijen);
 }
 export function csvBudget(act){
   const r = gesorteerd(act.budget).map(p => [p.soort === 'in' ? 'Inkomsten' : 'Uitgaven', p.naam, p.begroot ?? '', p.werkelijk ?? '']);
