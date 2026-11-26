@@ -24,14 +24,16 @@
    Rekenwerk, export en import: activiteiten-logica.js (getest). Sjablonen: activiteit-sjablonen.js. */
 import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, deleteField, query, where, onSnapshot,
   serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261127c';
-import { ico } from './icons.js?v=20261126w';
+import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261127d';
+import { ico } from './icons.js?v=20261127b';
 import { SJABLONEN, sjabloonVan } from './activiteit-sjablonen.js?v=20261125w';
 import * as L from './activiteiten-logica.js?v=20261126y';
-import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261127c';
-import * as TN from './activiteit-toernooi.js?v=20261127c';
-import * as CS from './clubschermen.js?v=20261127c';
-import * as VB from './vrijwilligers.js?v=20261127c';
+import * as D from './draaiboek-logica.js?v=20261127d';
+import { docxBestanden } from './draaiboek-docx.js?v=20261127b';
+import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261127d';
+import * as TN from './activiteit-toernooi.js?v=20261127d';
+import * as CS from './clubschermen.js?v=20261127d';
+import * as VB from './vrijwilligers.js?v=20261127d';
 
 let A = null;
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -65,7 +67,7 @@ export async function openActiviteiten(clubId, actId = '', opties = {}){
   if (S.club?.platformModules?.activiteiten !== true) return meld('Activiteiten staat niet aan voor deze club.');
   stijl();
   const el = laag();
-  A = { clubId, el, lijst: [], sjablonen: [], act: null, id: '', tab: 'overzicht', weergave: 'lijst', deel: null, aanm: [], subs: [], venster: null,
+  A = { clubId, el, lijst: [], sjablonen: [], act: null, id: '', tab: 'overzicht', weergave: 'onderwerpen', onderwerp: '', lees: false, leesOw: '', ladeId: '', ladeLijst: [], deel: null, aanm: [], subs: [], venster: null,
         vuil: false, live: false, liveTik: null, progB: false };
   el.innerHTML = `<div class="ac-app"><div class="ac-leeg">${ico('action-loading', 20)} Activiteiten laden…</div></div>`;
   await laadLijst();
@@ -89,7 +91,7 @@ function laag(){
     document.addEventListener('keydown', e => {
       if (!A || e.key !== 'Escape') return;
       e.stopPropagation();
-      if (A.venster) sluitVenster(); else if (A.live){ A.live = false; clearInterval(A.liveTik); teken(); } else if (A.id) terugNaarLijst(); else if (A.extra && !A.alleenTv){ A.extra = ''; teken(); } else sluitActiviteiten();
+      if (A.venster) sluitVenster(); else if (A.lees){ A.lees = false; teken(); } else if (A.live){ A.live = false; clearInterval(A.liveTik); teken(); } else if (A.id) terugNaarLijst(); else if (A.extra && !A.alleenTv){ A.extra = ''; teken(); } else sluitActiviteiten();
     }, true);
     el.addEventListener('click', klik);
     koppelDatumkiezer(el, () => ({ stip: s => (A?.lijst || []).filter(x => x.datum === s && x.id !== A.id).map(x => x.naam).join(', ') }));
@@ -173,11 +175,15 @@ const volgende = map => Object.values(map || {}).reduce((m, x) => Math.max(m, Nu
 /* ---------- tekenen ---------- */
 function teken(){
   if (!A) return;
-  const scroll = A.el.querySelector('.ac-app')?.scrollTop || 0;
+  const scroll = A.el.querySelector('.ac-app')?.scrollTop || 0, bladScroll = A.el.querySelector('.ac-blad')?.scrollTop || 0;
   if (!A.live && !A.id && A.extra === 'schermen' && hertekenSchermen()) return;
+  /* [20261126z] een taak opent als lade aan de rechterkant (op de telefoon over het hele scherm) */
+  const venster = A.venster ? `<div class="ac-venster ${A.ladeId ? 'lade' : ''}" data-ac="venster-achter"><div class="ac-blad" role="dialog" aria-modal="true">${typeof A.venster === 'function' ? A.venster() : A.venster}</div></div>` : '';
   if (A.live && A.act) A.el.innerHTML = htmlLive();
-  else A.el.innerHTML = `<div class="ac-app">${A.id ? (A.act ? htmlAct() : `<div class="ac-leeg">${ico('action-loading', 20)} Laden…</div>`) : A.extra === 'schermen' ? CS.htmlSchermen(extraCtx()) : A.extra === 'vrijwilligers' ? VB.htmlVrijwilligers(extraCtx()) : htmlLijst()}</div>${A.venster ? `<div class="ac-venster" data-ac="venster-achter"><div class="ac-blad" role="dialog" aria-modal="true">${typeof A.venster === 'function' ? A.venster() : A.venster}</div></div>` : ''}`;
+  else if (A.lees && A.act) A.el.innerHTML = htmlLees() + venster;
+  else A.el.innerHTML = `<div class="ac-app">${A.id ? (A.act ? htmlAct() : `<div class="ac-leeg">${ico('action-loading', 20)} Laden…</div>`) : A.extra === 'schermen' ? CS.htmlSchermen(extraCtx()) : A.extra === 'vrijwilligers' ? VB.htmlVrijwilligers(extraCtx()) : htmlLijst()}</div>${venster}`;
   const app = A.el.querySelector('.ac-app'); if (app) app.scrollTop = scroll;
+  const blad = A.el.querySelector('.ac-blad'); if (blad && bladScroll) blad.scrollTop = bladScroll;
   if (!A.live && !A.id && A.extra === 'schermen') CS.naTekenSchermen(A.el);
 }
 /* [20261126u] Kantine-tv: het beeld van de tv (een iframe) mag bij elke wijziging niet opnieuw laden.
@@ -222,12 +228,17 @@ function htmlLijst(){
 }
 
 /* één activiteit */
+/* [20261126z] Comité, Vrijwilligers, Deelnemers, Locatie, Communicatie, Budget en Documenten zijn geen eigen
+   tabbladen meer: ze staan bij het onderwerp in het draaiboek waar ze bij horen. */
+const ZICHTBARE_TABS = ['overzicht', 'taken', 'programma', 'toernooi', 'evaluatie'];
+const OUDE_TAB = { mensen: 'basis', documenten: 'basis', deelnemers: 'wedstrijd', vrijwilligers: 'vrijwilligers', locatie: 'kantine', communicatie: 'communicatie', budget: 'budget' };
 function htmlAct(){
-  const a = A.act, tabs = L.TABS.filter(([id]) => L.VASTE_TABS.includes(id) || tabAan(a, id));
+  if (OUDE_TAB[A.tab]){ A.onderwerp = OUDE_TAB[A.tab]; A.tab = 'taken'; A.weergave = 'onderwerpen'; }
+  const a = A.act, tabs = L.TABS.filter(([id]) => ZICHTBARE_TABS.includes(id) && (L.VASTE_TABS.includes(id) || tabAan(a, id)));
   if (!tabs.some(([id]) => id === A.tab)) A.tab = 'overzicht';
   const sub = [a.datum ? L.datumLang(a.datum) : 'Nog geen datum', a.start ? `${a.start}${a.eind ? '–' + a.eind : ''}` : '', L.STATUS_ACT[a.status] || ''].filter(Boolean).join(' · ');
   const inhoud = { overzicht: htmlOverzicht, taken: htmlTaken, programma: htmlProgramma, mensen: htmlMensen, vrijwilligers: htmlVrijwilligers, deelnemers: htmlDeelnemers,
-    toernooi: () => TN.htmlToernooi(tnCtx()), locatie: htmlLocatie, communicatie: htmlCommunicatie, budget: htmlBudget, documenten: htmlDocumenten, evaluatie: htmlEvaluatie }[A.tab];
+    toernooi: () => TN.htmlToernooi(tnCtx()), communicatie: htmlCommunicatie, budget: htmlBudget, documenten: htmlDocumenten, evaluatie: htmlEvaluatie }[A.tab] || htmlOverzicht;
   return `${kop(a.naam || 'Activiteit', sub, `<button class="knop licht" data-ac="export">${ico('admin-download', 18)} Exporteren</button>`)}
     ${a.planB?.actief ? `<div class="ac-melding rood">${ico('action-warning', 18)} <span><b>Plan B is actief.</b> ${esc(a.planB.tekst || '')}</span><button class="knop klein licht" data-ac="planb-uit">Terug naar plan A</button></div>` : ''}
     <nav class="ac-tabs" role="tablist">${tabs.map(([id, n]) => `<button role="tab" aria-selected="${A.tab === id}" class="${A.tab === id ? 'aan' : ''}" data-tab="${id}">${esc(n)}${tabTeller(id)}</button>`).join('')}</nav>
@@ -249,7 +260,7 @@ function htmlOverzicht(){
   const a = A.act, o = L.overzicht(a, vandaag(), A.aanm, A.deel?.diensten);
   const lid = id => a.comite?.[id]?.naam || '';
   const taakRegel = t => `<button class="ac-rij knopje" data-taak="${esc(t.id)}"><span class="ac-groei">${esc(t.titel)}</span><small class="ac-zacht">${esc([lid(t.eigenaar), L.datumKort(L.taakDatum(t, a.datum))].filter(Boolean).join(' · '))}</small></button>`;
-  const tegel = (kleur, titel, tekst, tab) => `<button class="ac-tegel" data-tab="${tab}">${stip(kleur)}<span><b>${esc(titel)}</b><small>${tekst}</small></span></button>`;
+  const tegel = (kleur, titel, tekst, doel) => `<button class="ac-tegel" ${doel === 'taken' ? 'data-tab="taken"' : `data-onderwerp="${doel}"`}>${stip(kleur)}<span><b>${esc(titel)}</b><small>${tekst}</small></span></button>`;
   const v = a.vorige;
   return `<div class="ac-grid2">
     <div class="ac-paneel ac-aftel"><b>${esc(L.aftelTekst(o.dagenTot))}</b><span>${esc(a.datum ? L.datumLang(a.datum) : 'Kies een datum')}</span></div>
@@ -257,44 +268,119 @@ function htmlOverzicht(){
       ${tegel(o.kleur.taken, 'Draaiboek', o.taken.totaal ? `${o.taken.klaar} van ${o.taken.totaal} klaar${o.taken.telaat.length ? `, ${o.taken.telaat.length} te laat` : ''}` : 'Nog geen taken', 'taken')}
       ${a.tabs?.vrijwilligers !== false ? tegel(o.kleur.diensten, 'Vrijwilligers', A.deel ? `${o.diensten.gevuld} van ${o.diensten.nodig} plekken gevuld` : 'Nog geen diensten', 'vrijwilligers') : ''}
       ${a.tabs?.budget !== false ? tegel(o.kleur.budget, 'Budget', o.budget.uitBegroot ? `${L.euro(o.budget.uitWerkelijk)} van ${L.euro(o.budget.uitBegroot)} uitgegeven` : 'Geen begroting', 'budget') : ''}
-      ${a.tabs?.locatie !== false ? tegel(o.kleur.checks, 'Veiligheid', o.checks.totaal ? `${o.checks.totaal - o.checks.open} van ${o.checks.totaal} afgevinkt` : 'Geen checklist', 'locatie') : ''}
+      ${a.tabs?.locatie !== false ? tegel(o.kleur.checks, 'Veiligheid', o.checks.totaal ? `${o.checks.totaal - o.checks.open} van ${o.checks.totaal} afgevinkt` : 'Geen checklist', 'veiligheid') : ''}
     </div></div>
     <div class="ac-grid2">
       <div class="ac-paneel"><h3>Deze week te doen</h3>${o.taken.week.map(taakRegel).join('') || '<p class="ac-zacht">Niets deze week.</p>'}
         ${o.taken.telaat.length ? `<h3 class="rood">Te laat</h3>${o.taken.telaat.map(taakRegel).join('')}` : ''}
         ${o.taken.zonderEigenaar ? `<p class="ac-zacht">${o.taken.zonderEigenaar} open ${o.taken.zonderEigenaar === 1 ? 'taak heeft' : 'taken hebben'} nog geen eigenaar.</p>` : ''}</div>
-      <div class="ac-paneel"><h3>Gegevens</h3>
-        <label class="ac-label">Naam</label>${veld('naam', a.naam)}
-        <div class="ac-rij2"><span><label class="ac-label">Datum</label>${datumVeld('data-veld="datum"', a.datum)}</span>
-          <span><label class="ac-label">Status</label><select class="ac-in" data-veld="status">${Object.entries(L.STATUS_ACT).map(([k, n]) => opt(k, n, a.status === k)).join('')}</select></span></div>
-        <div class="ac-rij2"><span><label class="ac-label">Begin</label>${veld('start', a.start, { type: 'time' })}</span><span><label class="ac-label">Einde</label>${veld('eind', a.eind, { type: 'time' })}</span></div>
-        <label class="ac-label">Locatie</label>${veld('locatie', a.locatie, { ph: 'Sportpark, kantine, sporthal…' })}
-        <label class="ac-label">Omschrijving</label>${tekstvak('omschrijving', a.omschrijving, 'Waar gaat het om, voor wie?')}
-      </div></div>
+      ${htmlGegevens()}</div>
     ${v ? `<div class="ac-paneel ac-geheugen"><h3>${ico('admin-archive', 18)} Lessen van ${esc(v.naam || 'vorige keer')}${v.datum ? ` (${esc(L.datumKort(v.datum))} ${esc(v.datum.slice(0, 4))})` : ''}</h3>
       ${v.goed ? `<p><b>Ging goed:</b> ${esc(v.goed)}</p>` : ''}${v.beter ? `<p><b>Kan beter:</b> ${esc(v.beter)}</p>` : ''}<p class="ac-zacht">Tips van vorige keer staan bij de taken in het draaiboek.</p></div>` : ''}
-    <div class="ac-paneel"><h3>Onderdelen</h3><p class="ac-zacht">Zet aan wat je nodig hebt. Een informatieavond heeft geen velden nodig, een toernooi wel.</p>
+    <div class="ac-paneel"><h3>Onderdelen</h3><p class="ac-zacht">Zet aan wat je nodig hebt. Wat uit staat, verdwijnt uit het draaiboek. Een informatieavond heeft geen budget nodig, een toernooi wel.</p>
       <div class="ac-chips">${L.TABS.filter(([id]) => !L.VASTE_TABS.includes(id)).map(([id, n]) => `<label class="ac-chip ${tabAan(a, id) ? 'aan' : ''}"><input type="checkbox" data-veld="tabs.${id}" data-bool ${tabAan(a, id) ? 'checked' : ''}> ${esc(n)}</label>`).join('')}</div></div>
     ${isAdmin() ? `<div class="ac-acties"><button class="knop licht" data-ac="kopie">Kopie maken (bv. volgend jaar)</button><button class="knop gevaar" data-ac="weg">Activiteit verwijderen</button></div>` : ''}`;
 }
 
-/* Draaiboek */
+/* Draaiboek [20261126z]: standaard per onderwerp (zie draaiboek-logica.js), daarnaast lijst, bord en tijdlijn. */
+const smal = () => matchMedia('(max-width: 820px)').matches;
+const rijenVoor = t => Math.min(6, Math.max(1, Math.ceil(String(t || '').length / 42) + (String(t || '').match(/\n/g) || []).length));
 function htmlTaken(){
-  const a = A.act, w = A.weergave;
-  return `<div class="ac-balkje"><div class="ac-schakel" role="group" aria-label="Weergave">${[['lijst', 'Lijst'], ['bord', 'Bord'], ['tijdlijn', 'Tijdlijn']].map(([k, n]) => `<button class="${w === k ? 'aan' : ''}" data-weergave="${k}">${n}</button>`).join('')}</div>
-    <span class="ac-groei"></span><label class="knop licht klein">Taken inlezen (CSV/Excel)<input type="file" accept=".csv,text/csv,.txt" data-ac-bestand="csv" hidden></label>
-    <button class="knop vol klein" data-ac="taak-nieuw">${ico('action-add', 16)} Taak</button></div>
-    ${w === 'bord' ? htmlBord() : w === 'tijdlijn' ? htmlTijdlijn() : htmlTakenLijst()}
-    <p class="ac-zacht">Taken staan in dagen vóór de datum. Verschuift de datum, dan schuift het draaiboek mee.</p>`;
-  void a;
+  const w = A.weergave, ow = w === 'onderwerpen';
+  return `<div class="ac-balkje"><div class="ac-schakel" role="group" aria-label="Weergave">${[['onderwerpen', 'Onderwerpen'], ['lijst', 'Lijst'], ['bord', 'Bord'], ['tijdlijn', 'Tijdlijn']].map(([k, n]) => `<button class="${w === k ? 'aan' : ''}" data-weergave="${k}">${n}</button>`).join('')}</div>
+    <span class="ac-groei"></span><button class="knop licht klein" data-ac="lees">${ico('admin-document', 16)} Leesweergave en Word</button>
+    ${ow ? '' : `<label class="knop licht klein">Taken inlezen (CSV/Excel)<input type="file" accept=".csv,text/csv,.txt" data-ac-bestand="csv" hidden></label>
+    <button class="knop vol klein" data-ac="taak-nieuw">${ico('action-add', 16)} Taak</button>`}</div>
+    ${w === 'bord' ? htmlBord() : w === 'tijdlijn' ? htmlTijdlijn() : w === 'lijst' ? htmlTakenLijst() : htmlOnderwerpen()}
+    ${ow ? '' : '<p class="ac-zacht">Taken staan in dagen vóór de datum. Verschuift de datum, dan schuift het draaiboek mee.</p>'}`;
+}
+function htmlOnderwerpen(){
+  const a = A.act, po = D.perOnderwerp(a, vandaag());
+  if (!po.some(o => o.id === A.onderwerp)) A.onderwerp = smal() ? '' : (po[0]?.id || '');
+  const o = po.find(x => x.id === A.onderwerp);
+  const totaal = po.reduce((s, x) => s + x.taken.length, 0), klaar = po.reduce((s, x) => s + x.klaar, 0), laat = po.reduce((s, x) => s + x.telaat, 0);
+  const item = x => {
+    const alles = x.taken.length && x.klaar === x.taken.length;
+    const pct = x.taken.length ? Math.round(x.klaar / x.taken.length * 100) : x.vragen.length ? Math.round(x.ingevuld / x.vragen.length * 100) : 0;
+    const volgende = x.taken.find(t => t.status !== 'klaar' && L.taakDatum(t, a.datum));
+    const sub = [x.eigenaarInfo?.naam || 'nog geen eigenaar',
+      x.telaat ? `${x.telaat} te laat` : alles ? 'alles klaar' : volgende ? `volgende vóór ${L.datumKort(L.taakDatum(volgende, a.datum))}` : ''].filter(Boolean).join(' · ');
+    return `<button class="ac-ow ${x.id === A.onderwerp ? 'aan' : ''}" data-onderwerp="${esc(x.id)}"><span class="ac-ow-ic">${ico(x.icoon, 20)}</span>
+      <span class="ac-ow-t"><b>${esc(x.naam)}</b><small class="${x.telaat ? 'rood' : ''}">${esc(sub)}</small><span class="ac-balk ${x.telaat ? 'rood' : alles ? '' : 'oranje'}"><i style="width:${pct}%"></i></span></span>
+      <span class="ac-ow-n">${alles ? ico('action-check', 16) : x.taken.length ? `${x.klaar}/${x.taken.length}` : ''}</span></button>`;
+  };
+  return `<div class="ac-ow-werk ${o ? 'open' : ''}">
+    <nav class="ac-paneel ac-ow-lijst" aria-label="Onderwerpen">
+      <div class="ac-ow-totaal"><b>${klaar}/${totaal}</b><span class="ac-groei"><span class="ac-balk ${laat ? 'oranje' : ''}"><i style="width:${totaal ? Math.round(klaar / totaal * 100) : 0}%"></i></span>
+        <small>taken klaar${laat ? ` · <span class="rood">${laat} te laat</span>` : ''}</small></span></div>
+      ${po.map(item).join('')}
+      <button class="ac-ow-nieuw" data-ac="ow-nieuw">${ico('action-add', 16)} Onderwerp toevoegen</button></nav>
+    <section class="ac-ow-detail">${o ? htmlOnderwerp(o) : ''}</section></div>`;
+}
+function htmlOnderwerp(o){
+  const a = A.act, v = vandaag(), leden = L.gesorteerd(a.comite, (x, y) => String(x.naam).localeCompare(String(y.naam), 'nl')), ei = o.eigenaarInfo;
+  const taakRij = t => {
+    const st = t.status || 'open', staat = L.taakStaat(t, a.datum, v), d = L.taakDatum(t, a.datum), tv = D.taakVragen(t);
+    return `<div class="ac-taak ${staat}"><button class="ac-vink ${st}" data-ac="status" data-id="${esc(t.id)}" data-naar="${st === 'klaar' ? 'open' : 'klaar'}" aria-label="${st === 'klaar' ? 'Weer open zetten' : 'Klaar'}">${st === 'klaar' ? ico('action-check', 16) : st === 'bezig' ? '½' : ''}</button>
+      <button class="ac-taak-t" data-taak="${esc(t.id)}"><b>${esc(t.titel)}</b><small>${esc([d ? (staat === 'telaat' ? 'te laat: vóór ' : 'vóór ') + L.datumKort(d) : '', a.comite?.[t.eigenaar]?.naam || ''].filter(Boolean).join(' · '))}</small></button>
+      <button class="ac-pil knopje" data-taak="${esc(t.id)}">${tv.vragen.length || tv.blokken.length ? 'invullen' : 'open'} ›</button></div>`;
+  };
+  const kop = `<div class="ac-ow-kop"><button class="ac-terug ac-alleen-smal" data-ac="ow-terug" aria-label="Alle onderwerpen">‹</button><span class="ac-ow-ic groot">${ico(o.icoon, 24)}</span>
+      <h2 class="ac-groei">${esc(o.naam)}</h2>${o.telaat ? `<span class="ac-pil rood">${o.telaat} te laat</span>` : ''}
+      <button class="ac-x" data-ac="ow-bewerk" data-id="${esc(o.id)}" aria-label="Onderwerp aanpassen" title="Naam, icoon of weghalen">${ico('admin-edit', 18)}</button></div>
+    <div class="ac-ow-wie"><label class="ac-label" for="owEig">Eigenaar</label><select id="owEig" class="ac-in smal" data-veld="onderwerpen.${esc(o.id)}.eigenaar">${opt('', ei && !ei.gekozen ? `${ei.naam} (op rol)` : '— nog niemand —')}${leden.map(l => opt(l.id, `${l.naam}${l.rol ? ' (' + l.rol + ')' : ''}`, ei?.gekozen && ei.id === l.id)).join('')}</select>
+      <small class="ac-zacht">${leden.length ? 'Open taken zonder eigenaar gaan mee naar de eigenaar die je kiest.' : 'Zet eerst mensen in het comité, bij Datum, plek en comité.'}</small></div>`;
+  const taken = `<div class="ac-paneel"><h3>Te doen <small class="ac-zacht">${o.klaar}/${o.taken.length}</small></h3>${o.taken.map(taakRij).join('') || '<p class="ac-zacht">Geen taken bij dit onderwerp.</p>'}
+    <div class="ac-acties"><button class="knop licht klein" data-ac="taak-nieuw" data-ow="${esc(o.id)}">${ico('action-add', 16)} Taak</button></div></div>`;
+  const vragen = `<div class="ac-paneel"><h3>Afspraken</h3>${o.vragen.map(q => `<div class="ac-vraag"><label class="ac-label" for="v_${esc(o.id)}_${esc(q.id)}">${esc(q.vraag)}</label>
+      <div class="ac-vraag-r"><textarea class="ac-in" id="v_${esc(o.id)}_${esc(q.id)}" rows="${rijenVoor(q.antwoord || q.ph)}" maxlength="${D.ANTWOORD_MAX}" data-veld="onderwerpen.${esc(o.id)}.vragen.${esc(q.id)}.antwoord" placeholder="${esc(q.ph)}">${esc(q.antwoord)}</textarea>
+      <button class="ac-x" data-ac="vraag-weg" data-id="${esc(o.id)}" data-v="${esc(q.id)}" aria-label="Vraag weghalen">✕</button></div></div>`).join('') || '<p class="ac-zacht">Nog geen vragen.</p>'}
+    ${o.vragen.length < D.MAX_VRAGEN ? `<div class="ac-toevoeg"><input class="ac-in" data-kies="vraag-${esc(o.id)}" placeholder="Eigen vraag, bijvoorbeeld: wie haalt de sleutel?" maxlength="120"><button class="knop licht klein" data-ac="vraag-nieuw" data-id="${esc(o.id)}">Toevoegen</button></div>` : ''}</div>`;
+  return `${kop}<div class="ac-grid2">${taken}${vragen}</div>${o.blokken.map(b => htmlBlok(b, o.id)).join('')}`;
+}
+/* Wat er bij een onderwerp (of in de lade van een taak) onder de afspraken staat. */
+function htmlBlok(b, oid){
+  const a = A.act, verwijs = (icoon, titel, tekst, knop) => `<div class="ac-paneel ac-verwijs"><h3>${ico(icoon, 18)} ${esc(titel)}</h3><p class="ac-zacht">${tekst}</p><div class="ac-acties">${knop}</div></div>`;
+  const blok = (titel, html) => `<section class="ac-blok"><h3 class="ac-blok-kop">${esc(titel)}</h3>${html}</section>`;
+  switch (b){
+    case 'gegevens': return htmlGegevens();
+    case 'comite': return htmlMensen();
+    case 'documenten': return htmlDocumenten();
+    case 'deelnemers': return blok('Deelnemers', htmlDeelnemers());
+    case 'toernooi': return verwijs('football-tournament', 'Toernooi', 'Poules, speelschema, uitslagen, inschrijven en de live pagina staan in de toernooiplanner.', '<button class="knop licht" data-tab="toernooi">Naar de toernooiplanner</button>');
+    case 'programma': { const p = L.programmaLijst(a.programma).lijst;
+      return verwijs('planning-day', 'Dagprogramma', p.length ? `${p.length} ${p.length === 1 ? 'punt' : 'punten'}, van ${esc(p[0].tijdNu)} tot ${esc(p[p.length - 1].eindNu)}.` : 'Nog geen programma.', '<button class="knop licht" data-tab="programma">Naar het dagprogramma</button>'); }
+    case 'vrijwilligers': return blok('Diensten', htmlVrijwilligers());
+    case 'communicatie': return blok('Berichten', htmlCommunicatie());
+    case 'spullen': return htmlSpullen(oid);
+    case 'veiligheid': return htmlChecks();
+    case 'kosten': return htmlKosten(oid);
+    case 'budget': return blok('Begroting', htmlBudget());
+    case 'evaluatie': return verwijs('attendance-evaluatie', 'Evaluatie', 'Wat ging goed, wat kan beter, en tips per taak voor volgende keer.', '<button class="knop licht" data-tab="evaluatie">Naar de evaluatie</button>');
+  }
+  return '';
+}
+function htmlGegevens(){
+  const a = A.act, vp = S.club?.platformModules?.veldplanner === true && isAdmin();
+  return `<div class="ac-paneel"><h3>Gegevens</h3>
+    <label class="ac-label">Naam</label>${veld('naam', a.naam)}
+    <div class="ac-rij2"><span><label class="ac-label">Datum</label>${datumVeld('data-veld="datum"', a.datum)}</span>
+      <span><label class="ac-label">Status</label><select class="ac-in" data-veld="status">${Object.entries(L.STATUS_ACT).map(([k, n]) => opt(k, n, a.status === k)).join('')}</select></span></div>
+    <div class="ac-rij2"><span><label class="ac-label">Begin</label>${veld('start', a.start, { type: 'time' })}</span><span><label class="ac-label">Einde</label>${veld('eind', a.eind, { type: 'time' })}</span></div>
+    <label class="ac-label">Locatie</label>${veld('locatie', a.locatie, { ph: 'Sportpark, kantine, sporthal…' })}
+    <label class="ac-label">Omschrijving</label>${tekstvak('omschrijving', a.omschrijving, 'Waar gaat het om, voor wie?')}
+    ${vp || (isAdmin() && L.isIso(a.datum)) ? `<div class="ac-acties">${vp ? '<button class="knop licht klein" data-ac="veldplanner">Velden en kleedkamers in de Veldplanner</button>' : ''}
+      ${isAdmin() && L.isIso(a.datum) ? `<button class="knop licht klein" data-ac="aflasten">Trainingen op ${esc(L.datumKort(a.datum))} afgelasten</button>` : ''}</div>` : ''}</div>`;
 }
 function taakKaart(t, { bord = false } = {}){
   const a = A.act, staat = L.taakStaat(t, a.datum, vandaag()), d = L.taakDatum(t, a.datum);
   const st = t.status || 'open', volg = { open: 'bezig', bezig: 'klaar', klaar: 'open' }[st];
+  const o = D.onderwerpen(a).find(x => x.id === D.taakOnderwerp(t, a));
   return `<div class="ac-taak ${staat}" ${bord ? `draggable="true" data-sleep="${esc(t.id)}"` : ''}>
     <button class="ac-vink ${st}" data-ac="status" data-id="${esc(t.id)}" data-naar="${volg}" aria-label="Status: ${L.STATUS_TAAK[st]}">${st === 'klaar' ? ico('action-check', 16) : st === 'bezig' ? '½' : ''}</button>
     <button class="ac-taak-t" data-taak="${esc(t.id)}"><b>${esc(t.titel)}</b>
       <small>${esc([d ? (staat === 'telaat' ? 'te laat: ' : 'vóór ') + L.datumKort(d) : '', isTijd0(t) ? '' : L.dTekst(t.d), a.comite?.[t.eigenaar]?.naam || (t.rol ? `(${t.rol})` : '')].filter(Boolean).join(' · '))}</small>
+      ${o ? `<small class="ac-ow-tag">${ico(o.icoon, 13)} ${esc(o.naam)}</small>` : ''}
       ${t.tip ? `<small class="ac-tip">${ico('action-info', 14)} ${esc(t.tip)}</small>` : ''}</button>
     ${bord ? `<span class="ac-pijlen">${st !== 'open' ? `<button data-ac="status" data-id="${esc(t.id)}" data-naar="${st === 'klaar' ? 'bezig' : 'open'}" aria-label="Terug">‹</button>` : ''}${st !== 'klaar' ? `<button data-ac="status" data-id="${esc(t.id)}" data-naar="${st === 'open' ? 'bezig' : 'klaar'}" aria-label="Verder">›</button>` : ''}</span>` : ''}</div>`;
 }
@@ -320,22 +406,79 @@ function htmlTijdlijn(){
       <small>${k === dezeWeek ? 'deze week' : ''}${k === dagWeek ? ' · de activiteit' : ''}${k < dezeWeek ? ' · geweest' : ''}</small></div>${weken.get(k).map(t => taakKaart(t)).join('')}</div>`).join('')}
     ${weken.has('zonder') ? `<div class="ac-week"><div class="ac-week-kop"><b>Zonder datum</b></div>${weken.get('zonder').map(t => taakKaart(t)).join('')}</div>` : ''}</div>`;
 }
-function vensterTaak(id){
-  const a = A.act, t = a.taken?.[id];
-  if (!t) return;
-  const vast = L.isIso(t.datum);
-  A.venster = `<h2>Taak</h2>
-    <label class="ac-label">Wat</label>${veld(`taken.${id}.titel`, t.titel)}
-    <div class="ac-rij2"><span><label class="ac-label">Eigenaar</label><select class="ac-in" data-veld="taken.${id}.eigenaar">${opt('', '— nog niemand —')}${L.gesorteerd(a.comite, (x, y) => String(x.naam).localeCompare(String(y.naam))).map(l => opt(l.id, `${l.naam}${l.rol ? ' (' + l.rol + ')' : ''}`, t.eigenaar === l.id)).join('')}</select></span>
-      <span><label class="ac-label">Fase</label><select class="ac-in" data-veld="taken.${id}.fase">${(a.fasen || L.FASEN).map(f => opt(f.id, f.naam, (t.fase || L.faseVan(t.d)) === f.id)).join('')}</select></span></div>
-    <div class="ac-rij2"><span><label class="ac-label">Klaar … dagen vooraf ${vast ? '(staat op vaste datum)' : ''}</label>${veld(`taken.${id}.d`, t.d ?? '', { type: 'number', extra: 'data-num inputmode="numeric" step="1" min="-365" max="730"' })}</span>
-      <span><label class="ac-label">Of een vaste datum</label>${datumVeld(`data-veld="taken.${esc(id)}.datum"`, t.datum || '', { leeg: 'Geen vaste datum' })}</span></div>
-    <p class="ac-zacht">${esc(L.dTekst(vast ? null : t.d))}${L.taakDatum(t, a.datum) ? ` → klaar vóór ${esc(L.datumLang(L.taakDatum(t, a.datum)))}` : ''}. Negatief = na de activiteit.</p>
-    <label class="ac-label">Status</label><div class="ac-schakel">${Object.entries(L.STATUS_TAAK).map(([k, n]) => `<button class="${(t.status || 'open') === k ? 'aan' : ''}" data-ac="status" data-id="${esc(id)}" data-naar="${k}">${n}</button>`).join('')}</div>
-    <label class="ac-label">Notitie</label>${tekstvak(`taken.${id}.notitie`, t.notitie, 'Afspraken, telefoonnummer leverancier, link…')}
-    ${t.tip ? `<p class="ac-tip">${ico('action-info', 14)} ${esc(t.tip)}</p>` : ''}
-    <div class="ac-acties"><button class="knop gevaar klein" data-ac="taak-weg" data-id="${esc(id)}">Verwijderen</button><span class="ac-groei"></span><button class="knop vol" data-ac="venster-dicht">Klaar</button></div>`;
+/* Een taak openen = een invulkaart (lade) met wat er bij die taak hoort [20261126z].
+   lijst: de taken waar Vorige en Volgende doorheen lopen (het onderwerp, of het hele draaiboek). */
+function vensterTaak(id, lijst){
+  if (!A.act?.taken?.[id]) return;
+  A.ladeLijst = lijst || (A.ladeLijst?.includes(id) ? A.ladeLijst : ladeContext());
+  A.ladeId = id; A.venster = htmlLade;
   teken();
+  const blad = A.el.querySelector('.ac-blad'); if (blad) blad.scrollTop = 0;
+}
+function ladeContext(){
+  const a = A.act;
+  if (A.tab === 'taken' && A.weergave === 'onderwerpen' && A.onderwerp) return (D.perOnderwerp(a, vandaag()).find(o => o.id === A.onderwerp)?.taken || []).map(t => t.id);
+  return L.takenOpDatum(a).map(t => t.id);
+}
+function naarTekst(id){
+  const a = A.act;
+  if (id === 'vrijwilligers'){ if (!A.deel) return 'De vrijwilligersdiensten zet je klaar bij het onderwerp Vrijwilligers. Daar staat ook de link om te delen.';
+    const ds = L.telDiensten(A.deel.diensten, A.aanm); return `${ds.gevuld} van ${ds.nodig} plekken gevuld${ds.tekort ? `, nog ${ds.tekort} nodig` : ''}. Diensten, de inschrijflink en de oproep staan bij Vrijwilligers.`; }
+  if (id === 'communicatie'){ const b = L.gesorteerd(a.berichten); return b.length ? `${b.length} berichten klaar, ${b.filter(x => x.geplaatstMs).length} verstuurd. Je verstuurt ze bij Communicatie.` : 'Kant-en-klare berichten zet je klaar bij Communicatie.'; }
+  return 'Teams, deelnemers en het programma staan bij dit onderwerp.';
+}
+function htmlLade(){
+  const a = A.act, id = A.ladeId, t = a?.taken?.[id];
+  if (!t) return '<p>Deze taak is weggehaald.</p><div class="ac-acties"><button class="knop vol" data-ac="venster-dicht">Sluiten</button></div>';
+  const lijst = D.onderwerpen(a), oid = D.taakOnderwerp(t, a, lijst), o = lijst.find(x => x.id === oid);
+  const st = t.status || 'open', staat = L.taakStaat(t, a.datum, vandaag()), d = L.taakDatum(t, a.datum), vast = L.isIso(t.datum);
+  const tv = D.taakVragen(t), leden = L.gesorteerd(a.comite, (x, y) => String(x.naam).localeCompare(String(y.naam), 'nl'));
+  const i = (A.ladeLijst || []).indexOf(id), vorige = i > 0 ? A.ladeLijst[i - 1] : '', volgende = i >= 0 ? A.ladeLijst[i + 1] || '' : '';
+  const naar = tv.naar && tv.naar !== oid ? lijst.find(x => x.id === tv.naar) : (tv.naar ? o : null);
+  return `<div class="ac-lade-kop">${o ? `<button class="ac-chip" data-onderwerp="${esc(o.id)}" title="Naar dit onderwerp">${ico(o.icoon, 16)} ${esc(o.naam)}</button>` : ''}
+      <span class="ac-groei"></span>${i >= 0 ? `<small class="ac-zacht">${i + 1} van ${A.ladeLijst.length}</small>` : ''}<button class="ac-x" data-ac="venster-dicht" aria-label="Sluiten">${ico('navigation-close', 20)}</button></div>
+    <textarea class="ac-in ac-lade-titel" rows="${Math.min(3, Math.ceil(String(t.titel || '').length / 34) || 1)}" data-veld="taken.${esc(id)}.titel" aria-label="Taak" maxlength="200">${esc(t.titel)}</textarea>
+    <div class="ac-lade-meta"><div class="ac-schakel">${Object.entries(L.STATUS_TAAK).map(([k, n]) => `<button class="${st === k ? 'aan' : ''}" data-ac="status" data-id="${esc(id)}" data-naar="${k}">${n}</button>`).join('')}</div>
+      ${d ? `<span class="ac-pil ${staat === 'telaat' ? 'rood' : ''}">vóór ${esc(L.datumKort(d))}${staat === 'telaat' ? ', te laat' : ''}</span>` : ''}
+      <select class="ac-in smal" data-veld="taken.${esc(id)}.eigenaar" aria-label="Wie doet het">${opt('', 'Wie doet het?')}${leden.map(l => opt(l.id, `${l.naam}${l.rol ? ' (' + l.rol + ')' : ''}`, t.eigenaar === l.id)).join('')}</select></div>
+    ${t.tip ? `<div class="ac-tipkaart">${ico('action-info', 16)} <span><b>Tip:</b> ${esc(t.tip)}</span></div>` : ''}
+    ${tv.vragen.length ? `<div class="ac-paneel"><h3>Vul in</h3>${tv.vragen.map(q => `<label class="ac-label" for="tv_${esc(q.k)}">${esc(q.v)}</label>
+      <input class="ac-in" id="tv_${esc(q.k)}" data-veld="taken.${esc(id)}.antw.${esc(q.k)}" value="${esc(t.antw?.[q.k] || '')}" placeholder="${esc(q.ph || '')}" maxlength="300">`).join('')}</div>` : ''}
+    ${tv.blokken.filter(b => D.blokAan(a, b)).map(b => htmlBlok(b, oid)).join('')}
+    ${naar ? `<div class="ac-paneel ac-verwijs"><p class="ac-zacht">${esc(naarTekst(naar.id))}</p><div class="ac-acties"><button class="knop licht" data-onderwerp="${esc(naar.id)}">${ico(naar.icoon, 16)} Naar ${esc(naar.naam)}</button></div></div>` : ''}
+    <label class="ac-label" for="tNot">Notitie</label><textarea id="tNot" class="ac-in" rows="3" data-veld="taken.${esc(id)}.notitie" placeholder="Afspraken, telefoonnummer, link…">${esc(t.notitie || '')}</textarea>
+    <details class="ac-meer"><summary>Planning en meer</summary>
+      <div class="ac-rij2"><span><label class="ac-label">Onderwerp</label><select class="ac-in" data-veld="taken.${esc(id)}.onderwerp">${lijst.map(x => opt(x.id, x.naam, x.id === oid)).join('')}</select></span>
+        <span><label class="ac-label">Fase</label><select class="ac-in" data-veld="taken.${esc(id)}.fase">${(a.fasen || L.FASEN).map(f => opt(f.id, f.naam, (t.fase || L.faseVan(t.d)) === f.id)).join('')}</select></span></div>
+      <div class="ac-rij2"><span><label class="ac-label">Klaar … dagen vooraf ${vast ? '(staat op vaste datum)' : ''}</label>${veld(`taken.${id}.d`, t.d ?? '', { type: 'number', extra: 'data-num inputmode="numeric" step="1" min="-365" max="730"' })}</span>
+        <span><label class="ac-label">Of een vaste datum</label>${datumVeld(`data-veld="taken.${esc(id)}.datum"`, t.datum || '', { leeg: 'Geen vaste datum' })}</span></div>
+      <p class="ac-zacht">${esc(L.dTekst(vast ? null : t.d))}${d ? ` → klaar vóór ${esc(L.datumLang(d))}` : ''}. Negatief = na de activiteit.</p>
+      <div class="ac-acties"><button class="knop gevaar klein" data-ac="taak-weg" data-id="${esc(id)}">Taak verwijderen</button></div></details>
+    <div class="ac-lade-voet"><button class="knop licht" data-ac="lade-naar" data-id="${esc(vorige)}" ${vorige ? '' : 'disabled'}>‹ Vorige</button>
+      <button class="knop licht" data-ac="lade-naar" data-id="${esc(volgende)}" ${volgende ? '' : 'disabled'}>Volgende ›</button><span class="ac-groei"></span>
+      ${st === 'klaar' ? '<button class="knop licht" data-ac="venster-dicht">Sluiten</button>' : `<button class="knop fluo" data-ac="taak-klaar" data-id="${esc(id)}">${ico('action-check', 16)} Klaar</button>`}</div>`;
+}
+/* Onderwerp aanpassen of toevoegen */
+const OW_ICONEN = ['match-location', 'planning-day', 'football-tournament', 'activiteit-kantine', 'tag-handshake', 'tag-megaphone', 'activiteit-veiligheid', 'activiteit-budget',
+  'activiteit-afronding', 'planning-activity', 'planning-event', 'team-members', 'training-equipment', 'football-referee', 'admin-document', 'communication-phone', 'match-departure', 'admin-tv'];
+function vensterOnderwerp(id){
+  A.venster = () => {
+    const o = D.onderwerpen(A.act, { ookLeeg: true }).find(x => x.id === id);
+    if (!o) return '<p>Dit onderwerp is weg.</p><div class="ac-acties"><button class="knop vol" data-ac="venster-dicht">Sluiten</button></div>';
+    return `<h2>Onderwerp</h2><label class="ac-label">Naam</label>${veld(`onderwerpen.${id}.naam`, o.naam, { extra: 'maxlength="60"' })}
+      <label class="ac-label">Icoon</label><div class="ac-iconen">${OW_ICONEN.map(n => `<button class="ac-icoonkeus ${o.icoon === n ? 'aan' : ''}" data-ac="ow-icoon" data-id="${esc(id)}" data-icoon="${n}" aria-label="Icoon ${n}">${ico(n, 22)}</button>`).join('')}</div>
+      <p class="ac-zacht">Weghalen kan altijd: de taken blijven bestaan en komen bij een ander onderwerp. ${o.standaard ? 'Je kunt het later terugzetten via Onderwerp toevoegen.' : ''}</p>
+      <div class="ac-acties"><button class="knop gevaar klein" data-ac="ow-weg" data-id="${esc(id)}">Onderwerp weghalen</button><span class="ac-groei"></span><button class="knop vol" data-ac="venster-dicht">Klaar</button></div>`;
+  };
+  teken();
+}
+function vensterOnderwerpNieuw(){
+  const weg = D.ONDERWERPEN.filter(o => A.act.onderwerpen?.[o.id]?.weg === true);
+  A.venster = `<h2>Onderwerp toevoegen</h2><label class="ac-label">Naam</label><input class="ac-in" data-kies="ow-naam" maxlength="60" placeholder="Bijvoorbeeld: Muziek en geluid">
+    <div class="ac-acties"><span class="ac-groei"></span><button class="knop licht" data-ac="venster-dicht">Annuleren</button><button class="knop vol" data-ac="ow-maak">Toevoegen</button></div>
+    ${weg.length ? `<h3>Of zet terug</h3><div class="ac-chips">${weg.map(o => `<button class="ac-chip" data-ac="ow-terugzet" data-id="${o.id}">${ico(o.icoon, 16)} ${esc(o.naam)}</button>`).join('')}</div>` : ''}`;
+  teken();
+  A.el.querySelector('[data-kies="ow-naam"]')?.focus();
 }
 
 /* Dagprogramma */
@@ -445,21 +588,32 @@ function htmlDeelnemers(){
       <p class="ac-zacht">Wie er per team meedoet, staat in het lijstje van dat team (alleen de staf van het team ziet namen).</p></div>`;
 }
 
-/* Locatie en spullen */
-function htmlLocatie(){
-  const a = A.act, vp = S.club?.platformModules?.veldplanner === true && isAdmin();
-  const mat = L.gesorteerd(a.materiaal), checks = L.gesorteerd(a.checks), leden = L.gesorteerd(a.comite);
-  return `<div class="ac-paneel"><h3>Locatie</h3>${veld('locatie', a.locatie, { ph: 'Sportpark, kantine, sporthal…' })}
-      <div class="ac-acties">${vp ? '<button class="knop licht klein" data-ac="veldplanner">Velden en kleedkamers in de Veldplanner</button>' : ''}
-      ${isAdmin() && L.isIso(a.datum) ? `<button class="knop licht klein" data-ac="aflasten">Trainingen op ${esc(L.datumKort(a.datum))} afgelasten</button>` : ''}</div></div>
-    <div class="ac-paneel"><h3>Spullen</h3>${mat.map(m => `<div class="ac-rij"><input type="checkbox" data-veld="materiaal.${esc(m.id)}.klaar" data-bool ${m.klaar ? 'checked' : ''} aria-label="Klaar">
-        ${veld(`materiaal.${m.id}.naam`, m.naam, { klasse: 'ac-groei' })}${veld(`materiaal.${m.id}.aantal`, m.aantal ?? '', { type: 'number', ph: 'Aantal', extra: 'data-num min="0" inputmode="numeric"', klasse: 'getal' })}
-        <select class="ac-in smal" data-veld="materiaal.${esc(m.id)}.wie">${opt('', 'Wie neemt mee?')}${leden.map(l => opt(l.id, l.naam, m.wie === l.id)).join('')}</select>
-        <button class="ac-x" data-ac="regel-weg" data-pad="materiaal.${esc(m.id)}" aria-label="Weg">✕</button></div>`).join('') || '<p class="ac-zacht">Nog geen spullen.</p>'}
-      <button class="knop licht klein" data-ac="regel-nieuw" data-soort="materiaal">${ico('action-add', 16)} Spullen</button></div>
-    <div class="ac-paneel"><h3>Veiligheid en vergunningen</h3>${checks.map(c => `<div class="ac-rij"><input type="checkbox" data-veld="checks.${esc(c.id)}.klaar" data-bool ${c.klaar ? 'checked' : ''} aria-label="Afgevinkt">${veld(`checks.${c.id}.titel`, c.titel, { klasse: 'ac-groei' })}
-        <button class="ac-x" data-ac="regel-weg" data-pad="checks.${esc(c.id)}" aria-label="Weg">✕</button></div>`).join('') || '<p class="ac-zacht">Geen checklist.</p>'}
-      <button class="knop licht klein" data-ac="regel-nieuw" data-soort="checks">${ico('action-add', 16)} Punt</button></div>`;
+/* Spullen, veiligheid en kosten (bij de onderwerpen) */
+function htmlSpullen(oid){
+  const a = A.act, mat = oid ? D.regelsVan(a.materiaal, oid, a, 'spullen') : L.gesorteerd(a.materiaal), leden = L.gesorteerd(a.comite);
+  return `<div class="ac-paneel"><h3>${oid === 'kantine' ? 'Inkooplijst' : 'Spullen'}</h3>${mat.map(m => `<div class="ac-rij"><input type="checkbox" data-veld="materiaal.${esc(m.id)}.klaar" data-bool ${m.klaar ? 'checked' : ''} aria-label="Klaar">
+      ${veld(`materiaal.${m.id}.naam`, m.naam, { klasse: 'ac-groei', ph: 'Wat' })}${veld(`materiaal.${m.id}.aantal`, m.aantal ?? '', { type: 'number', ph: 'Aantal', extra: 'data-num min="0" inputmode="numeric"', klasse: 'getal' })}
+      <input class="ac-in smal" data-veld="materiaal.${esc(m.id)}.wie" data-wie list="ac-wie-lijst" maxlength="60" placeholder="Wie neemt mee?" aria-label="Wie neemt mee" value="${esc(a.comite?.[m.wie]?.naam || m.wie || '')}">
+      <button class="ac-x" data-ac="regel-weg" data-pad="materiaal.${esc(m.id)}" aria-label="Weg">✕</button></div>`).join('') || '<p class="ac-zacht">Nog niets op de lijst.</p>'}
+    <datalist id="ac-wie-lijst">${leden.map(l => `<option value="${esc(l.naam)}">`).join('')}</datalist>
+    <div class="ac-acties"><button class="knop licht klein" data-ac="regel-nieuw" data-soort="materiaal" data-ow="${esc(oid || '')}">${ico('action-add', 16)} Regel</button></div></div>`;
+}
+function htmlChecks(){
+  const checks = L.gesorteerd(A.act.checks);
+  return `<div class="ac-paneel"><h3>Veiligheid en vergunningen</h3>${checks.map(c => `<div class="ac-rij"><input type="checkbox" data-veld="checks.${esc(c.id)}.klaar" data-bool ${c.klaar ? 'checked' : ''} aria-label="Afgevinkt">${veld(`checks.${c.id}.titel`, c.titel, { klasse: 'ac-groei' })}
+      <button class="ac-x" data-ac="regel-weg" data-pad="checks.${esc(c.id)}" aria-label="Weg">✕</button></div>`).join('') || '<p class="ac-zacht">Geen checklist.</p>'}
+    <div class="ac-acties"><button class="knop licht klein" data-ac="regel-nieuw" data-soort="checks">${ico('action-add', 16)} Punt</button></div></div>`;
+}
+function htmlKosten(oid){
+  const a = A.act, r = D.regelsVan(a.budget, oid, a, 'kosten'), som = k => r.reduce((s, p) => s + (p.soort === 'in' ? -1 : 1) * (Number(p[k]) || 0), 0);
+  return `<div class="ac-paneel"><h3>Kosten <small class="ac-zacht ac-groei" style="text-align:right;text-transform:none;font-family:inherit">telt mee in het budget</small></h3>
+    ${r.length ? `<div class="ac-rij ac-zacht"><span class="ac-groei">Post</span><span class="geld">Begroot</span><span class="geld">Werkelijk</span><span style="width:28px"></span></div>` : ''}
+    ${r.map(p => `<div class="ac-rij">${veld(`budget.${p.id}.naam`, p.naam, { klasse: 'ac-groei', ph: 'Post' })}
+      ${veld(`budget.${p.id}.begroot`, p.begroot ?? '', { type: 'number', ph: 'Begroot', extra: 'data-num step="0.01" inputmode="decimal"', klasse: 'geld' })}
+      ${veld(`budget.${p.id}.werkelijk`, p.werkelijk ?? '', { type: 'number', ph: 'Werkelijk', extra: 'data-num step="0.01" inputmode="decimal"', klasse: 'geld' })}
+      <button class="ac-x" data-ac="regel-weg" data-pad="budget.${esc(p.id)}" aria-label="Weg">✕</button></div>`).join('') || '<p class="ac-zacht">Nog geen kosten bij dit onderwerp.</p>'}
+    ${r.length ? `<div class="ac-rij"><b class="ac-groei">Totaal</b><b class="geld">${L.euro(som('begroot'))}</b><b class="geld">${L.euro(som('werkelijk'))}</b><span style="width:28px"></span></div>` : ''}
+    <div class="ac-acties"><button class="knop licht klein" data-ac="regel-nieuw" data-soort="budget" data-sub="uit" data-ow="${esc(oid)}">${ico('action-add', 16)} Kostenpost</button></div></div>`;
 }
 
 /* Communicatie */
@@ -478,7 +632,7 @@ function htmlCommunicatie(){
           <button class="knop licht klein" data-ac="kopieer" data-tekst="${esc(tl + '\n' + t)}">Kopiëren</button><span class="ac-groei"></span>
           <button class="ac-x" data-ac="regel-weg" data-pad="berichten.${esc(b.id)}" aria-label="Weg">✕</button></div></div>`; }).join('') || '<div class="ac-paneel"><p class="ac-zacht">Nog geen berichten.</p></div>'}
     <button class="knop licht" data-ac="regel-nieuw" data-soort="berichten">${ico('action-add', 16)} Bericht</button>
-    <p class="ac-zacht">Berichten aan coaches komen als balk bovenaan het teamscherm. Ouders bereik je via de Teamkamer-agenda (tab Deelnemers) of WhatsApp.</p>`;
+    <p class="ac-zacht">Berichten aan coaches komen als balk bovenaan het teamscherm. Ouders bereik je via de Teamkamer-agenda (zet dat aan bij Deelnemers) of WhatsApp.</p>`;
 }
 
 /* Budget */
@@ -518,7 +672,7 @@ function htmlEvaluatie(){
 }
 
 /* ---------- vensters ---------- */
-function sluitVenster(){ A.venster = null; teken(); }
+function sluitVenster(){ A.venster = null; A.ladeId = ''; teken(); }
 function vensterNieuw(){
   const ai = aiAan();
   const kaart = s => `<button class="ac-sj" data-ac="nieuw-sj" data-id="${esc(s.id)}">${ico(s.icoon || 'planning-event', 28)}<b>${esc(s.naam)}</b><small>${esc(s.omschrijving || `${(s.taken || []).length} taken`)}</small></button>`;
@@ -561,7 +715,8 @@ function vensterExport(){
   const a = A.act;
   A.venster = `<h2>Exporteren</h2><p class="ac-zacht">Alles kan eruit: om te printen, in Excel verder te werken, in je agenda te zetten of als back-up.</p>
     <div class="ac-export">
-      <button data-exp="pdf">${ico('admin-document', 22)}<b>Draaiboek (PDF)</b><small>Alles op papier: taken, programma, diensten, spullen</small></button>
+      <button data-exp="docx">${ico('admin-document', 22)}<b>Draaiboek (Word)</b><small>Per onderwerp, om te mailen, te printen of in de vergadering door te lopen</small></button>
+      <button data-exp="pdf">${ico('admin-document', 22)}<b>Draaiboek (PDF)</b><small>Zelfde inhoud, met vinkjes om op de dag af te strepen</small></button>
       ${A.deel ? `<button data-exp="pdf-rooster">${ico('admin-document', 22)}<b>Vrijwilligersrooster (PDF)</b><small>Om op te hangen</small></button>` : ''}
       <button data-exp="csv-taken">${ico('admin-file', 22)}<b>Taken (Excel/CSV)</b><small>Ook weer in te lezen</small></button>
       ${a.tabs?.programma !== false ? `<button data-exp="csv-programma">${ico('admin-file', 22)}<b>Dagprogramma (Excel/CSV)</b></button>` : ''}
@@ -593,7 +748,8 @@ function exporteer(soort){
   if (soort === 'json') return download(bestandsnaam('json'), L.jsonExport(a, { diensten: A.deel?.diensten, aanmeldingen: A.aanm }), 'application/json');
   if (soort === 'json-sj') return download(bestandsnaam('json', 'draaiboek').replace(/-\d{4}-\d{2}-\d{2}/, ''), L.jsonSjabloon(L.alsSjabloon(a, { diensten: A.deel?.diensten })), 'application/json');
   if (TN.exporteerToernooi(tnCtx(), soort)) return;
-  if (soort === 'pdf') return printen(htmlPrintDraaiboek());
+  if (soort === 'docx') return exporteerWord(A.lees ? A.leesOw : '');
+  if (soort === 'pdf') return printen(htmlDoc(docModel(A.lees ? A.leesOw : '')));
   if (soort === 'pdf-rooster') return printen(htmlPrintRooster());
 }
 
@@ -607,28 +763,51 @@ function printen(body){
     body{font:12px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;color:#111;margin:18mm 14mm}h1{font-size:22px;margin:0 0 2px}h2{font-size:15px;margin:18px 0 6px;border-bottom:2px solid #111;padding-bottom:2px}
     .sub{color:#555;margin-bottom:10px}table{width:100%;border-collapse:collapse;margin:4px 0 8px}th,td{text-align:left;padding:4px 6px;border-bottom:1px solid #ccc;vertical-align:top}th{font-size:11px;color:#555}
     .k{width:16px}.vak{display:inline-block;width:11px;height:11px;border:1.5px solid #111;border-radius:2px}.tip{color:#555;font-style:italic}.lijn{border-bottom:1px solid #999;height:22px}.wat{white-space:pre-line;margin:0 0 4px;color:#333}td small{white-space:pre-line}
-    .voet{margin-top:24px;color:#777;font-size:10px}@page{margin:12mm}</style></head><body>${body}<p class="voet">Gemaakt met Cluppie · ${esc(new Date().toLocaleString('nl-NL'))}</p></body></html>`);
+    .voet{margin-top:24px;color:#777;font-size:10px}h3{font-size:13px;margin:10px 0 3px}td small{color:#555}.dl td{border:0;padding:2px 6px}.dl td:first-child{color:#555;width:30%}.nog-leeg{color:#aaa}.vinkt td:first-child,.vinkt th:first-child{width:16px;text-align:center}@page{margin:12mm}</style></head><body>${body}<p class="voet">Gemaakt met Cluppie · ${esc(new Date().toLocaleString('nl-NL'))}</p></body></html>`);
   d.close();
   setTimeout(() => { try { f.contentWindow.focus(); f.contentWindow.print(); } catch { meld('Printen lukt niet in deze browser.'); } setTimeout(() => f.remove(), 60000); }, 250);
 }
-function htmlPrintDraaiboek(){
-  const a = A.act, v = vandaag(), fase = Object.fromEntries((a.fasen || L.FASEN).map(f => [f.id, f.naam]));
-  const lid = id => a.comite?.[id]?.naam || '';
-  const prog = L.programmaLijst(a.planB?.actief && Object.keys(a.programmaB || {}).length ? a.programmaB : a.programma, a.vertraging).lijst;
-  const ds = A.deel ? L.telDiensten(A.deel.diensten, A.aanm) : null, t = L.budgetTotaal(a.budget);
-  return `<h1>${esc(a.naam)}</h1><div class="sub">${esc([L.datumLang(a.datum), a.start ? `${a.start}${a.eind ? '–' + a.eind : ''}` : '', a.locatie].filter(Boolean).join(' · '))}</div>
-    ${a.omschrijving ? `<p>${esc(a.omschrijving)}</p>` : ''}
-    ${Object.keys(a.comite || {}).length ? `<h2>Comité</h2><table>${L.gesorteerd(a.comite).map(l => `<tr><td>${esc(l.naam)}</td><td>${esc(l.rol || '')}</td></tr>`).join('')}</table>` : ''}
-    <h2>Draaiboek</h2><table><tr><th class="k"></th><th>Klaar vóór</th><th>Taak</th><th>Wie</th><th>Fase</th></tr>${L.takenOpDatum(a).map(x => `<tr><td><span class="vak">${x.status === 'klaar' ? '✓' : ''}</span></td>
-      <td>${esc(L.datumKort(L.taakDatum(x, a.datum)))}</td><td>${esc(x.titel)}${x.notitie ? `<br><small>${esc(x.notitie)}</small>` : ''}${x.tip ? `<br><small class="tip">Tip: ${esc(x.tip)}</small>` : ''}</td><td>${esc(lid(x.eigenaar) || x.rol || '')}</td><td>${esc(fase[x.fase] || '')}</td></tr>`).join('')}</table>
-    ${prog.length ? `<h2>Dagprogramma${a.planB?.actief ? ' (plan B)' : ''}</h2><table><tr><th>Tijd</th><th>Wat</th><th>Waar</th><th>Wie</th></tr>${prog.map(p => `<tr><td>${esc(p.tijdNu)}–${esc(p.eindNu)}</td><td>${esc(p.wat)}</td><td>${esc(p.waar || '')}</td><td>${esc(p.wie || '')}</td></tr>`).join('')}</table>` : ''}
-    ${a.planB?.tekst ? `<h2>Plan B</h2><p>${esc(a.planB.tekst)}</p>` : ''}
-    ${ds ? `<h2>Vrijwilligers</h2><table><tr><th>Dienst</th><th>Tijd</th><th>Plek</th><th>Wie</th></tr>${ds.lijst.map(d => `<tr><td>${esc(d.naam)}${d.wat ? `<br><small>${esc(d.wat)}</small>` : ''}</td><td>${esc(d.start)}–${esc(d.eind)}</td><td>${esc(d.plek || '')}</td><td>${esc(A.aanm.filter(x => x.dienst === d.id).map(x => x.naam).join(', '))}${d.tekort ? ` <b>(nog ${d.tekort})</b>` : ''}</td></tr>`).join('')}</table>` : ''}
-    ${Object.keys(a.materiaal || {}).length ? `<h2>Spullen</h2><table>${L.gesorteerd(a.materiaal).map(m => `<tr><td class="k"><span class="vak">${m.klaar ? '✓' : ''}</span></td><td>${esc(m.naam)}</td><td>${esc(m.aantal ?? '')}</td><td>${esc(lid(m.wie))}</td></tr>`).join('')}</table>` : ''}
-    ${Object.keys(a.checks || {}).length ? `<h2>Veiligheid</h2><table>${L.gesorteerd(a.checks).map(c => `<tr><td class="k"><span class="vak">${c.klaar ? '✓' : ''}</span></td><td>${esc(c.titel)}</td></tr>`).join('')}</table>` : ''}
-    ${t.uitBegroot || t.inBegroot ? `<h2>Budget</h2><table><tr><th>Post</th><th>Begroot</th><th>Werkelijk</th></tr>${L.gesorteerd(a.budget).map(p => `<tr><td>${p.soort === 'in' ? '+ ' : '− '}${esc(p.naam)}</td><td>${L.euro(p.begroot)}</td><td>${p.werkelijk != null ? L.euro(p.werkelijk) : ''}</td></tr>`).join('')}
-      <tr><th>Saldo</th><th>${L.euro(t.saldoBegroot)}</th><th>${L.euro(t.saldoWerkelijk)}</th></tr></table>` : ''}
-    <p class="sub">Stand op ${esc(L.datumLang(v))}.</p>`;
+/* ---------- leesweergave, PDF en Word [20261126z] ---------- */
+/* Eén model (draaiboek-logica.js draaiboekDoc) voor het scherm, de PDF en Word. Word inlezen doen we bewust niet. */
+const docModel = alleen => D.draaiboekDoc(A.act, { deel: A.deel, aanm: A.aanm, vandaag: vandaag(), alleen, teams: S.clubTeams || [] });
+function htmlDoc(m, scherm = false){
+  const cel = c => { const [eerste, ...rest] = String(c ?? '').split('\n'); return esc(eerste) + (rest.length ? `<br><small>${rest.map(esc).join('<br>')}</small>` : ''); };
+  const deel = d => d.soort === 'kop' ? `<h3>${esc(d.tekst)}</h3>` : d.soort === 'tekst' ? `<p>${esc(d.tekst)}</p>`
+    : d.soort === 'dl' ? `<table class="dl">${d.rijen.map(([k, v]) => `<tr><td>${esc(k)}</td><td class="${v === '…' ? 'nog-leeg' : ''}">${cel(v)}</td></tr>`).join('')}</table>`
+    : `<table class="${d.vink ? 'vinkt' : ''}"><tr>${d.kop.map(k => `<th>${esc(k)}</th>`).join('')}</tr>${d.rijen.map(r => `<tr>${d.kop.map((_, j) => `<td>${cel(r[j])}</td>`).join('')}</tr>`).join('')}</table>`;
+  return `<h1>${esc(m.titel)}</h1>${m.sub ? `<div class="sub">${esc(m.sub)}</div>` : ''}${m.versie ? `<div class="sub">${esc(m.versie)}</div>` : ''}
+    ${m.secties.map((s, i) => `<h2${scherm ? ` id="ls_${esc(s.id)}"` : ''}>${i + 1}. ${esc(s.kop)}${scherm ? `<button class="ac-bewerk" ${s.id === 'programma' ? 'data-tab="programma"' : `data-onderwerp="${esc(s.id)}"`}>bewerken</button>` : ''}</h2>
+      ${s.eigenaar ? `<div class="sub">Eigenaar: ${esc(s.eigenaar)}</div>` : ''}${s.delen.map(deel).join('')}`).join('')}
+    ${m.secties.length ? '' : '<p class="sub">Nog niets ingevuld.</p>'}`;
+}
+function htmlLees(){
+  const a = A.act, po = D.onderwerpen(a), m = docModel(A.leesOw);
+  return `<div class="ac-app ac-lees"><header class="ac-kop"><button class="ac-terug" data-ac="lees-uit" aria-label="Terug">‹</button><div class="ac-titel"><small>Leesweergave</small><h1>${esc(a.naam || 'Activiteit')}</h1></div>
+      <select class="ac-in smal" data-kies="lees-ow" aria-label="Welk deel">${opt('', 'Hele draaiboek')}${po.map(o => opt(o.id, o.naam, A.leesOw === o.id)).join('')}</select>
+      <button class="knop licht" data-exp="pdf">${ico('admin-document', 18)} PDF</button><button class="knop fluo" data-exp="docx">${ico('admin-download', 18)} Word</button></header>
+    <div class="ac-lees-werk"><nav class="ac-lees-inhoud" aria-label="Inhoud">${m.secties.map((s, i) => `<button data-ac="lees-naar" data-id="ls_${esc(s.id)}">${i + 1}. ${esc(s.kop)}</button>`).join('')}</nav>
+      <article class="ac-papier">${htmlDoc(m, true)}</article></div></div>`;
+}
+let jszipBelofte = null;
+function laadJSZip(){
+  if (window.JSZip) return Promise.resolve(window.JSZip);
+  if (!jszipBelofte) jszipBelofte = new Promise((ok, nok) => {
+    const sc = document.createElement('script');
+    sc.src = 'vendor/jszip.min.js';   // lokaal meegeleverd, zelfde als bij Training maken
+    sc.onload = () => window.JSZip ? ok(window.JSZip) : nok(new Error('JSZip niet beschikbaar'));
+    sc.onerror = () => { jszipBelofte = null; nok(new Error('JSZip laden mislukt')); };
+    document.head.appendChild(sc);
+  });
+  return jszipBelofte;
+}
+async function exporteerWord(alleen = ''){
+  try {
+    const JSZip = await laadJSZip(), zip = new JSZip();
+    for (const [pad, inhoud] of Object.entries(docxBestanden(docModel(alleen)))) zip.file(pad, inhoud);
+    const type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    const blob = await zip.generateAsync({ type: 'blob', mimeType: type, compression: 'DEFLATE' });
+    download(bestandsnaam('docx', alleen ? 'draaiboek-' + alleen : 'draaiboek'), blob, type);
+  } catch (e){ console.error('[activiteiten] word', e); meld('Het Word-bestand maken lukte niet.'); }
 }
 function htmlPrintRooster(){
   const a = A.act, ds = L.telDiensten(A.deel?.diensten, A.aanm);
@@ -641,17 +820,22 @@ function htmlPrintRooster(){
 async function klik(e){
   if (!A) return;
   const t = e.target;
-  const tab = t.closest('[data-tab]'); if (tab){ A.tab = tab.dataset.tab; A.venster = null; teken(); const app = A.el.querySelector('.ac-app'), nav = app?.querySelector('.ac-tabs'); if (app && nav && app.scrollTop > nav.offsetTop) app.scrollTop = nav.offsetTop - 8; nav?.querySelector('.aan')?.scrollIntoView({ block: 'nearest', inline: 'nearest' }); return; }
+  const tab = t.closest('[data-tab]'); if (tab){ A.tab = tab.dataset.tab; A.venster = null; A.ladeId = ''; A.lees = false; teken(); const app = A.el.querySelector('.ac-app'), nav = app?.querySelector('.ac-tabs'); if (app && nav && app.scrollTop > nav.offsetTop) app.scrollTop = nav.offsetTop - 8; nav?.querySelector('.aan')?.scrollIntoView({ block: 'nearest', inline: 'nearest' }); return; }
   const w = t.closest('[data-weergave]'); if (w){ A.weergave = w.dataset.weergave; return teken(); }
   const pb = t.closest('[data-progb]'); if (pb){ A.progB = pb.dataset.progb === 'true'; return teken(); }
   const op = t.closest('[data-open]'); if (op){ A.tab = 'overzicht'; return openAct(op.dataset.open); }
+  const ow = t.closest('[data-onderwerp]'); if (ow){
+    A.tab = 'taken'; A.weergave = 'onderwerpen'; A.onderwerp = ow.dataset.onderwerp; A.venster = null; A.ladeId = ''; A.lees = false; teken();
+    const app = A.el.querySelector('.ac-app'), werk = app?.querySelector('.ac-ow-werk'); if (app && werk && app.scrollTop > werk.offsetTop) app.scrollTop = werk.offsetTop - 60;
+    return;
+  }
   const tk = t.closest('[data-taak]'); if (tk) return vensterTaak(tk.dataset.taak);
   const ex = t.closest('[data-exp]'); if (ex) return exporteer(ex.dataset.exp);
   const tn = t.closest('[data-tn]'); if (tn && A.act){ if (tn.disabled) return; return TN.klikToernooi(tnCtx(), tn); }
   const cs = t.closest('[data-cs]'); if (cs && A.extra === 'schermen'){ if (cs.disabled) return; return CS.klikSchermen(extraCtx(), cs); }
   const vb = t.closest('[data-vb]'); if (vb && A.extra === 'vrijwilligers'){ if (vb.disabled) return; return VB.klikVrijwilligers(extraCtx(), vb); }
   if (t.classList.contains('ac-venster')) return sluitVenster();
-  const b = t.closest('[data-ac]'); if (!b) return;
+  const b = t.closest('[data-ac]'); if (!b || b.disabled) return;
   const ac = b.dataset.ac, id = b.dataset.id, a = A.act;
   switch (ac){
     case 'sluit': return sluitActiviteiten();
@@ -673,13 +857,57 @@ async function klik(e){
     case 'kopie': return vensterGegevens({ soort: 'kopie', act: a, diensten: A.deel?.diensten || null });
     case 'weg': return vensterWeg();
     case 'weg-ja': return verwijder();
-    case 'status': { await zet({ [`taken.${id}.status`]: b.dataset.naar }); if (A.venster) vensterTaak(id); return; }
+    case 'status': return zet({ [`taken.${id}.status`]: b.dataset.naar });
     case 'taak-nieuw': {
-      const nid = L.nieuwId('t');
-      await zet({ [`taken.${nid}`]: { titel: 'Nieuwe taak', fase: 'voor', eigenaar: '', d: 14, datum: '', status: 'open', notitie: '', tip: '', volg: volgende(a.taken) } });
-      return vensterTaak(nid);
+      const nid = L.nieuwId('t'), ow = b.dataset.ow || (A.tab === 'taken' && A.weergave === 'onderwerpen' ? A.onderwerp : '');
+      await zet({ [`taken.${nid}`]: { titel: 'Nieuwe taak', fase: 'voor', eigenaar: '', d: 14, datum: '', status: 'open', notitie: '', tip: '', volg: volgende(a.taken), ...(ow ? { onderwerp: ow } : {}) } });
+      const l = ladeContext(); if (!l.includes(nid)) l.push(nid);
+      vensterTaak(nid, l);
+      const tt = A.el.querySelector('.ac-lade-titel'); if (tt){ tt.focus(); tt.select(); }
+      return;
     }
-    case 'taak-weg': { A.venster = null; return zet({ [`taken.${id}`]: deleteField() }); }
+    case 'taak-weg': { A.venster = null; A.ladeId = ''; return zet({ [`taken.${id}`]: deleteField() }); }
+    case 'lade-naar': return id && vensterTaak(id);
+    case 'taak-klaar': {
+      await zet({ [`taken.${id}.status`]: 'klaar' });
+      const l = A.ladeLijst || [], i = l.indexOf(id);
+      const nxt = [...l.slice(i + 1), ...l.slice(0, Math.max(0, i))].find(x => x !== id && A.act?.taken?.[x] && A.act.taken[x].status !== 'klaar');
+      if (nxt) return vensterTaak(nxt);
+      meld('Alles hier is klaar'); return sluitVenster();
+    }
+    case 'ow-terug': A.onderwerp = ''; return teken();
+    case 'ow-nieuw': return vensterOnderwerpNieuw();
+    case 'ow-maak': {
+      const naam = String(A.el.querySelector('[data-kies="ow-naam"]')?.value || '').trim().slice(0, 60);
+      if (!naam) return meld('Geef het onderwerp een naam');
+      const n = D.onderwerpen(a, { ookLeeg: true }).length;
+      if (n >= D.MAX_ONDERWERPEN) return meld(`Maximaal ${D.MAX_ONDERWERPEN} onderwerpen.`);
+      const nid = L.nieuwId('o');
+      A.venster = null; A.onderwerp = nid; A.weergave = 'onderwerpen';
+      return zet({ [`onderwerpen.${nid}`]: { naam, icoon: D.EIGEN_ICOON, volg: 100 + n, eigen: true } });
+    }
+    case 'ow-terugzet': A.venster = null; A.onderwerp = id; return zet({ [`onderwerpen.${id}`]: deleteField() });
+    case 'ow-bewerk': return vensterOnderwerp(id);
+    case 'ow-icoon': return zet({ [`onderwerpen.${id}.icoon`]: b.dataset.icoon });
+    case 'ow-weg': {
+      const o = D.onderwerpen(a, { ookLeeg: true }).find(x => x.id === id); if (!o) return;
+      if (!confirm(`Onderwerp "${o.naam}" weghalen? De taken blijven bestaan en komen bij een ander onderwerp.`)) return;
+      A.venster = null; A.onderwerp = '';
+      return zet({ [`onderwerpen.${id}`]: o.standaard ? { weg: true } : deleteField() });
+    }
+    case 'vraag-nieuw': {
+      const inp = A.el.querySelector(`[data-kies="vraag-${CSS.escape(id)}"]`), vraag = String(inp?.value || '').trim().slice(0, 120);
+      if (!vraag) return meld('Typ eerst de vraag');
+      return zet({ [`onderwerpen.${id}.vragen.${L.nieuwId('v')}`]: { vraag, antwoord: '', volg: 100 + Date.now() % 100000 } });
+    }
+    case 'vraag-weg': {
+      const o = D.onderwerpen(a, { ookLeeg: true }).find(x => x.id === id), q = o?.vragen.find(x => x.id === b.dataset.v); if (!q) return;
+      if (q.antwoord && !confirm(`"${q.vraag}" weghalen? Het antwoord gaat ook weg.`)) return;
+      return zet({ [`onderwerpen.${id}.vragen.${q.id}`]: q.standaard ? { weg: true } : deleteField() });
+    }
+    case 'lees': A.lees = true; A.leesOw = ''; teken(); A.el.querySelector('.ac-app')?.scrollTo(0, 0); return;
+    case 'lees-uit': A.lees = false; return teken();
+    case 'lees-naar': return A.el.querySelector('#' + CSS.escape(id))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     case 'prog-nieuw': {
       const sl = A.progB ? 'programmaB' : 'programma', laatste = L.programmaLijst(a[sl]).lijst.slice(-1)[0];
       return zet({ [`${sl}.${L.nieuwId('p')}`]: { tijd: laatste?.eindNu || a.start || '', duur: 15, wat: '', waar: '', wie: '', volg: volgende(a[sl]) } });
@@ -689,7 +917,7 @@ async function klik(e){
       const s = b.dataset.soort, nid = L.nieuwId(s.slice(0, 1));
       const nieuw = { materiaal: { naam: '', aantal: null, wie: '', klaar: false }, checks: { titel: '', klaar: false }, documenten: { naam: '', url: '' },
         berichten: { d: 7, titel: 'Nieuw bericht', tekst: '', kanaal: 'whatsapp', geplaatstMs: null }, budget: { naam: '', soort: b.dataset.sub === 'in' ? 'in' : 'uit', begroot: 0, werkelijk: null } }[s];
-      return zet({ [`${s}.${nid}`]: { ...nieuw, volg: volgende(a[s]) } });
+      return zet({ [`${s}.${nid}`]: { ...nieuw, volg: volgende(a[s]), ...(b.dataset.ow && (s === 'materiaal' || s === 'budget') ? { onderwerp: b.dataset.ow } : {}) } });
     }
     case 'live': A.live = true; teken(); clearInterval(A.liveTik); A.liveTik = setInterval(() => { if (A?.live && !A.venster) teken(); }, 30000); return;
     case 'live-uit': A.live = false; clearInterval(A.liveTik); return teken();
@@ -739,7 +967,7 @@ async function klik(e){
     case 'kopieer': return kopieKlembord(b.dataset.tekst);
     case 'teams-alle': return zet({ teams: (S.clubTeams || []).filter(x => x && x.id && !x.gearchiveerd).map(x => x.id).slice(0, L.MAX.teams) });
     case 'teams-geen': return zet({ teams: [] });
-    case 'veldplanner': return import('./veldplanner.js?v=20261127c').then(m => m.openVeldplanner(A.clubId));
+    case 'veldplanner': return import('./veldplanner.js?v=20261127d').then(m => m.openVeldplanner(A.clubId));
     case 'aflasten': return vensterAflasten();
     case 'aflasten-ja': return aflasten();
     case 'bericht-plaats': return plaatsBericht(id);
@@ -757,6 +985,7 @@ async function wijzig(e){
   if (A.extra === 'schermen' && await CS.wijzigSchermen(extraCtx(), t)) return;
   if (A.extra === 'vrijwilligers' && await VB.wijzigVrijwilligers(extraCtx(), t)) return;
   if (t.matches('[data-ac-bestand]')) return leesBestand(t);
+  if (t.matches('[data-kies="lees-ow"]')){ A.leesOw = t.value; return teken(); }
   if (t.matches('[data-kies="lid"]')){
     const u = t.value; if (!u) return;
     const p = mensenVanClub().find(x => x.id === u);
@@ -770,6 +999,8 @@ async function wijzig(e){
   if (t.matches('[data-aanwezig]')){ try { await updateDoc(doc(db, 'activiteitDeel', A.act.deelId, 'aanmeldingen', t.dataset.aanwezig), { aanwezig: t.checked }); } catch { meld('Opslaan mislukt.'); } return; }
   if (!t.matches('[data-veld]')) return;
   const pad = t.dataset.veld;
+  /* [20261127c] wie neemt mee: een comitélid (opgeslagen als id) of een zelf getypte naam */
+  if (t.hasAttribute('data-wie')) return zet({ [pad]: D.wieNaarWaarde(t.value, A.act) });
   let w = t.type === 'checkbox' ? t.checked : t.value;
   if (t.hasAttribute('data-num')) w = String(w).trim() === '' ? null : Number(String(w).replace(',', '.'));
   if (typeof w === 'number' && !Number.isFinite(w)) return meld('Dat is geen getal');
@@ -782,8 +1013,11 @@ async function wijzig(e){
   if (pad === 'agenda' && w === false) patch.vraag = false;
   if (pad === 'datum') patch.seizoen = L.seizoenVan(w);
   if (pad === 'agenda' && !w) patch.kamer = false;
+  /* [20261126z] onderwerpen: een naam mag niet leeg; een nieuwe eigenaar krijgt de open taken zonder eigenaar */
+  if (/^onderwerpen\.[^.]+\.naam$/.test(pad) && !String(w || '').trim()) return meld('Geef het onderwerp een naam');
+  const owEig = pad.match(/^onderwerpen\.([^.]+)\.eigenaar$/);
+  if (owEig && w){ const o = D.perOnderwerp(A.act, vandaag()).find(x => x.id === owEig[1]); for (const tk of o?.taken || []) if (!tk.eigenaar && tk.status !== 'klaar') patch[`taken.${tk.id}.eigenaar`] = w; }
   await zet(patch);
-  if (A?.venster && /^taken\./.test(pad) && /\.(d|datum|eigenaar|fase)$/.test(pad)) vensterTaak(pad.split('.')[1]);
 }
 
 /* ---------- vrijwilligers: deel-document ---------- */
@@ -1032,7 +1266,7 @@ textarea.ac-in{resize:vertical}
 .ac-voorbeeld{background:color-mix(in srgb,var(--ink) 5%,var(--card));border-radius:var(--r-s);padding:8px 10px;font-size:var(--t-sm);margin:0;white-space:pre-line}
 .ac-totaal .ac-rij{min-height:30px}
 .ac-tiprij{display:flex;flex-direction:column;gap:2px;padding:6px 0;border-bottom:1px solid var(--hair)}
-.ac-venster{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:2}
+.ac-venster{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:6}
 .ac-blad{background:var(--bg);width:min(720px,100%);max-height:92vh;overflow:auto;border-radius:var(--r-l) var(--r-l) 0 0;padding:var(--space-md) 16px calc(var(--space-md) + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:6px}
 .ac-blad h2{font-family:var(--font-display);text-transform:uppercase;font-size:var(--t-2xl);margin:0}
 .ac-blad h3{margin:var(--space-sm) 0 0;font-size:var(--t-md)}
@@ -1062,6 +1296,90 @@ textarea.ac-in{resize:vertical}
   .ac-titel h1{font-size:var(--t-2xl)}
   .ac-kop .knop{padding-inline:10px}
   .ac-staat{display:none}
+}
+/* [20261126z] draaiboek per onderwerp, lade per taak, leesweergave */
+.ac-balk.oranje i{background:var(--warn)}.ac-balk.rood i{background:var(--uit)}
+.ac-ow-werk{display:grid;grid-template-columns:300px minmax(0,1fr);gap:var(--space-sm);align-items:start}
+.ac-ow-lijst{position:sticky;top:44px;gap:2px;padding:8px}
+.ac-ow{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:10px;align-items:center;text-align:left;background:none;color:var(--ink);padding:8px;border-radius:var(--r-s);min-height:56px;border:1.5px solid transparent;width:100%}
+.ac-ow:hover{background:color-mix(in srgb,var(--ink) 4%,var(--card))}
+.ac-ow.aan{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--card))}
+.ac-ow-ic{width:36px;height:36px;border-radius:10px;background:color-mix(in srgb,var(--ink) 6%,var(--card));display:grid;place-items:center;color:var(--accent);flex-shrink:0}
+.ac-ow-ic.groot{width:44px;height:44px;border-radius:12px}
+.ac-ow-t{display:flex;flex-direction:column;gap:2px;min-width:0}.ac-ow-t b{font-weight:600}
+.ac-ow-t small{font-size:var(--t-xs);color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ac-ow-t .ac-balk{margin-top:4px}
+.ac-ow-n{font-size:var(--t-xs);font-weight:600;color:var(--ink-2);display:flex;color:var(--ok)}
+.ac-ow-n:not(:has(svg)){color:var(--ink-2)}
+.ac-ow-nieuw{background:none;color:var(--accent);font-weight:600;text-align:left;padding:10px 8px;display:flex;gap:6px;align-items:center;min-height:44px}
+.ac-ow-totaal{display:flex;gap:10px;align-items:center;padding:4px 8px 10px;border-bottom:1px solid var(--hair);margin-bottom:4px}
+.ac-ow-totaal b{font-family:var(--font-display);font-size:var(--t-2xl);line-height:1}.ac-ow-totaal small{font-size:var(--t-xs);color:var(--ink-2)}
+.ac-ow-detail{display:flex;flex-direction:column;gap:var(--space-sm);min-width:0}
+.ac-ow-kop{display:flex;align-items:center;gap:10px}
+.ac-ow-kop h2{font-family:var(--font-display);text-transform:uppercase;font-size:var(--t-3xl);margin:0;line-height:1;overflow-wrap:anywhere}
+.ac-ow-wie{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.ac-ow-wie .ac-label{margin:0}
+.ac-ow-tag{display:inline-flex!important;align-items:center;gap:4px;color:var(--ink-2)}
+.ac-pil{display:inline-flex;align-items:center;gap:4px;font-size:var(--t-xs);font-weight:600;padding:3px 9px;border-radius:var(--r-pill);background:color-mix(in srgb,var(--ink) 7%,var(--card));color:var(--ink-2);white-space:nowrap;flex-shrink:0;min-height:24px}
+.ac-pil.knopje{cursor:pointer;margin-top:4px}.ac-pil.knopje:hover{color:var(--accent)}
+.ac-pil.rood{background:color-mix(in srgb,var(--uit) 14%,var(--card))}
+.ac-vraag-r{display:flex;gap:4px;align-items:flex-start}.ac-vraag-r textarea{flex:1;min-height:40px}
+.ac-vraag-r .ac-x{opacity:.45}.ac-vraag-r .ac-x:hover,.ac-vraag-r .ac-x:focus-visible{opacity:1}
+.ac-blok{display:flex;flex-direction:column;gap:var(--space-sm)}
+.ac-blok-kop{font-family:var(--font-display);text-transform:uppercase;font-size:var(--t-xl);margin:var(--space-xs) 0 0}
+.ac-verwijs p{margin:0}
+.ac-alleen-smal{display:none!important}
+.ac-iconen{display:flex;flex-wrap:wrap;gap:6px}
+.ac-icoonkeus{width:44px;height:44px;border-radius:10px;background:var(--card);border:1.5px solid var(--hair);color:var(--ink);display:grid;place-items:center}
+.ac-icoonkeus.aan{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--card))}
+.ac-tipkaart{display:flex;gap:8px;align-items:flex-start;background:var(--amber-bg);border:1px solid var(--amber-lijn);border-radius:var(--r-s);padding:8px 10px;font-size:var(--t-sm)}
+.ac-tipkaart svg{flex-shrink:0;margin-top:2px}
+.ac-venster.lade,html.desk .ac-venster.lade{align-items:stretch;justify-content:flex-end}
+.ac-venster.lade .ac-blad,html.desk .ac-venster.lade .ac-blad{width:min(580px,100%);max-height:none;height:100%;border-radius:0;padding-bottom:0;gap:8px;box-shadow:-12px 0 40px rgba(0,0,0,.18)}
+.ac-venster.lade .ac-blad > *{flex-shrink:0}
+.ac-lade-kop{display:flex;align-items:center;gap:8px}
+.ac-venster textarea.ac-lade-titel{font-family:var(--font-display);font-size:var(--t-2xl);font-weight:700;text-transform:uppercase;border-color:transparent;background:transparent;padding:4px 6px;line-height:1.1;resize:none;margin-left:-6px}
+.ac-lade-titel:hover{border-color:var(--hair)}.ac-lade-titel:focus{border-color:var(--accent);background:var(--card)}
+.ac-lade-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ac-lade-meta select.ac-in.smal{flex:1 1 150px;max-width:220px}
+.ac-meer{background:var(--card);border-radius:var(--r-m);padding:6px var(--space-sm);box-shadow:var(--shadow)}
+.ac-meer summary{cursor:pointer;font-weight:600;min-height:36px;display:flex;align-items:center}
+.ac-meer[open]{padding-bottom:var(--space-sm)}
+.ac-lade-voet{position:sticky;bottom:0;background:var(--bg);display:flex;gap:6px;align-items:center;padding:10px 0 calc(10px + env(safe-area-inset-bottom));margin-top:auto;border-top:1px solid var(--hair);z-index:2}
+.ac-lade-voet .knop{width:auto}
+.ac-lees{max-width:1240px}
+.ac-lees .ac-kop{flex-wrap:wrap}
+.ac-lees-werk{display:grid;grid-template-columns:220px minmax(0,1fr);gap:var(--space-md);align-items:start}
+.ac-lees-inhoud{position:sticky;top:0;display:flex;flex-direction:column;gap:2px}
+.ac-lees-inhoud button{background:none;text-align:left;color:var(--ink);padding:8px 10px;border-radius:var(--r-s);font-size:var(--t-sm);min-height:36px}
+.ac-lees-inhoud button:hover{background:var(--card)}
+.ac-papier{background:#fff;color:#16191d;border-radius:6px;box-shadow:var(--shadow);padding:40px 56px;max-width:860px;width:100%;box-sizing:border-box;font-size:15px;line-height:1.5}
+.ac-papier h1{font-family:var(--font-display);text-transform:uppercase;font-size:34px;margin:0 0 4px;line-height:1}
+.ac-papier .sub{color:#5b616a;margin:2px 0}
+.ac-papier h2{font-family:var(--font-display);text-transform:uppercase;font-size:21px;margin:26px 0 6px;padding-bottom:4px;border-bottom:2px solid #d42a20;display:flex;align-items:baseline;gap:10px;scroll-margin-top:16px}
+.ac-papier h3{font-size:15px;margin:14px 0 4px}
+.ac-bewerk{margin-left:auto;background:none;color:#c62828;font:600 13px/1 var(--font-body,inherit);text-transform:none;padding:4px 6px;min-height:28px}
+.ac-papier table{width:100%;border-collapse:collapse;margin:4px 0 8px}
+.ac-papier th{font-size:12px;color:#5b616a;text-align:left;padding:5px 6px;border-bottom:1px solid #d6dae0;font-weight:600}
+.ac-papier td{padding:6px;border-bottom:1px solid #eceef1;vertical-align:top;overflow-wrap:anywhere}
+.ac-papier td small{color:#5b616a}
+.ac-papier .dl td{border:0;padding:3px 6px}.ac-papier .dl td:first-child{color:#5b616a;width:32%}
+.ac-papier .nog-leeg{color:#a3a9b1}
+.ac-papier .vinkt td:first-child,.ac-papier .vinkt th:first-child{width:22px;text-align:center}
+@media (max-width:820px){
+  .ac-ow-werk{grid-template-columns:1fr}
+  .ac-ow-werk.open .ac-ow-lijst{display:none}
+  .ac-ow-werk:not(.open) .ac-ow-detail{display:none}
+  .ac-ow-lijst{position:static;background:none;box-shadow:none;padding:0;gap:6px}
+  .ac-ow{background:var(--card);box-shadow:var(--shadow);border-radius:var(--r-m);border-color:transparent}
+  .ac-ow-totaal{background:var(--card);border-radius:var(--r-m);box-shadow:var(--shadow);padding:10px 12px;border:0}
+  .ac-alleen-smal{display:inline-grid!important;place-items:center}
+  .ac-ow-kop h2{font-size:var(--t-2xl)}
+  .ac-ow-kop .ac-ow-ic.groot{display:none}
+  .ac-lees-werk{grid-template-columns:1fr}.ac-lees-inhoud{display:none}
+  .ac-papier{padding:22px 18px;font-size:14px}
+  .ac-lees .ac-kop .ac-titel{flex:1 1 calc(100% - 60px)}
+  .ac-lees .ac-kop select.ac-in.smal{flex:1 1 140px;max-width:none}
+  .ac-papier .dl td:first-child{width:42%}
 }
 .ac-extra{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin:4px 0 6px}
 .ac-extra-k{display:flex;gap:12px;align-items:flex-start;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--hair);border-radius:var(--r-m,14px);padding:12px 14px;font:inherit;cursor:pointer;min-height:64px}

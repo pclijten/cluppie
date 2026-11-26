@@ -11,8 +11,8 @@
    Opslag: veld `toernooi` in de activiteit (zie toernooi-logica.js). Geen rules-wijziging nodig.
    Dit bestand krijgt alles van activiteiten.js via ctx en importeert dat bestand niet. */
 import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, deleteField } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261127c';
-import { ico } from './icons.js?v=20261126w';
+import { S, esc, meld } from './state.js?v=20261127d';
+import { ico } from './icons.js?v=20261127b';
 import * as T from './toernooi-logica.js?v=20261125w';
 import { kleinPlaatje } from './plaatje.js?v=20261125w';
 
@@ -73,7 +73,7 @@ function htmlOpzet(ctx, a, t){
         <button class="ac-x" data-tn="veld-weg" data-id="${esc(v.id)}" aria-label="Veld weg">✕</button></div>`).join('') || '<p class="ac-zacht">Nog geen velden.</p>'}
       <div class="ac-acties">${nogClub.length ? `<button class="knop licht klein" data-tn="velden-club">${ico('planning-week', 16)} Velden van de club (${nogClub.length})</button>` : ''}<button class="knop licht klein" data-tn="veld-nieuw">${ico('action-add', 16)} Veld</button></div>
       ${!club ? '<p class="ac-zacht">Velden van de club laden…</p>' : !club.velden.length ? '<p class="ac-zacht">De club heeft nog geen velden op de veldkaart, of je mag die niet zien. Voeg ze hier zelf toe.</p>' : ''}
-      ${conflicten.length ? `<div class="ac-melding">${ico('action-warning', 18)} <span><b>Let op, in de Veldplanner staat op deze dag:</b> ${conflicten.map(b => `${esc(b.teamNaam || b.naam || b.team || 'een training')} ${esc(b.start)}–${esc(b.eind)} op ${esc(club.velden.find(v => v.id === String(b.veld))?.naam || 'een veld')}`).join('; ')}. Verplaats of laat afgelasten (tab Locatie en spullen).</span></div>` : ''}</div>
+      ${conflicten.length ? `<div class="ac-melding">${ico('action-warning', 18)} <span><b>Let op, in de Veldplanner staat op deze dag:</b> ${conflicten.map(b => `${esc(b.teamNaam || b.naam || b.team || 'een training')} ${esc(b.start)}–${esc(b.eind)} op ${esc(club.velden.find(v => v.id === String(b.veld))?.naam || 'een veld')}`).join('; ')}. Verplaats of laat afgelasten (Draaiboek, onderwerp Datum, plek en comité).</span></div>` : ''}</div>
     <div class="ac-paneel"><h3>Poules</h3><p class="ac-zacht">Een poule speelt iedereen tegen iedereen. Geef een poule eigen velden of een eigen begintijd, bijvoorbeeld de jongsten op de kwartvelden om 9:00.</p>
       ${poules.map(p => { const n = Object.values(t.teams || {}).filter(x => x.poule === p.id).length, mag = new Set(p.velden || []);
         return `<div class="tn-poule" style="--pk:${esc(p.kleur || '#999')}"><div class="ac-rij"><input class="tn-kleur" type="color" data-veld="toernooi.poules.${esc(p.id)}.kleur" value="${esc(p.kleur || '#999999')}" aria-label="Kleur">${veld(`poules.${p.id}.naam`, p.naam, { klasse: 'ac-groei vet' })}
@@ -399,7 +399,7 @@ export async function klikToernooi(ctx, b){
       return zet({ [`toernooi.schermen.${T.nieuwId('x')}`]: { soort: id === 'sponsor' ? 'sponsor' : 'scherm', titel: '', tekst: '', volg: T.volgende(t.schermen), tv: true, tel: true } }); }
     case 'scherm-club': {
       let lijst = [];
-      try { lijst = await (await import('./clubschermen.js?v=20261127c')).clubSponsoren(ctx.clubId); }
+      try { lijst = await (await import('./clubschermen.js?v=20261127d')).clubSponsoren(ctx.clubId); }
       catch { return meld('De sponsoren van de club zijn alleen te lezen door de clubbeheerder.'); }
       if (!lijst.length) return meld('De club heeft nog geen sponsoren. Zet ze in Activiteiten › Kantine-tv en sponsoren.');
       const heeft = new Set(Object.values(t.schermen || {}).map(x => String(x?.titel || '').toLowerCase())), patch = {};
@@ -699,7 +699,7 @@ function htmlLive(ctx, a, t){
     <div class="ac-paneel"><h3>Mededelingen</h3><p class="ac-zacht">Bijvoorbeeld: "Finales beginnen 10 minuten later" of "Prijsuitreiking om 12:30 in de kantine". Staat meteen bovenaan de live pagina en loopt mee op tv.</p>
       <div class="ac-rij"><input class="ac-in ac-groei" data-tn-med maxlength="280" placeholder="Typ een mededeling"><button class="knop vol klein" data-tn="med-stuur">Plaatsen</button></div>
       ${med.map(m => `<div class="ac-rij"><span class="ac-tijd">${esc(new Date(m.ms).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }))}</span><span class="ac-groei">${esc(m.tekst)}</span><button class="ac-x" data-tn="med-weg" data-id="${esc(m.id)}" aria-label="Weg">✕</button></div>`).join('') || '<p class="ac-zacht">Nog geen mededelingen.</p>'}
-      <p class="ac-zacht">Coaches van eigen teams bereik je ook via de tab Communicatie (Berichten en WhatsApp).</p></div>
+      <p class="ac-zacht">Coaches van eigen teams bereik je ook via het draaiboek, onderwerp Communicatie (berichten en WhatsApp).</p></div>
     <div class="ac-paneel"><h3>Sponsoren en eigen schermen</h3><p class="ac-zacht">Sponsoren staan met hun logo op de tv en onderaan de live pagina. Een eigen scherm is een dia met titel, tekst en eventueel een afbeelding, bijvoorbeeld het menu van de kantine, de loterij of de huisregels. Op tv wisselen ze af met de standen.</p>
       ${sch.map(x => `<div class="tn-scherm"><label class="tn-plaatje" title="Afbeelding kiezen">${x.img ? `<img src="${esc(x.img)}" alt="">` : `<span>${x.soort === 'sponsor' ? 'Logo' : 'Afbeelding'}</span>`}<input type="file" accept="image/*" data-tn-plaatje="${esc(x.id)}" hidden></label>
           <div class="tn-scherm-v"><div class="ac-rij"><span class="ac-zacht">${x.soort === 'sponsor' ? 'Sponsor' : 'Scherm'}</span>${veld(`schermen.${x.id}.titel`, x.titel, { klasse: 'ac-groei vet', ph: x.soort === 'sponsor' ? 'Naam van de sponsor' : 'Titel', extra: 'maxlength="60"' })}<button class="ac-x" data-tn="scherm-weg" data-id="${esc(x.id)}" aria-label="Weg">✕</button></div>

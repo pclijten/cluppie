@@ -9,8 +9,8 @@
    vrijwilligersBank/{id}/aanmeldingen (naam en contact, alleen clubbeheer en de aanmelder zelf).
    Krijgt alles van activiteiten.js via ctx. */
 import { db, doc, collection, query, where, getDocs, setDoc, updateDoc, deleteDoc, deleteField, onSnapshot } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261127c';
-import { ico } from './icons.js?v=20261126w';
+import { S, esc, meld } from './state.js?v=20261127d';
+import { ico } from './icons.js?v=20261127b';
 import { liveId } from './toernooi-logica.js?v=20261125w';
 import * as V from './vrijwilligers-logica.js?v=20261125w';
 
@@ -71,7 +71,7 @@ export function htmlVrijwilligers(ctx){
   const aanm = [...(vb.aanm || [])].filter(a => !vb.filter || a.taak === vb.filter).sort((x, y) => (y.ms || 0) - (x.ms || 0)), nNieuw = (vb.aanm || []).filter(a => !a.status || a.status === 'nieuw').length;
   const taakVan = Object.fromEntries(taken.map(t => [t.id, t]));
   return `${ctx.kop('Vrijwilligers', S.club?.naam || '')}
-    <p class="ac-zacht">Geef aan waar de club vrijwilligers voor zoekt en schrijf per taak precies op wat iemand doet. Wie weet waar hij ja tegen zegt, zegt eerder ja. Diensten bij één activiteit (bijvoorbeeld het kersttoernooi) regel je in die activiteit, tab Vrijwilligers.</p>
+    <p class="ac-zacht">Geef aan waar de club vrijwilligers voor zoekt en schrijf per taak precies op wat iemand doet. Wie weet waar hij ja tegen zegt, zegt eerder ja. Diensten bij één activiteit (bijvoorbeeld het kersttoernooi) regel je in die activiteit, in het draaiboek bij Vrijwilligers.</p>
     <div class="ac-paneel"><h3>Vrijwilligersbank</h3><p class="ac-zacht">Eén pagina met alle taken waar de club mensen voor zoekt. Deel de link in de nieuwsbrief, de Teamkamer of op een poster in de kantine. Aanmelden kan zonder account.</p>
       ${b === undefined ? '<p class="ac-zacht">Laden…</p>' : aan ? `<div class="tn-live"><div class="tn-qr">${vb.qr || '<span class="ac-zacht">QR-code maken…</span>'}</div>
           <div class="tn-live-t"><input class="ac-in" readonly value="${esc(link)}" aria-label="Link naar de vrijwilligersbank" onfocus="this.select()">

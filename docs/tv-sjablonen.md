@@ -154,3 +154,13 @@ Voor elk sjabloon gelijk, uit `tv-speler.js`:
 - Doelpunten komen na elkaar in beeld, elk negen seconden (wachtrij van acht).
 
 Namen staan standaard uit: de tv-pagina is openbaar voor wie de link heeft. Na een wijziging in `functions/kantine-tv.js` moeten de functions opnieuw gedeployd worden.
+
+## Korte link
+
+De club kiest bij **Kantine-tv** onder de QR-code een korte naam, bijvoorbeeld `mifano`. De tv staat dan ook op
+`www.cluppie.io/tv/mifano`; de link, de QR-code en de kopieerknop gebruiken vanaf dat moment de korte link.
+
+- `tvNamen/{naam}` = `{ tv, club, ms }` wijst naar `clubTv/{tv}`. Een naam is uniek; alleen tv-beheer van de club maakt of
+  verwijdert hem (zie `firestore.rules`). `clubTv.korteNaam` onthoudt de gekozen naam.
+- GitHub Pages kent geen doorverwijzingen, daarom stuurt `public/404.html` elk adres `/tv/<naam>` door naar `/?kantine=<naam>`.
+  `bootSchermNaam` in `scherm-boot.js` zoekt de tv op. De lange link `?scherm=<id>` blijft werken.

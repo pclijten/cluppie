@@ -812,6 +812,17 @@ service cloud.firestore {
         allow write: if tvBeheer(tv()) && activiteitenAan(tv().club);
       }
     }
+    /* [20261127b] Korte link naar de kantine-tv (/tv/<naam>): tvNamen/{naam} = { tv, club, ms }. Iedereen met de link
+       leest hem (ook anoniem); alleen tv-beheer van de club maakt hem, voor de eigen tv, en haalt hem weg. */
+    match /tvNamen/{naam} {
+      allow get: if ingelogd();
+      allow create: if naam.matches('^[a-z0-9][a-z0-9-]{2,29}$')
+        && request.resource.data.keys().hasOnly(['tv', 'club', 'ms'])
+        && request.resource.data.tv is string && request.resource.data.club is string
+        && isTvBeheerder(request.resource.data.club)
+        && get(/databases/$(database)/documents/clubTv/$(request.resource.data.tv)).data.get('club', null) == request.resource.data.club;
+      allow delete: if isTvBeheerder(resource.data.club);
+    }
     /* [20261125w] Vrijwilligersbank (?taken=<id>, taken-boot.js): de club zet er taken op met een vaste omschrijving
        (wat doe je, wanneer, hoe lang, waar). Wie de link heeft meldt zich aan voor een taak. De taken zijn openbaar;
        een aanmelding (naam, e-mail of telefoon) leest alleen clubbeheer en de aanmelder zelf. */
