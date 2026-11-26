@@ -19,21 +19,21 @@
 
    Tabblad: 'seizoensplan'. Importeert NIET uit teams.js; teams.js geeft zetTeamTab mee. */
 import { db, doc, collection, getDoc, getDocs, setDoc, addDoc, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261126w';
-import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261126w';
-import { aiAan, aiDoel } from './clubconfig.js?v=20261126w';
-import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261126w';
-import { trainingenVanPlan, planVoorTeam } from './seizoensplan-club.js?v=20261126w';
-import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261126w';
+import { S, esc, meld } from './state.js?v=20261126x';
+import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261126x';
+import { aiAan, aiDoel } from './clubconfig.js?v=20261126x';
+import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261126x';
+import { trainingenVanPlan, planVoorTeam } from './seizoensplan-club.js?v=20261126x';
+import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261126x';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261126g';
 import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261126g';
-import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261126w';
+import { maakPlan, FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261126x';
 import {
   MODELLEN, ACCENTEN, maakSeizoensplan, weekKalender, herreken, standaardVrij, maandagVan, beschikbareThemas, themaVolgorde,
   valideerBlokken, positieOp, positieWeek, teamSignalen, stelBijsturingVoor, pasVoorstelToe, speelwijzeExtra, seizoenStartJaar as seizoenJaar,
-} from './seizoensplan-logica.js?v=20261126w';
+} from './seizoensplan-logica.js?v=20261126x';
 /* [20261116h] de speelwijze als rode draad: weegt mee in de themavolgorde en staat bij elk blok */
-import { speelstijlNu, speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad, speelwijzeBron } from './speelwijze.js?v=20261126w';
+import { speelstijlNu, speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad, speelwijzeBron } from './speelwijze.js?v=20261126x';
 import { speelwijzeVan, stijlVoorPlan, dekking, principeVoorThema, rodeDraad } from './speelwijze-logica.js?v=20261116j';
 import { htmlDraadKaart, htmlDekking, htmlPrincipeChip } from './speelwijze-html.js?v=20261116j';
 
@@ -129,8 +129,8 @@ function htmlInhoud(){
   const lezen = alleenLezen();
   if (lezen && s.tab === 'opzet') s.tab = 'jaarlijn';
   const tabs = lezen ? [['jaarlijn', 'Jaarlijn'], ['bijsturing', 'Signalen']] : [['opzet', '1 Opzet'], ['jaarlijn', '2 Jaarlijn'], ['bijsturing', '3 Bijsturing']];
-  return `<div class="tm-tabs">${tabs.map(([k, t]) => `<button class="${s.tab === k ? 'aan' : ''}" data-sp-tab="${k}">${t}</button>`).join('')}</div>
-    ${s.tab === 'opzet' ? htmlOpzet() : s.tab === 'jaarlijn' ? htmlJaarlijn() : htmlBijsturing()}`;
+  return `<div class="tm-tabs sp-tabs">${tabs.map(([k, t]) => `<button class="${s.tab === k ? 'aan' : ''}" data-sp-tab="${k}">${t}</button>`).join('')}</div>
+    ${s.tab === 'opzet' ? htmlOpzet() : s.tab === 'jaarlijn' ? htmlJaarlijn() : `<div class="sp-smal">${htmlBijsturing()}</div>`}`;
 }
 const chip = (attr, w, t, aan) => `<button class="tm-chip${aan ? ' aan' : ''}" ${attr}="${esc(w)}">${esc(t)}</button>`;
 
@@ -138,11 +138,12 @@ function htmlOpzet(){
   const s = staat(), f = s.form;
   const lv = leeftijdVanCategorie(S.team?.categorie);
   const kal = weekKalender(f.start, f.eind, f.vrij || []);
-  return `<div class="kaart"><div class="tm-sub" style="margin-top:0">Kies je opbouw</div>
+  /* [20261126x] desktop: opbouw en speelwijze links, de instellingen rechts (.sp-opzet) */
+  return `<div class="sp-opzet"><div class="sp-opzet-l"><div class="kaart"><div class="tm-sub" style="margin-top:0">Kies je opbouw</div>
       ${Object.entries(MODELLEN).map(([k, m]) => `<button class="tm-model${k === f.model ? ' aan' : ''}" data-sp-model="${k}"><b>${esc(m.naam)}</b><span>${esc(m.tekst)}</span>${m.opm ? `<em>${esc(m.opm)}</em>` : ''}</button>`).join('')}
     </div>
-    ${htmlOpzetSpeelwijze()}
-    <div class="kaart">
+    ${htmlOpzetSpeelwijze()}</div>
+    <div class="kaart sp-opzet-r">
       <div class="tm-rij"><span class="tm-l">Team</span><b>${esc(S.team?.naam || '')} · ${esc(catLabel(S.team?.categorie))}</b></div>
       <div class="tm-rij"><span class="tm-l">Start</span><input type="date" class="tm-select" id="spStart" value="${esc(f.start)}"></div>
       <div class="tm-rij"><span class="tm-l">Einde</span><input type="date" class="tm-select" id="spEind" value="${esc(f.eind)}"></div>
@@ -158,7 +159,7 @@ function htmlOpzet(){
       <button class="knop vol fluo" data-sp-maak="1" style="margin-top:12px">${s.plan ? 'Maak opnieuw (vervangt de huidige jaarlijn)' : 'Maak concept-jaarlijn'}</button>
       ${aiAan() ? `<button class="knop vol licht" data-sp-maak-ai="1" style="margin-top:8px"${s.aiBezig ? ' disabled' : ''}>${s.aiBezig ? 'Bezig…' : 'Laat AI een jaarvoorstel doen'}</button>
         <div class="tm-info" style="margin-top:6px">De AI stelt voor; de app controleert het (4–6 weken per blok, alleen thema's die bij ${esc(catLabel(S.team?.categorie))} horen) en valt anders terug op de standaardopbouw.</div>` : ''}
-    </div>`;
+    </div></div>`;
 }
 
 /* [20261116h] Opzet: de speelwijze weegt mee in het plan (aan of uit). */
@@ -201,29 +202,34 @@ function htmlJaarlijn(){
   const nu = huidigeWeekNr(plan), vanaf = nu, tot = Math.min(plan.trainingsweken, nu + 3);
   const alle = trainingenVanPlan({ plan, team: { id: S.teamId, categorie: S.team?.categorie }, vormen: vormen(), planId: vanClub() ? plan.planId : `team_${S.teamId}_${seizoenSleutel()}`, aantalSpelers: aanwezigeSpelers() });
   const eigenaar = vanClub() ? `<span class="tm-badge">Van de club · ${esc(plan.naam || 'seizoensplan')}</span> <span class="tm-info">alleen lezen</span>` : `<span class="tm-badge">Jouw plan</span>`;
-  let h = `<div class="kaart"><div class="tm-kop2">Seizoensplan ${esc(catLabel(S.team?.categorie))}</div><div style="margin:4px 0 6px">${eigenaar}</div>
-    <div class="tm-info">${esc(MODELLEN[plan.model]?.naam || '')} · ${plan.trainingsweken} trainingsweken · ${plan.blokken.length} blokken · ${plan.params.tpw}× per week${plan.params.accent?.length ? ' · accent ' + esc(plan.params.accent.join(', ')) : ''}</div>
-    <div class="tm-band">${plan.blokken.map((b, i) => `<i style="flex:${b.weken};background:${KLEUREN[i % KLEUREN.length]}" title="${esc(b.thema)}"></i>`).join('')}</div>
-    <div class="tm-info">Nu: week ${nu}. Elke training komt op Trainingen op de maandag van de week ervoor; hier zie je de komende vier weken.</div></div>`;
+  /* [20261126x] kop over de volle breedte: het seizoen in één oogopslag, met de blokken als legenda en het huidige blok gemarkeerd */
+  const blokNu = positieWeek(plan, nu).blok;
+  let h = `<div class="kaart sp-overzicht"><div class="sp-overzicht-kop"><div><div class="tm-kop2">Seizoensplan ${esc(catLabel(S.team?.categorie))}</div><div style="margin-top:4px">${eigenaar}</div></div>
+      <div class="sp-cijfers"><span><b>${nu}</b><small>week nu</small></span><span><b>${plan.trainingsweken}</b><small>weken</small></span><span><b>${plan.blokken.length}</b><small>blokken</small></span><span><b>${plan.params.tpw}×</b><small>per week</small></span></div></div>
+    <div class="tm-band">${plan.blokken.map((b, i) => `<i style="flex:${b.weken};background:${KLEUREN[i % KLEUREN.length]}" class="${b === blokNu ? 'nu' : ''}" title="${esc(b.thema)}"></i>`).join('')}</div>
+    <div class="sp-legenda">${plan.blokken.map((b, i) => `<span class="${b === blokNu ? 'nu' : ''}"><i style="background:${KLEUREN[i % KLEUREN.length]}"></i>${esc(b.thema)} <small>${dk(b.van)} – ${dk(b.tot)}</small></span>`).join('')}</div>
+    <div class="tm-info" style="margin-top:8px">${esc(MODELLEN[plan.model]?.naam || '')}${plan.params.accent?.length ? ' · accent ' + esc(plan.params.accent.join(', ')) : ''}. Elke training komt op Trainingen op de maandag van de week ervoor; hieronder zie je de komende vier weken.</div></div>
+    <div class="sp-lay">`;
   /* [20261116h] de rode draad van deze week en de speelwijze in het hele seizoen */
   const sw = swVanPlan(plan), posNu = positieWeek(plan, nu);
   if (speelwijzeGeladen()){
-    h += htmlDraadKaart(rodeDraad(sw, { thema: posNu.blok.thema, fase: posNu.fase, blok: posNu.blok.nr, weekInBlok: posNu.weekInBlok, weken: posNu.blok.weken, leeftijd: leeftijdVanCategorie(S.team?.categorie) }), 'seizoen',
-      { geenTekst: sw ? 'Dit thema hoort bij de basis: techniek en plezier. Er hoort geen principe van de speelwijze bij.' : 'Leg de speelwijze vast om bij elk blok te zien welk principe je traint.' });
+    h += '<div class="sp-draad">' + htmlDraadKaart(rodeDraad(sw, { thema: posNu.blok.thema, fase: posNu.fase, blok: posNu.blok.nr, weekInBlok: posNu.weekInBlok, weken: posNu.blok.weken, leeftijd: leeftijdVanCategorie(S.team?.categorie) }), 'seizoen',
+      { geenTekst: sw ? 'Dit thema hoort bij de basis: techniek en plezier. Er hoort geen principe van de speelwijze bij.' : 'Leg de speelwijze vast om bij elk blok te zien welk principe je traint.' }) + '</div>';
     if (sw){
-      h += `<div class="kaart"><div class="tm-sub" style="margin-top:0">De speelwijze in dit seizoen</div>${htmlDekking(dekking(plan, sw, t => (LEERCURVE.find(x => x.thema === t)?.vanaf ?? 99) <= leeftijdVanCategorie(S.team?.categorie)), sw)}
-        ${!plan.params.speelstijl ? `<div class="tm-info">Dit plan is gemaakt zonder speelwijze: de thema’s volgen alleen het opbouwmodel. ${alleenLezen() ? '' : 'Maak het opnieuw onder “1 Opzet” om de speelwijze mee te wegen.'}</div>` : stijlIsGewijzigd(plan) ? `<div class="tm-info">De speelwijze is gewijzigd nadat dit plan is gemaakt. Dit plan houdt de oude; ${alleenLezen() ? 'de club kan het plan opnieuw maken.' : 'maak het opnieuw onder “1 Opzet” om de nieuwe mee te nemen.'}</div>` : ''}</div>`;
+      h += `<aside class="kaart sp-zij"><div class="tm-sub" style="margin-top:0">De speelwijze in dit seizoen</div>${htmlDekking(dekking(plan, sw, t => (LEERCURVE.find(x => x.thema === t)?.vanaf ?? 99) <= leeftijdVanCategorie(S.team?.categorie)), sw)}
+        ${!plan.params.speelstijl ? `<div class="tm-info">Dit plan is gemaakt zonder speelwijze: de thema’s volgen alleen het opbouwmodel. ${alleenLezen() ? '' : 'Maak het opnieuw onder “1 Opzet” om de speelwijze mee te wegen.'}</div>` : stijlIsGewijzigd(plan) ? `<div class="tm-info">De speelwijze is gewijzigd nadat dit plan is gemaakt. Dit plan houdt de oude; ${alleenLezen() ? 'de club kan het plan opnieuw maken.' : 'maak het opnieuw onder “1 Opzet” om de nieuwe mee te nemen.'}</div>` : ''}</aside>`;
     }
   }
+  h += '<div class="sp-blokken">';
   plan.blokken.forEach((b, i) => {
-    h += `<div class="tm-blok" style="--c:${KLEUREN[i % KLEUREN.length]}"><h3>${esc(b.thema)} <span class="tm-badge">${esc(b.domein || '')}</span> <span class="tm-badge">${b.weken} wk · ${dk(b.van)} – ${dk(b.tot)}</span>${b.soort === 'herhaling' ? ' <span class="tm-badge">herhaling</span>' : ''}</h3>
+    h += `<div class="tm-blok${b.totWeek < nu ? ' voorbij' : ''}" style="--c:${KLEUREN[i % KLEUREN.length]}"><h3>${esc(b.thema)} <span class="tm-badge">${esc(b.domein || '')}</span> <span class="tm-badge">${b.weken} wk · ${dk(b.van)} – ${dk(b.tot)}</span>${b.soort === 'herhaling' ? ' <span class="tm-badge">herhaling</span>' : ''}</h3>
       ${sw ? `<div class="sw-blokchip">${htmlPrincipeChip(principeVoorThema(sw, b.thema)) || '<span class="sw-chip basis">Basis: techniek en plezier</span>'}</div>` : ''}
       <div class="tm-info">${esc(b.fasen.join(' → '))}</div><div class="tm-waarom"><b>Waarom:</b> ${esc(b.waarom || '')}</div>`;
     for (let w = b.vanafWeek; w <= b.totWeek; w++) if (w >= vanaf && w <= tot) h += weekHtml(plan, w, b, alle);
     if (b.totWeek > tot && b.vanafWeek <= tot + 1 && b.totWeek > nu) h += `<div class="tm-info">Week ${Math.max(tot + 1, b.vanafWeek)}–${b.totWeek}: worden wekelijks aangevuld.</div>`;
     h += '</div>';
   });
-  return h;
+  return h + '</div></div>';
 }
 
 /* ---------- bijsturing ---------- */
