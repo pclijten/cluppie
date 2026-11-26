@@ -827,6 +827,21 @@ test('kantine-tv en sponsoren: bedragen alleen voor clubbeheer, de tv is openbaa
   await assertFails(getDoc(doc(kijker, 'clubTv/tv1')));
   await assertFails(getDocs(collection(kijker, 'clubTv/tv1/schermen')));
 });
+test('kantine-tv: de clubbeheerder wijst tv-beheerders aan', async () => {
+  const a = als('adminA'), tvb = als('coordA');
+  await env.withSecurityRulesDisabled(async ctx => { await updateDoc(doc(ctx.firestore(), 'clubs/A'), { platformModules: { activiteiten: true } }); });
+  await assertFails(updateDoc(doc(tvb, 'clubs/A'), { 'tvBeheerders.coordA': true }));                                   // niet zichzelf aanwijzen
+  await assertFails(setDoc(doc(tvb, 'clubs/A/sponsoren/s5'), { soort: 'sponsor', titel: 'Bakker' }));
+  await assertSucceeds(updateDoc(doc(a, 'clubs/A'), { 'tvBeheerders.coordA': true, 'tvBeheerdersInfo.coordA': { naam: 'Coord' } }));
+  await assertSucceeds(setDoc(doc(tvb, 'clubs/A/sponsoren/s5'), { soort: 'sponsor', titel: 'Bakker', bedrag: 250 }));
+  await assertSucceeds(getDoc(doc(tvb, 'clubs/A/sponsoren/s5')));
+  await assertSucceeds(setDoc(doc(tvb, 'clubTv/tv5'), { club: 'A', open: true, clubNaam: 'Club A', programma: [] }));
+  await assertSucceeds(updateDoc(doc(tvb, 'clubTv/tv5'), { sjabloon: 'kubus' }));
+  await assertSucceeds(setDoc(doc(tvb, 'clubTv/tv5/schermen/s5'), { soort: 'sponsor', titel: 'Bakker' }));
+  await assertFails(setDoc(doc(als('coachA'), 'clubTv/tv5/schermen/s6'), { titel: 'x' }));                              // gewone coach niet
+  await assertSucceeds(updateDoc(doc(a, 'clubs/A'), { tvBeheerders: {} }));
+  await assertFails(updateDoc(doc(tvb, 'clubTv/tv5'), { sjabloon: 'bord' }));                                            // na intrekken niet meer
+});
 test('vrijwilligersbank: taken openbaar, aanmeldingen alleen voor clubbeheer en de aanmelder', async () => {
   const a = als('adminA'), ouder = anoniem('anon1'), ander = anoniem('anon2');
   await env.withSecurityRulesDisabled(async ctx => { await updateDoc(doc(ctx.firestore(), 'clubs/A'), { platformModules: { activiteiten: true } }); });

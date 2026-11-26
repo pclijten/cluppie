@@ -8,15 +8,15 @@
 
    Opslag: clubs/{club}/sponsoren/{id} (met bedrag en notitie) en de openbare kopie in
    clubTv/{tvId} + clubTv/{tvId}/schermen/{id}. Krijgt alles van activiteiten.js via ctx. */
-import { db, doc, collection, query, where, getDocs, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261126s';
+import { db, doc, collection, query, where, getDocs, addDoc, setDoc, updateDoc, deleteDoc, deleteField, onSnapshot } from './firebase.js?v=20261011g';
+import { S, esc, meld } from './state.js?v=20261126t';
 import { ico } from './icons.js?v=20261116t';
 import { liveId, MAX_SCHERMEN } from './toernooi-logica.js?v=20261125w';
 import { kleinPlaatje } from './plaatje.js?v=20261125w';
-import * as C from './clubscherm-logica.js?v=20261126s';
-import { SJABLONEN, sjabloonId } from './tv-sjablonen.js?v=20261126s';
+import * as C from './clubscherm-logica.js?v=20261126t';
+import { SJABLONEN, sjabloonId } from './tv-sjablonen.js?v=20261126t';
 
-const cs = { keuze: {}, clubId: '', tv: undefined, items: null, stop: null, qrVoor: '', qr: '', bezig: false };
+const cs = { tvbZoek: '', keuze: {}, clubId: '', tv: undefined, items: null, stop: null, qrVoor: '', qr: '', bezig: false };
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const opt = (w, t, sel) => `<option value="${esc(w)}"${sel ? ' selected' : ''}>${esc(t)}</option>`;
 export const schermLink = id => `${location.origin}${location.pathname.replace(/[^/]*$/, '')}?scherm=${encodeURIComponent(id)}`;
@@ -60,6 +60,29 @@ async function leesProgramma(){
   return { datum, programma: C.bouwProgramma(teams, perTeam, datum) };
 }
 
+/* ---------- wie beheert de tv ---------- */
+/* De clubbeheerder wijst clubleden aan die de kantine-tv en de sponsoren mogen beheren (clubs/{id}.tvBeheerders). */
+function htmlTvBeheerders(ctx){
+  const aan = S.club?.tvBeheerders || {}, admins = S.club?.admins || {};
+  const mensen = (ctx.mensen?.() || []).filter(p => !admins[p.id]);
+  const chip = p => `<button class="tn-chip ${aan[p.id] ? 'aan' : ''}" data-cs="tvb" data-id="${esc(p.id)}" aria-pressed="${aan[p.id] ? 'true' : 'false'}">${aan[p.id] ? '✓ ' : ''}${esc(p.naam)}</button>`;
+  const zoek = cs.tvbZoek.trim().toLowerCase(), lijst = zoek ? mensen.filter(p => p.naam.toLowerCase().includes(zoek)) : mensen.filter(p => aan[p.id]).concat(mensen.filter(p => !aan[p.id]).slice(0, 12));
+  return `<div class="ac-paneel"><h3>Wie beheert de tv</h3>
+    <p class="ac-zacht">Clubbeheerders mogen dit altijd. Geef hier ook andere clubleden de tv, bijvoorbeeld de kantinecommissie of de sponsorcommissie. Zij zien de tegel Kantine-tv op het clubdashboard en beheren de tv en de sponsoren, ook de bedragen. Verder krijgen ze geen rechten.</p>
+    ${mensen.length > 12 ? `<input class="ac-in" data-cs-zoek="tvb" value="${esc(cs.tvbZoek)}" placeholder="Zoek een clublid" aria-label="Zoek een clublid">` : ''}
+    <div class="tn-chips" style="margin-top:8px">${lijst.map(chip).join('') || '<span class="ac-zacht">Geen clubleden gevonden.</span>'}</div></div>`;
+}
+async function zetTvBeheerder(ctx, id){
+  const p = (ctx.mensen?.() || []).find(x => x.id === id); if (!p || !S.clubId) return;
+  const aan = S.club?.tvBeheerders?.[id] !== true;
+  try {
+    await updateDoc(doc(db, 'clubs', ctx.clubId), aan ? { [`tvBeheerders.${id}`]: true, [`tvBeheerdersInfo.${id}`]: { naam: p.naam } } : { [`tvBeheerders.${id}`]: deleteField(), [`tvBeheerdersInfo.${id}`]: deleteField() });
+    if (S.club){ S.club.tvBeheerders = { ...(S.club.tvBeheerders || {}) }; if (aan) S.club.tvBeheerders[id] = true; else delete S.club.tvBeheerders[id]; }
+    meld(aan ? `${p.naam} beheert nu ook de tv` : `${p.naam} beheert de tv niet meer`);
+  } catch (e){ console.error('[schermen] tv-beheerder', e); meld('Wijzigen mislukt.'); }
+  ctx.herteken();
+}
+
 /* ---------- tekenen ---------- */
 export function htmlSchermen(ctx){
   laad(ctx);
@@ -93,12 +116,13 @@ export function htmlSchermen(ctx){
     <div class="ac-paneel"><h3>Kantine-tv</h3><p class="ac-zacht">Zet deze pagina op de tv in de kantine. Hij toont het wedstrijdprogramma van vandaag met veld en kleedkamer, de standen en uitslagen, je sponsoren en eigen schermen, in het sjabloon dat je kiest. De pagina werkt zichzelf bij; het programma komt elke tien minuten uit de wedstrijden van de teams.</p>
       ${cs.tv === undefined ? '<p class="ac-zacht">Laden…</p>' : aan ? `<div class="tn-live"><div class="tn-qr">${cs.qr || '<span class="ac-zacht">QR-code maken…</span>'}</div>
           <div class="tn-live-t"><input class="ac-in" readonly value="${esc(link)}" aria-label="Link naar de kantine-tv" onfocus="this.select()">
-            <div class="ac-acties"><a class="knop vol klein" href="${esc(link)}" target="_blank" rel="noopener">Tv-pagina openen</a><button class="knop licht klein" data-cs="kopieer">Link kopiëren</button><button class="knop licht klein" data-cs="programma" ${cs.bezig ? 'disabled' : ''}>Programma nu bijwerken</button><span class="ac-groei"></span><button class="knop licht klein" data-cs="tv-uit">Tv uitzetten</button></div>
+            <div class="ac-acties"><a class="knop vol klein" href="${esc(link)}" target="_blank" rel="noopener">Tv-pagina openen</a><button class="knop licht klein" data-cs="kopieer">Link kopiëren</button>${ctx.isAdmin ? `<button class="knop licht klein" data-cs="programma" ${cs.bezig ? 'disabled' : ''}>Programma nu bijwerken</button>` : ''}<span class="ac-groei"></span><button class="knop licht klein" data-cs="tv-uit">Tv uitzetten</button></div>
             <p class="ac-zacht">${tv.datum === v ? `Vandaag ${(tv.programma || []).length} ${(tv.programma || []).length === 1 ? 'wedstrijd' : 'wedstrijden'} op het scherm.` : 'Het programma van vandaag staat er nog niet op.'} Open de link in de browser van de tv, of scan de code met een telefoon die je op de tv aansluit.</p>
             <label class="ac-label">Mededeling onderin het scherm</label><input class="ac-in" data-cs-tv="mededeling" maxlength="200" value="${esc(tv.mededeling || '')}" placeholder="Bijvoorbeeld: Zaterdag 12 december kerstbingo in de kantine">
             <label class="ac-schak"><input type="checkbox" data-cs-tv="uit" ${tv.uit !== false ? 'checked' : ''}> Ook uitwedstrijden tonen</label>
             ${keuze}</div></div>`
         : `<div class="ac-acties"><button class="knop vol" data-cs="tv-aan">Kantine-tv aanzetten</button></div>${tv?.id ? '<p class="ac-zacht">De tv staat uit. Aanzetten geeft dezelfde link als eerst.</p>' : ''}<div class="cs-keuze">${keuze}</div>`}</div>
+    ${ctx.isAdmin ? htmlTvBeheerders(ctx) : ''}
     <div class="ac-paneel"><h3>Sponsoren ${sponsors.length ? `<small class="ac-zacht">· ${tot.actief} actief${tot.bedrag ? `, € ${tot.bedrag.toLocaleString('nl-NL')} per jaar` : ''}${tot.verlopen ? `, ${tot.verlopen} verlopen` : ''}${tot.bijna ? `, ${tot.bijna} loopt bijna af` : ''}</small>` : ''}</h3>
       <p class="ac-zacht">Per sponsor het pakket, het bedrag en tot wanneer de afspraak loopt. Bedrag en notitie ziet alleen het bestuur. Na de einddatum verdwijnt de sponsor vanzelf van de tv. Hoofdsponsoren staan vooraan.</p>
       ${cs.items === null ? '<p class="ac-zacht">Laden…</p>' : sponsors.map(rij).join('') || '<p class="ac-zacht">Nog geen sponsoren.</p>'}
@@ -124,11 +148,13 @@ export async function klikSchermen(ctx, b){
       try { await deleteDoc(doc(db, 'clubs', ctx.clubId, 'sponsoren', id)); if (cs.tv?.id) await deleteDoc(doc(db, 'clubTv', cs.tv.id, 'schermen', id)).catch(() => {}); } catch { meld('Weghalen mislukt.'); } return; }
     case 'plaatje-weg': return bewaarItem(ctx, id, { img: '' });
     case 'csv': return ctx.download(`sponsoren-${vandaag()}.csv`, C.csvSponsoren(cs.items || [], vandaag()), 'text/csv;charset=utf-8');
+    case 'tvb': if (!ctx.isAdmin) return; return zetTvBeheerder(ctx, id);
     case 'kopieer': return ctx.kopieer(schermLink(cs.tv.id), 'Link gekopieerd');
     case 'tv-aan': {
       const tid = cs.tv?.id || liveId();
       try {
-        const p = await leesProgramma();
+        /* Een tv-beheerder ziet niet alle teams; dan vult de Cloud Function het programma binnen tien minuten. */
+        const p = ctx.isAdmin ? await leesProgramma() : { datum: '', programma: [] };
         const data = { club: ctx.clubId, open: true, ...C.tvKopie({ ...clubInfo(), mededeling: cs.tv?.mededeling || '', uit: cs.tv?.uit, sjabloon: cs.tv?.sjabloon ?? cs.keuze.sjabloon, goals: cs.tv?.goals ?? cs.keuze.goals, evenement: cs.tv?.evenement ?? cs.keuze.evenement, ...p }), bijgewerktMs: Date.now(), programmaMs: Date.now() };
         await setDoc(doc(db, 'clubTv', tid), data);
         cs.tv = { id: tid, ...data }; await zetAllesOpenbaar();
@@ -153,6 +179,7 @@ async function bewaarItem(ctx, id, patch){
   catch (e){ console.error('[schermen] opslaan', e); meld('Opslaan mislukt.'); }
 }
 export async function wijzigSchermen(ctx, el){
+  if (el.matches('[data-cs-zoek="tvb"]')){ cs.tvbZoek = el.value || ''; ctx.herteken(); return true; }
   if (el.matches('[data-cs-plaatje]')){
     const f = el.files?.[0], id = el.dataset.csPlaatje; el.value = ''; if (!f) return true;
     if (!/^image\//.test(f.type) || f.size > 12 * 1024 * 1024){ meld('Kies een afbeelding (jpg of png, max 12 MB).'); return true; }

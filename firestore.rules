@@ -60,6 +60,9 @@ service cloud.firestore {
     function activiteit(c, a) { return get(/databases/$(database)/documents/clubs/$(c)/activiteiten/$(a)).data; }
     function isComite(c, a) { return isClubLid(c) && exists(/databases/$(database)/documents/clubs/$(c)/activiteiten/$(a)) && uid() in activiteit(c, a).get('comiteUids', []); }
     function magActiviteit(c, a) { return activiteitenAan(c) && (isClubAdmin(c) || isComite(c, a)); }
+    /* [20261126s] Kantine-tv: de clubbeheerder wijst clubleden aan die de tv en de sponsoren mogen beheren
+       (clubs/{id}.tvBeheerders.{uid} = true). Alleen de clubbeheerder zet dat (het clubdocument). */
+    function isTvBeheerder(c) { return isClubAdmin(c) || (isClubLid(c) && club(c).get('tvBeheerders', {}).get(uid(), false) == true); }
     function isVeldplanner(c) { return isClubAdmin(c) || isTraincoVanClub(c); }
     function isHoofdJeugd(c) { return echt() && clubBestaat(c) && club(c).get('hoofdJeugd', {}).get(uid(), false) == true; }
     function isJeugdPlanner(c) { return isClubAdmin(c) || isHoofdJeugd(c); }
@@ -290,8 +293,8 @@ service cloud.firestore {
       /* [20261125w] Sponsoren en eigen schermen van de club (Activiteiten › Kantine-tv en sponsoren), met bedrag en
          notitie: alleen clubbeheer. De openbare kopie voor de tv staat in clubTv/{id}/schermen. */
       match /sponsoren/{sid} {
-        allow read: if isClubAdmin(clubId);
-        allow write: if isClubAdmin(clubId) && activiteitenAan(clubId);
+        allow read: if isTvBeheerder(clubId);
+        allow write: if isTvBeheerder(clubId) && activiteitenAan(clubId);
       }
       match /veldplanner/{docId} {
         allow read: if isVeldplanner(clubId);
@@ -795,7 +798,7 @@ service cloud.firestore {
        kantineTv), een mededeling, en in de subcollectie de sponsoren en eigen schermen. Voor iedereen met de link, ook
        anoniem. Geen persoonsgegevens. Clubbeheer vindt de eigen tv met where('club', '==', clubId). */
     match /clubTv/{tvId} {
-      function tvBeheer(d) { return d.get('club', null) is string && isClubAdmin(d.club); }
+      function tvBeheer(d) { return d.get('club', null) is string && isTvBeheerder(d.club); }
       allow get: if ingelogd() && (resource.data.get('open', false) == true || tvBeheer(resource.data));
       allow list: if echt() && tvBeheer(resource.data);
       allow create: if tvBeheer(request.resource.data) && activiteitenAan(request.resource.data.club);

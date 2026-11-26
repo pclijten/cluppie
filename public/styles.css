@@ -8623,6 +8623,8 @@ button.btr-sessie:hover{ border-color:var(--hover-rand); }
 .tn-chip{display:inline-flex;align-items:center;gap:5px;padding:7px 11px;border-radius:var(--r-pill);background:var(--surface-2);border:1px solid var(--line-d);font-size:var(--t-sm);font-weight:600;min-height:36px;color:var(--ink)}
 .tn-chip i{font-style:normal;font-size:var(--t-2xs);color:var(--warn);font-weight:700}
 .tn-chip.vast{background:transparent}
+button.tn-chip{cursor:pointer;font:inherit;color:inherit}
+.tn-chip.aan{background:var(--accent-vlak,var(--accent));color:var(--accent-ink,#fff);border-color:transparent;font-weight:600}
 /* [20261117f] teamnaam aanpasbaar: de naam is een knop met een potloodje; lange eigen namen breken af */
 .tn-naamknop{display:inline-flex;align-items:center;gap:6px;min-width:0;color:var(--ink);text-align:left;padding:var(--space-2xs) 0}
 .tn-naamknop svg{color:var(--ink-2);flex-shrink:0}
