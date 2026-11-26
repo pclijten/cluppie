@@ -8,6 +8,7 @@ import {
 import { startTeams, openTeam, renderTeam, verlaatTeamView, teamTabTerug } from './teams.js?v=20261126q';
 import { sluitWedstrijd } from './wedstrijd.js?v=20261126q';
 import { initChatbot } from './chatbot.js?v=20261126q';
+import { bewaakVersie } from './versie-wacht.js?v=20261126r';
 
 /* [20260921] Training gedeeld met een ouder (?deel=<id>): volledig losse,
    sterk vereenvoudigde flow — geen normale login, geen navigatie, alleen de
@@ -63,6 +64,11 @@ const openClubLazy = id => import('./club.js?v=20261126q').then(m => m.openClub(
 initModalSluiten();
 initAuthUI();
 initGlobaleFoutafhandeling();
+/* [20261126r] nieuwe release terwijl de app open staat: herladen voordat oude en nieuwe modules door elkaar lopen
+   (zie js/versie-wacht.js). Automatisch alleen als er niets open staat dat verloren kan gaan. */
+bewaakVersie(() => !S.wedstrijdId
+  && !document.querySelector('#modalAchter.open, .wz-achter.open, .wo-achter.open, .tb-board, .trb-overlay.open')
+  && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || ''));
 
 /* Opstart-laadscherm: standaard zichtbaar in index.html zodat een coach nooit
    naar een leeg zwart scherm kijkt terwijl Firebase Auth de sessie herstelt.
