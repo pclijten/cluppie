@@ -10,6 +10,7 @@
 import { auth, db, functions, httpsCallable, signInAnonymously, signOut, onAuthStateChanged, signInWithEmailAndPassword,
   createUserWithEmailAndPassword, sendEmailVerification, collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, where, onSnapshot } from './firebase.js?v=20261011g';
 import * as K from './kamer-logica.js?v=20261125m';
+import * as P from './kamer-push.js?v=20261126z';
 
 const wortel = document.getElementById('tk');
 const qs = new URLSearchParams(location.search);
@@ -23,12 +24,17 @@ const A = { scherm: 'laden', fout: '', bezig: false, user: null, link: null, lid
 let naarPoll = qs.get('poll') || '';                   /* [20261116p] link uit WhatsApp: één keer naar die poll schuiven */
 const TABNAAM = { vandaag: 'Vandaag', agenda: 'Agenda', polls: 'Polls', kind: 'Mijn kind' };
 if (qs.get('k')) bewaar.set('tkCode', K.schoonCode(qs.get('k'), 12));
+/* [20261126m] een tik op een pushmelding opent het team van die melding (?team=) */
+if (qs.get('team') && /^[A-Za-z0-9_-]{1,64}$/.test(qs.get('team'))) bewaar.set('tkTeam', qs.get('team'));
+/* de worker van de site (zelfde als de trainersapp): offline openen en pushmeldingen */
+if ('serviceWorker' in navigator && !/[?&]demo(=|&|$)/.test(location.search)) navigator.serviceWorker.register('sw.js').catch(() => {});
 
 const ICO = {
   huis: '<path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"></path>',
   agenda: '<rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path>',
   poll: '<path d="M5 20V10M12 20V4M19 20v-7"></path>',
   mens: '<circle cx="12" cy="8" r="4"></circle><path d="M4 20c0-4 4-6 8-6s8 2 8 6"></path>',
+  bel: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"></path><path d="M10 21h4"></path>',
   slot: '<rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path>',
   plek: '<path d="M12 21s7-6 7-11a7 7 0 0 0-14 0c0 5 7 11 7 11z"></path><circle cx="12" cy="10" r="2.5"></circle>',
 };
@@ -291,7 +297,8 @@ function htmlVandaag(){
       <button class="tk-knop licht klein" data-doe="gelezen">Gelezen</button></section>` : ''}
     ${stem.length ? `<section class="tk-kaart nieuw" style="gap:4px"><h2 class="tk-label accent">${stem.length === 1 ? 'Je stem is nodig' : 'Je stem is nodig bij ' + stem.length + ' polls'}</h2>
       ${stem.map(p => `<button class="tk-item-kop" style="padding:4px 0;min-height:52px" data-doe="naarpoll" data-id="${e(p.id)}"><span class="tk-item-tekst tk-vet">${e(p.vraag)}</span><span class="tk-klein tk-let">Stem nu</span></button>`).join('')}</section>` : ''}
-    ${htmlHulpGezocht(vandaag)}`;
+    ${htmlHulpGezocht(vandaag)}
+    ${htmlPushTip()}`;
   const wedstrijdSnel = kom.find(i => i.soort === 'wedstrijd' && K.binnenDagen(i.datum, vandaag, 2));
   const wedstrijdWeek = kom.find(i => i.soort === 'wedstrijd' && K.binnenDagen(i.datum, vandaag, 7));
   const videos = (A.kamer?.thuisVideos || []).filter(v => v && (v.yt || v.url));
@@ -372,6 +379,29 @@ function htmlPolls(){
   const ps = zichtbarePolls();
   return ps.map(htmlPoll).join('') || '<section class="tk-kaart"><p class="tk-zacht" style="margin:0">Er zijn nog geen polls.</p></section>';
 }
+/* ==================== [20261126m] pushmeldingen (js/kamer-push.js) ==================== */
+/* alleen ouders: een speler komt binnen met een code (anoniem account) en kan geen meldingen bewaren */
+const pushKan = () => isOuder() && A.user && !A.user.isAnonymous && P.staat() !== 'kan-niet';
+const BEGINSCHERM = 'Op de iPhone kan dit pas als de teamkamer op je beginscherm staat. Tik in Safari op <b>Deel</b> (het vierkantje met de pijl omhoog) en kies <b>Zet op beginscherm</b>. Open de teamkamer daarna vanaf je beginscherm en zet hier meldingen aan.';
+function htmlPush(){
+  if (!pushKan()) return '';
+  const st = P.staat();
+  if (st === 'beginscherm') return `<section class="tk-kaart"><h2 class="tk-label">Meldingen op deze telefoon</h2><p class="tk-klein" style="margin:0">${BEGINSCHERM}</p></section>`;
+  if (st === 'geweigerd') return `<section class="tk-kaart"><h2 class="tk-label">Meldingen op dit toestel</h2><p class="tk-klein tk-zacht" style="margin:0">Meldingen zijn geblokkeerd. Zet ze aan in de instellingen van je telefoon of browser (bij Cluppie of www.cluppie.io) en kom dan hier terug.</p></section>`;
+  const aan = st === 'aan';
+  return `<section class="tk-kaart" style="flex-direction:row;align-items:center"><div style="flex:1"><div class="tk-vet" id="lbl-push">Meldingen op dit toestel</div>
+    <div class="tk-klein tk-zacht">${aan ? 'Je krijgt een melding als de trainer een poll of mededeling plaatst.' : 'Krijg een melding bij een nieuwe poll of mededeling van de trainer.'}</div></div>
+    <button class="tk-sw" role="switch" aria-checked="${aan}" aria-labelledby="lbl-push" data-doe="${aan ? 'pushuit' : 'pushaan'}" ${A.bezig ? 'disabled' : ''}></button></section>`;
+}
+function htmlPushTip(){
+  if (!pushKan() || bewaar.get('tkPushWeg')) return '';
+  const st = P.staat();
+  if (st !== 'uit' && st !== 'beginscherm') return '';
+  return `<section class="tk-kaart" style="gap:8px"><div class="tk-rij" style="justify-content:flex-start;gap:8px">${ico('bel', true)}<h2 class="tk-label">Mis geen poll</h2></div>
+    <p class="tk-klein" style="margin:0">${st === 'beginscherm' ? BEGINSCHERM : 'Zet meldingen aan, dan hoor je het als de trainer een poll of mededeling plaatst.'}</p>
+    <div class="tk-twee">${st === 'uit' ? `<button class="tk-knop klein" data-doe="pushaan" ${A.bezig ? 'disabled' : ''}>Zet meldingen aan</button>` : ''}<button class="tk-knop licht klein" data-doe="pushweg">Niet nu</button></div></section>`;
+}
+
 function htmlKind(){
   const id = kindId(), p = spelers()[id] || {}, g = A.gezin[id] || {}, tot = A.lid?.vervaltOp?.toDate ? A.lid.vervaltOp.toDate() : null;
   const meer = (A.lid?.spelerIds || []).length > 1;
@@ -391,6 +421,7 @@ function htmlKind(){
       <p class="tk-klein tk-zacht" style="margin:0">${e(kindNaam())} heeft geen e-mailadres of wachtwoord nodig en ziet hetzelfde als jij, zonder dit scherm.</p>
       <button class="tk-knop licht klein" data-doe="stopkind">Stop de toegang van ${e(kindNaam())}</button>
     </section>` : ''}
+    ${htmlPush()}
     ${A.kamer?.namen ? `<section class="tk-kaart" style="flex-direction:row;align-items:center"><div style="flex:1"><div class="tk-vet" id="lbl-naam">Toon de voornaam van ${e(kindNaam())}</div>
       <div class="tk-klein tk-zacht">${zichtbaar ? `Andere gezinnen zien: ${e(kindNaam())}${g.nr != null ? ', nummer ' + g.nr : ''}.` : 'Andere gezinnen zien: Speler.'}</div></div>
       <button class="tk-sw" role="switch" aria-checked="${zichtbaar}" aria-labelledby="lbl-naam" data-doe="verberg"></button></section>` : ''}
@@ -434,7 +465,7 @@ function htmlKamer(){
   const teller = { vandaag: nieuweBerichten().length, polls: nogStemmen().length };
   const tellerTekst = { vandaag: 'nieuwe mededelingen', polls: 'polls waar je nog op stemt' };
   const knoppen = tabs.map(t => `<button data-doe="tab" data-tab="${t[0]}" aria-current="${tab === t[0]}"${teller[t[0]] ? ` aria-label="${t[1]}, ${teller[t[0]]} ${tellerTekst[t[0]]}"` : ''}><span class="tk-ico-vak">${ico(t[2])}${teller[t[0]] ? `<i class="tk-badge">${teller[t[0]]}</i>` : ''}</span><span>${t[1]}</span></button>`).join('');
-  try { const n = teller.vandaag + teller.polls; document.title = (n ? `(${n}) ` : '') + 'Teamkamer · Cluppie'; } catch { /* geen titel */ }
+  try { const n = teller.vandaag + teller.polls; document.title = (n ? `(${n}) ` : '') + 'Teamkamer · Cluppie'; P.badge(n); } catch { /* geen titel */ }
   const ander = A.teams.length > 1 ? '<button class="tk-knop licht klein" data-doe="wisselteam">Ander team</button>' : '';
   const team = A.kamer.teamNaam || 'Team', club = A.kamer.clubNaam || 'Teamkamer';
   /* op de computer: zijbalk en kruimelpad zoals in de app; op de telefoon: kop en balk onderaan */
@@ -592,6 +623,7 @@ function openKamer(teamId, lid){
   A.subs.push(onSnapshot(collection(basis, 'agenda'), s => { A.agenda = s.docs.map(d => ({ id: d.id, ...d.data() })); teken(); weerHalen(); }, () => {}));
   A.subs.push(onSnapshot(collection(basis, 'berichten'), s => { A.berichten = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.ms || 0) - (a.ms || 0)); teken(); }, () => {}));
   A.subs.push(onSnapshot(collection(basis, 'polls'), s => { A.polls = s.docs.map(d => ({ id: d.id, ...d.data() })); stemmenIngehaald(); teken(); eigenStemmen(); }, () => {}));
+  if (lid.rol === 'ouder' && !A.user.isAnonymous) P.vernieuw(A.user.uid);
   (lid.spelerIds || []).forEach(id => A.subs.push(onSnapshot(doc(basis, 'gezin', id), s => { A.gezin[id] = s.data() || {}; teken(); }, () => {})));
   /* [20261116r] cijfers van het eigen kind: alleen ouders mogen dit document lezen (rules) */
   if (lid.rol === 'ouder') (lid.spelerIds || []).forEach(id => A.subs.push(onSnapshot(doc(basis, 'gezin', id, 'ouder', 'stats'), s => { A.stats[id] = s.data() || null; teken(); }, () => {})));
@@ -762,7 +794,15 @@ wortel.addEventListener('click', async (ev) => {
     }
     if (doe === 'sluitblad' || doe === 'sluitblad-knop') return zet({ blad: null });
     if (doe === 'sluitblad-na') return setTimeout(() => zet({ blad: null }), 300);
-    if (doe === 'uitloggen'){ sluitSpeler(); stopSubs(); bewaar.set('tkWacht', ''); if (auth.currentUser?.isAnonymous) bewaar.set('tkTeam', ''); A.link = null; await signOut(auth); return; }
+    if (doe === 'pushaan'){
+      zet({ bezig: true });
+      try { await P.zetAan(A.user.uid); bewaar.set('tkPushWeg', '1'); toast('Meldingen staan aan op dit toestel.'); }
+      catch (x){ toast(foutTekst(x)); }
+      return zet({ bezig: false });
+    }
+    if (doe === 'pushuit'){ zet({ bezig: true }); await P.zetUit(A.user.uid); toast('Meldingen staan uit op dit toestel.'); return zet({ bezig: false }); }
+    if (doe === 'pushweg'){ bewaar.set('tkPushWeg', '1'); return teken(); }
+    if (doe === 'uitloggen'){ if (A.user && !A.user.isAnonymous) await P.vergeet(A.user.uid); P.badge(0); sluitSpeler(); stopSubs(); bewaar.set('tkWacht', ''); if (auth.currentUser?.isAnonymous) bewaar.set('tkTeam', ''); A.link = null; await signOut(auth); return; }
     if (doe === 'vergeetlink'){ bewaar.set('tkCode', ''); A.link = null; return naInloggen(auth.currentUser); }
     if (doe === 'wisselteam'){ const n = (A.teams.findIndex(t => t.teamId === A.teamId) + 1) % A.teams.length; return openKamer(A.teams[n].teamId, A.teams[n].lid); }
     if (doe === 'reset'){

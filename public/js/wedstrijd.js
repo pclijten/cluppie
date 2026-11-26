@@ -5,7 +5,7 @@ import {
 import {
   S, $, $$, esc, meld, mmss, uurMin, datumNL, speler, spelerNaam, spelerNr,
   openModal, sluitModal, toon, stopUnsubs, modAan, bewaarPositie, terugLaag, terugLaagWeg, doeTerug, isBeheerder
-} from './state.js?v=20261126y';
+} from './state.js?v=20261126z';
 import {
   FORMATIES, LIJN_NAAM, bouwSlots, slotLijn, catInfo, isToernooi,
   parseFormatie, formatieBestaat, formatieNamen, aantalVeldspelers,
@@ -14,19 +14,19 @@ import {
   clubFormatie11, doelSuggesties, isoWeek, SEIZOEN_FALLBACK,
   WISSEL_REDENEN, wisselReden, AFWEZIG_REDENEN, afwezigRedenInfo, slotPositieNaam,
   catLabel,
-} from './config.js?v=20261126y';
-import { kwartGespeeld, effectieveLineup, verwisselSlots, analyseKwart, analyseWedstrijd, speeltijdReserve, disciplinaireTijd, WISSEL_BEURT, analyseKwartVerwacht, analyseWedstrijdVerwacht } from './analyse.js?v=20261126y';
+} from './config.js?v=20261126z';
+import { kwartGespeeld, effectieveLineup, verwisselSlots, analyseKwart, analyseWedstrijd, speeltijdReserve, disciplinaireTijd, WISSEL_BEURT, analyseKwartVerwacht, analyseWedstrijdVerwacht } from './analyse.js?v=20261126z';
 import { ico } from './icons.js?v=20261126w';
-import { laadClubgids, zoekTegenstanders, plekVoor, pouleTeamnamen, clubVanTeam } from './clubgids.js?v=20261126y';
-import { aiAan, eigenClubTokens, voorbeeldTegenstander, beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261126y';
+import { laadClubgids, zoekTegenstanders, plekVoor, pouleTeamnamen, clubVanTeam } from './clubgids.js?v=20261126z';
+import { aiAan, eigenClubTokens, voorbeeldTegenstander, beleidsplanNaam, kompasNaam } from './clubconfig.js?v=20261126z';
 
-import { telGebruik, telNav } from './tracker.js?v=20261126y';
+import { telGebruik, telNav } from './tracker.js?v=20261126z';
 import { opkomstVoor, teltMee, MIN_OPKOMST_TRAININGEN } from './opkomst.js?v=20260922c';
 import { spelersOpWedstrijd, ontbrekendeLeners, leenErbijNa } from './uitleen-regels.js?v=20261113b';
-import { openInvoegSheet, bewaarWedstrijdAlsSjabloon, zetNaToepassenCallback } from './opstelling-sjabloon.js?v=20261126y';
+import { openInvoegSheet, bewaarWedstrijdAlsSjabloon, zetNaToepassenCallback } from './opstelling-sjabloon.js?v=20261126z';
 import { sportWoord, sportWedstrijd, sportKaarten, kaartDef, zonderKeeper } from './sporten.js?v=20261126g';   /* [20261125y] sportprofiel stap 3: woorden uit het profiel */
 import { heeftElftallen, elftalWedstrijd, elftalNaam, hoortBijElftal, spelersVoorElftal, filterOpElftal,
-  elftalFilter, elftalFilterHtml } from './elftallen.js?v=20261126y';
+  elftalFilter, elftalFilterHtml } from './elftallen.js?v=20261126z';
 
 /* ==================== AANMAKEN ==================== */
 function leegKwart(){ return {lineup:{}, events:[], plan:[], correcties:{}, klok:{base:0, running:false, start:0}}; }
@@ -563,7 +563,7 @@ export function adviesZichtbaar(){ return ADVIES_VOOR_IEDEREEN || isBeheerder();
 function openAdvies(){
   const w = S.wedstrijd;
   if (!w) return;
-  import('./opstelling-advies.js?v=20261126y')
+  import('./opstelling-advies.js?v=20261126z')
     .then(m => m.openOpstellingAdvies(w, () => { S.kwart = '1'; bewaarWedstrijd(); renderWedstrijd(); }))
     .catch(e => { console.error('[Cluppie] opstellingsadviseur laden mislukt', e); meld('Kon het opstellingsvoorstel niet openen, probeer het opnieuw'); });
 }
@@ -674,7 +674,7 @@ export function openWedstrijd(wid){
   if (!S.teamId || !wid){
     console.warn('[Cluppie] openWedstrijd afgebroken: ontbrekende teamId of wid', {teamId:S.teamId, wid});
     S.wedstrijdId = null;
-    if (S.teamId) import('./teams.js?v=20261126y').then(m => m.renderTeam?.());
+    if (S.teamId) import('./teams.js?v=20261126z').then(m => m.renderTeam?.());
     return;
   }
   S.wedstrijdId = wid; S.kwart = '1'; S.geselecteerd = null; S._confroOpen = false; S._wizardActief = false;
@@ -720,7 +720,7 @@ export function sluitWedstrijd(naarTab){
   verbergWijzigOpzet();
   if (typeof naarTab === 'string') S.teamTab = naarTab;
   bewaarPositie();
-  import('./teams.js?v=20261126y').then(m => { m.renderTeam(); toon('team'); });
+  import('./teams.js?v=20261126z').then(m => { m.renderTeam(); toon('team'); });
 }
 /* Speeltijd van INGELEENDE spelers in déze wedstrijd wegschrijven op het
    leen-record zelf (clubs/{clubId}/uitleningen/{leenId}), zodat het
@@ -2782,7 +2782,7 @@ export function htmlStats(){
 export function koppelStatsBlad(root){
   (root || document).querySelectorAll('[data-statsblad]').forEach(b => b.onclick = () => {
     S.statsBlad = b.dataset.statsblad;
-    import('./teams.js?v=20261126y').then(m => m.renderTeam?.());
+    import('./teams.js?v=20261126z').then(m => m.renderTeam?.());
   });
 }
 
@@ -3613,8 +3613,8 @@ ${confroHtml}
   /* Acties die in het oude scherm onderaan staan en in het zijlijnscherm ook in het menu. */
   const acties = {
     verslag: modalVerslag,
-    evaluatie: () => import('./teams.js?v=20261126y').then(m => m.modalTeamEvaluatie(S.wedstrijdId)),
-    tactiek: () => import('./tactiekbord.js?v=20261126y').then(m => m.openTactiekLijst(w)),
+    evaluatie: () => import('./teams.js?v=20261126z').then(m => m.modalTeamEvaluatie(S.wedstrijdId)),
+    tactiek: () => import('./tactiekbord.js?v=20261126z').then(m => m.openTactiekLijst(w)),
     bijwerk: () => { S.bijwerkKwart = S.kwart; toonBijwerkScherm(); },
     sjabloon: () => bewaarWedstrijdAlsSjabloon(w),
     verwijder: async () => {
@@ -3657,7 +3657,7 @@ ${confroHtml}
   const bsj = v.querySelector('#bewaarSjabloon');
   if (bsj) bsj.onclick = () => bewaarWedstrijdAlsSjabloon(w);
   const tbk = v.querySelector('#tactiekbordKnop');
-  if (tbk) tbk.onclick = () => import('./tactiekbord.js?v=20261126y').then(m => m.openTactiekLijst(w));
+  if (tbk) tbk.onclick = () => import('./tactiekbord.js?v=20261126z').then(m => m.openTactiekLijst(w));
   { const db = v.querySelector('#doelBanner') || v.querySelector('#zlDoel'); if (db) db.onclick = () => toonWijzigOpzet('doel'); }
   v.querySelector('#subFormatieKlik').onclick = (e) => { e.stopPropagation(); toonKwartFormatie(); };
   { const kfk = v.querySelector('#kwartFormatieKnop'); if (kfk) kfk.onclick = toonKwartFormatie; }
@@ -3684,7 +3684,7 @@ ${confroHtml}
   { const bwk = v.querySelector('#bijwerkKnop'); if (bwk) bwk.onclick = () => { S.bijwerkKwart = S.kwart; toonBijwerkScherm(); }; }
   const teamEvalKnop = v.querySelector('#teamEvalKnop');
   if (teamEvalKnop) teamEvalKnop.onclick = () => {
-    import('./teams.js?v=20261126y').then(m => m.modalTeamEvaluatie(S.wedstrijdId));
+    import('./teams.js?v=20261126z').then(m => m.modalTeamEvaluatie(S.wedstrijdId));
   };
   v.querySelectorAll('[data-corrigeer-goal]').forEach(b => b.onclick = e => {
     e.stopPropagation(); modalGoalCorrigeren(Number(b.dataset.corrigeerGoal));

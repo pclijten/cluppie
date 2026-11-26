@@ -11,7 +11,7 @@
 
    Weggeklikt wordt lokaal onthouden in localStorage onder 'cluppie_bericht_weg'. */
 
-import { S, esc, datumNL } from './state.js?v=20261126y';
+import { S, esc, datumNL } from './state.js?v=20261126z';
 import { ico } from './icons.js?v=20261126w';
 /* gemaakt is een Firestore-Timestamp (of null zolang de schrijfactie nog loopt);
    datumNL() uit state.js verwacht een JJJJ-MM-DD-tekst en gaf hier "Invalid Date". */

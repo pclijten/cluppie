@@ -9,12 +9,13 @@
    claude/teamkamer-ouders-spelers-polls-impactanalyse.md. */
 'use strict';
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { onDocumentWritten } = require('firebase-functions/v2/firestore');
+const { onDocumentWritten, onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 const logger = require('firebase-functions/logger');
 const crypto = require('crypto');
 const L = require('./teamkamer-logica');
+const P = require('./teamkamer-push');
 
 const REGIO = 'europe-west1';
 const ALFABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';      // geen 0/O/1/I/L
@@ -309,6 +310,9 @@ const kamerPoll = onDocumentWritten({ document: 'teamkamer/{teamId}/polls/{pollI
     return;
   }
   if (voor && pollSleutel(voor) !== pollSleutel(na)) await telPoll(db, teamId, pollId);
+  /* [20261126m] pushmelding: bij een nieuwe poll als de trainer dat aanvinkte, en bij "Herinner wie nog niet stemde" */
+  if (!voor && na.melding === true && na.status === 'open') await meldPoll(db, teamId, pollId, na, 'poll', event.data.after.ref);
+  else if (P.herinnerMag(voor, na)) await meldPoll(db, teamId, pollId, na, 'herinnering', event.data.after.ref);
   if (na.status === 'gesloten' && na.beurtenGeteld !== true && L.BEURT_SOORTEN.includes(na.soort)){
     const kamer = await kamerAan(db, teamId);
     if (!kamer || kamer.mag?.beurten !== true) return;            /* beurtenteller staat uit (eindbaas) */
@@ -329,6 +333,36 @@ const kamerPoll = onDocumentWritten({ document: 'teamkamer/{teamId}/polls/{pollI
     for (const s of L.BEURT_SOORTEN) gem[s] = gezinnen.length ? Math.round((gezinnen.reduce((n, g) => n + (Number(g.beurten?.[s]) || 0), 0) / gezinnen.length) * 10) / 10 : 0;
     await kRef.set({ beurtenGem: gem }, { merge: true });
   }
+});
+
+/* ---------- [20261126m] pushmeldingen naar ouders (zie teamkamer-push.js) ---------- */
+async function meldPoll(db, teamId, pollId, poll, soort, ref){
+  try {
+    const kamer = await kamerAan(db, teamId);
+    if (!kamer || kamer.mag?.polls !== true) return;
+    let gestemd = null;
+    if (soort === 'herinnering'){
+      const st = (await db.collection(`teamkamer/${teamId}/polls/${pollId}/stemmen`).get()).docs;
+      gestemd = new Set(st.filter(d => (d.data().keuzes || []).length).map(d => d.id));
+    }
+    const leden = (await ledenVanTeam(db, teamId)).map(d => ({ id: d.id, ...d.data() }));
+    const uids = P.ontvangers(leden, { behalve: poll.gemaaktDoor || '', gestemd });
+    const r = await P.stuur(db, uids, P.melding(soort, { teamNaam: kamer.teamNaam, teamId, id: pollId, vraag: poll.vraag }));
+    await ref.update(soort === 'poll' ? { meldingBereik: r.ouders } : { herinnerBereik: r.ouders });
+  } catch (e){ logger.warn('[kamerPush] poll ' + teamId + '/' + pollId, e.message || e); }
+}
+const kamerBericht = onDocumentCreated({ document: 'teamkamer/{teamId}/berichten/{berichtId}', region: REGIO }, async (event) => {
+  const b = event.data && event.data.data();
+  if (!b || b.melding !== true) return;
+  const db = getFirestore(), { teamId, berichtId } = event.params;
+  try {
+    const kamer = await kamerAan(db, teamId);
+    if (!kamer || kamer.mag?.berichten !== true) return;
+    const leden = (await ledenVanTeam(db, teamId)).map(d => ({ id: d.id, ...d.data() }));
+    const uids = P.ontvangers(leden, { behalve: b.doorUid || '' });
+    const r = await P.stuur(db, uids, P.melding('bericht', { teamNaam: kamer.teamNaam, teamId, id: berichtId, tekst: b.tekst }));
+    await event.data.ref.update({ meldingBereik: r.ouders });
+  } catch (e){ logger.warn('[kamerPush] bericht ' + teamId + '/' + berichtId, e.message || e); }
 });
 
 /* ---------- teamlink ---------- */
@@ -574,7 +608,7 @@ async function exportUid(db, uid){
 }
 
 module.exports = {
-  functies: { kamerAanlevering, kamerActiviteit, kamerTeam, kamerClub, kamerPlatform, kamerSpeler, kamerWedstrijd, kamerPresentie, kamerStem, kamerPoll, kamerLinkInfo, maakKamerLink, vraagKamerToegang,
+  functies: { kamerAanlevering, kamerActiviteit, kamerTeam, kamerClub, kamerPlatform, kamerSpeler, kamerWedstrijd, kamerPresentie, kamerStem, kamerPoll, kamerBericht, kamerLinkInfo, maakKamerLink, vraagKamerToegang,
     beoordeelKamerAanvraag, trekKamerToegangIn, maakKindCode, wisselKindCode, stopKindToegang, kamerVerberg, kamerVerleng, kamerVervers, kamerNacht },
   bouwKamer, telPoll, nacht, magBeheren, verwijderUid, exportUid,
 };

@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
+const verstuurd = [];
 const Module = require('module'), fake = require('./fake-firestore.js'), orig = Module._load;
 class HttpsError extends Error { constructor(c, m){ super(m); this.code = c; } }
 Module._load = function(r, ...a){
@@ -14,6 +15,8 @@ Module._load = function(r, ...a){
   if (r === 'firebase-functions/logger') return { warn(){}, info(){}, error(){} };
   if (r === 'firebase-functions/params') return { defineSecret: () => ({ value: () => '' }), defineString: () => ({ value: () => '' }) };
   if (r === 'firebase-admin/firestore') return { getFirestore: () => fake.db, FieldValue: fake.FieldValue, Timestamp: fake.Timestamp };
+  if (r === 'firebase-admin/messaging') return { getMessaging: () => ({ sendEachForMulticast: async (m) => { verstuurd.push(m);
+    return { responses: m.tokens.map(t => (t === 'dood' ? { success: false, error: { code: 'messaging/registration-token-not-registered' } } : { success: true })) }; } }) };
   if (r === 'firebase-admin') return { firestore: { Timestamp: fake.Timestamp }, auth: () => ({ deleteUser: async () => {} }), apps: [1], initializeApp(){} };
   return orig.call(this, r, ...a);
 };
@@ -303,7 +306,7 @@ ok(!/<textarea|contenteditable/.test(app), 'ouders en spelers kunnen nergens vri
 const logica = fs.readFileSync(new URL('../functions/teamkamer-logica.js', import.meta.url), 'utf8');
 ok(!/afwezigRedenen\[|\.reden\b|\.notitie\b|leerpunten|beoordeling/.test(logica.replace(/\/\*[\s\S]*?\*\//g, '')), 'de kopie neemt geen reden, notitie, leerpunt of beoordeling over');
 const index = fs.readFileSync(new URL('../functions/index.js', import.meta.url), 'utf8');
-ok(index.includes("require('./teamkamer').functies") && Object.keys(F).length === 22, 'functies geëxporteerd');
+ok(index.includes("require('./teamkamer').functies") && Object.keys(F).length === 23, 'functies geëxporteerd');
 
 /* [20261116n] thuis oefenen: video's. Alleen een YouTube-id of een video uit de opslag van Cluppie komt in de kopie. */
 const opslag = 'https://firebasestorage.googleapis.com/v0/b/voorbeeld.appspot.com/o/clubs%2Fc1%2Fvideos%2Fclip.mp4?alt=media&token=x';
@@ -411,5 +414,59 @@ ok(K.hulpOpDatum(hl, '2026-11-30', 'u1') === null && K.hulpOpDatum(hl, '2026-11-
 ok(K.hulpOpDatum(hl, '2026-12-02', 'u1').deelId === 'a' && K.hulpRegel(K.hulpOpDatum(hl, '2026-12-02', 'u1'), 'u1') === 'Nog niemand, 3 plekken', 'trainingshulp: staat een training in twee lijsten, dan telt de eerste lijst');
 ok(K.hulpGezocht(hl, '2026-11-20', 'u1').map(h => h.datum).join() === '2026-11-25,2026-12-02' && K.hulpGezocht(hl, '2026-11-20', 'u2', 3).length === 0 && K.hulpGezocht(hl, '2026-11-26', 'u1').map(h => h.datum).join() === '2026-12-02', 'trainingshulp: hulp gezocht = komende 14 dagen, nog plek, niet waar je zelf al helpt, niet in het verleden');
 ok(K.hulpNaam('  Sandra   van  Dijk-de-hele-lange-achternaam ') === 'Sandra van Dijk-de-hele-' && K.hulpNaam(null) === '' && K.hulpPlekken(1) === '1 plek' && K.hulpPlekken(2) === '2 plekken', 'trainingshulp: voornaam opgeschoond en ingekort tot 24 tekens');
+
+/* ---------- [20261126m] pushmeldingen naar ouders ---------- */
+const P = require('../functions/teamkamer-push.js');
+const toek = Date.now() + 1e9, vroeger = Date.now() - 1000;
+const pl = [{ id: 'u1', rol: 'ouder', spelerIds: ['a'], vervaltOp: fake.Timestamp.fromMillis(toek) }, { id: 'u2', rol: 'ouder', spelerIds: ['b', 'c'], vervaltOp: fake.Timestamp.fromMillis(toek) },
+  { id: 'u3', rol: 'speler', spelerIds: ['a'], vervaltOp: fake.Timestamp.fromMillis(toek) }, { id: 'u4', rol: 'ouder', spelerIds: ['d'], vervaltOp: fake.Timestamp.fromMillis(vroeger) },
+  { id: 'coach', rol: 'ouder', spelerIds: ['e'], vervaltOp: fake.Timestamp.fromMillis(toek) }];
+ok(P.ontvangers(pl, { behalve: 'coach' }).join() === 'u1,u2', 'push: alleen ouders met geldige toegang, niet de schrijver, geen spelers');
+ok(P.ontvangers(pl, { gestemd: new Set(['a', 'b']) }).join() === 'u2,coach', 'push: herinnering alleen aan gezinnen met een kind dat nog niet stemde');
+const pm = P.melding('poll', { teamNaam: 'JO9-1', teamId: 't1', id: 'q 1', vraag: 'Wie rijdt zaterdag?' });
+ok(pm.titel === 'Nieuwe poll · JO9-1' && pm.tekst === 'Wie rijdt zaterdag?' && pm.url === 'https://www.cluppie.io/kamer.html?team=t1&poll=q%201' && pm.tag === 'poll-q 1', 'push: tekst en link van een poll');
+const bm = P.melding('bericht', { teamNaam: '', teamId: 't1', id: 'b1', tekst: 'x'.repeat(300) });
+ok(bm.titel === 'Mededeling · je team' && bm.tekst.length === 160 && bm.tekst.endsWith('…') && bm.url.endsWith('?team=t1'), 'push: mededeling ingekort, zonder teamnaam');
+ok(P.melding('herinnering', { teamNaam: 'JO9-1', teamId: 't1', id: 'q1', vraag: 'V' }).titel === 'Je stem is nodig · JO9-1', 'push: herinnering');
+const nuMs = Date.now();
+ok(P.herinnerMag({ status: 'open' }, { status: 'open', herinnerMs: nuMs }, nuMs) && !P.herinnerMag({ status: 'open', herinnerMs: nuMs - 3600000 }, { status: 'open', herinnerMs: nuMs }, nuMs)
+  && !P.herinnerMag({ status: 'open', herinnerMs: nuMs }, { status: 'open', herinnerMs: nuMs }, nuMs) && !P.herinnerMag({ status: 'open' }, { status: 'gesloten', herinnerMs: nuMs }, nuMs)
+  && !P.herinnerMag(null, { status: 'open', herinnerMs: nuMs }, nuMs), 'push: hooguit één herinnering per zes uur, alleen bij een open poll');
+
+store.set('teamkamer/tp', { aan: true, teamNaam: 'JO9-1', mag: { polls: true, berichten: true } });
+for (const l of pl) store.set('teamkamer/tp/kamerleden/' + l.id, { ...l });
+store.set('gebruikers/u1/push/x1', { token: 'tok-u1' });
+store.set('gebruikers/u2/push/x2', { token: 'tok-u2' });
+store.set('gebruikers/u2/push/x3', { token: 'dood' });
+store.set('gebruikers/u3/push/x4', { token: 'tok-u3' });
+store.set('gebruikers/coach/push/x5', { token: 'tok-coach' });
+const nieuwePoll = { vraag: 'Wie rijdt?', status: 'open', melding: true, gemaaktDoor: 'coach', opties: [{ id: 'o1', tekst: 'Ik' }] };
+store.set('teamkamer/tp/polls/p1', nieuwePoll);
+verstuurd.length = 0;
+await F.kamerPoll(event('teamkamer/tp/polls/p1', undefined, nieuwePoll, { teamId: 'tp', pollId: 'p1' }));
+ok(verstuurd.length === 1 && verstuurd[0].tokens.sort().join() === 'dood,tok-u1,tok-u2' && verstuurd[0].data.url.includes('poll=p1') && verstuurd[0].webpush.headers.Urgency === 'high',
+  'push: nieuwe poll met melding gaat naar de toestellen van de ouders, niet naar de trainer of een speler');
+ok(store.get('teamkamer/tp/polls/p1').meldingBereik === 2 && !store.has('gebruikers/u2/push/x3') && store.has('gebruikers/u2/push/x2'), 'push: bereik terug in de poll, een dood token is opgeruimd');
+verstuurd.length = 0;
+await F.kamerPoll(event('teamkamer/tp/polls/p2', undefined, { ...nieuwePoll, melding: false }, { teamId: 'tp', pollId: 'p2' }));
+const zelfde = store.get('teamkamer/tp/polls/p1');
+await F.kamerPoll(event('teamkamer/tp/polls/p1', nieuwePoll, zelfde, { teamId: 'tp', pollId: 'p1' }));
+ok(verstuurd.length === 0, 'push: geen melding zonder vinkje, en niet opnieuw als de server de poll bijwerkt');
+store.set('teamkamer/tp/polls/p1/stemmen/a', { keuzes: ['o1'], door: 'u1', ms: 1 });
+const metHerinnering = { ...zelfde, herinnerMs: Date.now() };
+store.set('teamkamer/tp/polls/p1', metHerinnering);
+await F.kamerPoll(event('teamkamer/tp/polls/p1', zelfde, metHerinnering, { teamId: 'tp', pollId: 'p1' }));
+ok(verstuurd.length === 1 && verstuurd[0].tokens.join() === 'tok-u2' && verstuurd[0].data.titel.startsWith('Je stem is nodig') && store.get('teamkamer/tp/polls/p1').herinnerBereik === 1,
+  'push: herinnering alleen naar wie nog niet stemde');
+verstuurd.length = 0;
+const bericht = { tekst: 'Donderdag op veld 3', melding: true, doorUid: 'coach' };
+store.set('teamkamer/tp/berichten/m1', bericht);
+await F.kamerBericht({ params: { teamId: 'tp', berichtId: 'm1' }, data: { data: () => bericht, ref: fake.db.doc('teamkamer/tp/berichten/m1') } });
+await F.kamerBericht({ params: { teamId: 'tp', berichtId: 'm2' }, data: { data: () => ({ tekst: 'stil' }), ref: fake.db.doc('teamkamer/tp/berichten/m2') } });
+ok(verstuurd.length === 1 && verstuurd[0].data.titel === 'Mededeling · JO9-1' && verstuurd[0].tokens.length === 2 && store.get('teamkamer/tp/berichten/m1').meldingBereik === 2, 'push: mededeling met vinkje wel, zonder niet');
+store.set('teamkamer/tp', { aan: true, teamNaam: 'JO9-1', mag: { polls: true, berichten: false } });
+verstuurd.length = 0;
+await F.kamerBericht({ params: { teamId: 'tp', berichtId: 'm3' }, data: { data: () => bericht, ref: fake.db.doc('teamkamer/tp/berichten/m3') } });
+ok(verstuurd.length === 0, 'push: geen melding als mededelingen uit staan');
 
 console.log(`teamkamer: ${n} controles geslaagd`);
