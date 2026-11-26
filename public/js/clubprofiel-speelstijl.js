@@ -11,7 +11,7 @@
      vastgelegd: { ms, modus, zin } | null
 
    Puur: alleen speelstijl-logica.js (ook puur). Getest in tests/clubprofiel.test.mjs. */
-import { VRAGEN, KORT, DIMS, FASEN, LEEFTIJDEN, DEELN, REFS, vragenVoor, schoonAntwoord, clubUitkomst, huidigDoc, leeftijdTekst } from './speelstijl-logica.js?v=20261019e';
+import { VRAGEN, KORT, DIMS, FASEN, LEEFTIJDEN, DEELN, REFS, vragenVoor, schoonAntwoord, clubUitkomst, huidigDoc, leeftijdTekst } from './speelstijl-logica.js?v=20261127p';
 
 const DIM = Object.fromEntries(DIMS.map(d => [d.id, d]));
 const FASE = Object.fromEntries(FASEN.map(f => [f.id, f]));

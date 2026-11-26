@@ -4,26 +4,26 @@
    team-evaluatie-criteria.js; voorheen 8 categorieën) en het bijbehorende
    dashboard/geschiedenis, plus de "Stats"-tab die dit combineert met de
    spelersstatistieken uit wedstrijd.js. */
-import { beleidsplanNaam } from './clubconfig.js?v=20261127n';
+import { beleidsplanNaam } from './clubconfig.js?v=20261127p';
 import {
   db, collection, doc, addDoc, deleteDoc, updateDoc, deleteField
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, openModal, sluitModal, toon, modAan
-} from './state.js?v=20261127n';
-import { SEIZOEN_FALLBACK } from './config.js?v=20261127n';
+} from './state.js?v=20261127p';
+import { SEIZOEN_FALLBACK } from './config.js?v=20261127p';
 import {
   TE_GROEPEN, TE_NIV, TE_FOCUS_LADDER, TE_STEM, teDoelIco, teLeeftijd, teCriteriaVoor, teCriterium, teZichtbaar, teZinnen, teFaseLabel,
   teScores, teIsNieuw, teGem, teGroepWaarden, teCritGemiddelden, teLaagste, teKleur, teCijfer, teBlokVoorDatum,
   htmlTeNieuwMelding, koppelTeNieuwMelding, openTeNaslag
-} from './team-evaluatie-criteria.js?v=20261127b';
+} from './team-evaluatie-criteria.js?v=20261127p';
 import { ico } from './icons.js?v=20261127b';
 
-import { htmlStats } from './wedstrijd.js?v=20261127n';
-import { telGebruik } from './tracker.js?v=20261127n';
-import { themaOpDatum } from './seizoensplan-logica.js?v=20261127n';
-import { wedstrijdvraagNu } from './speelwijze.js?v=20261127n';
-import { onderdeelAan } from './onderdelen.js?v=20261127n';
+import { htmlStats } from './wedstrijd.js?v=20261127p';
+import { telGebruik } from './tracker.js?v=20261127p';
+import { themaOpDatum } from './seizoensplan-logica.js?v=20261127p';
+import { wedstrijdvraagNu } from './speelwijze.js?v=20261127p';
+import { onderdeelAan } from './onderdelen.js?v=20261127p';
 
 /* Kleine lokale kopie van de deelnemer-helper (ook aanwezig in teams-spelers.js)
    — bewust hier gedupliceerd i.p.v. een cross-module import voor één regel. */
