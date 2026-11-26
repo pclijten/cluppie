@@ -381,6 +381,12 @@ export function schermen(t, { leeg = false } = {}){
 }
 export const liveId = () => Array.from({ length: 20 }, () => 'abcdefghjkmnpqrstuvwxyz23456789'[Math.floor(Math.random() * 31)]).join('');
 /* Wat iedereen met de link ziet: schema, uitslagen, stand, kleedkamers en mededelingen. Geen spelers. */
+/* Hoeveel teams per poule door gaan naar de finales (voor de streep in de stand op de live pagina): { pouleId: n } */
+export function koDoor(t = {}){
+  const uit = {};
+  for (const w of t.schema || []) if (w.ko && w.fase !== 'plaats') for (const b of [w.ka, w.kb]) if (b?.p && t.poules?.[b.p]) uit[b.p] = Math.max(uit[b.p] || 0, Number(b.r) || 0);
+  return uit;
+}
 /* logo en clubkleur voor de openbare pagina's (live, tv, inschrijven) */
 export const clubUiterlijk = (logo, kleur) => ({ logo: plaatjeOk(logo) ? logo : '', kleur: /^#[0-9a-f]{6}$/i.test(kleur || '') ? kleur : '' });
 export function liveKopie(act = {}, { clubNaam = '', logo = '', kleur = '' } = {}){
@@ -398,6 +404,7 @@ export function liveKopie(act = {}, { clubNaam = '', logo = '', kleur = '' } = {
     schermen: schermen(t),
     planB: act.planB?.actief === true ? tekst(act.planB.tekst, 300) : '',
     prijs: prijsuitreiking(t),
+    door: koDoor(t),
   };
 }
 export const mededelingen = t => Object.entries(t?.mededelingen || {}).filter(([, m]) => m && m.tekst).map(([id, m]) => ({ id, tekst: String(m.tekst).slice(0, 280), ms: Number(m.ms) || 0 }))

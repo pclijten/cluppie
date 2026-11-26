@@ -1,7 +1,7 @@
 /* ==================== PLAATJE [20261125w] ====================
    Een logo of foto in de browser klein maken (wit vlak eronder, jpg) tot het als data-URL in een
    Firestore-document past. Gebruikt voor sponsoren en eigen schermen (toernooi en kantine-tv). */
-import { MAX_PLAATJE } from './toernooi-logica.js?v=20261127u';
+import { MAX_PLAATJE } from './toernooi-logica.js?v=20261127v';
 
 export async function kleinPlaatje(bestand){
   const url = URL.createObjectURL(bestand);
