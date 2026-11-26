@@ -107,6 +107,7 @@ const PATHS = {
   'admin-club': '<path d="M3.5 9.5 12 4.5l8.5 5"/><path d="M5.5 10v8"/><path d="M10 10v8"/><path d="M14 10v8"/><path d="M18.5 10v8"/><path d="M3.5 19.5h17"/>',
   'action-blocked': '<circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/>',
   'admin-delete': '<path d="M5.4 7.4h13.2"/><path d="M7.4 7.4 8.3 20h7.4l.9-12.6"/><path d="M9.6 4.4h4.8l.6 3H9z"/><path d="M10.6 11v5.4M13.4 11v5.4"/>',
+  'admin-tv': '<rect x="3" y="4.5" width="18" height="12.5" rx="2"/><path d="M8.5 20.5h7M12 17v3.5"/>',
   'admin-document': '<path d="M6 3h9l4 4v14H6z"/><path d="M9 11h8M9 15h8M9 7h3"/>',
   'admin-download': '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
   'admin-edit': '<path d="M15.4 4.8 19.2 8.6 9 18.8l-4 1.2 1.2-4z"/><path d="M13.4 6.8 17.2 10.6"/>',

@@ -10,8 +10,8 @@
    video's van de club — nooit op spelers. Rechtenbron: dat veld.
    Importeert niets uit club.js (geen kringimport). */
 import { db, doc, updateDoc, deleteField, collection, query, where, getDocs, getDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261126v';
-import { ico } from './icons.js?v=20261116t';
+import { S, esc, meld } from './state.js?v=20261126w';
+import { ico } from './icons.js?v=20261126w';
 import { rolNaam as clubRolNaam } from './rolnamen.js?v=20261120c';   /* [20261120c] eigen rolnamen van de club */
 
 const roep = (naam, data) => httpsCallable(functions, naam)(data).then(r => r.data);

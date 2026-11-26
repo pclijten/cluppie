@@ -21,7 +21,7 @@
 
    Deze module is een blad: alleen icons.js, zodat wijzigingen hier geen grote
    versie-cascade geven. */
-import { ico } from './icons.js?v=20261116t';
+import { ico } from './icons.js?v=20261126w';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export const TE_NIV = [null,'Aandacht','Op weg','Prima','Sterk','Uitblinker'];
