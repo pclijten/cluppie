@@ -16,7 +16,6 @@ const METRICS = [
   ['actiefPct', 'Actieve coaches', '% van alle coaches, 30 dagen'],
 ];
 
-export function htmlVergelijkPlek(){ return '<div id="inzVergelijk"><div class="kaart leeg">Laden…</div></div>'; }
 
 export async function vulVergelijk(root, herteken){
   const el = root.querySelector('#inzVergelijk'); if (!el) return;

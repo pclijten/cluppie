@@ -110,10 +110,6 @@ export function zetLettergrootte(schaal){
   HTML.style.setProperty('--fs', s);
 }
 
-/* pas de opgeslagen lettergrootte toe (voor het geval de gate niet liep) */
-export function pasLettergrootteToe(){
-  HTML.style.setProperty('--fs', huidigeLettergrootte());
-}
 
 /* volg live systeemwissels zolang de coach nog niks koos en er geen dwang is */
 if (window.matchMedia){

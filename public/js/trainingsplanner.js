@@ -31,7 +31,6 @@ export const OPBOUW = {
 };
 /* Oude trainingsduren (90 minuten) en losse waarden komen uit bij de dichtstbijzijnde keuze. */
 export const kiesDuur = (d) => { d = Number(d) || 60; return d <= 52 ? 45 : d <= 67 ? 60 : 75; };
-export const overgangMinuten = (duur) => { const o = OPBOUW[kiesDuur(duur)].overgang; return o.ontvangst + o.tussen + o.afsluiting; };
 function s(slot, minuten){ return { slot, minuten }; }
 
 /* ───────────── Weer ───────────── */

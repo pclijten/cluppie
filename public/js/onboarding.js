@@ -37,9 +37,6 @@ import { S, $, esc, meld, modAan, toon, terugLaag } from './state.js?v=20261127n
    'coach' is de brede default (trainer/leider/coördinator draaien in dezelfde
    schermen); 'kijker' is speler/ouder/vrijwilliger (alleen-lezen); 'beheerder'
    krijgt daarbovenop het clubdashboard. */
-export const ONBOARDING_ROLLEN = [
-  { id:'coach',     emoji:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="4.5" width="14" height="16" rx="2.2"/><path d="M9 3.2h6v3H9z"/><path d="M8.8 11.4h6.4"/><path d="M8.8 15.4h4"/></svg>', naam:'Coach / trainer', desc:'Opstelling, training, beoordelen' },
-];
 /* Er is nog maar één rol: coach/trainer (dekt ook leider). Het rollen-veld op de
    stappen blijft staan zodat de engine ongewijzigd werkt en de tour later weer
    uitgebreid kan worden, maar de rolSet levert altijd de coach-set. */

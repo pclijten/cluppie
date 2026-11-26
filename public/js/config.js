@@ -322,8 +322,6 @@ export const SKILLS = [
 export function skillDomein(id){
   return SKILLS.find(s => s.id === id) || (ALLE_LIJSTEN.skills || []).find(s => s.id === id) || null;
 }
-/* alias voor compatibiliteit met eerdere code die 'tipsDomein' aanriep */
-export const TIPS = SKILLS;
 export function tipsDomein(id){ return skillDomein(id); }
 
 /* ==================== LEERCURVE (Jeugdbeleidsplan §3.3) ====================
@@ -561,7 +559,6 @@ export const GEBRUIK_EVENTS = (() => {
     for (const e of c.events) m[e.ev] = {label:e.label, cat:c.id, catNaam:c.naam};
   return m;
 })();
-export function gebruikEventLabel(ev){ return GEBRUIK_EVENTS[ev]?.label || ev; }
 
 /* ==================== SPORT WISSELEN ====================
    [20261126a] Sportprofiel stap 5: zet de standaardwaarden van een andere sport IN PLAATS in de

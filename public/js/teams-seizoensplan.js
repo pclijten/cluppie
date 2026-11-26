@@ -115,7 +115,6 @@ async function laadNu(s){
   teken();
 }
 export { laadSeizoensplan as laadSeizoensplanVoorTeam };
-export function huidigPlan(){ return planVan(); }
 
 /* ---------- HTML ---------- */
 export function htmlSeizoensplan(){

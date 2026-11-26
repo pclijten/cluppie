@@ -135,5 +135,3 @@ export const LEERINHOUD = {
 
 };
 
-/* Vind de inhoud voor een thema (of null als er nog geen inhoud is). */
-export function leerinhoudVoor(thema){ return LEERINHOUD[thema] || null; }

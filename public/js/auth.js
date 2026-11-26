@@ -26,7 +26,6 @@ const LS_CODE = 'opstelling_join_code';   // teamcode die na login gekoppeld moe
 let pendingTeamInfo = null;   // {code, teamNaam} uit de uitnodigingslink
 let deeplinkVerwerkt = false;
 
-export function getPendingTeamInfo(){ return pendingTeamInfo; }
 
 function bewaarCode(){
   if (pendingTeamInfo){ try { localStorage.setItem(LS_CODE, pendingTeamInfo.code); } catch(e){} }

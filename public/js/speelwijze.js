@@ -274,6 +274,4 @@ export function wedstrijdvraagNu(thema){
   return p ? { vraag: p.vraag, principe: p } : null;
 }
 
-/* Voor andere schermen: is er voor dit thema een principe? */
-export const principeNu = thema => principeVoorThema(speelwijzeNu(), thema);
 export { MOMENTEN };

@@ -529,5 +529,3 @@ async function doorvoeren(ctx, root){
   hertekenLijst(root, ctx);
   meld(fout ? `${ok} doorgevoerd, ${fout} mislukt. ${laatsteFout}` : `${ok} spelers staan nu in het gekozen team`);
 }
-/* Voor Club → Instellingen: staat de selectie-optie aan voor deze bouw? */
-export function selectieStandaard(eb){ return eb?.selectie === true || (eb?.selectie == null && /selectie/i.test(eb?.naam || '')); }

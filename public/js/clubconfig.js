@@ -62,7 +62,6 @@ export const DISTRICTEN = [
   { id: 'zuid1',  naam: 'Zuid I', ingebouwd: true },
   { id: 'zuid2',  naam: 'Zuid II', ingebouwd: true },
 ];
-export const districtNaam = id => (id === 'zuid' ? 'Zuid I / II' : (DISTRICTEN.find(d => d.id === id) || {}).naam || (id === 'eigen' ? 'Eigen kalender' : id || ''));
 export const districtId = id => (id === 'zuid' || !id ? 'zuid1' : id);
 /* Document-id van een platformkalender: "2026-27_zuid1" (zuid → zuid1 en zuid2 delen dezelfde kalender via zuid1). */
 export const kalenderId = (seizoen, district) => String(seizoen).replace(/[^0-9]+/g, '-').replace(/^-|-$/g, '') + '_' + (district === 'zuid2' ? 'zuid1' : districtId(district));
@@ -202,7 +201,6 @@ try {
   if (m && m.clubId){ LOGO_CACHE[m.clubId] = veiligUrl(m.logo) || CLUPPIE_LOGO; NAAM_CACHE[m.clubId] = m.naam || ''; }
 } catch (e) {}
 
-export function huidigeClubId(){ return HUIDIG ? HUIDIG.clubId : null; }
 export function cfg(){ return HUIDIG ? HUIDIG.eff : diep(NEUTRAAL, {}); }
 
 /* [20261126a] Sport wisselen (stap 5): de standaard van de sport in config.js en in ORIG zetten.
@@ -428,7 +426,6 @@ export function clubAfk(club){
   const ingesteld = String((eff.identiteit && eff.identiteit.afkorting) || '').trim();
   return ingesteld || clubAfkorting(naam);   // zonder instelling: afgeleid uit de clubnaam
 }
-export function clubNaamNu(){ return HUIDIG ? HUIDIG.naam : ''; }
 export function kompasNaam(){ return (cfg().identiteit.kompasNaam || 'Club-kompas').trim(); }
 export function beleidsplanNaam(){ return (cfg().identiteit.beleidsplanNaam || 'jeugdbeleidsplan').trim(); }
 /* [20261021] AI staat standaard uit en wordt alleen door de eindbaas aangezet (clubs/{id}.platformModules.ai) */

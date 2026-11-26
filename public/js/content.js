@@ -118,10 +118,6 @@ export function kompasTips(){
 }
 /* [20261120g] alleen de eigen, gepubliceerde teksten van de club in één categorie (zonder de Cluppie-standaard) */
 export function clubEigenVoorCategorie(categorie){ return sorteer(_clubEigen.filter(c => c.categorie === categorie)); }
-export function goudenRegels(){
-  laadFallbackIndienNodig();
-  return sorteer(bron().filter(c => c.categorie === 'gouden-regel')).map(c => c.titel);
-}
 
 /* ---------- Admin-tabblad: alle content, incl. concepten ----------
    scope 'club'   = de eigen teksten van de club (clubs/{clubId}/content)

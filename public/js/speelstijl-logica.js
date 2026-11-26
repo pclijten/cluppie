@@ -14,7 +14,6 @@ export const MAX_INVULLERS = 5;
 export const VERSIE = 1;
 
 /* c = hoe goed onderbouwd: 'keuze' = een keuze van de club, geen goed of fout; 'ervaring' = ervaring van trainers, niet onderzocht bij jeugd */
-export const CERT = { ervaring: 'Ervaring van trainers', keuze: 'Een keuze, geen goed of fout' };
 export const DIMS = [
   { id: 'd1', n: 'Opbouw', A: 'Rustig opbouwen vanaf de keeper', B: 'Snel over de druk heen', c: 'keuze', why: 'Hoe beginnen jullie vanaf de keeper? Opbouwen vraagt veel oefening en geduld. Direct vooruit spelen vraagt andere vaardigheden. Beide zijn keuzes van de club.' },
   { id: 'd2', n: 'Tempo', A: 'Geduldig rondspelen', B: 'Snel vooruit', c: 'keuze', why: 'Hoe snel gaat de bal vooruit? Geduldig spelen geeft meer balcontacten. Snel vooruit geeft meer kansen in korte tijd.' },

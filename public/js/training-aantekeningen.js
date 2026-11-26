@@ -365,18 +365,6 @@ async function wisNotitie(notitieId){
   meld('Notitie verwijderd');
 }
 
-/* ---- Herstel eigen laag: wist alle EIGEN notities bij deze training ---- */
-export async function herstelEigenLaag(){
-  if (!_actief) return;
-  const eigen = _actief.notities.filter(n => n.auteurUid === S.user?.uid);
-  if (!eigen.length){ meld('Je hebt geen eigen notities'); return; }
-  if (!confirm('Al jouw notities bij deze training wissen? Het origineel en notities van collega\'s blijven bewaard.')) return;
-  for (const n of eigen){ try { await verwijderNotitie(_actief.teamId, n.id); } catch(e){} }
-  _actief.notities = _actief.notities.filter(n => n.auteurUid !== S.user?.uid);
-  verbergNotities(); toonNotities();
-  werkBadgeBij();
-  meld('Jouw laag hersteld');
-}
 
 /* ---- Opruimen bij sluiten van de training-weergave ---- */
 export function resetAantekeningen(){
