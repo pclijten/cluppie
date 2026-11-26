@@ -5,8 +5,8 @@
    Pas bij minimaal 3 deelnemers verschijnen er cijfers. Server: functions/platform.js. */
 
 import { db, doc, getDoc } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261126q';
-import { bewaar } from './club-instellingen.js?v=20261126q';
+import { S, esc, meld } from './state.js?v=20261126r';
+import { bewaar } from './club-instellingen.js?v=20261126r';
 
 const METRICS = [
   ['evaluaties', 'Beoordelingen', 'per team, 30 dagen'],

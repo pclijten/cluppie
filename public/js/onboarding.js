@@ -28,9 +28,9 @@
    verder niets aan de engine te veranderen (zie beheeromgeving-notities
    onderaan). */
 
-import { kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261126q';
+import { kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261126r';
 import { db, doc, getDoc, setDoc } from './firebase.js?v=20261011g';
-import { S, $, $$, esc, meld, modAan, toon, terugLaag } from './state.js?v=20261126q';
+import { S, $, $$, esc, meld, modAan, toon, terugLaag } from './state.js?v=20261126r';
 
 /* ---------- Rollen ----------
    Iedere rol krijgt alleen hoofdstukken waarvan de 'rollen'-set de rol bevat.
@@ -87,7 +87,7 @@ function naarTab(tab){
       // Onderbalk niet in beeld (bv. wedstrijdscherm of teamsoverzicht):
       // zet de tab direct, render en toon de team-view expliciet.
       S.teamTab = tab;
-      import('./teams.js?v=20261126q').then(m => { m.renderTeam?.(); toon('team'); });
+      import('./teams.js?v=20261126r').then(m => { m.renderTeam?.(); toon('team'); });
     }
     const t0 = performance.now();
     (function wacht(){
@@ -160,7 +160,7 @@ async function zorgWedstrijdOpen(){
   const eersteId = (S.wedstrijden[0]||{}).id;
   if (!eersteId) return false;
   let m;
-  try { m = await import('./wedstrijd.js?v=20261126q'); }
+  try { m = await import('./wedstrijd.js?v=20261126r'); }
   catch(e){ console.warn('[ob] kon wedstrijd.js niet laden', e); return false; }
   m.openWedstrijd?.(eersteId);
   await wachtOpElement(() => document.querySelector('#view-wedstrijd.actief'), 2000);
@@ -172,7 +172,7 @@ async function zorgWedstrijdOpen(){
 async function verlaatWedstrijd(){
   if (!wedstrijdOpen()) return;
   try {
-    const m = await import('./wedstrijd.js?v=20261126q');
+    const m = await import('./wedstrijd.js?v=20261126r');
     m.sluitWedstrijd?.('wedstrijden');
   } catch(e){
     console.warn('[ob] sluitWedstrijd faalde, val terug op terugknop', e);
@@ -204,7 +204,7 @@ export const ONBOARDING_STAPPEN = [
     opdracht:'Open een team',
     voor:async () => {
       if (!document.querySelector('#view-teams.actief')){
-        try { const t = await import('./teams.js?v=20261126q'); t.startTeams?.(); } catch(e){ console.warn('[ob] teams.js laadfout', e); }
+        try { const t = await import('./teams.js?v=20261126r'); t.startTeams?.(); } catch(e){ console.warn('[ob] teams.js laadfout', e); }
         await wachtOpElement(() => document.querySelector('#view-teams.actief'));
       }
     },
@@ -460,7 +460,7 @@ export const ONBOARDING_STAPPEN = [
     hfd:'instellingen', hfdNaam:'Uitnodigen', emoji:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="8" r="3.1"/><path d="M3.6 19.6a6.4 6.4 0 0 1 12 0"/><path d="M18.6 5v5.4"/><path d="M15.9 7.7h5.4"/></svg>', rollen:['coach'],
     titel:'Coaches uitnodigen',
     tekst:'Met <b>Coach uitnodigen</b> maak je een persoonlijke link voor een collega-coach. Deel hem via WhatsApp; hij is 14 dagen geldig.',
-    voor:async () => { S.teamTab = 'instellingen'; const m = await import('./teams.js?v=20261126q'); m.renderTeam?.();
+    voor:async () => { S.teamTab = 'instellingen'; const m = await import('./teams.js?v=20261126r'); m.renderTeam?.();
       await wachtOpElement(() => document.querySelector('#view-team #deelLink, #view-team #deelCode')); },
     doel:() => document.querySelector('#view-team #deelLink, #view-team #deelCode'),
     optioneelAls:() => !document.querySelector('#view-team #deelLink, #view-team #deelCode'),

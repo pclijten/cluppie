@@ -40,12 +40,17 @@ export async function bootSchermPagina(tvId){
   if (!el) return;
   stijlLive(); stijl(); tvStijl();
   el.style.display = 'block';
-  const breed = () => innerWidth >= 900;
+  /* Tv-weergave vanaf 900 px breed, of liggend vanaf 640 px: veel tv-browsers en tv-sticks melden een kleinere
+     breedte dan het scherm echt heeft (1280 x 720 met schaal 1,5 is 853 px). &tv=1 in de link dwingt het af. */
+  const dwing = new URLSearchParams(location.search).get('tv') === '1';
+  const breed = () => dwing || innerWidth >= 900 || (innerWidth >= 640 && innerWidth > innerHeight);
   el.innerHTML = melding('Even geduld', 'Het scherm wordt geladen…');
-  try { await authKlaar(); await sessie(false); }
+  const qs = new URLSearchParams(location.search), kiesSjabloon = qs.get('sjabloon') || '', proef = qs.get('proef') === '1';
+  /* Voorbeeld van een sjabloon voor een club die de tv nog niet heeft aangezet: niets uit de database, alles proef. */
+  const alleenVoorbeeld = tvId === 'voorbeeld' && proef;
+  if (!alleenVoorbeeld) try { await authKlaar(); await sessie(false); }
   catch { el.innerHTML = melding('Laden is niet gelukt', 'Controleer je verbinding en ververs de pagina.'); return; }
   const st = { d: null, items: [], tik: 0, hersteld: false, gezien: new Map(), speler: null, T: null, laadt: '', kapot: '' };
-  const qs = new URLSearchParams(location.search), kiesSjabloon = qs.get('sjabloon') || '', proef = qs.get('proef') === '1';
   let stops = [];
   function luister(){
     stops.push(onSnapshot(doc(db, 'clubTv', tvId), s => {
@@ -58,11 +63,25 @@ export async function bootSchermPagina(tvId){
     }));
     stops.push(onSnapshot(collection(db, 'clubTv', tvId, 'schermen'), s => { st.items = sorteer(s.docs.map(d => ({ id: d.id, ...d.data() }))); if (st.d) teken(); }, () => {}));
   }
-  luister();
+  if (alleenVoorbeeld){
+    const k = qs.get('kleur') || '';
+    st.d = { clubNaam: (qs.get('naam') || 'Jouw club').slice(0, 80), kleur: /^#[0-9a-f]{6}$/i.test(k) ? k : '', open: true, uit: true, goals: 'park',
+      mededeling: 'Zo ziet je mededeling eruit. Die zet je zelf bij de instellingen.' };
+    document.title = 'Voorbeeld kantine-tv'; teken();
+  } else luister();
   setInterval(() => { st.tik++; if (st.d) teken(); }, 12000);
   addEventListener('resize', () => { if (st.d) teken(); });
   /* een tv die dagen aan staat: elke nacht verversen, zodat een nieuwe versie van de pagina meekomt */
   setInterval(() => { const d = new Date(); if (d.getHours() === 4 && d.getMinutes() < 2) location.reload(); }, 60000);
+  /* Staat er een nieuwe versie van Cluppie online, dan ververst de tv zichzelf binnen een kwartier (niet pas 's nachts). */
+  const mijnVersie = (document.querySelector('script[src*="js/main.js"]')?.getAttribute('src') || '').split('v=')[1] || '';
+  if (mijnVersie) setInterval(async () => {
+    try {
+      const r = await fetch(`index.html?nieuw=${Date.now()}`, { cache: 'no-store' }); if (!r.ok) return;
+      const v = (/js\/main\.js\?v=([0-9a-z]+)/.exec(await r.text()) || [])[1];
+      if (v && v !== mijnVersie) location.reload();
+    } catch { /* geen verbinding: volgende keer */ }
+  }, 15 * 60000);
 
   const rij = w => `<div class="lv-wed ks-wed ${w.afgelast ? 'ks-af' : ''}" style="--pk:${w.thuis ? 'var(--accent)' : 'var(--hair)'}">
       <span class="lv-wed-v"><b>${esc(w.tijd || '–')}</b>${esc(w.afgelast ? 'Afgelast' : [w.veld, w.kk ? 'kk ' + w.kk : ''].filter(Boolean).join(' · ') || (w.thuis ? '' : 'uit'))}</span>

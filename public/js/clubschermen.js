@@ -9,20 +9,23 @@
    Opslag: clubs/{club}/sponsoren/{id} (met bedrag en notitie) en de openbare kopie in
    clubTv/{tvId} + clubTv/{tvId}/schermen/{id}. Krijgt alles van activiteiten.js via ctx. */
 import { db, doc, collection, query, where, getDocs, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261126q';
+import { S, esc, meld } from './state.js?v=20261126r';
 import { ico } from './icons.js?v=20261116t';
 import { liveId, MAX_SCHERMEN } from './toernooi-logica.js?v=20261125w';
 import { kleinPlaatje } from './plaatje.js?v=20261125w';
 import * as C from './clubscherm-logica.js?v=20261126q';
 import { SJABLONEN, sjabloonId } from './tv-sjablonen.js?v=20261126q';
 
-const cs = { clubId: '', tv: undefined, items: null, stop: null, qrVoor: '', qr: '', bezig: false };
+const cs = { keuze: {}, clubId: '', tv: undefined, items: null, stop: null, qrVoor: '', qr: '', bezig: false };
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const opt = (w, t, sel) => `<option value="${esc(w)}"${sel ? ' selected' : ''}>${esc(t)}</option>`;
 export const schermLink = id => `${location.origin}${location.pathname.replace(/[^/]*$/, '')}?scherm=${encodeURIComponent(id)}`;
+/* Voorbeeld van een sjabloon. Zonder tv (nog niet aangemaakt) een voorbeeld zonder gegevens van de club, met naam en kleur in de link. */
+const voorbeeld = (tv, sj) => tv?.id ? `${schermLink(tv.id)}&sjabloon=${sj}&proef=1`
+  : `${schermLink('voorbeeld')}&sjabloon=${sj}&proef=1&naam=${encodeURIComponent(clubInfo().clubNaam)}&kleur=${encodeURIComponent(clubInfo().kleur)}`;
 const clubInfo = () => ({ clubNaam: S.club?.naam || '', logo: S.club?.instellingen?.identiteit?.logo || '', kleur: S.club?.instellingen?.identiteit?.kleur || '' });
 
-export function resetSchermen(){ cs.stop?.(); cs.stop = null; cs.clubId = ''; cs.tv = undefined; cs.items = null; cs.qrVoor = ''; cs.qr = ''; }
+export function resetSchermen(){ cs.keuze = {}; cs.stop?.(); cs.stop = null; cs.clubId = ''; cs.tv = undefined; cs.items = null; cs.qrVoor = ''; cs.qr = ''; }
 async function laad(ctx){
   if (cs.clubId === ctx.clubId) return;
   resetSchermen(); cs.clubId = ctx.clubId;
@@ -62,7 +65,13 @@ export function htmlSchermen(ctx){
   const v = vandaag(), items = C.sorteer((cs.items || []).map(x => ({ id: x.id, ...C.schoonItem(x) }))), tv = cs.tv, aan = !!tv?.open;
   const sponsors = items.filter(x => x.soort === 'sponsor'), eigen = items.filter(x => x.soort === 'scherm'), tot = C.sponsorTotaal(items, v), vol = items.length >= C.MAX_ITEMS;
   const link = tv?.id ? schermLink(tv.id) : '';
-  const sj = SJABLONEN.find(x => x.id === sjabloonId(tv?.sjabloon)) || SJABLONEN[0];
+  const sj = SJABLONEN.find(x => x.id === sjabloonId(tv?.sjabloon ?? cs.keuze.sjabloon)) || SJABLONEN[0];
+  const keuze = `<label class="ac-label" for="csSjabloon">Sjabloon: hoe het scherm eruitziet</label>
+            <div class="ac-rij"><select class="ac-in ac-groei" id="csSjabloon" data-cs-tv="sjabloon">${SJABLONEN.map(x => opt(x.id, x.naam, x.id === sj.id)).join('')}</select><a class="knop licht klein" href="${esc(voorbeeld(tv, sj.id))}" target="_blank" rel="noopener">Voorbeeld bekijken</a></div>
+            <p class="ac-zacht">${esc(sj.kort)} ${aan ? 'Je keuze staat meteen op de tv.' : 'Je keuze blijft bewaard en staat er meteen op zodra je de tv aanzet.'} Het voorbeeld laat het sjabloon zien met proefwedstrijden en een doelpunt.</p>
+            <label class="ac-label" for="csGoals">Doelpunt groot in beeld</label>
+            <select class="ac-in" id="csGoals" data-cs-tv="goals">${Object.entries(C.GOAL_KEUZES).map(([k, n]) => opt(k, n, C.goalKeuze(tv?.goals ?? cs.keuze.goals) === k)).join('')}</select>
+            <p class="ac-zacht">Valt er een doelpunt, dan komt dat een paar seconden groot in beeld, met team en stand en zonder namen van spelers. Dit werkt bij wedstrijden waarvan de coach de stand bijhoudt in de app.</p>`;
   if (aan && cs.qrVoor !== tv.id){ cs.qrVoor = tv.id; cs.qr = ''; qrSvg(link).then(svg => { cs.qr = svg; ctx.herteken(); }).catch(() => {}); }
   const veld = (id, k, w, o = {}) => `<input class="ac-in ${o.klasse || ''}" type="${o.type || 'text'}" data-cs-veld="${esc(id)}.${k}" value="${esc(w ?? '')}" placeholder="${esc(o.ph || '')}" ${o.extra || ''}>`;
   const rij = x => { const oud = C.verlopen(x, v), bijna = C.bijnaVerlopen(x, v);
@@ -83,13 +92,8 @@ export function htmlSchermen(ctx){
             <p class="ac-zacht">${tv.datum === v ? `Vandaag ${(tv.programma || []).length} ${(tv.programma || []).length === 1 ? 'wedstrijd' : 'wedstrijden'} op het scherm.` : 'Het programma van vandaag staat er nog niet op.'} Open de link in de browser van de tv, of scan de code met een telefoon die je op de tv aansluit.</p>
             <label class="ac-label">Mededeling onderin het scherm</label><input class="ac-in" data-cs-tv="mededeling" maxlength="200" value="${esc(tv.mededeling || '')}" placeholder="Bijvoorbeeld: Zaterdag 12 december kerstbingo in de kantine">
             <label class="ac-schak"><input type="checkbox" data-cs-tv="uit" ${tv.uit !== false ? 'checked' : ''}> Ook uitwedstrijden tonen</label>
-            <label class="ac-label" for="csSjabloon">Sjabloon: hoe het scherm eruitziet</label>
-            <div class="ac-rij"><select class="ac-in ac-groei" id="csSjabloon" data-cs-tv="sjabloon">${SJABLONEN.map(x => opt(x.id, x.naam, x.id === sj.id)).join('')}</select><a class="knop licht klein" href="${esc(`${link}&sjabloon=${sj.id}&proef=1`)}" target="_blank" rel="noopener">Voorbeeld bekijken</a></div>
-            <p class="ac-zacht">${esc(sj.kort)} Je keuze staat meteen op de tv. Het voorbeeld laat het sjabloon zien met proefwedstrijden en een doelpunt.</p>
-            <label class="ac-label" for="csGoals">Doelpunt groot in beeld</label>
-            <select class="ac-in" id="csGoals" data-cs-tv="goals">${Object.entries(C.GOAL_KEUZES).map(([k, n]) => opt(k, n, C.goalKeuze(tv.goals) === k)).join('')}</select>
-            <p class="ac-zacht">Valt er een doelpunt, dan komt dat een paar seconden groot in beeld, met team en stand en zonder namen van spelers. Dit werkt bij wedstrijden waarvan de coach de stand bijhoudt in de app.</p></div></div>`
-        : `<div class="ac-acties"><button class="knop vol" data-cs="tv-aan">Kantine-tv aanzetten</button></div>${tv?.id ? '<p class="ac-zacht">De tv staat uit. Aanzetten geeft dezelfde link als eerst.</p>' : ''}`}</div>
+            ${keuze}</div></div>`
+        : `<div class="ac-acties"><button class="knop vol" data-cs="tv-aan">Kantine-tv aanzetten</button></div>${tv?.id ? '<p class="ac-zacht">De tv staat uit. Aanzetten geeft dezelfde link als eerst.</p>' : ''}<div class="cs-keuze">${keuze}</div>`}</div>
     <div class="ac-paneel"><h3>Sponsoren ${sponsors.length ? `<small class="ac-zacht">· ${tot.actief} actief${tot.bedrag ? `, € ${tot.bedrag.toLocaleString('nl-NL')} per jaar` : ''}${tot.verlopen ? `, ${tot.verlopen} verlopen` : ''}${tot.bijna ? `, ${tot.bijna} loopt bijna af` : ''}</small>` : ''}</h3>
       <p class="ac-zacht">Per sponsor het pakket, het bedrag en tot wanneer de afspraak loopt. Bedrag en notitie ziet alleen het bestuur. Na de einddatum verdwijnt de sponsor vanzelf van de tv. Hoofdsponsoren staan vooraan.</p>
       ${cs.items === null ? '<p class="ac-zacht">Laden…</p>' : sponsors.map(rij).join('') || '<p class="ac-zacht">Nog geen sponsoren.</p>'}
@@ -120,7 +124,7 @@ export async function klikSchermen(ctx, b){
       const tid = cs.tv?.id || liveId();
       try {
         const p = await leesProgramma();
-        const data = { club: ctx.clubId, open: true, ...C.tvKopie({ ...clubInfo(), mededeling: cs.tv?.mededeling || '', uit: cs.tv?.uit, sjabloon: cs.tv?.sjabloon, goals: cs.tv?.goals, ...p }), bijgewerktMs: Date.now(), programmaMs: Date.now() };
+        const data = { club: ctx.clubId, open: true, ...C.tvKopie({ ...clubInfo(), mededeling: cs.tv?.mededeling || '', uit: cs.tv?.uit, sjabloon: cs.tv?.sjabloon ?? cs.keuze.sjabloon, goals: cs.tv?.goals ?? cs.keuze.goals, ...p }), bijgewerktMs: Date.now(), programmaMs: Date.now() };
         await setDoc(doc(db, 'clubTv', tid), data);
         cs.tv = { id: tid, ...data }; await zetAllesOpenbaar();
       } catch (e){ console.error('[schermen] tv aan', e); return meld(e?.code === 'permission-denied' ? 'De tv kan nog niet aan: de regels zijn nog niet gepubliceerd.' : 'Aanzetten mislukt.'); }
@@ -155,6 +159,10 @@ export async function wijzigSchermen(ctx, el){
     const [id, k] = el.dataset.csVeld.split('.');
     const w = el.type === 'checkbox' ? el.checked : k === 'bedrag' ? Math.max(0, Math.round(Number(el.value) || 0)) : el.value;
     await bewaarItem(ctx, id, { [k]: w }); return true;
+  }
+  /* Nog geen tv aangemaakt: sjabloon en doelpunten onthouden tot de tv aangaat. */
+  if (el.matches('[data-cs-tv="sjabloon"],[data-cs-tv="goals"]') && !cs.tv?.id){
+    const k = el.dataset.csTv; cs.keuze[k] = k === 'sjabloon' ? sjabloonId(el.value) : C.goalKeuze(el.value); ctx.herteken(); return true;
   }
   if (el.matches('[data-cs-tv]') && cs.tv?.id){
     const k = el.dataset.csTv, w = el.type === 'checkbox' ? el.checked : k === 'sjabloon' ? sjabloonId(el.value) : k === 'goals' ? C.goalKeuze(el.value) : String(el.value || '').replace(/\s+/g, ' ').trim().slice(0, 200);

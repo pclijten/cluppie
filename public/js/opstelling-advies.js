@@ -24,17 +24,17 @@
    Opgeroepen vanuit wedstrijd.js (openOpstellingAdvies). Opslaan en hertekenen
    gebeurt via de callback van wedstrijd.js, zodat er één schrijfpad blijft. */
 import { db, doc, updateDoc } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal, spelerNaam, spelerNr } from './state.js?v=20261126q';
+import { S, esc, meld, openModal, sluitModal, spelerNaam, spelerNr } from './state.js?v=20261126r';
 import {
   bouwSlots, positieNaam, formatieNamen, isToernooi,
   POSITIE_GROEPEN, afwezigRedenInfo
-} from './config.js?v=20261126q';
-import { analyseWedstrijd, speeltijdReserve } from './analyse.js?v=20261126q';
+} from './config.js?v=20261126r';
+import { analyseWedstrijd, speeltijdReserve } from './analyse.js?v=20261126r';
 import { opkomstVoor, MIN_OPKOMST_TRAININGEN } from './opkomst.js?v=20260922c';
 import { spelersOpWedstrijd } from './uitleen-regels.js?v=20261113b';
 import { TE_GROEPEN, teScores, teLaagste, teLeeftijd } from './team-evaluatie-criteria.js?v=20261120a';
 import { ico } from './icons.js?v=20261116t';
-import { telGebruik } from './tracker.js?v=20261126q';
+import { telGebruik } from './tracker.js?v=20261126r';
 import { sportWoord } from './sporten.js?v=20261126g';   /* [20261125y] sportprofiel stap 3: woorden uit het profiel */
 
 const VERSIE = 1;
