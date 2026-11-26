@@ -142,4 +142,42 @@ ok(T.csvInschrijvingen(lijstIns, tIns).split('\r\n')[0].includes('School;Team;Ca
 ok(T.liveKopie({}, { logo: png, kleur: '#0055aa' }).logo === png && T.liveKopie({}, { logo: 'http://x/y.png', kleur: 'rood' }).logo === '' && T.inschrijfKopie({}, { kleur: '#0055AA' }).kleur === '#0055AA', 'clublogo en kleur');
 ok(T.euro(15) === '€ 15,-' && T.euro(12.5) === '€ 12,50' && T.bedrag('1e9') === 0, 'bedragen');
 
+
+// knock-out: kruisfinales, finale, om plaats 3 en plaatsingswedstrijden [20261127f]
+{
+  const t = { start: '09:00', duur: 10, wissel: 5, velden: { v1: { naam: 'Veld 1', volg: 1 }, v2: { naam: 'Veld 2', volg: 2 } },
+    poules: { pA: { naam: 'Poule A', volg: 1 }, pB: { naam: 'Poule B', volg: 2 } },
+    teams: Object.fromEntries(['a1', 'a2', 'a3', 'b1', 'b2', 'b3'].map((id, i) => [id, { naam: id.toUpperCase(), poule: id[0] === 'a' ? 'pA' : 'pB', volg: i }])),
+    ko: { g1: { naam: 'Finales', poules: ['pA', 'pB'], ronde: 4, plaats3: true, overige: true, volg: 1 } } };
+  const r = T.planSchema(t); t.schema = r.schema;
+  const ko = r.schema.filter(w => w.ko), laatstePoule = Math.max(...r.schema.filter(w => w.fase === 'poule').map(w => T.naarMin(w.t)));
+  gelijk(ko.map(w => w.fase).sort(), ['brons', 'finale', 'halve', 'halve', 'plaats'], 'ko: wedstrijden');
+  ok(ko.every(w => T.naarMin(w.t) > laatstePoule), 'ko: na de poules');
+  const hf = Math.max(...ko.filter(w => w.fase === 'halve').map(w => T.naarMin(w.t)));
+  ok(ko.filter(w => w.fase === 'finale' || w.fase === 'brons').every(w => T.naarMin(w.t) > hf), 'ko: finale na de halve finales');
+  gelijk(ko.filter(w => w.fase === 'halve').map(w => [w.ka, w.kb]), [[{ p: 'pA', r: 1 }, { p: 'pB', r: 2 }], [{ p: 'pB', r: 1 }, { p: 'pA', r: 2 }]], 'ko: kruislings');
+  ok(T.metKo(t).filter(w => w.ko).every(w => !w.a && w.la), 'ko: nog onbekend zolang de poule loopt');
+  t.uitslag = {}; for (const w of r.schema.filter(w => w.fase === 'poule')) t.uitslag[w.id] = { a: 1, b: 0 };
+  const m = Object.fromEntries(T.metKo(t).map(w => [w.id, w]));
+  ok(m['g1-h1'].a && m['g1-h1'].b && m['g1-p1'].a, 'ko: teams ingevuld als de poule klaar is');
+  ok(!m['g1-f'].a && m['g1-f'].la === 'Winnaar HF1', 'ko: finale wacht op de halve finale');
+  t.uitslag['g1-h1'] = { a: 1, b: 1, w: 'b' }; t.uitslag['g1-h2'] = { a: 3, b: 0 }; t.uitslag['g1-f'] = { a: 0, b: 2 };
+  const m2 = Object.fromEntries(T.metKo(t).map(w => [w.id, w]));
+  ok(m2['g1-f'].a === m2['g1-h1'].b && m2['g1-f'].b === m2['g1-h2'].a, 'ko: winnaar na strafschoppen gaat door');
+  ok(m2['g1-b'].a === m2['g1-h1'].a, 'ko: verliezer naar om plaats 3');
+  ok(T.koUitslag(t, 'g1')[0].id === m2['g1-f'].b, 'ko: kampioen');
+  ok(T.stand(t, 'pA').every(x => x.g === 2), 'ko telt niet mee in de poulestand');
+  ok(T.liveKopie({ toernooi: t }).schema.find(w => w.id === 'g1-f').titel === 'Finale', 'ko: titel op de live pagina');
+  gelijk(T.koOpzet({ ...t, ko: {} }, { id: 'x', poules: ['pA'], ronde: 2 }).map(w => [w.ka, w.kb]), [[{ p: 'pA', r: 1 }, { p: 'pA', r: 2 }]], 'ko: één poule, finale 1 tegen 2');
+  ok(T.koOpzet(t, { id: 'x', poules: ['pA', 'pB'], ronde: 8 }).filter(w => w.ronde === 1).length === 2, 'ko: 8 bij 6 teams wordt 4');
+}
+// kleedkamer met linker- en rechterhelft
+{
+  const t = { kk: { k1: { naam: 'Kleedkamer 1', plekken: 1, delen: 2, volg: 1 } }, start: '09:00', duur: 10, wissel: 0,
+    teams: { a: { naam: 'A' }, b: { naam: 'B' }, c: { naam: 'C' } }, schema: [{ id: 'w1', a: 'a', b: 'b', t: '09:00', v: 'v' }, { id: 'w2', a: 'c', b: 'a', t: '09:10', v: 'v' }] };
+  gelijk(T.kkDelen(t).map(k => k.naam), ['Kleedkamer 1 links', 'Kleedkamer 1 rechts'], 'kk: helften');
+  const p = T.planKleedkamers(t);
+  ok(new Set(Object.values(p.kk)).size === 2 && p.tekort.length === 1, 'kk: één team per helft');
+  ok(T.kkNaam(t, 'k1~R') === 'Kleedkamer 1 rechts' && T.kkNaam({ kk: { k1: { naam: 'K' } } }, 'k1~R') === 'K', 'kk: naam van een helft');
+}
 console.log(`toernooi: ${n} controles geslaagd`);

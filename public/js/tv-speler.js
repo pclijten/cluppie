@@ -8,7 +8,7 @@
    - Verandert er iets terwijl een dia staat (een stand, een mededeling), dan wordt alleen dat deel ververst, zonder overgang.
    - goal(g) legt het doelpunt-moment van het sjabloon over het beeld; de dia's wachten zolang.
    Wat een sjabloon moet leveren staat in docs/tv-sjablonen.md. */
-import { rijStatus } from './clubscherm-logica.js?v=20261126v';
+import { rijStatus } from './clubscherm-logica.js?v=20261127f';
 
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 /* Lettergrootte die krimpt als de tekst langer is dan `tekens`: voor namen van sponsoren en teams in grote letters. */

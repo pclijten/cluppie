@@ -5,7 +5,7 @@
    - wat er in de openbare kopie mag (clubTv/{id} en clubTv/{id}/schermen/{sid}): geen bedragen, geen notities.
    De Cloud Function functions/kantine-tv.js bouwt hetzelfde programma (zelfde velden) elke tien minuten.
    Getest in tests/clubscherm.test.mjs. */
-import { plaatjeOk, veiligeLink } from './toernooi-logica.js?v=20261125w';
+import { plaatjeOk, veiligeLink } from './toernooi-logica.js?v=20261127f';
 
 export const MAX_ITEMS = 40, MAX_PROGRAMMA = 120;
 export const PAKKETTEN = { hoofd: 'Hoofdsponsor', sponsor: 'Sponsor', vriend: 'Vriend van de club' };
@@ -108,8 +108,8 @@ export function evenementTv(live, vandaag){
   const duur = (Number(live.duur) || 12) + (Number(live.wissel) || 0), uitslag = live.uitslag || {};
   const programma = (Array.isArray(live.schema) ? live.schema : []).filter(w => isTijd(w.t))
     .map(w => { const u = uitslag[w.id], p = poules[w.p]?.naam;
-      return { tijd: w.t, thuis: true, a: tekst(teams[w.a]?.naam || 'Nog onbekend', 40), b: tekst(teams[w.b]?.naam || 'Nog onbekend', 40),
-        veld: tekst([velden[w.v], p].filter(Boolean).join(' · '), 60), kk: '', duur,
+      return { tijd: w.t, thuis: true, a: tekst(teams[w.a]?.naam || w.la || 'Nog onbekend', 40), b: tekst(teams[w.b]?.naam || w.lb || 'Nog onbekend', 40),
+        veld: tekst([velden[w.v], w.titel || p].filter(Boolean).join(' · '), 60), kk: '', duur,
         stand: u ? `${u.a} - ${u.b}` : '', eind: !!u, bezig: false }; })
     .sort((x, y) => min(x.tijd) - min(y.tijd)).slice(0, MAX_PROGRAMMA);
   const med = live.planB || (Array.isArray(live.mededelingen) && live.mededelingen[0]?.tekst) || '';

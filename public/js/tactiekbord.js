@@ -25,10 +25,10 @@
 
 import { db, collection, doc, addDoc, updateDoc, deleteDoc, setDoc,
          onSnapshot, serverTimestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld, spelerNaam, spelerNr, modAan, bewaakTerug, vangnetStilTerugAlsNodig, terugLaag } from './state.js?v=20261127d';
-import { bouwSlots } from './config.js?v=20261127d';
+import { S, esc, meld, spelerNaam, spelerNr, modAan, bewaakTerug, vangnetStilTerugAlsNodig, terugLaag } from './state.js?v=20261127f';
+import { bouwSlots } from './config.js?v=20261127f';
 import { bordLijnenHtml, sportVeld } from './sporten.js?v=20261126g';   /* [20261125z] veld uit het sportprofiel */
-import { telNav } from './tracker.js?v=20261127d';
+import { telNav } from './tracker.js?v=20261127f';
 
 const NS = 'http://www.w3.org/2000/svg';
 
@@ -217,7 +217,7 @@ export function openTactiekLijst(w){
   if (toonLeerplein){
     host.querySelector('#tbLeerplein').onclick = () => {
       sluit();
-      import('./leerplein.js?v=20261127d').then(m => m.openLeerplein(w));
+      import('./leerplein.js?v=20261127f').then(m => m.openLeerplein(w));
     };
   }
 
