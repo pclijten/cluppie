@@ -13,7 +13,7 @@ import {
 } from './snelstart-logica.js?v=20261122a';
 import { koppelClubSuggesties, normNaam } from './clubgids.js?v=20261127k';
 import { laadSoloAI, pasSportToe } from './clubconfig.js?v=20261127k';
-import { SPORTEN, STANDAARD_SPORT, meerdereSporten, sportWoord, openSporten, periodeNaamVoor } from './sporten.js?v=20261126g';   /* [20261125x] sportprofiel; [20261125y] woorden */
+import { STANDAARD_SPORT, meerdereSporten, sportWoord, openSporten, periodeNaamVoor } from './sporten.js?v=20261126g';   /* [20261125x] sportprofiel; [20261125y] woorden */
 
 /* ---------- Plaats opzoeken (Open-Meteo, zonder sleutel) ---------- */
 async function zoekPlaats(q){

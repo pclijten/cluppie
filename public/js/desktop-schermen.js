@@ -19,12 +19,12 @@
 import { S, $, esc, speler, modAan, meld } from './state.js?v=20261127k';
 import { db, doc, setDoc, addDoc, updateDoc, deleteDoc, collection, serverTimestamp } from './firebase.js?v=20261011g';
 import { SKILLS, NIVEAUS, niveauKleur, LEERCURVE, leercurveRelevant, bouwSlots, periodeNrs, isoWeek,
-  TEAM_CATEGORIEEN, TEAM_TAGS, AFWEZIG_REDENEN, afwezigRedenInfo, SEIZOEN_FALLBACK, POSITIE_GROEPEN } from './config.js?v=20261127k';
-import { analyseWedstrijd, speeltijdReserve, kwartGespeeld } from './analyse.js?v=20261127k';
+  TEAM_TAGS, AFWEZIG_REDENEN, afwezigRedenInfo, SEIZOEN_FALLBACK, POSITIE_GROEPEN } from './config.js?v=20261127k';
+import { analyseWedstrijd, speeltijdReserve } from './analyse.js?v=20261127k';
 import { teltMee } from './opkomst.js?v=20260922c';
 import { vastOp, vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
 import { themaOpDatum } from './seizoensplan-logica.js?v=20261127k';
-import { htmlDraadVoorTraining, wedstrijdvraagNu } from './speelwijze.js?v=20261127k';
+import { htmlDraadVoorTraining } from './speelwijze.js?v=20261127k';
 import { onderdeelAan } from './onderdelen.js?v=20261127k';
 import { magUitlenen } from './uitleen-rechten.js?v=20261127k';
 import { leenOmschrijving, leenActief, spelersOpTraining, effectieveSelectie } from './uitleen-regels.js?v=20261113b';
@@ -180,7 +180,6 @@ function kwartenKlaar(w){
 }
 
 /* ---------- oefenstof ---------- */
-function weekNrUit(t){ const m = String(t || '').match(/\b([1-9]|[1-4]\d|5[0-3])\b/); return m ? parseInt(m[1], 10) : null; }
 function oefenstofTeam(){ return (S.trainingen || []).filter(t => (t.teams || []).includes(S.teamId)); }
 /* [20261113b] zelfde weekindeling als Trainingen (weekStart/datum gaan voor de weektekst) */
 /* [20261122b] trainingsnummer uit het veld of de titel ("Week 47 - training 2") */
@@ -218,18 +217,6 @@ function stofRij(t){
 function sessies(){ return [...(S.presentie || [])].filter(s => s.datum).sort((a, b) => b.datum.localeCompare(a.datum)); }
 function aanwezigTel(s){ return S.spelers.filter(p => teltMee(s, p) && !(s.afwezig || []).includes(p.id)).length; }
 function meetellers(s){ return S.spelers.filter(p => teltMee(s, p)).length; }
-function komendeTrainingsdagen(n = 3){
-  const dagen = Array.isArray(S.team?.trainingsdagen) ? S.team.trainingsdagen : [];
-  const uit = []; if (!dagen.length) return uit;
-  const d = new Date(); d.setHours(12, 0, 0, 0);
-  for (let i = 0; i < 21 && uit.length < n; i++){
-    const iso = d.toISOString().slice(0, 10);
-    const dag = ((d.getDay() + 6) % 7) + 1;            // 1 = ma … 7 = zo
-    if (dagen.includes(dag) && !(S.presentie || []).some(s => s.datum === iso)) uit.push(iso);
-    d.setDate(d.getDate() + 1);
-  }
-  return uit;
-}
 function isoWeekVan(iso){ return isoWeek(new Date(iso + 'T12:00')); }
 function oefenstofVoorDatum(iso){
   const lijst = oefenstofWeek(isoWeekVan(iso));
@@ -648,7 +635,6 @@ function zijGespeeld(w){
    (standaard vandaag of de eerstvolgende) met aanwezigheid (tik = afmelden
    met reden) en daaronder de oefenstof: PDF bovenaan, oefeningen uit het
    AI-gedeelte eronder. Rechts volgende week en voorgaande trainingen. */
-function maandagVan(d){ const x = new Date(d); x.setHours(12, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
 const sessieOp = iso => (S.presentie || []).find(s => s.datum === iso) || null;
 const kortDatum = iso => `${datumMooi(iso, { weekday:'short' }).slice(0, 2).toLowerCase()} ${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 /* [20261113b] gekozen dag op Trainingen: datum van de gekozen training of 'dt:JJJJ-MM-DD' */

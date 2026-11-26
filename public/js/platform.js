@@ -6,7 +6,7 @@
    ene club; start en stop staan in het toegangslog van de club.
 ==================================================================== */
 import { db, collection, getDocs, doc, getDoc, setDoc, serverTimestamp, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261127k';
+import { esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261127k';
 import { logoImgVoorDoc, DISTRICTEN, kalenderId, valideerKalender, ORIGINEEL } from './clubconfig.js?v=20261127k';
 import { STARTLIJST_STAPPEN } from './startlijst.js?v=20261011d';
 import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261127k';
@@ -159,7 +159,6 @@ const STATUS_COACH = {
   'wacht-op-club': { tekst: 'wacht op club', soort: 'let' },
   'nog-geen-team': { tekst: 'nog geen team', soort: '' },
 };
-const aantalTeams = n => `${n} team${n === 1 ? '' : 's'}`;
 function coachRij(c){
   const st = STATUS_COACH[c.status] || { tekst: c.status, soort: '' };
   const team = (c.teams || []).map(t => `${t.naam || t.categorie}${t.spelers ? ` · ${t.spelers} spelers` : ''}`).join(' | ');

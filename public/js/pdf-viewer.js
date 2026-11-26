@@ -14,7 +14,6 @@
    training opent. */
 import { meld, bewaakTerug, vangnetStilTerugAlsNodig } from './state.js?v=20261127k';
 
-const PDFJS_VERSIE = '3.11.174';
 const PDFJS_BASE = 'vendor/pdfjs-3/';   // zelf gehost (AVG: geen CDN-verbinding)
 
 let _pdfjsLoad = null;

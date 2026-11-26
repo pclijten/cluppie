@@ -27,7 +27,6 @@ import { htmlPollsBijWedstrijd, openPollVoorWedstrijd, zetDeelOpstelling } from 
 import { veldkaartInlineHtml, vulVeldkaarten } from './veldkaart.js?v=20261127k';
 
 const p2 = n => String(n).padStart(2, '0');
-const isoVan = d => `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
 const DAG_LANG = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'];
 const MAAND = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
 const hoofd = s => s.charAt(0).toUpperCase() + s.slice(1);

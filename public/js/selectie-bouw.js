@@ -28,7 +28,7 @@
 import { S, esc, meld } from './state.js?v=20261127k';
 import { db, doc, collection, getDoc, writeBatch, serverTimestamp } from './firebase.js?v=20261011g';
 import { bouwLeenSnapshot } from './teams-spelers.js?v=20261127k';
-import { SKILLS, POSITIE_GROEPEN, TEAM_CATEGORIEEN } from './config.js?v=20261127k';
+import { SKILLS, POSITIE_GROEPEN } from './config.js?v=20261127k';
 import { analyseWedstrijd, speeltijdReserve } from './analyse.js?v=20261127k';
 import { opkomstVoor } from './opkomst.js?v=20260922c';
 import { teLeeftijd, teCriteriaVoor, teScores } from './team-evaluatie-criteria.js?v=20261127b';

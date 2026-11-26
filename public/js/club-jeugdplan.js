@@ -11,10 +11,10 @@
      trainingen/{id}  — gegenereerd door toewijzen (bron 'seizoensplan', seizoensplanId, teams:[teamId])
    Alle writes merge:true. Rechten zelf staan in de rules; dit scherm toont alleen wat mag. */
 import { S, esc, meld } from './state.js?v=20261127k';
-import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteField, query, where, writeBatch, serverTimestamp } from './firebase.js?v=20261011g';
+import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteField, serverTimestamp } from './firebase.js?v=20261011g';
 import { bouwNaam, catLabel, SEIZOEN_FALLBACK, leeftijdVanCategorie, LEERCURVE } from './config.js?v=20261127k';
 import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261126g';
-import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261126g';
+import { vormen, laadBibliotheek } from './bibliotheek.js?v=20261126g';
 import { MODELLEN, ACCENTEN, beschikbareThemas, maandagVan, standaardVrij, weekKalender, seizoenStartJaar } from './seizoensplan-logica.js?v=20261127k';
 import { rechtenVoor, magVoorBouw, teamsVoorPlan, planVoorTeam, trainingDocs, uitrolPlan, spelersVoorPlanner, duurVoorLeeftijd, JEUGDBOUWEN } from './seizoensplan-club.js?v=20261127k';
 import { bestaandeTrainingen, voerUit } from './seizoensplan-trainingen.js?v=20261127k';

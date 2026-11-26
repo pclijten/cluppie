@@ -49,7 +49,6 @@ function bouwen(){
   return lijst;
 }
 const huidigeBouw = () => bouwen().find(b => b.clubId === st.clubId && b.bouw === st.bouw) || { naam: st.bouw, club:'' };
-const vandaag = () => new Date().toISOString().slice(0, 10);
 const datumKort = iso => { try { return new Date(iso + 'T12:00').toLocaleDateString('nl-NL', { weekday:'short', day:'numeric', month:'short' }); } catch(e){ return iso || ''; } };
 
 function view(){

@@ -29,7 +29,6 @@ import { sportWoord } from './sporten.js?v=20261126g';   /* [20261125y] sportpro
 const p2 = n => String(n).padStart(2, '0');
 const isoVan = d => `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
 const hhmm = d => `${p2(d.getHours())}:${p2(d.getMinutes())}`;
-const DAG_LANG = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'];
 const DAG_KORT = ['zo', 'ma', 'di', 'wo', 'do', 'vr', 'za'];
 const hoofd = s => s.charAt(0).toUpperCase() + s.slice(1);
 
