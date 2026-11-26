@@ -469,4 +469,21 @@ verstuurd.length = 0;
 await F.kamerBericht({ params: { teamId: 'tp', berichtId: 'm3' }, data: { data: () => bericht, ref: fake.db.doc('teamkamer/tp/berichten/m3') } });
 ok(verstuurd.length === 0, 'push: geen melding als mededelingen uit staan');
 
+/* ---------- [20261126m] berichten van de club: pushmelding naar trainers ---------- */
+const B = require('../functions/bericht-push.js');
+ok(B.trainers([{ id: 't1', club: 'c1', leden: { a: true, b: true, x: false } }, { id: 't2', club: 'c1', leden: { b: true, beheer: true } }, { id: 't9', club: 'c2', leden: { vreemd: true } }], 'c1', 'beheer').join() === 'a,b',
+  'clubbericht: trainers van de gekozen teams, alleen deze club, niet de schrijver, iedereen één keer');
+const cm = B.melding({ titel: 'Veldverdeling', body: 'Zaterdag   op veld 2', clubNaam: 'ASV' }, 'm9');
+ok(cm.titel === 'Veldverdeling · ASV' && cm.tekst === 'Zaterdag op veld 2' && cm.badge === false && cm.url.includes('index.html'), 'clubbericht: tekst, link naar de trainersapp, geen cijfer op het icoon');
+store.set('teams/tb1', { naam: 'JO9-1', club: 'cb', leden: { tr1: true, tr2: true } });
+store.set('teams/tb2', { naam: 'JO9-2', club: 'andere', leden: { tr9: true } });
+store.set('gebruikers/tr1/push/y1', { token: 'tok-tr1' });
+store.set('gebruikers/tr9/push/y9', { token: 'tok-tr9' });
+const cb = { club: 'cb', clubNaam: 'ASV', titel: 'Let op', body: 'Tekst', teams: ['tb1', 'tb2'], melding: true, doorUid: 'tr2' };
+store.set('berichten/cb1', cb);
+verstuurd.length = 0;
+await B.clubBericht({ params: { berichtId: 'cb1' }, data: { data: () => cb, ref: fake.db.doc('berichten/cb1') } });
+await B.clubBericht({ params: { berichtId: 'cb2' }, data: { data: () => ({ ...cb, melding: false }), ref: fake.db.doc('berichten/cb2') } });
+ok(verstuurd.length === 1 && verstuurd[0].tokens.join() === 'tok-tr1' && verstuurd[0].data.badge === '0' && store.get('berichten/cb1').meldingBereik === 1, 'clubbericht: melding alleen met vinkje, alleen naar trainers van teams van de eigen club');
+
 console.log(`teamkamer: ${n} controles geslaagd`);
