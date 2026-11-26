@@ -12,11 +12,11 @@
    blijven daarnaast werken zoals ze werkten.
    Getekend in Club → Bouwen (sinds 20260929a, daarvoor Club → Instellingen), boven de eigen bouwen.
 ======================================================== */
-import { S, esc, meld } from './state.js?v=20261126q';
+import { S, esc, meld } from './state.js?v=20261126t';
 import { db, doc, updateDoc } from './firebase.js?v=20261011g';
-import { BOUWEN, bouwVanCategorie } from './config.js?v=20261126q';
+import { BOUWEN, bouwVanCategorie } from './config.js?v=20261126t';
 import { rolNaam as clubRolNaam } from './rolnamen.js?v=20261120c';   /* [20261120c] eigen rolnamen van de club */
-import { koppelCoordinatorenBeheer } from './coordinatoren.js?v=20261126q';
+import { koppelCoordinatorenBeheer } from './coordinatoren.js?v=20261126t';
 
 const KLEUR = { onder:'#35c47a', midden:'#3b82f6', boven:'#a855f7' };
 const KORT  = Object.fromEntries(BOUWEN.map(b => [b.id, b.kort]));

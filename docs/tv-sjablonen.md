@@ -112,3 +112,22 @@ De coach houdt de stand bij in de app. De functie `kantineTvWedstrijd` zet een n
 van de tv. De tv-pagina vergelijkt de stand met de vorige (`nieuweGoals` in `clubscherm-logica.js`) en roept bij een
 doelpunt `goal(m, g)` van het sjabloon aan. Een uitslag die achteraf wordt ingevuld of een correctie naar beneden geeft
 geen melding.
+
+## Evenement op de tv
+
+Bij de instellingen kiest de club een toernooi waarvan de live pagina aan staat (`clubTv/{id}.evenement` = de id van
+`toernooiLive/{id}`). Op de dag van dat toernooi zet `evenementTv` in `clubscherm-logica.js` het schema, de uitslagen, de
+mededelingen en de sponsoren van het toernooi om naar het gewone model. De sjablonen hoeven daar niets voor te doen.
+Op andere dagen, of als de live pagina uit staat, toont de tv het gewone wedstrijdprogramma.
+
+## Wie beheert de tv
+
+De clubbeheerder ziet op het clubdashboard de tegel **Kantine-tv** (als Activiteiten voor de club aanstaat). Die tegel opent direct het tv-scherm.
+Onder **Wie beheert de tv** zet de clubbeheerder andere clubleden aan of uit, bijvoorbeeld de kantinecommissie. Dat komt op het clubdocument te staan als `tvBeheerders.{uid} = true` met de naam in `tvBeheerdersInfo.{uid}`.
+
+Een tv-beheerder:
+- ziet dezelfde tegel en mag de schermen (`clubTv`) en de sponsoren aanpassen (`isTvBeheerder` in `firestore.rules`);
+- kan zichzelf of anderen geen tv-rechten geven, want alleen de clubbeheerder past het clubdocument aan;
+- bouwt het programma niet zelf op. Dat doet de Cloud Function, omdat een tv-beheerder niet de wedstrijden van alle teams kan lezen.
+
+Na een merge die `firestore.rules` wijzigt moeten de regels opnieuw gedeployd worden (`tools/deploy-alles.ps1`).

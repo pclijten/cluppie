@@ -76,5 +76,19 @@ ok(C.nieuweGoals(g3, [{ ...thuisRij, stand: '1 - 0' }], 'alle').length === 1, 'e
 ok(C.goalKeuze('x') === 'park' && C.tvKopie({ sjabloon: 'kubus', goals: 'alle' }).sjabloon === 'kubus' && C.tvKopie({ sjabloon: '<x>' }).sjabloon === 'bord' && C.tvKopie({}).goals === 'park', 'sjabloon en goal-keuze in de openbare kop');
 ok(F.regelAnders({ datum: F.vandaagNL(), goals: [] }, { datum: F.vandaagNL(), goals: g('voor') }, F.vandaagNL()) === true && F.regelAnders({ datum: F.vandaagNL(), goals: g('voor'), selectie: [1] }, { datum: F.vandaagNL(), goals: g('voor'), selectie: [1, 2] }, F.vandaagNL()) === false && F.regelAnders({ datum: '2020-01-01' }, { datum: '2020-01-01', goals: g('voor') }, F.vandaagNL()) === false, 'functie: alleen bij een andere regel van vandaag');
 
+// evenement (toernooi) op de kantine-tv
+{
+  const live = { open: true, naam: 'Pupillentoernooi', datum: '2026-11-28', duur: 12, wissel: 3, veldjes: [{ id: 'v1', naam: 'Veld A' }], poules: { p1: { naam: 'Poule A' } },
+    teams: { t1: { naam: 'SV Cluppie' }, t2: { naam: 'RKSV Minor' } }, schema: [{ id: 'w2', a: 't2', b: 't1', v: 'v1', p: 'p1', t: '10:20' }, { id: 'w1', a: 't1', b: 't2', v: 'v1', p: 'p1', t: '10:00' }, { id: 'x', a: 't1', b: 't9', t: 'later' }],
+    uitslag: { w1: { a: 2, b: 1 } }, mededelingen: [{ tekst: 'Prijsuitreiking om 16:00' }], schermen: [{ id: 's1', soort: 'sponsor', titel: 'Snackbar', tv: true }, { id: 's2', titel: 'Weg', tv: false }] };
+  const e = C.evenementTv(live, '2026-11-28');
+  ok(e && e.naam === 'Pupillentoernooi' && e.programma.length === 2 && e.programma[0].tijd === '10:00' && e.programma[0].stand === '2 - 1' && e.programma[0].eind === true && e.programma[1].veld === 'Veld A · Poule A', 'evenement: schema als programma, gesorteerd, met uitslag en veld');
+  ok(e.mededeling === 'Prijsuitreiking om 16:00' && e.items.length === 1 && e.items[0].titel === 'Snackbar', 'evenement: mededeling en sponsoren van het toernooi');
+  ok(C.evenementTv({ ...live, planB: 'Uitwijken naar de sporthal' }, '2026-11-28').mededeling === 'Uitwijken naar de sporthal', 'evenement: plan B gaat voor');
+  ok(C.evenementTv(live, '2026-11-29') === null && C.evenementTv({ ...live, open: false }, '2026-11-28') === null && C.evenementTv(null, '2026-11-28') === null, 'evenement: alleen op de dag zelf en als de live pagina aan staat');
+  ok(C.rijStatus(e.programma[1], 10 * 60 + 25) === 'live' && C.rijStatus(e.programma[1], 10 * 60 + 40) === 'voorbij' && C.rijStatus(e.programma[0], 10 * 60 + 5) === 'klaar', 'evenement: korte wedstrijden zijn na hun duur voorbij');
+  ok(C.evenementId('abcdefghjk2345') === 'abcdefghjk2345' && C.evenementId('../x') === '' && C.tvKopie({ evenement: 'abcdefghjk2345' }).evenement === 'abcdefghjk2345' && C.tvKopie({}).evenement === '', 'evenement: id gecontroleerd in de tv-kopie');
+}
+
 console.log(mis ? `clubscherm: ${mis} van ${n} MIS` : `clubscherm: ${n} controles geslaagd`);
 process.exit(mis ? 1 : 0);

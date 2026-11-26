@@ -13,9 +13,9 @@
    Voorbeeld bekijken zonder iets op te slaan: ?scherm=<id>&sjabloon=<id>, en &proef=1 voor proefwedstrijden met doelpunten. */
 import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, collection, onSnapshot } from './firebase.js?v=20261011g';
 import { plaatjeOk, veiligeLink } from './toernooi-logica.js?v=20261125w';
-import { sorteer, nieuweGoals, goalKeuze } from './clubscherm-logica.js?v=20261126q';
-import { sjabloonId, laadSjabloon } from './tv-sjablonen.js?v=20261126q';
-import { maakSpeler, tvModel, proefProgramma, PROEF_DIAS } from './tv-speler.js?v=20261126q';
+import { sorteer, nieuweGoals, goalKeuze, evenementId, evenementTv } from './clubscherm-logica.js?v=20261126t';
+import { sjabloonId, laadSjabloon } from './tv-sjablonen.js?v=20261126t';
+import { maakSpeler, tvModel, proefProgramma, PROEF_DIAS } from './tv-speler.js?v=20261126t';
 import { stijl as stijlLive } from './live-boot.js?v=20261126n';
 import { tvStijl, tvKleur, tvZet, bordHtml, logoHtml, tikHtml, diaHtml, sponsHtml, voetHtml } from './tv-stijl.js?v=20261126n';
 
@@ -40,17 +40,22 @@ export async function bootSchermPagina(tvId){
   if (!el) return;
   stijlLive(); stijl(); tvStijl();
   el.style.display = 'block';
-  const breed = () => innerWidth >= 900;
+  /* Tv-weergave vanaf 900 px breed, of liggend vanaf 640 px: veel tv-browsers en tv-sticks melden een kleinere
+     breedte dan het scherm echt heeft (1280 x 720 met schaal 1,5 is 853 px). &tv=1 in de link dwingt het af. */
+  const dwing = new URLSearchParams(location.search).get('tv') === '1';
+  const breed = () => dwing || innerWidth >= 900 || (innerWidth >= 640 && innerWidth > innerHeight);
   el.innerHTML = melding('Even geduld', 'Het scherm wordt geladen…');
-  try { await authKlaar(); await sessie(false); }
-  catch { el.innerHTML = melding('Laden is niet gelukt', 'Controleer je verbinding en ververs de pagina.'); return; }
-  const st = { d: null, items: [], tik: 0, hersteld: false, gezien: new Map(), speler: null, T: null, laadt: '', kapot: '' };
   const qs = new URLSearchParams(location.search), kiesSjabloon = qs.get('sjabloon') || '', proef = qs.get('proef') === '1';
+  /* Voorbeeld van een sjabloon voor een club die de tv nog niet heeft aangezet: niets uit de database, alles proef. */
+  const alleenVoorbeeld = tvId === 'voorbeeld' && proef;
+  if (!alleenVoorbeeld) try { await authKlaar(); await sessie(false); }
+  catch { el.innerHTML = melding('Laden is niet gelukt', 'Controleer je verbinding en ververs de pagina.'); return; }
+  const st = { evId: '', evStop: null, ev: null, d: null, items: [], tik: 0, hersteld: false, gezien: new Map(), speler: null, T: null, laadt: '', kapot: '' };
   let stops = [];
   function luister(){
     stops.push(onSnapshot(doc(db, 'clubTv', tvId), s => {
       if (!s.exists()){ if (s.metadata?.fromCache && !st.d) return; st.d = null; el.innerHTML = melding('Deze link werkt niet (meer)', 'Vraag het bestuur om een nieuwe link.'); return; }
-      st.d = s.data(); document.title = `${st.d.clubNaam || 'Club'} · vandaag`; teken();
+      st.d = s.data(); document.title = `${st.d.clubNaam || 'Club'} · vandaag`; volgEvenement(evenementId(st.d.evenement)); teken();
     }, async e => {
       console.error('[Cluppie] scherm', e);
       if (e?.code === 'permission-denied' && !st.hersteld){ st.hersteld = true; stops.forEach(u => u()); stops = []; try { await sessie(true); luister(); return; } catch { /* door */ } }
@@ -58,11 +63,31 @@ export async function bootSchermPagina(tvId){
     }));
     stops.push(onSnapshot(collection(db, 'clubTv', tvId, 'schermen'), s => { st.items = sorteer(s.docs.map(d => ({ id: d.id, ...d.data() }))); if (st.d) teken(); }, () => {}));
   }
-  luister();
+  /* Een evenement (toernooi) dat de club op de tv heeft gezet: de live pagina van dat toernooi volgen. */
+  function volgEvenement(id){
+    if (id === st.evId) return;
+    st.evStop?.(); st.evStop = null; st.ev = null; st.evId = id;
+    if (id) st.evStop = onSnapshot(doc(db, 'toernooiLive', id), s => { st.ev = s.exists() ? s.data() : null; if (st.d) teken(); }, () => { st.ev = null; if (st.d) teken(); });
+  }
+  if (alleenVoorbeeld){
+    const k = qs.get('kleur') || '';
+    st.d = { clubNaam: (qs.get('naam') || 'Jouw club').slice(0, 80), kleur: /^#[0-9a-f]{6}$/i.test(k) ? k : '', open: true, uit: true, goals: 'park',
+      mededeling: 'Zo ziet je mededeling eruit. Die zet je zelf bij de instellingen.' };
+    document.title = 'Voorbeeld kantine-tv'; teken();
+  } else luister();
   setInterval(() => { st.tik++; if (st.d) teken(); }, 12000);
   addEventListener('resize', () => { if (st.d) teken(); });
   /* een tv die dagen aan staat: elke nacht verversen, zodat een nieuwe versie van de pagina meekomt */
   setInterval(() => { const d = new Date(); if (d.getHours() === 4 && d.getMinutes() < 2) location.reload(); }, 60000);
+  /* Staat er een nieuwe versie van Cluppie online, dan ververst de tv zichzelf binnen een kwartier (niet pas 's nachts). */
+  const mijnVersie = (document.querySelector('script[src*="js/main.js"]')?.getAttribute('src') || '').split('v=')[1] || '';
+  if (mijnVersie) setInterval(async () => {
+    try {
+      const r = await fetch(`index.html?nieuw=${Date.now()}`, { cache: 'no-store' }); if (!r.ok) return;
+      const v = (/js\/main\.js\?v=([0-9a-z]+)/.exec(await r.text()) || [])[1];
+      if (v && v !== mijnVersie) location.reload();
+    } catch { /* geen verbinding: volgende keer */ }
+  }, 15 * 60000);
 
   const rij = w => `<div class="lv-wed ks-wed ${w.afgelast ? 'ks-af' : ''}" style="--pk:${w.thuis ? 'var(--accent)' : 'var(--hair)'}">
       <span class="lv-wed-v"><b>${esc(w.tijd || '–')}</b>${esc(w.afgelast ? 'Afgelast' : [w.veld, w.kk ? 'kk ' + w.kk : ''].filter(Boolean).join(' · ') || (w.thuis ? '' : 'uit'))}</span>
@@ -80,7 +105,10 @@ export async function bootSchermPagina(tvId){
   function stopSpeler(){ if (!st.speler) return; st.speler.stop(); st.speler = null; document.documentElement.classList.remove('ts-html'); document.getElementById('tsSjabloon')?.remove(); }
 
   function teken(){
-    let d = st.d; if (!d) return;
+    let d = st.d, eigenItems = st.items; if (!d) return;
+    /* Op de dag van het gekozen toernooi: het schema, de uitslagen en de sponsoren van het toernooi, met de stijl van de club. */
+    const ev = !proef && st.ev ? evenementTv(st.ev, vandaag()) : null;
+    if (ev){ d = { ...d, clubNaam: ev.naam || d.clubNaam, datum: vandaag(), programma: ev.programma, mededeling: ev.mededeling || d.mededeling, uit: true }; eigenItems = [...ev.items, ...st.items]; }
     if (proef) d = { ...d, datum: vandaag(), programma: proefProgramma(new Date(), st.tik) };
     const tv = breed(), isVandaag = d.datum === vandaag();
     const goals = nieuweGoals(st.gezien, isVandaag ? (d.programma || []).filter(w => d.uit !== false || w.thuis) : [], goalKeuze(d.goals));
@@ -92,7 +120,7 @@ export async function bootSchermPagina(tvId){
       }
       if (!st.T) return;                       /* het eerste sjabloon is nog onderweg: de laadtekst blijft staan */
       if (!st.speler){ st.speler = maakSpeler(el); document.documentElement.classList.add('ts-html'); document.documentElement.classList.remove('lv-tv-html'); }
-      const items = (proef && !st.items.length ? PROEF_DIAS : st.items).map(x => ({ ...x, img: plaatjeOk(x.img) ? x.img : '' }));
+      const items = (proef && !eigenItems.length ? PROEF_DIAS : eigenItems).map(x => ({ ...x, img: plaatjeOk(x.img) ? x.img : '' }));
       st.speler.zet(st.T, tvModel({ ...d, logo: plaatjeOk(d.logo) ? d.logo : '', programma: isVandaag ? d.programma : [] }, items, new Date()));
       goals.forEach(g => st.speler.goal(g));
       return;
@@ -100,7 +128,7 @@ export async function bootSchermPagina(tvId){
     stopSpeler();
     if (tv) goals.slice(0, 1).forEach(bordGoal);
     const alles = isVandaag ? (d.programma || []).filter(w => d.uit !== false || w.thuis) : [];
-    const spons = st.items.filter(x => x.soort === 'sponsor' && (x.titel || x.img)), dias = st.items.filter(x => x.titel || x.tekst || x.img);
+    const spons = eigenItems.filter(x => x.soort === 'sponsor' && (x.titel || x.img)), dias = eigenItems.filter(x => x.titel || x.tekst || x.img);
     const logo = plaatjeOk(d.logo) ? `<img class="lv-logo" src="${esc(d.logo)}" alt="">` : '', kleur = /^#[0-9a-f]{6}$/i.test(d.kleur || '') ? ` style="--accent:${d.kleur}"` : '';
     const dag = new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
     if (!tv){
