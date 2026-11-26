@@ -18,7 +18,7 @@
    zonder dat de coach alle tabbladen hoeft te sluiten.
    ================================================================ */
 
-const CACHE_VERSIE = 'cluppie-v20261126q';
+const CACHE_VERSIE = 'cluppie-v20261126r';
 
 /* Minimale schil die we bij installatie alvast klaarzetten. De overige
    bestanden (JS-modules, iconen, fonts van gstatic) worden vanzelf
@@ -62,11 +62,16 @@ function cachebaar(req){
   return false;
 }
 
+/* [20261126r] Het openen van de app (navigatie) wacht hooguit NAV_WACHT_MS op het net. Bij een trage
+   of haperende lijn (wifi zonder internet, één streepje bereik) bleef het laadscherm anders minutenlang
+   staan tot de browser opgaf. Is er dan een gecachte schil, dan start de app daarmee; het netwerk-
+   antwoord vult op de achtergrond alsnog de cache voor de volgende keer. Zonder cache: gewoon wachten. */
+const NAV_WACHT_MS = 6000;
+
 self.addEventListener('fetch', (e) => {
   if (!cachebaar(e.request)) return;   // niet afhandelen → browser doet z'n gewone werk
 
-  e.respondWith(
-    fetch(e.request)
+  const vanNet = fetch(e.request)
       .then(antwoord => {
         // Alleen volwaardige antwoorden bewaren (geen fouten of opaque redirects)
         if (antwoord && antwoord.ok){
@@ -85,6 +90,18 @@ self.addEventListener('fetch', (e) => {
           if (schil) return schil;
         }
         return new Response('Offline en niet in cache', { status: 503, statusText: 'Offline' });
-      })
-  );
+      });
+
+  if (e.request.mode !== 'navigate'){ e.respondWith(vanNet); return; }
+  e.waitUntil(vanNet.catch(() => {}));
+  e.respondWith(new Promise(klaar => {
+    let gedaan = false;
+    const geef = r => { if (!gedaan){ gedaan = true; klaar(r); } };
+    vanNet.then(geef, () => geef(new Response('Offline en niet in cache', { status: 503, statusText: 'Offline' })));
+    setTimeout(async () => {
+      if (gedaan) return;
+      const uitCache = await caches.match(e.request, { ignoreSearch: true });   // zelfde pagina, ook met ?scherm= e.d.
+      if (uitCache) geef(uitCache);
+    }, NAV_WACHT_MS);
+  }));
 });
