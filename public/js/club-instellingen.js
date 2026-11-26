@@ -9,19 +9,19 @@
    luistert een snapshot) niets kwijtmaakt. Bij een club die nog geen
    instellingen.v heeft (legacy) worden bij de eerste wijziging eerst alle
    huidige waarden vastgelegd, zodat er niets verspringt. */
-import { ico } from './icons.js?v=20261116t';
+import { ico } from './icons.js?v=20261126w';
 import {
   db, doc, collection, addDoc, updateDoc, setDoc, deleteDoc, getDoc, getDocs, query, where, writeBatch, serverTimestamp
 } from './firebase.js?v=20261011g';
-import { S, $, esc, meld, openModal, sluitModal, nieuweCode, isPlatformBeheerder } from './state.js?v=20261126v';
-import { ACTIEF, SEIZOEN_FALLBACK, parseFormatie, aantalVeldspelers, SKILLS, LEERCURVE, catLabel } from './config.js?v=20261126v';
+import { S, $, esc, meld, openModal, sluitModal, nieuweCode, isPlatformBeheerder } from './state.js?v=20261126w';
+import { ACTIEF, SEIZOEN_FALLBACK, parseFormatie, aantalVeldspelers, SKILLS, LEERCURVE, catLabel } from './config.js?v=20261126w';
 import {
   effectief, isLegacy, mergeLijst, LIJST_DEFS, ORIGINEEL, NEUTRAAL, CLUPPIE_LOGO, ICOONNAMEN,
   valideerKalender, herlaadKalender, pasClubConfigToe, clubAfk, DISTRICTEN
-} from './clubconfig.js?v=20261126v';
-import { MODULE_DEFS } from './club-beheer.js?v=20261126v';
-import { lerenBeschikbaar } from './leren-signalen.js?v=20261126v';
-import { doorPlatformUit, werkwijzeVan, modulesVoorNieuweClub } from './onderdelen.js?v=20261126v';
+} from './clubconfig.js?v=20261126w';
+import { MODULE_DEFS } from './club-beheer.js?v=20261126w';
+import { lerenBeschikbaar } from './leren-signalen.js?v=20261126w';
+import { doorPlatformUit, werkwijzeVan, modulesVoorNieuweClub } from './onderdelen.js?v=20261126w';
 
 /* ---------- Tabs ---------- */
 export const INSTEL_TABS = [
@@ -520,7 +520,7 @@ export function koppelInstelNieuw(v, herteken){
   else if (sub === 'pedagogiek') koppelPedagogiek(v, herteken);
   else if (sub === 'regels') koppelRegels(v, herteken);
   else if (sub === 'ai') koppelAI(v, herteken);
-  else if (sub === 'toegang') import('./toegang.js?v=20261126v').then(m => m.koppelToegang(v, herteken));
+  else if (sub === 'toegang') import('./toegang.js?v=20261126w').then(m => m.koppelToegang(v, herteken));
 }
 
 /* ---------- Identiteit ---------- */
@@ -694,7 +694,7 @@ function tabPedagogiek(eff){
     ${kaart('Teksten van Cluppie', '', `
       <label class="ci-schakel"><input type="checkbox" id="pdStandaard" ${p.contentStandaard !== false ? 'checked' : ''}><span>Standaardteksten van Cluppie gebruiken<br><small>Leerthema-uitleg, wekelijkse tips en gouden regels. Uit = alleen jullie eigen teksten (onder Content) worden getoond. Eigen teksten gaan altijd voor.</small></span></label>
       <button class="knop vol klein" id="pdStandaardOpslaan" style="margin-top:10px">Opslaan</button>`)}
-    <div class="cb-uitleg" style="margin:0 2px 12px">Domeinen, leercurve-thema’s, tags en redenen pas je aan onder <b>Lijsten</b>. De teksten bij de leerthema’s en tips staan onder <b>Content</b>.</div>
+    <div class="cb-uitleg" style="margin:0 2px 12px">Domeinen, leercurve-thema’s, tags en redenen pas je aan onder <b>Lijsten</b>. De teksten bij de leerthema’s en tips staan onder <b>Clubteksten</b>.</div>
     ${kaart('Sjablonen', '', `<div id="sjabloonRoot"><p class="cb-uitleg">Laden…</p></div>`)}`;
 }
 
@@ -913,7 +913,7 @@ export function modalNieuweClub(naCreatie){
         W.naam = b.querySelector('#wzNaam').value; W.district = b.querySelector('#wzDistrict').value;
         k.disabled = true; uit.innerHTML = '<div class="sl-laden"><span class="sl-spin"></span>Club opzoeken in Sportlink…</div>';
         try {
-          const { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261126v');
+          const { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261126w');
           const info = await zoekClubInSportlink(id);
           if (info.gevonden){
             const [logo, kleur] = await Promise.all([verkleinSportlinkLogo(info.logo), leesbareKleur(info.kleur)]);
@@ -922,7 +922,7 @@ export function modalNieuweClub(naCreatie){
             W.slVondst = htmlClubVondst(info, { logo, kleur });
           } else { W.clubcode = ''; W.slVondst = htmlClubVondst(info); }
         } catch (x){
-          const { htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261126v');
+          const { htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261126w');
           W.slVondst = htmlClubVondst(null, { fout: x });
         }
         k.disabled = false; teken();

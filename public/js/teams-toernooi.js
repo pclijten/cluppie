@@ -52,9 +52,9 @@
    circulaire import): teams.js geeft zetTeamTab/renderTeam mee aan
    koppelToernooi(). */
 import { db, doc, collection, setDoc, updateDoc, deleteDoc, onSnapshot } from './firebase.js?v=20261011g';
-import { S, $, $$, esc, meld, openModal, sluitModal, terugLaag } from './state.js?v=20261126v';
-import { SEIZOEN_FALLBACK } from './config.js?v=20261126v';
-import { ico } from './icons.js?v=20261116t';
+import { S, $, $$, esc, meld, openModal, sluitModal, terugLaag } from './state.js?v=20261126w';
+import { SEIZOEN_FALLBACK } from './config.js?v=20261126w';
+import { ico } from './icons.js?v=20261126w';
 
 /* ---------- Vaste gegevens ---------- */
 /* Hesjeskleuren: bewust vaste kleuren, ze kantelen niet mee met het thema. */
