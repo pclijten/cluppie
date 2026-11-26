@@ -15,13 +15,13 @@
    trainingsscherm op desktop (desktop-schermen.js). Beide vragen vandaagVan(t) op bij het tekenen en luisteren met
    opWijziging() om opnieuw te tekenen. Klikken in de balk worden hier één keer voor het hele document afgehandeld. */
 import { db, doc, getDoc, setDoc, deleteDoc, serverTimestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261127v';
-import { vormen, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261126g';
-import { speelwijzeNu } from './speelwijze.js?v=20261127v';
-import { weerLocatie } from './clubconfig.js?v=20261127v';
+import { S, esc, meld } from './state.js?v=20261127y';
+import { vormen, laadBibliotheek, bibliotheekGeladen, basisGeladen } from './bibliotheek.js?v=20261127y';
+import { speelwijzeNu } from './speelwijze.js?v=20261127y';
+import { weerLocatie } from './clubconfig.js?v=20261127y';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
-import { momentenVanTeam } from './trainingsmomenten.js?v=20261127v';
-import { pasAan, schoonKeuze, isAangepast, weerVoorstel, WEERKEUZES, MIN_SPELERS, MAX_SPELERS } from './training-vandaag-logica.js?v=20261127v';
+import { momentenVanTeam } from './trainingsmomenten.js?v=20261127y';
+import { pasAan, schoonKeuze, isAangepast, weerVoorstel, WEERKEUZES, MIN_SPELERS, MAX_SPELERS } from './training-vandaag-logica.js?v=20261127y';
 
 const K = new Map();            /* 'team|training' → { keuze (of null), geladen } */
 const W = new Map();            /* 'lat,lon|datum|uur' → { voorstel } of 'bezig' */
@@ -161,6 +161,8 @@ export function vandaagVan(t, teamId = S.teamId){
   const sl = sleutel(teamId, t.id);
   if (!K.has(sl)) laad(teamId, t.id);
   if (!bibliotheekGeladen()) laadBibliotheek().then(meldAan).catch(() => {});
+  /* [20261127y] basis nog niet binnen: de training zoals hij is, de balk komt zodra de vormen er zijn */
+  if (!basisGeladen()) return { html: '', oefeningen: basis, aangepast: false };
   const keuze = K.get(sl)?.keuze || null;
   const res = bereken(t, keuze, teamId);
   return { html: htmlVandaag(t, teamId, res, keuze, { presentie: verwacht(t.datum, teamId), weer: weerbericht(t, teamId) }), oefeningen: res.oefeningen, aangepast: res.aangepast };

@@ -9,11 +9,26 @@
 
    Pure functies (voegSamen, valideerVorm, rij/kolommen voor Excel) zijn getest in
    tests/bibliotheek.test.mjs. Impactanalyse: claude/trainingsbibliotheek-beheer-impactanalyse.md. */
-import { BIBLIOTHEEK } from './trainingsbibliotheek.js?v=20261126g';
 import { SPORTEN, STANDAARD_SPORT, actieveSport } from './sporten.js?v=20261126g';   /* [20261126b] oefenstof per sport */
 
-export const BASIS = BIBLIOTHEEK.vormen;
-export const BASIS_VERSIE = BIBLIOTHEEK.versie;
+/* [20261127y] De basis (trainingsbibliotheek.js, ~1,6 MB) laadt niet meer mee bij het opstarten van de app, maar pas
+   met laadBasis() (laadBibliotheek() doet dat ook; main.js start het op de achtergrond na het inloggen).
+   BIEB, BASIS en BIEB.themaregels houden dezelfde objecten en worden bij het laden gevuld, zodat wie ze al
+   importeerde de inhoud vanzelf ziet. Schermen die de vormen nodig hebben, wachten op basisGeladen(). */
+export const BIEB = { versie: '', vormen: [], themaregels: {}, geladen: false };
+export const BASIS = BIEB.vormen;
+export let BASIS_VERSIE = '';
+let basisBelofte = null;
+export function basisGeladen(){ return BIEB.geladen; }
+export function laadBasis(){
+  if (BIEB.geladen) return Promise.resolve(BIEB);
+  return basisBelofte ||= import('./trainingsbibliotheek.js?v=20261126g').then(({ BIBLIOTHEEK: B }) => {
+    BIEB.versie = B.versie; BASIS_VERSIE = B.versie;
+    BIEB.vormen.push(...B.vormen); Object.assign(BIEB.themaregels, B.themaregels || {});
+    BIEB.geladen = true; staat().alle = null;
+    return BIEB;
+  }).catch(e => { basisBelofte = null; throw e; });
+}
 export const FASES = ['warming-up', 'positiespel', 'spelvorm', 'partijspel', 'afsluiting'];
 const kloon = x => JSON.parse(JSON.stringify(x));
 
@@ -170,15 +185,16 @@ export function vergelijkImport(rijen, huidig, maakId = (n, i) => 'eigen_' + Str
 let laden = null;
 const staat = () => (globalThis.__cluppieBieb ||= { overlays: {}, geladen: false, alle: null });
 export function zetOverlays(overlays){ const s = staat(); s.overlays = overlays || {}; s.geladen = true; s.alle = null; }
-export function alleVormen(){ const s = staat(); return s.alle || (s.alle = voegSamen(BASIS, s.overlays)); }
+export function alleVormen(){ const s = staat(); if (!BIEB.geladen) return voegSamen(BASIS, s.overlays); return s.alle || (s.alle = voegSamen(BASIS, s.overlays)); }
 /* Wat de planner mag kiezen: zonder uitgezette vormen. */
 /* [20261126b] alleen de oefenstof van de sport van het team (zonder veld: voetbal) */
 export const vormSport = v => (v && SPORTEN[v.sport] ? v.sport : STANDAARD_SPORT);
 export function vormen(){ const sp = actieveSport(); return alleVormen().filter(v => v._status !== 'uit' && vormSport(v) === sp); }
 /* Opzoeken op id, ook als de vorm uitstaat (bewaarde trainingen blijven openen). */
 export function vormOpId(id){ return alleVormen().find(v => v.id === id) || null; }
-export function bibliotheekGeladen(){ return staat().geladen; }
+export function bibliotheekGeladen(){ return staat().geladen && BIEB.geladen; }
 export async function laadBibliotheek(forceer = false){
+  await laadBasis();
   if (staat().geladen && !forceer) return alleVormen();
   if (laden && !forceer) return laden;
   laden = (async () => {
