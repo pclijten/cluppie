@@ -9,7 +9,7 @@
    vrijwilligersBank/{id}/aanmeldingen (naam en contact, alleen clubbeheer en de aanmelder zelf).
    Krijgt alles van activiteiten.js via ctx. */
 import { db, doc, collection, query, where, getDocs, setDoc, updateDoc, deleteDoc, deleteField, onSnapshot } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261128a';
+import { S, esc, meld } from './state.js?v=20261128d';
 import { ico } from './icons.js?v=20261127b';
 import { liveId } from './toernooi-logica.js?v=20261127v';
 import * as V from './vrijwilligers-logica.js?v=20261127v';
