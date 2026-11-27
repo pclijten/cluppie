@@ -8,7 +8,7 @@
    - De duur komt uit het veld `duur` (seconden) of uit de metadata die de browser toch al leest.
 
    Er wordt niets in de database aangepast voor bestaande video's. */
-import { youtubeId, youtubeThumb } from './config.js?v=20261129m';
+import { youtubeId, youtubeThumb } from './config.js?v=20261129n';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 
