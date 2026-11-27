@@ -5,8 +5,9 @@
      competitiesoort         → 'regulier' | 'beker' | 'oefen' | 'overig'
      info { accommodatie, veld, plaats, verzamel, vertrek, kleedkamer, adres, plaatsAdres, telefoon, route }
      infoEigen { verzamel, vertrek }   → door de coach ingevuld, gaat altijd voor
-   Een afgelaste wedstrijd wordt nooit verwijderd (opstelling/presentie blijven staan), maar telt niet
-   als "eerstvolgend" of "komend".
+   Een afgelaste wedstrijd wordt nooit verwijderd (opstelling/presentie blijven staan).
+   [20261127] Hij gedraagt zich verder als een gewone wedstrijd: hij blijft op zijn plek staan in de
+   lijsten en op het dashboard (ook als eerstvolgende), met de afgelast-melding en een streep.
 
    Bewust zonder imports (zoals opkomst.js): wordt door teams.js, teams-hub.js, desktop-schermen.js,
    desktop-bouw.js en club.js gebruikt; zo kost een wijziging hier geen versie-cascade. */
@@ -15,8 +16,8 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 
 export const isAfgelast = w => !!w && w.status === 'afgelast';
 export const isWeg = w => !!w && !isAfgelast(w) && w.sportlinkWeg === true;
-/* Telt mee als komende/eerstvolgende wedstrijd? */
-export const telMee = w => !!w && !isAfgelast(w);
+/* Telt mee als komende/eerstvolgende wedstrijd? [20261127] ook een afgelaste: die blijft gewoon staan. */
+export const telMee = w => !!w;
 
 /* "Beker" / "Oefen" vóór de meta-regel. Competitie krijgt niets: dat is de normale situatie. */
 export function soortPill(w){

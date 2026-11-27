@@ -8,19 +8,19 @@
    eigen teams opent desktop.js in de gewone teamschermen.
    Tekent in een eigen view (#view-dkbouw) binnen #app.
 =============================================================== */
-import { S, $, esc, isBeheerder, toon, terugView } from './state.js?v=20261129h';
-import { BOUWEN, bouwVanCategorie } from './config.js?v=20261129h';
+import { S, $, esc, isBeheerder, toon, terugView } from './state.js?v=20261129i';
+import { BOUWEN, bouwVanCategorie } from './config.js?v=20261129i';
 import { ico } from './icons.js?v=20261127b';
-import { analyseWedstrijd } from './analyse.js?v=20261129h';
-import { laadBouwData, zetBouwContext, presentiePctTeam, presentiePctWedstrijdTeam, uitslagenTeam, modalNieuweUitleningVanuitBouw, splitsUitleningen, leenKaartInfo } from './bouw-hub.js?v=20261129h';
-import { trekUitleningIn, definitiefOverzetten, wijzigUitlening } from './teams-spelers.js?v=20261129h';
-import { htmlMeekijk } from './desktop-schermen.js?v=20261129h';
-import { rondeStatusTeam } from './evaluatierondes.js?v=20261129h';
-import { isSelectieBouw, htmlRadarBlok, htmlSelectieTegel, htmlSelectieScherm, selectieKlik, selectieInvoer } from './selectie-bouw.js?v=20261129h';
+import { analyseWedstrijd } from './analyse.js?v=20261129i';
+import { laadBouwData, zetBouwContext, presentiePctTeam, presentiePctWedstrijdTeam, uitslagenTeam, modalNieuweUitleningVanuitBouw, splitsUitleningen, leenKaartInfo } from './bouw-hub.js?v=20261129i';
+import { trekUitleningIn, definitiefOverzetten, wijzigUitlening } from './teams-spelers.js?v=20261129i';
+import { htmlMeekijk } from './desktop-schermen.js?v=20261129i';
+import { rondeStatusTeam } from './evaluatierondes.js?v=20261129i';
+import { isSelectieBouw, htmlRadarBlok, htmlSelectieTegel, htmlSelectieScherm, selectieKlik, selectieInvoer } from './selectie-bouw.js?v=20261129i';
 /* [20261116n] Trainingen van de week: blok op het dashboard + eigen scherm 'tr' */
-import { zorgVoorTrainingen, htmlDashBlok, htmlTrainingenScherm, trainingenKlik } from './bouw-trainingen.js?v=20261129h';
+import { zorgVoorTrainingen, htmlDashBlok, htmlTrainingenScherm, trainingenKlik } from './bouw-trainingen.js?v=20261129i';
 /* [20261125b] Evaluatieronde: blok op het dashboard + eigen scherm 'ev' (voortgang, scores, inzichten) */
-import { htmlRondeDashBlok, htmlRondeScherm, roKlik } from './ronde-overzicht.js?v=20261129hz';
+import { htmlRondeDashBlok, htmlRondeScherm, roKlik } from './ronde-overzicht.js?v=20261129iz';
 
 const cache = new Map();          // 'clubId|bouw' → context uit laadBouwData
 const bezig = new Map();          // lopende laadacties
@@ -91,7 +91,7 @@ terugView('dkbouw', () => {
     huidig.scherm = 'dash'; huidig.teamId = null; huidig.keuze = {};
     teken(); window.scrollTo(0, 0); return true;
   }
-  import('./teams.js?v=20261129h').then(m => { m.renderTeams(); toon('teams'); });
+  import('./teams.js?v=20261129i').then(m => { m.renderTeams(); toon('teams'); });
   return true;
 });
 
@@ -156,7 +156,7 @@ export function teamRijen(ctx){
   return ctx.teams.map(t => {
     const d = ctx.data.get(t.id) || {};
     const u = (() => { try { return uitslagenTeam(t); } catch(e){ return {}; } })();
-    const kom = (d.wedstrijden || []).filter(w => !gespeeld(w) && w.status !== 'afgelast').sort((a, b) => (a.datum + (a.aftrap || '')).localeCompare(b.datum + (b.aftrap || '')))[0] || null;
+    const kom = (d.wedstrijden || []).filter(w => !gespeeld(w))   /* [20261127] afgelast blijft gewoon staan */.sort((a, b) => (a.datum + (a.aftrap || '')).localeCompare(b.datum + (b.aftrap || '')))[0] || null;
     return { t, d, u, kom, tr: (() => { try { return presentiePctTeam(t); } catch(e){ return null; } })(),
       wd: (() => { try { return presentiePctWedstrijdTeam(t); } catch(e){ return null; } })(), kaart: gemKaart(d), open: openEvaluaties(d),
       /* [20260929a] lopende evaluatieronde van de club */
@@ -188,7 +188,7 @@ function htmlDashboard(ctx){
         ${rij.map(r => { const l = r.u?.laatste; const kl = l ? (l.voor > l.tegen ? 'groen' : l.voor < l.tegen ? 'rood' : '') : '';
           return `<div class="dkb-rij"><b>${esc(r.t.naam)}</b><span>${l ? 'tegen ' + esc(l.tegenstander || '') + (l.bron === 'app' ? ', app' : '') : (r.u?.knvbVerborgen ? 'geen KNVB-uitslagen (O10 en jonger)' : 'nog geen uitslag')}</span>${l ? `<span class="dk-pill ${kl}">${l.voor}\u2013${l.tegen}</span>` : ''}</div>`; }).join('') || '<p class="dk-leeg">Geen teams.</p>'}</div>
       <div class="dk-blok dkb-half"><h3>${ico('planning-calendar', 18)}Komende wedstrijden</h3>
-        ${rij.map(r => `<div class="dkb-rij"><b>${esc(r.t.naam)}</b><span>${r.kom ? esc(datumKort(r.kom.datum)) + (r.kom.aftrap ? ', ' + esc(r.kom.aftrap) : '') + ', ' + (r.kom.thuis ? 'thuis' : 'uit') + ' ' + esc(r.kom.tegenstander || '') : 'niets gepland'}</span></div>`).join('')}</div>
+        ${rij.map(r => `<div class="dkb-rij"><b>${esc(r.t.naam)}</b><span>${r.kom ? esc(datumKort(r.kom.datum)) + (r.kom.aftrap ? ', ' + esc(r.kom.aftrap) : '') + ', ' + (r.kom.thuis ? 'thuis' : 'uit') + ' ' + esc(r.kom.tegenstander || '') + (r.kom.status === 'afgelast' ? ' (afgelast)' : '') : 'niets gepland'}</span></div>`).join('')}</div>
       ${sel ? `<div class="dkb-kols">${rij.map(r => `<div class="dkb-kol">${tegelHtml(r)}${htmlRadarBlok(ctx, r.t)}</div>`).join('')}</div>`
         : `<div class="dkb-tegels">${rij.map(tegelHtml).join('')}</div>`}
       <div class="dk-blok dkb-opk"><h3>${ico('attendance-overview', 18)}Opkomst per team<span>dit seizoen</span></h3>
@@ -260,7 +260,7 @@ async function klik(e){
   const ctx = cache.get(huidig.clubId + '|' + huidig.bouw);
   const a = b.dataset.bk, id = b.dataset.id;
   if (a === 'ververs'){ await laadBouw(huidig.clubId, huidig.bouw, true); teken(); return; }
-  if (a === 'weekbrief'){ import('./club-weekbrief.js?v=20261129h').then(m => m.openWeekbrief(ctx?.teams || [], bouwNaamVan(huidig.bouw))); return; }
+  if (a === 'weekbrief'){ import('./club-weekbrief.js?v=20261129i').then(m => m.openWeekbrief(ctx?.teams || [], bouwNaamVan(huidig.bouw))); return; }
   if (a === 'naaruit'){ huidig.scherm = 'uit'; teken(); return; }
   if (a === 'selmaken'){ huidig.scherm = 'selmaken'; teken(); window.scrollTo(0, 0); return; }
   if (a === 'naardash'){ huidig.scherm = 'dash'; teken(); window.scrollTo(0, 0); return; }
