@@ -23,6 +23,8 @@ service firebase.storage {
     match /clubs/{clubId}/videos/{f} {
       allow read: if lid(clubId) || trainco(clubId);
       allow write: if lid(clubId) && request.resource.size < 300 * 1024 * 1024 && request.resource.contentType.matches('video/.*');
+      // [20261127] voorbeeldbeeld (poster) dat bij het uploaden in de browser wordt gemaakt
+      allow write: if lid(clubId) && request.resource.size < 2 * 1024 * 1024 && request.resource.contentType == 'image/jpeg';
       allow delete: if beheerder(clubId);
     }
     match /clubs/{clubId}/trainingvideos/{t}/{f} {

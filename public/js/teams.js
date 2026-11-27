@@ -17,6 +17,7 @@ import { kompasTips, startContentListener } from './content.js?v=20261129b';
 import { pasClubConfigToe, pasSportToe, clubAfk, weerLocatie, weerSleutel, logoImg, logoImgVoorDoc, primaireClubId, voorbeeldTeamcode, laadPlatformConfig, laadSoloAI } from './clubconfig.js?v=20261129b';
 import { rolNaam as clubRolNaam } from './rolnamen.js?v=20261120c';   /* [20261120c] eigen rolnamen van de club */
 import { ico } from './icons.js?v=20261127b';
+import { activeerVideoThumbs } from './video-thumb.js?v=20261127a';
 import { luisterActiviteiten, activiteitPlanningItems, openActiviteitVoorTeam } from './activiteiten-team.js?v=20261129b';   /* [20261125x] clubactiviteiten in de Planning */
 
 import { analyseWedstrijd } from './analyse.js?v=20261129b';
@@ -2519,6 +2520,7 @@ function koppelTeamTab(v, tab){
   if (tab === 'videos'){
     /* [20261118e] categorie kiezen */
     v.querySelectorAll('[data-tvcat]').forEach(b => b.onclick = () => { S._videoCat = b.dataset.tvcat; renderTeam(); });
+    activeerVideoThumbs(v);
     v.querySelectorAll('[data-open-video]').forEach(r => r.onclick = () => {
       telGebruik('video_open');
       telVideoBekeken(r.dataset.videoId);

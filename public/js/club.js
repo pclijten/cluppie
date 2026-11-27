@@ -8,7 +8,7 @@ import { teamsOpId } from './teams-ophalen.js?v=20261011g';
 import {
   S, $, $$, esc, meld, teamCode, openModal, sluitModal, toon, stopUnsubs, initialen, isBeheerder
 } from './state.js?v=20261129b';
-import { ACTIEF, DOC_CATEGORIEEN, docCategorieenAlle, catInfo, BOUWEN, bouwVanCategorie, bouwNaam, youtubeId, youtubeThumb, youtubeWatch, SEIZOEN_FALLBACK, GEBRUIK_CATEGORIEEN, catLabel } from './config.js?v=20261129b';
+import { ACTIEF, DOC_CATEGORIEEN, docCategorieenAlle, catInfo, BOUWEN, bouwVanCategorie, bouwNaam, youtubeId, youtubeWatch, SEIZOEN_FALLBACK, GEBRUIK_CATEGORIEEN, catLabel } from './config.js?v=20261129b';
 import { teltMee } from './opkomst.js?v=20260922c';
 import { htmlDiagramHerstel, koppelDiagramHerstel } from './training-herstel.js?v=20261129b';
 import { uploadHulpHtml, uploadFout, UPLOAD_HULP } from './upload-hulp.js?v=20261113c';
@@ -23,6 +23,7 @@ import { startClubContentListener, htmlClubContent, koppelClubContent } from './
 import { htmlInzichtTabs, htmlInzichtTab, openRapport } from './club-inzicht.js?v=20261129b';
 import { telGebruik, telNav } from './tracker.js?v=20261129b';
 import { ico } from './icons.js?v=20261127b';
+import { videoThumbHtml, activeerVideoThumbs, netteVideoTitel, maakPoster } from './video-thumb.js?v=20261127a';
 import { sportProfiel, sportVan, heeftSportlink, sportWoord } from './sporten.js?v=20261126g';
 import { INSTEL_TABS, INSTEL_BASIS, NIEUWE_TABS, htmlInstelNieuw, koppelInstelNieuw, htmlAlgemeenMelding, koppelAlgemeenMelding, modalNieuweClub } from './club-instellingen.js?v=20261129b';
 import { pasClubConfigToe, clubAfk, effectief, pdfProfielNu, pdfOmzettenAan } from './clubconfig.js?v=20261129b';
@@ -2098,10 +2099,8 @@ function htmlClubVideos(teams, videos){
     const upload = vid.bron === 'upload';
     const id = upload ? null : youtubeId(vid.url);
     const href = upload ? vid.url : (youtubeWatch(id) || vid.url);
-    const thumbInner = id
-      ? `<img src="${esc(youtubeThumb(id))}" alt="" loading="lazy" draggable="false"><span class="play">▶</span>`
-      : `<span class="play">▶</span>${upload ? '<span class="u-t-2xs u-fw-7" style="position:absolute;bottom:2px;right:3px;letter-spacing:.5px;color:var(--wit);background:color-mix(in srgb, var(--zwart) 55%, transparent);padding:1px var(--space-2xs);border-radius:var(--r-2xs);line-height:1">MP4</span>' : ''}`;
-    const titel = esc(vid.titel || 'Video');
+    const thumbInner = videoThumbHtml(vid);   /* [20261127] voorbeeldbeeld + duur (video-thumb.js) */
+    const titel = esc(netteVideoTitel(vid.titel));
     return `
       <div class="video-rij vsort" data-vid="${vid.id}" draggable="true">
         <span class="vsort-greep" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></span>
@@ -2783,6 +2782,7 @@ function koppelClubTab(v, tab, teams, trainingen, videos, documenten){
       b.onclick = () => modalVideoBekeken(vid, teams);
     });
     if (S.clubVideoBekeken) vulBekeken();
+    activeerVideoThumbs(v);
     if (S.clubId && !(S._vkTijd && S._vkClub === S.clubId && Date.now() - S._vkTijd < 60000)){
       S._vkTijd = Date.now(); S._vkClub = S.clubId;
       laadBekeken(S.clubId).then(b => { S.clubVideoBekeken = b; if (S.clubTab === 'videos') vulBekeken(); })
@@ -2801,6 +2801,7 @@ function koppelClubTab(v, tab, teams, trainingen, videos, documenten){
       const vid = videos.find(x => x.id === b.dataset.vweg);
       if (!confirm(`Video "${vid.titel || ''}" verwijderen?`)) return;
       try { if (vid.path) await deleteObject(sRef(storage, vid.path)); } catch(e){}
+      try { if (vid.thumbPath) await deleteObject(sRef(storage, vid.thumbPath)); } catch(e){}
       await deleteDoc(doc(db,'videos',vid.id));
       meld('Video verwijderd'); renderClub();
     });
@@ -4271,7 +4272,7 @@ function modalUploadVideo(files, teams, voorBouw = null){
   const teGroot = files.filter(f => f.size > MAX_VIDEO_MB() * 1024 * 1024);
   let rijen = files.filter(f => !teGroot.includes(f))
     .sort((a, b) => a.name.localeCompare(b.name, 'nl', { numeric: true }))
-    .map(file => ({ file, titel: file.name.replace(/\.[^.]+$/, '') }));
+    .map(file => ({ file, titel: netteVideoTitel(file.name.replace(/\.[^.]+$/, '')) }));
   if (!rijen.length)
     return meld(teGroot.length === 1 ? `Bestand is te groot (max ${MAX_VIDEO_MB()} MB). Comprimeer de clip eerst.` : `Alle bestanden zijn te groot (max ${MAX_VIDEO_MB()} MB per video).`);
   const voor = voorBouw ? new Set(teams.filter(t => standaardBouwVoorStof(t) === voorBouw).map(t => t.id)) : new Set();
@@ -4339,9 +4340,22 @@ async function uploadVideos(lijst, teamIds, catVelden){
       const r = sRef(storage, path);
       await uploadBytes(r, file, {contentType: file.type || 'video/mp4'});
       const url = await getDownloadURL(r);
+      /* [20261127] voorbeeldbeeld en duur uit het lokale bestand; lukt dat niet, dan maakt de
+         lijst later zelf een beeld uit de video (video-thumb.js) */
+      const extra = {};
+      const poster = await maakPoster(file).catch(() => null);
+      if (poster?.duur) extra.duur = poster.duur;
+      if (poster?.blob){
+        try {
+          const thumbPath = path.replace(/\.[^./]+$/, '') + '_poster.jpg';
+          const tr = sRef(storage, thumbPath);
+          await uploadBytes(tr, poster.blob, { contentType: 'image/jpeg' });
+          extra.thumb = await getDownloadURL(tr); extra.thumbPath = thumbPath;
+        } catch(e){ console.warn('[club] poster niet opgeslagen:', e?.code || e?.message); }
+      }
       await addDoc(collection(db,'videos'), {
         club: clubId, clubNaam,
-        bron: 'upload', url, path,
+        bron: 'upload', url, path, ...extra,
         titel, bestandsnaam: file.name, grootte: file.size,
         teams: teamIds, ...catVelden, volgorde: Date.now(),
         gemaakt: serverTimestamp(),

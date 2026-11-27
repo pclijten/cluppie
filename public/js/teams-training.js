@@ -13,9 +13,10 @@ import { telGebruik } from './tracker.js?v=20261129b';
 import { videoInKamer } from './kamer-beheer.js?v=20261129b';   /* [20261126v] video delen in de teamkamer */
 import { voorbeeldTeamcode } from './clubconfig.js?v=20261129b';
 import { ico } from './icons.js?v=20261127b';
+import { videoThumbHtml, netteVideoTitel } from './video-thumb.js?v=20261127a';
 
 import {
-  CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, youtubeId, youtubeThumb, youtubeWatch,
+  CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, youtubeId, youtubeWatch,
   SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo, isoWeek,
   catLabel,
 } from './config.js?v=20261129b';
@@ -590,17 +591,16 @@ function videoRijHtml(vid, nr){
   const upload = vid.bron === 'upload';
   const id = upload ? null : youtubeId(vid.url);
   const href = upload ? vid.url : (youtubeWatch(id) || vid.url);
-  const thumbInner = id
-    ? `<img src="${esc(youtubeThumb(id))}" alt="" loading="lazy"><span class="play">▶</span>`
-    : `<span class="play">▶</span>${upload ? '<span class="u-t-2xs u-fw-7" style="position:absolute;bottom:2px;right:3px;letter-spacing:.5px;color:var(--wit);background:color-mix(in srgb, var(--zwart) 55%, transparent);padding:1px var(--space-2xs);border-radius:var(--r-2xs);line-height:1">MP4</span>' : ''}`;
+  /* [20261127] echt voorbeeldbeeld, duur en een leesbare titel (video-thumb.js) */
+  const titel = netteVideoTitel(vid.titel);
   return `
-    <div class="video-rij" data-open-video="${esc(href)}" data-video-id="${esc(vid.id || '')}" data-video-type="${upload ? 'upload' : 'youtube'}" data-video-titel="${esc(vid.titel || 'Video')}" style="cursor:pointer">
-      <div class="thumb">${thumbInner}<span class="tv-nr">${nr}</span></div>
-      <div class="v"><div class="v-titel">${esc(vid.titel || 'Video')}</div>
+    <div class="video-rij vkaart" data-open-video="${esc(href)}" data-video-id="${esc(vid.id || '')}" data-video-type="${upload ? 'upload' : 'youtube'}" data-video-titel="${esc(titel)}" style="cursor:pointer">
+      <div class="thumb">${videoThumbHtml(vid)}<span class="tv-nr">${nr}</span></div>
+      <div class="v"><div class="v-titel" title="${esc(titel)}">${esc(titel)}</div>
         <div class="v-meta">${vid.clubNaam ? esc(vid.clubNaam) : (upload ? 'Eigen video' : 'YouTube')}</div></div>
       <div class="acties">
         ${(() => { const k = videoInKamer(vid); return k === null ? '' : `<button class="rij-wa rij-kamer${k ? ' aan' : ''}" data-kamer-video="${esc(vid.id || '')}" aria-pressed="${k}" title="${k ? 'Staat in de Teamkamer. Tik om weg te halen' : 'Deel in de Teamkamer voor ouders en spelers'}">${k ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M12 10v6M9 13h6"/></svg>'}<span class="rij-kamer-t">${k ? 'In Teamkamer' : 'Teamkamer'}</span></button>`; })()}
-        <button class="rij-wa" data-deel-video="${esc(href)}" data-deel-type="${upload ? 'upload' : 'youtube'}" data-deel-titel="${esc(vid.titel || 'Video')}" title="Delen via WhatsApp">${ico('action-whatsapp',18)}</button>
+        <button class="rij-wa" data-deel-video="${esc(href)}" data-deel-type="${upload ? 'upload' : 'youtube'}" data-deel-titel="${esc(titel)}" title="Delen via WhatsApp">${ico('action-whatsapp',18)}</button>
       </div>
     </div>`;
 }
