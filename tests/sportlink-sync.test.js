@@ -40,6 +40,8 @@ function standaardSL(){
       { teamcode: 501, teamnaam: 'VV Voorbeeld O11-1', poulecode: 801, competitiesoort: 'regulier', klassepoule: '3e klasse 14' },
       { teamcode: 501, teamnaam: 'VV Voorbeeld O11-1', poulecode: 905, competitiesoort: 'beker', klassepoule: 'Beker groep C' },
       { teamcode: 502, teamnaam: 'VV Voorbeeld O13-1', poulecode: 802, competitiesoort: 'regulier', klassepoule: '2e klasse 3' },
+      /* [20261127] winterfutsal: hetzelfde team nog een keer, met eigen teamcode en poule */
+      { teamcode: 602, teamnaam: 'VV Voorbeeld O13-1', poulecode: 950, competitiesoort: 'regulier', klassepoule: 'Regio 9 2', spelsoort: 'Zaal' },
     ],
     programma: [
       { wedstrijdcode: 1001, wedstrijddatum: T(6), aanvangstijd: '10:30', thuisteamid: 777, thuisteam: 'FC Kempen O11-1', uitteamid: 501, uitteam: 'VV Voorbeeld O11-1',
@@ -124,6 +126,8 @@ function zetKlaar(){
   ok(doc('clubgids/MOLB34B')?.naam === 'SV Molenbroek' && !doc('clubgids/MOLB34B').accommodatie, 'clubgids: uitploeg zonder sportpark');
   const lijst = doc('clubs/c1/geheim/_sportlink');
   ok(lijst.koppelingen['501'] === 't11' && lijst.teams[0].poules.length === 2, 'teamlijst met poules en koppelingen');
+  ok(lijst.koppelingen['502'] === 't13' && !lijst.koppelingen['602'] && doc('clubs/c1/geheim/t13').gematcht === true,
+    'winterfutsal: team met een zaalvariant in Sportlink wordt aan het veldteam gekoppeld');
   const ov = doc('clubs/c1/geheim/_afgelast');
   ok(ov.rijen.length === 1 && ov.rijen[0].teamId === 't11' && ov.rijen[0].teamNaam === 'O11-1', 'clubscherm-overzicht afgelast');
   ok(doc('clubs/c1').sportlinkClubcode === 'XXTT12Z', 'clubcode vastgelegd');
@@ -160,7 +164,7 @@ function zetKlaar(){
   /* clubinfo */
   zetKlaar();
   const info = await F.sportlinkClubInfo({ auth: { uid: 'u9', token: { firebase: { sign_in_provider: 'password' } } }, data: { clientId: 'k7Rq2pX9aW' } });
-  ok(info.gevonden && info.clubnaam === 'VV Voorbeeld' && info.kleur === '#1f8f4e' && info.aantalTeams === 2 && info.metBeker === 1, 'clubinfo: gevonden met teams');
+  ok(info.gevonden && info.clubnaam === 'VV Voorbeeld' && info.kleur === '#1f8f4e' && info.aantalTeams === 3 && info.metBeker === 1, 'clubinfo: gevonden met teams');
   ok(!JSON.stringify(info).includes('NL00BANK') && !JSON.stringify(info).includes('Jansen'), 'clubinfo: geen bank of secretaris');
   ok(info.bestaatAl === false, 'clubinfo: nog niet op Cluppie');
   store.set('clubs/c1', { ...doc('clubs/c1'), sportlinkClubcode: 'XXTT12Z' });

@@ -953,6 +953,7 @@ async function haalTeamlijst(clientId){
       leeftijdscategorie: String(r.leeftijdscategorie || '').trim() || null,
       geslacht: String(r.geslacht || '').trim() || null,
       speeldag: String(r.speeldag || '').trim() || null,
+      zaal: isZaal(r),
       _regulier: regulier,
     });
   }
@@ -986,6 +987,14 @@ function naamSleutel(naam, voorvoegsel){
   return s.replace(/[^a-z0-9+]+/g, '');
 }
 
+/* [20261127] Zaalvoetbal (winterfutsal)? Sportlink geeft hetzelfde team dan een tweede keer terug, met een eigen
+   teamcode en poule ("O13-1" naast "O13-1JM"). De veldnaam die Sportlink meestuurt is niet overal gelijk, dus
+   kijk in alle velden die de spelsoort of competitie beschrijven. Onbekend = geen zaal (gedrag als voorheen). */
+function isZaal(r){
+  return /zaal|futsal/i.test([r.spelsoort, r.kalespelsoort, r.competitienaam, r.competitiesoort, r.teamsoort, r.klasse, r.klassepoule]
+    .map(v => String(v || '')).join(' '));
+}
+
 /* Welk Sportlink-team hoort bij dit Cluppie-team? */
 function koppeling(team, lijst, voorvoegsel){
   const vast = String(team.sportlinkTeamcode || '').trim();
@@ -995,8 +1004,11 @@ function koppeling(team, lijst, voorvoegsel){
   }
   const k = naamSleutel(team.sportlinkNaam || team.naam, voorvoegsel);
   if (!k) return null;
-  const kandidaten = lijst.filter(x => naamSleutel(x.teamnaam, voorvoegsel) === k);
-  // Veld gaat vóór futsal e.d.: kies bij meerdere de variant mét poule.
+  const alle = lijst.filter(x => naamSleutel(x.teamnaam, voorvoegsel) === k);
+  // [20261127] Veld gaat vóór zaal: doet een team ook aan winterfutsal mee, dan telt alleen het veldteam.
+  const veld = alle.filter(x => !x.zaal);
+  const kandidaten = veld.length ? veld : alle;
+  // Kies bij meerdere de variant mét poule.
   const metPoule = kandidaten.filter(x => x.poulecode);
   const keuze = metPoule.length === 1 ? metPoule[0] : (kandidaten.length === 1 ? kandidaten[0] : null);
   return keuze ? { ...keuze, automatisch: true } : null;

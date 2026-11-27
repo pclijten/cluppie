@@ -2,11 +2,20 @@
 
 ASV'33 draait nu in een eigen omgeving: site cluppieasv33.nl (repo `cluppieasv33`), Firebase-project `cluppieasv33`. Na de verhuizing is ASV'33 een gewone club in cluppie.io (project `cluppie-ad329`) en stuurt cluppieasv33.nl door naar www.cluppie.io.
 
-Stand 27-11-2026: deel A is gedaan (23-11) en de proef van deel B is geslaagd (24-11, project `cluppie-proef`: 77 accounts, ruim 10.600 documenten, inloggen met het oude wachtwoord werkt). Deel C, de echte verhuizing, is nog niet gedaan en wacht op een avond die Paul kiest. Nog nooit tegen een echt project gedraaid: `bestanden`, `slot`/`ontgrendel` en het stil inloggen na het doorverwijzen.
+**Stand 27-11-2026: de verhuizing is gedaan.** ASV'33 draait op cluppie.io (club `PkoTXl0vGKTS5w0KSq4q`, 24 teams) en cluppieasv33.nl verwijst door.
 
-Cluppie.io draait sinds 27-11 op Firebase Hosting in plaats van GitHub Pages. Voor de verhuizing verandert dat niets: het adres blijft www.cluppie.io en de doorverwijspagina, `verhuisLogin` en het script zijn daarna opnieuw getest. De site van ASV'33 (cluppieasv33.nl) staat nog wel op GitHub Pages; de doorverwijzing in deel C stap 7 gaat dus nog zoals beschreven.
+Verloop op 27-11-2026 (ochtend, Nederlandse tijd):
 
-Vóór de echte verhuizing: `git pull` in de map Cluppie, en nagaan dat cluppie.io alle updates uit ASV'33 heeft (stand 27-11: t/m ASV'33 PR #110).
+- 09:24 cluppie.io leeggemaakt met `tools/maak-leeg.mjs`: alle proefclubs en proefteams weg, accounts en platform bleven staan.
+- 09:31 oude omgeving op slot (`slot` werkte in één keer; de oude rules staan in `.verhuis/` op de pc van Paul).
+- Daarna `accounts` (75 nieuw, 3 gekoppeld op e-mailadres), `gegevens` (10.900 documenten) en `bestanden` (1093 bestanden, 609 MB); `controle` eindigde op "Gelijk"; `club` gedraaid.
+- Nagekeken op www.cluppie.io. Bij Sportlink stonden 8 teams op "niet gevonden": twee bestaan niet in Sportlink (Mini's, O12-Test), de andere zes hadden door de winterfutsal een tweede Sportlink-team met dezelfde naam. Met de hand gekoppeld; sinds 20261127 kiest de sync in dat geval zelf het veldteam.
+- 10:06 doorverwijzing live (repo `cluppieasv33`, PR #112). Stil inloggen: de functie is bereikbaar; wie op het oude adres niet meer ingelogd was, logt één keer gewoon in.
+- 10:11 de drie geplande taken van `cluppieasv33` gepauzeerd in Cloud Scheduler (`wedstrijddagCheck`, `syncVoetbalNl`, `scoutWekelijks`).
+
+Voor trainers: de oude link stuurt door; het icoon op het beginscherm opnieuw zetten vanaf www.cluppie.io en meldingen daar opnieuw aanzetten (pushmeldingen horen bij het webadres).
+
+Wat hieronder staat is het draaiboek zoals het is gevolgd; het blijft staan als naslag en voor terugdraaien.
 
 ## Wat er is
 
