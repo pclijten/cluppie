@@ -92,4 +92,19 @@ assert.equal(tr2[0].koppel, 'open');
 assert.equal(tr2[1].koppel, 'geweigerd');
 assert.deepEqual(L.vandaagDoen({ trainers: tr2 }), [], 'trainers met een voorstel (ook geweigerd) staan niet meer in Vandaag doen');
 
+/* [20261127v] momentopname naast de echte clubdocumenten: verdwenen clubs weg, nieuwe erbij */
+{
+  const oud = [{ id: 'juv', naam: 'Juventa' }, { id: 'mif', naam: 'Mifano' }, { id: 'blijf', naam: 'Blijft', status: 'groen', startlijst: st(7) }];
+  const docs = { blijf: { id: 'blijf', naam: 'Blijft' }, asv: { id: 'asv', naam: 'Asv 33', teams: { a: true, b: true }, instellingen: { locatie: { plaats: 'Arcen' } } } };
+  const r = L.metEchteClubs(oud, docs);
+  assert.deepEqual(r.clubs.map(k => k.id), ['asv', 'blijf'], 'op naam, verdwenen clubs eruit');
+  assert.equal(r.weg, 2); assert.equal(r.nieuw, 1);
+  assert.equal(r.clubs[0].teams, 2); assert.equal(r.clubs[0].plaats, 'Arcen'); assert.equal(r.clubs[0].terugvalRij, true);
+  assert.equal(L.faseVan(r.clubs[0], nu), 'onbekend', 'nieuwe club zonder cijfers: fase onbekend');
+  assert.equal(r.clubs[1].status, 'groen', 'bestaande regel blijft zoals hij was');
+  const gelijk = L.metEchteClubs([{ id: 'a', naam: 'A' }], { a: { id: 'a', naam: 'A' } });
+  assert.equal(gelijk.weg + gelijk.nieuw, 0, 'niets veranderd');
+  assert.deepEqual(L.metEchteClubs(undefined, undefined).clubs, []);
+}
+
 console.log('platform-logica: alle controles geslaagd');

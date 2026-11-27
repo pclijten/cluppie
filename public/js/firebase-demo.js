@@ -660,6 +660,17 @@ if (DEMO_ROL === 'eindbaas'){
     beoordeelClubAanmelding: d => { const a = store.get('clubAanmeldingen/' + d.id); if (a) store.set('clubAanmeldingen/' + d.id, { ...a, status: d.besluit === 'goedkeuren' ? 'goedgekeurd' : 'afgewezen' }); return { ok: true }; },
     hernoemClubPlatform: d => { const c = store.get('clubs/' + d.clubId); if (c) store.set('clubs/' + d.clubId, { ...c, naam: d.naam, plaats: d.plaats }); const r = rijen.find(x => x.id === d.clubId); if (r){ r.naam = d.naam; r.plaats = d.plaats; } return { ok: true }; },
     stelKoppelingVoor: d => ({ ok: true, clubNaam: (store.get('clubs/' + d.clubId) || {}).naam || '' }),
+    /* [20261127v] club verwijderen: eerst tellen, dan (met de juiste naam) uit het geheugen halen */
+    verwijderClubPlatform: d => {
+      const c = store.get('clubs/' + d.clubId);
+      if (!c){ const e = new Error('Deze club bestaat niet (meer).'); e.code = 'failed-precondition'; throw e; }
+      const teams = [...store.keys()].filter(k => /^teams\/[^/]+$/.test(k) && (store.get(k) || {}).club === d.clubId);
+      if (d.droog !== false) return { droog: true, naam: c.naam, teams: teams.length, documenten: { wedstrijden: 12, trainingen: 30 }, losseDocumenten: 42, bestanden: 7 };
+      if (String(d.bevestigNaam || '').trim().toLowerCase() !== String(c.naam || '').trim().toLowerCase()){ const e = new Error('De naam klopt niet; er is niets verwijderd.'); e.code = 'failed-precondition'; throw e; }
+      store.delete('clubs/' + d.clubId); for (const k of teams) store.delete(k);
+      const i = rijen.findIndex(x => x.id === d.clubId); if (i >= 0) rijen.splice(i, 1);
+      veranderd(); return { klaar: true };
+    },
     startOndersteuning: () => { const e = new Error('Meehelpen kan niet in de demo: het opent de club als beheerder'); e.code = 'demo/niet-beschikbaar'; throw e; },
   });
 }
