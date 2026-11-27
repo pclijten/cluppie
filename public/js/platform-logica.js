@@ -128,3 +128,19 @@ export function kpiWaarden(o, aanmeldingen = [], trainers = []){
     aiClubs: ((o && o.clubs) || []).filter(k => k.ai && k.ai.aan).length,
   };
 }
+
+/* [20261127v] platformstats/overzicht is een momentopname (elke nacht, of met Vernieuwen). De clubdocumenten
+   zelf worden bij het openen altijd vers gelezen. Leg die twee naast elkaar: clubs die niet meer bestaan
+   vallen weg, clubs die er sinds de momentopname bij kwamen verschijnen met wat de client zelf weet.
+   Geeft { clubs, weg, nieuw }: weg/nieuw > 0 betekent dat de cijfers verouderd zijn. */
+export function metEchteClubs(clubs = [], docs = {}){
+  const ids = new Set(Object.keys(docs || {})), gezien = new Set();
+  const blijft = (clubs || []).filter(k => k && ids.has(k.id) && !gezien.has(k.id) && gezien.add(k.id));
+  const tel = o => o && typeof o === 'object' ? Object.keys(o).length : 0;
+  const erbij = Object.values(docs || {}).filter(c => c && !gezien.has(c.id)).map(c => ({
+    id: c.id, naam: c.naam || 'Club zonder naam', plaats: c.instellingen?.locatie?.plaats || '',
+    teams: tel(c.teams), leden: tel(c.leden), gemaakt: c.gemaakt, status: 'onbekend',
+    signalen: [], terugvalRij: true }));
+  const lijst = [...blijft, ...erbij].sort((a, b) => String(a.naam).localeCompare(String(b.naam)));
+  return { clubs: lijst, weg: (clubs || []).length - blijft.length, nieuw: erbij.length };
+}
