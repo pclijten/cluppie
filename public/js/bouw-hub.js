@@ -21,25 +21,25 @@
    wordt ÉÉN keer per team opgehaald bij het openen en daarna door alle
    schermen hergebruikt (huidigeContext.data) — geen dubbele reads. */
 import { teamsOpId } from './teams-ophalen.js?v=20261011g';
-import { pasClubConfigToe } from './clubconfig.js?v=20261130m';
-import { S, esc, openModal, sluitModal, isBeheerder, terugLaag } from './state.js?v=20261130m';
+import { pasClubConfigToe } from './clubconfig.js?v=20261130f';
+import { S, esc, openModal, sluitModal, isBeheerder, terugLaag } from './state.js?v=20261130f';
 import {
   db, collection, doc, getDoc, getDocs, query, where
 } from './firebase.js?v=20261011g';
 /* [20261120m] Rechtstreeks uit de Firebase-SDK (zelfde URL als firebase.js, dus
    dezelfde Firestore-instantie); firebase.js zelf blijft ongewijzigd. */
 import { getDocFromCache, getDocsFromCache } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import { BOUWEN, bouwNaam, SKILLS, SEIZOEN_FALLBACK, catLabel, TEAM_TAGS } from './config.js?v=20261130m';
+import { BOUWEN, bouwNaam, SKILLS, SEIZOEN_FALLBACK, catLabel, TEAM_TAGS } from './config.js?v=20261130f';
 import { TE_GROEPEN, TE_NIV, TE_FOCUS_LADDER, TE_STEM, teDoelIco, teVervolg, teLeeftijd, teCriteriaVoor, teScores, teIsNieuw, teGroepWaarden, teKleur, teCijfer, teZinnen } from './team-evaluatie-criteria.js?v=20261127p';
 import { ico } from './icons.js?v=20261127b';
-import { trekUitleningIn, definitiefOverzetten, wijzigUitlening } from './teams-spelers.js?v=20261130m';
-import { openUitleenForm } from './uitleen-form.js?v=20261130m';
+import { trekUitleningIn, definitiefOverzetten, wijzigUitlening } from './teams-spelers.js?v=20261130f';
+import { openUitleenForm } from './uitleen-form.js?v=20261130f';
 import { vandaagLokaal, plusDagen, leenActief, leenStatus, leenSoortLabel, leenOmschrijving } from './uitleen-regels.js?v=20261127p';
-import { telGebruik } from './tracker.js?v=20261130m';
-import { analyseWedstrijd } from './analyse.js?v=20261130m';
+import { telGebruik } from './tracker.js?v=20261130f';
+import { analyseWedstrijd } from './analyse.js?v=20261130f';
 import { opkomstVoor, MIN_OPKOMST_TRAININGEN } from './opkomst.js?v=20260922c';
-import { rondesVan, rondeStatusTeam } from './evaluatierondes.js?v=20261130m';
-import { priveBeoordelingenVan } from './beoordelingen-prive.js?v=20261130m';
+import { rondesVan, rondeStatusTeam } from './evaluatierondes.js?v=20261130f';
+import { priveBeoordelingenVan } from './beoordelingen-prive.js?v=20261130f';
 
 /* [20260929a] Voortgang van de "verplichte" evaluatie per team: de lopende
    evaluatieronde van de club als die er is, anders (zoals voorheen) de
@@ -222,11 +222,11 @@ export async function openBouwHub(clubId, bouw, isHerbezoek){
   /* [20261127] Op de laptop (desktopweergave actief): het bouwdashboard van
      de desktop-bouwomgeving, hetzelfde scherm als via de zijbalk. */
   if (!isHerbezoek && document.documentElement.classList.contains('desk')){
-    try { const d = await import('./desktop.js?v=20261130m'); await d.openBouwDashboard(clubId, bouw); return; }
+    try { const d = await import('./desktop.js?v=20261130f'); await d.openBouwDashboard(clubId, bouw); return; }
     catch(e){ console.warn('[Cluppie] desktop-bouwdashboard niet geopend, terug naar het oude dashboard', e); }
   }
   if (!isHerbezoek && !window.matchMedia('(min-width:1100px) and (min-height:520px)').matches){
-    try { const m = await import('./mobiel-bouw.js?v=20261130m'); await m.openMobielBouw(clubId, bouw); return; }
+    try { const m = await import('./mobiel-bouw.js?v=20261130f'); await m.openMobielBouw(clubId, bouw); return; }
     catch(e){ console.warn('[Cluppie] mobiele bouw-omgeving niet geladen, terug naar het oude dashboard', e); }
   }
   const el = bouwLaag();
@@ -897,7 +897,7 @@ function renderTeamsScherm(){
   inhoud.querySelectorAll('[data-bh-open-team]').forEach(b => {
     b.onclick = async () => {
       sluitBouwHub(); toonTerugPil();
-      const m = await import('./teams.js?v=20261130m');
+      const m = await import('./teams.js?v=20261130f');
       m.openTeam(b.dataset.bhOpenTeam);
     };
   });

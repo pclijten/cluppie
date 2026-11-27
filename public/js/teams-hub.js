@@ -11,22 +11,23 @@
    alleen HTML + de opslaghulpjes voor de wedstrijd-presentie. Het importeert
    bewust NIET terug uit teams.js (geen circulaire import). */
 import { db, doc, updateDoc, deleteField } from './firebase.js?v=20261011g';
-import { S, esc, meld, datumNL, modAan, openModal } from './state.js?v=20261130m';
-import { AFWEZIG_REDENEN, afwezigRedenInfo, catLabel } from './config.js?v=20261130m';
+import { S, esc, meld, datumNL, modAan, openModal } from './state.js?v=20261130f';
+import { AFWEZIG_REDENEN, afwezigRedenInfo, catLabel } from './config.js?v=20261130f';
+import { trainingNieuw } from './training-nieuw.js?v=20261130f';   /* [20261127t] oude trainingen tellen niet als nieuw */
 import { ico } from './icons.js?v=20261127b';
-import { logoImg, primaireClubId } from './clubconfig.js?v=20261130m';
-import { analyseWedstrijd, WISSEL_BEURT } from './analyse.js?v=20261130m';
-import { telGebruik } from './tracker.js?v=20261130m';
-import { ongelezenBerichten } from './berichten.js?v=20261130m';
-import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261130m';
-import { toernooiBezig } from './teams-toernooi.js?v=20261130m';
-import { htmlRondeBalk } from './evaluatierondes.js?v=20261130m';
-import { onderdeelAan } from './onderdelen.js?v=20261130m';
+import { logoImg, primaireClubId } from './clubconfig.js?v=20261130f';
+import { analyseWedstrijd, WISSEL_BEURT } from './analyse.js?v=20261130f';
+import { telGebruik } from './tracker.js?v=20261130f';
+import { ongelezenBerichten } from './berichten.js?v=20261130f';
+import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261130f';
+import { toernooiBezig } from './teams-toernooi.js?v=20261130f';
+import { htmlRondeBalk } from './evaluatierondes.js?v=20261130f';
+import { onderdeelAan } from './onderdelen.js?v=20261130f';
 import { teamkamerMag } from './kamer-logica.js?v=20261127k';
-import { eersteStappenPlaats } from './snelstart.js?v=20261130m';
-import { htmlNu } from './nu-scherm.js?v=20261130m';
+import { eersteStappenPlaats } from './snelstart.js?v=20261130f';
+import { htmlNu } from './nu-scherm.js?v=20261130f';
 import { spelersOpWedstrijd, effectieveSelectie, leenErbijNa } from './uitleen-regels.js?v=20261127p';
-import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261130m';
+import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261130f';
 import { isAfgelast, telMee, soortPill, wedstrijdInfo, htmlAfgelastBanner, afgelastMeldingen, deelTekst } from './wedstrijd-status.js?v=20261129i';
 
 
@@ -80,7 +81,7 @@ export function htmlHub(updInfo){
   const documentenOngelezen = S.documenten
     .filter(d => (d.teams||[]).includes(S.teamId) && !S.trainingenGelezen[d.id]).length;
   const oefenstofOngelezen = S.trainingen
-    .filter(t => (t.teams||[]).includes(S.teamId) && !S.trainingenGelezen[t.id]).length;
+    .filter(t => (t.teams||[]).includes(S.teamId) && trainingNieuw(t, S.trainingenGelezen)).length;
 
   /* Teamkeuze-dropdown: alle teams van deze coach + doorlink naar het
      teamsoverzicht (daar wonen clubbeheer, berichten en team-aanmaken). */

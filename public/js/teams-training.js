@@ -8,21 +8,22 @@ import {
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, speler, initialen, openModal, sluitModal, toon, isBeheerder
-} from './state.js?v=20261130m';
-import { telGebruik } from './tracker.js?v=20261130m';
-import { videoInKamer } from './kamer-beheer.js?v=20261130m';   /* [20261126v] video delen in de teamkamer */
-import { voorbeeldTeamcode } from './clubconfig.js?v=20261130m';
+} from './state.js?v=20261130f';
+import { telGebruik } from './tracker.js?v=20261130f';
+import { videoInKamer } from './kamer-beheer.js?v=20261130f';   /* [20261126v] video delen in de teamkamer */
+import { voorbeeldTeamcode } from './clubconfig.js?v=20261130f';
+import { trainingNieuw } from './training-nieuw.js?v=20261130f';   /* [20261127t] oude trainingen tellen niet als nieuw */
 import { ico } from './icons.js?v=20261127b';
-import { videoThumbHtml, netteVideoTitel } from './video-thumb.js?v=20261130m';
+import { videoThumbHtml, netteVideoTitel } from './video-thumb.js?v=20261130f';
 
 import {
   CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, youtubeId, youtubeWatch,
   SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo, isoWeek,
   catLabel,
-} from './config.js?v=20261130m';
-import { onderdeelAan } from './onderdelen.js?v=20261130m';
-import { htmlKompas } from './teams-leerlijn.js?v=20261130m';
-import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261130m';
+} from './config.js?v=20261130f';
+import { onderdeelAan } from './onderdelen.js?v=20261130f';
+import { htmlKompas } from './teams-leerlijn.js?v=20261130f';
+import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261130f';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20261127p';
 import { spelersOpTraining } from './uitleen-regels.js?v=20261127p';
 import {
@@ -427,7 +428,7 @@ export function htmlTeamTrainingen(){
   const pdfRijHtml = (t, dagChip, datumIso) => {
     const aanpas = magAanpassen && (t.teams || []).length === 1 && Array.isArray(t.oefeningen) && t.oefeningen.length && datumIso && datumIso >= vandaagStr
       ? `<button class="knop klein licht" data-tr-aanpassen="${esc(t.id)}" data-datum="${esc(datumIso)}" title="Maak in Training maken een andere training voor deze dag">Andere training maken</button>` : '';
-    const ongelezen = !S.trainingenGelezen[t.id];
+    const ongelezen = trainingNieuw(t, S.trainingenGelezen);
     const heeftAi = Array.isArray(t.oefeningen) && t.oefeningen.length;
     const chip = dagChip
       ? `<span class="dag-chip">${esc(dagChip)}</span>`
@@ -493,7 +494,7 @@ export function htmlTeamTrainingen(){
       const standaardOpen = (key === standaardOpenKey) || ookOpen.has(key);
       const open = standaardOpen ? !S._pdfDicht.has(key) : S._pdfDicht.has('open:'+key);
       const toonAlles = S._pdfToonAlles.has(key);
-      const ongelezenInWeek = items.filter(t => !S.trainingenGelezen[t.id]).length;
+      const ongelezenInWeek = items.filter(t => trainingNieuw(t, S.trainingenGelezen)).length;
 
       // titel + datumbereik van de week
       let titel, periode = '';
