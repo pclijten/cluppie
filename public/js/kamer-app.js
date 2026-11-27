@@ -49,7 +49,7 @@ const AUTH_FOUT = { 'auth/invalid-credential': 'E-mailadres of wachtwoord klopt 
 
 /* [20261127b] het logo van de club als app-icoon van de teamkamer op het beginscherm (js/app-icoon.js) */
 function appIcoon(k){
-  import('./app-icoon.js?v=20261128m').then(m => m.zetAppIcoon({ clubId: k.club || 'los', naam: k.clubNaam || '', logo: k.clubLogo || '', afkorting: k.clubAfk || '' }, 'kamer')).catch(() => {});
+  import('./app-icoon.js?v=20261128o').then(m => m.zetAppIcoon({ clubId: k.club || 'los', naam: k.clubNaam || '', logo: k.clubLogo || '', afkorting: k.clubAfk || '', icoon: k.clubIcoon || null }, 'kamer')).catch(() => {});
 }
 function toast(tekst){
   document.querySelectorAll('.tk-toast').forEach(x => x.remove());

@@ -158,7 +158,7 @@ const kamerSpeler = onDocumentWritten({ document: 'teams/{teamId}/spelers/{spele
 });
 const ALLES = { uitslag: true, live: true, opstelling: true, opstellingAltijd: true };
 /* [eindbaas] de eindbaas zet een mogelijkheid aan of uit, of de club verandert van naam, plaats, logo of afkorting: alle teamkamers van die club opnieuw */
-const clubSleutel = (c) => JSON.stringify(c ? [c.platformModules?.teamkamer === true, c.platformModules?.teamkamerOpties || null, c.naam || '', c.instellingen?.locatie || null, c.instellingen?.identiteit?.logo || '', c.instellingen?.identiteit?.afkorting || ''] : 'geen');
+const clubSleutel = (c) => JSON.stringify(c ? [c.platformModules?.teamkamer === true, c.platformModules?.teamkamerOpties || null, c.naam || '', c.instellingen?.locatie || null, c.instellingen?.identiteit?.logo || '', c.instellingen?.identiteit?.afkorting || '', c.instellingen?.identiteit?.appIcoon?.a512 || ''] : 'geen');
 const kamerClub = onDocumentWritten({ document: 'clubs/{clubId}', region: REGIO }, async (event) => {
   const voor = event.data.before.data(), na = event.data.after.data();
   const zelfde = clubSleutel(voor) === clubSleutel(na);

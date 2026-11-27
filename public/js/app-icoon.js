@@ -36,10 +36,10 @@ export function korteNaam(naam, afkorting){
 
 /* Het manifest per club. Zelfde start_url/scope als public/manifest.webmanifest (en geen eigen id),
    zodat het dezelfde app blijft: Chrome kan een bestaande installatie dan bijwerken. */
-export function maakManifest(naam, afkorting, soort = 'app'){
-  const n = schoon(naam), kort = korteNaam(n, afkorting);
-  if (soort === 'kamer') return maakKamerManifest(n, kort);
-  const ic = (s, p) => ({ src: `icons/club-${s}${p === 'maskable' ? '-maskable' : ''}.png`, sizes: `${s}x${s}`, type: 'image/png', purpose: p });
+export function maakManifest(naam, afkorting, soort = 'app', icoon = null){
+  const n = schoon(naam), kort = korteNaam(n, afkorting), srv = serverIconen(icoon);
+  if (soort === 'kamer') return maakKamerManifest(n, kort, srv);
+  const ic = (s, p) => ({ src: srv ? srv[(p === 'maskable' ? 'm' : 'a') + s] : `icons/club-${s}${p === 'maskable' ? '-maskable' : ''}.png`, sizes: `${s}x${s}`, type: 'image/png', purpose: p });
   return {
     name: n ? `${n} · Cluppie` : 'Cluppie — Coach je team',
     short_name: korteNaam(n, afkorting),
@@ -55,8 +55,8 @@ export function maakManifest(naam, afkorting, soort = 'app'){
 }
 /* De teamkamer: zelfde id/start_url/scope als public/kamer.webmanifest. Onder het icoon "ASV'33 Team",
    zodat een trainer met beide apps ze uit elkaar houdt (te lang: alleen de clubnaam). */
-function maakKamerManifest(n, kort){
-  const ic = (s, p) => ({ src: `icons/kamer-${s}${p === 'maskable' ? '-maskable' : ''}.png`, sizes: `${s}x${s}`, type: 'image/png', purpose: p });
+function maakKamerManifest(n, kort, srv){
+  const ic = (s, p) => ({ src: srv ? srv[(p === 'maskable' ? 'm' : 'a') + s] : `icons/kamer-${s}${p === 'maskable' ? '-maskable' : ''}.png`, sizes: `${s}x${s}`, type: 'image/png', purpose: p });
   const team = kort !== 'Cluppie' && (kort + ' Team').length <= 14 ? kort + ' Team' : (kort === 'Cluppie' ? 'Teamkamer' : kort);
   return {
     id: 'kamer.html',
@@ -71,6 +71,24 @@ function maakKamerManifest(n, kort){
     theme_color: '#0e1116',
     icons: [ic(192, 'any'), ic(512, 'any'), ic(192, 'maskable'), ic(512, 'maskable')],
   };
+}
+
+/* [20261127c] Android haalt het icoon bij het installeren buiten de service worker om op (de
+   WebAPK-server van Google, of Chrome zelf). Daarom zet een clubbeheerder de iconen ook als echte
+   bestanden in Firebase Storage (clubs/{id}/trainingen/app-icoon/, daar mogen leden PNG's zetten,
+   dus geen nieuwe rules nodig); de openbare download-links staan in instellingen.identiteit.appIcoon.
+   Die gaan in het manifest; zonder die links blijven de iconen uit de cache van de app. */
+const STORAGE_URL = /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/[A-Za-z0-9._-]+\/o\/[^\s"'<>]+$/;
+export const ICOON_SLEUTELS = ['a192', 'a512', 'm192', 'm512'];
+export function serverIconen(icoon){
+  if (!icoon || typeof icoon !== 'object') return null;
+  return ICOON_SLEUTELS.every(k => typeof icoon[k] === 'string' && STORAGE_URL.test(icoon[k])) ? icoon : null;
+}
+/* Handtekening van alleen het logo: horen de iconen in Storage nog bij het huidige logo? */
+export const logoSig = (logo) => handtekening('', '', logo, '');
+export function serverIcoonNodig(logo, icoon){
+  if (!logo || /^icons\/icon-/.test(logo)) return false;
+  return !serverIconen(icoon) || icoon.sig !== logoSig(logo);
 }
 
 /* Korte handtekening van club + logo + naam, om niet bij elke opstart opnieuw te tekenen. */
@@ -146,11 +164,13 @@ export function zetAppIcoon(merk, soort = 'app'){
   _bezig = klaar;
   return klaar;
 }
-async function doe(l, { clubId, naam, logo, afkorting }, soort){
+async function doe(l, { clubId, naam, logo, afkorting, icoon }, soort){
   const S = SOORTEN[soort], lsIos = LS_IOS + S.ls, lsSig = LS_SIG + S.ls;
   /* geen eigen logo (of het Cluppie-logo zelf): het gewone Cluppie-icoon */
   if (!clubId || !logo || /^icons\/icon-/.test(logo)) return wis(l, soort);
-  const sig = handtekening(clubId, naam, logo, afkorting);
+  /* iconen in Storage alleen als ze bij dit logo horen */
+  const srv = serverIconen(icoon) && icoon.sig === logoSig(logo) ? icoon : null;
+  const sig = handtekening(clubId, naam, logo, afkorting + '|' + (srv ? srv.a512 : ''));
   const titel = maakManifest(naam, afkorting, soort).short_name;
   let ios = null;
   try { ios = JSON.parse(localStorage.getItem(lsIos) || 'null'); } catch {}
@@ -171,7 +191,7 @@ async function doe(l, { clubId, naam, logo, afkorting }, soort){
       await c.put(`icons/${S.icoon}-${maat}.png`, new Response(await alsBlob(teken(img, maat, VULLING.any, true)), { headers: png }));
       await c.put(`icons/${S.icoon}-${maat}-maskable.png`, new Response(await alsBlob(teken(img, maat, VULLING.maskable, false)), { headers: png }));
     }
-    await c.put(S.manifest, new Response(JSON.stringify(maakManifest(naam, afkorting, soort)), { headers: { 'Content-Type': 'application/manifest+json', 'Cache-Control': 'no-cache' } }));
+    await c.put(S.manifest, new Response(JSON.stringify(maakManifest(naam, afkorting, soort, srv)), { headers: { 'Content-Type': 'application/manifest+json', 'Cache-Control': 'no-cache' } }));
     try { localStorage.setItem(lsSig, sig); } catch {}
     herlaadManifest(l, sig, soort);
   }
@@ -190,4 +210,25 @@ async function wis(l, soort){
   }
   if (had) herlaadManifest(l, '0', soort);
   return false;
+}
+
+/* [20261127c] Clubbeheerder: de iconen als echte bestanden in Storage zetten en de links in het
+   clubdocument bewaren. fb = { storage, sRef, uploadBytes, getDownloadURL, db, doc, updateDoc }. */
+const _gemaakt = new Set();
+export async function maakServerIcoon(clubId, logo, fb){
+  const sig = logoSig(logo);
+  if (!clubId || _gemaakt.has(clubId + sig)) return null;
+  _gemaakt.add(clubId + sig);
+  const img = await laadPlaatje(logo);
+  const uit = { sig };
+  for (const maat of [192, 512]){
+    for (const [k, vul, rond] of [['a', VULLING.any, true], ['m', VULLING.maskable, false]]){
+      const r = fb.sRef(fb.storage, `clubs/${clubId}/trainingen/app-icoon/${sig}-${k}${maat}.png`);
+      await fb.uploadBytes(r, await alsBlob(teken(img, maat, vul, rond)), { contentType: 'image/png', cacheControl: 'public, max-age=31536000' });
+      uit[k + maat] = await fb.getDownloadURL(r);
+    }
+  }
+  if (!serverIconen(uit)) throw new Error('onverwachte download-link');
+  await fb.updateDoc(fb.doc(fb.db, 'clubs', clubId), { 'instellingen.identiteit.appIcoon': uit });
+  return uit;
 }
