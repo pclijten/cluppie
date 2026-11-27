@@ -28,7 +28,7 @@
 <link rel="preload" href="fonts/barlow-condensed-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="fonts/fonts.css">
-<link rel="stylesheet" href="over/over.css?v=20261128b">
+<link rel="stylesheet" href="over/over.css?v=20261128c">
 <link rel="stylesheet" href="vendor/over/locomotive-scroll.css">
 <script>document.documentElement.classList.add('js');</script>
 </head>
@@ -144,7 +144,7 @@
           <li>Het programma van vandaag en je sponsoren op de kantine-tv.</li>
           <li>Een vrijwilligersbank met per taak precies wat je doet.</li>
         </ul>
-        <div class="acties"><a href="#rondom" class="btn btn--vol">Bekijk alle ingangen</a><a href="#rondom" class="kies__verder">Toernooi en kantine</a></div>
+        <div class="acties"><a href="#rondom" class="btn btn--vol">Bekijk alle ingangen</a><a href="#kantine-tv" class="kies__verder">Probeer de kantine-tv</a></div>
       </article>
     </div>
   </div>
@@ -486,6 +486,54 @@
   </div>
   <svg class="hoofdstuk__lijn" viewBox="0 0 1000 20" preserveAspectRatio="none" aria-hidden="true"><path d="M0 10 H1000" pathLength="1"/></svg>
 </div>
+
+<!-- 3a · De kantine-tv om zelf te proberen [20261127]: de echte tv-pagina (index.html?scherm=voorbeeld) in demomodus, zonder database -->
+<section class="tvdemo" id="kantine-tv" aria-labelledby="tvdemo-kop">
+  <div class="container">
+    <div class="tvdemo__kop">
+      <div>
+        <p class="hoofdstuk__label">Probeer het zelf</p>
+        <h2 id="tvdemo-kop">De kantine-tv, live</h2>
+      </div>
+      <p class="lead">Het programma van vandaag met veld, kleedkamer en stand, je sponsoren en eigen mededelingen. Kies een sjabloon en een clubkleur, en druk op Goal! om te zien wat de kantine ziet als er gescoord wordt.</p>
+    </div>
+    <div class="tvdemo__grid">
+      <div class="tvdemo__tv">
+        <div class="tvdemo__scherm">
+          <iframe title="Voorbeeld van de kantine-tv" data-tv-src="index.html?scherm=voorbeeld&amp;tv=1&amp;ontwerp=1&amp;proef=1&amp;demo&amp;naam=Jouw%20club" loading="lazy" tabindex="-1"></iframe>
+          <div class="tvdemo__goalflits" aria-hidden="true"></div>
+        </div>
+        <div class="tvdemo__voet" aria-hidden="true"></div>
+      </div>
+      <div class="tvdemo__bediening">
+        <button type="button" class="tvdemo__goal" data-tv-goal><span class="tvdemo__bal" aria-hidden="true">⚽</span> Goal!</button>
+        <p class="tvdemo__label">Sjabloon</p>
+        <div class="tvdemo__sjablonen" role="group" aria-label="Kies een sjabloon">
+          <button type="button" class="tvdemo__sj" data-tv-sjabloon="wedstrijdavond" aria-pressed="true">Wedstrijdavond</button>
+          <button type="button" class="tvdemo__sj" data-tv-sjabloon="bord" aria-pressed="false">Tactisch bord</button>
+          <button type="button" class="tvdemo__sj" data-tv-sjabloon="vertrekhal" aria-pressed="false">Vertrekhal</button>
+          <button type="button" class="tvdemo__sj" data-tv-sjabloon="affiche" aria-pressed="false">Affiche</button>
+          <button type="button" class="tvdemo__sj" data-tv-sjabloon="bento" aria-pressed="false">Bento</button>
+          <button type="button" class="tvdemo__sj" data-tv-sjabloon="veldkaart" aria-pressed="false">Veldkaart</button>
+          <button type="button" class="tvdemo__sj" data-tv-sjabloon="sportnieuws" aria-pressed="false">Sportnieuws</button>
+          <button type="button" class="tvdemo__sj" data-tv-sjabloon="lichtkrant" aria-pressed="false">Lichtkrant</button>
+          <button type="button" class="tvdemo__sj" data-tv-sjabloon="plakboek" aria-pressed="false">Plakboek</button>
+          <button type="button" class="tvdemo__sj" data-tv-sjabloon="kubus" aria-pressed="false">Kubus</button>
+          <button type="button" class="tvdemo__sj" data-tv-sjabloon="lounge" aria-pressed="false">Lounge</button>
+        </div>
+        <p class="tvdemo__label">Clubkleur</p>
+        <div class="tvdemo__kleuren" role="group" aria-label="Kies een clubkleur">
+          <button type="button" class="tvdemo__kleur" data-tv-kleur="#c8102e" style="--k:#c8102e" aria-pressed="true" aria-label="Clubkleur Rood"></button>
+          <button type="button" class="tvdemo__kleur" data-tv-kleur="#0b5fff" style="--k:#0b5fff" aria-pressed="false" aria-label="Clubkleur Blauw"></button>
+          <button type="button" class="tvdemo__kleur" data-tv-kleur="#0a7d3b" style="--k:#0a7d3b" aria-pressed="false" aria-label="Clubkleur Groen"></button>
+          <button type="button" class="tvdemo__kleur" data-tv-kleur="#f2c230" style="--k:#f2c230" aria-pressed="false" aria-label="Clubkleur Geel"></button>
+          <button type="button" class="tvdemo__kleur" data-tv-kleur="#111827" style="--k:#111827" aria-pressed="false" aria-label="Clubkleur Zwart"></button>
+        </div>
+        <p class="tvdemo__noot">Een verzonnen club met proefwedstrijden. Bij jullie komt het programma uit Sportlink en de stand van de coaches langs de lijn. Spelersnamen bij een doelpunt staan standaard uit.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- 1c · Alle ingangen: wie komt waar binnen -->
 <section class="ingangen" id="ingangen" aria-labelledby="ingangen-kop">
@@ -1019,6 +1067,32 @@
     };
     addEventListener('scroll',()=>{ if(!wacht){ wacht=true; requestAnimationFrame(bij); } },{passive:true});
     addEventListener('resize',bij); bij();
+  })();
+
+  /* [20261127] de kantine-tv: de echte tv-pagina in een iframe (demomodus), pas geladen als hij in beeld komt.
+     Sjabloon en Goal! gaan met postMessage (zoals het ontwerpscherm in de app), de kleur laadt de tv opnieuw. */
+  (()=>{
+    const ifr=document.querySelector('.tvdemo iframe'); if(!ifr) return;
+    const st={sjabloon:'wedstrijdavond', kleur:'#c8102e'};
+    const bron=()=>ifr.dataset.tvSrc+'&sjabloon='+st.sjabloon+'&kleur='+encodeURIComponent(st.kleur);
+    const stuur=b=>{ try{ ifr.contentWindow.postMessage({cluppieTv:1, ...b}, location.origin); }catch(e){} };
+    new IntersectionObserver((es,o)=>es.forEach(e=>{ if(e.isIntersecting){ ifr.src=bron(); o.disconnect(); } }),{rootMargin:'300px'}).observe(ifr);
+    document.querySelectorAll('[data-tv-sjabloon]').forEach(k=>k.addEventListener('click',()=>{
+      st.sjabloon=k.dataset.tvSjabloon;
+      document.querySelectorAll('[data-tv-sjabloon]').forEach(x=>x.setAttribute('aria-pressed', x===k));
+      if(!ifr.src) ifr.src=bron(); else stuur({sjabloon:st.sjabloon});
+    }));
+    document.querySelectorAll('[data-tv-kleur]').forEach(k=>k.addEventListener('click',()=>{
+      st.kleur=k.dataset.tvKleur;
+      document.querySelectorAll('[data-tv-kleur]').forEach(x=>x.setAttribute('aria-pressed', x===k));
+      ifr.src=bron();
+    }));
+    const flits=document.querySelector('.tvdemo__goalflits'), knop=document.querySelector('[data-tv-goal]');
+    knop.addEventListener('click',()=>{
+      if(!ifr.src) ifr.src=bron();
+      stuur({goal:true});
+      knop.classList.remove('schiet'); flits.classList.remove('aan'); void knop.offsetWidth; knop.classList.add('schiet'); flits.classList.add('aan');
+    });
   })();
 
   /* [20261127] de rail met nieuws: knoppen schuiven een kaart verder */
