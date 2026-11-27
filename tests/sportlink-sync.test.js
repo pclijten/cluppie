@@ -39,7 +39,9 @@ function standaardSL(){
     teams: [
       { teamcode: 501, teamnaam: 'VV Voorbeeld O11-1', poulecode: 801, competitiesoort: 'regulier', klassepoule: '3e klasse 14' },
       { teamcode: 501, teamnaam: 'VV Voorbeeld O11-1', poulecode: 905, competitiesoort: 'beker', klassepoule: 'Beker groep C' },
-      { teamcode: 502, teamnaam: 'VV Voorbeeld O13-1', poulecode: 802, competitiesoort: 'regulier', klassepoule: '2e klasse 3' },
+      /* [20261127b] jeugd in fases: de 1e fase staat er nog naast de 2e; de nieuwste telt */
+      { teamcode: 502, teamnaam: 'VV Voorbeeld O13-1', poulecode: 702, competitiesoort: 'regulier', klassepoule: '2e klasse Jeugd (1e fase) 3' },
+      { teamcode: 502, teamnaam: 'VV Voorbeeld O13-1', poulecode: 802, competitiesoort: 'regulier', klassepoule: '2e klasse Jeugd (2e fase) 3' },
       /* [20261127] winterfutsal: hetzelfde team nog een keer, met eigen teamcode en poule */
       { teamcode: 602, teamnaam: 'VV Voorbeeld O13-1', poulecode: 950, competitiesoort: 'regulier', klassepoule: 'Regio 9 2', spelsoort: 'Zaal' },
     ],
@@ -128,6 +130,8 @@ function zetKlaar(){
   ok(lijst.koppelingen['501'] === 't11' && lijst.teams[0].poules.length === 2, 'teamlijst met poules en koppelingen');
   ok(lijst.koppelingen['502'] === 't13' && !lijst.koppelingen['602'] && doc('clubs/c1/geheim/t13').gematcht === true,
     'winterfutsal: team met een zaalvariant in Sportlink wordt aan het veldteam gekoppeld');
+  { const o13 = lijst.teams.find(t => t.teamcode === '502');
+    ok(o13.poulecode === '802' && /2e fase/.test(o13.klassepoule) && o13.poules.length === 2, 'fases: de nieuwste reguliere poule van een team telt (2e fase boven 1e fase)'); }
   const ov = doc('clubs/c1/geheim/_afgelast');
   ok(ov.rijen.length === 1 && ov.rijen[0].teamId === 't11' && ov.rijen[0].teamNaam === 'O11-1', 'clubscherm-overzicht afgelast');
   ok(doc('clubs/c1').sportlinkClubcode === 'XXTT12Z', 'clubcode vastgelegd');

@@ -945,7 +945,9 @@ async function haalTeamlijst(clientId){
     if (!teamcode || !teamnaam) continue;
     const regulier = String(r.competitiesoort || '').toLowerCase() === 'regulier';
     const b = perCode.get(teamcode);
-    if (b && (b._regulier || !regulier)) continue;
+    /* [20261127b] Jeugd speelt in fases: Sportlink geeft de reguliere poule van elke fase terug. De eerste regel
+       won, dus bleef een team op de stand en poule van de 1e fase staan. Nu wint de nieuwste fase. */
+    if (b && (!regulier || (b._regulier && !nieuwerePoule(r, b)))) continue;
     perCode.set(teamcode, {
       teamcode, teamnaam,
       lokaleteamcode: r.lokaleteamcode != null ? String(r.lokaleteamcode) : '-1',
@@ -955,12 +957,25 @@ async function haalTeamlijst(clientId){
       geslacht: String(r.geslacht || '').trim() || null,
       speeldag: String(r.speeldag || '').trim() || null,
       zaal: isZaal(r),
-      _regulier: regulier,
+      _regulier: regulier, _fase: faseVan(r.klassepoule),
     });
   }
   // [20261012a] alle poules per team (regulier, beker, …); poulecode/klassepoule blijven de reguliere
   const poules = slh.poulesPerTeam(regels);
-  return [...perCode.values()].map(({ _regulier, ...t }) => ({ ...t, poules: poules.get(t.teamcode) || [] }));
+  return [...perCode.values()].map(({ _regulier, _fase, ...t }) => ({ ...t, poules: poules.get(t.teamcode) || [] }));
+}
+
+/* "3e klasse Zwaluwen Jeugd (2e fase) 18" → 2; geen fase in de naam → 0. */
+function faseVan(klassepoule){
+  const m = /\((\d+)e\s*fase\)/i.exec(String(klassepoule || ''));
+  return m ? Number(m[1]) : 0;
+}
+/* Is regel r een nieuwere reguliere poule dan wat er al staat (b)? Eerst de fase uit de naam; is die gelijk of
+   onbekend, dan de hoogste poulecode (zo kiest bekerPoule ook de nieuwste ronde). */
+function nieuwerePoule(r, b){
+  const fr = faseVan(r.klassepoule), fb = b._fase || 0;
+  if (fr !== fb) return fr > fb;
+  return (Number(r.poulecode) || 0) > (Number(b.poulecode) || 0);
 }
 
 /* Gemeenschappelijk voorvoegsel van alle teamnamen, afgekapt op een spatie:
