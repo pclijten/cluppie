@@ -9875,6 +9875,9 @@ p.cp-let{margin:0;font-size:var(--t-sm)}
 .pc-gevaar{margin-top:var(--space-md)}
 .pc-gevaar > b{color:var(--uit)}
 .pc-gevaar .pc-hernoem-rij .knop.gevaar:only-child{justify-self:start}
+.pc-wis-knop{color:var(--ink-2)}
+.pc-wis-knop:hover{color:var(--uit)}
+.pc-wis-rij > td{padding-top:0}
 .pc-hernoem-rij label{display:flex;flex-direction:column;gap:var(--space-3xs);font-size:var(--t-sm);color:var(--ink-2)}
 @media (max-width:640px){.pc-hernoem-rij{grid-template-columns:minmax(0,1fr)}.pc-hernoem-rij .knop{justify-self:start}}
 /* [20261120g] Clubprofiel: voorbeeld op de telefoon, rechts naast het scherm */

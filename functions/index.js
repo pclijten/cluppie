@@ -185,6 +185,7 @@ exports.platformOverzichtNu = require('./platform').platformOverzichtNu;
 exports.zetPlatformInstellingen = require('./platform').zetPlatformInstellingen;
 exports.hernoemClubPlatform = require('./platform').hernoemClubPlatform;   // [20261120g] naam en plaats van een club, door de eindbaas
 exports.verwijderClubPlatform = require('./club-verwijderen').maak({ isPlatformBeheerder: require('./platform').isPlatformBeheerder });   // [20261127v] club verwijderen, door de eindbaas
+exports.verwijderTrainerPlatform = require('./trainer-verwijderen').maak({ isPlatformBeheerder: require('./platform').isPlatformBeheerder });   // [20261129m] losse trainer verwijderen, door de eindbaas
 /* [20261019b] leren van gebruik (fase 1h): anonieme signalen + maandelijkse samenvatting; staat standaard uit (zie functions/leren.js) */
 Object.assign(exports, require('./leren').maakFuncties({ onCall, onSchedule, HttpsError, getFirestore, FieldValue, vereisLid, isPlatformBeheerder: require('./platform').isPlatformBeheerder }));
 const aanmelding = require('./aanmelding');
