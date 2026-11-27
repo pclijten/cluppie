@@ -14,16 +14,16 @@
    Pure logica (fases, Vandaag doen, filters) staat in platform-logica.js.
 ==================================================================== */
 import { db, collection, getDocs, doc, getDoc, setDoc, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, isPlatformBeheerder, terugLaag, terugLaagWeg, bewaakTerug } from './state.js?v=20261129i';
+import { S, esc, meld, isPlatformBeheerder, terugLaag, terugLaagWeg, bewaakTerug } from './state.js?v=20261129y';
 import { ico } from './icons.js?v=20261127b';
-import { logoImgVoorDoc, DISTRICTEN, CLUPPIE_LOGO } from './clubconfig.js?v=20261129i';
+import { logoImgVoorDoc, DISTRICTEN, CLUPPIE_LOGO } from './clubconfig.js?v=20261129y';
 import { STARTLIJST_STAPPEN } from './startlijst.js?v=20261011d';
-import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261129i';
+import { BEHEERD, NAMEN as ONDERDEEL_NAMEN, platformToegestaan } from './onderdelen.js?v=20261129y';
 import { FASES, FASE_NAAM, STANDAARD, KOPPEL_NAAM, faseVan, volgendeStap, filterClubs, vandaagDoen, trainersMetClub, kpiWaarden, dagenSinds, metEchteClubs } from './platform-logica.js?v=20261128t';
-import { modulesVoorNieuweClub } from './onderdelen.js?v=20261129i';
+import { modulesVoorNieuweClub } from './onderdelen.js?v=20261129y';
 import { OPTIES as TK_OPTIES } from './kamer-logica.js?v=20261127k';   /* [20261116m] mogelijkheden van de teamkamer, elk met een eigen schakelaar */
 import { KEUZES as PDF_KEUZES, schoonProfiel, isStandaard, PDF_LIMIET_STANDAARD, AANWIJZING_MAX } from './pdf-profiel.js?v=20261115e';
-import * as MW from './platform-maatwerk.js?v=20261129i';   /* [20261121a] Maatwerk-tabel, maatwerk en notities per club, rollen per club */
+import * as MW from './platform-maatwerk.js?v=20261129y';   /* [20261121a] Maatwerk-tabel, maatwerk en notities per club, rollen per club */
 import { SPORTEN, sportVan, sportNaam } from './sporten.js?v=20261126g';   /* [20261125x] sportprofiel */
 
 const STAP_NAAM = Object.fromEntries(STARTLIJST_STAPPEN.map(s => [s.id, s.titel]));
@@ -279,7 +279,47 @@ function trainerRij(t){
     <td>${team ? esc(team) : '<span class="tc-meta">—</span>'}</td>
     <td>${t.eigenClub ? esc(t.eigenClub.naam) + (t.eigenClub.plaats ? `<small class="pc-sub">${esc(t.eigenClub.plaats)}</small>` : '') : '—'}${t.club ? ' ' + chip('doet mee', 'ok') : ''}</td>
     <td>${chip(st, soort)}</td><td>${esc(act)}</td>
-    <td class="r"><span class="pc-knoppen pc-rechts">${t.email ? `<button class="knop licht klein" data-pc="kopieer" data-tekst="${esc(t.email)}">${ico('action-copy', 15)} E-mail</button>` : ''}${koppelKnop(t)}</span></td></tr>`;
+    <td class="r"><span class="pc-knoppen pc-rechts">${t.email ? `<button class="knop licht klein" data-pc="kopieer" data-tekst="${esc(t.email)}">${ico('action-copy', 15)} E-mail</button>` : ''}${koppelKnop(t)}<button class="knop licht klein pc-wis-knop" data-pc="twistellen" data-uid="${esc(t.uid)}" title="Account verwijderen" aria-label="${esc(t.naam)} verwijderen">${ico('admin-delete', 15)}</button></span></td></tr>${trainerWisRij(t)}`;
+}
+/* [20261129m] Losse trainer verwijderen: eerst laten zien wat er weggaat (functie, droog), dan het e-mailadres
+   laten typen, dan pas echt. Trainers bij een club (zoals ASV'33) en platformbeheerders weigert de functie altijd. */
+function trainerWisRij(t){
+  const w = P.wisT?.uid === t.uid ? P.wisT : null;
+  if (!w) return '';
+  const rij = binnen => `<tr class="pc-wis-rij"><td colspan="6"><div class="pc-hernoem pc-gevaar"><b>Account van ${esc(t.naam)} verwijderen</b>${binnen}</div></td></tr>`;
+  if (w.bezig) return rij('<small>Kijken wat er weggaat…</small>');
+  if (w.fout) return rij(`<div class="pc-signaal rood">${esc(w.fout)}</div><div class="pc-hernoem-rij"><button class="knop licht klein" data-pc="twisstop">Sluiten</button></div>`);
+  const x = w.telling || {}, tw = x.teamsWeg || [], tb = x.teamsBlijft || [];
+  const teams = tw.length ? `${tw.length === 1 ? 'het team' : 'de teams'} ${tw.map(a => `${esc(a.naam)} (${a.spelers} speler${a.spelers === 1 ? '' : 's'})`).join(', ')} met trainingen, wedstrijden en Teamkamer` : '';
+  const delen = [`de inlog en het profiel van ${esc(x.email || t.naam)}`, teams, x.losseDocumenten ? `${x.losseDocumenten} losse gegevens bij ${tw.length === 1 ? 'dat team' : 'die teams'}` : '', 'logins en gebruiksgegevens'].filter(Boolean);
+  return rij(`<div class="pc-signaal rood"><b>Dit kan niet ongedaan worden gemaakt.</b> Er is geen prullenbak.</div>
+      <small>Dit gaat weg: ${delen.join(', ')}.${tb.length ? ` Uit ${tb.map(a => esc(a.naam)).join(', ')} gaat alleen deze trainer weg; dat team heeft nog een andere coach en blijft.` : ''}</small>
+      <div class="pc-hernoem-rij"><label><span>Typ ${x.email ? 'het e-mailadres' : 'de naam'} om te bevestigen: <b>${esc(x.bevestig || '')}</b></span><input class="invoer" id="pcTWis" autocomplete="off" spellcheck="false" autocapitalize="off"></label>
+        <button class="knop licht klein" data-pc="twisstop">Annuleren</button>
+        <button class="knop gevaar klein" data-pc="twisecht" id="pcTWisKnop" disabled>Definitief verwijderen</button></div>`);
+}
+async function trainerWisTellen(b){
+  const uid = b.dataset.uid; if (!uid) return;
+  P.wisT = { uid, bezig: true }; teken();
+  try {
+    const r = await httpsCallable(functions, 'verwijderTrainerPlatform')({ uid, droog: true });
+    if (P.wisT?.uid === uid) P.wisT = { uid, telling: r.data };
+  } catch (x){ if (P.wisT?.uid === uid) P.wisT = { uid, fout: x.code === 'functions/not-found' && /function/i.test(x.message || '') ? 'De functie verwijderTrainerPlatform is nog niet gedeployed.' : (x.message || x.code) }; }
+  teken();
+  P.el.querySelector('#pcTWis')?.focus();
+}
+async function trainerWisEcht(b){
+  const w = P.wisT, invoer = P.el.querySelector('#pcTWis')?.value || '';
+  if (!w?.telling || !wisSchoon(w.telling.bevestig) || wisSchoon(w.telling.bevestig) !== wisSchoon(invoer)) return meld('Typ eerst precies het e-mailadres');
+  b.disabled = true; b.textContent = 'Verwijderen…';
+  try {
+    await httpsCallable(functions, 'verwijderTrainerPlatform')({ uid: w.uid, droog: false, bevestig: invoer });
+    meld(`${w.telling.naam || w.telling.email || 'De trainer'} is verwijderd`);
+    const ind = P.o?.individueel;
+    if (ind?.lijst) P.o = { ...P.o, individueel: { ...ind, lijst: ind.lijst.filter(x => x.uid !== w.uid), totaal: Math.max(0, (ind.totaal || 1) - 1) } };
+    P.wisT = null; verrijk(); teken();
+    vernieuw(null, true);
+  } catch (x){ b.disabled = false; b.textContent = 'Definitief verwijderen'; meld('Verwijderen mislukt: ' + (x.message || x.code)); }
 }
 /* [20261111b] Koppel aan club: zet een voorstel klaar dat de trainer in zijn app ziet. */
 function koppelKnop(t){
@@ -514,8 +554,8 @@ async function pdfProef(file){
   const stap = t => { st.proef = { bezig: true, naam: file.name, stap: t }; if (P.lade?.clubId === clubId) teken(); };
   stap('PDF inlezen…');
   try {
-    const ai = await import('./training-ai.js?v=20261129i');
-    const tw = await import('./training-weergave.js?v=20261129i');
+    const ai = await import('./training-ai.js?v=20261129y');
+    const tw = await import('./training-weergave.js?v=20261129y');
     const { paginas, diagramBlobs, aantalPaginas, overgeslagen } = await ai.leesPdf(file, profiel);
     if (!paginas.some(x => x.tekst.trim())) throw new Error('geen leesbare tekst (een scan?)');
     stap('Omzetten met de AI…');
@@ -606,12 +646,12 @@ function teken(){
   if (fokus != null){ const z = document.getElementById('pcZoek'); if (z){ z.focus(); try { z.setSelectionRange(fokus, fokus); } catch (e) {} } }
   if (P.lade && P._fokusLade){ P._fokusLade = false; P.el.querySelector('.pc-lade [aria-selected="true"]')?.focus({ preventScroll: true }); }
   const pb = P.el.querySelector('#pbRoot');
-  if (pb) import('./platform-bibliotheek.js?v=20261129i').then(m => m.toonBibliotheek(pb)).catch(e => { pb.innerHTML = '<div class="kaart leeg">Bibliotheek laden mislukt.</div>'; console.error(e); });
+  if (pb) import('./platform-bibliotheek.js?v=20261129y').then(m => m.toonBibliotheek(pb)).catch(e => { pb.innerHTML = '<div class="kaart leeg">Bibliotheek laden mislukt.</div>'; console.error(e); });
   P.el.querySelector('.tc-onder .actief')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });   /* [20261116p] onderbalk schuift bij zeven onderdelen */
   const cp = P.el.querySelector('#cpRoot');
-  if (cp && P.lade) import('./platform-clubprofiel.js?v=20261129i').then(m => m.toonClubprofiel(cp, P.docs[P.lade?.clubId] || {})).catch(e => { cp.innerHTML = '<div class="kaart leeg">Clubprofiel laden mislukt.</div>'; console.error(e); });
+  if (cp && P.lade) import('./platform-clubprofiel.js?v=20261129y').then(m => m.toonClubprofiel(cp, P.docs[P.lade?.clubId] || {})).catch(e => { cp.innerHTML = '<div class="kaart leeg">Clubprofiel laden mislukt.</div>'; console.error(e); });
   const pm = P.el.querySelector('#pmRoot');
-  if (pm) import('./platform-mails.js?v=20261129i').then(m => m.toonMails(pm)).catch(e => { pm.innerHTML = '<div class="kaart leeg">Mails laden mislukt.</div>'; console.error(e); });
+  if (pm) import('./platform-mails.js?v=20261129y').then(m => m.toonMails(pm)).catch(e => { pm.innerHTML = '<div class="kaart leeg">Mails laden mislukt.</div>'; console.error(e); });
   bewaakTerug();
 }
 
@@ -634,13 +674,16 @@ async function klik(e){
   if (a === 'fasewis'){ P.faseFilter = null; return teken(); }
   if (a === 'alletaken'){ P.alleTaken = !P.alleTaken; return teken(); }
   if (a === 'alletrainers'){ P.alleTrainers = !P.alleTrainers; return teken(); }
-  if (a === 'nieuweclub') return import('./club.js?v=20261129i').then(m => m.modalNieuwClub());
-  if (a === 'kalenders') return import('./platform.js?v=20261129i').then(m => m.openKalenders());
+  if (a === 'nieuweclub') return import('./club.js?v=20261129y').then(m => m.modalNieuwClub());
+  if (a === 'kalenders') return import('./platform.js?v=20261129y').then(m => m.openKalenders());
   if (a === 'kopieer') return kopieer(b.dataset.tekst);
   if (a === 'vernieuw') return vernieuw(b);
   if (a === 'wistellen') return wisTellen(b);
   if (a === 'wisecht') return wisEcht(b);
   if (a === 'wisstop'){ P.wis = null; return teken(); }
+  if (a === 'twistellen') return trainerWisTellen(b);
+  if (a === 'twisecht') return trainerWisEcht(b);
+  if (a === 'twisstop'){ P.wisT = null; return teken(); }
   if (a === 'goedkeuren' || a === 'afwijzen') return beoordeel(b, a === 'goedkeuren');
   if (a === 'schakel') return schakel(b);
   if (a === 'pdfbewaar') return pdfBewaar(b);
@@ -661,6 +704,7 @@ function invoer(e){
   if (MW.invoer(e)) return;
   if (e.target.dataset?.pdfveld) return pdfVeld(e.target);
   if (e.target.id === 'pcZoek'){ P.zoek = e.target.value; teken(); }
+  if (e.target.id === 'pcTWis'){ const k = P.el.querySelector('#pcTWisKnop'), v = P.wisT?.telling?.bevestig; if (k) k.disabled = !wisSchoon(v) || wisSchoon(v) !== wisSchoon(e.target.value); }
   if (e.target.id === 'pcWisNaam'){ const k = P.el.querySelector('#pcWisKnop'); if (k) k.disabled = !wisNaamKlopt(P.docs[P.wis?.clubId], e.target.value); }
 }
 async function wijzig(e){
@@ -752,7 +796,7 @@ async function beoordeel(b, goed){
      Staat dat uit, of zijn de functies er nog niet, dan gaat het zoals voorheen (afwijzen met een tweede tik). */
   b.disabled = true;
   let keuze = { direct: true };
-  try { keuze = await (await import('./platform-mails.js?v=20261129i')).vraagMailBij(goed ? 'welkomClub' : 'afwijzing', P.aanmeldingen.find(a => a.id === id) || {}); }
+  try { keuze = await (await import('./platform-mails.js?v=20261129y')).vraagMailBij(goed ? 'welkomClub' : 'afwijzing', P.aanmeldingen.find(a => a.id === id) || {}); }
   catch (x){ console.warn('[platform] mail vooraf tonen mislukt', x); }
   if (keuze === null){ b.disabled = false; return; }
   if (keuze.direct && !goed && P.bevestig !== id){ P.bevestig = id; return teken(); }
@@ -815,10 +859,10 @@ function ladeGevaar(c){
 async function meehelpen(b){
   const id = P.lade.clubId;
   b.disabled = true;
-  const ond = await import('./ondersteuning.js?v=20261129i').catch(() => null);
+  const ond = await import('./ondersteuning.js?v=20261129y').catch(() => null);
   if (!ond || !(await ond.startOndersteuning(id))){ b.disabled = false; return; }
   sluitCentrum();
-  import('./club.js?v=20261129i').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
+  import('./club.js?v=20261129y').then(m => m.openClub(id)).catch(() => meld('Club openen mislukt'));
 }
 const soloNu = () => ({ aan: false, limiet: 20, chatLimiet: 30, ...(P.platform?.soloAI || {}) });
 /* platform/instellingen schrijven kan alleen via de functie zetPlatformInstellingen (valideert ook) */

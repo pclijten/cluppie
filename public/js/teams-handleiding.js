@@ -4,9 +4,9 @@
    wat hierboven al in dit bestand staat. De zoekfunctionaliteit
    (#helpZoek) wordt door de hub (teams.js/koppelTeamTab) aangesloten,
    want die werkt direct op het gerenderde DOM-element. */
-import { esc } from './state.js?v=20261129i';
-import { beleidsplanNaam } from './clubconfig.js?v=20261129i';
-import { ROLKAARTEN, mijnRollen } from './rolkaart.js?v=20261129i';
+import { esc } from './state.js?v=20261129y';
+import { beleidsplanNaam } from './clubconfig.js?v=20261129y';
+import { ROLKAARTEN, mijnRollen } from './rolkaart.js?v=20261129y';
 import { uitlegVoor, zoekTekst } from './hulp-rol.js?v=20261122a';
 
 /* [20261122a] Hoofdstuk "Jouw rol": uitleg per rol, de eigen rol bovenaan en gemarkeerd. Een coördinator
@@ -20,7 +20,7 @@ function htmlJouwRol(){
     <div class="tip"><b>Niet:</b> ${esc(u.niet)}</div>
     </section>`).join('\n    ')}`;
 }
-import { onboardingHerstartBlok } from './onboarding.js?v=20261129i';
+import { onboardingHerstartBlok } from './onboarding.js?v=20261129y';
 
 export function htmlHandleiding(){
   return `<div class="hl">

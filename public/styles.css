@@ -9598,6 +9598,21 @@ html.desk .lh-rijen .lj-rk{margin-bottom:0}
 .vk-veld.dim::after{content:'';position:absolute;inset:0;background:color-mix(in srgb, var(--zwart) 35%, transparent)}
 .vk-veld-naam,.vk-deel span{font-size:var(--t-2xs);font-weight:800;color:var(--wit);background:color-mix(in srgb, var(--zwart) 62%, transparent);padding:1px 7px;border-radius:var(--r-pill);white-space:nowrap}
 .vk-veld-naam{position:absolute;left:50%;top:50%;translate:-50% -50%}
+/* [20261127t] kaartstijl Tekening: Cluppie tekent het park zelf (geen luchtfoto) */
+.vk-kaart.vk-tek{background-color:#a9cf8c;background-image:radial-gradient(circle at 20% 30%,rgba(255,255,255,.18) 0 1.5px,transparent 2px),radial-gradient(circle at 70% 80%,rgba(40,90,30,.16) 0 1.5px,transparent 2px);background-size:26px 26px,34px 34px}
+.vk-tek .vk-tegels{position:absolute;inset:0}
+.vk-omg{position:absolute;left:0;top:0;pointer-events:none}
+.vk-tek .vk-veld{background:repeating-linear-gradient(90deg,#46a04b 0 8.333%,#3b9141 8.333% 16.666%);border-radius:2px;
+  box-shadow:0 0 0 calc(var(--vk-m,1px) * 3) #63b25c,0 0 0 calc(var(--vk-m,1px) * 3 + 1px) rgba(30,70,25,.25),0 calc(var(--vk-m,1px) * 2 + 4px) 14px rgba(20,50,15,.35)}
+.vk-tek .vk-veld i{border-color:rgba(255,255,255,.95);border-width:2px}
+.vk-tek .vk-l-mid{border-width:0 0 0 2px !important}
+.vk-t-16{top:20.35%;height:59.3%;width:15.7%}.vk-t-16.l{left:0;border-left:0 !important}.vk-t-16.r{right:0;border-right:0 !important}
+.vk-t-5{top:36.5%;height:27%;width:5.2%}.vk-t-5.l{left:0;border-left:0 !important}.vk-t-5.r{right:0;border-right:0 !important}
+.vk-tek .vk-veld i.vk-t-doel{top:44.6%;height:10.8%;width:2.4%;background:repeating-linear-gradient(45deg,rgba(255,255,255,.55) 0 1px,transparent 1px 3px);border-width:2px}
+.vk-t-doel.l{left:-2.4%;border-right:0 !important}.vk-t-doel.r{right:-2.4%;border-left:0 !important}
+.vk-tek .vk-stip{background:#3b9141}
+.vk-tek .vk-bron{background:color-mix(in srgb, #1d4a1a 70%, transparent)}
+.vk-zoom .vk-stijl-knop{display:flex;align-items:center;justify-content:center}
 .vk-deel{position:absolute;box-sizing:border-box;border:1.5px dashed color-mix(in srgb, var(--wit) 85%, transparent);display:flex;align-items:center;justify-content:center}
 .vk-deel.doel{background:color-mix(in srgb, var(--vast-accent-donker) 45%, transparent);border:3px solid var(--vast-accent-donker)}
 .vk-deel.doel span{background:var(--vast-accent-donker)}
@@ -9875,6 +9890,9 @@ p.cp-let{margin:0;font-size:var(--t-sm)}
 .pc-gevaar{margin-top:var(--space-md)}
 .pc-gevaar > b{color:var(--uit)}
 .pc-gevaar .pc-hernoem-rij .knop.gevaar:only-child{justify-self:start}
+.pc-wis-knop{color:var(--ink-2)}
+.pc-wis-knop:hover{color:var(--uit)}
+.pc-wis-rij > td{padding-top:0}
 .pc-hernoem-rij label{display:flex;flex-direction:column;gap:var(--space-3xs);font-size:var(--t-sm);color:var(--ink-2)}
 @media (max-width:640px){.pc-hernoem-rij{grid-template-columns:minmax(0,1fr)}.pc-hernoem-rij .knop{justify-self:start}}
 /* [20261120g] Clubprofiel: voorbeeld op de telefoon, rechts naast het scherm */

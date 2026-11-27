@@ -23,11 +23,11 @@
    ============================================================================ */
 
 import { functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, terugLaag, terugLaagWeg } from './state.js?v=20261129i';
-import { telGebruik } from './tracker.js?v=20261129i';
-import { aiAan } from './clubconfig.js?v=20261129i';
-import { startOnboarding, startOnboardingHoofdstuk, heeftOnboardingHoofdstuk } from './onboarding.js?v=20261129i';
-import { mijnRollen } from './rolkaart.js?v=20261129i';
+import { S, esc, terugLaag, terugLaagWeg } from './state.js?v=20261129y';
+import { telGebruik } from './tracker.js?v=20261129y';
+import { aiAan } from './clubconfig.js?v=20261129y';
+import { startOnboarding, startOnboardingHoofdstuk, heeftOnboardingHoofdstuk } from './onboarding.js?v=20261129y';
+import { mijnRollen } from './rolkaart.js?v=20261129y';
 import { startVragen } from './hulp-rol.js?v=20261122a';
 import { ico } from './icons.js?v=20261127b';
 import { gidsMet, SCHERMEN } from './gidsen-data.js?v=20261129i';
@@ -134,7 +134,7 @@ function naarHelp(id, stap){
   if (!S.teamId) return;
   sluitChat();
   if (id) openGids(id, stap); else { S._gids = null; S._gidsStap = null; }
-  import('./teams.js?v=20261129i').then(m => m.zetTeamTab('help'));
+  import('./teams.js?v=20261129y').then(m => m.zetTeamTab('help'));
 }
 function sluitChat(){ document.getElementById('cbAchter')?.classList.remove('open'); terugLaagWeg('chat'); }
 

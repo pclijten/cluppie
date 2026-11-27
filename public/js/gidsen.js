@@ -8,15 +8,15 @@
 
    State (bewust los op S, niet in state.js): S._gids = id van de open handleiding, S._gidsStap = stap om
    naartoe te scrollen, S._gidsFilter = 'mij' | 'alles' | een rol, S._gidsZoek = zoekterm. */
-import { S, esc, modAan } from './state.js?v=20261129i';
+import { S, esc, modAan } from './state.js?v=20261129y';
 import { ico } from './icons.js?v=20261127b';
 import { GIDSEN, GIDS_ROLLEN, SCHERMEN, gidsMet, gidsVoor, zoekGidsen } from './gidsen-data.js?v=20261129i';
 import { BEELDEN } from './gidsen-beelden.js?v=20261129i';
-import { mijnRollen } from './rolkaart.js?v=20261129i';
-import { onderdeelAan } from './onderdelen.js?v=20261129i';
+import { mijnRollen } from './rolkaart.js?v=20261129y';
+import { onderdeelAan } from './onderdelen.js?v=20261129y';
 import { teamkamerMag } from './kamer-logica.js?v=20261127k';
-import { htmlHandleiding } from './teams-handleiding.js?v=20261129i';
-import { telGebruik } from './tracker.js?v=20261129i';
+import { htmlHandleiding } from './teams-handleiding.js?v=20261129y';
+import { telGebruik } from './tracker.js?v=20261129y';
 
 /* versie van de beelden en PDF's: verandert bij elke release, zodat een nieuw beeld niet uit de cache komt */
 const V = new URL(import.meta.url).searchParams.get('v') || '';

@@ -186,6 +186,7 @@ exports.platformOverzichtNu = require('./platform').platformOverzichtNu;
 exports.zetPlatformInstellingen = require('./platform').zetPlatformInstellingen;
 exports.hernoemClubPlatform = require('./platform').hernoemClubPlatform;   // [20261120g] naam en plaats van een club, door de eindbaas
 exports.verwijderClubPlatform = require('./club-verwijderen').maak({ isPlatformBeheerder: require('./platform').isPlatformBeheerder });   // [20261127v] club verwijderen, door de eindbaas
+exports.verwijderTrainerPlatform = require('./trainer-verwijderen').maak({ isPlatformBeheerder: require('./platform').isPlatformBeheerder });   // [20261129m] losse trainer verwijderen, door de eindbaas
 /* [20261019b] leren van gebruik (fase 1h): anonieme signalen + maandelijkse samenvatting; staat standaard uit (zie functions/leren.js) */
 Object.assign(exports, require('./leren').maakFuncties({ onCall, onSchedule, HttpsError, getFirestore, FieldValue, vereisLid, isPlatformBeheerder: require('./platform').isPlatformBeheerder }));
 const aanmelding = require('./aanmelding');
@@ -402,6 +403,40 @@ Regels:
 - "indeling" alleen als het de poules duidelijk eerlijker maakt, hoogstens 6 verplaatsingen, en houd de poules even groot
   (verplaats dan in paren: team X naar poule B en team Y naar poule A). Anders een lege lijst.
 - Noem nooit namen van personen.`;
+
+/* [20261127t] sportpark als tekening: AI tekent de omgeving uit de luchtfoto (functions/sportpark-tekening.js) */
+exports.sportparkTekeningAI = require('./sportpark-tekening').maak({ onCall, HttpsError, getFirestore, FieldValue, vereisAI, claude, ANTHROPIC_API_KEY, REGIO });
+
+/* [20261127t] Veldplanner: een bestaande planning (tekst uit PDF, Word of Excel) omzetten naar vaste regels.
+   De app leest die regels daarna zelf in (leesPlanning in public/js/veldplanner-logica.js); de AI zet alleen om. */
+const INLEZEN_SYSTEEM = `Je zet een trainingsrooster van een sportclub om naar vaste regels. De invoer is tekst uit een PDF, Word- of Excelbestand,
+vaak een tabel (dagen als kolommen of kopregels, velden als kolommen, tijden als rijen).
+Schrijf per training precies één regel in deze vorm, en verder niets:
+<dag> <begin>-<eind> <team> <veld> <deel> kk <nummers>
+- dag: maandag t/m zondag. Tijden als 18:00-19:15. Staat er alleen een begintijd, schrijf dan alleen de begintijd.
+- team en veld precies zoals in de lijsten hieronder (kies de best passende; JO11-2 is O11-2).
+- deel: heel, half a, half b, a voor, a achter, b voor of b achter; laat weg als het niet in het rooster staat.
+- kk met de nummers van de kleedkamers, bijvoorbeeld "kk 3" of "kk 2 4"; laat weg als er geen staat.
+Sla regels zonder team of zonder veld over. Verzin niets.`;
+exports.veldplannerInlezenAI = onCall(
+  { region: REGIO, secrets: [ANTHROPIC_API_KEY], cors: true, timeoutSeconds: 120 },
+  async (request) => {
+    const { clubId, rol } = await vereisAI(request);
+    const club = (await getFirestore().doc(PADEN.club(clubId)).get()).data() || {};
+    if (club.platformModules?.veldplanner !== true) throw new HttpsError('failed-precondition', 'De Veldplanner staat niet aan voor deze club.');
+    const d = request.data || {}, kort = (v, n) => String(v ?? '').slice(0, n);
+    const tekst = kort(d.tekst, 40000);
+    if (tekst.trim().length < 10) throw new HttpsError('invalid-argument', 'Er staat geen rooster in.');
+    const lijst = (x, n) => (Array.isArray(x) ? x : []).slice(0, n).map(v => kort(v, 40).replace(/\s+/g, ' ').trim()).filter(Boolean);
+    const namen = await namenVoorScrub(clubId, request.auth.uid, rol);
+    const { tekst: uit } = await claude({
+      apiKey: ANTHROPIC_API_KEY.value(), system: INLEZEN_SYSTEEM,
+      messages: [{ role: 'user', content: `Teams: ${lijst(d.teams, 300).join(', ')}\nVelden: ${lijst(d.velden, 40).join(', ')}\nKleedkamers: ${lijst(d.kleedkamers, 40).join(', ')}\n\nRooster:\n${scrubPII(tekst, namen)}` }],
+      maxTokens: 6000, temperature: 0, metaTerug: true,
+    });
+    return { regels: String(uit || '').split('\n').map(r => r.trim()).filter(Boolean).slice(0, 600).join('\n') };
+  }
+);
 
 exports.toernooiControleAI = onCall(
   { region: REGIO, secrets: [ANTHROPIC_API_KEY], cors: true, timeoutSeconds: 90 },
