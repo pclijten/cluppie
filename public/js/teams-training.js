@@ -8,20 +8,20 @@ import {
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, speler, initialen, openModal, sluitModal, toon, isBeheerder
-} from './state.js?v=20261128o';
-import { telGebruik } from './tracker.js?v=20261128o';
-import { videoInKamer } from './kamer-beheer.js?v=20261128o';   /* [20261126v] video delen in de teamkamer */
-import { voorbeeldTeamcode } from './clubconfig.js?v=20261128o';
+} from './state.js?v=20261128p';
+import { telGebruik } from './tracker.js?v=20261128p';
+import { videoInKamer } from './kamer-beheer.js?v=20261128p';   /* [20261126v] video delen in de teamkamer */
+import { voorbeeldTeamcode } from './clubconfig.js?v=20261128p';
 import { ico } from './icons.js?v=20261127b';
 
 import {
   CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, youtubeId, youtubeThumb, youtubeWatch,
   SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo, isoWeek,
   catLabel,
-} from './config.js?v=20261128o';
-import { onderdeelAan } from './onderdelen.js?v=20261128o';
-import { htmlKompas } from './teams-leerlijn.js?v=20261128o';
-import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261128o';
+} from './config.js?v=20261128p';
+import { onderdeelAan } from './onderdelen.js?v=20261128p';
+import { htmlKompas } from './teams-leerlijn.js?v=20261128p';
+import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261128p';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20261127p';
 import { spelersOpTraining } from './uitleen-regels.js?v=20261127p';
 import {
@@ -649,7 +649,7 @@ export function htmlInstellingen(){
       <!-- [20261012c] vaste teamcode weg: collega's komen binnen via een persoonlijke link (toegang.js) -->
       <button class="knop fluo vol" id="deelLink" style="margin-top:10px">${ico('team-player-add', 16)} Coach uitnodigen</button>
       <p style="font-size:calc(12px * var(--fs));color:var(--ink-2);margin:6px 0 0">Je collega krijgt een persoonlijke link, 14 dagen geldig.</p>
-      <button class="knop licht vol" id="wijzigMijnNaam" style="margin-top:10px">✏️ Mijn weergavenaam wijzigen</button>
+      <button class="knop licht vol" id="wijzigMijnNaam" style="margin-top:10px">${ico('admin-edit', 18)} Mijn weergavenaam wijzigen</button>
     </div>
     <div class="kaart">
       <div class="sectie-kop" style="margin-top:0">Mijn account</div>

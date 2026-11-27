@@ -265,7 +265,8 @@ export const deleteObject = async () => {};
    Sportlink-sync die schrijft, wedstrijden (gespeelde met doelpunten en opstelling, komende om
    voor te bereiden), teamevaluaties, spelersbeoordelingen en trainingen uit de eigen bibliotheek.
    Plus een uitlening tussen O11-1 en O11-2. Alles is verzonnen. */
-const SEIZOEN = "2025/'26";
+/* [20261128p] seizoen van de demo volgt de datum, zoals bij een echte club (anders zegt Stats 2025/'26 en de kalender 2026/'27) */
+const SEIZOEN = (() => { const d = new Date(), y = d.getMonth() >= 7 ? d.getFullYear() : d.getFullYear() - 1; return `${y}/'${String(y + 1).slice(-2)}`; })();
 const CLUB = 'demo-cluppie-io', CLUBNAAM = 'cluppie.io';
 const zetSeed = (pad, data) => store.set(pad, pasToe(undefined, data));
 const isoDag = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
