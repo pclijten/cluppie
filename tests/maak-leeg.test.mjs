@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+// Proefclubs opruimen (tools/maak-leeg.mjs): welke clubs, teams en documenten weggaan.
+const { kiesDoelen, hoortBij, NOOIT } = await import('../tools/maak-leeg.mjs');
+let n = 0; const ok = (v, m) => { assert.ok(v, m); n++; };
+const clubs = [{ id: 'c1' }, { id: 'c2' }, { id: 'asv' }];
+const teams = [{ id: 't1', club: 'c1' }, { id: 't2', club: 'c2' }, { id: 'ta', club: 'asv' }, { id: 'los' }, { id: 'wees', club: 'bestaatniet' }, { id: 'losblijf' }];
+let d = kiesDoelen(clubs, teams, []);
+ok(d.clubsWeg.size === 3 && d.teamsWeg.size === 6, 'zonder behoud gaat alles weg');
+d = kiesDoelen(clubs, teams, ['asv', 'losblijf']);
+ok(!d.clubsWeg.has('asv') && d.clubsWeg.has('c1') && d.clubsWeg.has('c2'));
+ok(!d.teamsWeg.has('ta'), 'teams van een club die blijft, blijven');
+ok(d.teamsWeg.has('t1') && d.teamsWeg.has('los') && d.teamsWeg.has('wees'), 'losse teams en teams van een verdwenen club gaan weg');
+ok(!d.teamsWeg.has('losblijf'), 'een los team kan apart behouden worden');
+d = kiesDoelen(clubs, teams, ['t1']);
+ok(!d.teamsWeg.has('t1') && d.clubsWeg.has('c1'), 'alleen het team behouden: de club gaat wel weg');
+d = kiesDoelen(clubs, teams, ['asv']);
+ok(hoortBij('x', { club: 'c1' }, d) && hoortBij('x', { clubId: 'c2' }, d) && hoortBij('x', { team: 't1' }, d) && hoortBij('x', { teamId: 'los' }, d));
+ok(hoortBij('c1', {}, d) && hoortBij('t2', null, d), 'document-id is dat van de club of het team');
+ok(!hoortBij('x', { club: 'asv' }, d) && !hoortBij('ta', {}, d) && !hoortBij('asv', {}, d), 'wat bij de behouden club hoort, blijft');
+ok(!hoortBij('x', { naam: 'c1', club: null }, d) && !hoortBij('x', { club: ['c1'] }, d) && !hoortBij('x', {}, d), 'alleen een tekstveld club/clubId/team/teamId telt');
+ok(!hoortBij('uid_video_c1', { uid: 'u' }, d), 'een id dat de club alleen bevat, telt niet');
+ok(['platform', 'content', 'gebruikers', 'privacyKennisname'].every(k => NOOIT.includes(k)));
+console.log(`maak-leeg: ${n} controles geslaagd`);
