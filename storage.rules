@@ -52,6 +52,13 @@ service firebase.storage {
         && request.resource.size < 3 * 1024 * 1024 && request.resource.contentType.matches('image/.*');
       allow delete: if beheerder(clubId);
     }
+    /* [20261130a] Uitlegvideo's bij de handleidingen (hulp/video/01-aan-de-slag.mp4 enzovoort): voor alle clubs
+       gelijk en zonder gegevens van een club of speler, dus voor iedereen te lezen. Schrijven kan alleen
+       Cluppie zelf, vanaf de eigen computer (niet via de app). */
+    match /hulp/{f=**} {
+      allow read: if true;
+      allow write: if false;
+    }
     /* alles anders (oude paden zonder club) is dicht */
     match /{ander=**} { allow read, write: if false; }
   }
