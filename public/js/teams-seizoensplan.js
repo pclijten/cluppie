@@ -19,20 +19,20 @@
 
    Tabblad: 'seizoensplan'. Importeert NIET uit teams.js; teams.js geeft zetTeamTab mee. */
 import { db, doc, collection, getDoc, getDocs, setDoc, addDoc, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261128w';
-import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261128w';
-import { aiAan, aiDoel } from './clubconfig.js?v=20261128w';
-import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261128w';
-import { trainingenVanPlan, planVoorTeam } from './seizoensplan-club.js?v=20261128w';
-import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261128w';
+import { S, esc, meld } from './state.js?v=20261129b';
+import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261129b';
+import { aiAan, aiDoel } from './clubconfig.js?v=20261129b';
+import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261129b';
+import { trainingenVanPlan, planVoorTeam } from './seizoensplan-club.js?v=20261129b';
+import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261129b';
 import { BIEB, basisGeladen, laadBasis, vormen, laadBibliotheek } from './bibliotheek.js?v=20261127y';
-import { FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261128w';
+import { FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261129b';
 import {
   MODELLEN, ACCENTEN, maakSeizoensplan, weekKalender, herreken, standaardVrij, maandagVan, beschikbareThemas, themaVolgorde,
   valideerBlokken, positieOp, positieWeek, teamSignalen, stelBijsturingVoor, pasVoorstelToe, speelwijzeExtra, seizoenStartJaar as seizoenJaar,
-} from './seizoensplan-logica.js?v=20261128w';
+} from './seizoensplan-logica.js?v=20261129b';
 /* [20261116h] de speelwijze als rode draad: weegt mee in de themavolgorde en staat bij elk blok */
-import { speelstijlNu, speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad, speelwijzeBron } from './speelwijze.js?v=20261128w';
+import { speelstijlNu, speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad, speelwijzeBron, speelwijzeAan } from './speelwijze.js?v=20261129b';
 import { speelwijzeVan, stijlVoorPlan, dekking, principeVoorThema, rodeDraad } from './speelwijze-logica.js?v=20261127p';
 import { htmlDraadKaart, htmlDekking, htmlPrincipeChip } from './speelwijze-html.js?v=20261127p';
 
@@ -67,6 +67,7 @@ function alleenLezen(){ return vanClub() || !werkwijzeToestaat('seizoensplan', S
 /* [20261116h] De speelwijze die bij een plan hoort: de momentopname in het plan (params.speelstijl), en bij een plan
    van vóór de speelwijze de huidige (dan stuurt hij de themavolgorde niet, maar staat het principe wel bij elk blok). */
 function swVanPlan(plan){
+  if (!speelwijzeAan()) return null;    /* [20261127s] module uit: geen principe bij de blokken */
   const snap = plan?.params?.speelstijl;
   return snap ? speelwijzeVan(snap, leeftijdVanCategorie(S.team?.categorie)) : speelwijzeNu();
 }

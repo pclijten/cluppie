@@ -30,10 +30,10 @@
    eigen vakken weggooien. De velden zelf (id, naam) komen wel uit de veldkaart.
    Rekenwerk in veldplanner-logica.js (getest). */
 import { db, doc, getDoc, setDoc } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261128w';
+import { S, esc, meld } from './state.js?v=20261129b';
 import { ico } from './icons.js?v=20261127b';
-import { bouwVanTeam } from './bouw-indeling.js?v=20261128w';
-import { momentenVanTeam } from './trainingsmomenten.js?v=20261128w';
+import { bouwVanTeam } from './bouw-indeling.js?v=20261129b';
+import { momentenVanTeam } from './trainingsmomenten.js?v=20261129b';
 import { NODIG, MAAT_NAAM, KK_VOOR, KK_NA, MAX_EIGEN, naarMin, naarTijd, rondKwartier,
   vakkenVan, vakUit, deelVan, deelTekst, meters, banenVan, stukken, maatVanCategorie, duurVanCategorie,
   zoekVrijVak, vrijeKleedkamers, stapel, controleer, nogInTePlannen, schoonRooster, schoonKleedkamers, schoonVak,
@@ -386,7 +386,7 @@ function koppel(){
     if (a === 'kleedkamers') return vensterKleedkamers();
     if (a === 'deselect'){ P.sel = null; return teken(); }
     if (a === 'weg') return weg(P.sel);
-    if (a === 'sportpark'){ const c = P.clubId; sluitVeldplanner(); return import('./veldkaart.js?v=20261128w').then(m => m.openSportparkBeheer(c)); }
+    if (a === 'sportpark'){ const c = P.clubId; sluitVeldplanner(); return import('./veldkaart.js?v=20261129b').then(m => m.openSportparkBeheer(c)); }
   });
   el.querySelectorAll('[data-weergave]').forEach(k => k.onclick = () => { P.weergave = k.dataset.weergave; P.sel = null; P.objSel = null; teken(); });
   el.querySelectorAll('[data-dag]').forEach(k => k.onclick = () => { P.dag = +k.dataset.dag; P.sel = null; teken(); });
@@ -608,7 +608,7 @@ function raak(k, x, y){
 }
 async function maakKaart(){
   const el = P.el.querySelector('#vpKaart'); if (!el) return;
-  const { Kaart } = await import('./veldkaart.js?v=20261128w');
+  const { Kaart } = await import('./veldkaart.js?v=20261129b');
   if (!P || !el.isConnected) return;
   const pos = P.kaartPos || { lat: P.park.lat, lon: P.park.lon, z: Math.min(19, P.park.zoom || 18) };
   const rel = e => { const r = el.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };

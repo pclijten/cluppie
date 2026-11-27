@@ -18,26 +18,26 @@
    Tabblad: 'trainingsmodule'. Importeert NIET uit teams.js (geen kringimport); teams.js geeft
    zetTeamTab mee aan koppelTrainingsmodule(). */
 import { db, collection, addDoc, setDoc, getDoc, getDocs, deleteDoc, doc, functions, httpsCallable, serverTimestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261128w';
-import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } from './config.js?v=20261128w';
-import { aiAan, aiDoel } from './clubconfig.js?v=20261128w';
+import { S, esc, meld } from './state.js?v=20261129b';
+import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel } from './config.js?v=20261129b';
+import { aiAan, aiDoel } from './clubconfig.js?v=20261129b';
 import { ico } from './icons.js?v=20261127b';
 import { BIEB, basisGeladen, laadBasis, vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261127y';
-import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, kiesDuur, SLOT_NAAM, groepsindeling, opbouwVoor, WEER } from './trainingsplanner.js?v=20261128w';
+import { maakPlan, rangschik, bouwOnderdeel, valideer, pasKnoppenToe, jaarlijn, blokVoorWeek, FASE_UITLEG, DUREN, kiesDuur, SLOT_NAAM, groepsindeling, opbouwVoor, WEER } from './trainingsplanner.js?v=20261129b';
 import { MATERIAAL, MATERIAAL_NAAM, PRESETS, presetVan, VELDEN, schoonContext, behoefte, haalbaar, valtAf, tipTekst } from './trainingscontext-logica.js?v=20261019a';
 import { htmlZevenVelden, STANDAARD_OPEN } from './oefenkaart.js?v=20261127p';
 import { maak3DBlok, heeftWebGL } from './scene3d.js?v=20261126p';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
 import { TERUGBLIK_VRAGEN, zetAntwoord, terugblikKlaar, terugblikSamenvatting, signaalVormBewaard, signaalVormGewisseld, signaalTerugblik, signaalMateriaal, signaalGat, gatRedenen } from './leren-logica.js?v=20261019b';
-import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261128w';
+import { stuurSignalen, lerenAan } from './leren-signalen.js?v=20261129b';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261121b';
-import { positieWeek, seizoensweekOp, weekKalender, standaardVrij, maandagVan, seizoenStartJaar } from './seizoensplan-logica.js?v=20261128w';
-import { trainingenRef } from './seizoensplan-trainingen.js?v=20261128w';
-import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261128w';
-import { oefeningVan, geplandeTraining, vormIdsVan, rondBlok } from './seizoensplan-club.js?v=20261128w';
-import { onderdeelAan } from './onderdelen.js?v=20261128w';
+import { positieWeek, seizoensweekOp, weekKalender, standaardVrij, maandagVan, seizoenStartJaar } from './seizoensplan-logica.js?v=20261129b';
+import { trainingenRef } from './seizoensplan-trainingen.js?v=20261129b';
+import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261129b';
+import { oefeningVan, geplandeTraining, vormIdsVan, rondBlok } from './seizoensplan-club.js?v=20261129b';
+import { onderdeelAan } from './onderdelen.js?v=20261129b';
 /* [20261116h] de speelwijze als rode draad: leerdoel, coachwoorden, vormen die het principe trainen en de regel in het partijspel */
-import { speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad } from './speelwijze.js?v=20261128w';
+import { speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad, speelwijzeAan } from './speelwijze.js?v=20261129b';
 import { rodeDraad, principe as principeOpId, principeVoorThema, principeVanVorm, LESOPBOUW } from './speelwijze-logica.js?v=20261127p';
 import { htmlDraadKaart, htmlPrincipeChip } from './speelwijze-html.js?v=20261127p';
 
@@ -312,10 +312,10 @@ function htmlOnderdeel(od, i){
   const open = t.open === i, veldOpen = t.tab[i] === undefined ? STANDAARD_OPEN : t.tab[i];
   const naam = od.slot === 'afsluiting' ? `Afsluiting · ${od.minuten} min` : od.slotNaam;
   const knoppen = od.slot === 'afsluiting' ? '' : `<button class="knop klein licht" data-tm-wissel="${i}">↻ Andere vorm</button>`;
-  const pr = od.principe ? principeOpId(od.principe) : null, stap = LESOPBOUW[od.slot];
+  const pr = od.principe && speelwijzeAan() ? principeOpId(od.principe) : null, stap = LESOPBOUW[od.slot];
   const velden = open ? htmlZevenVelden(v, { minuten: od.minuten, rondes: od.rondes, ronde: od.ronde, rust: od.rust, groepen: od.groepen,
     aanpassingen: kn.aanpassingen, themaregel: od.themaregel, ai, stijl: t.knop.stijl, extraMateriaal: htmlMateriaalRegel(od),
-    principe: pr, speelwijzeRegel: od.speelwijzeRegel, stap, woorden: od.slot === 'afsluiting' ? [] : draadVanPlan().woorden },
+    principe: pr, speelwijzeRegel: speelwijzeAan() ? od.speelwijzeRegel : null, stap, woorden: od.slot === 'afsluiting' ? [] : draadVanPlan().woorden },
     { open: veldOpen, attr: 'data-tm-ok', sleutel: i + ':' }) : '';
   return `<div class="tm-vorm${open ? ' open' : ''}" style="--c:${SLOT_KLEUR[od.slot]}">
     <button class="tm-vk" data-tm-open-vorm="${i}" aria-expanded="${open}"><span class="tm-min">${od.minuten}′</span><span class="tm-schets" aria-hidden="true">${vormSvg(v, kn.veld)}</span>
@@ -458,7 +458,7 @@ function deelTekst(){
   const regels = [`*Training ${catLabel(S.team?.categorie)} — ${p.profiel.thema}*`, `${p.profiel.duur} min · ${p.profiel.aantalSpelers} spelers`, ''];
   const draad = draadVanPlan();
   if (draad.principe) regels.push(`Speelwijze: ${draad.principe.titel}`, `Leerdoel: ${draad.leerdoel}`, `Coachwoorden: ${draad.woorden.join(' · ')}`, '');
-  p.onderdelen.forEach(o => { regels.push(`${o.minuten}′ ${o.vorm.naam} (${o.slotNaam.toLowerCase()})`); if (o.themaregel) regels.push(`   Themaregel: ${o.themaregel}`); if (o.speelwijzeRegel) regels.push(`   Regel van de speelwijze: ${o.speelwijzeRegel}`); });
+  p.onderdelen.forEach(o => { regels.push(`${o.minuten}′ ${o.vorm.naam} (${o.slotNaam.toLowerCase()})`); if (o.themaregel) regels.push(`   Themaregel: ${o.themaregel}`); if (o.speelwijzeRegel && speelwijzeAan()) regels.push(`   Regel van de speelwijze: ${o.speelwijzeRegel}`); });
   if (p.afsluiting) regels.push(`${p.afsluiting.minuten}′ ${p.afsluiting.vorm.naam} (afsluiting)`);
   regels.push('', '_Gemaakt met Cluppie_');
   return regels.join('\n');

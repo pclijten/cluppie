@@ -13,14 +13,14 @@
    per ongeluk wordt overschreven. Dit bestand importeert niets uit club.js
    (geen kringimport): club.js geeft een api-object mee. */
 import { db, doc, updateDoc } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261128w';
-import { BOUWEN, catLabel } from './config.js?v=20261128w';
-import { kompasNaam } from './clubconfig.js?v=20261128w';
-import { onderdeelAan, doorPlatformUit, werkwijzeVan } from './onderdelen.js?v=20261128w';
+import { S, esc, meld } from './state.js?v=20261129b';
+import { BOUWEN, catLabel } from './config.js?v=20261129b';
+import { kompasNaam } from './clubconfig.js?v=20261129b';
+import { onderdeelAan, doorPlatformUit, werkwijzeVan } from './onderdelen.js?v=20261129b';
 import { ico } from './icons.js?v=20261127b';
-import { momentenVanTeam, htmlMomentenKaart, koppelMomentenKaart, DAGEN_KORT } from './trainingsmomenten.js?v=20261128w';
-import { verwijderCoach } from './trainco-beheer.js?v=20261128w';
-import { eigenBouwenVanTeam, bouwVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261128w';
+import { momentenVanTeam, htmlMomentenKaart, koppelMomentenKaart, DAGEN_KORT } from './trainingsmomenten.js?v=20261129b';
+import { verwijderCoach } from './trainco-beheer.js?v=20261129b';
+import { eigenBouwenVanTeam, bouwVanTeam, ALLEEN_EIGEN } from './bouw-indeling.js?v=20261129b';
 
 /* [sleutel, naam, kort, icoon, uitleg] — 'lijstjes' was eerder niet door de beheerder te regelen */
 export const MODULE_DEFS = [
@@ -33,6 +33,8 @@ export const MODULE_DEFS = [
   ['trainingsmodule', 'Training maken', 'Maken', 'training-plan', 'Complete trainingen samenstellen (Trainingen → Training maken).'],
   ['seizoensplan', 'Seizoensplanning', 'Seizoen', 'planning-month', 'Jaarlijn in blokken met bijsturing op basis van evaluaties (Trainingen → Seizoen).'],
   ['toernooitje','Toernooitje','Toern', 'football-tournament','Onderling toernooitje met planner, klok, score en stand.'],
+  /* [20261127s] staat standaard aan; uit = geen tabblad Speelwijze en geen principe bij trainingen en het seizoen */
+  ['speelwijze', 'Speelwijze', 'Speel', 'football-speelwijze', 'Hoe het team wil voetballen, als rode draad door seizoen, trainingen en evaluatie.'],
 ];
 document.addEventListener('clubconfig', () => { const d = MODULE_DEFS.find(m => m[0] === 'kompas'); if (d) d[1] = kompasNaam(); });
 export const BOUW_KLEUR = { onder:'#35c47a', midden:'#3b82f6', boven:'#a855f7' };

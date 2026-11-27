@@ -11,13 +11,13 @@
 
    Importeert NIET uit teams.js of teams-seizoensplan.js (geen kringimport): het plan van het team leest hij uit
    S._spPlan, en teams.js geeft zetTeamTab mee. */
-import { S, esc, meld } from './state.js?v=20261128w';
+import { S, esc, meld, modAan } from './state.js?v=20261129b';
 import { db, doc, getDoc, setDoc, deleteDoc } from './firebase.js?v=20261011g';
-import { leeftijdVanCategorie, catLabel } from './config.js?v=20261128w';
-import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261128w';
+import { leeftijdVanCategorie, catLabel } from './config.js?v=20261129b';
+import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261129b';
 import { vormen, vormOpId, laadBibliotheek, bibliotheekGeladen } from './bibliotheek.js?v=20261127y';
-import { positieOp, positieWeek } from './seizoensplan-logica.js?v=20261128w';
-import { rechtenVoor } from './seizoensplan-club.js?v=20261128w';
+import { positieOp, positieWeek } from './seizoensplan-logica.js?v=20261129b';
+import { rechtenVoor } from './seizoensplan-club.js?v=20261129b';
 import { maak3DBlok } from './scene3d.js?v=20261126p';
 import * as L from './speelstijl-logica.js?v=20261127p';
 import { speelwijzeVan, perMoment, rodeDraad, dekking, vormenPerPrincipe, principeVoorThema, huidigUitStijl, MOMENTEN } from './speelwijze-logica.js?v=20261127p';
@@ -32,7 +32,12 @@ function lader(){
   if (!S._sw || S._sw.teamId !== S.teamId) S._sw = { teamId: S.teamId, huidig: null, bron: null, geladen: false, belofte: null };
   return S._sw;
 }
+/* [20261127s] De speelwijze is een module die de club (Instellingen › AI & modules) of het team (Teams beheren)
+   aan en uit zet, zoals Evaluaties en Leerlijn. Staat er niets, dan staat hij aan. Uit = het tabblad verdwijnt en
+   de rest van de app doet alsof er geen speelwijze is: geen rode draad, geen principe bij trainingen en blokken. */
+export const speelwijzeAan = (team = S.team) => modAan('speelwijze', team);
 export function laadSpeelwijze(opnieuw = false){
+  if (!speelwijzeAan()) return Promise.resolve(null);
   const c = lader();
   if (c.belofte && !opnieuw) return c.belofte;
   const teamId = S.teamId, club = S.team?.club || null;
@@ -51,7 +56,7 @@ export function laadSpeelwijze(opnieuw = false){
   })();
   return c.belofte;
 }
-export const speelwijzeGeladen = () => !!(S._sw && S._sw.teamId === S.teamId && S._sw.geladen);
+export const speelwijzeGeladen = () => speelwijzeAan() && !!(S._sw && S._sw.teamId === S.teamId && S._sw.geladen);
 /* Het speelstijl-document van dit team (van de club of van het team zelf), of null. */
 export function speelstijlNu(){ return speelwijzeGeladen() ? S._sw.huidig : null; }
 export function speelwijzeBron(){ return speelwijzeGeladen() ? S._sw.bron : null; }
