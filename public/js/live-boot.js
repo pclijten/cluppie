@@ -8,7 +8,7 @@
    toernooiLive/{id} lezen (firestore.rules). Geen spelersnamen, niets om in te vullen.
    De pagina werkt zichzelf bij (onSnapshot); het comité vult de uitslagen in via Activiteiten. */
 import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, onSnapshot } from './firebase.js?v=20261011g';
-import * as T from './toernooi-logica.js?v=20261130g';
+import * as T from './toernooi-logica.js?v=20261130k';
 import { tvStijl, tvKleur, tvZet, bordHtml, logoHtml, tikHtml, diaHtml, sponsHtml, voetHtml } from './tv-stijl.js?v=20261126n';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
