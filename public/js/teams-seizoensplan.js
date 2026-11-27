@@ -19,20 +19,20 @@
 
    Tabblad: 'seizoensplan'. Importeert NIET uit teams.js; teams.js geeft zetTeamTab mee. */
 import { db, doc, collection, getDoc, getDocs, setDoc, addDoc, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261129n';
-import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261129n';
-import { aiAan, aiDoel } from './clubconfig.js?v=20261129n';
-import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261129n';
-import { trainingenVanPlan, planVoorTeam } from './seizoensplan-club.js?v=20261129n';
-import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261129n';
+import { S, esc, meld } from './state.js?v=20261129v';
+import { SEIZOEN_FALLBACK, leeftijdVanCategorie, bouwVanCategorie, catLabel, TEAM_CATEGORIEEN, teamCategorie } from './config.js?v=20261129v';
+import { aiAan, aiDoel } from './clubconfig.js?v=20261129v';
+import { zetSeizoenTrainingen } from './seizoensplan-trainingen.js?v=20261129v';
+import { trainingenVanPlan, planVoorTeam } from './seizoensplan-club.js?v=20261129v';
+import { onderdeelAan, werkwijzeToestaat } from './onderdelen.js?v=20261129v';
 import { BIEB, basisGeladen, laadBasis, vormen, laadBibliotheek } from './bibliotheek.js?v=20261127y';
-import { FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261129n';
+import { FASE_UITLEG, LEERCURVE, kiesDuur } from './trainingsplanner.js?v=20261129v';
 import {
   MODELLEN, ACCENTEN, maakSeizoensplan, weekKalender, herreken, standaardVrij, maandagVan, beschikbareThemas, themaVolgorde,
   valideerBlokken, positieOp, positieWeek, teamSignalen, stelBijsturingVoor, pasVoorstelToe, speelwijzeExtra, seizoenStartJaar as seizoenJaar,
-} from './seizoensplan-logica.js?v=20261129n';
+} from './seizoensplan-logica.js?v=20261129v';
 /* [20261116h] de speelwijze als rode draad: weegt mee in de themavolgorde en staat bij elk blok */
-import { speelstijlNu, speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad, speelwijzeBron, speelwijzeAan } from './speelwijze.js?v=20261129n';
+import { speelstijlNu, speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad, speelwijzeBron, speelwijzeAan } from './speelwijze.js?v=20261129v';
 import { speelwijzeVan, stijlVoorPlan, dekking, principeVoorThema, rodeDraad } from './speelwijze-logica.js?v=20261127p';
 import { htmlDraadKaart, htmlDekking, htmlPrincipeChip } from './speelwijze-html.js?v=20261127p';
 
