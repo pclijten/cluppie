@@ -47,10 +47,10 @@
      clubnaam   OpenStreetMap Nominatim (alleen de zoektekst, bij Zoek)
    Geen GPS of locatie van de gebruiker. */
 import { db, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, collection, getDocs, query, where, serverTimestamp, storage, sRef, uploadBytes, getDownloadURL } from './firebase.js?v=20261011g';
-import { S, esc, meld, isBeheerder } from './state.js?v=20261129f';
+import { S, esc, meld, isBeheerder } from './state.js?v=20261129g';
 import { ico } from './icons.js?v=20261127b';
-import { telGebruik } from './tracker.js?v=20261129f';
-import { catInfo } from './config.js?v=20261129f';
+import { telGebruik } from './tracker.js?v=20261129g';
+import { catInfo } from './config.js?v=20261129g';
 import { sportVeld } from './sporten.js?v=20261126g';   /* [20261125z] veld uit het sportprofiel */
 const kaartCirkel = () => { const c = sportVeld().kaart?.cirkel; return !c ? '' : c === 18 ? '<i class="vk-l-cirkel"></i>' : `<i class="vk-l-cirkel" style="width:${c}%"></i>`; };
 
@@ -1357,7 +1357,9 @@ function tekenZij(){
   if (h) h.textContent = hint();
   if (!zij) return;
   const v = gekozenVeld(), pl = v ? null : gekozenPlek();
-  const items = [...B.park.velden.map(x => ({ id:x.id, t:metVeld(x.naam) + (x.lengte ? '' : ' (stip)'), i:'' })),
+  /* [20261129f] velden op nummer (Veld 1, 2, 3 …) in plaats van in de volgorde waarin ze zijn opgehaald */
+  const opNaam = [...B.park.velden].sort((a, b) => String(a.naam).localeCompare(String(b.naam), 'nl', { numeric:true }));
+  const items = [...opNaam.map(x => ({ id:x.id, t:metVeld(x.naam) + (x.lengte ? '' : ' (stip)'), i:'' })),
                  ...B.park.plekken.map(x => ({ id:x.id, t:x.naam || PLEK[x.soort]?.naam, i:plekIco(x.soort, 16) }))];
   const lijst = items.length ? `<div class="vk-veldlijst">${items.map(x =>
     `<button type="button" class="vk-chip${x.id === B.sel ? ' aan' : ''}" data-vk-kies="${esc(x.id)}">${x.i}${esc(x.t)}</button>`).join('')}</div>` : '';

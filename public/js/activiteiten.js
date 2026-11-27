@@ -24,17 +24,17 @@
    Rekenwerk, export en import: activiteiten-logica.js (getest). Sjablonen: activiteit-sjablonen.js. */
 import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, deleteField, query, where, onSnapshot,
   serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261129f';
+import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261129g';
 import { ico } from './icons.js?v=20261127b';
 import { SJABLONEN, sjabloonVan } from './activiteit-sjablonen.js?v=20261125w';
 import * as L from './activiteiten-logica.js?v=20261127n';
 import * as D from './draaiboek-logica.js?v=20261127n';
 import { docxBestanden } from './draaiboek-docx.js?v=20261127b';
-import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261129f';
-import * as TN from './activiteit-toernooi.js?v=20261129f';
+import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261129g';
+import * as TN from './activiteit-toernooi.js?v=20261129g';
 import { schoonToernooi } from './toernooi-logica.js?v=20261127v';
-import * as CS from './clubschermen.js?v=20261129f';
-import * as VB from './vrijwilligers.js?v=20261129f';
+import * as CS from './clubschermen.js?v=20261129g';
+import * as VB from './vrijwilligers.js?v=20261129g';
 
 let A = null;
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -984,7 +984,7 @@ async function klik(e){
     case 'kopieer': return kopieKlembord(b.dataset.tekst);
     case 'teams-alle': return zet({ teams: (S.clubTeams || []).filter(x => x && x.id && !x.gearchiveerd).map(x => x.id).slice(0, L.MAX.teams) });
     case 'teams-geen': return zet({ teams: [] });
-    case 'veldplanner': return import('./veldplanner.js?v=20261129f').then(m => m.openVeldplanner(A.clubId));
+    case 'veldplanner': return import('./veldplanner.js?v=20261129g').then(m => m.openVeldplanner(A.clubId));
     case 'aflasten': return vensterAflasten();
     case 'aflasten-ja': return aflasten();
     case 'bericht-plaats': return plaatsBericht(id);
@@ -1311,6 +1311,9 @@ textarea.ac-in{resize:vertical}
   .ac-prog-kop{display:none}
   .ac-prog{padding-bottom:8px;border-bottom:1px solid var(--hair)}
   .ac-titel h1{font-size:var(--t-2xl)}
+  /* [20261129f] smal scherm: de knoppen zakken onder de titel in plaats van de titel letter voor letter af te breken */
+  .ac-kop{flex-wrap:wrap}
+  .ac-titel{flex:1 1 150px}
   .ac-kop .knop{padding-inline:10px}
   .ac-staat{display:none}
 }
@@ -1377,7 +1380,7 @@ textarea.ac-in{resize:vertical}
 .ac-bewerk{margin-left:auto;background:none;color:#c62828;font:600 13px/1 var(--font-body,inherit);text-transform:none;padding:4px 6px;min-height:28px}
 .ac-papier table{width:100%;border-collapse:collapse;margin:4px 0 8px}
 .ac-papier th{font-size:12px;color:#5b616a;text-align:left;padding:5px 6px;border-bottom:1px solid #d6dae0;font-weight:600}
-.ac-papier td{padding:6px;border-bottom:1px solid #eceef1;vertical-align:top;overflow-wrap:anywhere}
+.ac-papier td{padding:6px;border-bottom:1px solid #eceef1;vertical-align:top;overflow-wrap:break-word}
 .ac-papier td small{color:#5b616a}
 .ac-papier .dl td{border:0;padding:3px 6px}.ac-papier .dl td:first-child{color:#5b616a;width:32%}
 .ac-papier .nog-leeg{color:#a3a9b1}

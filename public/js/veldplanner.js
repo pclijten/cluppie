@@ -30,10 +30,10 @@
    eigen vakken weggooien. De velden zelf (id, naam) komen wel uit de veldkaart.
    Rekenwerk in veldplanner-logica.js (getest). */
 import { db, doc, getDoc, setDoc } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261129f';
+import { S, esc, meld } from './state.js?v=20261129g';
 import { ico } from './icons.js?v=20261127b';
-import { bouwVanTeam } from './bouw-indeling.js?v=20261129f';
-import { momentenVanTeam } from './trainingsmomenten.js?v=20261129f';
+import { bouwVanTeam } from './bouw-indeling.js?v=20261129g';
+import { momentenVanTeam } from './trainingsmomenten.js?v=20261129g';
 import { NODIG, MAAT_NAAM, KK_VOOR, KK_NA, MAX_EIGEN, naarMin, naarTijd, rondKwartier,
   vakkenVan, vakUit, deelVan, deelTekst, meters, banenVan, stukken, maatVanCategorie, duurVanCategorie,
   zoekVrijVak, vrijeKleedkamers, stapel, controleer, nogInTePlannen, schoonRooster, schoonKleedkamers, schoonVak,
@@ -171,7 +171,7 @@ async function bewaarNu(){
 function staatTekst(){
   if (P.staat === 'bewaren') return 'Bewaren…';
   if (P.staat === 'fout') return 'Niet opgeslagen';
-  return P.om ? `Opgeslagen ${P.om.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}` : 'Concept';
+  return P.om ? `Opgeslagen ${P.om.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}` : 'Wijzigingen worden vanzelf bewaard';   /* [20261129f] was 'Concept', dat staat er al naast */
 }
 function zetStaat(){ const s = P?.el.querySelector('.vp-staat'); if (s){ s.textContent = staatTekst(); s.classList.toggle('fout', P.staat === 'fout'); } }
 
@@ -207,7 +207,7 @@ function teken(){
     <div class="vp-grid">
       ${htmlZijbalk()}
       <section class="vp-paneel vp-tl" aria-label="Tijdlijn ${DAGEN[P.dag]}">
-        <div class="vp-paneel-kop"><h2>${DAGEN[P.dag]}</h2><span class="vp-zacht">${P.blokken.filter(b => b.dag === P.dag).length} trainingen · stappen van 15 minuten</span></div>
+        <div class="vp-paneel-kop"><h2>${DAGEN[P.dag]}</h2><span class="vp-zacht">${(n => `${n} ${n === 1 ? 'training' : 'trainingen'}`)(P.blokken.filter(b => b.dag === P.dag).length)} · stappen van 15 minuten</span></div>
         <div class="vp-tl-scroll">${htmlTijdlijn()}${htmlKleedstrook()}</div>
         <div class="vp-legenda">${['onder', 'midden', 'boven'].map(b => `<span><i class="b-${b}"></i>${BOUW[b]}</span>`).join('')}<span><i class="bots"></i>Botsing</span></div>
       </section>
@@ -228,7 +228,7 @@ function htmlDagen(c){
   return `<nav class="vp-dagen" aria-label="Dagen">${dagen.map(d => {
     const n = P.blokken.filter(b => b.dag === d).length, f = c.lijst.filter(x => x.dag === d && x.soort === 'fout').length, w = c.lijst.filter(x => x.dag === d && x.soort === 'warn').length;
     return `<button type="button" class="vp-dag${d === P.dag ? ' aan' : ''}" data-dag="${d}" aria-pressed="${d === P.dag}">
-      <b><span class="lang">${DAGEN[d]}</span><span class="kort">${DAGK[d]}</span></b><small>${n} <span class="lang">trainingen</span></small>
+      <b><span class="lang">${DAGEN[d]}</span><span class="kort">${DAGK[d]}</span></b><small>${n} <span class="lang">${n === 1 ? 'training' : 'trainingen'}</span></small>
       <span class="vp-dagstat">${f ? `<em class="f">${f} botsing${f === 1 ? '' : 'en'}</em>` : ''}${w ? `<em class="w">${w} let op</em>` : ''}${!f && !w && n ? '<em class="ok">Klopt</em>' : ''}</span></button>`;
   }).join('')}${dagen.includes(6) ? '' : `<button type="button" class="vp-dag plus" data-dag="6" aria-label="Zaterdag tonen">+ za</button>`}</nav>`;
 }
@@ -386,7 +386,7 @@ function koppel(){
     if (a === 'kleedkamers') return vensterKleedkamers();
     if (a === 'deselect'){ P.sel = null; return teken(); }
     if (a === 'weg') return weg(P.sel);
-    if (a === 'sportpark'){ const c = P.clubId; sluitVeldplanner(); return import('./veldkaart.js?v=20261129f').then(m => m.openSportparkBeheer(c)); }
+    if (a === 'sportpark'){ const c = P.clubId; sluitVeldplanner(); return import('./veldkaart.js?v=20261129g').then(m => m.openSportparkBeheer(c)); }
   });
   el.querySelectorAll('[data-weergave]').forEach(k => k.onclick = () => { P.weergave = k.dataset.weergave; P.sel = null; P.objSel = null; teken(); });
   el.querySelectorAll('[data-dag]').forEach(k => k.onclick = () => { P.dag = +k.dataset.dag; P.sel = null; teken(); });
@@ -608,7 +608,7 @@ function raak(k, x, y){
 }
 async function maakKaart(){
   const el = P.el.querySelector('#vpKaart'); if (!el) return;
-  const { Kaart } = await import('./veldkaart.js?v=20261129f');
+  const { Kaart } = await import('./veldkaart.js?v=20261129g');
   if (!P || !el.isConnected) return;
   const pos = P.kaartPos || { lat: P.park.lat, lon: P.park.lon, z: Math.min(19, P.park.zoom || 18) };
   const rel = e => { const r = el.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };

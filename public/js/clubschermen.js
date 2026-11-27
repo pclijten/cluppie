@@ -9,7 +9,7 @@
    Opslag: clubs/{club}/sponsoren/{id} (met bedrag en notitie) en de openbare kopie in
    clubTv/{tvId} + clubTv/{tvId}/schermen/{id}. Krijgt alles van activiteiten.js via ctx. */
 import { db, doc, collection, query, where, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, deleteField, onSnapshot } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261129f';
+import { S, esc, meld } from './state.js?v=20261129g';
 import { ico } from './icons.js?v=20261127b';
 import { liveId, MAX_SCHERMEN } from './toernooi-logica.js?v=20261127v';
 import { kleinPlaatje } from './plaatje.js?v=20261127v';
@@ -108,7 +108,10 @@ const DIA_UITLEG = {
 };
 const RAND_UITLEG = 'Altijd in beeld: de naam, het logo en de kleur van de club (uit de clubinstellingen), de datum en de klok, en onderin je mededeling.';
 function beeldSrc(tv, aan, proef){
-  if (aan && tv?.id) return `${schermLink(tv.id)}&tv=1&ontwerp=1${proef ? '&proef=1' : ''}`;
+  /* [20261129g] in de demo (?demo) bestaat de tv alleen in het geheugen van deze pagina: het beeld ernaast blijft dan het voorbeeld,
+     anders zegt het 'Deze link werkt niet' */
+  const demo = document.documentElement.classList.contains('demo');
+  if (aan && tv?.id && !demo) return `${schermLink(tv.id)}&tv=1&ontwerp=1${proef ? '&proef=1' : ''}`;
   return `${schermLink('voorbeeld')}&tv=1&ontwerp=1&proef=1&naam=${encodeURIComponent(clubInfo().clubNaam)}&kleur=${encodeURIComponent(clubInfo().kleur)}`;
 }
 /* Iets naar het beeld sturen (sjabloon, vaste dia, proefdoelpunt). */
