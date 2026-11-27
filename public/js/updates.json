@@ -1,4 +1,10 @@
 [
+  { "datum": "2026-11-27", "titel": "Nieuwe Help: 22 handleidingen met beeld, als PDF, en een slimmere hulpchat", "punten": [
+    "Onder Help staan nu 22 handleidingen per onderdeel, van inloggen tot de toernooiplanner. Je ziet alleen wat bij jouw rol hoort, en bij elke stap het echte scherm van de telefoon of de laptop met genummerde stippen.",
+    "Elke handleiding kun je als PDF downloaden of printen, en er is één boekje met alles.",
+    "Met Breng me erheen spring je vanuit een stap meteen naar het goede scherm.",
+    "De Hulpchat legt nu stap voor stap uit, laat het scherm erbij zien en verwijst naar de juiste handleiding. Hij weet op welk scherm je zit. Staat AI uit of is de limiet bereikt, dan zoekt hij zelf de best passende handleiding."
+  ] },
   { "datum": "2026-11-27", "titel": "Video's met voorbeeldbeeld en duur", "punten": [
     "Bij Video's zie je nu per video een echt beeld uit de video in plaats van een zwart vlak, met de lengte rechtsonder.",
     "Titels die nog een bestandsnaam waren, zoals 01-aan-de-slag, lees je nu als Aan de slag.",

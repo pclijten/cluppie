@@ -10499,3 +10499,113 @@ p.cp-let{margin:0;font-size:var(--t-sm)}
 /* Club › Video's (beheerlijst): iets groter beeld, zonder afspeelknop zodat de duur leesbaar blijft */
 .video-rij.vsort .thumb{width:96px;height:54px}
 .video-rij.vsort .thumb .vt-play{display:none}
+
+/* ==================== HELP: HANDLEIDINGEN PER ONDERDEEL [20261130a] ====================
+   Scherm uit gidsen.js. Overzicht met kaarten, en per handleiding de stappen met het echte
+   schermbeeld in een toestelkader. De stippen op het beeld horen bij de nummers in de legenda. */
+.gd{display:flex;flex-direction:column;gap:var(--space-sm)}
+.gd-zoekbalk{margin-bottom:0}
+.gd-chatbalk{display:flex;align-items:center;gap:var(--space-sm);width:100%;text-align:left;padding:var(--space-sm) var(--space-md);border-radius:var(--r-m);border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line-d));background:color-mix(in srgb,var(--accent) 8%,var(--card));color:var(--ink);cursor:pointer;font:inherit}
+.gd-chatbalk>svg{flex:none;color:var(--accent)}
+.gd-chatbalk span{display:flex;flex-direction:column;gap:var(--space-3xs);min-width:0}
+.gd-chatbalk b{font-size:var(--t-base)}
+.gd-chatbalk small{font-size:var(--t-sm);color:var(--ink-2)}
+.gd-chatbalk .gd-pijl{margin-left:auto;font-size:var(--t-2xl);color:var(--ink-2);flex:none}
+.gd-filter{display:flex;gap:var(--space-xs);overflow-x:auto;scrollbar-width:none;padding-bottom:var(--space-3xs)}
+.gd-filter::-webkit-scrollbar{display:none}
+.gd-filter button{flex:none;padding:var(--space-xs) var(--space-sm);border-radius:var(--r-pill);border:1px solid var(--line-d);background:var(--card);color:var(--ink-2);font:inherit;font-size:var(--t-sm);font-weight:600;cursor:pointer}
+.gd-filter button.aan{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.gd-lijst,.gd-treffers{display:grid;gap:var(--space-xs)}
+.gd-kaart,.gd-treffer{display:flex;align-items:center;gap:var(--space-sm);width:100%;text-align:left;padding:var(--space-sm);border-radius:var(--r-m);border:1px solid var(--line-d);background:var(--card);color:var(--ink);cursor:pointer;font:inherit}
+.gd-kaart:hover,.gd-treffer:hover{border-color:var(--hover-rand)}
+.gd-kaart.uit{opacity:.55}
+.gd-kaart-nr{flex:none;width:38px;height:38px;border-radius:var(--r-s);display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 12%,var(--surface-2));color:var(--accent);font-family:var(--font-display);font-weight:700;font-size:var(--t-xl)}
+.gd-kaart-t{display:flex;flex-direction:column;gap:var(--space-3xs);min-width:0;flex:1}
+.gd-kaart-t b{font-size:var(--t-base)}
+.gd-kaart-t small{font-size:var(--t-sm);color:var(--ink-2)}
+.gd-kaart-r{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:var(--space-3xs);font-size:var(--t-xs);color:var(--ink-2);font-weight:600}
+.gd-kaart-r small{font-weight:400;font-size:var(--t-2xs)}
+.gd-boekje{display:flex;align-items:center;justify-content:center;gap:var(--space-xs);padding:var(--space-sm);border-radius:var(--r-m);border:1px dashed var(--hair);color:var(--ink);text-decoration:none;font-weight:600;font-size:var(--t-md)}
+.gd-naslag{margin-top:var(--space-lg);border-top:1px solid var(--line-d);padding-top:var(--space-sm)}
+.gd-naslag>summary{cursor:pointer;font-weight:600;color:var(--ink-2);font-size:var(--t-md);padding:var(--space-xs) 0}
+.gd-naslag[open]>summary{margin-bottom:var(--space-sm)}
+
+.gd-terug{align-self:flex-start;background:none;border:0;color:var(--ink-2);font:inherit;font-size:var(--t-md);font-weight:600;cursor:pointer;padding:var(--space-xs) 0}
+.gd-kop{background:var(--card);border:1px solid var(--line-d);border-radius:var(--r-m);padding:var(--space-md)}
+.gd-kop-nr{font-size:var(--t-xs);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.gd-kop h2{font-family:var(--font-display);font-size:var(--t-4xl);line-height:1.05;margin:var(--space-2xs) 0;text-transform:uppercase}
+.gd-kop p{margin:0;color:var(--ink-2);font-size:var(--t-base)}
+.gd-meta{display:flex;flex-wrap:wrap;gap:var(--space-xs);margin-top:var(--space-sm)}
+.gd-meta span{font-size:var(--t-xs);padding:var(--space-3xs) var(--space-xs);border-radius:var(--r-pill);background:var(--surface-2);color:var(--ink-2);font-weight:600}
+.gd-acties{display:flex;flex-wrap:wrap;gap:var(--space-xs);margin-top:var(--space-sm)}
+.gd-acties .knop{display:inline-flex;align-items:center;gap:var(--space-2xs);text-decoration:none}
+.gd-stappen{list-style:none;margin:0;padding:0;display:grid;gap:var(--space-sm)}
+.gd-stap{background:var(--card);border:1px solid var(--line-d);border-radius:var(--r-m);padding:var(--space-md);display:grid;gap:var(--space-md);scroll-margin-top:var(--space-2xl)}
+.gd-stap.gd-raak{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent)}
+.gd-stap h3{display:flex;align-items:center;gap:var(--space-xs);margin:0 0 var(--space-xs);font-size:var(--t-xl)}
+.gd-nr{flex:none;width:28px;height:28px;border-radius:var(--r-pill);display:grid;place-items:center;background:var(--ink);color:var(--bg);font-size:var(--t-md);font-weight:700}
+.gd-stap p{margin:0;font-size:var(--t-base);line-height:1.55}
+.gd-leg{list-style:none;margin:var(--space-sm) 0 0;padding:0;display:flex;flex-wrap:wrap;gap:var(--space-xs)}
+.gd-leg li{display:flex;align-items:center;gap:var(--space-2xs);font-size:var(--t-sm);font-weight:600;padding:var(--space-3xs) var(--space-xs) var(--space-3xs) var(--space-3xs);border-radius:var(--r-pill);background:var(--surface-2)}
+.gd-beeld{margin:0;display:flex;justify-content:center}
+.gd-scherm{position:relative;line-height:0;background:var(--surface-2);box-shadow:var(--shadow)}
+.gd-scherm img{display:block;width:100%;height:auto}
+.gd-beeld.telefoon .gd-scherm{width:min(100%,280px);border:6px solid var(--pitch-ink);border-radius:var(--r-l);overflow:hidden}
+.gd-beeld.laptop .gd-scherm{width:100%;border:1px solid var(--hair);border-top:14px solid var(--pitch-ink);border-radius:var(--r-s);overflow:hidden}
+.gd-punt{position:absolute;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:var(--r-pill);display:grid;place-items:center;background:var(--accent);color:var(--fluo);font-size:var(--t-xs);font-weight:700;line-height:1;box-shadow:0 0 0 2px var(--fluo),var(--shadow);pointer-events:none}
+.gd-punt.klein{position:static;transform:none;width:20px;height:20px;box-shadow:none;flex:none}
+.gd-beeld.laptop .gd-punt{width:18px;height:18px;font-size:var(--t-2xs)}
+.gd-tips{background:color-mix(in srgb,var(--warn) 10%,var(--card));border:1px solid color-mix(in srgb,var(--warn) 35%,var(--line-d));border-radius:var(--r-m);padding:var(--space-md)}
+.gd-tips h3{margin:0 0 var(--space-xs);font-size:var(--t-lg)}
+.gd-tips ul{margin:0;padding-left:var(--space-md);display:grid;gap:var(--space-2xs);font-size:var(--t-md);line-height:1.5}
+.gd-nav{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-xs)}
+.gd-nav button{display:flex;flex-direction:column;gap:var(--space-3xs);text-align:left;padding:var(--space-sm);border-radius:var(--r-m);border:1px solid var(--line-d);background:var(--card);color:var(--ink);font:inherit;font-weight:600;font-size:var(--t-md);cursor:pointer}
+.gd-nav button:last-child{text-align:right;align-items:flex-end}
+.gd-nav small{font-size:var(--t-xs);color:var(--ink-2);font-weight:400}
+.gd [hidden]{display:none!important}
+.gd-scherm[data-gd-groot]{cursor:zoom-in}
+.gd-grootlaag{overflow:auto;place-items:start center;cursor:zoom-out}
+.gd-grootlaag .gd-video-x{position:fixed;right:var(--space-md);top:var(--space-md)}
+.gd-beeld.groot.telefoon .gd-scherm{width:min(100%,460px)}
+.gd-beeld.groot.laptop .gd-scherm{width:min(100%,1440px);max-width:none}
+.gd-videolaag{position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.82);display:grid;place-items:center;padding:var(--space-md)}
+.gd-videokader{position:relative;width:min(100%,1100px)}
+.gd-videokader video{width:100%;max-height:82vh;border-radius:var(--r-s);background:#000}
+.gd-video-x{position:absolute;right:0;top:calc(-1 * var(--space-xl));width:36px;height:36px;border-radius:var(--r-pill);border:0;background:rgba(255,255,255,.16);color:#fff;font-size:var(--t-lg);cursor:pointer}
+@media (min-width:1100px) and (min-height:520px){
+  html.desk .gd{max-width:1080px}
+  html.desk .gd-lijst{grid-template-columns:1fr 1fr}
+  html.desk .gd-stap.met-beeld.telefoon{grid-template-columns:minmax(0,1fr) 300px;align-items:start}
+  html.desk .gd-beeld.laptop .gd-scherm{max-width:920px}
+}
+
+/* ---- Hulpchat [20261130a]: antwoord in stappen, verwijzingen naar handleiding en scherm ---- */
+.cb-help{display:inline-flex;align-items:center;gap:var(--space-2xs);margin-left:auto;padding:var(--space-2xs) var(--space-sm);border-radius:var(--r-pill);border:1px solid var(--line-d);background:var(--surface-2);color:var(--ink);font:inherit;font-size:var(--t-xs);font-weight:600;cursor:pointer}
+.cb-help[hidden]{display:none}
+.cb-help + .cb-x{margin-left:var(--space-xs)}
+.cb-msg.cb-rijk{max-width:94%}
+.cb-msg p{margin:0}
+.cb-msg p + p,.cb-msg p + .cb-stappen,.cb-msg .cb-stappen + p{margin-top:var(--space-xs)}
+.cb-stappen{margin:0;padding-left:var(--space-lg);display:grid;gap:var(--space-2xs)}
+ol.cb-stappen{list-style:none;padding-left:0;counter-reset:cbstap}
+ol.cb-stappen li{counter-increment:cbstap;display:grid;grid-template-columns:22px 1fr;gap:var(--space-xs);align-items:start}
+ol.cb-stappen li::before{content:counter(cbstap);width:22px;height:22px;border-radius:var(--r-pill);display:grid;place-items:center;background:var(--ink);color:var(--bg);font-size:var(--t-xs);font-weight:700;margin-top:1px}
+.cb-msg.bot,.cb-verwijs{animation:cb-in var(--dur-short) var(--ease-out)}
+@keyframes cb-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.cb-verwijs{align-self:stretch;display:grid;gap:var(--space-xs)}
+.cb-gids{border:1px solid var(--line-d);border-radius:var(--radius);background:var(--card);overflow:hidden}
+.cb-gids-kop{display:flex;align-items:center;gap:var(--space-sm);width:100%;text-align:left;padding:var(--space-xs) var(--space-sm);background:none;border:0;color:var(--ink);font:inherit;cursor:pointer}
+.cb-gids-nr{flex:none;width:32px;height:32px;border-radius:var(--r-s);display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 12%,var(--surface-2));color:var(--accent);font-family:var(--font-display);font-weight:700;font-size:var(--t-lg)}
+.cb-gids-t{display:flex;flex-direction:column;min-width:0;flex:1}
+.cb-gids-t b{font-size:var(--t-md)}
+.cb-gids-t small{font-size:var(--t-xs);color:var(--ink-2)}
+.cb-gids-pijl{flex:none;color:var(--ink-2);font-size:var(--t-xl);transition:transform var(--dur-micro)}
+.cb-gids-kop[aria-expanded="true"] .cb-gids-pijl{transform:rotate(180deg)}
+.cb-gids-uit{display:grid;gap:var(--space-sm);padding:0 var(--space-sm) var(--space-sm);font-size:var(--t-md);line-height:1.5}
+.cb-gids-uit[hidden]{display:none}
+.cb-gids-uit p{margin:0}
+.cb-gids-uit .gd-beeld.telefoon .gd-scherm{width:min(100%,220px)}
+.cb-gids-acties,.cb-knoppen{display:flex;flex-wrap:wrap;gap:var(--space-xs)}
+.cb-actie-knop{cursor:pointer;text-decoration:none;font-family:inherit}
+.cb-actie-knop.licht{background:var(--surface-2);color:var(--ink);border:1px solid var(--line-d)}
+@media (prefers-reduced-motion: reduce){ .cb-msg.bot,.cb-verwijs{animation:none} }

@@ -150,7 +150,7 @@ async function clubAfgelastingenOphalen(){
      alleen leesbaar voor clubbeheerders — coördinatoren zien dit blok niet) */
   S._clubWedAfgelast = null;
   if (isBeheerder()) getDoc(doc(db, 'clubs', S.clubId, 'geheim', '_afgelast'))
-    .then(d => { S._clubWedAfgelast = d.exists() ? (d.data().rijen || []) : []; if (S.clubTab === 'afgelasten') renderClub(); })
+    .then(d => { S._clubWedAfgelast = d.exists() ? (d.data().rijen || []) : []; if (S.clubTab === 'afgelasten') renderClub({ lokaal: true }); })   /* lokaal: anders haalt het hertekenen dit opnieuw op en blijft het scherm zichzelf verversen */
     .catch(() => {});
   const snap = await getDocs(collection(db,'clubs',S.clubId,'afgelastingen'));
   return snap.docs.map(d => ({id:d.id, ...d.data()}))

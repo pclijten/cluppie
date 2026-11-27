@@ -80,6 +80,10 @@ test('storage: proeven per gebruikerstype', async () => {
   await proef(24, 'coach', 'zet een veldfoto in de map van een ander', 'weigeren', () => uploadBytes(ref(opslag('coach'), 'clubs/test-fc/veldfotos/admin/2.jpg'), JPG, { contentType: 'image/jpeg' }));
   await proef(25, 'coach', 'zet een pdf in de veldfotomap', 'weigeren', () => uploadBytes(ref(opslag('coach'), 'clubs/test-fc/veldfotos/coach/3.pdf'), PDF, { contentType: 'application/pdf' }));
   await proef(26, 'coach andere club', 'stuurt een veldfoto naar een andere club', 'weigeren', () => uploadBytes(ref(opslag('ander'), 'clubs/test-fc/veldfotos/ander/4.jpg'), JPG, { contentType: 'image/jpeg' }));
+  /* [20261130a] uitlegvideo's bij de handleidingen (hulp/…): iedereen leest, niemand schrijft via de app */
+  await zet('hulp/video/01-aan-de-slag.mp4', MP4, 'video/mp4');
+  await proef(27, 'niet ingelogd', 'bekijkt een uitlegvideo', 'toestaan', () => getBytes(ref(opslag(null), 'hulp/video/01-aan-de-slag.mp4')));
+  await proef(28, 'clubadmin', 'overschrijft een uitlegvideo', 'weigeren', () => uploadBytes(ref(opslag('admin'), 'hulp/video/01-aan-de-slag.mp4'), MP4, { contentType: 'video/mp4' }));
   const fout = uitkomsten.filter(u => !u.klopt).map(u => `${u.nr} ${u.rol}: ${u.wat} -> ${u.uit}`);
   assert.deepStrictEqual(fout, [], 'afwijkingen van wat veilig is');
 });
