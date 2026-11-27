@@ -8,21 +8,21 @@ import {
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, speler, initialen, openModal, sluitModal, toon, isBeheerder
-} from './state.js?v=20261129i';
-import { telGebruik } from './tracker.js?v=20261129i';
-import { videoInKamer } from './kamer-beheer.js?v=20261129i';   /* [20261126v] video delen in de teamkamer */
-import { voorbeeldTeamcode } from './clubconfig.js?v=20261129i';
+} from './state.js?v=20261129j';
+import { telGebruik } from './tracker.js?v=20261129j';
+import { videoInKamer } from './kamer-beheer.js?v=20261129j';   /* [20261126v] video delen in de teamkamer */
+import { voorbeeldTeamcode } from './clubconfig.js?v=20261129j';
 import { ico } from './icons.js?v=20261127b';
-import { videoThumbHtml, netteVideoTitel } from './video-thumb.js?v=20261129i';
+import { videoThumbHtml, netteVideoTitel } from './video-thumb.js?v=20261129j';
 
 import {
   CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, youtubeId, youtubeWatch,
   SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo, isoWeek,
   catLabel,
-} from './config.js?v=20261129i';
-import { onderdeelAan } from './onderdelen.js?v=20261129i';
-import { htmlKompas } from './teams-leerlijn.js?v=20261129i';
-import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261129i';
+} from './config.js?v=20261129j';
+import { onderdeelAan } from './onderdelen.js?v=20261129j';
+import { htmlKompas } from './teams-leerlijn.js?v=20261129j';
+import { htmlClubPlaatsInstelling } from './snelstart.js?v=20261129j';
 import { coachMagKiezen, eigenVoorkeur, huidigeLettergrootte } from './thema.js?v=20261127p';
 import { spelersOpTraining } from './uitleen-regels.js?v=20261127p';
 import {
