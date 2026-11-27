@@ -31,7 +31,7 @@
    (ook in evaluatierondes.js), zodat dit bestand geen firebase/state nodig
    heeft. De gastschermen leveren de gegevens en hertekenen zichzelf. */
 import { ico } from './icons.js?v=20261127b';
-import { VB_DOMEINEN, critSleutel, critZichtbaar, NIV_LABEL, leeftijdTeam } from './beoordeling-volledig.js?v=20261129b';
+import { VB_DOMEINEN, critSleutel, critZichtbaar, NIV_LABEL, leeftijdTeam } from './beoordeling-volledig.js?v=20261129e';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KORT = { TE:'Techniek', TA:'Tactiek', FY:'Fysiek', ME:'Mentaal', GE:'Gedrag' };

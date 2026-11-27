@@ -8123,6 +8123,10 @@ html.desk .dk-ss .sn-kop,html.desk .dk-ss .sn-balk,html.desk .dk-ss .sn-voet,htm
 @media (pointer: coarse){
   :where(.terug, .uitlog-knop, .hub-teamnaam, .kompas-nav button, .acties button, .subtab, .plan-chip, .nu-agenda, .lid-weg, .knop.klein){ position: relative; }
   :where(.terug, .uitlog-knop, .hub-teamnaam, .kompas-nav button, .acties button, .subtab, .plan-chip, .nu-agenda, .lid-weg, .knop.klein)::after{
+    content: ''; position: absolute; left: 50%; top: 50%;
+    width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
+  }
+}
 
 /* ==================== RONDE-OVERZICHT [20261125b] ====================
    Teamoverzicht van een evaluatieronde (trainer) en de rondecockpit in de
@@ -8381,10 +8385,6 @@ button.ro-kh{ text-decoration:underline dotted; text-underline-offset:3px; }
 /* de afgeronde rondebalk is nu een knop naar het teamoverzicht */
 button.cb-rondebalk{ display:block; width:100%; text-align:left; color:var(--ink); cursor:pointer; }
 button.cb-rondebalk .cb-team-naam{ flex:1; min-width:0; }
-    content: ''; position: absolute; left: 50%; top: 50%;
-    width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
-  }
-}
 
 /* ==================== ROLKAART [20261116b] ==================== */
 .rolkaart h2{ margin: 0 0 var(--space-md); font-size: var(--t-2xl); color: var(--ink); }
