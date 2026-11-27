@@ -18,7 +18,7 @@
    zonder dat de coach alle tabbladen hoeft te sluiten.
    ================================================================ */
 
-const CACHE_VERSIE = 'cluppie-v20261128d';
+const CACHE_VERSIE = 'cluppie-v20261128k';
 
 /* Minimale schil die we bij installatie alvast klaarzetten. De overige
    bestanden (JS-modules, iconen, fonts van gstatic) worden vanzelf
@@ -68,7 +68,35 @@ function cachebaar(req){
    antwoord vult op de achtergrond alsnog de cache voor de volgende keer. Zonder cache: gewoon wachten. */
 const NAV_WACHT_MS = 6000;
 
+/* [20261127a] App-icoon per club (js/app-icoon.js): na het inloggen legt de app een manifest en
+   iconen met het clublogo in de cache 'appicoon-club'. Die gaan voor op manifest.webmanifest en
+   icons/club-*.png; zonder club staat er niets in en komt het gewone Cluppie-bestand van de site. */
+const APP_CACHE = 'appicoon-club';
+function appIcoonPad(req){
+  if (req.method !== 'GET') return null;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return null;
+  const basis = new URL('./', self.registration.scope).pathname;
+  if (!url.pathname.startsWith(basis)) return null;
+  const pad = url.pathname.slice(basis.length);
+  return (pad === 'manifest.webmanifest' || /^icons\/club-(192|512)(-maskable)?\.png$/.test(pad)) ? pad : null;
+}
+async function uitAppCache(req, pad){
+  try {
+    const c = await caches.open(APP_CACHE);
+    const r = await c.match(new URL(pad, self.registration.scope).href);
+    if (r) return r;
+  } catch (_){ /* geen cache: dan het gewone bestand */ }
+  return null;
+}
+
 self.addEventListener('fetch', (e) => {
+  const appPad = appIcoonPad(e.request);
+  if (appPad){
+    e.respondWith(uitAppCache(e.request, appPad).then(r => r || fetch(e.request).catch(async () =>
+      (await caches.match(e.request, { ignoreSearch: true })) || new Response('', { status: 503 }))));
+    return;
+  }
   if (!cachebaar(e.request)) return;   // niet afhandelen → browser doet z'n gewone werk
 
   const vanNet = fetch(e.request)

@@ -6,7 +6,7 @@
    in [club]" met een stopknop en de resterende tijd. Bewust een eigen bestand, niet in state.js.
 ==================================================================== */
 import { db, doc, getDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261128d';
+import { S, esc, meld } from './state.js?v=20261128k';
 
 const roep = (naam, data) => httpsCallable(functions, naam)(data).then(r => r.data);
 let _tot = 0, _clubId = null, _timer = null;
@@ -64,8 +64,8 @@ export async function stopOndersteuning(terugNaarPlatform){
   meld('Ondersteuning gestopt');
   if (terugNaarPlatform){
     try {
-      const c = await import('./club.js?v=20261128d'); c.verlaatClubView();
-      const p = await import('./platform.js?v=20261128d'); p.openPlatform();
+      const c = await import('./club.js?v=20261128k'); c.verlaatClubView();
+      const p = await import('./platform.js?v=20261128k'); p.openPlatform();
     } catch (e){}
   }
 }

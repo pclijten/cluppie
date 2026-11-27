@@ -12,11 +12,11 @@
    op vormIds; oude trainingen eerst één keer koppelen (knop bovenaan). Rules: zie firestore.rules [20261113d].
    Wordt getekend in het platformcentrum (platform-centrum.js) in <div id="pbRoot">. */
 import { db, doc, getDoc, getDocs, setDoc, deleteDoc, query, where, writeBatch } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261128d';
+import { S, esc, meld } from './state.js?v=20261128k';
 import { BASIS, BASIS_VERSIE, FASES, alleVormen, vormen, laadBibliotheek, verschilMetBasis, valideerVorm,
   rijVan, KOLOMMEN, LIJSTVELDEN, vergelijkImport, veldenNaarOpslag, alsDanTekst, alsDanUitTekst } from './bibliotheek.js?v=20261127y';
-import { herbouwOefening, bronVanOefening, vormIdsVan, naarNieuweOpbouw } from './seizoensplan-club.js?v=20261128d';
-import { maakPlan } from './trainingsplanner.js?v=20261128d';
+import { herbouwOefening, bronVanOefening, vormIdsVan, naarNieuweOpbouw } from './seizoensplan-club.js?v=20261128k';
+import { maakPlan } from './trainingsplanner.js?v=20261128k';
 import { vormSvg, TEKENING_LEGENDA } from './trainingsvorm-svg.js?v=20261121b';
 import { koppelEditor, controleerTekening } from './tekening-editor.js?v=20261126p';
 
