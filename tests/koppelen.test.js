@@ -160,5 +160,24 @@ const throws = async (f, code, m) => { try { await f(); ok(false, m + ' (geen fo
   ok(store.get('teams/losK2').koppelVoorstel.status === 'geweigerd', 'een eerder geweigerd voorstel blijft staan');
   ok(!store.get('teams/clubK').koppelVoorstel, 'clubteam krijgt geen voorstel');
 
+  /* 8. [20261130c] het team bestaat al in de club: coach koppelen aan het bestaande team */
+  store.set('teams/clubO11', { naam: 'O11-1', club: 'c1', leden: { oud: true }, rollen: { oud: 'coach' } });
+  store.set('teams/clubO11/spelers/a', { naam: 'Daan', achternaam: 'Jansen' });
+  store.set('teams/losJ', { naam: 'O11-1', leden: { jochem: true }, ledenInfo: { jochem: { naam: 'Jochem' } }, koppelVoorstel: { clubId: 'c1', clubNaam: 'SV Brakel', status: 'open' } });
+  store.set('teams/losJ/spelers/a', { naam: 'Daan', achternaam: 'Jansen' });
+  store.set('teams/losJ/spelers/b', { naam: 'Noor', achternaam: 'de Wit' });
+  await T.vraagKoppelingAan(req('jochem', { teamId: 'losJ' }));
+  await throws(() => T.beoordeelAanvraag(req('adm', { clubId: 'c1', uid: 'jochem', soort: 'team', besluit: 'koppel', doelTeamId: 'vreemd' })), 'failed-precondition', 'koppelen aan een team van een andere club kan niet');
+  await throws(() => T.beoordeelAanvraag(req('jochem', { clubId: 'c1', uid: 'jochem', soort: 'team', besluit: 'koppel', doelTeamId: 'clubO11' })), 'permission-denied', 'coach koppelt zichzelf niet');
+  const rk = await T.beoordeelAanvraag(req('adm', { clubId: 'c1', uid: 'jochem', soort: 'team', besluit: 'koppel', doelTeamId: 'clubO11', spelersMee: true }));
+  const d11 = store.get('teams/clubO11');
+  ok(d11.leden.jochem === true && d11.rollen.jochem === 'coach' && d11.leden.oud === true, 'aanvrager is coach van het bestaande team, de oude coach blijft');
+  ok(store.get('clubs/c1').leden.jochem === true, 'aanvrager is lid van de club');
+  ok(rk.overgenomen === 1 && store.has('teams/clubO11/spelers/b') && store.get('teams/clubO11/spelers/a').naam === 'Daan', 'alleen de speler die nog ontbrak komt mee');
+  const lj = store.get('teams/losJ');
+  ok(!lj.club && lj.koppelVoorstel.status === 'samengevoegd' && lj.koppelVoorstel.naarTeamId === 'clubO11', 'eigen team blijft los, met verwijzing naar het clubteam');
+  ok(!store.has('aanvragen/c1_jochem_team'), 'aanvraag is afgehandeld');
+  ok(!store.get('clubs/c1').teams?.losJ, 'geen tweede O11-1 in de club');
+
   console.log(process.exitCode ? 'koppelen: FOUTEN' : 'koppelen: alle controles geslaagd');
 })();

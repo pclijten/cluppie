@@ -9,14 +9,14 @@
    speler) en bewaren via bewaarVolledig in teams-spelers.js, dus precies
    hetzelfde datamodel als het formulier op de telefoon.
    Alleen op desktop: desktop-schermen.js tekent dit in de modus Evaluatie. */
-import { S, esc, speler, meld } from './state.js?v=20261130g';
+import { S, esc, speler, meld } from './state.js?v=20261130d';
 import { ico } from './icons.js?v=20261127b';
-import { SKILLS } from './config.js?v=20261130g';
-import { VB_DOMEINEN, critSleutel, critZichtbaar, ladderVan, NIV_LABEL, leeftijdTeam, koppelInfo } from './beoordeling-volledig.js?v=20261130g';
+import { SKILLS } from './config.js?v=20261130d';
+import { VB_DOMEINEN, critSleutel, critZichtbaar, ladderVan, NIV_LABEL, leeftijdTeam, koppelInfo } from './beoordeling-volledig.js?v=20261130d';
 import { teRadarSvg } from './team-evaluatie-criteria.js?v=20261127p';
-import { rondesVoorTeam, rondeSpelers, datumKort } from './evaluatierondes.js?v=20261130g';
-import { bewaarVolledig, modalLeerpunt } from './teams-spelers.js?v=20261130g';
-import { renderTeam } from './teams.js?v=20261130g';
+import { rondesVoorTeam, rondeSpelers, datumKort } from './evaluatierondes.js?v=20261130d';
+import { bewaarVolledig, modalLeerpunt } from './teams-spelers.js?v=20261130d';
+import { renderTeam } from './teams.js?v=20261130d';
 
 const EW = { view:null, teamId:null, pid:null, dom:'TE', fcrit:0, ronde:null, extraRonde:null, moment:'',
   bewerk:{}, concepten:new Map(), mxDom:'TE', mx:{ r:0, c:0 }, mxPop:false, bezig:false };
