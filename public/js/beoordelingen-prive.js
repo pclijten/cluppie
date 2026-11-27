@@ -7,7 +7,7 @@
    zichtbaarVoor array-contains <eigen uid>: de rules weigeren anders de hele
    query. Fout of nog geen rules? Dan een lege lijst, zodat de rest gewoon werkt. */
 import { db, collection, getDocs, query, where } from './firebase.js?v=20261011g';
-import { S } from './state.js?v=20261130b';
+import { S } from './state.js?v=20261130c';
 
 export async function priveBeoordelingenVan(teamId){
   if (!teamId || !S.user?.uid) return [];
