@@ -14,15 +14,15 @@
    teams-training.js, de wedstrijdpresentie in de hub en de wedstrijd zelf.
    Geen locatie/GPS: dat vraagt toestemming en hoort niet ongevraagd in de app.
    Wel de wedstrijdplek: sportpark met routelink (uit), veld en kleedkamer. */
-import { S, esc } from './state.js?v=20261129h';
+import { S, esc } from './state.js?v=20261129i';
 import { ico } from './icons.js?v=20261127b';
-import { afwezigRedenInfo, isoWeek } from './config.js?v=20261129h';
+import { afwezigRedenInfo, isoWeek } from './config.js?v=20261129i';
 import { bepaalNu, evenementen, kiesDaarna, losseEvenementen } from './nu-context.js?v=20261125m';
-import { momentenVanTeam } from './trainingsmomenten.js?v=20261129h';
+import { momentenVanTeam } from './trainingsmomenten.js?v=20261129i';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
 import { effectieveSelectie, spelersOpWedstrijd, spelersOpTraining } from './uitleen-regels.js?v=20261127p';
-import { doelTeksten, samenvattingNu, haalSamenvatting } from './doel-samenvatting.js?v=20261129h';
-import { veldPilHtml } from './veldkaart.js?v=20261129h';
+import { doelTeksten, samenvattingNu, haalSamenvatting } from './doel-samenvatting.js?v=20261129i';
+import { veldPilHtml } from './veldkaart.js?v=20261129i';
 import { kiesUitgelicht, gezienNu, gezienGeladen, laadGezien, markeerGezien } from './video-uitgelicht.js?v=20261124c';
 import { sportWoord } from './sporten.js?v=20261126g';   /* [20261125y] sportprofiel stap 3: woorden uit het profiel */
 
@@ -258,7 +258,8 @@ function afgelastKaart(w, nu){
     ${meta(`${esc(dagLabel(w.datum, nu))} ${esc(w.aftrap || '')}`.trim(), w.thuis ? 'thuis' : 'uit')}
     <p class="nu-melding" role="status">${ico('action-warning', 20)}<span><b>${sportWoord('ledenbron')} meldt deze wedstrijd als afgelast.</b>
       <span class="nu-zacht">Wordt in het weekend elk uur gecontroleerd.</span></span></p>
-    ${acties(knop('Planning openen', 'planning-calendar', 'data-nu-tab="planning"', false))}`;
+    ${plekHtml(w)}
+    ${wedKnoppen(w)}`;   /* [20261127] gewoon te openen, net als een wedstrijd die doorgaat */
 }
 
 /* ---------- de kaart ---------- */
@@ -435,7 +436,8 @@ export function htmlNu(opties = {}){
     rijen = kiesDaarna({ nu, hoofd: c.event, events: evenementen(nu, team, wedstrijden),
       losse: losseEvenementen(nu, alleMomenten, zonderTijd), planning,
       wedstrijdDatums: new Set((S.wedstrijden || []).map(w => w.datum).filter(Boolean)),
-      afgelast: e => e.type === 'training' ? !!afgelastOp(e.datum) : isAfgelast(e.w?._w) });
+      /* [20261127] een afgelaste wedstrijd blijft gewoon staan als eerstvolgende; alleen een afgelaste training schuift door */
+      afgelast: e => e.type === 'training' && !!afgelastOp(e.datum) });
   } catch (err) { console.warn('[nu] kon Daarna niet bepalen', err); rijen = (c.daarna || []).map(e => ({ ...e, prio: 3 })); }
   const uitleg = uitlegHtml();
   return `<section class="nu-blokje" aria-label="Nu">
@@ -490,16 +492,16 @@ export function koppelNu(v, ctx){
     const pt = ev.target.closest('[data-nu-pres-training]');
     if (pt){
       const datum = pt.dataset.nuPresTraining, rec = S.presentie.find(p => p.datum === datum) || null;
-      const m = await import('./teams-training.js?v=20261129h');
+      const m = await import('./teams-training.js?v=20261129i');
       m.modalPresentie(rec, rec ? {} : { datum });
       return;
     }
     const pw = ev.target.closest('[data-nu-pres-wedstrijd]');
     if (pw){ S._presWedstrijdId = pw.dataset.nuPresWedstrijd; ctx.zetTeamTab('preswedstrijd'); return; }
     const vb = ev.target.closest('[data-nu-voorbereiding]');
-    if (vb){ const m = await import('./wedstrijd-voorbereiding.js?v=20261129h'); m.openVoorbereiding(vb.dataset.nuVoorbereiding, ctx); return; }
+    if (vb){ const m = await import('./wedstrijd-voorbereiding.js?v=20261129i'); m.openVoorbereiding(vb.dataset.nuVoorbereiding, ctx); return; }
     const w = ev.target.closest('[data-nu-wedstrijd]');
-    if (w){ const m = await import('./wedstrijd.js?v=20261129h'); m.openWedstrijd(w.dataset.nuWedstrijd); return; }
+    if (w){ const m = await import('./wedstrijd.js?v=20261129i'); m.openWedstrijd(w.dataset.nuWedstrijd); return; }
     const tr = ev.target.closest('[data-nu-training]');
     if (tr){
       const gelukt = ctx.openTraining ? await ctx.openTraining(tr.dataset.nuTraining) : false;

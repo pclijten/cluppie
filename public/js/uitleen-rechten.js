@@ -3,8 +3,8 @@
    coördinatoren van de bouw (ook een eigen bouw) waar het team in zit.
    Zichtbaarheidscheck voor knoppen; los bestand zodat teams-spelers.js,
    desktop-schermen.js en uitleen-form.js hem delen zonder importkringloop. */
-import { S, isBeheerder, isPlatformBeheerder } from './state.js?v=20261129h';
-import { isBouwCoordinator } from './coordinatoren.js?v=20261129h';
+import { S, isBeheerder, isPlatformBeheerder } from './state.js?v=20261129i';
+import { isBouwCoordinator } from './coordinatoren.js?v=20261129i';
 
 export function magUitlenen(team){
   if (!team) return false;

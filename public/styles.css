@@ -6133,6 +6133,7 @@ div.sl-auto{display:flex;align-items:center}
 .ws-badge.weg{color:var(--ink-2);background:var(--op-vlak-2)}
 .lijst-item.ws-afgelast .titel{text-decoration:line-through;text-decoration-color:var(--warn);color:var(--ink-2)}
 .ws-tekst-af{color:var(--warn);font-weight:600}
+.ws-streep{text-decoration:line-through;text-decoration-color:var(--warn);text-decoration-thickness:2px}
 .ws-banner{display:flex;align-items:center;gap:10px;margin:0 0 var(--space-sm);padding:10px var(--space-sm);border-radius:var(--radius);font-size:var(--t-sm);
   background:color-mix(in srgb, var(--warn) 14%, var(--card));border:1px solid color-mix(in srgb, var(--warn) 45%, transparent)}
 .ws-banner-ic{font-size:var(--t-2xl);flex-shrink:0}

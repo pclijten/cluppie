@@ -4,13 +4,13 @@
    in clubs/{id}/content. Niets wordt aan coaches getoond tot de beheerder het publiceert (tabblad Content).
    Het plan van een andere club mag alleen worden gebruikt met toestemming van die club. */
 import { ico } from './icons.js?v=20261127b';
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261129h';
-import { LEERCURVE } from './config.js?v=20261129h';
+import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261129i';
+import { LEERCURVE } from './config.js?v=20261129i';
 import { functions, httpsCallable } from './firebase.js?v=20261011g';
 import { uploadHulpHtml, UPLOAD_HULP } from './upload-hulp.js?v=20261113c';
-import { aiAan, kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261129h';
-import { opslaanContent } from './content.js?v=20261129h';
-import { huidigeContentLijst } from './club-content.js?v=20261129h';
+import { aiAan, kompasNaam, beleidsplanNaam } from './clubconfig.js?v=20261129i';
+import { opslaanContent } from './content.js?v=20261129i';
+import { huidigeContentLijst } from './club-content.js?v=20261129i';
 
 const MAX_STUK = 12000;
 const slug = t => String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60);
@@ -43,8 +43,8 @@ export function splitsOpKoppen(tekst){
 }
 
 async function pdfNaarTekst(file){
-  const { laadPdfJs } = await import('./pdf-viewer.js?v=20261129h');
-  const { regelsUitTekstItems } = await import('./training-ai.js?v=20261129h');
+  const { laadPdfJs } = await import('./pdf-viewer.js?v=20261129i');
+  const { regelsUitTekstItems } = await import('./training-ai.js?v=20261129i');
   await laadPdfJs();
   const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
   const paginas = [];

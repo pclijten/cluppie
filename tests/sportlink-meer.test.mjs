@@ -197,7 +197,7 @@ ok('client: deelbericht zonder spelers, met plek en route', () => {
 });
 ok('client: pills, badges en wat meetelt', () => {
   assert.match(ws.soortPill(wUit), /Beker/); assert.equal(ws.soortPill({ competitiesoort: 'regulier' }), '');
-  assert.equal(ws.telMee({ status: 'afgelast' }), false); assert.equal(ws.telMee(wUit), true);
+  assert.equal(ws.telMee({ status: 'afgelast' }), true);   // [20261127] afgelast blijft gewoon staan assert.equal(ws.telMee(wUit), true);
   assert.match(ws.statusBadge({ status: 'afgelast', sportlinkWeg: true }), /Afgelast/);
   assert.match(ws.statusBadge({ sportlinkWeg: true }), /Niet in Sportlink/);
   assert.equal(ws.statusBadge(wUit), '');
