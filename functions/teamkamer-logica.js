@@ -200,6 +200,16 @@ function kamerLogo(l){
   if (x.length <= 160000 && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(x)) return x;
   return '';
 }
+/* [20261127c] de iconen als bestanden in Storage (js/app-icoon.js maakIcoon): alleen Storage-links */
+const STORAGE_URL = /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/[A-Za-z0-9._-]+\/o\/[^\s"'<>]+$/;
+function kamerIcoon(i){
+  if (!i || typeof i !== 'object') return null;
+  const k = ['a192', 'a512', 'm192', 'm512'];
+  if (!k.every(x => typeof i[x] === 'string' && i[x].length < 600 && STORAGE_URL.test(i[x]))) return null;
+  const uit = { sig: str(i.sig, 40) };
+  for (const x of k) uit[x] = i[x];
+  return uit;
+}
 /* ---------- het hoofddocument teamkamer/{teamId} ---------- */
 function kamerDoc(team, club, spelers, verborgen, platform){
   const mag = opties(team, club, platform), i = inst(team, mag);
@@ -212,6 +222,7 @@ function kamerDoc(team, club, spelers, verborgen, platform){
     /* [20261127b] logo en afkorting van de club: het app-icoon van de teamkamer op het beginscherm (js/app-icoon.js) */
     clubLogo: kamerLogo(club && club.instellingen && club.instellingen.identiteit && club.instellingen.identiteit.logo),
     clubAfk: str(club && club.instellingen && club.instellingen.identiteit && club.instellingen.identiteit.afkorting, 20),
+    clubIcoon: kamerIcoon(club && club.instellingen && club.instellingen.identiteit && club.instellingen.identiteit.appIcoon),
     club: team.club || null,
     mag,                                   /* wat de eindbaas toestaat: de rules en de pagina van ouders lezen dit */
     namen: i.namen, uitslag: i.uitslag, live: i.live,

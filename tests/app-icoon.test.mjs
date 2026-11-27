@@ -60,3 +60,21 @@ assert.equal(metLogo('javascript:alert(1)').clubLogo, '');
 assert.equal(metLogo('https://elders.nl/x.png').clubLogo, '');
 assert.equal(metLogo('data:image/png;base64,' + 'A'.repeat(200000)).clubLogo, '');
 console.log('app-icoon teamkamer: alles goed');
+
+// [20261127c] iconen als bestanden in Storage (Android haalt ze buiten de service worker om)
+const { serverIconen, serverIcoonNodig, logoSig } = await import('../public/js/app-icoon.js');
+const url = k => `https://firebasestorage.googleapis.com/v0/b/cluppie-ad329.firebasestorage.app/o/clubs%2Fc1%2Ftrainingen%2Fapp-icoon%2Fx-${k}.png?alt=media&token=abc`;
+const icoon = { sig: logoSig('icons/asv-schild.png'), a192: url('a192'), a512: url('a512'), m192: url('m192'), m512: url('m512') };
+assert.ok(serverIconen(icoon));
+assert.equal(serverIconen({ ...icoon, a512: 'https://elders.nl/x.png' }), null);
+assert.equal(serverIcoonNodig('icons/asv-schild.png', icoon), false);
+assert.equal(serverIcoonNodig('data:image/png;base64,AAAA', icoon), true, 'ander logo: opnieuw maken');
+assert.equal(serverIcoonNodig('icons/asv-schild.png', null), true);
+assert.equal(serverIcoonNodig('', null), false);
+const ms = maakManifest('Asv 33', "ASV'33", 'app', icoon);
+assert.deepEqual(ms.icons.map(i => i.src), [icoon.a192, icoon.a512, icoon.m192, icoon.m512]);
+assert.equal(maakManifest('Asv 33', "ASV'33", 'kamer', icoon).icons[1].src, icoon.a512);
+const kIc = L.kamerDoc(team, { naam: 'Asv 33', platformModules: { teamkamer: true }, instellingen: { identiteit: { logo: 'icons/asv-schild.png', appIcoon: icoon } } }, [], {}, null).clubIcoon;
+assert.equal(kIc.a512, icoon.a512);
+assert.equal(L.kamerDoc(team, { naam: 'x', platformModules: { teamkamer: true }, instellingen: { identiteit: { appIcoon: { ...icoon, m192: 'javascript:x' } } } }, [], {}, null).clubIcoon, null);
+console.log('app-icoon storage: alles goed');
