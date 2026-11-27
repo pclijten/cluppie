@@ -1,6 +1,6 @@
 /* TV-SJABLOON "LOUNGE" [20261126q]: rustig en chic, voor de bestuurskamer of businessclub. Schreefletters,
    veel ruimte en zacht bewegend licht in de clubkleur; een wissel is een trage vervaging. Zie docs/tv-sjablonen.md. */
-import { esc, standWissel, maat, stip, klok, beeld, bovenSponsor } from './tv-speler.js?v=20261130m';
+import { esc, standWissel, maat, stip, klok, beeld, bovenSponsor } from './tv-speler.js?v=20261130n';
 
 /* Het laatste woord cursief in de clubkleur. */
 const sier = t => { const w = String(t || '').trim().split(/\s+/); const l = w.pop(); return `${esc(w.join(' '))}${w.length ? ' ' : ''}<i>${esc(l)}</i>`; };

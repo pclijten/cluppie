@@ -13,15 +13,15 @@ import { ico } from './icons.js?v=20261127b';
 import {
   db, doc, collection, addDoc, updateDoc, setDoc, deleteDoc, getDoc, getDocs, query, where, writeBatch, serverTimestamp
 } from './firebase.js?v=20261011g';
-import { S, $, esc, meld, openModal, sluitModal, nieuweCode } from './state.js?v=20261130f';
-import { ACTIEF, SEIZOEN_FALLBACK, parseFormatie, aantalVeldspelers, SKILLS, LEERCURVE, catLabel } from './config.js?v=20261130f';
+import { S, $, esc, meld, openModal, sluitModal, nieuweCode } from './state.js?v=20261130n';
+import { ACTIEF, SEIZOEN_FALLBACK, parseFormatie, aantalVeldspelers, SKILLS, LEERCURVE, catLabel } from './config.js?v=20261130n';
 import {
   effectief, isLegacy, mergeLijst, LIJST_DEFS, ORIGINEEL, NEUTRAAL, CLUPPIE_LOGO, ICOONNAMEN,
   valideerKalender, herlaadKalender, pasClubConfigToe, clubAfk, DISTRICTEN
-} from './clubconfig.js?v=20261130f';
-import { MODULE_DEFS } from './club-beheer.js?v=20261130f';
-import { lerenBeschikbaar } from './leren-signalen.js?v=20261130f';
-import { doorPlatformUit, werkwijzeVan, modulesVoorNieuweClub } from './onderdelen.js?v=20261130f';
+} from './clubconfig.js?v=20261130n';
+import { MODULE_DEFS } from './club-beheer.js?v=20261130n';
+import { lerenBeschikbaar } from './leren-signalen.js?v=20261130n';
+import { doorPlatformUit, werkwijzeVan, modulesVoorNieuweClub } from './onderdelen.js?v=20261130n';
 
 /* ---------- Tabs ---------- */
 export const INSTEL_TABS = [
@@ -520,7 +520,7 @@ export function koppelInstelNieuw(v, herteken){
   else if (sub === 'pedagogiek') koppelPedagogiek(v, herteken);
   else if (sub === 'regels') koppelRegels(v, herteken);
   else if (sub === 'ai') koppelAI(v, herteken);
-  else if (sub === 'toegang') import('./toegang.js?v=20261130f').then(m => m.koppelToegang(v, herteken));
+  else if (sub === 'toegang') import('./toegang.js?v=20261130n').then(m => m.koppelToegang(v, herteken));
 }
 
 /* ---------- Identiteit ---------- */
@@ -913,7 +913,7 @@ export function modalNieuweClub(naCreatie){
         W.naam = b.querySelector('#wzNaam').value; W.district = b.querySelector('#wzDistrict').value;
         k.disabled = true; uit.innerHTML = '<div class="sl-laden"><span class="sl-spin"></span>Club opzoeken in Sportlink…</div>';
         try {
-          const { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261130f');
+          const { zoekClubInSportlink, verkleinSportlinkLogo, leesbareKleur, htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261130n');
           const info = await zoekClubInSportlink(id);
           if (info.gevonden){
             const [logo, kleur] = await Promise.all([verkleinSportlinkLogo(info.logo), leesbareKleur(info.kleur)]);
@@ -922,7 +922,7 @@ export function modalNieuweClub(naCreatie){
             W.slVondst = htmlClubVondst(info, { logo, kleur });
           } else { W.clubcode = ''; W.slVondst = htmlClubVondst(info); }
         } catch (x){
-          const { htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261130f');
+          const { htmlClubVondst } = await import('./sportlink-clubinfo.js?v=20261130n');
           W.slVondst = htmlClubVondst(null, { fout: x });
         }
         k.disabled = false; teken();

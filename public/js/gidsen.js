@@ -8,15 +8,15 @@
 
    State (bewust los op S, niet in state.js): S._gids = id van de open handleiding, S._gidsStap = stap om
    naartoe te scrollen, S._gidsFilter = 'mij' | 'alles' | een rol, S._gidsZoek = zoekterm. */
-import { S, esc, modAan } from './state.js?v=20261130f';
+import { S, esc, modAan } from './state.js?v=20261130n';
 import { ico } from './icons.js?v=20261127b';
 import { GIDSEN, GIDS_ROLLEN, SCHERMEN, gidsMet, gidsVoor, zoekGidsen } from './gidsen-data.js?v=20261130c';
 import { BEELDEN } from './gidsen-beelden.js?v=20261130c';
-import { mijnRollen } from './rolkaart.js?v=20261130f';
-import { onderdeelAan } from './onderdelen.js?v=20261130f';
+import { mijnRollen } from './rolkaart.js?v=20261130n';
+import { onderdeelAan } from './onderdelen.js?v=20261130n';
 import { teamkamerMag } from './kamer-logica.js?v=20261127k';
-import { htmlHandleiding } from './teams-handleiding.js?v=20261130f';
-import { telGebruik } from './tracker.js?v=20261130f';
+import { htmlHandleiding } from './teams-handleiding.js?v=20261130n';
+import { telGebruik } from './tracker.js?v=20261130n';
 
 /* versie van de beelden en PDF's: verandert bij elke release, zodat een nieuw beeld niet uit de cache komt */
 const V = new URL(import.meta.url).searchParams.get('v') || '';
@@ -183,13 +183,13 @@ export function schermMag(code){
 export async function naarScherm(code){
   if (!schermMag(code)) return false;
   const [soort, naam] = code.split(':');
-  if (soort === 'team'){ (await import('./teams.js?v=20261130f')).zetTeamTab(naam); return true; }
+  if (soort === 'team'){ (await import('./teams.js?v=20261130n')).zetTeamTab(naam); return true; }
   const clubId = S.clubId || (S.team && S.team.club);
-  if (soort === 'club'){ (await import('./club.js?v=20261130f')).openClub(clubId); if (naam !== 'hub') S.clubTab = naam; return true; }
-  if (naam === 'activiteiten') (await import('./activiteiten.js?v=20261130f')).openActiviteiten(clubId);
-  else if (naam === 'tv') (await import('./activiteiten.js?v=20261130f')).openActiviteiten(clubId, '', { extra: 'schermen' });
-  else if (naam === 'veldplanner') (await import('./veldplanner.js?v=20261130f')).openVeldplanner(clubId);
-  else if (naam === 'sportparken') (await import('./veldkaart.js?v=20261130f')).openSportparkBeheer(clubId);
+  if (soort === 'club'){ (await import('./club.js?v=20261130n')).openClub(clubId); if (naam !== 'hub') S.clubTab = naam; return true; }
+  if (naam === 'activiteiten') (await import('./activiteiten.js?v=20261130n')).openActiviteiten(clubId);
+  else if (naam === 'tv') (await import('./activiteiten.js?v=20261130n')).openActiviteiten(clubId, '', { extra: 'schermen' });
+  else if (naam === 'veldplanner') (await import('./veldplanner.js?v=20261130n')).openVeldplanner(clubId);
+  else if (naam === 'sportparken') (await import('./veldkaart.js?v=20261130n')).openSportparkBeheer(clubId);
   return true;
 }
 
@@ -229,8 +229,8 @@ export function koppelHulp(v, hulp){
   v.querySelectorAll('[data-gd-plek]').forEach(b => b.onclick = () => { const g = gidsMet(b.dataset.gdPlek); S._gids = null; naarScherm(g.plek); });
   v.querySelectorAll('[data-gd-groot]').forEach(b => { b.onclick = () => toonGroot(b); b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toonGroot(b); } }; });
   v.querySelectorAll('[data-gd-video]').forEach(b => b.onclick = () => speelVideo(gidsMet(b.dataset.gdVideo)));
-  v.querySelectorAll('[data-gd-chat]').forEach(b => b.onclick = () => import('./chatbot.js?v=20261130f').then(m => m.openChatbot({ gids: b.dataset.gdChat })));
-  v.querySelectorAll('.gd [data-open-hulpchat]').forEach(b => b.onclick = () => import('./chatbot.js?v=20261130f').then(m => m.openChatbot()));
+  v.querySelectorAll('[data-gd-chat]').forEach(b => b.onclick = () => import('./chatbot.js?v=20261130n').then(m => m.openChatbot({ gids: b.dataset.gdChat })));
+  v.querySelectorAll('.gd [data-open-hulpchat]').forEach(b => b.onclick = () => import('./chatbot.js?v=20261130n').then(m => m.openChatbot()));
   const zoek = v.querySelector('#gdZoek');
   if (zoek){
     let t = 0;
