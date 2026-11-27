@@ -52,8 +52,8 @@
    circulaire import): teams.js geeft zetTeamTab/renderTeam mee aan
    koppelToernooi(). */
 import { db, doc, collection, setDoc, updateDoc, deleteDoc, onSnapshot } from './firebase.js?v=20261011g';
-import { S, $, $$, esc, meld, openModal, sluitModal, terugLaag } from './state.js?v=20261130a';
-import { SEIZOEN_FALLBACK } from './config.js?v=20261130a';
+import { S, $, $$, esc, meld, openModal, sluitModal, terugLaag } from './state.js?v=20261130c';
+import { SEIZOEN_FALLBACK } from './config.js?v=20261130c';
 import { ico } from './icons.js?v=20261127b';
 
 /* ---------- Vaste gegevens ---------- */
