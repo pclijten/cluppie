@@ -273,11 +273,11 @@ export const GIDSEN = [
   { id: '21', slug: 'veldplanner', titel: 'Veldplanner', kort: 'Trainingen verdelen over velden, tijden en kleedkamers',
     voor: ['admin'], apparaat: 'laptop', onderdeel: 'veldplanner', plek: 'actie:veldplanner', video: '21-veldplanner',
     stappen: [
-      { t: 'Open de Veldplanner', x: 'Klik op je club en kies **Veldplanner**. De velden komen uit Sportparken, dus zet eerst je sportpark op de kaart. Bovenaan staan de dagen van de week. Links staan de teams die je nog moet inplannen.', b: '21-1', m: ['Maandag', 'Nog in te plannen'] },
+      { t: 'Open de Veldplanner', x: 'Klik op je club en kies **Veldplanner**. De velden komen uit Sportparken, dus zet eerst je sportpark op de kaart. Bovenaan staan de dagen van de week. Links staan de teams die je nog moet inplannen. Heb je al een rooster in PDF, Word of Excel? Met **Inlezen** zet Cluppie het voor je klaar en loop je het alleen nog na.', b: '21-1', m: ['Maandag', 'Nog in te plannen'] },
       { t: 'Teams inplannen', x: 'Sleep een team naar een veld en een tijd. De jongste teams krijgen een kwart veld, de oudere een half of heel veld. Elk veld heeft vier banen, zodat je precies ziet welk deel bezet is.', b: '21-2', m: ['Controle'] },
-      { t: 'Een blok aanpassen', x: 'Klik op een blok. Je kiest de dag, het veld, de tijden, het deel van het veld en de kleedkamer. Je kunt een blok ook verslepen of langer en korter maken. Foutje? Klik op **Ongedaan**.', b: '21-3', m: ['Kleedkamer'] },
-      { t: 'De controle', x: 'Rechts waarschuwt Cluppie bij een botsing op het veld, een dubbele kleedkamer, een trainer op twee plekken tegelijk of een jong team dat te laat traint. Vaak staat er een knop bij waarmee je het meteen oplost.' },
-      { t: 'De kaart', x: 'Schakel naar **Kaart** en je ziet het sportpark op de luchtfoto. Met **Tekenen** zet je er zelf dingen op, zoals het materiaalhok of de AED.', b: '21-4', m: ['Tekenen', 'Kaart'] },
+      { t: 'Een blok aanpassen', x: 'Klik op een blok. Je kiest de dag, het veld, de tijden, het deel van het veld en de kleedkamer. Je kunt een blok ook verslepen of langer en korter maken. Is een dag klaar en is een andere dag hetzelfde? Met **Dag kopiëren** zet je hem in één keer over. Foutje? Klik op **Ongedaan**.', b: '21-3', m: ['Kleedkamer'] },
+      { t: 'De controle', x: 'Rechts waarschuwt Cluppie bij een botsing op het veld, een dubbele kleedkamer, een trainer op twee plekken tegelijk of een jong team dat te laat traint. Vaak staat er een knop bij waarmee je het meteen oplost. Een melding die voor jouw club geen probleem is, zoals een trainer die bewust twee teams tegelijk heeft, klik je weg met **Wegklikken**. Botsingen op het veld blijven altijd staan.' },
+      { t: 'De kaart', x: 'Schakel naar **Kaart** en je ziet het sportpark op de luchtfoto, of als getekende kaart als je dat rustiger vindt. Met **Tekenen** zet je er zelf dingen op, zoals het materiaalhok of de AED.', b: '21-4', m: ['Tekenen', 'Kaart'] },
     ],
     tips: ['Het rooster is nu nog een concept: er gaat niets automatisch naar de teams. Je legt hier de puzzel en deelt het rooster voorlopig zelf.'] },
 

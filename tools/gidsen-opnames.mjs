@@ -67,7 +67,7 @@ export const OPNAMES = {
   '06-1': { rol: 'coach', pad: [TAB('wedstrijden'), ['klik', 'text=4 wedstrijden', 800]], vast: true, punten: { 'Afgelopen': 'text=AFGELOPEN' } },
   '06-2': { rol: 'coach', pad: [TAB('wedstrijden')], vast: true },
   '06-3': { rol: 'coach', pad: [TAB('evaluatie')], vast: true },
-  '06-4': { rol: 'coach', pad: [TAB('evaluatie'), NAAR('Onderdelen')], vast: true },
+  '06-4': { rol: 'coach', pad: [TAB('evaluatie'), ['js', "[...document.querySelectorAll('.sectie-kop')].find(x => x.textContent.trim().startsWith('Onderdelen'))?.scrollIntoView({ block: 'start' }); window.scrollBy(0, -70)", 400]], vast: true },
   '06-5': { rol: 'coach', pad: [TAB('poule')], vast: true },
 
   '07-1': { rol: 'coach', pad: [TAB('spelers')], vast: true },

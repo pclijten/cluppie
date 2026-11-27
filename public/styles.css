@@ -5160,6 +5160,8 @@ textarea.lj-namen{min-height:130px}
 }
 
 .trd-werkbalk{ display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:var(--space-sm); align-items:center; margin-bottom:20px; }
+/* [20261130a] de hulpregel onder de uploadknop hoort op een eigen rij; als vierde vakje drukte hij de knop tot een smalle kolom */
+.trd-werkbalk .upload-hulp{ grid-column:1 / -1; order:5; margin:0; }
 .trd-drop{ display:flex; align-items:center; gap:var(--space-md); width:100%; text-align:left; border:2px dashed var(--hair); border-radius:var(--radius); background:var(--surface); padding:var(--space-sm) var(--space-md); cursor:pointer; transition:border-color var(--dur-micro), background var(--dur-micro); }
 .trd-drop:hover,.trd-drop.sleep{ border-color:var(--accent); background:color-mix(in srgb,var(--accent) 8%, var(--surface)); }
 .trd-drop.bezig{ border-color:var(--accent); }

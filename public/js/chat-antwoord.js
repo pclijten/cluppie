@@ -3,7 +3,7 @@
    met verwijzingen als [[GIDS:05#2]], [[SCHERM:team:stats]], [[TOUR:opstelling]] en [[VERVOLG:vraag|vraag]].
    Deze module haalt ze uit de tekst en controleert ze tegen wat er echt bestaat, zodat de app er knoppen
    van kan maken. Wat niet klopt, valt stil weg. Getest in tests/gidsen.test.mjs. */
-import { GIDSEN, SCHERMEN, gidsMet, zoekGidsen, platTekst } from './gidsen-data.js?v=20261129i';
+import { GIDSEN, SCHERMEN, gidsMet, zoekGidsen, platTekst } from './gidsen-data.js?v=20261130a';
 
 const MARKER = /\[\[\s*(GIDS|SCHERM|TOUR|VERVOLG)\s*:\s*([^\]]*)\]\]/gi;
 
