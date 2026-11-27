@@ -222,4 +222,20 @@ ok(T.euro(15) === '€ 15,-' && T.euro(12.5) === '€ 12,50' && T.bedrag('1e9') 
   ok(T.autoIndeling({ ...t, eind: '' }).schema === undefined, 'auto: eindtijd nodig');
   ok(T.prijsuitreiking({ ...t, prijs: 0, schema: r.schema }) === null && T.liveKopie({ toernooi: { ...t, duur: r.duur, schema: r.schema } }).prijs.van === r.prijs.van, 'prijsuitreiking op de live pagina');
 }
+/* toernooi in de Veldplanner [20261127w] */
+{
+  const t = { start: '09:00', duur: 12, wissel: 3,
+    velden: { v1: { naam: 'Veld 1', clubVeld: 'c1', delen: 2, volg: 0 }, v2: { naam: 'Veld 2', clubVeld: 'c2', delen: 4, volg: 1 }, v3: { naam: 'Losse wei', delen: 1, volg: 2 } },
+    kk: { k1: { naam: 'Kleedkamer 1', clubKk: 'kc1', plekken: 2, volg: 0 } },
+    poules: { p1: { naam: 'Poule A', kleur: '#E20613', volg: 0 } },
+    teams: { a: { naam: 'Ajax', poule: 'p1' }, b: { naam: 'PSV', poule: 'p1' }, c: { naam: 'AZ', poule: 'p1' } },
+    schema: [{ id: 'w1', p: 'p1', a: 'a', b: 'b', v: 'v1~B', t: '09:00', fase: 'poule' }, { id: 'w2', p: 'p1', a: 'a', b: 'c', v: 'v2~C', t: '09:15', fase: 'poule' }, { id: 'w3', p: 'p1', a: 'b', b: 'c', v: 'v3', t: '09:30', fase: 'poule' }],
+    uitslag: { w1: { a: 2, b: 1 } } };
+  const r = T.naarVeldplanner(t, '2026-12-19');
+  gelijk(r.dag, 6, 'veldplanner: zaterdag');
+  gelijk(r.wedstrijden.map(w => [w.id, w.veld, w.vak, w.start, w.eind, w.naam, w.uitslag]), [['w1', 'c1', 'b', 540, 552, 'Ajax – PSV', '2-1'], ['w2', 'c2', 'bv', 555, 567, 'Ajax – AZ', '']], 'veldplanner: wedstrijden op clubvelden');
+  gelijk(r.zonderVeld, 1, 'veldplanner: veldje zonder clubveld');
+  ok(r.wedstrijden.every(w => w.kk.every(k => k === 'kc1')), 'veldplanner: clubkleedkamers');
+  gelijk(T.naarVeldplanner({}, '').dag, null, 'veldplanner: zonder datum');
+}
 console.log(`toernooi: ${n} controles geslaagd`);

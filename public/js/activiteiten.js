@@ -24,17 +24,17 @@
    Rekenwerk, export en import: activiteiten-logica.js (getest). Sjablonen: activiteit-sjablonen.js. */
 import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, deleteField, query, where, onSnapshot,
   serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261129y';
+import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261129z';
 import { ico } from './icons.js?v=20261127b';
 import { SJABLONEN, sjabloonVan } from './activiteit-sjablonen.js?v=20261125w';
 import * as L from './activiteiten-logica.js?v=20261127n';
 import * as D from './draaiboek-logica.js?v=20261127n';
 import { docxBestanden } from './draaiboek-docx.js?v=20261127b';
-import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261129y';
-import * as TN from './activiteit-toernooi.js?v=20261129y';
-import { schoonToernooi } from './toernooi-logica.js?v=20261127v';
-import * as CS from './clubschermen.js?v=20261129y';
-import * as VB from './vrijwilligers.js?v=20261129y';
+import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261129z';
+import * as TN from './activiteit-toernooi.js?v=20261129z';
+import { schoonToernooi } from './toernooi-logica.js?v=20261129z';
+import * as CS from './clubschermen.js?v=20261129z';
+import * as VB from './vrijwilligers.js?v=20261129z';
 
 let A = null;
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -45,7 +45,7 @@ const isAdmin = () => !!(S.club?.admins?.[uid()]) || isPlatformBeheerder();
 const isTvBeheerder = () => isAdmin() || S.club?.tvBeheerders?.[uid()] === true;
 /* Toernooi staat standaard alleen aan bij een toernooi-draaiboek; de rest standaard aan. */
 const tabAan = (a, id) => id === 'toernooi' ? (a.tabs?.toernooi ?? /toernooi/i.test(`${a.type || ''} ${a.sjabloon || ''}`)) === true : a.tabs?.[id] !== false;
-const tnCtx = () => ({ act: A.act, actNu: () => A?.act, actId: A.id, clubId: A.clubId, el: A.el, kopieer: kopieKlembord, waLink, zet, herteken: () => hertekenZacht(), venster: html => { A.venster = html; teken(); }, sluitVenster,
+const tnCtx = () => ({ isAdmin, act: A.act, actNu: () => A?.act, actId: A.id, clubId: A.clubId, el: A.el, kopieer: kopieKlembord, waLink, zet, herteken: () => hertekenZacht(), venster: html => { A.venster = html; teken(); }, sluitVenster,
   download, bestandsnaam, printen, csvLees: L.csvLees });
 /* Clubbrede onderdelen naast de activiteiten: de kantine-tv met sponsoren en de vrijwilligersbank. */
 const extraCtx = () => ({ clubId: A.clubId, herteken: () => { if (A?.extra) hertekenZacht(); }, kop: (titel, sub) => kop(titel, sub), kopieer: kopieKlembord, waLink, download, printen,
@@ -984,7 +984,7 @@ async function klik(e){
     case 'kopieer': return kopieKlembord(b.dataset.tekst);
     case 'teams-alle': return zet({ teams: (S.clubTeams || []).filter(x => x && x.id && !x.gearchiveerd).map(x => x.id).slice(0, L.MAX.teams) });
     case 'teams-geen': return zet({ teams: [] });
-    case 'veldplanner': return import('./veldplanner.js?v=20261129y').then(m => m.openVeldplanner(A.clubId));
+    case 'veldplanner': return import('./veldplanner.js?v=20261129z').then(m => m.openVeldplanner(A.clubId));
     case 'aflasten': return vensterAflasten();
     case 'aflasten-ja': return aflasten();
     case 'bericht-plaats': return plaatsBericht(id);

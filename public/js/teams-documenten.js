@@ -7,10 +7,10 @@
    Gegroepeerd onder kopjes per categorie (zelfde volgorde en namen als het
    clubscherm: KNVB · Beleid · Overig) — geen aparte filter-UI nodig, een
    team heeft doorgaans maar een handvol documenten per categorie. */
-import { S, esc } from './state.js?v=20261129y';
-import { docCategorieenAlle } from './config.js?v=20261129y';
+import { S, esc } from './state.js?v=20261129z';
+import { docCategorieenAlle } from './config.js?v=20261129z';
 import { ico } from './icons.js?v=20261127b';
-import { htmlClubwijzerRij } from './clubwijzer.js?v=20261129y';   /* [20261120d] de afspraken van de club, bovenaan */
+import { htmlClubwijzerRij } from './clubwijzer.js?v=20261129z';   /* [20261120d] de afspraken van de club, bovenaan */
 
 const CATEGORIE_ICOON = { beleid: 'PDF', knvb: 'KNVB', overig: 'DOC' };
 const CATEGORIE_KLASSE = { beleid: '', knvb: 'knvb', overig: 'overig' };

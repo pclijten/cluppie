@@ -11,11 +11,11 @@
    Opslag: veld `toernooi` in de activiteit (zie toernooi-logica.js). Geen rules-wijziging nodig.
    Dit bestand krijgt alles van activiteiten.js via ctx en importeert dat bestand niet. */
 import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, deleteField, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261129y';
+import { S, esc, meld } from './state.js?v=20261129z';
 import { ico } from './icons.js?v=20261127b';
-import * as T from './toernooi-logica.js?v=20261127v';
-import * as C from './toernooi-controle.js?v=20261127v';
-import { kleinPlaatje } from './plaatje.js?v=20261127v';
+import * as T from './toernooi-logica.js?v=20261129z';
+import * as C from './toernooi-controle.js?v=20261129z';
+import { kleinPlaatje } from './plaatje.js?v=20261129z';
 
 const clubInfo = () => ({ clubNaam: S.club?.naam || '', logo: S.club?.instellingen?.identiteit?.logo || '', kleur: S.club?.instellingen?.identiteit?.kleur || '' });
 const opt = (w, t, sel) => `<option value="${esc(w)}"${sel ? ' selected' : ''}>${esc(t)}</option>`;
@@ -264,6 +264,7 @@ function htmlTeams(ctx, a, t){
 function htmlSchema(ctx, a, t){
   const vj = T.veldjes(t), schema = T.metKo(t), o = T.opzet(t), pr = T.prijsuitreiking(t);
   const kop = `<div class="ac-paneel"><div class="ac-rij"><span class="ac-groei">${schema.length ? `<b>${schema.length} wedstrijden</b>, van ${esc(o.start)} tot ${esc(T.naarTijd(Math.max(...schema.map(w => T.naarMin(w.t))) + o.duur))}` : 'Nog geen schema.'}</span>
+      ${schema.length && S.club?.platformModules?.veldplanner === true && S.club?.platformModules?.activiteiten === true && ctx.isAdmin?.() ? `<button class="knop licht klein" data-tn="veldplanner" title="Bekijk de wedstrijden op jullie velden en kleedkamers, met de trainingen van die dag">${ico('football-pitch', 16)} Op de velden</button>` : ''}
       <button class="knop vol klein" data-tn="plan">${schema.length ? 'Opnieuw plannen' : 'Schema maken'}</button></div>
       ${st.waarsch?.length ? `<div class="ac-melding">${ico('action-warning', 18)} <span>${st.waarsch.map(esc).join(' ')}</span></div>` : ''}
       ${pr ? `<p class="tn-prijs">🏆 Prijsuitreiking om <b>${esc(pr.van)}</b>, klaar om <b>${esc(pr.tot)}</b>${o.eind && T.naarMin(pr.tot) > T.naarMin(o.eind) ? ` <span class="tn-waarsch">(later dan ${esc(o.eind)})</span>` : ''}</p>` : ''}
@@ -335,6 +336,7 @@ export async function klikToernooi(ctx, b){
   const actie = b.dataset.tn, id = b.dataset.id, a = ctx.act, t = a.toernooi || {}, zet = ctx.zet;
   switch (actie){
     case 'sub': st.sub = id; st.gekozen = ''; return ctx.herteken();
+    case 'veldplanner': return import('./veldplanner.js?v=20261129z').then(m => m.openVeldplanner(ctx.clubId, { toernooi: ctx.actId }));
     case 'controle': return ctx.venster(htmlControleVenster);
     case 'proef': st.zaad = st.zaad || (Date.now() >>> 0); return ctx.venster(htmlProefVenster);
     case 'proef-nog': st.zaad = (Date.now() >>> 0); return ctx.venster(htmlProefVenster);
@@ -518,7 +520,7 @@ export async function klikToernooi(ctx, b){
       return zet({ [`toernooi.schermen.${T.nieuwId('x')}`]: { soort: id === 'sponsor' ? 'sponsor' : 'scherm', titel: '', tekst: '', volg: T.volgende(t.schermen), tv: true, tel: true } }); }
     case 'scherm-club': {
       let lijst = [];
-      try { lijst = await (await import('./clubschermen.js?v=20261129y')).clubSponsoren(ctx.clubId); }
+      try { lijst = await (await import('./clubschermen.js?v=20261129z')).clubSponsoren(ctx.clubId); }
       catch { return meld('De sponsoren van de club zijn alleen te lezen door de clubbeheerder.'); }
       if (!lijst.length) return meld('De club heeft nog geen sponsoren. Zet ze in Activiteiten › Kantine-tv en sponsoren.');
       const heeft = new Set(Object.values(t.schermen || {}).map(x => String(x?.titel || '').toLowerCase())), patch = {};

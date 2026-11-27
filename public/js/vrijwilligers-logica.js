@@ -3,7 +3,7 @@
    De club zet taken op een openbare pagina (?taken=<id>) met een vaste omschrijving: wat je precies
    doet (in stappen), wanneer, hoe lang, waar, voor wie het geschikt is en wat je ervoor terugkrijgt.
    Zo weet een vrijwilliger vooraf waar die ja tegen zegt. Getest in tests/vrijwilligers.test.mjs. */
-import { plaatjeOk } from './toernooi-logica.js?v=20261127v';
+import { plaatjeOk } from './toernooi-logica.js?v=20261129z';
 
 export const MAX_TAKEN = 60, MAX_STAPPEN = 8;
 export const CATS = { kantine: 'Kantine', wedstrijd: 'Wedstrijddag', jeugd: 'Jeugd en trainingen', onderhoud: 'Onderhoud en terrein', evenement: 'Activiteiten', bestuur: 'Bestuur en commissies', overig: 'Overig' };
