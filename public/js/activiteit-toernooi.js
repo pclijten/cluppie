@@ -11,7 +11,7 @@
    Opslag: veld `toernooi` in de activiteit (zie toernooi-logica.js). Geen rules-wijziging nodig.
    Dit bestand krijgt alles van activiteiten.js via ctx en importeert dat bestand niet. */
 import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, deleteField, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261129m';
+import { S, esc, meld } from './state.js?v=20261129n';
 import { ico } from './icons.js?v=20261127b';
 import * as T from './toernooi-logica.js?v=20261127v';
 import * as C from './toernooi-controle.js?v=20261127v';
@@ -296,7 +296,7 @@ function htmlKk(ctx, a, t){
         <select class="ac-in smal" data-veld="toernooi.kk.${esc(k.id)}.delen" data-num aria-label="Indeling van de kleedkamer">${opt(1, 'Hele kleedkamer', Number(k.delen) !== 2)}${opt(2, 'Links en rechts', Number(k.delen) === 2)}</select>
         <label class="ac-zacht tn-mini" title="Maximaal ${plan.drukte[k.id] || 0} teams tegelijk in het schema">${Number(k.delen) === 2 ? 'plekken per helft' : 'plekken'} ${getal(`kk.${k.id}.plekken`, k.plekken ?? (Number(k.delen) === 2 ? 1 : 2), 'min="1" max="8"')}</label><button class="ac-x" data-tn="kk-weg" data-id="${esc(k.id)}" aria-label="Weg">✕</button></div>`).join('') || '<p class="ac-zacht">Nog geen kleedkamers.</p>'}
       <div class="ac-acties">${nogClub.length ? `<button class="knop licht klein" data-tn="kk-club">${ico('planning-week', 16)} Kleedkamers van de club (${nogClub.length})</button>` : ''}<button class="knop licht klein" data-tn="kk-nieuw">${ico('action-add', 16)} Kleedkamer</button></div></div>
-    ${plan.tekort.length ? `<div class="ac-melding">${ico('action-warning', 18)} <span><b>Te weinig plek</b> voor ${plan.tekort.map(id => esc(naamTeam(t, id))).join(', ')}. Voeg een kleedkamer toe, geef er een plek bij of spreid de poules (Opzet › begintijd).</span></div>` : ''}
+    ${plan.tekort.length && kks.length ? `<div class="ac-melding">${ico('action-warning', 18)} <span><b>Te weinig plek</b> voor ${plan.tekort.map(id => esc(naamTeam(t, id))).join(', ')}. Voeg een kleedkamer toe, geef er een plek bij of spreid de poules (Opzet › begintijd).</span></div>` : ''}
     <div class="ac-paneel"><h3>Indeling</h3>${teams.length ? teams.map(tm => { const r = rooster[tm.id];
       return `<div class="ac-rij"><span class="tn-stip" style="--pk:${esc(kleurPoule(t, tm.poule))}"></span><span class="ac-groei"><b>${esc(tm.naam)}</b> <small class="ac-zacht">${esc(T.naarTijd(T.naarMin(r.eerste) - 30))}–${esc(T.naarTijd(T.naarMin(r.laatste) + 20))}</small></span>
         <select class="ac-in tn-kk-kies" data-veld="toernooi.teams.${esc(tm.id)}.kk" aria-label="Kleedkamer van ${esc(tm.naam)}">${opt('', plan.kk[tm.id] && !tm.kk ? `Automatisch (${T.kkNaam(t, plan.kk[tm.id])})` : 'Automatisch')}${delen.map(k => opt(k.id, k.naam, plan.kk[tm.id] === k.id && !!tm.kk)).join('')}</select></div>`; }).join('') : '<p class="ac-zacht">Maak eerst het schema; dan weet Cluppie wanneer elk team er is.</p>'}</div>`;
@@ -518,7 +518,7 @@ export async function klikToernooi(ctx, b){
       return zet({ [`toernooi.schermen.${T.nieuwId('x')}`]: { soort: id === 'sponsor' ? 'sponsor' : 'scherm', titel: '', tekst: '', volg: T.volgende(t.schermen), tv: true, tel: true } }); }
     case 'scherm-club': {
       let lijst = [];
-      try { lijst = await (await import('./clubschermen.js?v=20261129m')).clubSponsoren(ctx.clubId); }
+      try { lijst = await (await import('./clubschermen.js?v=20261129n')).clubSponsoren(ctx.clubId); }
       catch { return meld('De sponsoren van de club zijn alleen te lezen door de clubbeheerder.'); }
       if (!lijst.length) return meld('De club heeft nog geen sponsoren. Zet ze in Activiteiten › Kantine-tv en sponsoren.');
       const heeft = new Set(Object.values(t.schermen || {}).map(x => String(x?.titel || '').toLowerCase())), patch = {};
@@ -549,7 +549,7 @@ export async function klikToernooi(ctx, b){
       return ctx.venster(`<h2>Voorstel voor het toernooi</h2>
         ${r.past ? '' : `<div class="ac-melding">${ico('action-warning', 18)} <span>${esc(r.waarschuwingen[0])}</span></div>`}
         <div class="tn-ctrl ${ernstig.some(p => p.niveau === 'fout') ? 'fout' : ernstig.length ? 'waarsch' : 'ok'}"><span class="tn-ctrl-ico">${ernstig.some(p => p.niveau === 'fout') ? '⛔' : ernstig.length ? '⚠️' : '✓'}</span><span class="tn-ctrl-t"><b>${ernstig.length ? `Proefgedraaid: ${ernstig.length} ${ernstig.length === 1 ? 'punt' : 'punten'}` : 'Proefgedraaid: alles loopt goed tot en met de prijsuitreiking'}</b>${ernstig.slice(0, 3).map(p => `<small>${NIV_ICO[p.niveau]} ${esc(p.tekst)}</small>`).join('')}</span></div>
-        <div class="ac-chips"><span class="ac-chip aan">${Object.keys(r.poules).length} ${Object.keys(r.poules).length === 1 ? 'poule' : 'poules'}</span><span class="ac-chip aan">${r.duur} min per wedstrijd</span><span class="ac-chip aan">${r.schema.length} wedstrijden${nKo ? `, waarvan ${nKo} finales` : ''}</span><span class="ac-chip aan">${esc(T.opzet(t).start)} – ${esc(r.eind)}</span>${r.prijs ? `<span class="ac-chip aan">Prijsuitreiking ${esc(r.prijs.van)}</span>` : ''}<span class="ac-chip aan">Klaar om ${esc(r.klaar)}</span></div>
+        <div class="ac-chips"><span class="ac-chip aan">${Object.keys(r.poules).length} ${Object.keys(r.poules).length === 1 ? 'poule' : 'poules'}</span><span class="ac-chip aan">${r.duur} min per wedstrijd</span><span class="ac-chip aan">${r.schema.length} wedstrijden${nKo ? `, waarvan ${nKo} ${nKo === 1 ? 'finale' : 'finalewedstrijden'}` : ''}</span><span class="ac-chip aan">${esc(T.opzet(t).start)} – ${esc(r.eind)}</span>${r.prijs ? `<span class="ac-chip aan">Prijsuitreiking ${esc(r.prijs.van)}</span>` : ''}<span class="ac-chip aan">Klaar om ${esc(r.klaar)}</span></div>
         ${perPoule.map(x => `<div class="ac-paneel tn-team" style="--pk:${esc(x.p.kleur)}"><b>${esc(x.p.naam)}</b> <small class="ac-zacht">${x.teams.length} teams</small><p class="ac-zacht">${x.teams.map(esc).join(', ')}</p></div>`).join('')}
         <p class="ac-zacht">Elk team speelt ongeveer ${r.speelmin} minuten. ${Object.keys(t.poules || {}).length || (t.schema || []).length ? '<b>Overnemen vervangt de huidige poules, het schema en de uitslagen.</b>' : ''} Daarna kun je alles nog aanpassen en wedstrijden verslepen.</p>
         <div class="ac-acties"><button class="knop licht" data-ac="venster-dicht">Annuleren</button><span class="ac-groei"></span><button class="knop vol" data-tn="auto-ja">Overnemen</button></div>`);
