@@ -9,14 +9,14 @@
    speler) en bewaren via bewaarVolledig in teams-spelers.js, dus precies
    hetzelfde datamodel als het formulier op de telefoon.
    Alleen op desktop: desktop-schermen.js tekent dit in de modus Evaluatie. */
-import { S, esc, speler, meld } from './state.js?v=20261130k';
+import { S, esc, speler, meld } from './state.js?v=20261130e';
 import { ico } from './icons.js?v=20261127b';
-import { SKILLS } from './config.js?v=20261130k';
-import { VB_DOMEINEN, critSleutel, critZichtbaar, ladderVan, NIV_LABEL, leeftijdTeam, koppelInfo } from './beoordeling-volledig.js?v=20261130k';
+import { SKILLS } from './config.js?v=20261130e';
+import { VB_DOMEINEN, critSleutel, critZichtbaar, ladderVan, NIV_LABEL, leeftijdTeam, koppelInfo } from './beoordeling-volledig.js?v=20261130e';
 import { teRadarSvg } from './team-evaluatie-criteria.js?v=20261127p';
-import { rondesVoorTeam, rondeSpelers, datumKort } from './evaluatierondes.js?v=20261130k';
-import { bewaarVolledig, modalLeerpunt } from './teams-spelers.js?v=20261130k';
-import { renderTeam } from './teams.js?v=20261130k';
+import { rondesVoorTeam, rondeSpelers, datumKort } from './evaluatierondes.js?v=20261130e';
+import { bewaarVolledig, modalLeerpunt } from './teams-spelers.js?v=20261130e';
+import { renderTeam } from './teams.js?v=20261130e';
 
 const EW = { view:null, teamId:null, pid:null, dom:'TE', fcrit:0, ronde:null, extraRonde:null, moment:'',
   bewerk:{}, concepten:new Map(), mxDom:'TE', mx:{ r:0, c:0 }, mxPop:false, bezig:false };
@@ -159,12 +159,16 @@ function htmlWerkblad(){
     return `<button class="ew-tab ${x.id === dom.id ? 'aan' : ''}" data-ew="dom" data-id="${x.id}" style="--c:${domKleur(x.id)}"><b>${x.id}</b>${esc(x.naam.split(' ')[0])}<small class="${n >= cs.length ? 'ok' : ''}">${n}/${cs.length}</small></button>`;
   }).join('');
 
-  const ladder = `<div class="ew-ladder"><div class="ew-ladder-l">${esc(lad.naam)}<small>${esc(lad.model)}</small></div>${[1, 2, 3, 4, 5].map(n => `<div title="${esc(lad.treden[n].tekst)}">${NIV_LABEL[n]}<small>${esc(lad.treden[n].trede)}</small></div>`).join('')}</div>`;
+  /* [20261130d] De betekenis van elk niveau staat nu uitgeschreven boven de knoppen
+     (blijft in beeld bij scrollen), op elke knop staat de trede, en onder een
+     gekozen niveau lees je de hele zin terug, net als in het formulier op de telefoon. */
+  const ladder = `<div class="ew-ladder"><div class="ew-ladder-l"><b>Wat zie je bij elk niveau?</b><span>${esc(lad.naam)} · ${esc(lad.model.split(' · ')[0])}</span><button type="button" class="dk-link" data-vb-info="dom" data-dom="${dom.id}">Meer uitleg</button></div>${[1, 2, 3, 4, 5].map(n => `<div class="ew-trede" style="--n:var(--n${n});--nt:var(--n${n}-tekst)"><b>${NIV_LABEL[n]}</b><strong>${esc(lad.treden[n].trede)}</strong><span>${esc(lad.treden[n].tekst)}</span></div>`).join('')}</div>`;
   const critHtml = rijen.map((x, idx) => {
     const g = w.criteria[x.k] || 0, vg = Number(v?.criteria?.[x.k]) || 0;
     return `<div class="ew-crit ${idx === EW.fcrit ? 'focus' : ''}" data-ew-rij="${idx}">
       <div class="ew-crit-n" data-ew="focus" data-idx="${idx}"><b>${esc(x.c.naam)}${x.c.vanaf ? `<span class="vb-badge">vanaf O${x.c.vanaf}</span>` : ''}<button type="button" class="vb-info" data-vb-info="crit" data-dom="${dom.id}" data-idx="${x.i}" aria-label="Uitleg ${esc(x.c.naam)}">i</button></b><small>${esc(x.c.uitleg)}</small></div>
-      ${[1, 2, 3, 4, 5].map(n => `<button class="ew-lv ${g === n ? 'gekozen kn' + n : ''} ${vg === n ? 'vorig' : ''}" data-ew="niv" data-idx="${idx}" data-n="${n}" title="${esc(lad.treden[n].tekst)}" aria-pressed="${g === n}">${NIV_LABEL[n]}</button>`).join('')}
+      ${[1, 2, 3, 4, 5].map(n => `<button class="ew-lv ${g === n ? 'gekozen kn' + n : ''} ${vg === n ? 'vorig' : ''}" data-ew="niv" data-idx="${idx}" data-n="${n}" title="${esc(lad.treden[n].tekst)}" aria-pressed="${g === n}"><b>${NIV_LABEL[n]}</b><small>${esc(lad.treden[n].trede)}</small></button>`).join('')}
+      ${g ? `<div class="ew-anker" style="--n:var(--n${g});--nt:var(--n${g}-tekst)"><i></i><b>${NIV_LABEL[g]}</b>${esc(lad.treden[g].tekst)}</div>` : ''}
     </div>`;
   }).join('');
   const oudDom = w.oud?.[dom.id] && !rijen.some(x => w.criteria[x.k]) ? `<div class="vb-oud">Eerder ingevuld als domeinscore: <b style="color:${kleurTekst(w.oud[dom.id])}">${NIV_LABEL[w.oud[dom.id]]}</b>. Vul de criteria in om die te vervangen.</div>` : '';
