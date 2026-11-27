@@ -11,22 +11,22 @@
    alleen HTML + de opslaghulpjes voor de wedstrijd-presentie. Het importeert
    bewust NIET terug uit teams.js (geen circulaire import). */
 import { db, doc, updateDoc, deleteField } from './firebase.js?v=20261011g';
-import { S, esc, meld, datumNL, modAan, openModal } from './state.js?v=20261129y';
-import { AFWEZIG_REDENEN, afwezigRedenInfo, catLabel } from './config.js?v=20261129y';
+import { S, esc, meld, datumNL, modAan, openModal } from './state.js?v=20261130b';
+import { AFWEZIG_REDENEN, afwezigRedenInfo, catLabel } from './config.js?v=20261130b';
 import { ico } from './icons.js?v=20261127b';
-import { logoImg, primaireClubId } from './clubconfig.js?v=20261129y';
-import { analyseWedstrijd, WISSEL_BEURT } from './analyse.js?v=20261129y';
-import { telGebruik } from './tracker.js?v=20261129y';
-import { ongelezenBerichten } from './berichten.js?v=20261129y';
-import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261129y';
-import { toernooiBezig } from './teams-toernooi.js?v=20261129y';
-import { htmlRondeBalk } from './evaluatierondes.js?v=20261129y';
-import { onderdeelAan } from './onderdelen.js?v=20261129y';
+import { logoImg, primaireClubId } from './clubconfig.js?v=20261130b';
+import { analyseWedstrijd, WISSEL_BEURT } from './analyse.js?v=20261130b';
+import { telGebruik } from './tracker.js?v=20261130b';
+import { ongelezenBerichten } from './berichten.js?v=20261130b';
+import { lijstjesOpenTotaal } from './teams-lijsten.js?v=20261130b';
+import { toernooiBezig } from './teams-toernooi.js?v=20261130b';
+import { htmlRondeBalk } from './evaluatierondes.js?v=20261130b';
+import { onderdeelAan } from './onderdelen.js?v=20261130b';
 import { teamkamerMag } from './kamer-logica.js?v=20261127k';
-import { eersteStappenPlaats } from './snelstart.js?v=20261129y';
-import { htmlNu } from './nu-scherm.js?v=20261129y';
+import { eersteStappenPlaats } from './snelstart.js?v=20261130b';
+import { htmlNu } from './nu-scherm.js?v=20261130b';
 import { spelersOpWedstrijd, effectieveSelectie, leenErbijNa } from './uitleen-regels.js?v=20261127p';
-import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261129y';
+import { htmlSelectieDashboard, heeftElftallen, elftalWedstrijd, elftalNaam, spelersVoorElftal, elftalPillWedstrijd } from './elftallen.js?v=20261130b';
 import { isAfgelast, telMee, soortPill, wedstrijdInfo, htmlAfgelastBanner, afgelastMeldingen, deelTekst } from './wedstrijd-status.js?v=20261129i';
 
 

@@ -30,10 +30,10 @@
    eigen vakken weggooien. De velden zelf (id, naam) komen wel uit de veldkaart.
    Rekenwerk in veldplanner-logica.js (getest). */
 import { db, doc, getDoc, setDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261129y';
+import { S, esc, meld } from './state.js?v=20261130b';
 import { ico } from './icons.js?v=20261127b';
-import { bouwVanTeam } from './bouw-indeling.js?v=20261129y';
-import { momentenVanTeam } from './trainingsmomenten.js?v=20261129y';
+import { bouwVanTeam } from './bouw-indeling.js?v=20261130b';
+import { momentenVanTeam } from './trainingsmomenten.js?v=20261130b';
 import { NODIG, MAAT_NAAM, KK_VOOR, KK_NA, MAX_EIGEN, naarMin, naarTijd, rondKwartier,
   vakkenVan, vakUit, deelVan, deelTekst, meters, banenVan, stukken, maatVanCategorie, duurVanCategorie,
   zoekVrijVak, vrijeKleedkamers, stapel, controleer, nogInTePlannen, schoonRooster, schoonKleedkamers, schoonVak,
@@ -407,7 +407,7 @@ function koppel(){
     if (a === 'negeerterug'){ bewaarStap(); P.inst.negeer = { trainers: [], meldingen: [] }; P.instGewijzigd = true; planBewaar(); teken(); return meld('Alle weggeklikte meldingen staan weer aan.'); }
     if (a === 'deselect'){ P.sel = null; return teken(); }
     if (a === 'weg') return weg(P.sel);
-    if (a === 'sportpark'){ const c = P.clubId; sluitVeldplanner(); return import('./veldkaart.js?v=20261129y').then(m => m.openSportparkBeheer(c)); }
+    if (a === 'sportpark'){ const c = P.clubId; sluitVeldplanner(); return import('./veldkaart.js?v=20261130b').then(m => m.openSportparkBeheer(c)); }
   });
   el.querySelectorAll('[data-weergave]').forEach(k => k.onclick = () => { ovStop(); P.weergave = k.dataset.weergave; P.sel = null; P.objSel = null; teken(); });
   el.querySelectorAll('[data-dag]').forEach(k => k.onclick = () => { P.dag = +k.dataset.dag; P.sel = null; if (P.ov){ ovStop(); P.ov.t = null; P.ov.live = false; } teken(); });
@@ -658,7 +658,7 @@ function raak(k, x, y){
 }
 async function maakKaart(){
   const el = P.el.querySelector('#vpKaart'); if (!el) return;
-  const { Kaart } = await import('./veldkaart.js?v=20261129y');
+  const { Kaart } = await import('./veldkaart.js?v=20261130b');
   if (!P || !el.isConnected) return;
   const pos = P.kaartPos || { lat: P.park.lat, lon: P.park.lon, z: Math.min(19, P.park.zoom || 18) };
   const rel = e => { const r = el.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
@@ -994,7 +994,7 @@ async function koppelOverzicht(){
     ovKiesPlek(g.dataset.schemaveld, (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
   });
   const kaartEl = el.querySelector('#vpOvKaart'); if (!kaartEl) return;
-  const { Kaart } = await import('./veldkaart.js?v=20261129y');
+  const { Kaart } = await import('./veldkaart.js?v=20261130b');
   if (!P || !kaartEl.isConnected) return;
   const pos = P.kaartPos || { lat: P.park.lat, lon: P.park.lon, z: Math.min(19, P.park.zoom || 18) };
   const k = new Kaart(kaartEl, { lat: pos.lat, lon: pos.lon, z: pos.z, interactief: true, omgeving: () => P?.park?.omgeving?.vormen, lagen: lagenOverzicht, onTik: ovTik });
@@ -1059,8 +1059,8 @@ async function tekstUitBestand(f){
   const naam = f.name.toLowerCase();
   if (/\.(csv|txt|tsv)$/.test(naam)) return (await f.text()).replace(/;/g, '\t');
   if (naam.endsWith('.pdf')){
-    const { laadPdfJs } = await import('./pdf-viewer.js?v=20261129y');
-    const { regelsUitTekstItems } = await import('./training-ai.js?v=20261129y');
+    const { laadPdfJs } = await import('./pdf-viewer.js?v=20261130b');
+    const { regelsUitTekstItems } = await import('./training-ai.js?v=20261130b');
     await laadPdfJs();
     const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(await f.arrayBuffer()) }).promise, uit = [];
     for (let n = 1; n <= Math.min(pdf.numPages, 30); n++) uit.push(regelsUitTekstItems((await (await pdf.getPage(n)).getTextContent()).items));

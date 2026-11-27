@@ -5,7 +5,7 @@
    bewerken, én het uitlenen van een speler aan een ander team binnen de
    club (thematisch dezelfde "speler"-context, vandaar in één bestand). */
 import { teamsOpId } from './teams-ophalen.js?v=20261011g';
-import { beleidsplanNaam, cfg } from './clubconfig.js?v=20261129y';
+import { beleidsplanNaam, cfg } from './clubconfig.js?v=20261130b';
 import {
   db, collection, doc, addDoc, deleteDoc, updateDoc, setDoc,
   getDoc, getDocs, query, where, deleteField,
@@ -13,36 +13,36 @@ import {
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, speler, uurMin, openModal, sluitModal, modAan, isBeheerder
-} from './state.js?v=20261129y';
+} from './state.js?v=20261130b';
 import {
   niveau, niveauKleur, NIVEAUS, SKILLS, skillDomein,
   LEERCURVE, leercurveRelevant, leercurveThema, snelTag, SNEL_TAGS,
   POSITIE_GROEPEN, SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo,
   wisselReden, isToernooi
-} from './config.js?v=20261129y';
-import { analyseWedstrijd, speeltijdReserve, disciplinaireTijd, telaatTijd, persoonlijkeNoemer } from './analyse.js?v=20261129y';
-import { isBouwCoordinator } from './coordinatoren.js?v=20261129y';
-import { magUitlenen } from './uitleen-rechten.js?v=20261129y';
+} from './config.js?v=20261130b';
+import { analyseWedstrijd, speeltijdReserve, disciplinaireTijd, telaatTijd, persoonlijkeNoemer } from './analyse.js?v=20261130b';
+import { isBouwCoordinator } from './coordinatoren.js?v=20261130b';
+import { magUitlenen } from './uitleen-rechten.js?v=20261130b';
 import { leenOmschrijving, leenActief } from './uitleen-regels.js?v=20261127p';
 import { ico } from './icons.js?v=20261127b';
-import { rondesVoorTeam, rondeSpelers, datumKort } from './evaluatierondes.js?v=20261129y';
+import { rondesVoorTeam, rondeSpelers, datumKort } from './evaluatierondes.js?v=20261130b';
 
-import { toonThemaInfo } from './teams-leerlijn.js?v=20261129y';
-import { telGebruik } from './tracker.js?v=20261129y';
+import { toonThemaInfo } from './teams-leerlijn.js?v=20261130b';
+import { telGebruik } from './tracker.js?v=20261130b';
 import { opkomstVoor, teltMee } from './opkomst.js?v=20260922c';
 /* [20261125b] teamoverzicht van een evaluatieronde: alle spelers in één beeld */
-import { teamModel, htmlTeamOverzicht, roKlik } from './ronde-overzicht.js?v=20261129yz';
-import { heeftElftallen, filterOpElftal, elftalPillen } from './elftallen.js?v=20261129y';
-import { bouwVanTeam, eigenBouwenVanTeam } from './bouw-indeling.js?v=20261129y';
+import { teamModel, htmlTeamOverzicht, roKlik } from './ronde-overzicht.js?v=20261130bz';
+import { heeftElftallen, filterOpElftal, elftalPillen } from './elftallen.js?v=20261130b';
+import { bouwVanTeam, eigenBouwenVanTeam } from './bouw-indeling.js?v=20261130b';
 import { htmlVolledigFormulier, koppelVolledigFormulier, koppelInfo, htmlSamenvatting, htmlNaslagLink, htmlSnelAnker,
-  domeinScores, leeftijdTeam, naslagEersteKeer, htmlSpelerRadar, domeinWaardenEcht } from './beoordeling-volledig.js?v=20261129y';
+  domeinScores, leeftijdTeam, naslagEersteKeer, htmlSpelerRadar, domeinWaardenEcht } from './beoordeling-volledig.js?v=20261130b';
 
 /* Cross-module her-render: teams.js importeert functies van hieruit, dus
    deze module mag teams.js niet statisch terug-importeren (circulaire
    import). Dynamic import() binnen de aanroepende functie is het patroon
    dat de rest van de app ook al gebruikt (zie club.js/wedstrijd.js). */
 async function herrenderTeam(){
-  const m = await import('./teams.js?v=20261129y');
+  const m = await import('./teams.js?v=20261130b');
   m.renderTeam();
 }
 
@@ -1021,6 +1021,40 @@ function priveLezers(){
 }
 const beoordelingRef = b => b.prive ? doc(db, 'beoordelingenPrive', b.id) : doc(db, 'teams', S.teamId, 'beoordelingen', b.id);
 
+/* [20261130a] Het opslaan zelf, los van het venster: het formulier (telefoon)
+   en het werkblad en de teammatrix op de desktop (evaluatie-werkblad.js)
+   bewaren zo op precies dezelfde manier. Geeft false als er geen score is. */
+export async function bewaarVolledig({ spelerId, bestaande = null, criteria: ruw = {}, oud = {}, notities = {}, rondeKeuze = '', rondeNaam = '', moment = '' }){
+  const lft = leeftijdTeam(S.team?.categorie);
+  const scores = domeinScores(ruw, lft, oud);
+  if (!Object.keys(scores).length) return false;
+  const rondeId = rondeKeuze && rondeKeuze !== '_oud' ? rondeKeuze : null;
+  const prive = !!rondeId;
+  const criteria = {};
+  for (const [k, n] of Object.entries(ruw)) if (n >= 1 && n <= 5) criteria[k] = n;
+  const data = {
+    soort:'volledig', spelerId, datum:bestaande?.datum || vandaagISO(),
+    bron:{type:'los', label: rondeNaam || moment || 'Periodieke meting'},
+    officieel: !!rondeId || rondeKeuze === '_oud',
+    criteria, scores, notities, versie:2, door:deelnemer(), gemaaktMs:Date.now(),
+  };
+  if (rondeId) data.ronde = rondeId;
+  if (!bestaande) data.seizoen = S.huidigSeizoen || SEIZOEN_FALLBACK;
+  else data.seizoen = bestaande.seizoen || S.huidigSeizoen || SEIZOEN_FALLBACK;
+  if (prive) Object.assign(data, { prive:true, teamId:S.teamId, club:S.team?.club || '', zichtbaarVoor:priveLezers() });
+  if (bestaande && !!bestaande.prive === prive){
+    if (!rondeId && bestaande.ronde) data.ronde = deleteField();
+    await updateDoc(beoordelingRef(bestaande), data);
+  } else {
+    // nieuw, of verhuist tussen privé en team (ronde aan/uit gezet)
+    const doel = prive ? collection(db, 'beoordelingenPrive') : collection(db, 'teams', S.teamId, 'beoordelingen');
+    await addDoc(doel, data);
+    if (bestaande) await deleteDoc(beoordelingRef(bestaande));
+    else telGebruik(rondeId ? 'ronde_beoordeling' : 'volledige_beoordeling');
+  }
+  return true;
+}
+
 export function modalVolledigeBeoordeling(spelerId, bestaande = null){
   if (!modAan('evaluaties')) return meld('Evaluaties staan uit voor dit team');
   const p = speler(spelerId); if (!p) return;
@@ -1104,37 +1138,14 @@ export function modalVolledigeBeoordeling(spelerId, bestaande = null){
 
   const okBtn = $('#mVbOk');
   if (okBtn) okBtn.onclick = async () => {
-    const scores = domeinScores(waarden.criteria, lft, waarden.oud);
-    if (!Object.keys(scores).length) return meld('Geef minstens één score');
     const notities = {};
     SKILLS.forEach(d => { const t = $(`[data-vb-not="${d.id}"]`); const v = t ? t.value.trim() : ''; if (v) notities[d.id] = v; });
     const rondeKeuze = $('#mVbRonde')?.value || '';
-    const rondeId = rondeKeuze && rondeKeuze !== '_oud' ? rondeKeuze : null;
-    const rondeNaam = rondeId ? (rondeOpties.find(r => r.id === rondeId)?.naam || '') : '';
-    const prive = !!rondeId;
-    const criteria = {};
-    for (const [k, n] of Object.entries(waarden.criteria)) if (n >= 1 && n <= 5) criteria[k] = n;
-    const data = {
-      soort:'volledig', spelerId, datum:bestaande?.datum || vandaagISO(),
-      bron:{type:'los', label: rondeNaam || ($('#mVbMoment')?.value || '').trim() || 'Periodieke meting'},
-      officieel: !!rondeId || rondeKeuze === '_oud',
-      criteria, scores, notities, versie:2, door:deelnemer(), gemaaktMs:Date.now(),
-    };
-    if (rondeId) data.ronde = rondeId;
-    if (!bestaande) data.seizoen = S.huidigSeizoen || SEIZOEN_FALLBACK;
-    else data.seizoen = bestaande.seizoen || S.huidigSeizoen || SEIZOEN_FALLBACK;
-    if (prive) Object.assign(data, { prive:true, teamId:S.teamId, club:S.team?.club || '', zichtbaarVoor:priveLezers() });
+    const rondeNaam = rondeKeuze && rondeKeuze !== '_oud' ? (rondeOpties.find(r => r.id === rondeKeuze)?.naam || '') : '';
     try {
-      if (bestaande && !!bestaande.prive === prive){
-        if (!rondeId && bestaande.ronde) data.ronde = deleteField();
-        await updateDoc(beoordelingRef(bestaande), data);
-      } else {
-        // nieuw, of verhuist tussen privé en team (ronde aan/uit gezet)
-        const doel = prive ? collection(db, 'beoordelingenPrive') : collection(db, 'teams', S.teamId, 'beoordelingen');
-        await addDoc(doel, data);
-        if (bestaande) await deleteDoc(beoordelingRef(bestaande));
-        else telGebruik(rondeId ? 'ronde_beoordeling' : 'volledige_beoordeling');
-      }
+      const klaar = await bewaarVolledig({ spelerId, bestaande, criteria: waarden.criteria, oud: waarden.oud, notities,
+        rondeKeuze, rondeNaam, moment: ($('#mVbMoment')?.value || '').trim() });
+      if (!klaar) return meld('Geef minstens één score');
       sluitModal();
       if (flow) volgendeEvalRonde(); else { herrenderTeam(); meld('Beoordeling opgeslagen'); naarOverzichtTerug(vanOverzicht); }
     } catch(e){ meld('Opslaan mislukt: '+(e.code||e.message)); }
@@ -1565,7 +1576,7 @@ export async function modalUitlenen(spelerId){
      Uitgebreid) en mag alleen door coördinatoren en de clubadmin. */
   const team = { ...S.team, id: S.teamId };
   if (!magUitlenen(team)) return meld('Uitlenen regelt de coördinator van de bouw');
-  const m = await import('./uitleen-form.js?v=20261129y');
+  const m = await import('./uitleen-form.js?v=20261130b');
   m.openUitleenForm({ clubId, vanTeam: team, speler: p });
 }
 
@@ -1573,7 +1584,7 @@ export async function modalUitlenen(spelerId){
 export async function wijzigUitlening(u, clubIdOverride, naOpslaan){
   const clubId = clubIdOverride || S.team?.club;
   if (!clubId || !u) return meld('Uitlening niet gevonden');
-  const m = await import('./uitleen-form.js?v=20261129y');
+  const m = await import('./uitleen-form.js?v=20261130b');
   m.openUitleenForm({ clubId, vanTeam: { id: u.vanTeam, naam: u.vanTeamNaam }, speler: { id: u.spelerId, naam: u.snapshot?.naam || 'Speler' }, bestaand: u, naOpslaan });
 }
 
