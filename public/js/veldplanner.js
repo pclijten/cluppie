@@ -30,15 +30,15 @@
    eigen vakken weggooien. De velden zelf (id, naam) komen wel uit de veldkaart.
    Rekenwerk in veldplanner-logica.js (getest). */
 import { db, doc, getDoc, setDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261130a';
+import { S, esc, meld } from './state.js?v=20261130b';
 import { ico } from './icons.js?v=20261127b';
-import { bouwVanTeam } from './bouw-indeling.js?v=20261130a';
-import { momentenVanTeam } from './trainingsmomenten.js?v=20261130a';
+import { bouwVanTeam } from './bouw-indeling.js?v=20261130b';
+import { momentenVanTeam } from './trainingsmomenten.js?v=20261130b';
 import { NODIG, MAAT_NAAM, KK_VOOR, KK_NA, MAX_EIGEN, naarMin, naarTijd, rondKwartier,
   vakkenVan, vakUit, deelVan, deelTekst, meters, banenVan, stukken, maatVanCategorie, duurVanCategorie,
   zoekVrijVak, vrijeKleedkamers, stapel, controleer, nogInTePlannen, schoonRooster, schoonKleedkamers, schoonVak,
   kleedkamersVoorstel, SOORTEN, MAX_OBJECTEN, schoonObjecten, meterTussen, verschuif, vlakUitHoeken,
-  leesTijd, leesPlanning, zetKleedTijden, schoonMinuten, schoonTeamInstellingen, opMoment, kleedkamersOpMoment, drukte, vrijeKwarten, dagBereik, inVak, vakkenOverlap } from './veldplanner-logica.js?v=20261129x';
+  leesTijd, leesPlanning, zetKleedTijden, schoonMinuten, schoonTeamInstellingen, schoonNegeer, kopieerDag, opMoment, kleedkamersOpMoment, drukte, vrijeKwarten, dagBereik, inVak, vakkenOverlap } from './veldplanner-logica.js?v=20261129y';
 
 const DAGEN = ['', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag', 'Zondag'];
 const DAGK = ['', 'ma', 'di', 'wo', 'do', 'vr', 'za', 'zo'];
@@ -70,7 +70,7 @@ export async function openVeldplanner(clubId){
     const i = inst.exists() ? inst.data() : {};
     P.instBestaat = inst.exists();
     P.inst = { kleedkamers: i.kleedkamers ? schoonKleedkamers(i.kleedkamers) : kleedkamersVoorstel(P.park?.plekken), velden: i.velden && typeof i.velden === 'object' ? i.velden : {}, objecten: schoonObjecten(i.objecten),
-      kkVoor: schoonMinuten(i.kkVoor, 15), kkNa: schoonMinuten(i.kkNa, 20), teams: schoonTeamInstellingen(i.teams) };
+      kkVoor: schoonMinuten(i.kkVoor, 15), kkNa: schoonMinuten(i.kkNa, 20), teams: schoonTeamInstellingen(i.teams), negeer: schoonNegeer(i.negeer) };
     zetKleedTijden(P.inst.kkVoor, P.inst.kkNa);
     P.blokken = schoonRooster(rooster.exists() ? rooster.data().blokken : []);
   } catch (e){
@@ -135,7 +135,7 @@ function ctx(){
   return {
     teams: Object.fromEntries(P.teams.map(t => [t.id, t])),
     velden: Object.fromEntries(P.velden.map(v => [v.id, { naam: v.naam, licht: lichtVan(v.id) }])),
-    inst: P.inst.velden, kleedkamers: P.inst.kleedkamers,
+    inst: P.inst.velden, kleedkamers: P.inst.kleedkamers, negeer: P.inst.negeer,
   };
 }
 const plekTekst = b => { const k = vakUit(vakkenVan(instVan(b.veld)), b.vak); return `${veldVan(b.veld).naam}${k.kort ? ' ' + k.kort : ''}`; };
@@ -164,7 +164,7 @@ async function bewaarNu(){
       velden[v.id] = { licht: i.licht !== false, vakken: (i.vakken || []).map(schoonVak).filter(Boolean).slice(0, MAX_EIGEN) };
     }
     klus.push(setDoc(doc(db, 'clubs', p.clubId, 'veldplanner', 'instellingen'), { kleedkamers: schoonKleedkamers(p.inst.kleedkamers), velden, objecten: schoonObjecten(p.inst.objecten),
-      kkVoor: schoonMinuten(p.inst.kkVoor, 15), kkNa: schoonMinuten(p.inst.kkNa, 20), teams: schoonTeamInstellingen(p.inst.teams), bijgewerktMs: Date.now() }));
+      kkVoor: schoonMinuten(p.inst.kkVoor, 15), kkNa: schoonMinuten(p.inst.kkNa, 20), teams: schoonTeamInstellingen(p.inst.teams), negeer: schoonNegeer(p.inst.negeer), bijgewerktMs: Date.now() }));
     p.instGewijzigd = false;
   }
   try { await Promise.all(klus); p.staat = 'opgeslagen'; p.om = new Date(); }
@@ -237,7 +237,8 @@ function htmlDagen(c){
     return `<button type="button" class="vp-dag${d === P.dag ? ' aan' : ''}" data-dag="${d}" aria-pressed="${d === P.dag}">
       <b><span class="lang">${DAGEN[d]}</span><span class="kort">${DAGK[d]}</span></b><small>${n} <span class="lang">${n === 1 ? 'training' : 'trainingen'}</span></small>
       <span class="vp-dagstat">${f ? `<em class="f">${f} botsing${f === 1 ? '' : 'en'}</em>` : ''}${w ? `<em class="w">${w} let op</em>` : ''}${!f && !w && n ? '<em class="ok">Klopt</em>' : ''}</span></button>`;
-  }).join('')}${dagen.includes(6) ? '' : `<button type="button" class="vp-dag plus" data-dag="6" aria-label="Zaterdag tonen">+ za</button>`}</nav>`;
+  }).join('')}${dagen.includes(6) ? '' : `<button type="button" class="vp-dag plus" data-dag="6" aria-label="Zaterdag tonen">+ za</button>`}
+    <button type="button" class="vp-dag plus vp-kopieer" data-vp="kopieer" ${P.blokken.some(b => b.dag === P.dag) ? '' : 'disabled'} title="Zet de trainingen van ${DAGEN[P.dag]} ook op andere dagen">${ico('action-copy', 16)}<span>Dag kopiëren</span></button></nav>`;
 }
 function htmlZijbalk(){
   const nog = nogInTePlannen(P.teams, P.blokken);
@@ -301,12 +302,19 @@ function htmlControle(c){
   const f = c.lijst.filter(x => x.soort === 'fout').length, w = c.lijst.length - f;
   const knop = x => {
     const fix = x.fix ? { kk: 'Kies vrije kleedkamer', licht: 'Zoek veld met licht', veld: 'Zoek vrije plek', vak: 'Zoek groter vak' }[x.fix.soort] : '';
-    return `<button type="button" class="knop licht klein" data-toon="${x.ids[0]}">Toon</button>${fix ? `<button type="button" class="knop licht klein" data-fix="${x.fix.soort}" data-id="${x.fix.id}">${fix}</button>` : ''}`;
+    return `<button type="button" class="knop licht klein" data-toon="${x.ids[0]}">Toon</button>${fix ? `<button type="button" class="knop licht klein" data-fix="${x.fix.soort}" data-id="${x.fix.id}">${fix}</button>` : ''}${x.soort === 'warn' && x.sleutel ? `<button type="button" class="knop licht klein vp-negeer" data-negeer="${esc(x.sleutel)}" title="Deze melding niet meer tonen">Wegklikken</button>` : ''}${x.wie ? `<button type="button" class="knop licht klein vp-negeer" data-negeertr="${esc(x.wie.uid)}" data-naam="${esc(x.wie.naam)}" title="Alle meldingen dat ${esc(x.wie.naam)} twee teams tegelijk traint niet meer tonen">Negeer voor ${esc(x.wie.naam)}</button>` : ''}`;
   };
+  /* trainers die bij veel 'tegelijk'-meldingen staan (vaak een beheerder als invuller): in één klik weg */
+  const perTrainer = new Map();
+  c.lijst.forEach(x => { if (x.wie){ const o = perTrainer.get(x.wie.uid) || { ...x.wie, n: 0 }; o.n++; perTrainer.set(x.wie.uid, o); } });
+  const veel = [...perTrainer.values()].filter(o => o.n >= 3).sort((a, b) => b.n - a.n).slice(0, 3);
   const lijst = [...c.lijst].sort((a, b) => (a.soort === 'fout' ? 0 : 1) - (b.soort === 'fout' ? 0 : 1) || (a.dag === P.dag ? 0 : 1) - (b.dag === P.dag ? 0 : 1) || a.dag - b.dag).slice(0, 40);
   return `<section class="vp-paneel vp-controle" aria-label="Controle">
     <div class="vp-paneel-kop"><h2>Controle</h2><span class="vp-zacht">hele week</span></div>
     <div class="vp-tellers"><div class="${f ? 'f' : ''}"><b>${f}</b><small>botsing${f === 1 ? '' : 'en'}</small></div><div class="${w ? 'w' : ''}"><b>${w}</b><small>waarschuwing${w === 1 ? '' : 'en'}</small></div></div>
+    ${veel.map(o => `<div class="vp-negeerbalk"><p>${o.n} meldingen gaan over <b>${esc(o.naam)}</b> die twee teams tegelijk traint. Staat ${esc(o.naam)} alleen als invuller bij teams?</p>
+      <button type="button" class="knop licht klein" data-negeertr="${esc(o.uid)}" data-naam="${esc(o.naam)}">Negeer voor ${esc(o.naam)}</button></div>`).join('')}
+    ${c.genegeerd ? `<p class="vp-zacht vp-genegeerd">${c.genegeerd} ${c.genegeerd === 1 ? 'melding' : 'meldingen'} weggeklikt · <button type="button" class="vp-link" data-vp="negeerterug">Weer tonen</button></p>` : ''}
     ${lijst.length ? lijst.map(x => `<div class="vp-mld ${x.soort}"><span class="ic">${ico(x.soort === 'fout' ? 'action-blocked' : 'action-warning', 16)}</span>
       <div><small>${DAGEN[x.dag]}</small><p>${esc(x.tekst)}</p><div class="vp-mld-knoppen">${knop(x)}</div></div></div>`).join('')
       : `<p class="vp-klaar">${P.blokken.length ? 'Alles klopt.' : 'Nog niets ingepland.'}</p>`}
@@ -395,9 +403,11 @@ function koppel(){
     if (a === 'kleedkamers') return vensterKleedkamers();
     if (a === 'teams') return vensterTeams();
     if (a === 'inlezen') return vensterInlezen();
+    if (a === 'kopieer') return vensterKopieer();
+    if (a === 'negeerterug'){ bewaarStap(); P.inst.negeer = { trainers: [], meldingen: [] }; P.instGewijzigd = true; planBewaar(); teken(); return meld('Alle weggeklikte meldingen staan weer aan.'); }
     if (a === 'deselect'){ P.sel = null; return teken(); }
     if (a === 'weg') return weg(P.sel);
-    if (a === 'sportpark'){ const c = P.clubId; sluitVeldplanner(); return import('./veldkaart.js?v=20261130a').then(m => m.openSportparkBeheer(c)); }
+    if (a === 'sportpark'){ const c = P.clubId; sluitVeldplanner(); return import('./veldkaart.js?v=20261130b').then(m => m.openSportparkBeheer(c)); }
   });
   el.querySelectorAll('[data-weergave]').forEach(k => k.onclick = () => { ovStop(); P.weergave = k.dataset.weergave; P.sel = null; P.objSel = null; teken(); });
   el.querySelectorAll('[data-dag]').forEach(k => k.onclick = () => { P.dag = +k.dataset.dag; P.sel = null; if (P.ov){ ovStop(); P.ov.t = null; P.ov.live = false; } teken(); });
@@ -405,6 +415,8 @@ function koppel(){
     bewaarStap(); const id = k.dataset.licht; P.inst.velden[id] = { ...instVan(id), licht: !lichtVan(id) }; P.instGewijzigd = true; planBewaar(); teken();
   });
   el.querySelectorAll('[data-indeel]').forEach(k => k.onclick = () => vensterIndeling(k.dataset.indeel));
+  el.querySelectorAll('[data-negeer]').forEach(k => k.onclick = () => { negeer('meldingen', k.dataset.negeer); meld('Melding weggeklikt. Met Ongedaan of "Weer tonen" komt hij terug.'); });
+  el.querySelectorAll('[data-negeertr]').forEach(k => k.onclick = () => { negeer('trainers', k.dataset.negeertr); meld(`Meldingen over ${k.dataset.naam} die teams tegelijk traint staan uit.`); });
   el.querySelectorAll('[data-toon]').forEach(k => k.onclick = () => { const b = blok(k.dataset.toon); if (!b) return; P.dag = b.dag; P.sel = b.id; teken(); focusBlok(b.id); P.el.querySelector(`.vp-blok[data-id="${b.id}"]`)?.scrollIntoView({ block: 'nearest', inline: 'center' }); });
   el.querySelectorAll('[data-fix]').forEach(k => k.onclick = () => herstel(k.dataset.fix, k.dataset.id));
   el.querySelectorAll('[data-kies]').forEach(k => k.onclick = () => { P.sel = k.dataset.kies; teken(); focusBlok(P.sel); });
@@ -646,7 +658,7 @@ function raak(k, x, y){
 }
 async function maakKaart(){
   const el = P.el.querySelector('#vpKaart'); if (!el) return;
-  const { Kaart } = await import('./veldkaart.js?v=20261130a');
+  const { Kaart } = await import('./veldkaart.js?v=20261130b');
   if (!P || !el.isConnected) return;
   const pos = P.kaartPos || { lat: P.park.lat, lon: P.park.lon, z: Math.min(19, P.park.zoom || 18) };
   const rel = e => { const r = el.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
@@ -982,7 +994,7 @@ async function koppelOverzicht(){
     ovKiesPlek(g.dataset.schemaveld, (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
   });
   const kaartEl = el.querySelector('#vpOvKaart'); if (!kaartEl) return;
-  const { Kaart } = await import('./veldkaart.js?v=20261130a');
+  const { Kaart } = await import('./veldkaart.js?v=20261130b');
   if (!P || !kaartEl.isConnected) return;
   const pos = P.kaartPos || { lat: P.park.lat, lon: P.park.lon, z: Math.min(19, P.park.zoom || 18) };
   const k = new Kaart(kaartEl, { lat: pos.lat, lon: pos.lon, z: pos.z, interactief: true, omgeving: () => P?.park?.omgeving?.vormen, lagen: lagenOverzicht, onTik: ovTik });
@@ -1047,8 +1059,8 @@ async function tekstUitBestand(f){
   const naam = f.name.toLowerCase();
   if (/\.(csv|txt|tsv)$/.test(naam)) return (await f.text()).replace(/;/g, '\t');
   if (naam.endsWith('.pdf')){
-    const { laadPdfJs } = await import('./pdf-viewer.js?v=20261130a');
-    const { regelsUitTekstItems } = await import('./training-ai.js?v=20261130a');
+    const { laadPdfJs } = await import('./pdf-viewer.js?v=20261130b');
+    const { regelsUitTekstItems } = await import('./training-ai.js?v=20261130b');
     await laadPdfJs();
     const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(await f.arrayBuffer()) }).promise, uit = [];
     for (let n = 1; n <= Math.min(pdf.numPages, 30); n++) uit.push(regelsUitTekstItems((await (await pdf.getPage(n)).getTextContent()).items));
@@ -1135,6 +1147,38 @@ function vensterInlezen(){
       sluitVenster(); planBewaar();
       const dagen = [...new Set(lijst.map(x => x.dag))].sort(); if (dagen.length && !dagen.includes(P.dag)) P.dag = dagen[0];
       teken(); meld(`${lijst.length} ${lijst.length === 1 ? 'training' : 'trainingen'} ingelezen. Klopt er iets niet? Met Ongedaan zet je het terug.`);
+    };
+  };
+  render();
+}
+
+/* [20261127u] meldingen wegklikken */
+function negeer(soort, waarde){
+  bewaarStap();
+  const n = schoonNegeer(P.inst.negeer); n[soort] = [...n[soort], waarde];
+  P.inst.negeer = schoonNegeer(n); P.instGewijzigd = true; planBewaar(); teken();
+}
+/* [20261127u] dag kopiëren naar andere dagen */
+function vensterKopieer(){
+  const van = P.dag, n = P.blokken.filter(b => b.dag === van).length;
+  if (!n) return meld(`Op ${DAGEN[van].toLowerCase()} staat nog niets om te kopiëren.`);
+  const st = { naar: new Set(), modus: 'vervang' };
+  const render = () => {
+    const v = venster(`<h2>${DAGEN[van]} kopiëren</h2>
+      <p class="vp-zacht">Zet de ${n} ${n === 1 ? 'training' : 'trainingen'} van ${DAGEN[van].toLowerCase()} (zelfde tijden, velden en kleedkamers) ook op:</p>
+      <div class="vp-kopdagen">${[1, 2, 3, 4, 5, 6, 7].filter(d => d !== van).map(d => { const m = P.blokken.filter(b => b.dag === d).length;
+        return `<label class="vp-kopdag"><input type="checkbox" data-kopdag="${d}" ${st.naar.has(d) ? 'checked' : ''}><b>${DAGEN[d]}</b><small>${m ? `${m} ${m === 1 ? 'training' : 'trainingen'}` : 'leeg'}</small></label>`; }).join('')}</div>
+      <div class="segment vp-segment" role="group" aria-label="Wat er al staat"><button type="button" data-kopmodus="vervang" aria-pressed="${st.modus === 'vervang'}">Dag vervangen</button><button type="button" data-kopmodus="erbij" aria-pressed="${st.modus === 'erbij'}">Erbij zetten</button></div>
+      <p class="vp-zacht">${st.modus === 'vervang' ? 'Wat al op de gekozen dagen staat, gaat eruit.' : 'Wat al op de gekozen dagen staat, blijft staan. Botsingen zie je daarna bij Controle.'}</p>
+      <div class="vp-voet"><button type="button" class="knop licht" data-dicht>Annuleren</button><button type="button" class="knop fluo" data-kopok ${st.naar.size ? '' : 'disabled'}>${st.naar.size ? `Kopieer naar ${st.naar.size} ${st.naar.size === 1 ? 'dag' : 'dagen'}` : 'Kies een dag'}</button></div>`);
+    v.querySelector('[data-dicht]').onclick = sluitVenster;
+    v.querySelectorAll('[data-kopdag]').forEach(x => x.onchange = () => { const d = +x.dataset.kopdag; x.checked ? st.naar.add(d) : st.naar.delete(d); render(); });
+    v.querySelectorAll('[data-kopmodus]').forEach(x => x.onclick = () => { st.modus = x.dataset.kopmodus; render(); });
+    v.querySelector('[data-kopok]').onclick = () => {
+      bewaarStap();
+      const r = kopieerDag(P.blokken, van, [...st.naar], st.modus, nieuwId);
+      P.blokken = schoonRooster(r.rooster); sluitVenster(); planBewaar(); teken();
+      meld(`${r.n} ${r.n === 1 ? 'training' : 'trainingen'} gekopieerd naar ${[...st.naar].sort().map(d => DAGEN[d].toLowerCase()).join(', ')}. Met Ongedaan zet je het terug.`);
     };
   };
   render();
@@ -1365,6 +1409,15 @@ html.vp-open{overflow:hidden}
 .vp-mld{display:flex;gap:8px;padding:8px 0;border-top:1px solid var(--hair)}
 .vp-mld .ic{margin-top:2px}.vp-mld.fout .ic{color:var(--uit)}.vp-mld.warn .ic{color:var(--warn)}
 .vp-mld small{font-size:var(--t-2xs);color:var(--ink-2)}
+.vp-mld-knoppen .vp-negeer{color:var(--ink-2)}
+.vp-negeerbalk{display:flex;flex-direction:column;gap:6px;padding:8px 10px;margin:6px 0;border-radius:var(--r-s);background:color-mix(in srgb,var(--warn) 12%,var(--surface-2))}
+.vp-negeerbalk p{margin:0;font-size:var(--t-xs)}.vp-negeerbalk .knop{align-self:flex-start}
+.vp-genegeerd{font-size:var(--t-xs);margin:4px 0}
+.vp-link{background:none;border:0;padding:0;color:var(--accent);text-decoration:underline;font:inherit;cursor:pointer}
+.vp-kopieer{flex-direction:row!important;gap:6px}.vp-kopieer:disabled{opacity:.45}
+.vp-kopdagen{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;margin:8px 0}
+.vp-kopdag{display:grid;grid-template-columns:auto 1fr;column-gap:8px;align-items:center;padding:8px 10px;border-radius:var(--r-s);background:var(--surface-2);cursor:pointer}
+.vp-kopdag input{grid-row:span 2}.vp-kopdag b{font-family:var(--font-display);text-transform:uppercase}.vp-kopdag small{color:var(--ink-2);font-size:var(--t-2xs)}
 .vp-mld p{margin:2px 0 6px;font-size:var(--t-sm)}
 .vp-mld-knoppen{display:flex;gap:6px;flex-wrap:wrap}
 .vp-x{width:36px;height:36px;border-radius:50%;background:var(--surface-2);font-size:20px;color:var(--ink)}

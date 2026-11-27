@@ -148,10 +148,7 @@ export function controleer(rooster, ctx, dagen = [1, 2, 3, 4, 5, 6, 7]){
   const V = id => ctx.velden?.[id] || { naam: 'Onbekend veld', licht: true };
   const vakken = id => vakkenVan(ctx.inst?.[id]);
   const kkNaam = id => (ctx.kleedkamers || []).find(k => k.id === id)?.naam || 'Kleedkamer';
-  const voeg = (soort, dag, ids, tekst, fix) => {
-    uit.push({ soort, dag, ids, tekst, fix });
-    ids.forEach(id => { if (soort === 'fout' || !status[id]) status[id] = soort === 'fout' ? 'botsing' : 'waarsch'; });
-  };
+  const voeg = (soort, dag, ids, tekst, fix, sleutel, wie) => { uit.push({ soort, dag, ids, tekst, fix, sleutel, wie }); };
   for (const d of dagen){
     const dag = rooster.filter(b => b.dag === d);
     for (let i = 0; i < dag.length; i++) for (let j = i + 1; j < dag.length; j++){
@@ -162,23 +159,47 @@ export function controleer(rooster, ctx, dagen = [1, 2, 3, 4, 5, 6, 7]){
       const samen = (a.kk || []).filter(k => (b.kk || []).includes(k));
       if (samen.length && overlapt(a.start - KK_VOOR, a.eind + KK_NA, b.start - KK_VOOR, b.eind + KK_NA))
         voeg('fout', d, [a.id, b.id], `${kkNaam(samen[0])} is dubbel: ${T(a.team).naam} en ${T(b.team).naam}.`, { soort: 'kk', id: b.id });
-      if (a.team === b.team) voeg('warn', d, [a.id, b.id], `${T(a.team).naam} traint twee keer op dezelfde dag.`);
+      if (a.team === b.team) voeg('warn', d, [a.id, b.id], `${T(a.team).naam} traint twee keer op dezelfde dag.`, undefined, `twee:${d}:${a.team}`);
       else if (tijd){
         const ca = T(a.team).coaches || [], cb = T(b.team).coaches || [];
         const wie = ca.find(u => cb.includes(u));
-        if (wie) voeg('warn', d, [a.id, b.id], `${T(a.team).coachNamen?.[wie] || 'Een trainer'} traint ${T(a.team).naam} en ${T(b.team).naam} tegelijk.`);
+        if (wie) voeg('warn', d, [a.id, b.id], `${T(a.team).coachNamen?.[wie] || 'Een trainer'} traint ${T(a.team).naam} en ${T(b.team).naam} tegelijk.`, undefined,
+          `coach:${d}:${[a.team, b.team].sort().join('+')}:${wie}`, { uid: wie, naam: T(a.team).coachNamen?.[wie] || 'Een trainer' });
       }
     }
     for (const b of dag){
       const t = T(b.team), v = V(b.veld), k = vakUit(vakken(b.veld), b.vak);
-      if (t.bouw === 'onder' && b.eind > ONDER_TOT) voeg('warn', d, [b.id], `${t.naam} (onderbouw) traint tot ${naarTijd(b.eind)}. Advies: uiterlijk ${naarTijd(ONDER_TOT)} klaar.`);
-      if (v.licht === false && b.eind > DONKER) voeg('warn', d, [b.id], `${v.naam} heeft geen licht en ${t.naam} traint tot ${naarTijd(b.eind)}. In de winter is het om 17:00 donker.`, { soort: 'licht', id: b.id });
+      if (t.bouw === 'onder' && b.eind > ONDER_TOT) voeg('warn', d, [b.id], `${t.naam} (onderbouw) traint tot ${naarTijd(b.eind)}. Advies: uiterlijk ${naarTijd(ONDER_TOT)} klaar.`, undefined, `onder:${d}:${b.team}`);
+      if (v.licht === false && b.eind > DONKER) voeg('warn', d, [b.id], `${v.naam} heeft geen licht en ${t.naam} traint tot ${naarTijd(b.eind)}. In de winter is het om 17:00 donker.`, { soort: 'licht', id: b.id }, `licht:${d}:${b.team}`);
       const nodig = NODIG[t.maat] || .25;
-      if (deelVan(k) < nodig - EPS) voeg('warn', d, [b.id], `${t.naam} heeft een ${MAAT_NAAM[t.maat]} nodig en staat op ${k.naam.toLowerCase()} (${deelTekst(deelVan(k))}).`, { soort: 'vak', id: b.id });
-      if ((ctx.kleedkamers || []).length && !(b.kk || []).length) voeg('warn', d, [b.id], `${t.naam} heeft nog geen kleedkamer.`, { soort: 'kk', id: b.id });
+      if (deelVan(k) < nodig - EPS) voeg('warn', d, [b.id], `${t.naam} heeft een ${MAAT_NAAM[t.maat]} nodig en staat op ${k.naam.toLowerCase()} (${deelTekst(deelVan(k))}).`, { soort: 'vak', id: b.id }, `vak:${d}:${b.team}`);
+      if ((ctx.kleedkamers || []).length && !(b.kk || []).length) voeg('warn', d, [b.id], `${t.naam} heeft nog geen kleedkamer.`, { soort: 'kk', id: b.id }, `geenkk:${d}:${b.team}`);
     }
   }
-  return { lijst: uit, status };
+  /* [20261127u] weggeklikte waarschuwingen (per melding of alle 'tegelijk'-meldingen van één trainer); botsingen blijven altijd staan */
+  const trainers = new Set(ctx.negeer?.trainers || []), meldingen = new Set(ctx.negeer?.meldingen || []);
+  const lijst = uit.filter(x => x.soort === 'fout' || !((x.wie && trainers.has(x.wie.uid)) || (x.sleutel && meldingen.has(x.sleutel))));
+  lijst.forEach(x => x.ids.forEach(id => { if (x.soort === 'fout' || !status[id]) status[id] = x.soort === 'fout' ? 'botsing' : 'waarsch'; }));
+  return { lijst, status, genegeerd: uit.length - lijst.length };
+}
+
+/* Wat de club heeft weggeklikt: { trainers: [uid], meldingen: [sleutel] } */
+export function schoonNegeer(n){
+  const lijst = (a, max, lang) => [...new Set((Array.isArray(a) ? a : []).map(String).filter(x => x && x.length <= lang && !/[\s<>]/.test(x)))].slice(0, max);
+  return { trainers: lijst(n?.trainers, 100, 128), meldingen: lijst(n?.meldingen, 1000, 200) };
+}
+
+/* [20261127u] Een dag kopiëren naar andere dagen. modus 'vervang' maakt de doeldag eerst leeg, 'erbij' voegt toe.
+   Uit: nieuw rooster + aantal gekopieerde blokken. */
+export function kopieerDag(rooster, van, naar, modus, maakId){
+  const bron = rooster.filter(b => b.dag === van), doelen = [...new Set(naar)].filter(d => d >= 1 && d <= 7 && d !== van);
+  let uit = modus === 'vervang' ? rooster.filter(b => !doelen.includes(b.dag)) : [...rooster];
+  let n = 0;
+  for (const d of doelen) for (const b of bron){
+    if (uit.length >= MAX_BLOKKEN) break;
+    uit.push({ ...b, kk: [...(b.kk || [])], id: maakId(), dag: d }); n++;
+  }
+  return { rooster: uit, n };
 }
 
 /* Teams die nog niet vaak genoeg ingepland staan. `per` = gewenst aantal trainingen per week. */

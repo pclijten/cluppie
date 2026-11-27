@@ -186,3 +186,26 @@ Algemene opmerking zonder team`, ctx);
   g(t.gevonden.map(x => [x.team, x.veld, x.vak, x.kk]), [['t5', 'v2', 'av', ['k3']], ['t3', 'v1', 'b', ['k1']]]);
   console.log(`veldplanner inlezen: ${m} controles geslaagd`);
 }
+
+/* meldingen wegklikken en dag kopiëren [20261127u] */
+{
+  let m = 0; const g = (a, b, t) => { assert.deepEqual(a, b, t); m++; };
+  const ctx = { teams: { t1: { naam: 'O11-1', bouw: 'boven', maat: 'kwart', coaches: ['p'], coachNamen: { p: 'Paul' } }, t2: { naam: 'O15-1', bouw: 'boven', maat: 'kwart', coaches: ['p'], coachNamen: { p: 'Paul' } } },
+    velden: { v1: { naam: 'Veld 1', licht: true }, v2: { naam: 'Veld 2', licht: true } }, inst: {}, kleedkamers: [] };
+  const r = [{ id: 'a', team: 't1', dag: 1, start: 1080, eind: 1155, veld: 'v1', vak: 'h', kk: [] }, { id: 'b', team: 't2', dag: 1, start: 1080, eind: 1155, veld: 'v2', vak: 'h', kk: [] }];
+  const c0 = V.controleer(r, ctx);
+  g(c0.lijst.map(x => [x.sleutel, x.wie?.uid]), [['coach:1:t1+t2:p', 'p']]);
+  g(c0.status, { a: 'waarsch', b: 'waarsch' });
+  const c1 = V.controleer(r, { ...ctx, negeer: { trainers: ['p'], meldingen: [] } });
+  g([c1.lijst.length, c1.genegeerd, c1.status], [0, 1, {}]);
+  g(V.controleer(r, { ...ctx, negeer: { trainers: [], meldingen: ['coach:1:t1+t2:p'] } }).lijst.length, 0);
+  /* botsing blijft, ook als de sleutel zou passen */
+  const bots = [{ ...r[0] }, { ...r[1], veld: 'v1' }];
+  g(V.controleer(bots, { ...ctx, negeer: { trainers: ['p'], meldingen: [] } }).lijst.map(x => x.soort), ['fout']);
+  g(V.schoonNegeer({ trainers: ['p', 'p', '', 'a b'], meldingen: 'x' }), { trainers: ['p'], meldingen: [] });
+  let i = 0; const id = () => 'n' + (++i);
+  const k = V.kopieerDag([...r, { id: 'c', team: 't1', dag: 3, start: 1000, eind: 1075, veld: 'v1', vak: 'h', kk: ['k1'] }], 1, [3, 4, 1], 'vervang', id);
+  g([k.n, k.rooster.map(b => [b.id, b.dag]).sort()], [4, [['a', 1], ['b', 1], ['n1', 3], ['n2', 3], ['n3', 4], ['n4', 4]]]);
+  g(V.kopieerDag(r, 1, [2], 'erbij', id).rooster.length, 4);
+  console.log(`veldplanner wegklikken en kopiëren: ${m} controles geslaagd`);
+}
