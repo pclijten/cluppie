@@ -21,25 +21,25 @@
    wordt ÉÉN keer per team opgehaald bij het openen en daarna door alle
    schermen hergebruikt (huidigeContext.data) — geen dubbele reads. */
 import { teamsOpId } from './teams-ophalen.js?v=20261011g';
-import { pasClubConfigToe } from './clubconfig.js?v=20261128o';
-import { S, esc, openModal, sluitModal, isBeheerder, terugLaag } from './state.js?v=20261128o';
+import { pasClubConfigToe } from './clubconfig.js?v=20261128p';
+import { S, esc, openModal, sluitModal, isBeheerder, terugLaag } from './state.js?v=20261128p';
 import {
   db, collection, doc, getDoc, getDocs, query, where
 } from './firebase.js?v=20261011g';
 /* [20261120m] Rechtstreeks uit de Firebase-SDK (zelfde URL als firebase.js, dus
    dezelfde Firestore-instantie); firebase.js zelf blijft ongewijzigd. */
 import { getDocFromCache, getDocsFromCache } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import { BOUWEN, bouwNaam, SKILLS, SEIZOEN_FALLBACK, catLabel, TEAM_TAGS } from './config.js?v=20261128o';
+import { BOUWEN, bouwNaam, SKILLS, SEIZOEN_FALLBACK, catLabel, TEAM_TAGS } from './config.js?v=20261128p';
 import { TE_GROEPEN, TE_NIV, TE_FOCUS_LADDER, TE_STEM, teDoelIco, teVervolg, teLeeftijd, teCriteriaVoor, teScores, teIsNieuw, teGroepWaarden, teKleur, teCijfer, teZinnen } from './team-evaluatie-criteria.js?v=20261127p';
 import { ico } from './icons.js?v=20261127b';
-import { trekUitleningIn, definitiefOverzetten, wijzigUitlening } from './teams-spelers.js?v=20261128o';
-import { openUitleenForm } from './uitleen-form.js?v=20261128o';
+import { trekUitleningIn, definitiefOverzetten, wijzigUitlening } from './teams-spelers.js?v=20261128p';
+import { openUitleenForm } from './uitleen-form.js?v=20261128p';
 import { vandaagLokaal, plusDagen, leenActief, leenStatus, leenSoortLabel, leenOmschrijving } from './uitleen-regels.js?v=20261127p';
-import { telGebruik } from './tracker.js?v=20261128o';
-import { analyseWedstrijd } from './analyse.js?v=20261128o';
+import { telGebruik } from './tracker.js?v=20261128p';
+import { analyseWedstrijd } from './analyse.js?v=20261128p';
 import { opkomstVoor, MIN_OPKOMST_TRAININGEN } from './opkomst.js?v=20260922c';
-import { rondesVan, rondeStatusTeam } from './evaluatierondes.js?v=20261128o';
-import { priveBeoordelingenVan } from './beoordelingen-prive.js?v=20261128o';
+import { rondesVan, rondeStatusTeam } from './evaluatierondes.js?v=20261128p';
+import { priveBeoordelingenVan } from './beoordelingen-prive.js?v=20261128p';
 
 /* [20260929a] Voortgang van de "verplichte" evaluatie per team: de lopende
    evaluatieronde van de club als die er is, anders (zoals voorheen) de
@@ -220,7 +220,7 @@ export async function openBouwHub(clubId, bouw, isHerbezoek){
      lijn met de desktop. Lukt het laden daarvan niet, dan valt hij terug op
      het oude overlay-dashboard hieronder. */
   if (!isHerbezoek && !window.matchMedia('(min-width:1100px) and (min-height:520px)').matches){
-    try { const m = await import('./mobiel-bouw.js?v=20261128o'); await m.openMobielBouw(clubId, bouw); return; }
+    try { const m = await import('./mobiel-bouw.js?v=20261128p'); await m.openMobielBouw(clubId, bouw); return; }
     catch(e){ console.warn('[Cluppie] mobiele bouw-omgeving niet geladen, terug naar het oude dashboard', e); }
   }
   const el = bouwLaag();
@@ -760,7 +760,7 @@ function renderDashboard(){
             <span class="u-t-2xs u-zacht">${teStats.count}× ›</span>
           </div>
           <div class="u-mt-2xs te-gchips">${groepChips(teStats.groepen, teStats.lft)}</div>
-          <div class="u-t-xs u-zacht u-mt-2xs">laatste${teStats.laatsteTegenstander?' vs '+esc(teStats.laatsteTegenstander):''}${teStats.focus ? `<span class="sep" aria-hidden="true"></span>${teDoelIco(13)} ${esc(teStats.focus.tekst)}: <b style="color:var(--n${teStats.focus.niveau})">${esc(TE_NIV[teStats.focus.niveau])}</b>` : ''}</div>
+          <div class="u-t-xs u-zacht u-mt-2xs">laatste${teStats.laatsteTegenstander?' vs '+esc(teStats.laatsteTegenstander):''}${teStats.focus ? `<span class="sep" aria-hidden="true"></span>${teDoelIco(13)} ${esc(teStats.focus.tekst)}: <b style="color:color-mix(in srgb,var(--n${teStats.focus.niveau}) 55%,var(--ink))">${esc(TE_NIV[teStats.focus.niveau])}</b>` : ''}</div>
         </button>` : `
         <div class="u-mt-sm u-zacht u-t-xs" style="padding-top:var(--space-sm);border-top:1px solid var(--surface-2)">Nog geen teamevaluaties na een wedstrijd</div>`) : '';
 
@@ -891,7 +891,7 @@ function renderTeamsScherm(){
   inhoud.querySelectorAll('[data-bh-open-team]').forEach(b => {
     b.onclick = async () => {
       sluitBouwHub(); toonTerugPil();
-      const m = await import('./teams.js?v=20261128o');
+      const m = await import('./teams.js?v=20261128p');
       m.openTeam(b.dataset.bhOpenTeam);
     };
   });
@@ -1267,7 +1267,7 @@ function renderTeamEvaluatieDetail(teamId, ev){
       return items.length ? `<div class="te-sam-groep"><div class="te-sam-gn"><span class="gs-stip" style="background:${g.kleur}"></span>${esc(g.naam)}</div>
         ${items.map(c => { const n = Math.round(sc[c.id]); return `<div class="te-sam-rij"><span class="nm">${esc(c.naam)}</span>${chip(n)}</div>${nieuw ? `<div class="te-sam-zin">${esc(teZinnen(c, lft)[n - 1] || '')}</div>` : ''}`; }).join('')}</div>` : ''; }).join('') || '<p class="u-t-sm u-zacht">Geen onderdelen ingevuld.</p>'}</div>
     ${vv ? `<div class="sectie-kop">Vervolg</div><div class="kaart u-t-sm">${esc(vv.titel)}</div>` : ''}
-    ${sp ? `<div class="sectie-kop">Spelers</div><div class="kaart u-t-sm">${TE_STEM.map(o => `<span class="te-stemtel" style="color:${o.kleur}">${ico(o.ico, 15)}${sp[o.id] || 0}</span>`).join(' ')}</div>` : ''}
+    ${sp ? `<div class="sectie-kop">Spelers</div><div class="kaart u-t-sm">${TE_STEM.map(o => `<span class="te-stemtel" style="color:color-mix(in srgb,${o.kleur} 55%,var(--ink))">${ico(o.ico, 15)}${sp[o.id] || 0}</span>`).join(' ')}</div>` : ''}
     ${ev.tags?.length ? `<div class="sectie-kop">Opvallend</div><div class="kaart" style="display:flex;flex-wrap:wrap;gap:var(--space-xs)">${ev.tags.map(t => `<span class="tag aan">${esc(TEAM_TAGS.find(x => x.id === t)?.label || t)}</span>`).join('')}</div>` : ''}
     ${ev.opvallend ? `<div class="sectie-kop">Opvallend</div><div class="kaart u-t-sm">${esc(ev.opvallend)}</div>` : ''}
     ${ev.notitieGoed ? `<div class="sectie-kop">Wat ging het beste?</div><div class="kaart u-t-sm">${esc(ev.notitieGoed)}</div>` : ''}

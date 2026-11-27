@@ -5,9 +5,9 @@
    Losse module (i.p.v. in club.js) omdat de Excel-export een eigen lui geladen
    library (ExcelJS via CDN) nodig heeft die de rest van de app nooit gebruikt. */
 import { db, collection, getDocs, query, where } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal } from './state.js?v=20261128o';
-import { SKILLS } from './config.js?v=20261128o';
-import { priveBeoordelingenVan } from './beoordelingen-prive.js?v=20261128o';
+import { S, esc, meld, openModal } from './state.js?v=20261128p';
+import { SKILLS } from './config.js?v=20261128p';
+import { priveBeoordelingenVan } from './beoordelingen-prive.js?v=20261128p';
 import { TE_CRITERIA, TE_NIV, teLeeftijd, teZichtbaar, teScores, teCritGemiddelden, teLaagste, teIsNieuw } from './team-evaluatie-criteria.js?v=20261127p';
 /* [20261119c] Kolommen = de onderdelen van de nieuwe teamevaluatie. Per team
    tellen alleen de onderdelen die bij de leeftijd horen; oude evaluaties
@@ -121,7 +121,7 @@ function htmlClubEvalTeams(teamsData){
   const heatTabel = `
     <div class="heat-wrap">
       <table class="heat-tabel">
-        <tr><th class="teamkop">Team</th>${TE_CRITERIA.map(c => `<th style="color:${c.groepKleur}">${esc(c.kort)}</th>`).join('')}<th>Trend</th><th>Blokdoel</th></tr>
+        <tr><th class="teamkop">Team</th>${TE_CRITERIA.map(c => `<th style="color:color-mix(in srgb,${c.groepKleur} 55%,var(--ink))">${esc(c.kort)}</th>`).join('')}<th>Trend</th><th>Blokdoel</th></tr>
         ${rijen.map(r => `
           <tr>
             <td class="teamnaam">${esc(r.team.naam)}<span class="n">${r.aantal} wedstr.</span></td>

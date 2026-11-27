@@ -21,7 +21,7 @@
    Deze module is een blad: ze importeert alleen icons.js en config.js, zodat
    een wijziging hier geen grote versie-cascade geeft. */
 import { ico } from './icons.js?v=20261127b';
-import { SKILLS, leeftijdVanCategorie } from './config.js?v=20261128o';
+import { SKILLS, leeftijdVanCategorie } from './config.js?v=20261128p';
 import { teRadarSvg } from './team-evaluatie-criteria.js?v=20261127p';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -161,7 +161,7 @@ export function htmlNaslagLink(compact = false){
     <span class="vb-pijl">${ico('navigation-forward', 16)}</span></button>`;
 }
 export function htmlSnelAnker(n){
-  return n ? `<b style="color:var(--n${n})">${NIV_LABEL[n]}</b> · ${SNEL_LADDER[n]}` : '';
+  return n ? `<b style="color:color-mix(in srgb,var(--n${n}) 55%,var(--ink))">${NIV_LABEL[n]}</b> · ${SNEL_LADDER[n]}` : '';
 }
 
 /* Formulier met de 5 domeinkaarten. `waarden` = {criteria, notities, oud} */
@@ -176,7 +176,7 @@ export function htmlVolledigFormulier({ lft, waarden, alleenLezen = false }){
         <button type="button" class="vb-info" data-vb-info="dom" data-dom="${d.id}" aria-label="Uitleg ${esc(d.naam)}">i</button>
         <span class="vb-aantal">${items.length}</span>
       </div>
-      ${oud[d.id] && !items.some(x => criteria[critSleutel(d.id, x.i)]) ? `<div class="vb-oud">Eerder ingevuld als domeinscore: <b style="color:var(--n${oud[d.id]})">${NIV_LABEL[oud[d.id]]}</b>. Vul de criteria in om die te vervangen.</div>` : ''}
+      ${oud[d.id] && !items.some(x => criteria[critSleutel(d.id, x.i)]) ? `<div class="vb-oud">Eerder ingevuld als domeinscore: <b style="color:color-mix(in srgb,var(--n${oud[d.id]}) 55%,var(--ink))">${NIV_LABEL[oud[d.id]]}</b>. Vul de criteria in om die te vervangen.</div>` : ''}
       ${items.map(({ c, i }) => {
         const k = critSleutel(d.id, i), gekozen = criteria[k] || 0, t = gekozen ? ladderVan(d.id).treden[gekozen] : null;
         return `<div class="vb-crit">
@@ -185,7 +185,7 @@ export function htmlVolledigFormulier({ lft, waarden, alleenLezen = false }){
           <div class="vb-schaal" data-vb-crit="${k}" data-dom="${d.id}" role="radiogroup" aria-label="${esc(c.naam)}">
             ${[1,2,3,4,5].map(n => `<button type="button" data-niv="${n}" class="kn${n}${gekozen === n ? ' gekozen' : ''}" aria-label="${NIV_LABEL[n]}"${alleenLezen ? ' disabled' : ''}></button>`).join('')}
           </div>
-          <div class="vb-anker${t ? ' toon' : ''}">${t ? `<b style="color:var(--n${gekozen})">${NIV_LABEL[gekozen]}</b> · ${t.tekst}` : ''}</div>
+          <div class="vb-anker${t ? ' toon' : ''}">${t ? `<b style="color:color-mix(in srgb,var(--n${gekozen}) 55%,var(--ink))">${NIV_LABEL[gekozen]}</b> · ${t.tekst}` : ''}</div>
         </div>`;
       }).join('')}
       <textarea class="invoer" data-vb-not="${d.id}" rows="2" placeholder="Toelichting ${esc(d.naam.toLowerCase())}…"${alleenLezen ? ' readonly' : ''}>${esc(notities[d.id] || '')}</textarea>
@@ -231,7 +231,7 @@ export function koppelVolledigFormulier(root, { lft, waarden, alleenLezen = fals
       if (opnieuw) delete waarden.criteria[k]; else waarden.criteria[k] = n;
       sch.querySelectorAll('[data-niv]').forEach(x => x.classList.toggle('gekozen', !opnieuw && x === b));
       const anker = sch.nextElementSibling, t = ladderVan(sch.dataset.dom).treden[n];
-      anker.innerHTML = opnieuw ? '' : `<b style="color:var(--n${n})">${NIV_LABEL[n]}</b> · ${t.tekst}`;
+      anker.innerHTML = opnieuw ? '' : `<b style="color:color-mix(in srgb,var(--n${n}) 55%,var(--ink))">${NIV_LABEL[n]}</b> · ${t.tekst}`;
       anker.classList.toggle('toon', !opnieuw);
     });
   });
@@ -483,7 +483,7 @@ function srInhoud(id){
   const doms = SKILLS.map((s, i) => {
     const d = nu[i] != null && vgl?.[i] != null ? nu[i] - vgl[i] : null;
     const pijl = d == null ? '' : Math.abs(d) < 0.05 ? '<em class="gelijk">=</em>' : `<em class="${d > 0 ? 'op' : 'neer'}">${d > 0 ? '+' : '−'}${nlCijfer(Math.abs(d))}</em>`;
-    return `<button type="button" data-sr-dom="${i}" class="${st.open === i ? 'aan' : ''}"><small>${s.id}</small><b style="color:${s.kleur}">${nlCijfer(nu[i])}</b>${pijl}</button>`;
+    return `<button type="button" data-sr-dom="${i}" class="${st.open === i ? 'aan' : ''}"><small>${s.id}</small><b style="color:color-mix(in srgb,${s.kleur} 55%,var(--ink))">${nlCijfer(nu[i])}</b>${pijl}</button>`;
   }).join('');
   let detail = '';
   if (st.open != null){
@@ -493,7 +493,7 @@ function srInhoud(id){
       const chip = n => n ? `<span class="vb-chip kn${n}">${NIV_LABEL[n]}</span>` : '<span class="vb-chip te-cl">–</span>';
       return `<div class="sr-crit"><span class="nm">${esc(c.naam)}</span><span class="van">${vb ? `${chip(a)}<i>→</i>` : ''}${chip(b)}</span></div>`;
     }).join('');
-    detail = `<div class="sr-detail"><div class="vb-veldlabel" style="color:${SKILLS[st.open].kleur}">${d.id} · ${esc(d.naam)}</div>${rijen}
+    detail = `<div class="sr-detail"><div class="vb-veldlabel" style="color:color-mix(in srgb,${SKILLS[st.open].kleur} 55%,var(--ink))">${d.id} · ${esc(d.naam)}</div>${rijen}
       ${!nuB.criteria ? '<p class="sr-hint">Deze beoordeling is nog per domein ingevuld; er zijn geen losse criteria.</p>' : ''}
       ${keuze?.id === 'team' ? '<p class="sr-hint">Bij “Team” is er geen eigen vorige stand. Kies Vorige of Begin om de groei per criterium te zien.</p>' : ''}</div>`;
   }
