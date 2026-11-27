@@ -7,7 +7,7 @@
    Importeert niets uit teams.js (geen kringverwijzing): teams.js geeft renderTeam mee aan
    koppelTeamkamer(). state.js is niet aangeraakt. */
 import { db, functions, httpsCallable, doc, collection, addDoc, setDoc, updateDoc, deleteDoc, getDocs, query, where, onSnapshot, Timestamp } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261130e';
+import { S, esc, meld } from './state.js?v=20261130f';
 import * as K from './kamer-logica.js?v=20261127k';
 import { actieveSport } from './sporten.js?v=20261126g';   /* [20261126g] alleen oefenstof van de eigen sport */
 
@@ -64,7 +64,7 @@ async function doeSync(){
   const i = inst();
   if (!i.aan) return;
   if (i.trainingen && mag('trainingen')){
-    const { trainingenPerWeek } = await import('./teams-training.js?v=20261130e');
+    const { trainingenPerWeek } = await import('./teams-training.js?v=20261130f');
     if (S.teamId !== teamId) return;
     const vandaag = K.vandaagIso(), items = {};
     for (const g of trainingenPerWeek().komend) for (const x of g.items){
@@ -74,7 +74,7 @@ async function doeSync(){
     await lever(teamId, 'trainingen', { items });
   }
   if (i.stats.aan && mag('stats') && (S.spelers || []).length){
-    const [A, O] = await Promise.all([import('./analyse.js?v=20261130e'), import('./opkomst.js?v=20260922c')]);
+    const [A, O] = await Promise.all([import('./analyse.js?v=20261130f'), import('./opkomst.js?v=20260922c')]);
     if (S.teamId !== teamId) return;
     const sz = S.huidigSeizoen, ditSeizoen = (x) => !sz || !x.seizoen || x.seizoen === sz;
     const spelers = K.statsVoorOuders(eigenSpelers(), (S.wedstrijden || []).filter(ditSeizoen), (S.presentie || []).filter(ditSeizoen),
