@@ -12,10 +12,10 @@ import {
   auth, db, functions, httpsCallable,
   collection, doc, getDoc, getDocs, query, where
 } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261130c';
+import { S, esc, meld, openModal, sluitModal, isPlatformBeheerder } from './state.js?v=20261130d';
 import { stuurVerificatieMail } from './verificatie.js?v=20261020e';
-import { bewaar } from './club-instellingen.js?v=20261130c';
-import { effectief } from './clubconfig.js?v=20261130c';
+import { bewaar } from './club-instellingen.js?v=20261130d';
+import { effectief } from './clubconfig.js?v=20261130d';
 
 export const PRIVACY_VERSIE = '2026-10';
 const roep = (naam, data) => httpsCallable(functions, naam)(data || {}).then(r => r.data);
@@ -111,6 +111,23 @@ export async function laadMijnAanvragen(container){
   } catch(e){ container.innerHTML = ''; }
 }
 
+/* [20261130c] keuzepaneel bij een team-aanvraag: aan welk bestaand clubteam koppelen we de coach?
+   Een team met dezelfde naam staat vooraan en is al gekozen. */
+const normTeam = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+function koppelPaneel(a, teams){
+  const zelfde = teams.filter(t => normTeam(t.naam) && normTeam(t.naam) === normTeam(a.teamNaam));
+  const rest = teams.filter(t => !zelfde.includes(t)).sort((x, y) => (x.naam || '').localeCompare(y.naam || '', 'nl', { numeric: true }));
+  const opt = t => `<option value="${esc(t.id)}">${esc(t.naam || t.id)}</option>`;
+  return `<div data-ar-paneel="${esc(a.uid)}" ${zelfde.length ? '' : 'hidden'} style="flex-basis:100%;margin-top:8px;padding:10px;border:1px solid var(--lijn, rgba(127,127,127,.3));border-radius:10px">
+    <div class="cb-uitleg" style="margin:0 0 8px">${zelfde.length ? `<b>${esc(a.teamNaam)}</b> bestaat al in de club. ` : ''}Maak ${esc(a.naam)} coach van een bestaand team in plaats van een tweede team toe te voegen. Het eigen team van ${esc(a.naam)} blijft los bestaan en komt niet in de club.</div>
+    <div class="rij" style="gap:8px;flex-wrap:wrap;align-items:center">
+      <select class="invoer" style="flex:1;min-width:150px">${zelfde.length ? '' : '<option value="">Kies team…</option>'}${zelfde.map(opt).join('')}${rest.map(opt).join('')}</select>
+      <button class="knop vol klein" data-ar-koppel="${esc(a.uid)}">Coach van dit team maken</button>
+    </div>
+    <label class="ci-schakel" style="margin-top:8px"><input type="checkbox"><span>Ook spelers uit het eigen team overnemen die nog niet in dit team staan${a.spelers ? ` (eigen team heeft ${a.spelers} spelers)` : ''}</span></label>
+  </div>`;
+}
+
 /* Beheerder/coach: melding bij openstaande aanvragen */
 export async function meldOpenAanvragen(clubId){
   try {
@@ -198,8 +215,10 @@ export async function koppelToegang(v, herteken){
       <div style="flex:1;min-width:150px"><b>${esc(a.naam)}</b><div class="cb-uitleg" style="margin:0">${a.rol === 'team'
         ? `wil team <b>${esc(a.teamNaam || '')}</b>${a.spelers ? ` (${a.spelers} spelers)` : ''} bij de club onderbrengen. Spelers, wedstrijden en trainingen gaan mee; ${esc(a.naam)} wordt coach van dit team.`
         : esc(a.rol === 'trainco' ? 'trainingscoördinator' : (a.teamNaam || 'club'))} · ${datumKort(a.gemaakt)}</div></div>
-      <button class="knop klein" data-ar-goed="${esc(a.uid)}" data-ar-soort="${a.rol === 'trainco' || a.rol === 'team' ? a.rol : ''}">${a.rol === 'team' ? 'Team toevoegen' : 'Goedkeuren'}</button>
+      <button class="knop klein" data-ar-goed="${esc(a.uid)}" data-ar-soort="${a.rol === 'trainco' || a.rol === 'team' ? a.rol : ''}"${a.rol === 'team' && teams.some(t => normTeam(t.naam) && normTeam(t.naam) === normTeam(a.teamNaam)) ? ` data-ar-dubbel="${esc(a.teamNaam)}"` : ''}>${a.rol === 'team' ? 'Als nieuw team toevoegen' : 'Goedkeuren'}</button>
+      ${a.rol === 'team' ? `<button class="knop klein" data-ar-kop="${esc(a.uid)}">Bestaand team</button>` : ''}
       <button class="knop licht klein" data-ar-af="${esc(a.uid)}" data-ar-soort="${a.rol === 'trainco' || a.rol === 'team' ? a.rol : ''}">Afwijzen</button>
+      ${a.rol === 'team' ? koppelPaneel(a, teams) : ''}
     </div>`).join('') : '<p class="cb-uitleg" style="margin:0">Geen openstaande aanvragen.</p>');
 
   /* --- uitnodigingen --- */
@@ -283,8 +302,22 @@ export async function koppelToegang(v, herteken){
   /* een aanmelding als trainingscoördinator heeft een eigen aanvraagdocument */
   /* [20261111b] soort staat op de knop: trainingscoördinator, team koppelen of gewone aanvraag (één persoon kan er meer hebben) */
   const soortVan = b => b.dataset.arSoort ? { soort: b.dataset.arSoort } : {};
-  qa('[data-ar-goed]').forEach(b => b.onclick = () => klaar(() =>
+  qa('[data-ar-goed]').forEach(b => b.onclick = () => (b.dataset.arDubbel && !confirm(`${b.dataset.arDubbel} bestaat al in de club. Toch als tweede team toevoegen?`)) ? null : klaar(() =>
     roep('beoordeelAanvraag', { clubId, uid: b.dataset.arGoed, besluit: 'goed', rol: 'coach', ...soortVan(b) }), b, b.dataset.arSoort === 'team' ? 'Team toegevoegd aan de club' : 'Goedgekeurd'));
+  /* [20261130c] het team van de coach bestaat al in de club: koppel hem aan dat team */
+  qa('[data-ar-kop]').forEach(b => b.onclick = () => {
+    const p = q(`[data-ar-paneel="${CSS.escape(b.dataset.arKop)}"]`); if (p) p.hidden = !p.hidden;
+  });
+  qa('[data-ar-koppel]').forEach(b => b.onclick = () => {
+    const uid = b.dataset.arKoppel, p = q(`[data-ar-paneel="${CSS.escape(uid)}"]`);
+    const doelTeamId = p.querySelector('select').value, spelersMee = p.querySelector('input[type=checkbox]').checked;
+    if (!doelTeamId) return meld('Kies het team');
+    klaar(async () => {
+      const r = await roep('beoordeelAanvraag', { clubId, uid, besluit: 'koppel', soort: 'team', doelTeamId, spelersMee });
+      const d = r || {};
+      meld(`Toegevoegd als coach van ${d.doelNaam || 'het team'}${d.overgenomen ? `, ${d.overgenomen} speler${d.overgenomen === 1 ? '' : 's'} overgenomen` : ''}`);
+    }, b);
+  });
   qa('[data-ar-af]').forEach(b => b.onclick = () => klaar(() => roep('beoordeelAanvraag', { clubId, uid: b.dataset.arAf, besluit: 'af', ...soortVan(b) }), b, 'Afgewezen'));
 
   q('#tgInvMaak').onclick = (e) => klaar(async () => {
@@ -307,7 +340,7 @@ export async function koppelToegang(v, herteken){
     klaar(() => roep('verwijderLid', { clubId, uid: b.dataset.lidWeg }), b, 'Uitgeschreven');
   });
 
-  q('#pvVoLees')?.addEventListener('click', () => import('./club.js?v=20261130c').then(m => m.modalVerwerkersovereenkomst()));
+  q('#pvVoLees')?.addEventListener('click', () => import('./club.js?v=20261130d').then(m => m.modalVerwerkersovereenkomst()));
   q('#pvOpslaan').onclick = (e) => klaar(async () => {
     const wijz = [
       ['privacy.contactNaam', q('#pvNaam').value.trim()], ['privacy.contactEmail', q('#pvMail').value.trim()],

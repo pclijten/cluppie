@@ -4,15 +4,15 @@
    Gegevens: teams/{id}.eigenClub en gebruikers/{uid}/meta/onboarding.snelstart (alleen UI-vlaggen). */
 import { isFirestoreVastgelopen, toonHerlaadBalk } from './firestore-herstel.js?v=20261113a';
 import { db, collection, doc, addDoc, updateDoc, setDoc, getDoc, getDocs, serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, $, $$, esc, meld, teamCode, openModal, sluitModal } from './state.js?v=20261130c';
-import { CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, bouwVanCategorie, catLabel } from './config.js?v=20261130c';
+import { S, $, $$, esc, meld, teamCode, openModal, sluitModal } from './state.js?v=20261130d';
+import { CATEGORIEEN, CATEGORIEEN_MEIDEN, catInfo, bouwVanCategorie, catLabel } from './config.js?v=20261130d';
 import {
   bouwEigenClub, valideerClub, valideerPlaats, standaardTeamNaam, categorieVoor, STANDAARD_CAT,
   eersteStappenStatus, toonEersteStappen, toonWelkomCoach, welkomCoachStatus, isNieuwAccount, toonClubTip,
   deelTekstClub, toonDeelClub, magClubHerkennen,
 } from './snelstart-logica.js?v=20261122a';
-import { koppelClubSuggesties, normNaam } from './clubgids.js?v=20261130c';
-import { laadSoloAI, pasSportToe } from './clubconfig.js?v=20261130c';
+import { koppelClubSuggesties, normNaam } from './clubgids.js?v=20261130d';
+import { laadSoloAI, pasSportToe } from './clubconfig.js?v=20261130d';
 import { STANDAARD_SPORT, meerdereSporten, sportWoord, openSporten, periodeNaamVoor } from './sporten.js?v=20261126g';   /* [20261125x] sportprofiel; [20261125y] woorden */
 
 /* ---------- Plaats opzoeken (Open-Meteo, zonder sleutel) ---------- */
@@ -143,7 +143,7 @@ export async function openSnelstart(){
       <button class="knop vol" id="ssVerder">Laten we beginnen</button>
       <button class="knop licht vol" id="ssRond" style="margin-top:8px">Liever eerst een rondleiding</button>`);
     $('#ssVerder').onclick = tekenStap2;
-    $('#ssRond').onclick = () => { sluitModal(); import('./onboarding.js?v=20261130c').then(m => m.startOnboarding(true)); };
+    $('#ssRond').onclick = () => { sluitModal(); import('./onboarding.js?v=20261130d').then(m => m.startOnboarding(true)); };
   };
 
   const tekenStap2 = () => {
@@ -244,7 +244,7 @@ export async function openSnelstart(){
           eigenClub: st.club, sport: st.sport, gemaakt: serverTimestamp(),
         });
         sluitModal();
-        import('./teams.js?v=20261130c').then(m => m.openTeam(ref.id));
+        import('./teams.js?v=20261130d').then(m => m.openTeam(ref.id));
       } catch (e){
         console.error(e); knop.disabled = false;
         if (isFirestoreVastgelopen(e)){ toonHerlaadBalk(); meld('De verbinding is vastgelopen. Herlaad de app en maak je team opnieuw aan.'); }
@@ -271,7 +271,7 @@ export function modalClubPlaats(){
       t.eigenClub = eigenClub;
       vergeetHerkenning(t.id);   /* andere club ingevuld: opnieuw kijken of die al meedoet */
       sluitModal(); meld('Opgeslagen');
-      import('./teams.js?v=20261130c').then(m => m.renderTeam && m.renderTeam());
+      import('./teams.js?v=20261130d').then(m => m.renderTeam && m.renderTeam());
     } catch (err){ console.error(err); meld('Opslaan mislukt, probeer het nog eens'); }
   };
 }
@@ -329,7 +329,7 @@ export async function koppelEersteStappen(v, { zetTeamTab } = {}){
   el.innerHTML = html;
   koppelKnoppen(el, team, teamId, () => koppelEersteStappen(v, { zetTeamTab }));
   el.querySelectorAll('[data-ss-tab]').forEach(b => b.onclick = () => zetTeamTab && zetTeamTab(b.dataset.ssTab));
-  const r = el.querySelector('#ssRondleiding'); if (r) r.onclick = () => import('./onboarding.js?v=20261130c').then(m => m.startOnboarding(true));
+  const r = el.querySelector('#ssRondleiding'); if (r) r.onclick = () => import('./onboarding.js?v=20261130d').then(m => m.startOnboarding(true));
   const w = el.querySelector('#ssVerberg'); if (w) w.onclick = async () => { el.innerHTML = ''; await zetVlag('eersteStappenWeg', true); };
   const cv = el.querySelector('#ssClubVul'); if (cv) cv.onclick = modalClubPlaats;
   const opnieuw = () => koppelEersteStappen(v, { zetTeamTab });
@@ -343,7 +343,7 @@ export async function koppelEersteStappen(v, { zetTeamTab } = {}){
    Geeft false terug als de trainer het deelvenster zelf sluit. */
 async function deelMetClub(){
   const tekst = deelTekstClub();
-  import('./tracker.js?v=20261130c').then(m => m.telGebruik('deel_club')).catch(() => {});
+  import('./tracker.js?v=20261130d').then(m => m.telGebruik('deel_club')).catch(() => {});
   if (navigator.share){
     try { await navigator.share({ text: tekst }); return true; }
     catch (e){ if (e && e.name === 'AbortError') return false; }
@@ -388,7 +388,7 @@ function koppelWelkomCoach(v, el, team, teamId, vl, { zetTeamTab } = {}){
       <span class="sn-vink" aria-hidden="true">${s.klaar ? '✓' : ''}</span><span class="sn-tekst"><b>${esc(s.titel)}</b><small>${esc(s.uitleg)}</small></span></button>`).join('')}
     <div class="sn-voet"><button class="sn-link" id="ssRondleiding">Liever een rondleiding?</button><button class="sn-link" id="ssVerberg">Verberg</button></div></section>`;
   el.querySelectorAll('[data-ss-tab]').forEach(b => b.onclick = () => zetTeamTab && zetTeamTab(b.dataset.ssTab));
-  const r = el.querySelector('#ssRondleiding'); if (r) r.onclick = () => import('./onboarding.js?v=20261130c').then(m => m.startOnboarding(true));
+  const r = el.querySelector('#ssRondleiding'); if (r) r.onclick = () => import('./onboarding.js?v=20261130d').then(m => m.startOnboarding(true));
   const w = el.querySelector('#ssVerberg'); if (w) w.onclick = async () => { el.innerHTML = ''; await zetVlag('welkomCoachWeg', true); };
 }
 
@@ -406,6 +406,9 @@ function koppelKaart(team){
     <div class="rij"><button class="knop fluo vol" id="ssKoppel">Vraag aan bij ${club}</button><button class="knop licht" id="ssKoppelNee">Liever niet</button></div></section>`;
   if (kv.status === 'aangevraagd') return `<section class="kaart sn-kaart"><div class="sn-kop"><b>Aanvraag ligt bij ${club}</b></div>
     <p class="meta" style="margin:0">De clubbeheerder beoordeelt je aanvraag. Tot die tijd werk je gewoon door; er verandert niets aan je team.</p></section>`;
+  if (kv.status === 'samengevoegd') return `<section class="kaart sn-kaart"><div class="sn-kop"><b>Je bent coach van ${esc(kv.naarTeamNaam || 'het team')} bij ${club}</b></div>
+    <p class="meta" style="margin:0 0 10px">${club} had ${esc(kv.naarTeamNaam || 'dit team')} al. De clubbeheerder heeft je daarom aan dat team toegevoegd; kies het bovenaan bij je teams. Dit eigen team blijft los bestaan en hoort niet bij de club. Heb je het niet meer nodig, dan kun je het verwijderen.</p>
+    <div class="rij"><button class="knop licht" id="ssKoppelGezien">Begrepen</button></div></section>`;
   if (kv.status === 'afgewezen') return `<section class="kaart sn-kaart"><div class="sn-kop"><b>${club} heeft je aanvraag niet goedgekeurd</b></div>
     <p class="meta" style="margin:0 0 10px">Je team blijft zoals het was. Wil je toch bij de club, neem dan contact op met de jeugdcoördinator.</p>
     <div class="rij"><button class="knop licht" id="ssKoppelGezien">Begrepen</button></div></section>`;
