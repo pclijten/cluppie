@@ -29,11 +29,12 @@
    Bewust niet op sportparken/eigen: de veldkaart schrijft daar de hele lijst velden opnieuw en zou
    eigen vakken weggooien. De velden zelf (id, naam) komen wel uit de veldkaart.
    Rekenwerk in veldplanner-logica.js (getest). */
-import { db, doc, getDoc, setDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261130f';
+import { db, doc, getDoc, getDocs, collection, setDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
+import { naarVeldplanner } from './toernooi-logica.js?v=20261130n';
+import { S, esc, meld } from './state.js?v=20261130n';
 import { ico } from './icons.js?v=20261127b';
-import { bouwVanTeam } from './bouw-indeling.js?v=20261130f';
-import { momentenVanTeam } from './trainingsmomenten.js?v=20261130f';
+import { bouwVanTeam } from './bouw-indeling.js?v=20261130n';
+import { momentenVanTeam } from './trainingsmomenten.js?v=20261130n';
 import { NODIG, MAAT_NAAM, KK_VOOR, KK_NA, MAX_EIGEN, naarMin, naarTijd, rondKwartier,
   vakkenVan, vakUit, deelVan, deelTekst, meters, banenVan, stukken, maatVanCategorie, duurVanCategorie,
   zoekVrijVak, vrijeKleedkamers, stapel, controleer, nogInTePlannen, schoonRooster, schoonKleedkamers, schoonVak,
@@ -42,13 +43,14 @@ import { NODIG, MAAT_NAAM, KK_VOOR, KK_NA, MAX_EIGEN, naarMin, naarTijd, rondKwa
 
 const DAGEN = ['', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag', 'Zondag'];
 const DAGK = ['', 'ma', 'di', 'wo', 'do', 'vr', 'za', 'zo'];
-const BOUW = { onder: 'Onderbouw', midden: 'Middenbouw', boven: 'Bovenbouw', overig: 'Overig' };
+const BOUW = { onder: 'Onderbouw', midden: 'Middenbouw', boven: 'Bovenbouw', overig: 'Overig', toernooi: 'Toernooi' };
+const bouwLijst = () => P?.toernooi ? ['toernooi', 'onder', 'midden', 'boven'] : ['onder', 'midden', 'boven'];
 const LH = 26, KOPB = 128;          // hoogte van een baan, breedte van de veldkop
 
 let P = null;                        // de open planner
 
 /* ---------- openen ---------- */
-export async function openVeldplanner(clubId){
+export async function openVeldplanner(clubId, opties = {}){
   clubId = clubId || S.clubId;
   if (!clubId) return;
   if (S.club?.platformModules?.veldplanner !== true) return meld('De Veldplanner staat niet aan voor deze club.');
@@ -73,6 +75,8 @@ export async function openVeldplanner(clubId){
       kkVoor: schoonMinuten(i.kkVoor, 15), kkNa: schoonMinuten(i.kkNa, 20), teams: schoonTeamInstellingen(i.teams), negeer: schoonNegeer(i.negeer) };
     zetKleedTijden(P.inst.kkVoor, P.inst.kkNa);
     P.blokken = schoonRooster(rooster.exists() ? rooster.data().blokken : []);
+    P.toernooien = await laadToernooien();
+    if (opties.toernooi && P.toernooien.some(a => a.id === opties.toernooi)) P.startMet = opties.toernooi;
   } catch (e){
     console.error('[veldplanner] laden', e);
     el.innerHTML = `<div class="vp-app"><div class="vp-leeg"><p>${e?.code === 'permission-denied' ? 'Geen toegang tot de Veldplanner. Zijn de Firestore-regels gepubliceerd?' : 'Laden mislukt. Probeer het zo opnieuw.'}</p><button class="knop" data-vp="sluit">Sluiten</button></div></div>`;
@@ -80,6 +84,7 @@ export async function openVeldplanner(clubId){
     return;
   }
   P.teams = teamsVan(S.clubTeams || []);
+  if (P.startMet){ const id = P.startMet; P.startMet = null; P.weergave = 'overzicht'; return startToernooi(id); }
   teken();
 }
 export function sluitVeldplanner(){
@@ -141,7 +146,9 @@ function ctx(){
 const plekTekst = b => { const k = vakUit(vakkenVan(instVan(b.veld)), b.vak); return `${veldVan(b.veld).naam}${k.kort ? ' ' + k.kort : ''}`; };
 
 /* ---------- geschiedenis en opslaan ---------- */
-function bewaarStap(){ P.hist.push(JSON.stringify({ b: P.blokken, i: P.inst })); if (P.hist.length > 60) P.hist.shift(); }
+function bewaarStap(){
+  if (P.toernooi){ meld('Een toernooi bekijk je hier alleen. Plannen doe je in de Toernooiplanner.'); throw new Error('veldplanner: toernooi alleen lezen'); }
+  P.hist.push(JSON.stringify({ b: P.blokken, i: P.inst })); if (P.hist.length > 60) P.hist.shift(); }
 function ongedaan(){
   const v = P.hist.pop(); if (!v) return;
   const o = JSON.parse(v); P.blokken = o.b; P.inst = o.i; zetKleedTijden(P.inst.kkVoor, P.inst.kkNa); P.teams = teamsVan(S.clubTeams || []);
@@ -149,6 +156,7 @@ function ongedaan(){
   P.instGewijzigd = true; planBewaar(); teken(); meld('Laatste stap ongedaan gemaakt');
 }
 function planBewaar(){
+  if (P.toernooi) return;
   P.staat = 'bewaren'; zetStaat();
   clearTimeout(P.bewaar); P.bewaar = setTimeout(bewaarNu, 900);
 }
@@ -156,7 +164,7 @@ async function bewaarNu(){
   const p = P; if (!p) return;
   p.bewaar = null;
   const klus = [setDoc(doc(db, 'clubs', p.clubId, 'veldroosters', 'basis'),
-    { naam: 'Basisrooster', status: 'concept', blokken: schoonRooster(p.blokken), bijgewerktMs: Date.now(), door: S.user?.uid || null })];
+    { naam: 'Basisrooster', status: 'concept', blokken: schoonRooster(p.echt ? p.echt.blokken : p.blokken), bijgewerktMs: Date.now(), door: S.user?.uid || null })];
   if (p.instGewijzigd){
     const velden = {};
     for (const v of p.velden){
@@ -195,27 +203,31 @@ function teken(){
   const ruimte = breed >= 1100 ? breed - 260 - 320 - 80 : breed - 32;
   P.px = Math.max(1.6, (ruimte - KOPB) / (P.tot - P.van));
   const c = controleer(P.blokken, ctx());
+  if (P.toernooi){   /* alleen wat toernooi en trainingen samen raakt */
+    c.lijst = c.lijst.filter(x => x.ids.some(isTw) && x.ids.some(id => !isTw(id)));
+    c.status = {}; c.lijst.forEach(x => x.ids.forEach(id => { c.status[id] = x.soort === 'fout' ? 'botsing' : 'waarsch'; }));
+  }
   P.status = c.status;
   P.el.innerHTML = `<div class="vp-app">
     <header class="vp-kop">
       <button type="button" class="vp-terug" data-vp="sluit" aria-label="Sluiten">‹</button>
       <div class="vp-titel"><small>${esc(S.club?.naam || 'Club')}</small><h1>Veldplanner</h1></div>
-      <span class="vp-concept">Concept · nog niet naar de teams</span><span class="vp-staat" aria-live="polite">${esc(staatTekst())}</span>
+      ${P.toernooi ? `<span class="vp-concept vp-tnlabel">Toernooi · alleen bekijken</span>` : '<span class="vp-concept">Concept · nog niet naar de teams</span>'}<span class="vp-staat" aria-live="polite">${esc(staatTekst())}</span>
       <div class="vp-acties">
         <div class="segment vp-segment" role="group" aria-label="Weergave"><button type="button" data-weergave="tijdlijn" aria-pressed="${P.weergave === 'tijdlijn'}">Tijdlijn</button><button type="button" data-weergave="overzicht" aria-pressed="${P.weergave === 'overzicht'}">Overzicht</button><button type="button" data-weergave="kaart" aria-pressed="${P.weergave === 'kaart'}">Kaart</button></div>
-        <button type="button" class="knop licht klein" data-vp="ongedaan" ${P.hist.length ? '' : 'disabled'}>Ongedaan</button>
+        ${P.toernooi ? '' : `<button type="button" class="knop licht klein" data-vp="ongedaan" ${P.hist.length ? '' : 'disabled'}>Ongedaan</button>
         <button type="button" class="knop licht klein" data-vp="inlezen">Inlezen</button>
         <button type="button" class="knop licht klein" data-vp="teams">Teams</button>
-        <button type="button" class="knop licht klein" data-vp="kleedkamers">Kleedkamers (${P.inst.kleedkamers.length})</button>
+        <button type="button" class="knop licht klein" data-vp="kleedkamers">Kleedkamers (${P.inst.kleedkamers.length})</button>`}
       </div>
     </header>
     ${P.weergave === 'kaart' ? htmlKaart() : P.weergave === 'overzicht' && P.velden.length ? htmlOverzicht(c) : P.velden.length ? `${htmlDagen(c)}
-    <div class="vp-grid">
-      ${htmlZijbalk()}
+    <div class="vp-grid${P.toernooi ? ' vp-tngrid' : ''}">
+      ${P.toernooi ? '' : htmlZijbalk()}
       <section class="vp-paneel vp-tl" aria-label="Tijdlijn ${DAGEN[P.dag]}">
-        <div class="vp-paneel-kop"><h2>${DAGEN[P.dag]}</h2><span class="vp-zacht">${(n => `${n} ${n === 1 ? 'training' : 'trainingen'}`)(P.blokken.filter(b => b.dag === P.dag).length)} · stappen van 15 minuten</span></div>
+        <div class="vp-paneel-kop"><h2>${DAGEN[P.dag]}</h2><span class="vp-zacht">${P.toernooi ? `${P.blokken.filter(b => isTw(b.id)).length} wedstrijden${P.blokken.some(b => !isTw(b.id)) ? `, ${P.blokken.filter(b => !isTw(b.id)).length} trainingen` : ''}` : (n => `${n} ${n === 1 ? 'training' : 'trainingen'}`)(P.blokken.filter(b => b.dag === P.dag).length)} · stappen van 15 minuten</span></div>
         <div class="vp-tl-scroll">${htmlTijdlijn()}${htmlKleedstrook()}</div>
-        <div class="vp-legenda">${['onder', 'midden', 'boven'].map(b => `<span><i class="b-${b}"></i>${BOUW[b]}</span>`).join('')}<span><i class="bots"></i>Botsing</span></div>
+        <div class="vp-legenda">${bouwLijst().map(b => `<span><i class="b-${b}"></i>${BOUW[b]}</span>`).join('')}<span><i class="bots"></i>Botsing</span></div>
       </section>
       <aside class="vp-rechts">${P.sel && blok(P.sel) ? htmlDetail() : ''}${htmlControle(c)}</aside>
     </div>` : htmlGeenVelden()}
@@ -231,6 +243,7 @@ function htmlGeenVelden(){
     <button type="button" class="knop fluo" data-vp="sportpark">Naar Sportparken</button></div>`;
 }
 function htmlDagen(c){
+  if (P.toernooi) return htmlTnBalk();
   const dagen = [1, 2, 3, 4, 5, 6, 7].filter(d => d <= 5 || d === P.dag || P.blokken.some(b => b.dag === d));
   return `<nav class="vp-dagen" aria-label="Dagen">${dagen.map(d => {
     const n = P.blokken.filter(b => b.dag === d).length, f = c.lijst.filter(x => x.dag === d && x.soort === 'fout').length, w = c.lijst.filter(x => x.dag === d && x.soort === 'warn').length;
@@ -238,6 +251,7 @@ function htmlDagen(c){
       <b><span class="lang">${DAGEN[d]}</span><span class="kort">${DAGK[d]}</span></b><small>${n} <span class="lang">${n === 1 ? 'training' : 'trainingen'}</span></small>
       <span class="vp-dagstat">${f ? `<em class="f">${f} botsing${f === 1 ? '' : 'en'}</em>` : ''}${w ? `<em class="w">${w} let op</em>` : ''}${!f && !w && n ? '<em class="ok">Klopt</em>' : ''}</span></button>`;
   }).join('')}${dagen.includes(6) ? '' : `<button type="button" class="vp-dag plus" data-dag="6" aria-label="Zaterdag tonen">+ za</button>`}
+    ${(P.toernooien || []).length ? `<button type="button" class="vp-dag plus vp-kopieer" data-vp="toernooi" title="Bekijk een toernooi op de velden">${ico('football-tournament', 16)}<span>Toernooi</span></button>` : ''}
     <button type="button" class="vp-dag plus vp-kopieer" data-vp="kopieer" ${P.blokken.some(b => b.dag === P.dag) ? '' : 'disabled'} title="Zet de trainingen van ${DAGEN[P.dag]} ook op andere dagen">${ico('action-copy', 16)}<span>Dag kopiëren</span></button></nav>`;
 }
 function htmlZijbalk(){
@@ -302,6 +316,7 @@ function htmlControle(c){
   const f = c.lijst.filter(x => x.soort === 'fout').length, w = c.lijst.length - f;
   const knop = x => {
     const fix = x.fix ? { kk: 'Kies vrije kleedkamer', licht: 'Zoek veld met licht', veld: 'Zoek vrije plek', vak: 'Zoek groter vak' }[x.fix.soort] : '';
+    if (P.toernooi) return `<button type="button" class="knop licht klein" data-toon="${x.ids[0]}">Toon</button>`;
     return `<button type="button" class="knop licht klein" data-toon="${x.ids[0]}">Toon</button>${fix ? `<button type="button" class="knop licht klein" data-fix="${x.fix.soort}" data-id="${x.fix.id}">${fix}</button>` : ''}${x.soort === 'warn' && x.sleutel ? `<button type="button" class="knop licht klein vp-negeer" data-negeer="${esc(x.sleutel)}" title="Deze melding niet meer tonen">Wegklikken</button>` : ''}${x.wie ? `<button type="button" class="knop licht klein vp-negeer" data-negeertr="${esc(x.wie.uid)}" data-naam="${esc(x.wie.naam)}" title="Alle meldingen dat ${esc(x.wie.naam)} twee teams tegelijk traint niet meer tonen">Negeer voor ${esc(x.wie.naam)}</button>` : ''}`;
   };
   /* trainers die bij veel 'tegelijk'-meldingen staan (vaak een beheerder als invuller): in één klik weg */
@@ -310,7 +325,7 @@ function htmlControle(c){
   const veel = [...perTrainer.values()].filter(o => o.n >= 3).sort((a, b) => b.n - a.n).slice(0, 3);
   const lijst = [...c.lijst].sort((a, b) => (a.soort === 'fout' ? 0 : 1) - (b.soort === 'fout' ? 0 : 1) || (a.dag === P.dag ? 0 : 1) - (b.dag === P.dag ? 0 : 1) || a.dag - b.dag).slice(0, 40);
   return `<section class="vp-paneel vp-controle" aria-label="Controle">
-    <div class="vp-paneel-kop"><h2>Controle</h2><span class="vp-zacht">hele week</span></div>
+    <div class="vp-paneel-kop"><h2>Controle</h2><span class="vp-zacht">${P.toernooi ? 'toernooi en trainingen' : 'hele week'}</span></div>
     <div class="vp-tellers"><div class="${f ? 'f' : ''}"><b>${f}</b><small>botsing${f === 1 ? '' : 'en'}</small></div><div class="${w ? 'w' : ''}"><b>${w}</b><small>waarschuwing${w === 1 ? '' : 'en'}</small></div></div>
     ${veel.map(o => `<div class="vp-negeerbalk"><p>${o.n} meldingen gaan over <b>${esc(o.naam)}</b> die twee teams tegelijk traint. Staat ${esc(o.naam)} alleen als invuller bij teams?</p>
       <button type="button" class="knop licht klein" data-negeertr="${esc(o.uid)}" data-naam="${esc(o.naam)}">Negeer voor ${esc(o.naam)}</button></div>`).join('')}
@@ -321,6 +336,7 @@ function htmlControle(c){
   </section>`;
 }
 function htmlDetail(){
+  if (P.toernooi) return htmlTnDetail();
   const b = blok(P.sel), t = teamVan(b.team), vakken = vakkenVan(instVan(b.veld));
   const vrij = new Set(vrijeKleedkamers(P.blokken, P.inst.kleedkamers, b, b.id));
   return `<section class="vp-paneel vp-detail" aria-label="${esc(t.naam)}">
@@ -404,10 +420,12 @@ function koppel(){
     if (a === 'teams') return vensterTeams();
     if (a === 'inlezen') return vensterInlezen();
     if (a === 'kopieer') return vensterKopieer();
+    if (a === 'toernooi') return vensterToernooien();
+    if (a === 'tnstop') return stopToernooi();
     if (a === 'negeerterug'){ bewaarStap(); P.inst.negeer = { trainers: [], meldingen: [] }; P.instGewijzigd = true; planBewaar(); teken(); return meld('Alle weggeklikte meldingen staan weer aan.'); }
     if (a === 'deselect'){ P.sel = null; return teken(); }
     if (a === 'weg') return weg(P.sel);
-    if (a === 'sportpark'){ const c = P.clubId; sluitVeldplanner(); return import('./veldkaart.js?v=20261130f').then(m => m.openSportparkBeheer(c)); }
+    if (a === 'sportpark'){ const c = P.clubId; sluitVeldplanner(); return import('./veldkaart.js?v=20261130n').then(m => m.openSportparkBeheer(c)); }
   });
   el.querySelectorAll('[data-weergave]').forEach(k => k.onclick = () => { ovStop(); P.weergave = k.dataset.weergave; P.sel = null; P.objSel = null; teken(); });
   el.querySelectorAll('[data-dag]').forEach(k => k.onclick = () => { P.dag = +k.dataset.dag; P.sel = null; if (P.ov){ ovStop(); P.ov.t = null; P.ov.live = false; } teken(); });
@@ -460,6 +478,7 @@ function koppel(){
       k.dispatchEvent(new Event('change')); terug();
     }
   }));
+  if (P.toernooi){ el.querySelectorAll('.vp-blok').forEach(k => k.onclick = () => { P.sel = k.dataset.id; teken(); }); return; }
   el.querySelectorAll('.vp-blok:not(.vervolg)').forEach(k => {
     k.addEventListener('pointerdown', e => sleepBlok(e, k));
     k.addEventListener('keydown', e => toetsBlok(e, k.dataset.id));
@@ -658,7 +677,7 @@ function raak(k, x, y){
 }
 async function maakKaart(){
   const el = P.el.querySelector('#vpKaart'); if (!el) return;
-  const { Kaart } = await import('./veldkaart.js?v=20261130f');
+  const { Kaart } = await import('./veldkaart.js?v=20261130n');
   if (!P || !el.isConnected) return;
   const pos = P.kaartPos || { lat: P.park.lat, lon: P.park.lon, z: Math.min(19, P.park.zoom || 18) };
   const rel = e => { const r = el.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
@@ -770,7 +789,7 @@ function htmlOverzicht(c){
       <div class="vp-ovkop">
         <div class="vp-ovklok"><small>${DAGEN[P.dag]}</small><b data-ovklok>${naarTijd(o.getekend)}</b></div>
         <div class="vp-ovfilters" role="group" aria-label="Filters">
-          ${['onder', 'midden', 'boven'].map(b => `<button type="button" class="vp-fchip b-${b}${o.bouw.includes(b) ? ' aan' : ''}" data-ovbouw="${b}" aria-pressed="${o.bouw.includes(b)}"><i></i>${BOUW[b]}</button>`).join('')}
+          ${bouwLijst().map(b => `<button type="button" class="vp-fchip b-${b}${o.bouw.includes(b) ? ' aan' : ''}" data-ovbouw="${b}" aria-pressed="${o.bouw.includes(b)}"><i></i>${BOUW[b]}</button>`).join('')}
           ${sel('team', 'Alle teams', teams.map(t => [t.id, t.naam]))}
           ${P.velden.length > 1 ? sel('veld', 'Alle velden', P.velden.map(v => [v.id, v.naam])) : ''}
           ${P.inst.kleedkamers.length ? sel('kk', 'Alle kleedkamers', P.inst.kleedkamers.map(k => [k.id, k.naam])) : ''}
@@ -857,7 +876,9 @@ function lagenOverzicht(k){
   const plek = kkPlek();
   if (plek && P.inst.kleedkamers.length){
     const p = k.px(plek.lat, plek.lon), kk = kleedkamersOpMoment(P.blokken, P.dag, t);
-    uit.push(`<div class="vp-ovkkkaart" style="left:${p.x}px;top:${p.y}px"><small>Kleedkamers</small><div>${P.inst.kleedkamers.slice(0, 16).map(x => {
+    /* [20261127w] op de plek zelf alleen een kaal kenmerk; de indeling staat in een hoek van de kaart, buiten de velden */
+    uit.push(`<div class="vk-stip vp-ovkkstip" style="left:${p.x}px;top:${p.y}px"><span>Kleedkamers</span></div>`);
+    uit.push(`<div class="vp-ovkkkaart" style="left:12px;bottom:12px"><small>Kleedkamers</small><div>${P.inst.kleedkamers.slice(0, 16).map(x => {
       const z = kk[x.id], b = z && teamVan(z.blok.team), dim = (o.kk && o.kk !== x.id) || (z && !ovPast(z.blok));
       return `<span class="${z ? `f-${z.fase} b-${b.bouw}` : 'vrij'}${dim ? ' dim' : ''}" title="${esc(x.naam)}"><b>${esc(kkKort(x.id))}</b>${z ? esc(b.naam) : ''}</span>`; }).join('')}</div></div>`);
   }
@@ -994,7 +1015,7 @@ async function koppelOverzicht(){
     ovKiesPlek(g.dataset.schemaveld, (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
   });
   const kaartEl = el.querySelector('#vpOvKaart'); if (!kaartEl) return;
-  const { Kaart } = await import('./veldkaart.js?v=20261130f');
+  const { Kaart } = await import('./veldkaart.js?v=20261130n');
   if (!P || !kaartEl.isConnected) return;
   const pos = P.kaartPos || { lat: P.park.lat, lon: P.park.lon, z: Math.min(19, P.park.zoom || 18) };
   const k = new Kaart(kaartEl, { lat: pos.lat, lon: pos.lon, z: pos.z, interactief: true, omgeving: () => P?.park?.omgeving?.vormen, lagen: lagenOverzicht, onTik: ovTik });
@@ -1059,8 +1080,8 @@ async function tekstUitBestand(f){
   const naam = f.name.toLowerCase();
   if (/\.(csv|txt|tsv)$/.test(naam)) return (await f.text()).replace(/;/g, '\t');
   if (naam.endsWith('.pdf')){
-    const { laadPdfJs } = await import('./pdf-viewer.js?v=20261130f');
-    const { regelsUitTekstItems } = await import('./training-ai.js?v=20261130f');
+    const { laadPdfJs } = await import('./pdf-viewer.js?v=20261130n');
+    const { regelsUitTekstItems } = await import('./training-ai.js?v=20261130n');
     await laadPdfJs();
     const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(await f.arrayBuffer()) }).promise, uit = [];
     for (let n = 1; n <= Math.min(pdf.numPages, 30); n++) uit.push(regelsUitTekstItems((await (await pdf.getPage(n)).getTextContent()).items));
@@ -1150,6 +1171,78 @@ function vensterInlezen(){
     };
   };
   render();
+}
+
+/* [20261127w] ==================== TOERNOOI BEKIJKEN ====================
+   Een toernooi uit Activiteiten (alleen met de module Activiteiten en voor de clubbeheerder, die mag
+   activiteiten lezen) tonen op de velden: elke wedstrijd wordt een blok op het clubveld en het deel van
+   het veld van het veldje, met de clubkleedkamers. De trainingen van die weekdag staan er gewoon bij, zodat
+   je ziet wat botst. Alleen lezen: P.blokken/P.teams worden tijdelijk vervangen, het echte rooster staat in
+   P.echt en alleen dat wordt bewaard (bewaarNu); bewaarStap weigert in deze stand. */
+const isTw = id => String(id).startsWith('tw_');
+async function laadToernooien(){
+  if (S.club?.platformModules?.activiteiten !== true) return [];
+  try {
+    const snap = await getDocs(collection(db, 'clubs', P.clubId, 'activiteiten'));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(a => a.toernooi && (a.toernooi.schema || []).length)
+      .map(a => ({ id: a.id, naam: String(a.naam || 'Toernooi'), datum: String(a.datum || ''), t: a.toernooi }))
+      .sort((a, b) => (b.datum || '').localeCompare(a.datum || ''));
+  } catch (e){ console.warn('[veldplanner] toernooien', e?.code || e); return []; }
+}
+const datumTekst = d => { if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return 'geen datum'; try { return new Date(d + 'T12:00').toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }); } catch { return d; } };
+function vensterToernooien(){
+  const l = P.toernooien || [];
+  const v = venster(`<h2>Toernooi bekijken</h2>
+    <p class="vp-zacht">Kies een toernooi uit Activiteiten. Je ziet de wedstrijden op jullie velden en kleedkamers, met de trainingen van die dag erbij. Plannen doe je in de Toernooiplanner.</p>
+    <div class="vp-tnlijst">${l.map(a => `<button type="button" class="vp-tnkeus" data-tnkies="${esc(a.id)}"><b>${esc(a.naam)}</b><small>${esc(datumTekst(a.datum))} · ${(a.t.schema || []).length} wedstrijden</small></button>`).join('')}</div>
+    <div class="vp-voet"><button type="button" class="knop licht" data-dicht>Sluiten</button></div>`);
+  v.querySelector('[data-dicht]').onclick = sluitVenster;
+  v.querySelectorAll('[data-tnkies]').forEach(x => x.onclick = () => { sluitVenster(); startToernooi(x.dataset.tnkies); });
+}
+function startToernooi(id){
+  const a = (P.toernooien || []).find(x => x.id === id); if (!a) return meld('Dat toernooi vind ik niet meer.');
+  if (P.bewaar){ clearTimeout(P.bewaar); bewaarNu(); }
+  if (P.toernooi) stopToernooi(true);
+  const r = naarVeldplanner(a.t, a.datum), dag = r.dag || P.dag, velden = new Set(P.velden.map(v => v.id));
+  const kks = new Set(P.inst.kleedkamers.map(k => k.id));
+  const wed = r.wedstrijden.filter(w => velden.has(w.veld));
+  P.echt = { blokken: P.blokken, teams: P.teams, dag: P.dag, hist: P.hist, sel: P.sel };
+  P.toernooi = { id: a.id, naam: a.naam, datum: a.datum, dag, zonderVeld: r.zonderVeld + (r.wedstrijden.length - wed.length), zonderDatum: !r.dag, n: wed.length };
+  P.teams = [...P.echt.teams, ...wed.map(w => ({ id: 'tt_' + w.id, naam: w.naam, bouw: 'toernooi', maat: 'kwart', duur: w.eind - w.start, per: 0, coaches: [], coachNamen: {}, wed: w }))];
+  P.blokken = [...P.echt.blokken.filter(b => b.dag === dag), ...wed.map(w => ({ id: 'tw_' + w.id, team: 'tt_' + w.id, dag, start: w.start, eind: w.eind, veld: w.veld, vak: w.vak, kk: w.kk.filter(k => kks.has(k)) }))];
+  P.dag = dag; P.hist = []; P.sel = null;
+  if (P.weergave === 'kaart') P.weergave = 'overzicht';
+  if (P.ov){ ovStop(); P.ov.t = wed.length ? wed[0].start : null; P.ov.live = false; P.ov.bouw = []; P.ov.team = ''; }
+  teken();
+}
+function stopToernooi(stil){
+  if (!P.toernooi) return;
+  ovStop();
+  P.blokken = P.echt.blokken; P.teams = P.echt.teams; P.dag = P.echt.dag; P.hist = P.echt.hist; P.sel = null;
+  P.echt = null; P.toernooi = null;
+  if (P.ov){ P.ov.t = null; P.ov.bouw = []; P.ov.team = ''; }
+  if (!stil) teken();
+}
+function htmlTnBalk(){
+  const t = P.toernooi;
+  return `<nav class="vp-dagen vp-tnbalk" aria-label="Toernooi">
+    <div class="vp-tninfo">${ico('football-tournament', 20)}<div><b>${esc(t.naam)}</b><small>${esc(datumTekst(t.datum))} · ${t.n} wedstrijden op jullie velden${P.blokken.some(b => !isTw(b.id)) ? ` · trainingen van ${DAGEN[t.dag].toLowerCase()} staan erbij` : ''}</small>
+      ${t.zonderDatum ? '<small class="w">Het toernooi heeft nog geen datum; je ziet het op de gekozen dag.</small>' : ''}
+      ${t.zonderVeld ? `<small class="w">${t.zonderVeld} ${t.zonderVeld === 1 ? 'veldje is' : 'veldjes zijn'} niet aan een veld van jullie sportpark gekoppeld (Toernooiplanner › Opzet).</small>` : ''}</div></div>
+    ${(P.toernooien || []).length > 1 ? '<button type="button" class="knop licht klein" data-vp="toernooi">Ander toernooi</button>' : ''}
+    <button type="button" class="knop fluo klein" data-vp="tnstop">Terug naar het trainingsrooster</button></nav>`;
+}
+function htmlTnDetail(){
+  const b = blok(P.sel); if (!b) return '';
+  const t = teamVan(b.team), w = t.wed, k = vakUit(vakkenVan(instVan(b.veld)), b.vak);
+  const regel = (l, v) => v ? `<div class="vp-tnregel"><small>${l}</small><span>${esc(v)}</span></div>` : '';
+  return `<section class="vp-paneel vp-detail" aria-label="${esc(t.naam)}">
+    <div class="vp-paneel-kop"><h2>${esc(w ? w.titel || 'Wedstrijd' : t.naam)}</h2><button type="button" class="vp-x" data-vp="deselect" aria-label="Sluiten">×</button></div>
+    ${w ? `<p class="vp-tnwed"><b>${esc(w.a)}</b><span>${esc(w.uitslag || 'tegen')}</span><b>${esc(w.b)}</b></p>` : `<p class="vp-zacht">Training · ${esc(BOUW[t.bouw] || '')}</p>`}
+    ${regel('Tijd', `${naarTijd(b.start)}–${naarTijd(b.eind)}`)}${regel('Veld', `${veldVan(b.veld).naam}${k.kort ? ' ' + k.kort : ''}${w ? ` (veldje ${w.veldje})` : ''}`)}
+    ${regel('Kleedkamers', (b.kk || []).map(kkNaam).join(', '))}
+    ${w ? '<p class="vp-zacht">Aanpassen doe je in de Toernooiplanner.</p>' : ''}
+  </section>`;
 }
 
 /* [20261127u] meldingen wegklikken */
@@ -1347,7 +1440,20 @@ html.vp-open{overflow:hidden}
 .vp-uitleg{margin-bottom:var(--space-xs)}
 .vp-klaar{color:var(--ok);font-weight:600;font-size:var(--t-sm)}
 .vp-label{display:block;font-size:var(--t-xs);color:var(--ink-2);margin:var(--space-xs) 0 4px}
-.b-onder{--bc:#3b82c4}.b-midden{--bc:#c9922e}.b-boven{--bc:#2f9e63}.b-overig{--bc:#8a8f98}
+.b-onder{--bc:#3b82c4}.b-midden{--bc:#c9922e}.b-boven{--bc:#2f9e63}.b-overig{--bc:#8a8f98}.b-toernooi{--bc:#9b5de5}
+.vp-tnbalk{display:flex!important;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border:1.5px solid #9b5de5;border-radius:var(--r-s);padding:8px 12px}
+.vp-tninfo{display:flex;gap:10px;align-items:center;flex:1;min-width:220px;color:#9b5de5}
+.vp-tninfo div{display:flex;flex-direction:column;color:var(--ink)}
+.vp-tninfo b{font-family:var(--font-display);text-transform:uppercase;font-size:var(--t-lg)}
+.vp-tninfo small{font-size:var(--t-xs);color:var(--ink-2)}.vp-tninfo small.w{color:var(--warn)}
+.vp-tnlabel{border-color:#9b5de5!important;color:#c4a3f5!important}
+.vp-grid.vp-tngrid{grid-template-columns:minmax(0,1fr) 300px}
+.vp-tnlijst{display:flex;flex-direction:column;gap:6px;margin:8px 0;max-height:50vh;overflow:auto}
+.vp-tnkeus{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 12px;border-radius:var(--r-s);background:var(--surface-2);border:1.5px solid var(--hair);color:var(--ink);text-align:left;border-left:5px solid #9b5de5}
+.vp-tnkeus b{font-family:var(--font-display);text-transform:uppercase}.vp-tnkeus small{color:var(--ink-2);font-size:var(--t-xs)}
+.vp-tnwed{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;text-align:center;margin:6px 0 10px}
+.vp-tnwed b{font-family:var(--font-display);text-transform:uppercase}.vp-tnwed span{font-weight:700;color:var(--ink-2)}
+.vp-tnregel{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px solid var(--hair);font-size:var(--t-sm)}.vp-tnregel small{color:var(--ink-2)}
 .vp-groep h3{display:flex;align-items:center;gap:6px;font-size:var(--t-sm);margin:var(--space-sm) 0 6px}
 .vp-groep h3 i,.vp-legenda i{width:10px;height:10px;border-radius:3px;background:var(--bc);display:inline-block}
 .vp-teamkaart{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:8px 10px;border-radius:var(--r-s);margin-bottom:6px;cursor:grab;touch-action:none;user-select:none;
@@ -1496,7 +1602,8 @@ html.vp-open{overflow:hidden}
 .vp-ovvak.aan{outline:3px solid #fff;outline-offset:1px;z-index:2}
 .vp-ovvak.botsing{border-color:var(--uit);box-shadow:0 0 0 2px var(--uit)}
 .vp-ovveldnaam{position:absolute;transform:translate(-50%,-50%);font-size:var(--t-2xs);font-weight:800;color:#fff;background:rgba(0,0,0,.62);padding:1px 7px;border-radius:var(--r-pill);white-space:nowrap;pointer-events:none}
-.vp-ovkkkaart{position:absolute;transform:translate(-50%,-50%);background:rgba(15,18,24,.86);color:#fff;border-radius:8px;padding:4px 6px;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.4);max-width:260px}
+@media (max-width:1099px){.vp-ovkkkaart{display:none}}
+.vp-ovkkkaart{position:absolute;z-index:3;background:rgba(15,18,24,.86);color:#fff;border-radius:8px;padding:4px 6px;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.4);max-width:260px}
 .vp-ovkkkaart small{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.05em;opacity:.75;margin-bottom:2px}
 .vp-ovkkkaart div{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:3px}
 .vp-ovkkkaart span{font-size:9px;font-weight:700;border-radius:4px;padding:1px 4px;display:flex;gap:4px;align-items:center;white-space:nowrap;overflow:hidden;background:rgba(255,255,255,.1)}
@@ -1599,7 +1706,7 @@ html.vp-open{overflow:hidden}
   .vp-ovgrid{grid-template-columns:1fr}
   .vp-ovkaart{height:min(56dvh,460px)}
   .vp-kaart{height:min(60dvh,480px)}
-  .vp-grid{grid-template-columns:1fr}
+  .vp-grid,.vp-grid.vp-tngrid{grid-template-columns:1fr}
   .vp-tl{order:1}.vp-rechts{order:2}.vp-zij{order:3}
   .vp-groep{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
   .vp-groep h3{width:100%;margin-bottom:0}

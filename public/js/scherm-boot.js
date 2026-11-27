@@ -12,11 +12,11 @@
    omhoog) geeft een melding over het hele scherm; clubTv.goals zegt voor welke wedstrijden (zie nieuweGoals).
    Voorbeeld bekijken zonder iets op te slaan: ?scherm=<id>&sjabloon=<id>, en &proef=1 voor proefwedstrijden met doelpunten. */
 import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, collection, onSnapshot, getDoc } from './firebase.js?v=20261011g';
-import { plaatjeOk, veiligeLink } from './toernooi-logica.js?v=20261127v';
-import { sorteer, nieuweGoals, goalKeuze, evenementId, evenementTv } from './clubscherm-logica.js?v=20261127v';
-import { sjabloonId, laadSjabloon } from './tv-sjablonen.js?v=20261127v';
-import { maakSpeler, tvModel, proefProgramma, PROEF_DIAS, standWissel, goalBand, goalStijl } from './tv-speler.js?v=20261127v';
-import { stijl as stijlLive } from './live-boot.js?v=20261127x';
+import { plaatjeOk, veiligeLink } from './toernooi-logica.js?v=20261130n';
+import { sorteer, nieuweGoals, goalKeuze, evenementId, evenementTv } from './clubscherm-logica.js?v=20261130n';
+import { sjabloonId, laadSjabloon } from './tv-sjablonen.js?v=20261130n';
+import { maakSpeler, tvModel, proefProgramma, PROEF_DIAS, standWissel, goalBand, goalStijl } from './tv-speler.js?v=20261130n';
+import { stijl as stijlLive } from './live-boot.js?v=20261130n';
 import { tvStijl, tvKleur, tvZet, bordHtml, logoHtml, tikHtml, diaHtml, sponsHtml, voetHtml } from './tv-stijl.js?v=20261126n';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

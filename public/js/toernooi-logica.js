@@ -769,3 +769,35 @@ export const BOOM_CSS = `
 .bm-onder{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
 .bm-onder .bm-w{flex:0 1 220px}
 .bm-podium{display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:center;margin:0;font-weight:800}`;
+
+/* ---------- toernooi in de Veldplanner [20261127w] ----------
+   Elke wedstrijd wordt een blok op het clubveld (clubVeld) en het deel van dat veld dat bij het veldje hoort
+   (1 = heel veld, 2 = half a/b, 4 = kwart a voor/achter, b voor/achter), met de clubkleedkamers van beide teams.
+   Veldjes zonder clubveld tellen mee in zonderVeld. Alleen lezen: de Veldplanner past niets aan het toernooi aan. */
+const VAK_VAN = { 1: ['h'], 2: ['a', 'b'], 4: ['av', 'aa', 'bv', 'ba'] };
+export function naarVeldplanner(t = {}, datum = ''){
+  const o = opzet(t), velden = Object.fromEntries(Object.entries(t.velden || {}).map(([id, v]) => [id, v]));
+  const vakVan = {}, zonderVeld = new Set();
+  for (const vj of veldjes(t)){
+    const v = velden[vj.veld] || {}, n = [1, 2, 4].includes(Number(v.delen)) ? Number(v.delen) : 1;
+    const i = n === 1 ? 0 : LETTERS.indexOf(String(vj.id).split('~')[1] || 'A');
+    vakVan[vj.id] = { veld: v.clubVeld || '', vak: VAK_VAN[n][Math.max(0, i)] || 'h', naam: vj.naam };
+  }
+  const plan = planKleedkamers(t), kkClub = id => t.kk?.[String(id || '').split('~')[0]]?.clubKk || '';
+  const tn = id => t.teams?.[id]?.naam || '';
+  const pouleVolg = Object.fromEntries(gesorteerd(t.poules).map((p, i) => [p.id, i]));
+  const wedstrijden = [];
+  for (const w of metKo(t)){
+    const plek = vakVan[w.v], start = naarMin(w.t);
+    if (!plek || start == null) continue;
+    if (!plek.veld){ zonderVeld.add(w.v); continue; }
+    const a = tn(w.a) || w.la || '?', b = tn(w.b) || w.lb || '?';
+    const kk = [...new Set([w.a, w.b].filter(Boolean).map(id => kkClub(kkVanTeam(t, id, plan))).filter(Boolean))].slice(0, 4);
+    const u = t.uitslag?.[w.id], uitslag = u && u.a !== '' && u.b !== '' && u.a != null && u.b != null ? `${u.a}-${u.b}` : '';
+    wedstrijden.push({ id: w.id, a, b, naam: `${a} – ${b}`, titel: w.ko ? koTitel(t, w) : (t.poules?.[w.p]?.naam || ''), ko: !!w.ko,
+      poule: w.p || '', kleur: w.ko ? '' : (t.poules?.[w.p]?.kleur || ''), pouleVolg: pouleVolg[w.p] ?? 99,
+      veld: plek.veld, vak: plek.vak, veldje: plek.naam, start, eind: Math.min(24 * 60, start + o.duur), kk, uitslag });
+  }
+  const dag = /^\d{4}-\d{2}-\d{2}$/.test(String(datum || '')) ? ((new Date(datum + 'T12:00').getDay() + 6) % 7) + 1 : null;
+  return { dag, wedstrijden: wedstrijden.sort((x, y) => x.start - y.start), zonderVeld: zonderVeld.size };
+}

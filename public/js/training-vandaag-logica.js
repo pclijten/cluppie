@@ -15,8 +15,8 @@
    Oefeningen zonder vorm uit de bibliotheek (een eigen PDF) blijven zoals ze zijn.
 
    Alleen aantallen en keuzes; nooit namen van spelers. */
-import { bouwOnderdeel, opbouwVoor, rangschik, kiesDuur, WEER, SLOT_NAAM } from './trainingsplanner.js?v=20261130f';
-import { oefeningVan, bronVanOefening, rondBlok } from './seizoensplan-club.js?v=20261130f';
+import { bouwOnderdeel, opbouwVoor, rangschik, kiesDuur, WEER, SLOT_NAAM } from './trainingsplanner.js?v=20261130n';
+import { oefeningVan, bronVanOefening, rondBlok } from './seizoensplan-club.js?v=20261130n';
 
 export const MIN_SPELERS = 6;
 export const MAX_SPELERS = 24;
