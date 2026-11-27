@@ -199,7 +199,7 @@ export async function laadBibliotheek(forceer = false){
   if (laden && !forceer) return laden;
   laden = (async () => {
     try {
-      const { db, collection, getDocs } = await import('./firebase.js?v=20261011g');
+      const { db, collection, getDocs } = await import('./firebase.js?v=20261127n');
       const snap = await getDocs(collection(db, 'platform', 'bibliotheek', 'vormen'));
       const o = {}; snap.docs.forEach(d => { o[d.id] = d.data(); });
       zetOverlays(o);

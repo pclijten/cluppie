@@ -12,7 +12,7 @@
 
    Deze module heeft alleen firebase.js nodig en houdt zijn eigen kleine
    hulpjes (esc, datums), zodat hij los staat van de rest van de app. */
-import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, collection, setDoc, deleteDoc, onSnapshot } from './firebase.js?v=20261011g';
+import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, collection, setDoc, deleteDoc, onSnapshot } from './firebase.js?v=20261127n';
 
 const NAAM_MAX = 24;
 const NAAM_SLEUTEL = 'cluppieHulpNaam';

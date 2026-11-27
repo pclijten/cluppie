@@ -14,16 +14,16 @@
    teams-training.js, de wedstrijdpresentie in de hub en de wedstrijd zelf.
    Geen locatie/GPS: dat vraagt toestemming en hoort niet ongevraagd in de app.
    Wel de wedstrijdplek: sportpark met routelink (uit), veld en kleedkamer. */
-import { S, esc } from './state.js?v=20261129f';
+import { S, esc } from './state.js?v=20261127n';
 import { ico } from './icons.js?v=20261127b';
-import { afwezigRedenInfo, isoWeek } from './config.js?v=20261129f';
+import { afwezigRedenInfo, isoWeek } from './config.js?v=20261127n';
 import { bepaalNu, evenementen, kiesDaarna, losseEvenementen } from './nu-context.js?v=20261125m';
-import { momentenVanTeam } from './trainingsmomenten.js?v=20261129f';
+import { momentenVanTeam } from './trainingsmomenten.js?v=20261127n';
 import { vastePrefill } from './vaste-afmeldingen.js?v=20261013a';
 import { effectieveSelectie, spelersOpWedstrijd, spelersOpTraining } from './uitleen-regels.js?v=20261127p';
-import { doelTeksten, samenvattingNu, haalSamenvatting } from './doel-samenvatting.js?v=20261129f';
-import { veldPilHtml } from './veldkaart.js?v=20261129f';
-import { kiesUitgelicht, gezienNu, gezienGeladen, laadGezien, markeerGezien } from './video-uitgelicht.js?v=20261124c';
+import { doelTeksten, samenvattingNu, haalSamenvatting } from './doel-samenvatting.js?v=20261127n';
+import { veldPilHtml } from './veldkaart.js?v=20261127n';
+import { kiesUitgelicht, gezienNu, gezienGeladen, laadGezien, markeerGezien } from './video-uitgelicht.js?v=20261127n';
 import { sportWoord } from './sporten.js?v=20261126g';   /* [20261125y] sportprofiel stap 3: woorden uit het profiel */
 
 const p2 = n => String(n).padStart(2, '0');
@@ -490,16 +490,16 @@ export function koppelNu(v, ctx){
     const pt = ev.target.closest('[data-nu-pres-training]');
     if (pt){
       const datum = pt.dataset.nuPresTraining, rec = S.presentie.find(p => p.datum === datum) || null;
-      const m = await import('./teams-training.js?v=20261129f');
+      const m = await import('./teams-training.js?v=20261127n');
       m.modalPresentie(rec, rec ? {} : { datum });
       return;
     }
     const pw = ev.target.closest('[data-nu-pres-wedstrijd]');
     if (pw){ S._presWedstrijdId = pw.dataset.nuPresWedstrijd; ctx.zetTeamTab('preswedstrijd'); return; }
     const vb = ev.target.closest('[data-nu-voorbereiding]');
-    if (vb){ const m = await import('./wedstrijd-voorbereiding.js?v=20261129f'); m.openVoorbereiding(vb.dataset.nuVoorbereiding, ctx); return; }
+    if (vb){ const m = await import('./wedstrijd-voorbereiding.js?v=20261127n'); m.openVoorbereiding(vb.dataset.nuVoorbereiding, ctx); return; }
     const w = ev.target.closest('[data-nu-wedstrijd]');
-    if (w){ const m = await import('./wedstrijd.js?v=20261129f'); m.openWedstrijd(w.dataset.nuWedstrijd); return; }
+    if (w){ const m = await import('./wedstrijd.js?v=20261127n'); m.openWedstrijd(w.dataset.nuWedstrijd); return; }
     const tr = ev.target.closest('[data-nu-training]');
     if (tr){
       const gelukt = ctx.openTraining ? await ctx.openTraining(tr.dataset.nuTraining) : false;

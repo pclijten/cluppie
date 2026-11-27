@@ -51,9 +51,9 @@
    eindstand van S._toernOpen). Dit bestand importeert NIET uit teams.js (geen
    circulaire import): teams.js geeft zetTeamTab/renderTeam mee aan
    koppelToernooi(). */
-import { db, doc, collection, setDoc, updateDoc, deleteDoc, onSnapshot } from './firebase.js?v=20261011g';
-import { S, $, $$, esc, meld, openModal, sluitModal, terugLaag } from './state.js?v=20261129f';
-import { SEIZOEN_FALLBACK } from './config.js?v=20261129f';
+import { db, doc, collection, setDoc, updateDoc, deleteDoc, onSnapshot } from './firebase.js?v=20261127n';
+import { S, $, $$, esc, meld, openModal, sluitModal, terugLaag } from './state.js?v=20261127n';
+import { SEIZOEN_FALLBACK } from './config.js?v=20261127n';
 import { ico } from './icons.js?v=20261127b';
 
 /* ---------- Vaste gegevens ---------- */

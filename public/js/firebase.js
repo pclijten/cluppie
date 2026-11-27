@@ -16,7 +16,7 @@
 ==================================================================== */
 const firebaseConfig = {
   apiKey: "AIzaSyCQdUHv2TjMyPbWYuR9b8ChAe_Z1o8Fmqk",
-  authDomain: "cluppie-ad329.firebaseapp.com",
+  authDomain: "auth.cluppie.io",
   projectId: "cluppie-ad329",
   storageBucket: "cluppie-ad329.firebasestorage.app",
   messagingSenderId: "776624143952",

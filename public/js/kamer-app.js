@@ -8,9 +8,9 @@
    - Geen chat, geen vrije tekst, geen foto's. Afmelden gaat via WhatsApp: de knop zet alleen het
      bericht klaar, Cluppie verstuurt en bewaart niets. */
 import { auth, db, functions, httpsCallable, signInAnonymously, signOut, onAuthStateChanged, signInWithEmailAndPassword,
-  createUserWithEmailAndPassword, sendEmailVerification, collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, where, onSnapshot } from './firebase.js?v=20261011g';
+  createUserWithEmailAndPassword, sendEmailVerification, collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, where, onSnapshot } from './firebase.js?v=20261127n';
 import * as K from './kamer-logica.js?v=20261127k';
-import * as P from './kamer-push.js?v=20261126z';
+import * as P from './kamer-push.js?v=20261127n';
 
 const wortel = document.getElementById('tk');
 const qs = new URLSearchParams(location.search);

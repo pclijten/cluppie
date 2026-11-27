@@ -4,7 +4,7 @@
    een melding bij een nieuwe poll, een mededeling of een herinnering, als de trainer dat aanvinkt.
    De melding zelf laat public/sw.js zien (dezelfde worker als de trainersapp).
    iPhone en iPad: meldingen kunnen pas als de teamkamer op het beginscherm staat en van daaruit is geopend. */
-import { app, db, doc, setDoc, deleteDoc } from './firebase.js?v=20261011g';
+import { app, db, doc, setDoc, deleteDoc } from './firebase.js?v=20261127n';
 
 /* openbare Web Push-sleutel van het Firebase-project (Projectinstellingen › Cloud Messaging) */
 const VAPID = 'BJBaRR47FzcMbYofctCMbp8jBzv4dXrhaVoQukADEW7v0Csy9MYovDVT1UVt9seYFtPh54U7Gww5wFW0iyR7xEo';

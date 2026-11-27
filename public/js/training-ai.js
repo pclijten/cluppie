@@ -16,10 +16,10 @@
 import {
   storage, sRef, uploadBytes, getDownloadURL,
   functions, httpsCallable
-} from './firebase.js?v=20261011g';
-import { laadPdfJs } from './pdf-viewer.js?v=20261129f';
-import { pdfOmzettenAan } from './clubconfig.js?v=20261129f';
-import { S } from './state.js?v=20261129f';
+} from './firebase.js?v=20261127n';
+import { laadPdfJs } from './pdf-viewer.js?v=20261127n';
+import { pdfOmzettenAan } from './clubconfig.js?v=20261127n';
+import { S } from './state.js?v=20261127n';
 import { schoonProfiel, overTeSlaan, koppelDiagrammen } from './pdf-profiel.js?v=20261115e';
 export { koppelDiagrammen };
 

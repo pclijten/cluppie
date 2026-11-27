@@ -9,8 +9,8 @@
    De teksten staan op de server (platformMails/teksten); lezen en schrijven gaat alleen via de functies
    leesMailteksten, zetMailtekst en stuurProefmail. Opmaak en links zitten vast in functions/mail-sjabloon.js.
    Wordt getekend in het platformcentrum (platform-centrum.js) in <div id="pmRoot">. */
-import { functions, httpsCallable } from './firebase.js?v=20261011g';
-import { esc, meld } from './state.js?v=20261129f';
+import { functions, httpsCallable } from './firebase.js?v=20261127n';
+import { esc, meld } from './state.js?v=20261127n';
 import { ico } from './icons.js?v=20261127b';
 import { TEKSTVELDEN, VELDNAAM, controleer, zelfde, statusVan, voorbeeldVan, voorAanmelding, tijdTekst } from './platform-mails-logica.js?v=20261116q';
 

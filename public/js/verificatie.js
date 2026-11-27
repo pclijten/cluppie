@@ -3,7 +3,7 @@
    Zolang die functie nog niet gedeployed is, valt hij terug op de standaardmail van Firebase.
    Geeft true als er een mail is verstuurd (of het adres al bevestigd was); gooit een Error met een leesbare melding bij te vaak vragen. */
 
-import { auth, functions, httpsCallable, sendEmailVerification } from './firebase.js?v=20261011g';
+import { auth, functions, httpsCallable, sendEmailVerification } from './firebase.js?v=20261127n';
 
 export async function stuurVerificatieMail(){
   const gebruiker = auth.currentUser;

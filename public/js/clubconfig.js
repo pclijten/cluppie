@@ -28,11 +28,11 @@
 
    Een club-document zonder instellingen.v krijgt de neutrale standaard totdat de
    beheerder de waarden in Instellingen "vastlegt". */
-import { S, clubAfkorting } from './state.js?v=20261129f';
-import * as C from './config.js?v=20261129f';
+import { S, clubAfkorting } from './state.js?v=20261127n';
+import * as C from './config.js?v=20261127n';
 import { zetActieveSport, actieveSport, sportProfiel, SPORTEN, STANDAARD_SPORT } from './sporten.js?v=20261126g';   /* [20261125y] sportprofiel stap 3 */
-import { db, doc, getDoc } from './firebase.js?v=20261011g';
-import { zetContentClub } from './content.js?v=20261129f';
+import { db, doc, getDoc } from './firebase.js?v=20261127n';
+import { zetContentClub } from './content.js?v=20261127n';
 import { weerVanTeam } from './snelstart-logica.js?v=20261122a';
 import { schoonProfiel as schoonPdfProfiel } from './pdf-profiel.js?v=20261115e';
 
@@ -233,7 +233,7 @@ export function pasClubConfigToe(club){
     leiding: { admins: club.admins || {}, hoofdJeugd: club.hoofdJeugd || {}, bouwCoordinatoren: club.bouwCoordinatoren || {},
       eigenBouwen: Array.isArray(club.eigenBouwen) ? club.eigenBouwen : [] } };
   /* [20261116b] eenmalige uitleg voor het hoofd jeugdopleiding (rolkaart.js) */
-  if (S.user && club.hoofdJeugd && club.hoofdJeugd[S.user.uid] === true) import('./rolkaart.js?v=20261129f').then(m => m.planRolkaart()).catch(() => {});
+  if (S.user && club.hoofdJeugd && club.hoofdJeugd[S.user.uid] === true) import('./rolkaart.js?v=20261127n').then(m => m.planRolkaart()).catch(() => {});
   /* [20261021] maximale videogrootte: alleen de eindbaas (platformModules.maxVideoMB); buiten de handtekening zoals S._clubPlatform */
   { const pv = Number(club.platformModules && club.platformModules.maxVideoMB);
     C.ACTIEF.maxVideoMB = pv > 0 ? pv : C.ACTIEF_STANDAARD.maxVideoMB; }
@@ -367,7 +367,7 @@ function zetAppIcoonLater(merk){
     /* [20261127c] een clubbeheerder zet de iconen ook als bestanden in Storage (voor Android) */
     const uid = S.user && S.user.uid, club = S.club && S.club.id === merk.clubId ? S.club : (S.clubs || []).find(c => c.id === merk.clubId);
     if (!uid || !club || !(club.admins && club.admins[uid]) || !m.serverIcoonNodig(merk.logo, merk.icoon)) return;
-    const fb = await import('./firebase.js?v=20261011g');
+    const fb = await import('./firebase.js?v=20261127n');
     const icoon = await m.maakServerIcoon(merk.clubId, merk.logo, fb);
     if (icoon) m.zetAppIcoon({ ...merk, icoon });
   }).catch(e => console.warn('[app-icoon]', e));

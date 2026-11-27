@@ -50,6 +50,16 @@ Alles gaat live vanaf `main`. De losse `firebase deploy`- en `gcloud`-opdrachten
 - **Versies:** elke release `node tools/versie.mjs JJJJMMDDx origin/main` (zet `?v=` in gewijzigde modules en hun importeurs + `CACHE_VERSIE` in `sw.js`).
 - **App Check:** reCAPTCHA Enterprise, meet alleen (Enforce uit).
 
+## Inlogdomein auth.cluppie.io (20261127n, branch `claude/authdomain-cluppie-io`) — NIET mergen vóór stap 1 t/m 4
+
+Google toont bij "Inloggen met Google" nu `cluppie-ad329.firebaseapp.com`. De branch zet `authDomain` op `auth.cluppie.io` (`public/js/firebase.js`) en voegt dat domein toe aan `frame-src` in `firebase.json`. De site zelf staat op GitHub Pages, dat `/__/auth/handler` niet kan serveren; daarom een eigen subdomein dat naar Firebase Hosting wijst. Mergen vóór de stappen hieronder breekt het inloggen voor iedereen.
+
+1. Firebase Console (project `cluppie-ad329`) › Hosting › Domein toevoegen: `auth.cluppie.io`. Eerst één keer `firebase deploy --only hosting` met een lege of minimale site, zodat `/__/auth/*` bestaat.
+2. DNS bij Strato: de records die Firebase toont (TXT voor verificatie, daarna A of CNAME voor `auth`). Wachten tot het certificaat actief is.
+3. Authentication › Settings › Authorized domains: `auth.cluppie.io` en `cluppie.io` toevoegen.
+4. Google Cloud Console › APIs & Services › Credentials › Web client (auto created by Firebase): bij Authorized redirect URIs `https://auth.cluppie.io/__/auth/handler`, bij Authorized JavaScript origins `https://auth.cluppie.io` en `https://www.cluppie.io`.
+5. Pas daarna mergen en testen: Google-login via popup op telefoon en laptop, plus inloggen met e-mail en wachtwoord. Wil je terug: `authDomain` weer op `cluppie-ad329.firebaseapp.com`.
+
 ## Open
 > **Deploys in de blokken hieronder:** de functions zijn bij met `main` (workflow, laatst 22-11). Wat nog open staat zijn de rules, de indexen en de invokers voor nieuwe callables: één keer `tools/deploy-alles.ps1` draaien dekt alle blokken. De losse opdrachten per blok niet meer gebruiken.
 

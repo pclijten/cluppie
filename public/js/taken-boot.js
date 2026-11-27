@@ -7,7 +7,7 @@
    Zelfde opzet als inschrijf-boot.js: anoniem inloggen, vrijwilligersBank/{id} lezen en een eigen
    aanmelding maken onder het vaste id <uid>_<taak>. Contactgegevens leest alleen het clubbeheer en
    dit toestel zelf (firestore.rules). */
-import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, collection, query, where, setDoc, deleteDoc, onSnapshot } from './firebase.js?v=20261011g';
+import { auth, db, signInAnonymously, signOut, onAuthStateChanged, doc, collection, query, where, setDoc, deleteDoc, onSnapshot } from './firebase.js?v=20261127n';
 import * as V from './vrijwilligers-logica.js?v=20261127v';
 import { plaatjeOk } from './toernooi-logica.js?v=20261127v';
 

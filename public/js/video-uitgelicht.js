@@ -11,7 +11,7 @@
    Dit bestand heeft geen vaste imports: de keuze hieronder is daardoor los te testen. */
 
 const LS_KEY = 'cluppieVideoGezien_v1';
-const FIREBASE = './firebase.js?v=20261011g';
+const FIREBASE = './firebase.js?v=20261127n';
 
 /* De uitgelichte video's van dit team, nieuwste eerst. */
 export function uitgelichtVoorTeam(videos, teamId){

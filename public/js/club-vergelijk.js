@@ -4,9 +4,9 @@
    waarden naast de mediaan en de beste kwart van alle deelnemers; nooit namen van andere clubs.
    Pas bij minimaal 3 deelnemers verschijnen er cijfers. Server: functions/platform.js. */
 
-import { db, doc, getDoc } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261129f';
-import { bewaar } from './club-instellingen.js?v=20261129f';
+import { db, doc, getDoc } from './firebase.js?v=20261127n';
+import { S, esc, meld } from './state.js?v=20261127n';
+import { bewaar } from './club-instellingen.js?v=20261127n';
 
 const METRICS = [
   ['evaluaties', 'Beoordelingen', 'per team, 30 dagen'],

@@ -10,7 +10,7 @@
    AVG: teamniveau. Geen uid, geen naam: alleen tijdstippen en een teller.
    Zuinig: dezelfde training binnen 10 minuten opnieuw openen telt niet opnieuw. */
 
-import { db, doc, setDoc, increment, serverTimestamp } from './firebase.js?v=20261011g';
+import { db, doc, setDoc, increment, serverTimestamp } from './firebase.js?v=20261127n';
 
 const DREMPEL_MS = 10 * 60 * 1000;
 const recent = new Map();   // `${teamId}|${trainingId}` -> laatst gelogd (ms)

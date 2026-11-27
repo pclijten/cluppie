@@ -11,9 +11,9 @@
    bij categorieën die twee jaar beslaan.
    PURE helpers (getest in tests/seizoen.test.mjs): volgendeCategorie, standaardBestemming. */
 
-import { db, doc, getDocs, collection, updateDoc, deleteField } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261129f';
-import { verhuisSpelersSeizoen } from './teams-spelers.js?v=20261129f';
+import { db, doc, getDocs, collection, updateDoc, deleteField } from './firebase.js?v=20261127n';
+import { S, esc, meld, openModal, sluitModal } from './state.js?v=20261127n';
+import { verhuisSpelersSeizoen } from './teams-spelers.js?v=20261127n';
 
 const BLIJFT = '__blijft', WEG = '__weg';
 

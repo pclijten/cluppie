@@ -9,10 +9,10 @@
    AVG: alleen aantallen per team, geen spelernamen; delen via WhatsApp gaat ook zonder namen.
    weekbriefTeam() is PUUR (getest in tests/weekbrief.test.mjs). */
 
-import { db, collection, getDocs, query, where } from './firebase.js?v=20261011g';
-import { S, esc, openModal } from './state.js?v=20261129f';
-import { LEERCURVE, leercurveRelevant, ACTIEF } from './config.js?v=20261129f';
-import { speeltijdReserve } from './analyse.js?v=20261129f';
+import { db, collection, getDocs, query, where } from './firebase.js?v=20261127n';
+import { S, esc, openModal } from './state.js?v=20261127n';
+import { LEERCURVE, leercurveRelevant, ACTIEF } from './config.js?v=20261127n';
+import { speeltijdReserve } from './analyse.js?v=20261127n';
 import { teltMee } from './opkomst.js?v=20260922c';
 
 const DAG = 86400000;

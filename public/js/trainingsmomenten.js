@@ -16,8 +16,8 @@
    en kan ze hier aanvullen.
 
    Per dag maximaal één moment (training 1 → eerste dag, training 2 → tweede). */
-import { db, doc, updateDoc } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261129f';
+import { db, doc, updateDoc } from './firebase.js?v=20261127n';
+import { S, esc, meld } from './state.js?v=20261127n';
 import { ico } from './icons.js?v=20261127b';
 
 export const DAGEN_LANG = ['Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag','Zondag'];

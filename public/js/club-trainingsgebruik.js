@@ -15,10 +15,10 @@
    AVG: alleen teamniveau. Geen spelers- of coachnamen in dit scherm.
    ====================================================================== */
 
-import { db, collection, getDocs, query, where, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261129f';
-import { momentenVanTeam } from './trainingsmomenten.js?v=20261129f';
-import { bouwGroepen } from './bouw-indeling.js?v=20261129f';
+import { db, collection, getDocs, query, where, functions, httpsCallable } from './firebase.js?v=20261127n';
+import { S, esc, meld } from './state.js?v=20261127n';
+import { momentenVanTeam } from './trainingsmomenten.js?v=20261127n';
+import { bouwGroepen } from './bouw-indeling.js?v=20261127n';
 
 const DAG = ['', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
 const DAG_MS = 86400000;

@@ -10,9 +10,9 @@
         (als de coach schrijfrechten heeft) op het document bewaard zodat
         andere coaches niet opnieuw hoeven te vragen.
    Faalt de AI, dan blijft de eerste doelregel staan: de kaart breekt nooit. */
-import { functions, httpsCallable, db, doc, updateDoc } from './firebase.js?v=20261011g';
-import { S } from './state.js?v=20261129f';
-import { aiAan, aiDoel } from './clubconfig.js?v=20261129f';
+import { functions, httpsCallable, db, doc, updateDoc } from './firebase.js?v=20261127n';
+import { S } from './state.js?v=20261127n';
+import { aiAan, aiDoel } from './clubconfig.js?v=20261127n';
 
 const MAX_TEKENS = 90;
 const geheugen = new Map();      // id+hash -> tekst (deze sessie)

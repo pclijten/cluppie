@@ -10,7 +10,7 @@
    - Is er op dit apparaat al iemand ingelogd op cluppie.io, dan gebeurt er niets: nooit stil van account wisselen.
    - Mislukt het, dan ziet de trainer het gewone inlogscherm.
    Zonder #verhuis doet deze module niets en laadt hij ook niets extra's. */
-import { auth } from './firebase.js?v=20261011g';
+import { auth } from './firebase.js?v=20261127n';
 
 /* PUUR (getest): haalt het bewijs uit het deel achter het hekje; geeft ook het hekje zonder het bewijs terug. */
 export function leesVerhuisHash(hash){

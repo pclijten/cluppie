@@ -7,8 +7,8 @@
    hetzelfde plan (bron 'seizoensplan', zelfde seizoensplanId) die niet meer in het plan zitten,
    worden verwijderd. Handmatige trainingen (bron niet 'seizoensplan') blijven altijd staan.
    [20261111d] Al zichtbare en door de coach aangepaste trainingen blijven ook staan (uitrolPlan). */
-import { db, collection, doc, getDocs, query, where, writeBatch, serverTimestamp } from './firebase.js?v=20261011g';
-import { trainingDocs, uitrolPlan } from './seizoensplan-club.js?v=20261129f';
+import { db, collection, doc, getDocs, query, where, writeBatch, serverTimestamp } from './firebase.js?v=20261127n';
+import { trainingDocs, uitrolPlan } from './seizoensplan-club.js?v=20261127n';
 
 const vandaagIso = () => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`; };
 

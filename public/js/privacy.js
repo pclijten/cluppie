@@ -4,9 +4,9 @@
    - verwijderen: haalt je uit teams en clubs, wist je gebruiksgegevens en je account
    Dit draait via Cloud Functions (exporteerMijnGegevens, verwijderMijnAccount).
 ==================================================================== */
-import { auth, functions, httpsCallable, signOut } from './firebase.js?v=20261011g';
-import { meld, openModal, sluitModal } from './state.js?v=20261129f';
-import { klikgedragAan, zetKlikgedrag } from './tracker.js?v=20261129f';
+import { auth, functions, httpsCallable, signOut } from './firebase.js?v=20261127n';
+import { meld, openModal, sluitModal } from './state.js?v=20261127n';
+import { klikgedragAan, zetKlikgedrag } from './tracker.js?v=20261127n';
 
 /* [20261113b] Opt-out klikgedrag (privacyverklaring 2026-10). Ook gebruikt in Instellingen › Mijn account. */
 export function htmlKlikgedragKeuze(prefix){
