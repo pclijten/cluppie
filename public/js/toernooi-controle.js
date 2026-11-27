@@ -13,7 +13,7 @@
 
    Een probleem: { id, niveau: 'fout'|'waarsch'|'tip', groep, tekst, tab, wed: [wedId], teams: [teamId] }
    fout = moet opgelost, waarsch = waarschijnlijk niet de bedoeling, tip = kan beter. */
-import * as T from './toernooi-logica.js?v=20261130k';
+import * as T from './toernooi-logica.js?v=20261130m';
 
 export const NIVEAUS = { fout: 'Fout', waarsch: 'Let op', tip: 'Tip' };
 const ORDE = { fout: 0, waarsch: 1, tip: 2 };
