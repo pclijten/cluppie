@@ -1,4 +1,11 @@
 [
+  { "datum": "2026-11-27", "titel": "Spelers evalueren op de laptop: werkblad en teammatrix", "punten": [
+    "Kies je op de laptop bij Evaluatie voor Evalueren, dan opent de beoordeling nu op het hele scherm in plaats van in een smal paneel. Links staan je spelers, in het midden vul je één domein tegelijk in en rechts groeit het profiel van de speler mee.",
+    "Op elke knop staat het niveau, van Aandacht tot Uitblinker, en erboven wat dat niveau betekent. De score van de vorige beoordeling staat erbij.",
+    "Sneller werken: kies met de toetsen 1 tot en met 5, met de pijltjes ga je naar het volgende criterium of domein. Met Opslaan ga je meteen door naar de volgende speler.",
+    "Nieuw is de Teammatrix: al je spelers onder elkaar en de criteria ernaast, als een cijferlijst. Typ een cijfer en je springt naar het volgende vakje. Een omlijnd vakje is de score van de vorige keer; met Enter neem je die over.",
+    "Op de telefoon blijft de beoordeling zoals die was."
+  ] },
   { "datum": "2026-11-27", "titel": "Video's met voorbeeldbeeld en duur", "punten": [
     "Bij Video's zie je nu per video een echt beeld uit de video in plaats van een zwart vlak, met de lengte rechtsonder.",
     "Titels die nog een bestandsnaam waren, zoals 01-aan-de-slag, lees je nu als Aan de slag.",

@@ -10517,3 +10517,134 @@ p.cp-let{margin:0;font-size:var(--t-sm)}
 /* Club › Video's (beheerlijst): iets groter beeld, zonder afspeelknop zodat de duur leesbaar blijft */
 .video-rij.vsort .thumb{width:96px;height:54px}
 .video-rij.vsort .thumb .vt-play{display:none}
+
+/* ==================== Evaluatie op de desktop: werkblad en teammatrix ====================
+   [20261130a] evaluatie-werkblad.js. Alleen binnen .dk-scherm, dus alleen op desktop. */
+.ew-scherm .dk-acties{flex-wrap:nowrap}
+.ew-scherm .dk-kruim{flex-shrink:0;max-width:34%}
+.ew-scherm .dk-kop .dk-knop{padding-left:var(--space-sm);padding-right:var(--space-sm)}
+.ew-hoort{display:flex;align-items:center;gap:var(--space-xs);font-size:var(--t-sm);color:var(--ink-2);white-space:nowrap}
+.ew-hoort select.invoer{width:auto;max-width:260px;padding-top:var(--space-xs);padding-bottom:var(--space-xs);font-size:var(--t-md)}
+.ew-moment.invoer{width:170px;padding-top:var(--space-xs);padding-bottom:var(--space-xs);font-size:var(--t-md)}
+.ew-leeg{padding:28px}
+.ew-drie{flex:1;display:grid;grid-template-columns:210px minmax(0,1fr) 300px;height:calc(100dvh - var(--dk-kop));min-height:0}
+.ew-sp{grid-template-columns:30px minmax(0,1fr) auto}
+.ew-st{font-style:normal;font-size:var(--t-xs);font-weight:600;color:var(--ink-2);white-space:nowrap;display:inline-flex;align-items:center;gap:2px}
+.ew-st.klaar{color:var(--n5-tekst)}
+.ew-st.half{color:var(--n3-tekst)}
+.ew-st.vuil{color:var(--accent-tekst)}
+.ew-st.vuil::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:4px}
+.ew-midden{padding:22px 28px 28px;display:flex;flex-direction:column;gap:var(--space-sm)}
+.ew-wkop{display:flex;align-items:flex-end;gap:var(--space-md);flex-wrap:wrap}
+.ew-wkop h1{font-family:var(--font-display);font-weight:800;font-size:48px;line-height:.9;text-transform:uppercase}
+.ew-meta{font-size:var(--t-sm);color:var(--ink-2);padding-bottom:3px}
+.ew-voortgang{margin-left:auto;text-align:right;font-size:var(--t-sm);color:var(--ink-2)}
+.ew-voortgang i{display:block;width:190px;height:6px;border-radius:var(--r-pill);background:var(--op-vlak-2);margin-top:6px;overflow:hidden}
+.ew-voortgang i b{display:block;height:100%;background:var(--accent)}
+.ew-tabs{display:flex;gap:var(--space-2xs);border-bottom:1px solid var(--line-d)}
+.dk-scherm .ew-tab{display:flex;align-items:center;gap:var(--space-xs);padding:10px 10px 12px;font-size:var(--t-md);font-weight:600;color:var(--ink-2);border-bottom:2px solid transparent;margin-bottom:-1px}
+.ew-tab b{font-family:var(--font-display);font-size:var(--t-lg);color:color-mix(in srgb,var(--c) 70%,var(--ink))}
+.ew-tab small{font-size:var(--t-xs);font-weight:500;color:var(--ink-2)}
+.ew-tab small.ok{color:var(--n5-tekst)}
+.ew-tab.aan{color:var(--ink);border-bottom-color:var(--c)}
+.ew-tab:hover{color:var(--ink)}
+.ew-domuitleg{display:flex;gap:var(--space-md);justify-content:space-between;align-items:center;font-size:var(--t-sm);color:var(--ink-2)}
+.ew-toetsen{white-space:nowrap;font-size:var(--t-xs);color:var(--ink-2)}
+.ew-toetsen kbd{font:600 11px var(--font-body);border:1px solid var(--hover-rand);border-bottom-width:2px;border-radius:5px;padding:0 5px;margin:0 2px 0 8px;color:var(--ink-2)}
+.ew-toetsen kbd:first-child{margin-left:0}
+.ew-ladder,.ew-crit{display:grid;grid-template-columns:minmax(170px,1.3fr) repeat(5,minmax(0,1fr));gap:6px;align-items:center}
+.ew-ladder{padding:0 12px;align-items:end;font-size:var(--t-2xs);font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-2);text-align:center}
+.ew-ladder small{display:block;font-weight:500;letter-spacing:0;text-transform:none;line-height:1.3}
+.ew-ladder-l{text-align:left}
+.ew-crit{padding:10px 12px;background:var(--surface);border:1px solid var(--line-d);border-radius:var(--r-m)}
+.ew-crit.focus{border-color:var(--hover-rand);box-shadow:0 0 0 1px var(--hover-rand)}
+.ew-crit-n .vb-badge{white-space:nowrap;margin-left:0}
+.ew-crit-n b{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;font-size:var(--t-md);font-weight:600}
+.ew-crit-n{cursor:pointer}
+.ew-crit:not(.focus) .ew-crit-n small{display:none}
+.ew-crit-n small{display:block;font-size:var(--t-xs);color:var(--ink-2);line-height:1.4;margin-top:2px}
+.dk-scherm .ew-lv{position:relative;height:42px;border-radius:var(--r-s);border:1px solid var(--line-d);background:var(--op-vlak);color:var(--ink-2);font-size:var(--t-xs);font-weight:600;text-align:center;white-space:nowrap;padding:0 2px}
+.ew-lv:hover{border-color:var(--hover-rand);color:var(--ink)}
+.dk-scherm .ew-lv.gekozen.kn1{background:var(--n1)}.dk-scherm .ew-lv.gekozen.kn2{background:var(--n2)}.dk-scherm .ew-lv.gekozen.kn3{background:var(--n3)}.dk-scherm .ew-lv.gekozen.kn4{background:var(--n4)}.dk-scherm .ew-lv.gekozen.kn5{background:var(--n5)}
+.ew-lv.gekozen{border-color:transparent;color:var(--vast-donkergrijs-1,#14181d)}
+.ew-lv.gekozen.kn1,.ew-lv.gekozen.kn5{color:var(--wit,#fff)}
+.ew-lv.vorig::after{content:"vorige";position:absolute;top:-8px;right:6px;font-size:10px;font-weight:600;line-height:1.3;padding:0 5px;border-radius:5px;background:var(--bg);color:var(--ink-2);border:1px dashed var(--hover-rand)}
+.ew-not{margin-top:var(--space-2xs)}
+.ew-onder{display:flex;flex-direction:column;align-items:flex-start;gap:var(--space-2xs)}
+.dk-scherm .ew-onder .dk-knop{padding-left:0}
+.ew-hint{font-size:var(--t-xs);color:var(--ink-2);line-height:2}
+.ew-rechts{border-left:1px solid var(--line-d);padding:var(--space-md);display:flex;flex-direction:column;gap:var(--space-sm)}
+.ew-rechts .dk-blok{padding:14px 16px}
+.ew-rechts .dk-label span{margin-left:auto;font-weight:500;font-size:var(--t-xs)}
+.ew-radar svg{display:block;width:100%;height:auto;max-height:230px}
+.dk-scherm .ew-domrij{display:grid;grid-template-columns:28px minmax(0,1fr) auto 64px;gap:var(--space-xs);align-items:center;width:100%;padding:5px 0;color:var(--ink-2);font-size:var(--t-sm)}
+.ew-domrij b{font-family:var(--font-display);font-size:var(--t-lg);color:color-mix(in srgb,var(--c) 70%,var(--ink))}
+.ew-domrij strong{font-family:var(--font-display);font-size:var(--t-xl);color:var(--ink)}
+.ew-domrij em{font-style:normal;font-size:var(--t-xs);font-weight:600;text-align:right;white-space:nowrap}
+.ew-domrij .op{color:var(--n5-tekst)}.ew-domrij .neer{color:var(--n1-tekst)}.ew-domrij .gelijk{color:var(--ink-2);font-weight:500}
+.ew-lp{font-size:var(--t-sm);padding:4px 0;border-bottom:1px solid var(--line-d)}
+.ew-rechts .vb-zicht{margin:0}
+.ew-knoppen{display:flex;flex-direction:column;gap:var(--space-xs);margin-top:auto;position:sticky;bottom:calc(var(--space-md) * -1);background:var(--bg);padding:var(--space-xs) 0 var(--space-md);z-index:3}
+.dk-scherm .ew-knoppen .dk-knop{justify-content:center;padding:11px var(--space-md)}
+.ew-scherm .dk-knop:disabled{opacity:.45;cursor:default}
+
+.ew-mx{position:relative;flex:1;min-height:0;overflow:hidden;height:calc(100dvh - var(--dk-kop));display:flex;flex-direction:column;gap:var(--space-sm);padding:var(--space-md) 28px}
+.ew-mx-balk{display:flex;align-items:center;gap:var(--space-xs);flex-wrap:wrap}
+.ew-ruimte{flex:1}
+.ew-seg{display:inline-flex;gap:2px;padding:3px;border-radius:var(--r-s);background:var(--surface);border:1px solid var(--line-d)}
+.dk-scherm .ew-seg button{padding:6px 12px;border-radius:7px;font-size:var(--t-sm);font-weight:600;color:var(--ink-2);display:inline-flex;gap:6px;align-items:center}
+.ew-seg button b{font-family:var(--font-display);font-size:var(--t-lg);color:color-mix(in srgb,var(--c) 70%,var(--ink))}
+.ew-seg button.aan{background:var(--op-vlak-2);color:var(--ink)}
+.ew-mx-rol{flex:0 1 auto;min-height:0;overflow:auto;scrollbar-width:thin;border:1px solid var(--line-d);border-radius:var(--r-m);background:var(--surface)}
+.ew-mx-tabel{border-collapse:separate;border-spacing:0;width:100%}
+.ew-mx-tabel th,.ew-mx-tabel td{border-bottom:1px solid var(--line-d);text-align:center;padding:0}
+.ew-mx-tabel tbody tr:last-child td{border-bottom:0}
+.ew-mx-tabel thead th{position:sticky;top:0;z-index:2;background:var(--surface);vertical-align:bottom;padding:8px 4px;font-size:var(--t-xs);font-weight:600;color:var(--ink-2);line-height:1.25}
+.ew-mx-tabel thead tr.ew-mx-dom th{font-family:var(--font-display);font-size:var(--t-md);font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:color-mix(in srgb,var(--c) 70%,var(--ink));box-shadow:inset 0 -2px 0 var(--c);padding:6px 4px;white-space:nowrap}
+.ew-mx-tabel thead tr.ew-mx-dom + tr th{top:31px}
+.dk-scherm .ew-mx-th{font:inherit;color:inherit;text-align:center;max-width:110px;display:inline-block}
+.ew-mx-th:hover{color:var(--ink);text-decoration:underline}
+.ew-mx-rol.alles .ew-mx-th{max-width:none;max-height:200px;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;line-height:1.1}
+.ew-mx-tabel .ew-nm{position:sticky;left:0;z-index:1;background:var(--surface);text-align:left;width:200px;min-width:170px}
+.ew-mx-tabel thead .ew-nm{z-index:3;padding-left:14px}
+.dk-scherm .ew-mx-tabel td.ew-nm button{display:flex;align-items:baseline;gap:8px;width:100%;padding:0 14px;height:46px;align-items:center;white-space:nowrap;color:var(--ink)}
+.ew-mx-tabel td.ew-nm b{font-size:var(--t-md);font-weight:600}
+.ew-mx-tabel td.ew-nm small{font-size:var(--t-xs);color:var(--ink-2);overflow:hidden;text-overflow:ellipsis}
+.ew-mx-tabel td.ew-nm button:hover b{text-decoration:underline}
+.ew-stip{width:7px;height:7px;border-radius:50%;background:var(--accent);margin-left:auto;flex-shrink:0}
+.ew-mx-tabel tr.ew-hl td{background:color-mix(in srgb,var(--ink) 4%,var(--surface))}
+.ew-mx-tabel .ew-sep{border-left:1px solid var(--line-d)}
+.ew-mx-tabel .ew-gem{width:64px;font-family:var(--font-display);font-size:var(--t-xl);font-weight:700}
+.ew-mx-tabel thead .ew-gem{font-family:var(--font-body);font-size:var(--t-xs);font-weight:600}
+.ew-mx-tabel td.ew-vg{color:var(--ink-2);font-size:var(--t-lg)}
+.dk-scherm .ew-cel{width:42px;height:32px;border-radius:7px;margin:7px auto;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:var(--t-lg);font-weight:700;text-align:center}
+.ew-mx-rol.alles .ew-cel{width:32px;height:28px}
+.ew-cel.kn2,.ew-cel.kn3,.ew-cel.kn4{color:var(--vast-donkergrijs-1,#14181d)}
+.ew-cel.kn1,.ew-cel.kn5{color:var(--wit,#fff)}
+.ew-cel.ew-c-leeg{border:1px dashed var(--hover-rand);color:var(--ink-2);font-weight:500;background:none}
+.ew-cel.ew-c-vorig{border:1.5px solid var(--c);color:var(--c);background:none;opacity:.85}
+.ew-cel:hover{filter:brightness(1.1)}
+.ew-cel:focus{outline:2px solid var(--ink);outline-offset:2px}
+.ew-mx-voet{display:flex;align-items:center;justify-content:space-between;gap:var(--space-md);flex-wrap:wrap}
+.ew-leg{display:flex;gap:var(--space-md);font-size:var(--t-xs);color:var(--ink-2);flex-wrap:wrap}
+.ew-leg i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+.ew-leg i.vorig{border:1.5px solid var(--n4-tekst)}
+.ew-mx .vb-zicht{margin:0}
+.ew-pop{position:absolute;z-index:6;width:300px;padding:12px;border-radius:var(--r-m);background:var(--surface-2);border:1px solid var(--hover-rand);box-shadow:var(--lift)}
+.ew-pop h5{font-size:var(--t-md);font-weight:600;margin-bottom:2px}
+.ew-pop p{font-size:var(--t-xs);color:var(--ink-2);line-height:1.4;margin-bottom:var(--space-xs)}
+.dk-scherm .ew-pop button{display:grid;grid-template-columns:26px minmax(0,1fr);column-gap:10px;align-items:center;width:100%;padding:6px 8px;border-radius:var(--r-xs);font-size:var(--t-sm);font-weight:600;color:var(--ink)}
+.ew-pop button i{grid-row:span 2;width:26px;height:22px;border-radius:5px;font:700 14px/22px var(--font-display);font-style:normal;text-align:center;color:var(--vast-donkergrijs-1,#14181d)}
+.ew-pop button i.kn1,.ew-pop button i.kn5{color:var(--wit,#fff)}
+.ew-pop button small{grid-column:2;font-size:var(--t-2xs);font-weight:400;color:var(--ink-2);line-height:1.35}
+.ew-pop button em{font-style:normal;font-size:var(--t-2xs);font-weight:500;color:var(--ink-2);margin-left:6px}
+.ew-pop button.aan,.ew-pop button:hover{background:var(--op-vlak-2)}
+.dk-scherm .ew-pop button.ew-wis{display:block;text-align:center;color:var(--ink-2);margin-top:4px}
+@media (max-width:1500px){
+  .ew-hoort span{display:none}
+}
+@media (max-width:1350px){
+  .ew-drie{grid-template-columns:210px minmax(0,1fr) 280px}
+  .ew-midden{padding:18px 20px 24px}
+  .ew-hoort span{display:none}
+}

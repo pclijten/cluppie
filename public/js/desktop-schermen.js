@@ -36,7 +36,12 @@ import { plekPillenHtml } from './veldkaart.js?v=20261129x';
 import { evaluatieOpen, presWedstrijdKeuzes, htmlWedstrijdInfo, koppelWedstrijdInfo } from './teams-hub.js?v=20261129x';
 import { TE_GROEPEN, TE_NIV, TE_FOCUS_LADDER, TE_STEM, teDoelIco, teVervolg, teLeeftijd, teCriteriaVoor, teZinnen, teScores, teIsNieuw, teGroepWaarden,
   teCritGemiddelden, teKleur, teCijfer, teWedRadar } from './team-evaluatie-criteria.js?v=20261127p';
+<<<<<<< HEAD
 import { htmlSpelerRadar, domeinWaardenEcht, leeftijdTeam } from './beoordeling-volledig.js?v=20261129x';
+=======
+import { htmlSpelerRadar, domeinWaardenEcht, leeftijdTeam } from './beoordeling-volledig.js?v=20261129v';
+import { ewActief, htmlEw, koppelEw, openWerkblad, openMatrix } from './evaluatie-werkblad.js?v=20261129v';
+>>>>>>> 6c70598 (Evaluatie op de laptop: werkblad per speler en teammatrix)
 import { isAfgelast, telMee, soortPill, statusBadge } from './wedstrijd-status.js?v=20261129i';
 import { spelerStats, meestGespeeldePosities } from './teams-spelers.js?v=20261129x';
 import { bewaarTeamEvaluatie } from './teams-evaluatie.js?v=20261129x';
@@ -532,7 +537,7 @@ function htmlPaspoort(){
   momenten.sort((a, b) => (b[0] || '').localeCompare(a[0] || ''));
 
   return `<div class="dk-scherm dk-paspoort">
-    ${kop('Evaluatie, ' + voornaam(p), `${knop('Selectie', 'terugsel', '', 'navigation-back')}${knop('Profiel', 'openprofiel', '', 'team-player').replace('data-dk="openprofiel"', `data-dk="openprofiel" data-id="${esc(p.id)}"`)}${knop('Snel beoordelen', 'snel', '', 'action-check')}${knop('Evalueren', 'beoordeel', 'rood', 'attendance-evaluatie')}`)}
+    ${kop('Evaluatie, ' + voornaam(p), `${knop('Selectie', 'terugsel', '', 'navigation-back')}${knop('Profiel', 'openprofiel', '', 'team-player').replace('data-dk="openprofiel"', `data-dk="openprofiel" data-id="${esc(p.id)}"`)}${knop('Snel beoordelen', 'snel', '', 'action-check')}${knop('Teammatrix', 'evmatrix', '', 'attendance-overview')}${knop('Evalueren', 'beoordeel', 'rood', 'attendance-evaluatie')}`)}
     <div class="dk-drie dk-drie-pas">
       <aside class="dk-kol dk-lijstkol">${lijst.map(s => { const ks = kaart(s); return `<button class="dk-sp ${s.id === p.id ? 'actief' : ''}" data-dk="profiel" data-id="${esc(s.id)}"><span class="dk-sp-nr">${esc(s.nummer ?? '')}</span><span class="dk-sp-t"><b>${esc(volledigeNaam(s))}</b><small>${esc(s.positie || 'Speler')}${ks.ovr != null ? ', ' + ks.ovr : ''}</small></span>${sparkline(ks.trend)}</button>`; }).join('')}</aside>
       <section class="dk-kol dk-hart"><div class="dk-spook dk-spook-rug">${esc(p.nummer ?? '')}</div>
@@ -1063,6 +1068,7 @@ async function actie(b){
   if (a === 'profiel'){ klassiekProfiel = null; S._beoordeelProfiel = id; if (S.teamTab !== 'spelers') zetTeamTab('spelers'); else renderTeam(); return; }
   if (a === 'terugsel'){ S._dkModus = null; S._beoordeelProfiel = null; renderTeam(); return; }
   if (a === 'volprofiel'){ klassiekProfiel = S._beoordeelProfiel; renderTeam(); return; }
+<<<<<<< HEAD
   if (a === 'ronde'){ const m = await import('./teams-spelers.js?v=20261129x'); m.startRondeFlow(b.dataset.id); return; }
   if (a === 'rondeoverzicht'){ const m = await import('./teams-spelers.js?v=20261129x'); m.openTeamOverzicht(b.dataset.id); return; }
   if (a === 'beoordeel'){ const m = await import('./teams-spelers.js?v=20261129x'); m.modalVolledigeBeoordeling(S._beoordeelProfiel); return; }
@@ -1071,6 +1077,19 @@ async function actie(b){
   if (a === 'snelronde'){ const m = await import('./teams-spelers.js?v=20261129x'); m.startSnelRonde(); return; }
   if (a === 'slspelers'){ const m = await import('./teams-spelers.js?v=20261129x'); m.modalSpelersUitSportlink(); return; }
   if (a === 'nieuwsp'){ const m = await import('./teams-spelers.js?v=20261129x'); m.modalSpeler(null); return; }
+=======
+  if (a === 'ronde'){ const m = await import('./teams-spelers.js?v=20261129v'); m.startRondeFlow(b.dataset.id); return; }
+  if (a === 'rondeoverzicht'){ const m = await import('./teams-spelers.js?v=20261129v'); m.openTeamOverzicht(b.dataset.id); return; }
+  /* [20261130a] op de laptop: het werkblad op het hele scherm in plaats van het zijpaneel */
+  if (a === 'beoordeel'){ if (isDesk() && modAan('evaluaties') && !meekijk){ openWerkblad(S._beoordeelProfiel); return; }
+    const m = await import('./teams-spelers.js?v=20261129v'); m.modalVolledigeBeoordeling(S._beoordeelProfiel); return; }
+  if (a === 'evmatrix'){ if (!modAan('evaluaties')) return meld('Evaluaties staan uit voor dit team'); openMatrix(); return; }
+  if (a === 'leerpunt'){ const m = await import('./teams-spelers.js?v=20261129v'); m.modalLeerpunt(S._beoordeelProfiel); return; }
+  if (a === 'lpthema'){ const m = await import('./teams-spelers.js?v=20261129v'); m.modalLeerpunt(id, selThema); return; }
+  if (a === 'snelronde'){ const m = await import('./teams-spelers.js?v=20261129v'); m.startSnelRonde(); return; }
+  if (a === 'slspelers'){ const m = await import('./teams-spelers.js?v=20261129v'); m.modalSpelersUitSportlink(); return; }
+  if (a === 'nieuwsp'){ const m = await import('./teams-spelers.js?v=20261129v'); m.modalSpeler(null); return; }
+>>>>>>> 6c70598 (Evaluatie op de laptop: werkblad per speler en teammatrix)
   if (a === 'filter'){ spFilter = b.dataset.f; renderTeam(); return; }
   if (a === 'elftal'){ S._elftalFilter = b.dataset.f; renderTeam(); return; }
   if (a === 'elftaltoew'){ modalElftalToewijzen(renderTeam); return; }
@@ -1083,9 +1102,17 @@ async function actie(b){
   /* [20260923a] */
   if (a === 'openprofiel'){ S._dkModus = null; S._beoordeelProfiel = id; S._profielTab = 'overzicht'; if (S.teamTab !== 'spelers') zetTeamTab('spelers'); else renderTeam(); return; }
   if (a === 'evmodus'){ S._dkModus = 'evaluatie'; S._beoordeelProfiel = S._beoordeelProfiel || eersteSpeler(); renderTeam(); return; }
+<<<<<<< HEAD
   if (a === 'snel'){ const m = await import('./teams-spelers.js?v=20261129x'); m.modalSnelBeoordeling(S._beoordeelProfiel); return; }
   if (a === 'evopen'){ const bo = S.beoordelingen.find(x => x.id === id); if (!bo) return; const m = await import('./teams-spelers.js?v=20261129x');
     if (bo.soort === 'snel') m.modalSnelBeoordeling(bo.spelerId, bo); else m.modalVolledigeBeoordeling(bo.spelerId, bo); return; }
+=======
+  if (a === 'snel'){ const m = await import('./teams-spelers.js?v=20261129v'); m.modalSnelBeoordeling(S._beoordeelProfiel); return; }
+  if (a === 'evopen'){ const bo = S.beoordelingen.find(x => x.id === id); if (!bo) return; const m = await import('./teams-spelers.js?v=20261129v');
+    if (bo.soort === 'snel') m.modalSnelBeoordeling(bo.spelerId, bo);
+    else if (isDesk() && modAan('evaluaties') && !(bo.prive && bo.door?.uid && bo.door.uid !== S.user?.uid)) openWerkblad(bo.spelerId, bo);   // andermans privébeoordeling blijft alleen-lezen in het venster
+    else m.modalVolledigeBeoordeling(bo.spelerId, bo); return; }
+>>>>>>> 6c70598 (Evaluatie op de laptop: werkblad per speler en teammatrix)
   if (a === 'awopen'){ awOpen = awOpen === id ? null : id; renderTeam(); return; }
   if (a === 'awzet'){ const pid = id, reden = b.dataset.r || null; awOpen = null;
     try { await zetPresentie(selTrainingDatum, pid, reden); meld(reden ? `${voornaam(speler(pid))} afgemeld` : `${voornaam(speler(pid))} weer aanwezig`); }
@@ -1196,7 +1223,7 @@ function renderDesk(v, tab){
   if (tab === 'spelers' && S._dkModus === 'evaluatie' && !S._beoordeelProfiel) S._beoordeelProfiel = eersteSpeler();
   try {
     const html = tab === 'hub' ? htmlDashboard()
-      : tab === 'spelers' ? (S._beoordeelProfiel ? (S._dkModus === 'evaluatie' ? htmlPaspoort() : htmlSpelerBewerk()) : htmlSelectie())
+      : tab === 'spelers' ? (ewActief() ? htmlEw() : S._beoordeelProfiel ? (S._dkModus === 'evaluatie' ? htmlPaspoort() : htmlSpelerBewerk()) : htmlSelectie())
       : tab === 'wedstrijden' ? htmlWedstrijden()
       : tab === 'presentietraining' ? htmlTrainingen()
       : tab === 'evaluatie' ? htmlEvaluatie()
@@ -1208,6 +1235,7 @@ function renderDesk(v, tab){
     v.classList.remove(...[...v.classList].filter(c => c.startsWith('dk-na')));
     v.innerHTML = html;
     koppel(v);
+    if (tab === 'spelers' && ewActief()) koppelEw(v);
     if (tab === 'wedstrijden') koppelWedstrijdInfo(v);   // [20261012h] tijden/plek aanpassen en delen op desktop
     laatsteSig = sig();
     return true;
