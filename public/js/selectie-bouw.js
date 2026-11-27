@@ -25,11 +25,11 @@
    Cijfers, beoordelingen en opkomst tellen over alle teams in de bouw, zodat
    een verhuisde speler zijn historie houdt. Geen extra reads, behalve één
    getDoc per verhuizing (vers spelerdocument). */
-import { S, esc, meld } from './state.js?v=20261128d';
+import { S, esc, meld } from './state.js?v=20261128k';
 import { db, doc, collection, getDoc, writeBatch, serverTimestamp } from './firebase.js?v=20261011g';
-import { bouwLeenSnapshot } from './teams-spelers.js?v=20261128d';
-import { SKILLS, POSITIE_GROEPEN } from './config.js?v=20261128d';
-import { analyseWedstrijd, speeltijdReserve } from './analyse.js?v=20261128d';
+import { bouwLeenSnapshot } from './teams-spelers.js?v=20261128k';
+import { SKILLS, POSITIE_GROEPEN } from './config.js?v=20261128k';
+import { analyseWedstrijd, speeltijdReserve } from './analyse.js?v=20261128k';
 import { opkomstVoor } from './opkomst.js?v=20260922c';
 import { teLeeftijd, teCriteriaVoor, teScores } from './team-evaluatie-criteria.js?v=20261127p';
 

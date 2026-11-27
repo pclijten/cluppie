@@ -10,9 +10,9 @@
    weekbriefTeam() is PUUR (getest in tests/weekbrief.test.mjs). */
 
 import { db, collection, getDocs, query, where } from './firebase.js?v=20261011g';
-import { S, esc, openModal } from './state.js?v=20261128d';
-import { LEERCURVE, leercurveRelevant, ACTIEF } from './config.js?v=20261128d';
-import { speeltijdReserve } from './analyse.js?v=20261128d';
+import { S, esc, openModal } from './state.js?v=20261128k';
+import { LEERCURVE, leercurveRelevant, ACTIEF } from './config.js?v=20261128k';
+import { speeltijdReserve } from './analyse.js?v=20261128k';
 import { teltMee } from './opkomst.js?v=20260922c';
 
 const DAG = 86400000;
