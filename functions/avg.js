@@ -136,6 +136,13 @@ exports.verwijderMijnAccount = onCall({ region: REGIO, cors: true }, async (requ
     throw new HttpsError('failed-precondition',
       `Je bent de enige beheerder van ${weesClubs.map(d => d.data().naam).join(', ')}. Draag eerst het beheer over of verwijder de club.`);
 
+  await wisAccount(db, uid);
+  return { ok: true };
+});
+
+/* [20261129m] Het account zelf en alles wat aan de uid hangt. Ook gebruikt door de eindbaas
+   (functions/trainer-verwijderen.js); de controles doet de aanroeper. Teams blijven bestaan. */
+async function wisAccount(db, uid){
   await require('./toegang').verwijderUidUitAlles(db, uid);
 
   await verwijderQuery(db.collection('logins').where('uid', '==', uid));
@@ -147,8 +154,7 @@ exports.verwijderMijnAccount = onCall({ region: REGIO, cors: true }, async (requ
   await db.doc(`privacyKennisname/${uid}`).delete().catch(() => {});
   await verwijderQuery(db.collection('aanvragen').where('uid', '==', uid));
   await admin.auth().deleteUser(uid);
-  return { ok: true };
-});
+}
 
 /* ---------- 4. Bewaartermijnen ---------- */
 exports.bewaartermijnen = onSchedule(
@@ -171,5 +177,6 @@ exports.bewaartermijnen = onSchedule(
 
 module.exports.schoonNaam = schoonNaam;
 module.exports.verwijderQuery = verwijderQuery;
+module.exports.wisAccount = wisAccount;
 module.exports.scrubPII = scrubPII;
 module.exports.namenVoorScrub = namenVoorScrub;

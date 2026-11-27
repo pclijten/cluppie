@@ -651,7 +651,7 @@ if (DEMO_ROL === 'eindbaas'){
   const overzicht = () => ({ bijgewerkt: Timestamp.now(), clubs: rijen,
     totalen: { clubs: rijen.length, actieveClubs: rijen.filter(k => k.laatsteGebruik && (nu - Date.parse(k.laatsteGebruik)) < 14 * DAG).length, coaches30: som(k => k.coaches30), teams: som(k => k.teams),
       wachtend: som(k => k.wachtend), aiMaand: som(k => k.ai.maand), aiSolo: 0, individueel: los.length, individueelNieuw: los.filter(x => x.nieuw).length },
-    individueel: { totaal: los.length, nieuw7: 2, eigenTeam: 2, wachtOpClub: 0, nogGeenTeam: 1, lijst: los } });
+    individueel: { totaal: los.length, nieuw7: los.filter(x => x.nieuw).length, eigenTeam: los.filter(x => x.status === 'eigen-team').length, wachtOpClub: 0, nogGeenTeam: los.filter(x => x.status === 'nog-geen-team').length, lijst: los } });
   zetSeed('platformstats/overzicht', overzicht());
   zetSeed('clubAanmeldingen/demo-aanmelding-1', { status: 'nieuw', clubNaam: 'VV Aanmelding', plaats: 'Aanmeldingen', district: 'west1', aantalTeams: '11-20', contactNaam: 'Tess Aanvrager', contactEmail: 'tess@voorbeeld.nl',
     rol: 'Jeugdvoorzitter', werkwijze: 'club', sportlinkClientId: 'demo', bericht: 'We willen na de winterstop beginnen met de onder- en middenbouw.', gemaakt: tsVoor(1), uid: 'demo-aanvrager' });
@@ -676,6 +676,17 @@ if (DEMO_ROL === 'eindbaas'){
       store.delete('clubs/' + d.clubId); for (const k of teams) store.delete(k);
       const i = rijen.findIndex(x => x.id === d.clubId); if (i >= 0) rijen.splice(i, 1);
       veranderd(); return { klaar: true };
+    },
+    /* [20261129m] losse trainer verwijderen: eerst tellen, dan (met het juiste e-mailadres) uit het geheugen halen */
+    verwijderTrainerPlatform: d => {
+      const t = los.find(x => x.uid === d.uid);
+      if (!t){ const e = new Error('Dit account bestaat niet (meer).'); e.code = 'failed-precondition'; throw e; }
+      const telling = { naam: t.naam, email: t.email, bevestig: t.email || t.naam, aangemeld: t.aangemeld,
+        teamsWeg: t.teams.map(x => ({ naam: x.naam, spelers: x.spelers })), teamsBlijft: [], documenten: t.teams.length ? { teamkamer: 1, trainingDeel: 2 } : {}, losseDocumenten: t.teams.length ? 3 : 0 };
+      if (d.droog !== false) return { droog: true, ...telling };
+      if (String(d.bevestig || '').trim().toLowerCase() !== String(telling.bevestig).trim().toLowerCase()){ const e = new Error('Het e-mailadres klopt niet; er is niets verwijderd.'); e.code = 'failed-precondition'; throw e; }
+      los.splice(los.indexOf(t), 1); zetSeed('platformstats/overzicht', overzicht());
+      veranderd(); return { klaar: true, ...telling };
     },
     startOndersteuning: () => { const e = new Error('Meehelpen kan niet in de demo: het opent de club als beheerder'); e.code = 'demo/niet-beschikbaar'; throw e; },
   });

@@ -43,8 +43,12 @@ function magWeg(club){
 /* ---------- uitvoering ---------- */
 async function verzamel(db, clubId){
   const teams = (await db.collection('teams').where('club', '==', clubId).select().get()).docs.map(d => d.id);
-  const ids = new Set([clubId, ...teams]);
+  return { teams, ...(await scanBij(db, new Set([clubId, ...teams]))) };
+}
+/* [20261129m] ook gebruikt door trainer-verwijderen.js: alle losse documenten die bij deze ids horen */
+async function scanBij(db, ids){
   const weg = [], tel = {};
+  if (!ids.size) return { weg, tel };
   for (const col of await db.listCollections()){
     if (NOOIT.includes(col.id)) continue;
     let laatste = null;
@@ -55,7 +59,7 @@ async function verzamel(db, clubId){
       laatste = snap.docs[snap.docs.length - 1]; if (snap.size < 500) break;
     }
   }
-  return { teams, weg, tel };
+  return { weg, tel };
 }
 async function bestandenVan(clubId){
   try {
@@ -103,4 +107,4 @@ async function haalUitOverzicht(db, clubId){
   } catch (e){ console.warn('[verwijderClubPlatform] overzicht', e.message || e); }
 }
 
-module.exports = { maak, hoortBij, naamKlopt, magWeg, NOOIT };
+module.exports = { maak, hoortBij, naamKlopt, magWeg, NOOIT, scanBij };
