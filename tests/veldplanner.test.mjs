@@ -145,3 +145,44 @@ console.log(`veldplanner: ${n} controles geslaagd`);
   g(V.inVak({ x: .5, y: 0, w: .5, h: .5 }, .7, .2), true); g(V.inVak({ x: .5, y: 0, w: .5, h: .5 }, .2, .2), false);
   console.log(`veldplanner overzicht: ${m} controles geslaagd`);
 }
+
+/* kleedkamertijden en team-instellingen [20261127t] */
+{
+  let m = 0; const g = (a, b, t) => { assert.deepEqual(a, b, t); m++; };
+  V.zetKleedTijden(5, 30); g([V.KK_VOOR, V.KK_NA], [5, 30], 'live binding');
+  const b = { dag: 1, start: 1080, eind: 1140, kk: ['k1'] };
+  g([1074, 1075, 1169, 1170].map(t => V.kleedFase(b, t)), [null, 'voor', 'na', null], 'fase met eigen tijden');
+  V.zetKleedTijden('x', 99); g([V.KK_VOOR, V.KK_NA], [15, 20], 'onzin wordt standaard');
+  g(V.schoonTeamInstellingen({ t1: { maat: 'half', duur: 77, per: 3 }, t2: { maat: 'groot', duur: 10, per: 9 }, 'kw@d': { maat: 'heel' }, t3: { per: 0 }, t4: { per: '' } }),
+    { t1: { maat: 'half', duur: 75, per: 3 }, t3: { per: 0 } });
+  g(V.schoonTeamInstellingen(null), {}); g(V.schoonTeamInstellingen([1]), {});
+  console.log(`veldplanner instellingen: ${m} controles geslaagd`);
+}
+
+/* planning inlezen [20261127t] */
+{
+  let m = 0; const g = (a, b, t) => { assert.deepEqual(a, b, t); m++; };
+  const ctx = { teams: [{ id: 't1', naam: 'O11-2', duur: 75 }, { id: 't2', naam: 'O9-1', duur: 60 }, { id: 't3', naam: 'MO13-1', duur: 75 }, { id: 't4', naam: 'O11-1' }],
+    velden: [{ id: 'v1', naam: 'Veld 1' }, { id: 'v2', naam: 'Veld 2' }], kleedkamers: [{ id: 'k1', naam: 'Kleedkamer 1' }, { id: 'k3', naam: 'Kleedkamer 3' }] };
+  const r = V.leesPlanning(`Trainingsschema najaar
+MAANDAG
+JO11-2\t18:00 - 19:15\tVeld 2 half a\tKK 3
+JO9-1  17.00-18.00  veld 1 kwart b voor  kleedkamer 1
+Dinsdag 19:00-20:30 MO13-1 Veld 1 heel kk 1 en 3
+woensdag O11-1 18:30 veld 2b
+JO11-2 18:00-19:15 veld 9
+Algemene opmerking zonder team`, ctx);
+  g(r.gevonden.map(x => [x.team, x.dag, x.start, x.eind, x.veld, x.vak, x.kk]), [
+    ['t1', 1, 1080, 1155, 'v2', 'a', ['k3']],
+    ['t2', 1, 1020, 1080, 'v1', 'bv', ['k1']],
+    ['t3', 2, 1140, 1230, 'v1', 'h', ['k1', 'k3']],
+    ['t4', 3, 1110, 1185, 'v2', 'b', []],
+  ]);
+  g(r.overgeslagen, ['JO11-2 18:00-19:15 veld 9'], 'onbekend veld wordt overgeslagen, losse tekst niet gemeld');
+  g(V.leesPlanning('', ctx), { gevonden: [], overgeslagen: [] });
+  /* tabel met kopregel: kale nummers onder Kleedkamer/Veld; JO13-1 is niet MO13-1; "kwart a" */
+  const ctx2 = { ...ctx, teams: [...ctx.teams, { id: 't5', naam: 'O13-1' }] };
+  const t = V.leesPlanning('Dag\tTijd\tTeam\tVeld\tDeel\tKleedkamer\nMaandag\t17:30-18:45\tJO13-1\t2\tkwart a\t3\nMaandag\t17:30-18:45\tMO13-1\tVeld 1\thalf b\t1', ctx2);
+  g(t.gevonden.map(x => [x.team, x.veld, x.vak, x.kk]), [['t5', 'v2', 'av', ['k3']], ['t3', 'v1', 'b', ['k1']]]);
+  console.log(`veldplanner inlezen: ${m} controles geslaagd`);
+}

@@ -29,16 +29,16 @@
    Bewust niet op sportparken/eigen: de veldkaart schrijft daar de hele lijst velden opnieuw en zou
    eigen vakken weggooien. De velden zelf (id, naam) komen wel uit de veldkaart.
    Rekenwerk in veldplanner-logica.js (getest). */
-import { db, doc, getDoc, setDoc } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261129v';
+import { db, doc, getDoc, setDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
+import { S, esc, meld } from './state.js?v=20261129x';
 import { ico } from './icons.js?v=20261127b';
-import { bouwVanTeam } from './bouw-indeling.js?v=20261129v';
-import { momentenVanTeam } from './trainingsmomenten.js?v=20261129v';
+import { bouwVanTeam } from './bouw-indeling.js?v=20261129x';
+import { momentenVanTeam } from './trainingsmomenten.js?v=20261129x';
 import { NODIG, MAAT_NAAM, KK_VOOR, KK_NA, MAX_EIGEN, naarMin, naarTijd, rondKwartier,
   vakkenVan, vakUit, deelVan, deelTekst, meters, banenVan, stukken, maatVanCategorie, duurVanCategorie,
   zoekVrijVak, vrijeKleedkamers, stapel, controleer, nogInTePlannen, schoonRooster, schoonKleedkamers, schoonVak,
   kleedkamersVoorstel, SOORTEN, MAX_OBJECTEN, schoonObjecten, meterTussen, verschuif, vlakUitHoeken,
-  leesTijd, opMoment, kleedkamersOpMoment, drukte, vrijeKwarten, dagBereik, inVak, vakkenOverlap } from './veldplanner-logica.js?v=20261129v';
+  leesTijd, leesPlanning, zetKleedTijden, schoonMinuten, schoonTeamInstellingen, opMoment, kleedkamersOpMoment, drukte, vrijeKwarten, dagBereik, inVak, vakkenOverlap } from './veldplanner-logica.js?v=20261129x';
 
 const DAGEN = ['', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag', 'Zondag'];
 const DAGK = ['', 'ma', 'di', 'wo', 'do', 'vr', 'za', 'zo'];
@@ -69,7 +69,9 @@ export async function openVeldplanner(clubId){
       .sort((a, b) => a.naam.localeCompare(b.naam, 'nl', { numeric: true }));
     const i = inst.exists() ? inst.data() : {};
     P.instBestaat = inst.exists();
-    P.inst = { kleedkamers: i.kleedkamers ? schoonKleedkamers(i.kleedkamers) : kleedkamersVoorstel(P.park?.plekken), velden: i.velden && typeof i.velden === 'object' ? i.velden : {}, objecten: schoonObjecten(i.objecten) };
+    P.inst = { kleedkamers: i.kleedkamers ? schoonKleedkamers(i.kleedkamers) : kleedkamersVoorstel(P.park?.plekken), velden: i.velden && typeof i.velden === 'object' ? i.velden : {}, objecten: schoonObjecten(i.objecten),
+      kkVoor: schoonMinuten(i.kkVoor, 15), kkNa: schoonMinuten(i.kkNa, 20), teams: schoonTeamInstellingen(i.teams) };
+    zetKleedTijden(P.inst.kkVoor, P.inst.kkNa);
     P.blokken = schoonRooster(rooster.exists() ? rooster.data().blokken : []);
   } catch (e){
     console.error('[veldplanner] laden', e);
@@ -112,12 +114,11 @@ function teamsVan(lijst){
   return lijst.filter(t => t && t.id && !t.gearchiveerd).map(t => {
     const mom = momentenVanTeam(t), duren = mom.map(m => (naarMin(m.eind) ?? 0) - (naarMin(m.start) ?? 0)).filter(d => d >= 30 && d <= 180);
     const coaches = Object.keys(t.leden || {}).filter(u => t.leden[u] === true);
-    const b = bouwVanTeam(t);
+    const b = bouwVanTeam(t), eigen = P?.inst?.teams?.[t.id] || {};
+    const auto = { maat: NODIG[t.veldMaat] ? t.veldMaat : maatVanCategorie(t.categorie, t.naam), duur: duren[0] || duurVanCategorie(t.categorie, t.naam), per: mom.length || 2 };
     return {
-      id: t.id, naam: String(t.naam || 'Team'), bouw: BOUW[b] ? b : 'overig',
-      maat: NODIG[t.veldMaat] ? t.veldMaat : maatVanCategorie(t.categorie, t.naam),
-      duur: duren[0] || duurVanCategorie(t.categorie, t.naam),
-      per: mom.length || 2, momenten: mom, coaches,
+      id: t.id, naam: String(t.naam || 'Team'), bouw: BOUW[b] ? b : 'overig', auto,
+      maat: eigen.maat || auto.maat, duur: eigen.duur || auto.duur, per: eigen.per ?? auto.per, eigen: !!Object.keys(eigen).length, momenten: mom, coaches,
       coachNamen: Object.fromEntries(coaches.map(u => [u, String(t.ledenInfo?.[u]?.naam || '').split(' ')[0] || 'Een trainer'])),
     };
   }).sort((a, b) => a.naam.localeCompare(b.naam, 'nl', { numeric: true }));
@@ -143,7 +144,7 @@ const plekTekst = b => { const k = vakUit(vakkenVan(instVan(b.veld)), b.vak); re
 function bewaarStap(){ P.hist.push(JSON.stringify({ b: P.blokken, i: P.inst })); if (P.hist.length > 60) P.hist.shift(); }
 function ongedaan(){
   const v = P.hist.pop(); if (!v) return;
-  const o = JSON.parse(v); P.blokken = o.b; P.inst = o.i;
+  const o = JSON.parse(v); P.blokken = o.b; P.inst = o.i; zetKleedTijden(P.inst.kkVoor, P.inst.kkNa); P.teams = teamsVan(S.clubTeams || []);
   if (P.sel && !blok(P.sel)) P.sel = null;
   P.instGewijzigd = true; planBewaar(); teken(); meld('Laatste stap ongedaan gemaakt');
 }
@@ -162,7 +163,8 @@ async function bewaarNu(){
       const i = p.inst.velden[v.id]; if (!i) continue;
       velden[v.id] = { licht: i.licht !== false, vakken: (i.vakken || []).map(schoonVak).filter(Boolean).slice(0, MAX_EIGEN) };
     }
-    klus.push(setDoc(doc(db, 'clubs', p.clubId, 'veldplanner', 'instellingen'), { kleedkamers: schoonKleedkamers(p.inst.kleedkamers), velden, objecten: schoonObjecten(p.inst.objecten), bijgewerktMs: Date.now() }));
+    klus.push(setDoc(doc(db, 'clubs', p.clubId, 'veldplanner', 'instellingen'), { kleedkamers: schoonKleedkamers(p.inst.kleedkamers), velden, objecten: schoonObjecten(p.inst.objecten),
+      kkVoor: schoonMinuten(p.inst.kkVoor, 15), kkNa: schoonMinuten(p.inst.kkNa, 20), teams: schoonTeamInstellingen(p.inst.teams), bijgewerktMs: Date.now() }));
     p.instGewijzigd = false;
   }
   try { await Promise.all(klus); p.staat = 'opgeslagen'; p.om = new Date(); }
@@ -202,6 +204,8 @@ function teken(){
       <div class="vp-acties">
         <div class="segment vp-segment" role="group" aria-label="Weergave"><button type="button" data-weergave="tijdlijn" aria-pressed="${P.weergave === 'tijdlijn'}">Tijdlijn</button><button type="button" data-weergave="overzicht" aria-pressed="${P.weergave === 'overzicht'}">Overzicht</button><button type="button" data-weergave="kaart" aria-pressed="${P.weergave === 'kaart'}">Kaart</button></div>
         <button type="button" class="knop licht klein" data-vp="ongedaan" ${P.hist.length ? '' : 'disabled'}>Ongedaan</button>
+        <button type="button" class="knop licht klein" data-vp="inlezen">Inlezen</button>
+        <button type="button" class="knop licht klein" data-vp="teams">Teams</button>
         <button type="button" class="knop licht klein" data-vp="kleedkamers">Kleedkamers (${P.inst.kleedkamers.length})</button>
       </div>
     </header>
@@ -286,7 +290,7 @@ function htmlKleedstrook(){
   if (!P.inst.kleedkamers.length) return '';
   const dag = P.blokken.filter(b => b.dag === P.dag);
   return `<div class="vp-kk" style="width:${KOPB + (P.tot - P.van) * P.px}px">
-    <h3>Kleedkamers <small>open 15 min voor tot 20 min na de training (gestreept)</small></h3>
+    <h3>Kleedkamers <small>open ${KK_VOOR} min voor tot ${KK_NA} min na de training (gestreept)</small></h3>
     ${P.inst.kleedkamers.map(k => `<div class="vp-kkrij"><span class="vp-kknaam">${esc(k.naam)}</span><div class="vp-kkbaan" style="width:${(P.tot - P.van) * P.px}px">
       ${dag.filter(b => (b.kk || []).includes(k.id)).map(b => { const t = teamVan(b.team);
         return `<button type="button" class="vp-kkblok b-${t.bouw}${P.status[b.id] === 'botsing' ? ' botsing' : ''}" data-kies="${b.id}"
@@ -313,7 +317,9 @@ function htmlDetail(){
   const vrij = new Set(vrijeKleedkamers(P.blokken, P.inst.kleedkamers, b, b.id));
   return `<section class="vp-paneel vp-detail" aria-label="${esc(t.naam)}">
     <div class="vp-paneel-kop"><h2>${esc(t.naam)}</h2><button type="button" class="vp-x" data-vp="deselect" aria-label="Sluiten">×</button></div>
-    <p class="vp-zacht">${BOUW[t.bouw]} · heeft een ${MAAT_NAAM[t.maat]} nodig${t.coaches.length ? ` · ${esc(t.coaches.map(u => t.coachNamen[u]).join(', '))}` : ''}</p>
+    <p class="vp-zacht">${BOUW[t.bouw]}${t.coaches.length ? ` · ${esc(t.coaches.map(u => t.coachNamen[u]).join(', '))}` : ''}</p>
+    <div class="vp-maatkeuze"><span>Dit team traint op</span><div class="segment vp-segment" role="group" aria-label="Veldmaat van ${esc(t.naam)}">${['kwart', 'half', 'heel'].map(m =>
+      `<button type="button" data-teammaat="${m}" aria-pressed="${t.maat === m}">${m}</button>`).join('')}</div></div>
     <div class="vp-velden2">
       <label>Dag<select class="invoer" data-veldin="dag">${[1, 2, 3, 4, 5, 6, 7].map(d => `<option value="${d}" ${d === b.dag ? 'selected' : ''}>${DAGEN[d]}</option>`).join('')}</select></label>
       <label>Veld<select class="invoer" data-veldin="veld">${P.velden.map(v => `<option value="${esc(v.id)}" ${v.id === b.veld ? 'selected' : ''}>${esc(v.naam)}</option>`).join('')}</select></label>
@@ -387,9 +393,11 @@ function koppel(){
     if (a === 'sluit') return sluitVeldplanner();
     if (a === 'ongedaan') return ongedaan();
     if (a === 'kleedkamers') return vensterKleedkamers();
+    if (a === 'teams') return vensterTeams();
+    if (a === 'inlezen') return vensterInlezen();
     if (a === 'deselect'){ P.sel = null; return teken(); }
     if (a === 'weg') return weg(P.sel);
-    if (a === 'sportpark'){ const c = P.clubId; sluitVeldplanner(); return import('./veldkaart.js?v=20261129v').then(m => m.openSportparkBeheer(c)); }
+    if (a === 'sportpark'){ const c = P.clubId; sluitVeldplanner(); return import('./veldkaart.js?v=20261129x').then(m => m.openSportparkBeheer(c)); }
   });
   el.querySelectorAll('[data-weergave]').forEach(k => k.onclick = () => { ovStop(); P.weergave = k.dataset.weergave; P.sel = null; P.objSel = null; teken(); });
   el.querySelectorAll('[data-dag]').forEach(k => k.onclick = () => { P.dag = +k.dataset.dag; P.sel = null; if (P.ov){ ovStop(); P.ov.t = null; P.ov.live = false; } teken(); });
@@ -400,6 +408,13 @@ function koppel(){
   el.querySelectorAll('[data-toon]').forEach(k => k.onclick = () => { const b = blok(k.dataset.toon); if (!b) return; P.dag = b.dag; P.sel = b.id; teken(); focusBlok(b.id); P.el.querySelector(`.vp-blok[data-id="${b.id}"]`)?.scrollIntoView({ block: 'nearest', inline: 'center' }); });
   el.querySelectorAll('[data-fix]').forEach(k => k.onclick = () => herstel(k.dataset.fix, k.dataset.id));
   el.querySelectorAll('[data-kies]').forEach(k => k.onclick = () => { P.sel = k.dataset.kies; teken(); focusBlok(P.sel); });
+  el.querySelectorAll('[data-teammaat]').forEach(k => k.onclick = () => {
+    const b = blok(P.sel); if (!b) return;
+    zetTeamInst(b.team, { maat: k.dataset.teammaat });
+    const t = teamVan(b.team), vak = zoekVrijVak(P.blokken, instVan(b.veld), { dag: b.dag, veld: b.veld, start: b.start, eind: b.eind, nodig: NODIG[t.maat], voorkeur: b.vak }, b.id);
+    if (vak && vak !== b.vak && deelVan(vakUit(vakkenVan(instVan(b.veld)), b.vak)) < NODIG[t.maat] - 1e-6) b.vak = vak;
+    planBewaar(); teken(); meld(`${t.naam} traint voortaan op een ${MAAT_NAAM[t.maat]}.`);
+  });
   el.querySelectorAll('[data-kk]').forEach(k => k.onclick = () => {
     const b = blok(P.sel), id = k.dataset.kk, kk = b.kk || [];
     verzet(b, { kk: kk.includes(id) ? kk.filter(x => x !== id) : [...kk, id].slice(0, 4) }, true);
@@ -631,11 +646,11 @@ function raak(k, x, y){
 }
 async function maakKaart(){
   const el = P.el.querySelector('#vpKaart'); if (!el) return;
-  const { Kaart } = await import('./veldkaart.js?v=20261129v');
+  const { Kaart } = await import('./veldkaart.js?v=20261129x');
   if (!P || !el.isConnected) return;
   const pos = P.kaartPos || { lat: P.park.lat, lon: P.park.lon, z: Math.min(19, P.park.zoom || 18) };
   const rel = e => { const r = el.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
-  const k = new Kaart(el, { lat: pos.lat, lon: pos.lon, z: pos.z, interactief: true, lagen: lagenKaart,
+  const k = new Kaart(el, { lat: pos.lat, lon: pos.lon, z: pos.z, interactief: true, omgeving: () => P?.park?.omgeving?.vormen, lagen: lagenKaart,
     grijp: (e, kaart) => {
       if (!P.tekenen) return null;
       const q = rel(e), h = P.tool === 'kies' || !SOORTEN[P.tool]?.vlak ? raak(kaart, q.x, q.y) : null, start = kaart.ll(q.x, q.y);
@@ -967,10 +982,10 @@ async function koppelOverzicht(){
     ovKiesPlek(g.dataset.schemaveld, (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
   });
   const kaartEl = el.querySelector('#vpOvKaart'); if (!kaartEl) return;
-  const { Kaart } = await import('./veldkaart.js?v=20261129v');
+  const { Kaart } = await import('./veldkaart.js?v=20261129x');
   if (!P || !kaartEl.isConnected) return;
   const pos = P.kaartPos || { lat: P.park.lat, lon: P.park.lon, z: Math.min(19, P.park.zoom || 18) };
-  const k = new Kaart(kaartEl, { lat: pos.lat, lon: pos.lon, z: pos.z, interactief: true, lagen: lagenOverzicht, onTik: ovTik });
+  const k = new Kaart(kaartEl, { lat: pos.lat, lon: pos.lon, z: pos.z, interactief: true, omgeving: () => P?.park?.omgeving?.vormen, lagen: lagenOverzicht, onTik: ovTik });
   P.ovKaart = k;
   const bewaarPos = () => { P.kaartPos = { lat: k.lat, lon: k.lon, z: k.z }; };
   kaartEl.addEventListener('pointerup', bewaarPos); kaartEl.addEventListener('wheel', bewaarPos, { passive: true });
@@ -983,22 +998,26 @@ function venster(html, klas = ''){
   let v = P.el.querySelector('.vp-venster');
   if (!v){ v = document.createElement('div'); v.className = 'vp-venster-laag'; v.innerHTML = '<div class="vp-venster" role="dialog" aria-modal="true"></div>'; P.el.appendChild(v);
     v.addEventListener('click', e => { if (e.target === v) sluitVenster(); }); v = v.firstChild; }
-  v.className = `vp-venster ${klas}`; v.innerHTML = html; P.venster = v;
+  v.className = `vp-venster ${klas}`; v.innerHTML = html; P.venster = v; P.naSluiten = null;
   return v;
 }
-function sluitVenster(){ P.el.querySelector('.vp-venster-laag')?.remove(); P.venster = null; }
+function sluitVenster(){ P.el.querySelector('.vp-venster-laag')?.remove(); P.venster = null; const na = P.naSluiten; P.naSluiten = null; na?.(); }
 const svgPunt = (svg, e) => { const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); };
 
 function vensterKleedkamers(){
-  const ed = P.inst.kleedkamers.map(k => ({ ...k }));
+  const ed = P.inst.kleedkamers.map(k => ({ ...k })), tijden = { voor: P.inst.kkVoor ?? 15, na: P.inst.kkNa ?? 20 };
   const render = () => {
     const v = venster(`<h2>Kleedkamers</h2>
       <p class="vp-zacht">${P.instBestaat ? 'De kleedkamers die je in de planner kunt kiezen.' : 'Voorstel uit de plekken van het sportpark. Pas de namen aan of voeg er een toe.'}</p>
       <div class="vp-kklijst">${ed.map((k, i) => `<div class="vp-kkregel"><input class="invoer" data-i="${i}" value="${esc(k.naam)}" maxlength="30" aria-label="Naam kleedkamer ${i + 1}">
         <button type="button" class="knop licht klein" data-weg="${i}" aria-label="${esc(k.naam)} weghalen">Weg</button></div>`).join('')}</div>
       <button type="button" class="knop licht klein" data-erbij ${ed.length >= 40 ? 'disabled' : ''}>+ Kleedkamer</button>
+      <span class="vp-label">Hoe lang heeft een team de kleedkamer?</span>
+      <div class="vp-velden2"><label>Minuten vóór de training<input class="invoer" type="number" inputmode="numeric" min="0" max="60" step="5" data-kktijd="voor" value="${tijden.voor}"></label>
+        <label>Minuten na de training<input class="invoer" type="number" inputmode="numeric" min="0" max="60" step="5" data-kktijd="na" value="${tijden.na}"></label></div>
       <div class="vp-voet"><button type="button" class="knop licht" data-dicht>Annuleren</button><button type="button" class="knop fluo" data-ok>Opslaan</button></div>`);
     v.querySelectorAll('[data-i]').forEach(x => x.oninput = () => { ed[+x.dataset.i].naam = x.value; });
+    v.querySelectorAll('[data-kktijd]').forEach(x => x.oninput = () => { tijden[x.dataset.kktijd] = x.value; });
     v.querySelectorAll('[data-weg]').forEach(x => x.onclick = () => { ed.splice(+x.dataset.weg, 1); render(); });
     v.querySelector('[data-erbij]').onclick = () => {
       const nrs = ed.map(k => parseInt((k.id.match(/\d+/) || [0])[0], 10)), n = Math.max(0, ...nrs) + 1;
@@ -1008,13 +1027,145 @@ function vensterKleedkamers(){
     v.querySelector('[data-ok]').onclick = () => {
       bewaarStap();
       P.inst.kleedkamers = schoonKleedkamers(ed);
+      P.inst.kkVoor = schoonMinuten(tijden.voor, P.inst.kkVoor ?? 15); P.inst.kkNa = schoonMinuten(tijden.na, P.inst.kkNa ?? 20);
+      zetKleedTijden(P.inst.kkVoor, P.inst.kkNa);
       const ids = new Set(P.inst.kleedkamers.map(k => k.id));
       P.blokken.forEach(b => { b.kk = (b.kk || []).filter(k => ids.has(k)); });
       P.instGewijzigd = true; P.instBestaat = true; sluitVenster(); planBewaar(); teken();
-      meld(`${P.inst.kleedkamers.length} kleedkamers opgeslagen.`);
+      meld(`${P.inst.kleedkamers.length} kleedkamers opgeslagen; open ${P.inst.kkVoor} min voor tot ${P.inst.kkNa} min na de training.`);
     };
   };
   render();
+}
+
+/* [20261127t] Een bestaande planning inlezen: PDF, Word (.docx), Excel (.xlsx), CSV of geplakte tekst.
+   De tekst haal je in de browser uit het bestand; leesPlanning herkent per regel dag, tijd, team, veld, deel en
+   kleedkamer. Lukt dat niet goed (een rooster als raster, dagen als kolommen), dan zet de AI de tekst eerst om
+   naar vaste regels (veldplannerInlezenAI), als AI voor de club aan staat. Eerst een voorbeeld, dan pas overnemen. */
+const laadScript = (src, test) => test() ? Promise.resolve() : new Promise((ok, mis) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => mis(new Error('laden mislukt')); document.head.appendChild(s); });
+async function tekstUitBestand(f){
+  const naam = f.name.toLowerCase();
+  if (/\.(csv|txt|tsv)$/.test(naam)) return (await f.text()).replace(/;/g, '\t');
+  if (naam.endsWith('.pdf')){
+    const { laadPdfJs } = await import('./pdf-viewer.js?v=20261129x');
+    const { regelsUitTekstItems } = await import('./training-ai.js?v=20261129x');
+    await laadPdfJs();
+    const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(await f.arrayBuffer()) }).promise, uit = [];
+    for (let n = 1; n <= Math.min(pdf.numPages, 30); n++) uit.push(regelsUitTekstItems((await (await pdf.getPage(n)).getTextContent()).items));
+    return uit.join('\n');
+  }
+  if (naam.endsWith('.docx')){
+    await laadScript('vendor/jszip.min.js', () => !!window.JSZip);
+    const { docxTekst } = await import('./clubprofiel-logica.js?v=20261121c');
+    const zip = await window.JSZip.loadAsync(await f.arrayBuffer());
+    /* tabelrij = één regel: alinea's binnen een cel worden spaties, een rij eindigt met een regeleinde */
+    const xml = String(await zip.file('word/document.xml')?.async('string') || '')
+      .replace(/<w:tc\b[\s\S]*?<\/w:tc>/g, tc => tc.replace(/<\/w:p>/g, ' ')).replace(/<\/w:tr>/g, '</w:tr></w:p>');
+    return docxTekst(xml);
+  }
+  if (naam.endsWith('.xlsx')){
+    await laadScript('vendor/exceljs.min.js', () => !!window.ExcelJS);
+    const wb = new window.ExcelJS.Workbook(); await wb.xlsx.load(await f.arrayBuffer());
+    const uit = [];
+    wb.worksheets.slice(0, 10).forEach(ws => { uit.push(ws.name || ''); ws.eachRow(rij => { const r = [];
+      rij.eachCell({ includeEmpty: true }, (c, k) => { const v = c.value;
+        r[k - 1] = v instanceof Date ? `${String(v.getUTCHours()).padStart(2, '0')}:${String(v.getUTCMinutes()).padStart(2, '0')}`
+          : typeof v === 'number' && v > 0 && v < 1 ? naarTijd(Math.round(v * 1440)) : v && typeof v === 'object' ? String(v.text ?? v.result ?? (v.richText || []).map(x => x.text).join('') ?? '') : String(v ?? ''); });
+      uit.push(Array.from(r, x => x ?? '').join('\t')); }); });
+    return uit.join('\n');
+  }
+  if (/\.(xls|doc)$/.test(naam)) throw new Error(`Sla het bestand op als ${naam.endsWith('.xls') ? '.xlsx' : '.docx'} (nieuwere versie) of als PDF, en probeer het opnieuw.`);
+  throw new Error('Dit soort bestand kan ik niet lezen. Kies een PDF, Word (.docx), Excel (.xlsx) of CSV.');
+}
+function vensterInlezen(){
+  const st = { tekst: '', bron: '', res: null, ai: false, bezig: false, modus: P.blokken.length ? 'erbij' : 'vervang', uit: new Set() };
+  const aiMag = S.club?.platformModules?.ai === true;
+  const ctx = () => ({ teams: P.teams, velden: P.velden, kleedkamers: P.inst.kleedkamers });
+  const lees = () => { st.res = leesPlanning(st.tekst, ctx()); st.uit = new Set(); };
+  const render = () => {
+    const r = st.res, n = r ? r.gevonden.length - st.uit.size : 0;
+    const v = venster(`<h2>Planning inlezen</h2>
+      <p class="vp-zacht">Kies het bestand met jullie huidige trainingsrooster (PDF, Word, Excel of CSV), of plak de tekst. Je ziet eerst wat Cluppie herkent; pas daarna neem je het over.</p>
+      <div class="vp-rij2"><label class="knop licht klein">${ico('admin-file', 16)} Bestand kiezen<input type="file" accept=".pdf,.docx,.xlsx,.csv,.txt,.tsv,.xls,.doc" data-inbestand hidden></label>
+        <span class="vp-zacht">${esc(st.bron || 'nog geen bestand')}</span></div>
+      <textarea class="invoer vp-inplak" data-inplak rows="5" placeholder="Of plak hier het rooster, bijvoorbeeld:&#10;Maandag 18:00-19:15 JO11-2 Veld 2 half a kk 3">${esc(st.tekst)}</textarea>
+      <div class="vp-rij2"><button type="button" class="knop licht klein" data-inlees ${st.tekst.trim() ? '' : 'disabled'}>Herkennen</button>
+        ${aiMag ? `<button type="button" class="knop licht klein" data-inai ${st.tekst.trim() && !st.bezig ? '' : 'disabled'} title="Voor roosters als raster of tabel met dagen als kolommen">${st.bezig ? 'AI leest mee…' : 'Laat AI meelezen'}</button>` : ''}</div>
+      ${r ? `<span class="vp-label">${r.gevonden.length ? `${r.gevonden.length} ${r.gevonden.length === 1 ? 'training' : 'trainingen'} herkend${st.ai ? ' (met AI)' : ''}` : 'Geen trainingen herkend'}${r.overgeslagen.length ? `, ${r.overgeslagen.length} regels niet` : ''}</span>
+        ${r.gevonden.length ? `<div class="vp-inlijst">${r.gevonden.map((x, i) => { const t = teamVan(x.team), k = x.vak ? vakUit(vakkenVan(instVan(x.veld)), x.vak).kort : '';
+          return `<label class="vp-inregel b-${t.bouw}"><input type="checkbox" data-inkies="${i}" ${st.uit.has(i) ? '' : 'checked'}>
+            <b>${esc(t.naam)}</b><span>${DAGK[x.dag]} ${naarTijd(x.start)}–${naarTijd(x.eind)}</span><span>${esc(veldVan(x.veld).naam)}${k ? ' ' + esc(k) : ''}</span><span>${x.kk.length ? 'kk ' + esc(x.kk.map(kkKort).join(', ')) : ''}</span></label>`; }).join('')}</div>` : ''}
+        ${r.overgeslagen.length ? `<details class="vp-planmeer"><summary>Niet herkend (${r.overgeslagen.length})</summary><ul class="vp-inniet">${r.overgeslagen.slice(0, 40).map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+          <p class="vp-zacht">Ontbreekt een team of veld? Controleer de namen bij Teams en bij Sportparken.${aiMag && !st.ai ? ' Of laat AI meelezen.' : ''}</p></details>` : ''}
+        ${r.gevonden.length ? `<div class="segment vp-segment" role="group" aria-label="Hoe overnemen"><button type="button" data-inmodus="erbij" aria-pressed="${st.modus === 'erbij'}">Toevoegen aan het rooster</button><button type="button" data-inmodus="vervang" aria-pressed="${st.modus === 'vervang'}">Rooster vervangen</button></div>` : ''}` : ''}
+      <div class="vp-voet"><button type="button" class="knop licht" data-dicht>Annuleren</button><button type="button" class="knop fluo" data-inok ${n ? '' : 'disabled'}>${n ? `${n} overnemen` : 'Overnemen'}</button></div>`, 'breed');
+    v.querySelector('[data-dicht]').onclick = sluitVenster;
+    v.querySelector('[data-inplak]').oninput = e => { st.tekst = e.target.value; st.bron = st.bron && st.bron.startsWith('geplakt') ? st.bron : st.bron; const b = v.querySelector('[data-inlees]'); if (b) b.disabled = !st.tekst.trim(); const a = v.querySelector('[data-inai]'); if (a) a.disabled = !st.tekst.trim(); };
+    v.querySelector('[data-inbestand]').onchange = async e => {
+      const f = e.target.files?.[0]; if (!f) return;
+      if (f.size > 15 * 1024 * 1024) return meld('Dat bestand is te groot (meer dan 15 MB).');
+      st.bron = `Bezig met lezen van ${f.name}…`; render();
+      try { st.tekst = await tekstUitBestand(f); st.bron = f.name; st.ai = false; lees(); }
+      catch (x){ console.warn('[veldplanner] inlezen', x); st.bron = ''; meld(x?.message || 'Het bestand lezen lukte niet.'); }
+      if (P?.venster) render();
+    };
+    v.querySelector('[data-inlees]').onclick = () => { st.ai = false; lees(); render(); };
+    v.querySelector('[data-inai]')?.addEventListener('click', async () => {
+      st.bezig = true; render();
+      try {
+        const r = await httpsCallable(functions, 'veldplannerInlezenAI', { timeout: 120000 })({ clubId: P.clubId, tekst: st.tekst.slice(0, 40000),
+          teams: P.teams.map(t => t.naam), velden: P.velden.map(x => x.naam), kleedkamers: P.inst.kleedkamers.map(k => k.naam) });
+        st.res = leesPlanning(r.data?.regels || '', ctx()); st.uit = new Set(); st.ai = true;
+      } catch (x){ console.warn('[veldplanner] AI inlezen', x); meld(x?.message ? `AI meelezen lukte niet: ${x.message}` : 'AI meelezen lukte niet.'); }
+      st.bezig = false; if (P?.venster) render();
+    });
+    v.querySelectorAll('[data-inkies]').forEach(x => x.onchange = () => { const i = +x.dataset.inkies; x.checked ? st.uit.delete(i) : st.uit.add(i); render(); });
+    v.querySelectorAll('[data-inmodus]').forEach(x => x.onclick = () => { st.modus = x.dataset.inmodus; render(); });
+    v.querySelector('[data-inok]').onclick = () => {
+      const lijst = st.res.gevonden.filter((x, i) => !st.uit.has(i));
+      bewaarStap();
+      if (st.modus === 'vervang') P.blokken = [];
+      for (const x of lijst){
+        const t = teamVan(x.team), b = { id: nieuwId(), team: x.team, dag: x.dag, start: x.start, eind: x.eind, veld: x.veld, vak: 'h', kk: x.kk };
+        b.vak = x.vak || zoekVrijVak(P.blokken, instVan(x.veld), { dag: x.dag, veld: x.veld, start: x.start, eind: x.eind, nodig: NODIG[t.maat] })
+          || zoekVrijVak(P.blokken, instVan(x.veld), { dag: x.dag, veld: x.veld, start: x.start, eind: x.eind, nodig: 0 }) || 'h';
+        P.blokken.push(b);
+      }
+      P.blokken = schoonRooster(P.blokken);
+      sluitVenster(); planBewaar();
+      const dagen = [...new Set(lijst.map(x => x.dag))].sort(); if (dagen.length && !dagen.includes(P.dag)) P.dag = dagen[0];
+      teken(); meld(`${lijst.length} ${lijst.length === 1 ? 'training' : 'trainingen'} ingelezen. Klopt er iets niet? Met Ongedaan zet je het terug.`);
+    };
+  };
+  render();
+}
+
+/* [20261127t] Per team: welk deel van het veld, hoe lang en hoe vaak per week. Leeg = wat de planner zelf uitrekent. */
+function zetTeamInst(teamId, wijz){
+  bewaarStap();
+  const oud = { ...(P.inst.teams?.[teamId] || {}) };
+  for (const [k, v] of Object.entries(wijz)) if (v === '' || v == null) delete oud[k]; else oud[k] = v;
+  P.inst.teams = schoonTeamInstellingen({ ...(P.inst.teams || {}), [teamId]: oud });
+  P.instGewijzigd = true; P.teams = teamsVan(S.clubTeams || []);
+}
+function vensterTeams(){
+  const groepen = ['onder', 'midden', 'boven', 'overig'].map(b => [b, P.teams.filter(t => t.bouw === b)]).filter(([, l]) => l.length);
+  const v = venster(`<h2>Teams</h2>
+    <p class="vp-zacht">Hoeveel veld heeft elk team nodig, hoe lang traint het en hoe vaak per week? Wat je niet invult, rekent de planner uit leeftijd en trainingsmomenten.</p>
+    <div class="vp-teamlijst">${groepen.map(([b, l]) => `<h3 class="vp-ovh3"><i class="b-${b}"></i>${BOUW[b]}</h3>${l.map(t => `
+      <div class="vp-teamregel b-${b}"><b>${esc(t.naam)}</b>
+        <div class="segment vp-segment" role="group" aria-label="Veldmaat ${esc(t.naam)}">${['kwart', 'half', 'heel'].map(m => `<button type="button" data-tm="${esc(t.id)}" data-maat="${m}" aria-pressed="${t.maat === m}">${m}</button>`).join('')}</div>
+        <label><input class="invoer" type="number" min="30" max="180" step="5" data-tduur="${esc(t.id)}" value="${t.duur}" aria-label="Minuten training ${esc(t.naam)}"> min</label>
+        <label><input class="invoer" type="number" min="0" max="7" step="1" data-tper="${esc(t.id)}" value="${t.per}" aria-label="Trainingen per week ${esc(t.naam)}"> × p/w</label>
+        ${t.eigen ? `<button type="button" class="vp-fwis" data-tauto="${esc(t.id)}" title="Terug naar ${MAAT_NAAM[t.auto.maat]}, ${t.auto.duur} min, ${t.auto.per}× per week">automatisch</button>` : '<span class="vp-zacht vp-auto">automatisch</span>'}
+      </div>`).join('')}`).join('')}</div>
+    <div class="vp-voet"><button type="button" class="knop fluo" data-dicht>Klaar</button></div>`, 'breed');
+  P.naSluiten = () => { planBewaar(); teken(); };
+  v.querySelector('[data-dicht]').onclick = sluitVenster;
+  v.querySelectorAll('[data-tm]').forEach(x => x.onclick = () => { zetTeamInst(x.dataset.tm, { maat: x.dataset.maat }); vensterTeams(); });
+  v.querySelectorAll('[data-tduur]').forEach(x => x.onchange = () => { zetTeamInst(x.dataset.tduur, { duur: x.value }); vensterTeams(); });
+  v.querySelectorAll('[data-tper]').forEach(x => x.onchange = () => { zetTeamInst(x.dataset.tper, { per: x.value }); vensterTeams(); });
+  v.querySelectorAll('[data-tauto]').forEach(x => x.onclick = () => { zetTeamInst(x.dataset.tauto, { maat: '', duur: '', per: '' }); vensterTeams(); });
 }
 
 function vensterIndeling(veldId){
@@ -1233,6 +1384,21 @@ html.vp-open{overflow:hidden}
 .vp-venster.breed{max-width:640px}
 .vp-venster h2{font-family:var(--font-display);text-transform:uppercase;font-size:var(--t-2xl);margin:0}
 .vp-voet{display:flex;justify-content:flex-end;gap:var(--space-xs);margin-top:var(--space-sm)}
+.vp-maatkeuze{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0;font-size:var(--t-xs);color:var(--ink-2)}
+.vp-maatkeuze .segment button,.vp-teamregel .segment button{text-transform:capitalize;padding:4px 10px;min-height:30px}
+.vp-teamlijst{display:flex;flex-direction:column;gap:4px;max-height:60dvh;overflow:auto}
+.vp-teamlijst h3 i{display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--bc);margin-right:6px}
+.vp-teamregel{display:grid;grid-template-columns:minmax(70px,1fr) auto auto auto 78px;gap:8px;align-items:center;padding:6px 8px;border-radius:var(--r-s);background:var(--surface-2);border-left:4px solid var(--bc)}
+.vp-teamregel b{font-family:var(--font-display);text-transform:uppercase;font-size:var(--t-md)}
+.vp-teamregel label{display:flex;align-items:center;gap:4px;font-size:var(--t-2xs);color:var(--ink-2);white-space:nowrap}
+.vp-teamregel .invoer{width:62px;padding:4px 6px;font-size:var(--t-sm);background:var(--surface);color:var(--ink)}
+.vp-auto{font-size:var(--t-2xs);text-align:center}
+@media (max-width:600px){.vp-teamregel{grid-template-columns:1fr 1fr}.vp-teamregel b{grid-column:1/-1}}
+.vp-inplak{width:100%;font-family:ui-monospace,monospace;font-size:var(--t-xs);background:var(--surface);color:var(--ink);resize:vertical}
+.vp-inlijst{display:flex;flex-direction:column;gap:3px;max-height:38dvh;overflow:auto}
+.vp-inregel{display:grid;grid-template-columns:auto minmax(64px,1fr) 1.2fr 1fr .8fr;gap:8px;align-items:center;padding:5px 8px;border-radius:var(--r-s);background:var(--surface-2);border-left:4px solid var(--bc);font-size:var(--t-xs);cursor:pointer}
+.vp-inregel b{font-family:var(--font-display);text-transform:uppercase;font-size:var(--t-md)}
+.vp-inniet{font-size:var(--t-2xs);color:var(--ink-2);margin:4px 0;padding-left:18px;max-height:140px;overflow:auto}
 .vp-kklijst{display:flex;flex-direction:column;gap:6px}
 .vp-kkregel,.vp-rij2{display:flex;gap:6px;align-items:center}
 .vp-kkregel .invoer,.vp-rij2 .invoer{background:var(--surface);color:var(--ink)}
@@ -1371,6 +1537,9 @@ html.vp-open{overflow:hidden}
 .vp-obj.punt span{background:rgba(0,0,0,.55);color:#fff;font-size:10px;font-weight:600;padding:1px 6px;border-radius:8px;white-space:nowrap}
 .vp-obj.punt.aan i{box-shadow:0 0 0 3px #fff}
 .vp-objgreep{position:absolute;right:-8px;bottom:-8px;width:14px;height:14px;border-radius:3px;background:#fff;border:2px solid var(--sk)}
+.vk-tek .vp-obj.vlak{background:color-mix(in srgb,var(--sk) 45%,#f4efe4);border:none;border-radius:3px;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--sk) 70%,#333),3px 5px 0 rgba(30,50,20,.28)}
+.vk-tek .vp-obj.vlak.aan{box-shadow:inset 0 0 0 2px #fff,0 0 0 2px var(--sk),3px 5px 0 rgba(30,50,20,.28)}
+.vk-tek .vp-ovvak.vrij{background:rgba(255,255,255,.22);border-color:#fff}
 .vp-oudplek{position:absolute;transform:translate(-50%,-50%);font-size:9px;color:#fff;background:rgba(0,0,0,.4);padding:1px 5px;border-radius:6px;white-space:nowrap;pointer-events:none}
 @media (max-width:1099px){
   .vp-kaartgrid{grid-template-columns:1fr}
