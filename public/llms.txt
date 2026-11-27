@@ -2,7 +2,7 @@
 
 > Cluppie is een Nederlandstalige webapp (PWA) voor jeugdvoetbal en jeugdhockey bij amateurclubs: voor jeugdtrainers, coördinatoren, het hoofd jeugdopleiding, de technische commissie en het bestuur. Trainers maken opstellingen, bewaken eerlijke speeltijd, evalueren wedstrijden en maken trainingen die passen bij hun team; de club legt speelstijl, leerlijn en seizoensplan vast voor de hele jeugdopleiding, en organiseert toernooien en clubactiviteiten met vrijwilligers, een kantine-tv en sponsoren. Website: https://www.cluppie.io
 
-Cluppie zit in de opstartfase (najaar 2026). Clubs en trainers die nu instappen, gebruiken Cluppie een half jaar gratis. Daarna betaalt een club een vast bedrag per seizoen naar het aantal jeugdteams: € 349 (tot en met 10 teams), € 595 (11 tot en met 25) of € 895 (26 of meer), exclusief btw. Een trainer met alleen zijn eigen team blijft gratis. Het wordt gebouwd samen met de trainers en jeugdopleidingen die het gebruiken; maatwerk per club is mogelijk. Contact: paul@cluppie.io
+Cluppie zit in de opstartfase (najaar 2026). Clubs en trainers die nu instappen, gebruiken Cluppie een half jaar gratis. Daarna betaalt een club een vast bedrag per seizoen naar het aantal jeugdteams; vraag de prijs op via paul@cluppie.io. Een trainer met alleen zijn eigen team blijft gratis. Het wordt gebouwd samen met de trainers en jeugdopleidingen die het gebruiken; maatwerk per club is mogelijk. Contact: paul@cluppie.io
 
 ## Sporten
 

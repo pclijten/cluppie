@@ -90,16 +90,24 @@ if (gsap && ScrollTrigger && !rustig) {
     });
   }
 
-  /* ---------- nieuw: de rail schuift horizontaal mee met scrollen (brede schermen) ---------- */
-  mm.add('(min-width: 60rem)', () => {
-    const sectie = document.querySelector('.nieuw'), rail = sectie.querySelector('.rail');
-    sectie.classList.add('is-gepind');
-    const afstand = () => rail.scrollWidth - document.documentElement.clientWidth;
-    const tw = gsap.to(rail, {
-      x: () => -afstand(), ease: 'none',
-      scrollTrigger: { trigger: sectie, start: 'top top', end: () => '+=' + afstand(), pin: true, scrub: 0.6, invalidateOnRefresh: true },
-    });
-    return () => { sectie.classList.remove('is-gepind'); if (tw.scrollTrigger) tw.scrollTrigger.kill(); tw.kill(); gsap.set(rail, { clearProps: 'x' }); };
+  /* ---------- nieuw: de rail scrolt zelf (met knoppen); niet meer gepind [20261127] ---------- */
+  gsap.from('.rail > li', {
+    x: 80, opacity: 0, duration: 0.8, stagger: 0.06, ease: 'power3.out',
+    scrollTrigger: { trigger: '.rail', start: 'top 85%', once: true },
+  });
+
+  /* ---------- hoofdstukken: het nummer schuift in, de kalklijn trekt zich [20261127] ---------- */
+  document.querySelectorAll('.hoofdstuk').forEach(hs => {
+    const tl = gsap.timeline({ scrollTrigger: { trigger: hs, start: 'top 80%', once: true } });
+    tl.from(hs.querySelector('.hoofdstuk__nr'), { xPercent: -40, opacity: 0, duration: 0.9, ease: 'power4.out' })
+      .from(hs.querySelectorAll('.hoofdstuk__label, .hoofdstuk__kop, .hoofdstuk__tekst'), { y: 24, opacity: 0, duration: 0.7, stagger: 0.08, ease: 'power3.out' }, '<0.15')
+      .fromTo(hs.querySelector('.hoofdstuk__lijn path'), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 1.2, ease: 'power2.inOut' }, '<');
+  });
+
+  /* ---------- scorebord: de feiten klappen om als een stadionbord [20261127] ---------- */
+  gsap.from('.scorebord .feit', {
+    rotateX: -90, opacity: 0, transformOrigin: '50% 0%', duration: 0.8, stagger: 0.1, ease: 'back.out(1.6)',
+    scrollTrigger: { trigger: '.scorebord', start: 'top 85%', once: true },
   });
 
   /* ---------- de cirkel: een Zdog-bal rolt mee met het zaterdag-verhaal ---------- */
@@ -178,7 +186,7 @@ if (gsap && ScrollTrigger && !rustig) {
       const toon = p => { const i = p < 0.34 ? 0 : p < 0.67 ? 1 : 2; stappen.forEach((li, k) => li.classList.toggle('is-actief', k === i)); };
       toon(0);
       const st = ScrollTrigger.create({
-        trigger: '.cirkel__grid', start: 'center 54%', end: '+=' + Math.round(innerHeight * 2.4), pin: true, scrub: 0.8,
+        trigger: '.cirkel__grid', start: 'center 54%', end: '+=' + Math.round(innerHeight * 1.6), pin: true, scrub: 0.8,
         onUpdate: s => { zet(s.progress); toon(s.progress); },
       });
       /* klik op een station: scrol naar dat deel van het verhaal */
@@ -189,23 +197,7 @@ if (gsap && ScrollTrigger && !rustig) {
     });
   }
 
-  /* ---------- alles op een rij: de tabbladen lopen mee met scrollen ---------- */
-  mm.add('(min-width: 60rem)', () => {
-    const sectie = document.querySelector('.alles');
-    const tabs = [...sectie.querySelectorAll('[role=tab]')];
-    sectie.classList.add('is-gepind');
-    let huidig = 0;
-    const st = ScrollTrigger.create({
-      trigger: sectie, start: 'top top', end: '+=' + Math.round(innerHeight * 0.45 * (tabs.length - 1)), pin: true, scrub: true,
-      onUpdate: s => {
-        const i = Math.min(tabs.length - 1, Math.round(s.progress * (tabs.length - 1)));
-        if (i !== huidig) { huidig = i; tabs[i].click(); tabs[i].scrollIntoView({ block: 'nearest', inline: 'center' }); }
-      },
-    });
-    const klik = e => { const t = e.target.closest('[role=tab]'); if (!t || !e.isTrusted) return; const i = tabs.indexOf(t); huidig = i; scrolNaar(st, i / (tabs.length - 1)); };
-    sectie.addEventListener('click', klik);
-    return () => { sectie.classList.remove('is-gepind'); sectie.removeEventListener('click', klik); st.kill(); };
-  });
+  /* [20261127] alles op een rij is niet meer gepind: de tabbladen zijn gewoon klikbaar */
 
   /* ---------- doe mee: de foto gaat open als een gordijn ---------- */
   gsap.fromTo('.meedoen__foto', { clipPath: 'inset(18% 14% 18% 14% round 20px)' }, {
@@ -227,7 +219,7 @@ if (gsap && ScrollTrigger && !rustig) {
 
   /* ---------- kaarten die meebewegen met de muis (alleen met een echte muis) ---------- */
   if (VanillaTilt && matchMedia('(hover: hover) and (pointer: fine)').matches) {
-    VanillaTilt.init(document.querySelectorAll('.rail > li, .vorm__veld, .veldkaart'), {
+    VanillaTilt.init(document.querySelectorAll('.rail > li, .vorm__veld, .veldkaart, .kies__kaart'), {
       max: 6, speed: 600, perspective: 1100, glare: true, 'max-glare': 0.12, scale: 1.01, gyroscope: false,
     });
   }
