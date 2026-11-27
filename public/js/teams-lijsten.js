@@ -36,13 +36,13 @@
    isHulp(l) waar is, neemt lijst-hulp.js het over. Alle pop-ups van Lijstjes openen sindsdien
    als paneel (openPaneel): op desktop van rechts, zodat de zijbalk zichtbaar blijft. */
 import { db, doc, collection, addDoc, updateDoc, deleteDoc, deleteField, onSnapshot } from './firebase.js?v=20261011g';
-import { S, $, $$, esc, meld, sluitModal } from './state.js?v=20261129g';
-import { SEIZOEN_FALLBACK } from './config.js?v=20261129g';
+import { S, $, $$, esc, meld, sluitModal } from './state.js?v=20261129h';
+import { SEIZOEN_FALLBACK } from './config.js?v=20261129h';
 import { ico } from './icons.js?v=20261127b';
 import {
   isHulp, hulpSync, hulpStop, hulpVoortgang, hulpOpenBinnenkort, htmlHulpLijst, koppelHulpLijst,
   modalNieuwHulp, hulpMenuHtml, hulpMenuActie, hulpOpruimen, hulpZetOpen, hulpZetTitel, openPaneel,
-} from './lijst-hulp.js?v=20261129g';
+} from './lijst-hulp.js?v=20261129h';
 
 /* ---------- Sjablonen ---------- */
 export const MATEN_STANDAARD = ['116','128','140','152','164','S','M','L','XL'];
