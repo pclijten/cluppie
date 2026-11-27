@@ -10,8 +10,8 @@
    [20261120g] Ook de eigen gouden regels van de club staan hier (die werden nergens aan trainers getoond).
    [20261120j] Een inhoudsopgave per hoofdstuk met zoekveld in plaats van één lange lijst (zie openClubwijzer).
    Leest alleen; schrijft niets. */
-import { S, esc, openModal } from './state.js?v=20261130b';
-import { contentVoorCategorie, clubEigenVoorCategorie } from './content.js?v=20261130b';
+import { S, esc, openModal } from './state.js?v=20261130e';
+import { contentVoorCategorie, clubEigenVoorCategorie } from './content.js?v=20261130e';
 
 export const clubwijzerItems = () => contentVoorCategorie('afspraak').filter(c => c && c.titel && c.achtergrond);
 /* [20261120g] de eigen gouden regels van de club (niet de standaard van Cluppie): bovenaan de Clubwijzer */

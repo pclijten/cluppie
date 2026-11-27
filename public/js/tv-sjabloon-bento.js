@@ -1,6 +1,6 @@
 /* TV-SJABLOON "BENTO" [20261126q]: alles tegelijk in een raster van tegels; bij een wissel kantelen de tegels om.
    De klok blijft staan. Zie docs/tv-sjablonen.md. */
-import { esc, standWissel, maat, maatWoord, stip, klok, beeld, bovenSponsor } from './tv-speler.js?v=20261129z';
+import { esc, standWissel, maat, maatWoord, stip, klok, beeld, bovenSponsor } from './tv-speler.js?v=20261130e';
 
 const tegel = (gebied, i, klasse, html) => `<div class="be-t ${klasse}" style="grid-area:${gebied};--i:${i}">${html}</div>`;
 const liveTegel = m => tegel('live', 1, '', m.live.length
