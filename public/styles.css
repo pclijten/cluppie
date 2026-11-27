@@ -10221,17 +10221,21 @@ p.cp-let{margin:0;font-size:var(--t-sm)}
     border-color:var(--line-d);
   }
   .dk-bord.zonder-veld{ grid-template-columns:minmax(0,1fr); min-height:0; }
-  .dk-bord-raster, .dk-bord-lijnen{ position:absolute; inset:0; z-index:-1; pointer-events:none; }
-  .dk-bord-raster{ background-image:radial-gradient(color-mix(in srgb,var(--bord-lijn) 22%,transparent) 1px,transparent 1px); background-size:24px 24px;
-    -webkit-mask-image:linear-gradient(90deg,#000 30%,rgba(0,0,0,.45)); mask-image:linear-gradient(90deg,#000 30%,rgba(0,0,0,.45)); }
-  :root[data-thema="donker"] .dk-bord-raster{ background-image:radial-gradient(color-mix(in srgb,var(--wit) 10%,transparent) 1px,transparent 1px); }
-  .dk-bord-lijnen{ width:100%; height:100%; }
-  .dk-bord-lijnen .lijn{ fill:none; stroke:color-mix(in srgb,var(--bord-lijn) 22%,transparent); stroke-width:1.5; }
-  .dk-bord-lijnen .loop{ fill:none; stroke:color-mix(in srgb,var(--bord-lijn) 42%,transparent); stroke-width:1.75; stroke-dasharray:6 6; }
-  :root[data-thema="donker"] .dk-bord-lijnen .lijn{ stroke:color-mix(in srgb,var(--wit) 14%,transparent); }
-  :root[data-thema="donker"] .dk-bord-lijnen .loop{ stroke:color-mix(in srgb,var(--wit) 32%,transparent); }
+  /* [20261127] strakker: stippen als scherpe 2px-punten op een vast raster vanaf de binnenrand, achter de tekst bijna weg;
+     één halve middencirkel rechtsonder in het tekstblok, die niets van de inhoud kruist */
+  .dk-bord-raster{ position:absolute; inset:0; z-index:-1; pointer-events:none;
+    background-image:radial-gradient(circle at 1px 1px,color-mix(in srgb,var(--ink) 30%,var(--surface)) 1px,transparent 1.2px);
+    background-size:24px 24px; background-position:31px 27px;
+    -webkit-mask-image:linear-gradient(90deg,rgba(0,0,0,.18) 0%,rgba(0,0,0,.18) 40%,#000 72%); mask-image:linear-gradient(90deg,rgba(0,0,0,.18) 0%,rgba(0,0,0,.18) 40%,#000 72%); }
+  :root[data-thema="donker"] .dk-bord-raster{ background-image:radial-gradient(circle at 1px 1px,color-mix(in srgb,var(--wit) 16%,transparent) 1px,transparent 1.2px); }
+  .dk-bord-lijnen{ position:absolute; right:0; bottom:-28px; width:200px; height:100px; z-index:-1; pointer-events:none; overflow:visible; }
+  .dk-bord-lijnen .lijn{ fill:none; stroke:color-mix(in srgb,var(--ink) 28%,var(--surface)); stroke-width:1.5; vector-effect:non-scaling-stroke; }
+  .dk-bord-lijnen .stip{ fill:color-mix(in srgb,var(--ink) 28%,var(--surface)); }
+  :root[data-thema="donker"] .dk-bord-lijnen .lijn{ stroke:color-mix(in srgb,var(--wit) 16%,transparent); }
+  :root[data-thema="donker"] .dk-bord-lijnen .stip{ fill:color-mix(in srgb,var(--wit) 16%,transparent); }
+  @media (max-width:1359px){ .dk-bord-lijnen{ display:none; } }
 
-  .dk-bord-links{ display:flex; flex-direction:column; min-width:0; }
+  .dk-bord-links{ position:relative; display:flex; flex-direction:column; min-width:0; }
   .dk-bord .dk-pill{ background:color-mix(in srgb,var(--bord-lijn) 8%,var(--surface)); border:1px solid color-mix(in srgb,var(--bord-lijn) 22%,transparent); color:var(--accent-tekst); }
   :root[data-thema="donker"] .dk-bord .dk-pill{ background:color-mix(in srgb,var(--wit) 7%,transparent); border-color:color-mix(in srgb,var(--wit) 16%,transparent); color:var(--ink); }
   .dk-bord .dk-groot{ margin-top:var(--space-md); font-size:clamp(48px,4.6vw,72px); letter-spacing:0; color:var(--ink); }
@@ -10251,18 +10255,31 @@ p.cp-let{margin:0;font-size:var(--t-sm)}
     box-shadow:0 8px 18px -8px color-mix(in srgb,var(--accent-vlak) 70%,transparent); }
   .dk-bord .dk-bord-knop:hover{ background:color-mix(in srgb,var(--accent-vlak) 88%,var(--zwart)); }
 
-  /* opstelling als tactiekbord: lijnen in de bordkleur, spelers als tegels */
-  .dk-bord .dk-veld-knop{ position:relative; align-self:stretch; display:flex; flex-direction:column; border-radius:var(--r-m); }
-  .dk-veld-label{ position:absolute; left:14px; top:10px; z-index:3; font-size:var(--t-xs); font-weight:500; color:var(--ink-2); }
+  /* opstelling als tactiekbord. [20261127] strakker: wit (donker: effen) veld met dekkende lijnen in de bordkleur in plaats van
+     half doorzichtig (dat werd roze), kop boven het veld, beide doelgebieden, middencirkel en middenstip */
+  .dk-bord{ --veld-lijn: var(--ink); }
+  :root[data-thema="donker"] .dk-bord{ --veld-lijn: color-mix(in srgb,var(--wit) 42%,var(--surface)); }
+  .dk-bord .dk-veld-knop{ position:relative; align-self:stretch; display:flex; flex-direction:column; gap:10px; border-radius:var(--r-m); }
+  .dk-veld-label{ font-size:var(--t-xs); font-weight:500; color:var(--ink-2); text-align:left; line-height:1.4; }
   .dk-veld-label b{ color:var(--accent-tekst); font-weight:600; }
   :root[data-thema="donker"] .dk-veld-label b{ color:var(--ink); }
-  .dk-bord .dk-veld{ flex:1; min-height:360px; background:color-mix(in srgb,var(--bord-lijn) 3%,var(--surface)); border:1.5px solid color-mix(in srgb,var(--bord-lijn) 45%,transparent); border-radius:var(--r-m); }
-  :root[data-thema="donker"] .dk-bord .dk-veld{ background:color-mix(in srgb,var(--wit) 3%,transparent); border-color:color-mix(in srgb,var(--wit) 40%,transparent); }
-  .dk-bord .dk-veld::before{ inset:auto 30% 0; height:20%; border:1.5px solid color-mix(in srgb,var(--bord-lijn) 40%,transparent); border-bottom:0; border-radius:0; }
-  .dk-bord .dk-veld::after{ right:auto;
-    height:72px; width:72px; left:50%; top:50%; transform:translate(-50%,-50%); border:1.5px solid color-mix(in srgb,var(--bord-lijn) 40%,transparent); border-radius:50%; }
-  .dk-bord .dk-veld{ background-image:linear-gradient(color-mix(in srgb,var(--bord-lijn) 40%,transparent),color-mix(in srgb,var(--bord-lijn) 40%,transparent));
-    background-size:100% 1.5px; background-position:0 50%; background-repeat:no-repeat; }
+  .dk-bord .dk-veld{ --l:var(--veld-lijn); flex:1; min-height:340px; border:2px solid var(--l); border-radius:var(--r-s);
+    background-color:var(--surface);
+    background-image:
+      linear-gradient(var(--l),var(--l)), /* middenlijn */
+      linear-gradient(var(--l),var(--l)), linear-gradient(var(--l),var(--l)), linear-gradient(var(--l),var(--l)), /* doelgebied boven */
+      linear-gradient(var(--l),var(--l)), linear-gradient(var(--l),var(--l)), linear-gradient(var(--l),var(--l)); /* doelgebied onder */
+    background-repeat:no-repeat;
+    background-size:100% 1px, 1px 13%, 1px 13%, 40% 1px, 1px 13%, 1px 13%, 40% 1px;
+    background-position:0 50%, 30% 0, 70% 0, 50% 13%, 30% 100%, 70% 100%, 50% 87%; }
+  :root[data-thema="donker"] .dk-bord .dk-veld{ background-color:color-mix(in srgb,var(--wit) 3%,var(--surface)); }
+  .dk-bord .dk-veld::before{ inset:auto; left:50%; top:50%; width:96px; height:96px; transform:translate(-50%,-50%);
+    border:1px solid var(--l); border-radius:50%; }
+  .dk-bord .dk-veld::after{ left:50%; right:auto; top:50%; width:5px; height:5px; transform:translate(-50%,-50%);
+    border:0; border-radius:50%; background:var(--l); }
+  /* keeper in het doelgebied, naam ernaast: anders botst zijn tegel op de naam van de laatste verdediger */
+  .dk-bord .dk-p.k{ top:calc(100% - 22px) !important; }
+  .dk-bord .dk-p.k small{ position:absolute; left:100%; top:50%; transform:translateY(-50%); margin:0 0 0 6px; white-space:nowrap; }
   .dk-bord .dk-veld-leeg span{ background:var(--surface-2); color:var(--ink-2); }
   /* spelers: witte tegel met een rand in de clubkleur en een donker cijfer, naam eronder op een wit labeltje */
   .dk-bord .dk-p b{ width:32px; height:32px; border-radius:10px; font-size:var(--t-lg); background:var(--wit); color:var(--vast-donkergrijs-1);
