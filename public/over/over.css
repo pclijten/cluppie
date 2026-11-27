@@ -466,3 +466,111 @@ html[data-sport="korfbal"] [data-alleen]:not([data-alleen~="korfbal"]) { display
 /* de vijfhoeken horen bij een voetbal; bij een andere sport is de getekende bal glad */
 html:not([data-sport="voetbal"]) .tv-balvlak { display: none; }
 @media (max-width: 30rem) { .sportkeuze { display: grid; grid-template-columns: 1fr 1fr; } }
+
+/* =====================================================================
+   [20261127] Herindeling: voetbal voorop, drie hoofdstukken, meer vaart
+   - nav met hoofdstukken en een rode voortgangsbalk
+   - hero met stadionlicht, een live-stip en de kop in clubrood
+   - scorebord met vier feiten + lichtkrant (LED-bord langs het veld)
+   - hoofdstukkoppen 01/02/03 met een kalklijn
+   - prijzen als kaarten, sportkeuze onderaan
+   ===================================================================== */
+
+/* ---------- nav ---------- */
+.nav__hoofdstukken { display: none; gap: 4px; margin-inline: auto; }
+@media (min-width: 64rem) { .nav__hoofdstukken { display: inline-flex; } }
+.nav__hs { position: relative; padding: 10px 14px; border-radius: var(--radius-pill); color: var(--color-ink-2); font-size: var(--text-sm); font-weight: 600; text-decoration: none; transition: color var(--dur-short) var(--ease-out), background-color var(--dur-short) var(--ease-out); }
+.nav__hs:hover { color: var(--color-ink); background: var(--color-paper-3); }
+.nav__hs.is-actief { color: var(--color-accent-ink); background: var(--color-accent); }
+.nav__voortgang { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; pointer-events: none; }
+.nav__voortgang span { display: block; height: 100%; width: 100%; transform-origin: 0 50%; transform: scaleX(var(--p, 0)); background: linear-gradient(90deg, var(--color-accent), oklch(72% 0.17 45)); box-shadow: 0 0 12px var(--color-accent); }
+
+/* ---------- hero: stadionlicht ---------- */
+.hero { overflow: clip; isolation: isolate; }
+.hero__licht { position: absolute; inset: 0; z-index: -1; pointer-events: none; mask-image: linear-gradient(#000 65%, transparent); -webkit-mask-image: linear-gradient(#000 65%, transparent); }
+.hero__licht span { position: absolute; width: 60vmax; aspect-ratio: 1; border-radius: 50%; filter: blur(80px); opacity: .5; animation: licht 18s var(--ease-in-out) infinite alternate; }
+.hero__licht span:nth-child(1) { background: radial-gradient(closest-side, oklch(56% 0.2 27 / .55), transparent); top: -30vmax; left: -18vmax; }
+.hero__licht span:nth-child(2) { background: radial-gradient(closest-side, oklch(46% 0.12 150 / .6), transparent); bottom: -34vmax; right: -16vmax; animation-delay: -6s; }
+.hero__licht span:nth-child(3) { background: radial-gradient(closest-side, oklch(90% 0.03 90 / .12), transparent); top: -20vmax; right: 10vmax; width: 40vmax; animation-delay: -11s; }
+.hero__licht::after { content: ""; position: absolute; inset: 0; background:
+  linear-gradient(90deg, transparent calc(50% - 1px), oklch(97% 0.012 150 / .05) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)),
+  radial-gradient(circle at 50% 50%, transparent 17vmin, oklch(97% 0.012 150 / .05) 17vmin calc(17vmin + 2px), transparent calc(17vmin + 2px));
+  mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%); }
+@keyframes licht { to { transform: translate(8vmax, 6vmax) scale(1.15); } }
+.hero__kicker { display: inline-flex; align-items: center; gap: 10px; margin: var(--space-lg) 0 var(--space-md); font: 700 var(--text-sm)/1 var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--color-chalk-2); }
+.hero__live { width: 10px; height: 10px; border-radius: 50%; background: var(--color-accent-2); box-shadow: 0 0 0 0 var(--color-accent-2); animation: live 1.8s ease-out infinite; }
+@keyframes live { 0% { box-shadow: 0 0 0 0 oklch(62% 0.205 27 / .7); } 100% { box-shadow: 0 0 0 14px oklch(62% 0.205 27 / 0); } }
+.hero h1 { font-size: clamp(3.25rem, 7vw, 7rem); line-height: .92; max-width: 11ch; }
+.hero h1::first-line { color: var(--color-accent-2); }
+.hero h1 .w:first-child > span { color: var(--color-accent-2); }
+.hero__ander { display: inline-block; margin-left: 4px; color: var(--color-ink-2); }
+.veldkaart { box-shadow: 0 40px 120px -30px oklch(46% 0.12 150 / .8), 0 0 0 1px oklch(97% 0.012 150 / .08); }
+.btn--vol { box-shadow: 0 10px 30px -10px var(--color-accent); }
+.btn--vol:hover { box-shadow: 0 14px 40px -10px var(--color-accent-2); }
+
+/* ---------- scorebord + lichtkrant ---------- */
+.scorebord { position: relative; padding-block: var(--space-xl) 0; background: linear-gradient(180deg, transparent, var(--color-paper-2) 60%); }
+.scorebord__kop { font-size: var(--text-sm); font-family: var(--font-body); font-weight: 700; letter-spacing: .12em; color: var(--color-muted); margin-bottom: var(--space-md) !important; max-width: none; }
+.scorebord .sporten__grid { perspective: 900px; }
+.scorebord .feit { position: relative; overflow: hidden; background: linear-gradient(180deg, oklch(14% 0.01 255), oklch(19% 0.014 255)); border: 1px solid oklch(30% 0.016 255); border-top: 3px solid var(--color-accent); }
+.scorebord .feit::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: oklch(0% 0 0 / .45); }
+.scorebord .feit__groot { font-size: clamp(1.6rem, 2.4vw, 2.4rem); color: oklch(88% 0.16 95); text-shadow: 0 0 18px oklch(88% 0.16 95 / .35); }
+.lichtkrant { display: flex; overflow: hidden; margin-top: var(--space-2xl); padding-block: 14px; background: var(--color-accent); color: var(--color-accent-ink); transform: rotate(-1.2deg) scale(1.02); box-shadow: 0 20px 60px -20px var(--color-accent); }
+.lichtkrant ul { display: flex; flex-shrink: 0; gap: 0; margin: 0; padding: 0; list-style: none; animation: krant 42s linear infinite; }
+.lichtkrant li { flex-shrink: 0; padding-inline: 22px; font: 800 clamp(1.25rem, 2vw, 1.75rem)/1 var(--font-display); text-transform: uppercase; white-space: nowrap; }
+.lichtkrant li::after { content: "●"; margin-left: 44px; font-size: .5em; vertical-align: middle; opacity: .7; }
+.lichtkrant:hover ul { animation-play-state: paused; }
+@keyframes krant { to { transform: translateX(-100%); } }
+
+/* ---------- voor wie: genummerde kaarten ---------- */
+.kies { counter-reset: kies; padding-top: calc(var(--section-gap-s) + var(--space-xl)); }
+.kies__kaart { counter-increment: kies; position: relative; border-radius: var(--radius-card); border: 1px solid var(--color-rule); border-top: 3px solid var(--color-accent); transition: transform var(--dur-long) var(--ease-out), box-shadow var(--dur-long) var(--ease-out), border-color var(--dur-short); }
+.kies__kaart:hover { border-color: color-mix(in oklab, var(--color-accent) 60%, var(--color-rule)); box-shadow: 0 30px 80px -30px oklch(56% 0.2 27 / .5); }
+.kies__nr::before { content: "0" counter(kies); display: inline-block; margin-right: 10px; padding: 3px 8px; border-radius: 6px; background: var(--color-accent); color: var(--color-accent-ink); font: 800 var(--text-sm)/1 var(--font-display); }
+.kies__verder { display: inline-flex; align-items: center; min-height: 48px; padding-inline: var(--space-sm); color: var(--color-ink-2); font-weight: 600; text-decoration: none; }
+.kies__verder::after { content: "↓"; margin-left: 6px; transition: transform var(--dur-short) var(--ease-out); }
+.kies__verder:hover { color: var(--color-ink); }
+.kies__verder:hover::after { transform: translateY(3px); }
+
+/* ---------- hoofdstukkoppen ---------- */
+.hoofdstuk { position: relative; padding-block: var(--section-gap-s) var(--space-xl); overflow: clip; scroll-margin-top: var(--nav-h); }
+.hoofdstuk__rij { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-xl); align-items: end; }
+.hoofdstuk__nr { font: 800 clamp(7rem, 16vw, 15rem)/.78 var(--font-display); color: transparent; -webkit-text-stroke: 2px var(--color-accent); letter-spacing: -.02em; }
+.hoofdstuk__label { font: 700 var(--text-sm)/1 var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--color-accent-2); }
+.hoofdstuk__kop { margin-top: var(--space-sm); font: 800 clamp(2.5rem, 5vw, 4.75rem)/.95 var(--font-display); text-transform: uppercase; max-width: 16ch; text-wrap: balance; }
+.hoofdstuk__tekst { margin-top: var(--space-md); color: var(--color-ink-2); font-size: var(--text-lead); max-width: 50ch; }
+.hoofdstuk__lijn { width: 100%; height: 20px; margin-top: var(--space-xl); }
+.hoofdstuk__lijn path { fill: none; stroke: var(--color-chalk); stroke-opacity: .35; stroke-width: 2; stroke-dasharray: 1; stroke-dashoffset: 0; vector-effect: non-scaling-stroke; }
+@media (max-width: 40rem) { .hoofdstuk__rij { grid-template-columns: 1fr; gap: var(--space-sm); } .hoofdstuk__nr { font-size: 6rem; } }
+
+/* ---------- nieuw: rail met knoppen ---------- */
+.nieuw__kop { display: flex; align-items: end; justify-content: space-between; gap: var(--space-lg); margin-bottom: var(--space-2xl); }
+.nieuw__kop h2 { margin-bottom: 0; }
+.rail-knoppen { display: flex; gap: var(--space-xs); }
+.knopje--rail { color: var(--color-ink); border-color: var(--color-rule); }
+.knopje--rail:hover { background: var(--color-accent); border-color: var(--color-accent); }
+.rail > li { border: 1px solid var(--color-rule); transition: border-color var(--dur-short); }
+.rail > li:hover { border-color: var(--color-accent); }
+
+/* ---------- prijzen ---------- */
+.prijzen { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-md); margin-top: var(--space-xl); }
+.prijs { display: grid; gap: 4px; padding: var(--space-lg); border-radius: var(--radius-card); border: 1px solid var(--color-rule); background: var(--color-paper-2); }
+.prijs--uit { background: linear-gradient(160deg, var(--color-field), var(--color-field-deep)); border-color: transparent; color: var(--color-chalk); box-shadow: 0 30px 80px -30px oklch(46% 0.12 150 / .8); }
+.prijs__wie { font-size: var(--text-sm); color: inherit; opacity: .8; }
+.prijs__bedrag { font: 800 clamp(2.5rem, 4vw, 3.5rem)/1 var(--font-display); }
+.prijs__per { font-size: var(--text-xs); opacity: .7; }
+.meedoen__prijs strong { color: var(--color-ink); }
+@media (max-width: 40rem) { .prijzen { grid-template-columns: 1fr; } }
+
+/* ---------- andere sporten ---------- */
+.sportblok { padding-block: var(--section-gap-s); background: var(--color-paper-2); border-top: 1px solid var(--color-rule); }
+.sportblok__rij { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-xl); align-items: center; }
+.sportblok h2 { font-size: clamp(2rem, 3vw, 3rem); }
+.sportblok .sportkeuze { margin: 0; }
+@media (max-width: 60rem) { .sportblok__rij { grid-template-columns: 1fr; } }
+
+/* ---------- rust ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .hero__licht span, .hero__live, .lichtkrant ul { animation: none; }
+  .lichtkrant { transform: none; }
+}
