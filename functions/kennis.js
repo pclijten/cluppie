@@ -81,4 +81,22 @@ function rolRegel(rollen, { solo = false, rol = '' } = {}){
     + 'Kan deze rol iets niet, zeg dan kort wie het wel kan: meestal de clubbeheerder, of Cluppie voor onderdelen die per club worden aangezet.';
 }
 
-module.exports = { KENNIS, KENNIS_TEKST, ROL_NAMEN, rolRegel };
+/* [20261130a] Waar de vrager nu is en wat bij de club uit staat, als extra regel achter de rol. De app stuurt
+   dit mee; hier gaat alleen door wat op de vaste lijsten staat, zodat er geen vrije tekst in de opdracht komt. */
+const ONDERDELEN_UIT = { trainingsmodule: 'Training maken en Seizoen', speelwijze: 'Speelwijze', evaluaties: 'spelers beoordelen (evaluaties)',
+  teamkamer: 'de Teamkamer', activiteiten: 'Activiteiten, Kantine-tv en de Toernooiplanner', veldplanner: 'de Veldplanner' };
+function contextRegel(context, schermen = {}){
+  const c = context && typeof context === 'object' ? context : {};
+  const delen = [];
+  const scherm = typeof c.scherm === 'string' && Object.prototype.hasOwnProperty.call(schermen, c.scherm) ? schermen[c.scherm] : '';
+  if (scherm) delen.push(`De vrager heeft nu het scherm "${scherm}" open; "hier" of "dit scherm" slaat daarop.`);
+  if (c.apparaat === 'laptop') delen.push('De vrager werkt op een laptop: daar staat het menu links (zijmenu), niet onder Alles.');
+  else if (c.apparaat === 'telefoon') delen.push('De vrager werkt op een telefoon: alles staat onder Alles, onderaan het scherm.');
+  const uit = [...new Set((Array.isArray(c.uit) ? c.uit : []).map(String).filter(k => Object.prototype.hasOwnProperty.call(ONDERDELEN_UIT, k)))];
+  if (uit.length) delen.push(`Bij deze club staan uit: ${uit.map(k => ONDERDELEN_UIT[k]).join('; ')}.`);
+  const gids = typeof c.gids === 'string' && /^\d{2}$/.test(c.gids) ? c.gids : '';
+  if (gids) delen.push(`De vrager komt uit handleiding ${gids} en heeft daar een vraag over.`);
+  return delen.length ? ' ' + delen.join(' ') : '';
+}
+
+module.exports = { KENNIS, KENNIS_TEKST, ROL_NAMEN, rolRegel, contextRegel, ONDERDELEN_UIT };

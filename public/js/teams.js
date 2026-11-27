@@ -67,7 +67,7 @@ import {
 import { koppelNu } from './nu-scherm.js?v=20261130c';
 import { logBekeken } from './video-uitgelicht.js?v=20261124c';
 import { vandaagLokaal, leenActief } from './uitleen-regels.js?v=20261127p';
-import { htmlHandleiding } from './teams-handleiding.js?v=20261130c';
+import { htmlHulp, koppelHulp } from './gidsen.js?v=20261130c';   /* [20261130a] Help = handleidingen per onderdeel; de oude doorlopende pagina staat daar als naslag onder */
 import { koppelElftalFilter, modalElftalToewijzen, elftalPillWedstrijd } from './elftallen.js?v=20261130c';
 import { isAfgelast, telMee, soortPill, statusBadge, plekKort, markeerGezien } from './wedstrijd-status.js?v=20261129i';
 import {
@@ -1637,7 +1637,7 @@ export function renderTeam(){
   if (tab === 'berichten')   inhoud = htmlBerichtenTab();
   if (tab === 'stats')       { inhoud = htmlStatsTab(); telGebruik('stats_bekeken'); }
   if (tab === 'instellingen')inhoud = htmlInstellingen();
-  if (tab === 'help')        { inhoud = htmlHandleiding(); telGebruik('handleiding'); }
+  if (tab === 'help')        { inhoud = htmlHulp(); telGebruik('handleiding'); }
   if (tab === 'updates')     { inhoud = htmlUpdates(); telGebruik('updates_bekeken'); }
   if (tab === 'lijstjes')    inhoud = htmlLijstjes();
   if (tab === 'lijst')       inhoud = htmlLijst();
@@ -2714,6 +2714,7 @@ function koppelTeamTab(v, tab){
     };
   }
   if (tab === 'help'){
+    koppelHulp(v, { zetTeamTab, opnieuw: renderTeam });
     koppelOnboardingHerstart(v);
     const inp = v.querySelector('#helpZoek');
     const wis = v.querySelector('#helpZoekWis');
