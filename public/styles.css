@@ -10464,3 +10464,35 @@ p.cp-let{margin:0;font-size:var(--t-sm)}
   /* 13. Kalender: een afspraak mag over twee regels, zodat de tegenstander leesbaar blijft */
   html.desk .dk-ev{ white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
 }
+
+/* ==================== [20261127] Video's: echte voorbeeldbeelden, duur en kaarten ==================== */
+.video-rij .thumb .vt-vlak{position:absolute;inset:0;display:block;background:linear-gradient(135deg,color-mix(in srgb, var(--accent) 22%, var(--zwart)),var(--zwart))}
+.video-rij .thumb .vt-vlak img,.video-rij .thumb .vt-vlak video{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.video-rij .thumb .vt-live{opacity:0;transition:opacity var(--dur-short) ease;background:transparent}
+.video-rij .thumb .vt-live.klaar{opacity:1}
+.video-rij .thumb .vt-play{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;display:flex;align-items:center;justify-content:center;padding-left:2px;box-sizing:border-box;color:var(--wit);background:color-mix(in srgb, var(--zwart) 55%, transparent);backdrop-filter:blur(2px);transition:transform var(--dur-short) ease, background var(--dur-short) ease}
+.video-rij .thumb .vt-play svg{width:16px;height:16px}
+.video-rij:hover .thumb .vt-play{background:var(--accent);transform:scale(1.08)}
+.video-rij .thumb .vt-duur{position:absolute;right:5px;bottom:5px;padding:1px 6px;border-radius:var(--r-2xs);background:color-mix(in srgb, var(--zwart) 78%, transparent);color:var(--wit);font-size:var(--t-2xs);font-weight:700;font-variant-numeric:tabular-nums;line-height:1.5}
+.video-rij .thumb .vt-duur[hidden]{display:none}
+.video-rij .thumb .tv-nr{z-index:1;background:color-mix(in srgb, var(--zwart) 78%, transparent)}
+.tv-lijst .video-rij .thumb{width:128px;height:72px}
+.tv-lijst .video-rij .thumb .vt-play{width:30px;height:30px;margin:-15px 0 0 -15px}
+.tv-lijst .video-rij .v-titel{font-size:var(--t-md)}
+
+@media (min-width:900px){
+  html.desk .dk-na-videos .tv-lijst{grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--space-md)}
+  html.desk .dk-na-videos .tv-lijst .video-rij{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"thumb thumb" "v acties";align-items:start;gap:0;padding:0;overflow:hidden;border-radius:var(--r-m) !important}
+  html.desk .dk-na-videos .tv-lijst .video-rij .thumb{grid-area:thumb;width:100%;height:auto;aspect-ratio:16/9;border-radius:0}
+  html.desk .dk-na-videos .tv-lijst .video-rij .thumb .vt-play{width:46px;height:46px;margin:-23px 0 0 -23px;opacity:.9}
+  html.desk .dk-na-videos .tv-lijst .video-rij .thumb .vt-play svg{width:20px;height:20px}
+  html.desk .dk-na-videos .tv-lijst .video-rij .thumb .tv-nr{left:8px;top:8px}
+  html.desk .dk-na-videos .tv-lijst .video-rij .thumb .vt-duur{right:8px;bottom:8px;font-size:var(--t-xs)}
+  html.desk .dk-na-videos .tv-lijst .video-rij .v{grid-area:v;padding:var(--space-sm) var(--space-xs) var(--space-sm) var(--space-sm)}
+  html.desk .dk-na-videos .tv-lijst .video-rij .v-titel{min-height:2.6em}
+  html.desk .dk-na-videos .tv-lijst .video-rij .acties{grid-area:acties;padding:var(--space-sm) var(--space-sm) 0 0}
+  html.desk .dk-na-videos .tv-lijst .video-rij .acties .rij-kamer-t{display:none}
+}
+/* Club › Video's (beheerlijst): iets groter beeld, zonder afspeelknop zodat de duur leesbaar blijft */
+.video-rij.vsort .thumb{width:96px;height:54px}
+.video-rij.vsort .thumb .vt-play{display:none}
