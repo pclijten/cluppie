@@ -9646,6 +9646,8 @@ html.desk .lh-rijen .lj-rk{margin-bottom:0}
 .vk-beheer{display:flex;flex-wrap:wrap;gap:var(--space-md);align-items:flex-start}
 .vk-beheer-kaart{flex:999 1 520px;min-width:0;display:flex;flex-direction:column;gap:var(--space-2xs)}
 .vk-beheer-zij{flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:var(--space-sm)}
+/* [20261129f] breed scherm: de luchtfoto blijft staan terwijl je rechts een veld instelt */
+@media (min-width:1000px) and (min-height:760px){.vk-beheer-kaart{position:sticky;top:0}}
 .vk-hint{font-size:var(--t-sm);color:var(--ink-2);margin:0}
 .vk-veldlijst{display:flex;flex-wrap:wrap;gap:var(--space-2xs)}
 .vk-chip{min-height:36px;padding:0 var(--space-sm);border-radius:var(--r-pill);background:var(--surface-2);border:1.5px solid var(--hair);font-size:var(--t-sm);font-weight:700;color:var(--ink)}

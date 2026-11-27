@@ -309,6 +309,10 @@ zetSeed(`clubs/${CLUB}/speelstijl/huidig`, {
   vastgelegdDoor: COACH, vastgelegdMs: Date.now() - 20 * 864e5,
 });
 
+/* [20261129g] het eigen sportpark van de democlub: vijf velden op de luchtfoto (veld 1 ook in tweeën en in vieren,
+   veld 2 in tweeën) en vier plekken. Zo werken Sportparken, de veldkaart bij een wedstrijd en de Veldplanner in de demo. */
+zetSeed(`clubs/${CLUB}/sportparken/eigen`, {naam:  'Sportpark Cluppie', adres:  'Sportpark Cluppie, Utrecht', plaats:  'Utrecht', eigen:  true, lat:  52.075195, lon:  5.063219, zoom:  17, velden:  [{id:  'demo-veld-1', naam:  'Veld 1', lat:  52.074684, lon:  5.064598, lengte:  100, breedte:  63, hoek:  17, splits:  {half:  true, kwart:  true}, delen:  {}}, {id:  'demo-veld-2', naam:  'Veld 2', lat:  52.07502, lon:  5.062771, lengte:  101, breedte:  69, hoek:  17, splits:  {half:  true, kwart:  false}, delen:  {}}, {id:  'demo-veld-3', naam:  'Veld 3', lat:  52.07536, lon:  5.064939, lengte:  105, breedte:  69, hoek:  17, splits:  {half:  false, kwart:  false}, delen:  {}}, {id:  'demo-veld-4', naam:  'Veld 4', lat:  52.075696, lon:  5.063104, lengte:  102, breedte:  71, hoek:  17, splits:  {half:  false, kwart:  false}, delen:  {}}, {id:  'demo-veld-5', naam:  'Veld 5', lat:  52.075493, lon:  5.061609, lengte:  120, breedte:  69, hoek:  -73, splits:  {half:  false, kwart:  false}, delen:  {}}], plekken:  [{id:  'demo-plek-1', soort:  'kantine', naam:  'Kantine', lat:  52.075821, lon:  5.065193, hoek:  17}, {id:  'demo-plek-2', soort:  'kleedkamer', naam:  'Kleedkamers 1–4', lat:  52.075426, lon:  5.065998, hoek:  17}, {id:  'demo-plek-3', soort:  'parkeren', naam:  'Parkeren', lat:  52.075604, lon:  5.066641, hoek:  0}, {id:  'demo-plek-4', soort:  'ingang', naam:  'Ingang', lat:  52.075657, lon:  5.065783, hoek:  0}]});
+
 const COLLEGA = ['Anouk', 'Jeroen', 'Fatima', 'Kees', 'Sanne', 'Ahmed', 'Petra', 'Martijn'];
 const TEAMS = [
   { id: 'demo-o9-1',   naam: 'O9-1',   cat: 'JO9',  bouw: 'onder',  format: '6' },
@@ -405,7 +409,8 @@ TEAMS.forEach((t, ti) => {
       type: 'normaal', tegenstander, thuis, format: t.format, periodes, formatie, datum: w.datum, aftrap: w.tijd, kwartduur: duur,
       selectie: spelers, goals, kaarten: [], kwarten, seizoen: SEIZOEN, gemaakt: TS, opzetGedaan: true,
       bron: 'sportlink', sportlinkCode: w.code, competitie: `${basis} 3e klasse`, sportlinkSync: TS,
-      info: { accommodatie: thuis ? 'Sportpark Cluppie, Utrecht' : `Sportpark ${tegenstander.split(' ').slice(0, -1).join(' ')}` },
+      info: { accommodatie: thuis ? 'Sportpark Cluppie, Utrecht' : `Sportpark ${tegenstander.split(' ').slice(0, -1).join(' ')}` },      /* [20261129g] thuiswedstrijden hebben een veld en kleedkamer, zodat de veldkaart van het demo-sportpark te zien is */
+      ...(thuis ? { slVeld: `Veld ${1 + (ti % 4)}`, slKleedkamer: String(1 + (ti % 4)) } : {}),
     });
     if (w.doelThuis != null){
       const b = 2 + Math.min(2, w.ronde * 0.6);
@@ -520,6 +525,7 @@ if (DEMO_ROL){
   }
   if (DEMO_ROL === 'hjo'){ club.hoofdJeugd = { [COACH]: true }; club.hoofdJeugdInfo = { [COACH]: INFO }; uitTeam('demo-o11-2'); }
   if (DEMO_ROL === 'admin'){ club.admins = { [COACH]: true }; club.adminsInfo = { [COACH]: INFO }; uitTeam('demo-o11-2'); uitTeam('demo-o13-1'); }
+  if (DEMO_ROL === 'admin') club.platformModules = { ...(club.platformModules || {}), activiteiten: true, veldplanner: true };
   /* [20261121c] voor Instellingen › Bewaartermijnen en opruimen: twee spelers die lang geleden zijn gearchiveerd
      (één vertrokken, één overgezet), één die nog binnen de termijn valt, en gegevens uit een oud seizoen */
   if (DEMO_ROL === 'admin'){
