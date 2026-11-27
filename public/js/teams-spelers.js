@@ -5,7 +5,7 @@
    bewerken, én het uitlenen van een speler aan een ander team binnen de
    club (thematisch dezelfde "speler"-context, vandaar in één bestand). */
 import { teamsOpId } from './teams-ophalen.js?v=20261011g';
-import { beleidsplanNaam, cfg } from './clubconfig.js?v=20261127z';
+import { beleidsplanNaam, cfg } from './clubconfig.js?v=20261128a';
 import {
   db, collection, doc, addDoc, deleteDoc, updateDoc, setDoc,
   getDoc, getDocs, query, where, deleteField,
@@ -13,34 +13,36 @@ import {
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, speler, uurMin, openModal, sluitModal, modAan, isBeheerder
-} from './state.js?v=20261127z';
+} from './state.js?v=20261128a';
 import {
   niveau, niveauKleur, NIVEAUS, SKILLS, skillDomein,
   LEERCURVE, leercurveRelevant, leercurveThema, snelTag, SNEL_TAGS,
   POSITIE_GROEPEN, SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo,
   wisselReden, isToernooi
-} from './config.js?v=20261127z';
-import { analyseWedstrijd, speeltijdReserve, disciplinaireTijd, telaatTijd, persoonlijkeNoemer } from './analyse.js?v=20261127z';
-import { isBouwCoordinator } from './coordinatoren.js?v=20261127z';
-import { magUitlenen } from './uitleen-rechten.js?v=20261127z';
+} from './config.js?v=20261128a';
+import { analyseWedstrijd, speeltijdReserve, disciplinaireTijd, telaatTijd, persoonlijkeNoemer } from './analyse.js?v=20261128a';
+import { isBouwCoordinator } from './coordinatoren.js?v=20261128a';
+import { magUitlenen } from './uitleen-rechten.js?v=20261128a';
 import { leenOmschrijving, leenActief } from './uitleen-regels.js?v=20261127p';
 import { ico } from './icons.js?v=20261127b';
-import { rondesVoorTeam, rondeSpelers, datumKort } from './evaluatierondes.js?v=20261127z';
+import { rondesVoorTeam, rondeSpelers, datumKort } from './evaluatierondes.js?v=20261128a';
 
-import { toonThemaInfo } from './teams-leerlijn.js?v=20261127z';
-import { telGebruik } from './tracker.js?v=20261127z';
+import { toonThemaInfo } from './teams-leerlijn.js?v=20261128a';
+import { telGebruik } from './tracker.js?v=20261128a';
 import { opkomstVoor, teltMee } from './opkomst.js?v=20260922c';
-import { heeftElftallen, filterOpElftal, elftalPillen } from './elftallen.js?v=20261127z';
-import { bouwVanTeam, eigenBouwenVanTeam } from './bouw-indeling.js?v=20261127z';
+/* [20261125b] teamoverzicht van een evaluatieronde: alle spelers in één beeld */
+import { teamModel, htmlTeamOverzicht, roKlik } from './ronde-overzicht.js?v=20261128az';
+import { heeftElftallen, filterOpElftal, elftalPillen } from './elftallen.js?v=20261128a';
+import { bouwVanTeam, eigenBouwenVanTeam } from './bouw-indeling.js?v=20261128a';
 import { htmlVolledigFormulier, koppelVolledigFormulier, koppelInfo, htmlSamenvatting, htmlNaslagLink, htmlSnelAnker,
-  domeinScores, leeftijdTeam, naslagEersteKeer, htmlSpelerRadar, domeinWaardenEcht } from './beoordeling-volledig.js?v=20261127z';
+  domeinScores, leeftijdTeam, naslagEersteKeer, htmlSpelerRadar, domeinWaardenEcht } from './beoordeling-volledig.js?v=20261128a';
 
 /* Cross-module her-render: teams.js importeert functies van hieruit, dus
    deze module mag teams.js niet statisch terug-importeren (circulaire
    import). Dynamic import() binnen de aanroepende functie is het patroon
    dat de rest van de app ook al gebruikt (zie club.js/wedstrijd.js). */
 async function herrenderTeam(){
-  const m = await import('./teams.js?v=20261127z');
+  const m = await import('./teams.js?v=20261128a');
   m.renderTeam();
 }
 
@@ -801,6 +803,7 @@ function deelnemer(){ return {uid:S.user.uid, naam:(S.team.ledenInfo?.[S.user.ui
 export function modalSnelBeoordeling(spelerId, bestaande = null){
   if (!modAan('evaluaties')) return meld('Evaluaties staan uit voor dit team');
   const p = speler(spelerId); if (!p) return;
+  const vanOverzicht = S._roTerug || null; S._roTerug = null;   // [20261125b] zie openTeamOverzicht
   const opts = bronOpties();
   let gekozenNiveau = bestaande?.niveau || 0;
   let gekozenTags = new Set(bestaande?.tags || []);
@@ -920,7 +923,7 @@ export function modalSnelBeoordeling(spelerId, bestaande = null){
       if (bestaande) await updateDoc(doc(db,'teams',S.teamId,'beoordelingen',bestaande.id), data);
       else { await addDoc(collection(db,'teams',S.teamId,'beoordelingen'), data); telGebruik('snel_beoordeling'); }
       sluitModal();
-      if (S._snelRonde) volgendeSnelRonde(); else { herrenderTeam(); meld(p.naam+' beoordeeld'); }
+      if (S._snelRonde) volgendeSnelRonde(); else { herrenderTeam(); meld(p.naam+' beoordeeld'); naarOverzichtTerug(vanOverzicht); }
     } catch(e){ meld('Opslaan mislukt: '+(e.code||e.message)); }
   };
   naslagEersteKeer(lftSnel);
@@ -948,7 +951,11 @@ export function startSnelRonde(){
 function volgendeSnelRonde(){
   const r = S._snelRonde; if (!r) return;
   r.index++;
-  if (r.index >= r.ids.length){ S._snelRonde = null; herrenderTeam(); meld('Ronde klaar ✓'); return; }
+  if (r.index >= r.ids.length){
+    S._snelRonde = null; herrenderTeam(); meld('Ronde klaar ✓');
+    if (r.ronde?.id) setTimeout(() => openTeamOverzicht(r.ronde.id), 250);   // [20261125b] evaluatieronde: sluit af met het teamoverzicht
+    return;
+  }
   modalSnelBeoordeling(r.ids[r.index]);
 }
 
@@ -1018,6 +1025,8 @@ export function modalVolledigeBeoordeling(spelerId, bestaande = null){
   if (!modAan('evaluaties')) return meld('Evaluaties staan uit voor dit team');
   const p = speler(spelerId); if (!p) return;
   const lft = leeftijdTeam(S.team?.categorie);
+  /* [20261125b] geopend vanuit het teamoverzicht van een ronde: na opslaan daarheen terug */
+  const vanOverzicht = S._roTerug || null; S._roTerug = null;
   const alleenLezen = !!(bestaande?.prive && bestaande.door?.uid && bestaande.door.uid !== S.user?.uid);
   const waarden = {
     criteria: { ...(bestaande?.criteria || {}) },
@@ -1038,7 +1047,7 @@ export function modalVolledigeBeoordeling(spelerId, bestaande = null){
   const alInRonde = r => S.beoordelingen.some(b => b.ronde === r.id && b.spelerId === spelerId && b.id !== bestaande?.id && b.door?.uid === S.user?.uid);
   const rondeStart = flow ? flow.ronde.id
     : bestaande ? (bestaande.ronde || (bestaande.officieel ? '_oud' : ''))
-    : (lopend.find(r => !alInRonde(r))?.id || '');
+    : ((lopend.find(r => r.id === vanOverzicht && !alInRonde(r)) || lopend.find(r => !alInRonde(r)))?.id || '');
 
   const rondeVoortgang = flow ? `<div class="ronde-voortgang">
       <div class="veldlabel" style="margin:0 0 var(--space-2xs)">${esc(flow.ronde.naam)}</div>
@@ -1127,7 +1136,7 @@ export function modalVolledigeBeoordeling(spelerId, bestaande = null){
         else telGebruik(rondeId ? 'ronde_beoordeling' : 'volledige_beoordeling');
       }
       sluitModal();
-      if (flow) volgendeEvalRonde(); else { herrenderTeam(); meld('Beoordeling opgeslagen'); }
+      if (flow) volgendeEvalRonde(); else { herrenderTeam(); meld('Beoordeling opgeslagen'); naarOverzichtTerug(vanOverzicht); }
     } catch(e){ meld('Opslaan mislukt: '+(e.code||e.message)); }
   };
   const skipVb = $('#mVbSkip');
@@ -1135,9 +1144,11 @@ export function modalVolledigeBeoordeling(spelerId, bestaande = null){
   const wegBtn = $('#mVbWeg');
   if (wegBtn) wegBtn.onclick = async () => {
     if (!confirm('Deze beoordeling verwijderen?')) return;
-    try { await deleteDoc(beoordelingRef(bestaande)); sluitModal(); herrenderTeam(); }
+    try { await deleteDoc(beoordelingRef(bestaande)); sluitModal(); herrenderTeam(); naarOverzichtTerug(vanOverzicht); }
     catch(e){ meld('Verwijderen mislukt: '+(e.code||e.message)); }
   };
+  /* kruisje zonder opslaan: ook terug naar het overzicht */
+  if (vanOverzicht){ const x = $('#modalSluitBtn'); if (x) x.onclick = () => openTeamOverzicht(vanOverzicht); }
   naslagEersteKeer(lft);
 }
 
@@ -1167,8 +1178,59 @@ export function startRondeFlow(rondeId){
 function volgendeEvalRonde(){
   const r = S._evalRonde; if (!r){ herrenderTeam(); return; }
   r.index++;
-  if (r.index >= r.ids.length){ S._evalRonde = null; herrenderTeam(); meld(`${r.ronde.naam}: ronde doorlopen ✓`); return; }
+  if (r.index >= r.ids.length){
+    S._evalRonde = null; herrenderTeam(); meld(`${r.ronde.naam}: ronde doorlopen ✓`);
+    /* [20261125b] sluit af met het teamoverzicht: alle spelers en scores in één beeld */
+    setTimeout(() => openTeamOverzicht(r.ronde.id), 250);
+    return;
+  }
   modalVolledigeBeoordeling(r.ids[r.index]);
+}
+
+/* ---------- Teamoverzicht van een evaluatieronde ----------
+   [20261125b] Alle spelers van het team met jouw beoordelingen in één matrix
+   (zie ronde-overzicht.js). Vergeten of niet-complete spelers springen eruit;
+   een tik op een speler opent zijn beoordeling en na het opslaan kom je hier
+   terug. Alleen je eigen beoordelingen: iedere trainer beoordeelt zelf. */
+let _ro = null;   // { rondeId, st:{sort,dom} } zolang het overzicht open of onderweg is
+function roRonde(rondeId){ return (S._clubRondes || []).find(r => r.id === rondeId) || null; }
+function tekenTeamOverzicht(){
+  const wortel = document.querySelector('#modalInhoud .ro-trainer');
+  const ronde = _ro && roRonde(_ro.rondeId);
+  if (!wortel || !ronde) return;
+  const model = teamModel({ ronde, spelers: S.spelers, beoordelingen: S.beoordelingen, lft: leeftijdTeam(S.team?.categorie), uid: S.user?.uid });
+  const body = wortel.parentElement, scroll = body.scrollTop;
+  wortel.outerHTML = htmlTeamOverzicht(model, _ro.st, { teamNaam: S.team?.naam });
+  body.scrollTop = scroll;
+}
+export function openTeamOverzicht(rondeId){
+  if (!modAan('evaluaties')) return meld('Evaluaties staan uit voor dit team');
+  const ronde = roRonde(rondeId);
+  if (!ronde) return meld('Deze evaluatieronde bestaat niet meer');
+  _ro = { rondeId, st: (_ro && _ro.rondeId === rondeId) ? _ro.st : { sort:'open', dom:'' } };
+  S._evalRonde = null;
+  openModal(`<h2>Teamoverzicht</h2><div class="ro-trainer"></div>`, { vorm:'paneel' });
+  tekenTeamOverzicht();
+  telGebruik('ronde_overzicht');
+  /* nieuwe of gewijzigde beoordelingen (ook van een ander apparaat) direct tonen */
+  S._roVervers = () => { if (document.querySelector('#modalInhoud .ro-trainer')) tekenTeamOverzicht(); else S._roVervers = null; };
+  const body = document.querySelector('#modalInhoud .modal-body');
+  if (body) body.onclick = e => roKlik(e, { st: _ro.st }, {
+    herteken: tekenTeamOverzicht,
+    verder: () => startRondeFlow(rondeId),
+    speler: id => {
+      const eigen = S.beoordelingen.find(b => b.ronde === rondeId && b.spelerId === id && (ronde.soort === 'snel' || b.door?.uid === S.user?.uid)) || null;
+      S._roTerug = rondeId;
+      if (ronde.soort === 'snel'){
+        if (!eigen) S._snelRonde = { index:0, ids:[id], overgeslagen:new Set(), ronde:{ id:ronde.id, naam:ronde.naam } };
+        modalSnelBeoordeling(id, eigen);
+      } else modalVolledigeBeoordeling(id, eigen);
+    },
+  });
+}
+/* Na opslaan of verwijderen van een beoordeling die vanuit het overzicht is geopend. */
+function naarOverzichtTerug(rondeId){
+  if (rondeId) setTimeout(() => openTeamOverzicht(rondeId), 200);
 }
 
 /* --- Leerpunten (array op spelerdoc) --- */
@@ -1503,7 +1565,7 @@ export async function modalUitlenen(spelerId){
      Uitgebreid) en mag alleen door coördinatoren en de clubadmin. */
   const team = { ...S.team, id: S.teamId };
   if (!magUitlenen(team)) return meld('Uitlenen regelt de coördinator van de bouw');
-  const m = await import('./uitleen-form.js?v=20261127z');
+  const m = await import('./uitleen-form.js?v=20261128a');
   m.openUitleenForm({ clubId, vanTeam: team, speler: p });
 }
 
@@ -1511,7 +1573,7 @@ export async function modalUitlenen(spelerId){
 export async function wijzigUitlening(u, clubIdOverride, naOpslaan){
   const clubId = clubIdOverride || S.team?.club;
   if (!clubId || !u) return meld('Uitlening niet gevonden');
-  const m = await import('./uitleen-form.js?v=20261127z');
+  const m = await import('./uitleen-form.js?v=20261128a');
   m.openUitleenForm({ clubId, vanTeam: { id: u.vanTeam, naam: u.vanTeamNaam }, speler: { id: u.spelerId, naam: u.snapshot?.naam || 'Speler' }, bestaand: u, naOpslaan });
 }
 

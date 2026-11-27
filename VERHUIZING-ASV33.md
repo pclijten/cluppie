@@ -2,7 +2,11 @@
 
 ASV'33 draait nu in een eigen omgeving: site cluppieasv33.nl (repo `cluppieasv33`), Firebase-project `cluppieasv33`. Na de verhuizing is ASV'33 een gewone club in cluppie.io (project `cluppie-ad329`) en stuurt cluppieasv33.nl door naar www.cluppie.io.
 
-Stand 22-11-2026: alles hieronder is gebouwd en getest in de emulator en in een browser. Er is nog **niets** gedraaid tegen een echt Firebase-project. Deel A en B zijn veilig; deel C (de echte verhuizing) pas na akkoord van Paul en een geslaagde proef.
+Stand 27-11-2026: deel A is gedaan (23-11) en de proef van deel B is geslaagd (24-11, project `cluppie-proef`: 77 accounts, ruim 10.600 documenten, inloggen met het oude wachtwoord werkt). Deel C, de echte verhuizing, is nog niet gedaan en wacht op een avond die Paul kiest. Nog nooit tegen een echt project gedraaid: `bestanden`, `slot`/`ontgrendel` en het stil inloggen na het doorverwijzen.
+
+Cluppie.io draait sinds 27-11 op Firebase Hosting in plaats van GitHub Pages. Voor de verhuizing verandert dat niets: het adres blijft www.cluppie.io en de doorverwijspagina, `verhuisLogin` en het script zijn daarna opnieuw getest. De site van ASV'33 (cluppieasv33.nl) staat nog wel op GitHub Pages; de doorverwijzing in deel C stap 7 gaat dus nog zoals beschreven.
+
+Vóór de echte verhuizing: `git pull` in de map Cluppie, en nagaan dat cluppie.io alle updates uit ASV'33 heeft (stand 27-11: t/m ASV'33 PR #110).
 
 ## Wat er is
 
@@ -39,7 +43,7 @@ Inloggen met het Google-account dat eigenaar is van beide projecten. Het script 
 
 ## Deel A: klaarzetten in cluppie.io (verandert niets voor bestaande clubs)
 
-1. De pull request met dit draaiboek mergen. De website en de functie `verhuisLogin` gaan vanzelf live via de workflows.
+1. (Gedaan 23-11.) De pull request met dit draaiboek mergen; de functie `verhuisLogin` gaat live via de workflow.
 2. `powershell -ExecutionPolicy Bypass -File tools\deploy-alles.ps1` draaien: zet de toegang (invoker) voor `verhuisLogin`.
 3. De functie toestemming geven om inlogbewijzen te ondertekenen. Zoek de service-account van de functie op en geef hem de rol op zichzelf:
 
