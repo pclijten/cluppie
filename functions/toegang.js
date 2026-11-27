@@ -277,6 +277,15 @@ exports.beoordeelAanvraag = onCall({ region: REGIO, cors: true }, async (request
   /* [20261111b] een los team dat bij de club wil horen: alleen een clubbeheerder */
   if (soortTeam){
     if (a.rol !== 'team' || !a.teamId) throw new HttpsError('failed-precondition', 'Dit is geen aanvraag om een team te koppelen.');
+    /* [20261130c] het team bestaat al in de club: de coach komt bij dat team, zijn eigen team blijft los */
+    if (request.data?.besluit === 'koppel'){
+      const doelId = String(request.data?.doelTeamId || '');
+      const r = await koppelAanBestaandTeam(db, { clubId, a, doelId, spelersMee: request.data?.spelersMee === true });
+      await ref.delete();
+      await log(db, clubId, 'goedgekeurd', { uid, naam: a.naam, door, doorNaam, teamId: doelId,
+        details: `coach van bestaand team ${r.doelNaam}${r.overgenomen ? `, ${r.overgenomen} speler${r.overgenomen === 1 ? '' : 's'} overgenomen` : ''}` });
+      return { ok: true, rol: 'coach', teamId: doelId, ...r };
+    }
     if (request.data?.besluit === 'goed'){
       await zetTeamNaarClub(db, { clubId, club, teamId: a.teamId, uid, naam: a.naam, aanvraagRef: ref });
       await log(db, clubId, 'goedgekeurd', { uid, naam: a.naam, door, doorNaam, teamId: a.teamId, details: `team ${a.teamNaam || ''} gekoppeld`.trim() });
@@ -425,6 +434,40 @@ async function zetTeamNaarClub(db, { clubId, club, teamId, uid, naam, aanvraagRe
     tx.update(clubRef(db, clubId), clubUpd);
     if (aanvraagRef) tx.delete(aanvraagRef);
   });
+}
+
+/* [20261130c] Een los team wil naar de club, maar de club heeft dat team al (bijv. O11-1 uit Sportlink).
+   Dan maken we geen tweede team: de aanvrager wordt coach van het bestaande clubteam. Spelers die nog
+   niet in dat team staan (op naam) kunnen meekomen; alles wat al bij het clubteam hoort blijft staan.
+   Het eigen team van de coach blijft los bestaan, met koppelVoorstel.status 'samengevoegd'; daar staat
+   op zijn team een kaart met uitleg, en hij kan het zelf verwijderen. */
+const normNaam = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+const volNaam = p => normNaam([p.naam, p.achternaam].filter(Boolean).join(' '));
+async function koppelAanBestaandTeam(db, { clubId, a, doelId, spelersMee }){
+  if (!doelId || doelId.includes('/')) throw new HttpsError('invalid-argument', 'Kies het team waar de coach bij komt.');
+  if (doelId === a.teamId) throw new HttpsError('invalid-argument', 'Kies een ander team dan het eigen team van de coach.');
+  const dRef = db.doc(`teams/${doelId}`), lRef = db.doc(`teams/${a.teamId}`);
+  const [d, l] = (await Promise.all([dRef.get(), lRef.get()])).map(x => x.data());
+  if (!d || d.club !== clubId) throw new HttpsError('failed-precondition', 'Dat team hoort niet bij deze club.');
+  if (l && !l.leden?.[a.uid]) throw new HttpsError('failed-precondition', 'De aanvrager is geen coach meer van zijn eigen team.');
+  let overgenomen = 0;
+  if (spelersMee && l){
+    const [los, doel] = await Promise.all([lRef.collection('spelers').get(), dRef.collection('spelers').get()]);
+    const bekend = new Set(); doel.docs.forEach(x => { const p = x.data(); bekend.add(volNaam(p)); bekend.add(normNaam(p.naam)); });
+    const batch = db.batch();
+    for (const x of los.docs){
+      const p = x.data();
+      if (!p.naam || bekend.has(volNaam(p)) || (!p.achternaam && bekend.has(normNaam(p.naam)))) continue;
+      const nieuw = doel.docs.some(y => y.id === x.id) ? dRef.collection('spelers').doc() : dRef.collection('spelers').doc(x.id);
+      batch.set(nieuw, { ...p, vanLosTeam: a.teamId });
+      bekend.add(volNaam(p)); overgenomen++;
+    }
+    if (overgenomen) await batch.commit();
+  }
+  await pasLidmaatschapToe(db, { clubId, teamId: doelId, uid: a.uid, naam: a.naam, rol: 'coach' });
+  if (l) await lRef.update({ koppelVoorstel: { ...(l.koppelVoorstel || {}), clubId, status: 'samengevoegd',
+    naarTeamId: doelId, naarTeamNaam: d.naam || '', tijd: FieldValue.serverTimestamp() } });
+  return { doelNaam: d.naam || '', overgenomen };
 }
 
 /* [20261114a] Trainer die zonder club begon en nu via een uitnodiging bij een club komt: zijn losse

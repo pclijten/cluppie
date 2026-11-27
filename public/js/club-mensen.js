@@ -7,11 +7,11 @@
 
    Daarnaast: de kaart "En daarna" op de club-hub, het vervolg op "Aan de slag" (startlijst.js).
    De rekenregels staan in rollen-bezetting.js (zonder DOM, getest). */
-import { S, esc } from './state.js?v=20261130b';
+import { S, esc } from './state.js?v=20261130c';
 import { db, doc, getDoc } from './firebase.js?v=20261011g';
 import { ico } from './icons.js?v=20261127b';
-import { BOUWEN } from './config.js?v=20261130b';
-import { bouwVanTeam } from './bouw-indeling.js?v=20261130b';
+import { BOUWEN } from './config.js?v=20261130c';
+import { bouwVanTeam } from './bouw-indeling.js?v=20261130c';
 import { ROLLEN as ROLNAMEN, eigenRolNaam } from './rolnamen.js?v=20261120c';
 import { rolBezetting, vervolgStatus } from './rollen-bezetting.js?v=20261121a';
 
