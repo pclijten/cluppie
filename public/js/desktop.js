@@ -215,7 +215,7 @@ function groepen(){
       { tab:'presentietraining', ico:'attendance-present', naam:'Trainingen', badge: stofNieuw },
       ...(onderdeelAan('trainingsmodule') ? [{ tab:'trainingsmodule',   ico:'training-plan',      naam:'Training maken' }] : []),
       ...(onderdeelAan('seizoensplan') ? [{ tab:'seizoensplan',      ico:'planning-month',     naam:'Seizoensplanning' }] : []),
-      { tab:'speelwijze',        ico:'football-speelwijze', naam:'Speelwijze' },
+      ...(modAan('speelwijze') ? [{ tab:'speelwijze',    ico:'football-speelwijze', naam:'Speelwijze' }] : []),
       /* [20260923a] Oefenstof zit op desktop in Trainingen; het tabblad blijft
          bereikbaar via zoeken (Ctrl K) en op de telefoon ongewijzigd. */
       { tab:'videos',            ico:'training-video',     naam:'Video\u2019s' },

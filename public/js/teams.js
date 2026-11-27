@@ -198,7 +198,7 @@ export function startTeams(){
         'trainingsmodule','seizoensplan','speelwijze','teamkamer',
       ]);
       const bewaardeTab = positie && positie.teamId === doelTeam.id ? (positie.teamTab || 'hub') : 'hub';
-      const herstelTab = HERSTELBARE_TABS.has(bewaardeTab) && (!['trainingsmodule','seizoensplan'].includes(bewaardeTab) || onderdeelAan(bewaardeTab)) ? bewaardeTab : 'hub';
+      const herstelTab = HERSTELBARE_TABS.has(bewaardeTab) && (!['trainingsmodule','seizoensplan','speelwijze'].includes(bewaardeTab) || onderdeelAan(bewaardeTab)) ? bewaardeTab : 'hub';
       openTeam(doelTeam.id, herstelTab);
       // een openstaande wedstrijd herstellen (indien die bij dit team hoort)
       if (positie && positie.teamId === doelTeam.id && positie.wedstrijdId){
@@ -1643,11 +1643,11 @@ export function renderTeam(){
   if (tab === 'teamkamer')   inhoud = htmlTeamkamer();   /* [20261116m] */
   syncTeamkamer();   /* [20261116r] trainingen en cijfers voor ouders bijwerken, alleen als de trainer dat heeft aangezet */
   /* [20261013b] uitgezet (eindbaas, club of team): geen scherm, wel een duidelijke uitleg */
-  const onderdeelUit = ['trainingsmodule','seizoensplan'].includes(tab) && !onderdeelAan(tab);
+  const onderdeelUit = ['trainingsmodule','seizoensplan','speelwijze'].includes(tab) && !onderdeelAan(tab);   /* [20261127s] ook Speelwijze */
   if (onderdeelUit) inhoud = `<div class="kaart leeg">Dit onderdeel staat niet aan voor jouw team. Vraag de clubbeheerder om het aan te zetten.</div>`;
   else if (tab === 'trainingsmodule') { inhoud = htmlTrainingsmodule(); telGebruik('training_maken'); }
   else if (tab === 'seizoensplan')    { inhoud = htmlSeizoensplan(); telGebruik('seizoensplan'); }
-  if (tab === 'speelwijze')           { inhoud = htmlTeamSpeelwijze(); telGebruik('speelwijze'); }
+  else if (tab === 'speelwijze')      { inhoud = htmlTeamSpeelwijze(); telGebruik('speelwijze'); }
   if (tab === 'toernooitjes') inhoud = htmlToernooitjes();
   if (tab === 'toernooitje')  inhoud = htmlToernooitje();
 
@@ -2132,7 +2132,7 @@ function koppelTeamTab(v, tab){
   if (tab === 'teamkamer'){ koppelTeamkamer(v, { renderTeam }); return; }
   if (tab === 'trainingsmodule' && onderdeelAan(tab)){ koppelTrainingsmodule(v, { zetTeamTab }); return; }
   if (tab === 'seizoensplan' && onderdeelAan(tab)){ koppelSeizoensplan(v, { zetTeamTab }); return; }
-  if (tab === 'speelwijze'){ koppelTeamSpeelwijze(v, { zetTeamTab }); return; }
+  if (tab === 'speelwijze' && onderdeelAan(tab)){ koppelTeamSpeelwijze(v, { zetTeamTab }); return; }
   if (tab === 'toernooitjes' || tab === 'toernooitje'){ koppelToernooi(v, tab, { zetTeamTab, renderTeam }); return; }
   if (tab === 'hub'){
     // Nu-blok bovenaan: kaart, Daarna-lijst en knoppen naar de bestaande schermen

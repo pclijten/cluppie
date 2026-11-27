@@ -905,7 +905,9 @@ function htmlClubHub(teams){
     clubRegel('evals',   'Evaluaties', 'attendance-evaluatie', 'Evaluatierondes van trainers', rondesOpen || null),
   ]]);
   secties.push(['Voetbal', 'football-ball', [
-    clubRegel('speelstijl', 'Speelwijze', 'football-speelwijze', 'Hoe de club wil voetballen'),   /* [20261116h] voor iedereen te bekijken */
+    /* [20261116h] voor iedereen te bekijken; [20261127s] staat de module in de clubstandaard uit, dan alleen voor de beheerder */
+    ...(S._modulesStandaard?.speelwijze !== false ? [clubRegel('speelstijl', 'Speelwijze', 'football-speelwijze', 'Hoe de club wil voetballen')]
+      : admin ? [clubRegel('speelstijl', 'Speelwijze', 'football-speelwijze', 'Staat uit voor de teams (Instellingen › AI & modules)')] : []),
     ...(rechtenVoor(S.club, S.user?.uid).magPlan ? [clubRegel('jeugdplan', 'Seizoensplan maken', 'planning-month', 'Plan voor de jeugd maken en aan de teams toewijzen')] : []),
     clubRegel('trainingen', 'Trainingen', 'training-cones', 'Clubtrainingen en oefenstof'),
     clubRegel('videos',     'Video’s', 'training-video', 'Uitlegvideo’s voor trainers en spelers'),

@@ -33,6 +33,8 @@ export const MODULE_DEFS = [
   ['trainingsmodule', 'Training maken', 'Maken', 'training-plan', 'Complete trainingen samenstellen (Trainingen → Training maken).'],
   ['seizoensplan', 'Seizoensplanning', 'Seizoen', 'planning-month', 'Jaarlijn in blokken met bijsturing op basis van evaluaties (Trainingen → Seizoen).'],
   ['toernooitje','Toernooitje','Toern', 'football-tournament','Onderling toernooitje met planner, klok, score en stand.'],
+  /* [20261127s] staat standaard aan; uit = geen tabblad Speelwijze en geen principe bij trainingen en het seizoen */
+  ['speelwijze', 'Speelwijze', 'Speel', 'football-speelwijze', 'Hoe het team wil voetballen, als rode draad door seizoen, trainingen en evaluatie.'],
 ];
 document.addEventListener('clubconfig', () => { const d = MODULE_DEFS.find(m => m[0] === 'kompas'); if (d) d[1] = kompasNaam(); });
 export const BOUW_KLEUR = { onder:'#35c47a', midden:'#3b82f6', boven:'#a855f7' };

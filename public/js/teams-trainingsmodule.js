@@ -37,7 +37,7 @@ import { laadSeizoensplanVoorTeam } from './teams-seizoensplan.js?v=20261128w';
 import { oefeningVan, geplandeTraining, vormIdsVan, rondBlok } from './seizoensplan-club.js?v=20261128w';
 import { onderdeelAan } from './onderdelen.js?v=20261128w';
 /* [20261116h] de speelwijze als rode draad: leerdoel, coachwoorden, vormen die het principe trainen en de regel in het partijspel */
-import { speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad } from './speelwijze.js?v=20261128w';
+import { speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad, speelwijzeAan } from './speelwijze.js?v=20261128t';
 import { rodeDraad, principe as principeOpId, principeVoorThema, principeVanVorm, LESOPBOUW } from './speelwijze-logica.js?v=20261127p';
 import { htmlDraadKaart, htmlPrincipeChip } from './speelwijze-html.js?v=20261127p';
 
@@ -312,10 +312,10 @@ function htmlOnderdeel(od, i){
   const open = t.open === i, veldOpen = t.tab[i] === undefined ? STANDAARD_OPEN : t.tab[i];
   const naam = od.slot === 'afsluiting' ? `Afsluiting · ${od.minuten} min` : od.slotNaam;
   const knoppen = od.slot === 'afsluiting' ? '' : `<button class="knop klein licht" data-tm-wissel="${i}">↻ Andere vorm</button>`;
-  const pr = od.principe ? principeOpId(od.principe) : null, stap = LESOPBOUW[od.slot];
+  const pr = od.principe && speelwijzeAan() ? principeOpId(od.principe) : null, stap = LESOPBOUW[od.slot];
   const velden = open ? htmlZevenVelden(v, { minuten: od.minuten, rondes: od.rondes, ronde: od.ronde, rust: od.rust, groepen: od.groepen,
     aanpassingen: kn.aanpassingen, themaregel: od.themaregel, ai, stijl: t.knop.stijl, extraMateriaal: htmlMateriaalRegel(od),
-    principe: pr, speelwijzeRegel: od.speelwijzeRegel, stap, woorden: od.slot === 'afsluiting' ? [] : draadVanPlan().woorden },
+    principe: pr, speelwijzeRegel: speelwijzeAan() ? od.speelwijzeRegel : null, stap, woorden: od.slot === 'afsluiting' ? [] : draadVanPlan().woorden },
     { open: veldOpen, attr: 'data-tm-ok', sleutel: i + ':' }) : '';
   return `<div class="tm-vorm${open ? ' open' : ''}" style="--c:${SLOT_KLEUR[od.slot]}">
     <button class="tm-vk" data-tm-open-vorm="${i}" aria-expanded="${open}"><span class="tm-min">${od.minuten}′</span><span class="tm-schets" aria-hidden="true">${vormSvg(v, kn.veld)}</span>
@@ -458,7 +458,7 @@ function deelTekst(){
   const regels = [`*Training ${catLabel(S.team?.categorie)} — ${p.profiel.thema}*`, `${p.profiel.duur} min · ${p.profiel.aantalSpelers} spelers`, ''];
   const draad = draadVanPlan();
   if (draad.principe) regels.push(`Speelwijze: ${draad.principe.titel}`, `Leerdoel: ${draad.leerdoel}`, `Coachwoorden: ${draad.woorden.join(' · ')}`, '');
-  p.onderdelen.forEach(o => { regels.push(`${o.minuten}′ ${o.vorm.naam} (${o.slotNaam.toLowerCase()})`); if (o.themaregel) regels.push(`   Themaregel: ${o.themaregel}`); if (o.speelwijzeRegel) regels.push(`   Regel van de speelwijze: ${o.speelwijzeRegel}`); });
+  p.onderdelen.forEach(o => { regels.push(`${o.minuten}′ ${o.vorm.naam} (${o.slotNaam.toLowerCase()})`); if (o.themaregel) regels.push(`   Themaregel: ${o.themaregel}`); if (o.speelwijzeRegel && speelwijzeAan()) regels.push(`   Regel van de speelwijze: ${o.speelwijzeRegel}`); });
   if (p.afsluiting) regels.push(`${p.afsluiting.minuten}′ ${p.afsluiting.vorm.naam} (afsluiting)`);
   regels.push('', '_Gemaakt met Cluppie_');
   return regels.join('\n');

@@ -8,7 +8,7 @@
    Gebruikt dezelfde overlay-aanpak en terug-bewaking als pdf-viewer.js, zodat de
    Android-terugknop / veeg-terug de weergave sluit i.p.v. de app te verlaten. */
 
-import { bewaakTerug, vangnetStilTerugAlsNodig, esc, terugLaag } from './state.js?v=20261128w';
+import { bewaakTerug, vangnetStilTerugAlsNodig, esc, terugLaag, modAan } from './state.js?v=20261128t';
 import { principe as principeOpId } from './speelwijze-logica.js?v=20261127p';
 import { htmlPrincipeChip } from './speelwijze-html.js?v=20261127p';
 import { maak3DBlok, heeftWebGL } from './scene3d.js?v=20261126p';
@@ -157,15 +157,18 @@ export function oefHtml(idx, oef, diagramUrls){
     : url
     ? `<figure class="trw-diagram" data-zoom="${esc(url)}" data-zoomtitel="${esc(oef.titel || 'Oefening ' + idx)}"><img src="${esc(url)}" alt="" loading="lazy"><span class="trw-zoomhint"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.3 15.3 20 20"/></svg> tik om te vergroten</span></figure>`
     : '';
-  const zeven = (oef.blokken || []).some(b => b.veld);
-  const blokken = zeven ? htmlVeldenVan(oef.blokken) : (oef.blokken || []).map(blokHtml).join('');
+  /* [20261127s] speelwijze-module uit: geen principe en geen regel van de speelwijze bij de oefening */
+  const swAan = modAan('speelwijze');
+  const eigen = (oef.blokken || []).filter(b => swAan || b.kop !== 'Regel van de speelwijze');
+  const zeven = eigen.some(b => b.veld);
+  const blokken = zeven ? htmlVeldenVan(eigen) : eigen.map(blokHtml).join('');
   return `
     <section class="trw-oef">
       <div class="trw-oef-kop">
         <span class="trw-oef-nr">${idx}</span>
         <h2>${esc(oef.titel || 'Oefening ' + idx)}</h2>
       </div>
-      ${oef.principe && principeOpId(oef.principe) ? `<div class="sw-blokchip">${htmlPrincipeChip(principeOpId(oef.principe))}</div>` : ''}
+      ${swAan && oef.principe && principeOpId(oef.principe) ? `<div class="sw-blokchip">${htmlPrincipeChip(principeOpId(oef.principe))}</div>` : ''}
       ${oef.vandaag ? `<div class="tv-was"><b>${esc(oef.vandaag.label)}</b><span>${esc(oef.vandaag.was || '')}</span></div>` : ''}
       ${diagram}
       <div class="${zeven ? 'ok-kaart trw-ok' : 'hl'}">${blokken}</div>

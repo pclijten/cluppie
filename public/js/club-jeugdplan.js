@@ -10,7 +10,9 @@
      clubs/{id}/seizoensplannen/{planId}/toewijzingen/{teamId}  { planVersie, aantal, overgeslagen, status, door, toegewezenMs }
      trainingen/{id}  — gegenereerd door toewijzen (bron 'seizoensplan', seizoensplanId, teams:[teamId])
    Alle writes merge:true. Rechten zelf staan in de rules; dit scherm toont alleen wat mag. */
-import { S, esc, meld } from './state.js?v=20261128w';
+import { S, esc, meld } from './state.js?v=20261128t';
+/* [20261127s] staat de speelwijze in de clubstandaard uit (Instellingen › AI & modules), dan weegt hij niet mee en verdwijnt hij uit dit scherm */
+const swClub = () => S._modulesStandaard?.speelwijze !== false;
 import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteField, serverTimestamp } from './firebase.js?v=20261011g';
 import { bouwNaam, catLabel, SEIZOEN_FALLBACK, leeftijdVanCategorie, LEERCURVE } from './config.js?v=20261128w';
 import { BIEB, basisGeladen, laadBasis, vormen, laadBibliotheek } from './bibliotheek.js?v=20261127y';
@@ -138,7 +140,7 @@ function htmlForm(rechten){
       <div class="tm-rij"><span class="tm-l">Week vrij maken</span><input type="date" class="tm-select" id="cjpVrijNieuw" aria-label="Vrije week toevoegen"></div>`,
       { cls: 'sp-a-seizoen', rechts: `<small>${weken} trainingsweken</small>` })}
     ${sectie('training-plan', 'Opbouw', `<div class="sp-modellen">${Object.entries(MODELLEN).map(([k, m]) => `<button class="tm-model${k === f.model ? ' aan' : ''}" data-cjp-model="${k}" aria-pressed="${k === f.model}"><b>${esc(m.naam)}</b><span>${esc(m.tekst)}</span></button>`).join('')}</div>`, { cls: 'sp-a-opbouw' })}
-    ${sectie('football-speelwijze', 'Speelwijze van de club', c.stijl ? `${c.stijl.zin ? `<p class="sw-lead klein">${esc(c.stijl.zin)}</p>` : ''}
+    ${!swClub() ? '' : sectie('football-speelwijze', 'Speelwijze van de club', c.stijl ? `${c.stijl.zin ? `<p class="sw-lead klein">${esc(c.stijl.zin)}</p>` : ''}
       <div class="tm-rij"><span class="tm-l">Meewegen in dit plan</span><div class="tm-chips">${chip('data-cjp-sw', '1', 'Aan', f.speelwijze !== false)}${chip('data-cjp-sw', '0', 'Uit', f.speelwijze === false)}</div></div>
       <div class="tm-info">${f.speelwijze !== false ? 'Per team komen de thema’s die bij de speelwijze horen een keer extra, en vormen die een principe trainen krijgen voorrang. Waar een team te jong voor is, blijft eruit.' : 'Het plan volgt alleen het opbouwmodel.'}</div>`
       : `<div class="tm-info">Nog niet vastgelegd (Club › Speelwijze). Het plan volgt dan alleen het opbouwmodel.</div>`, { cls: 'sp-a-stijl' })}
@@ -192,6 +194,7 @@ function htmlDetail(rechten){
 }
 /* [20261116h] Wat de speelwijze in dit plan doet, voor het voorbeeldteam. */
 function htmlSpeelwijzeInPlan(p, team, voorbeeld){
+  if (!swClub()) return '';
   const c = C(), snap = p.params?.speelstijl;
   if (!snap) return `<div class="tm-info" style="margin-top:8px">${c.stijl ? 'Dit plan weegt de speelwijze niet mee. Zet dat aan via “Wijzig plan”.' : 'De club heeft nog geen speelwijze vastgelegd (Club › Speelwijze).'}</div>`;
   const sw = speelwijzeVan(snap, leeftijdVanCategorie(team.categorie));
@@ -223,7 +226,7 @@ async function bewaarPlan(){
   const data = {
     naam, bouw: f.bouw, model: f.model,
     params: { start: f.start, eind: f.eind, vrij: f.vrij || [], accent: f.accent || [], tpw: f.tpw, duur: f.duur, niveau: f.niveau,
-      speelstijl: f.speelwijze !== false ? stijlVoorPlan(c.stijl) : null },
+      speelstijl: f.speelwijze !== false && swClub() ? stijlVoorPlan(c.stijl) : null },
     bibliotheekVersie: BIEB.versie, planVersie: bestaand ? (bestaand.planVersie || 1) + 1 : 1, door: uidNu(), bijgewerktMs: Date.now(),
     ...(bestaand ? {} : { gemaaktMs: Date.now() }),
   };

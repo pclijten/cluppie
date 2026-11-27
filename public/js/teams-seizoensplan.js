@@ -32,7 +32,7 @@ import {
   valideerBlokken, positieOp, positieWeek, teamSignalen, stelBijsturingVoor, pasVoorstelToe, speelwijzeExtra, seizoenStartJaar as seizoenJaar,
 } from './seizoensplan-logica.js?v=20261128w';
 /* [20261116h] de speelwijze als rode draad: weegt mee in de themavolgorde en staat bij elk blok */
-import { speelstijlNu, speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad, speelwijzeBron } from './speelwijze.js?v=20261128w';
+import { speelstijlNu, speelwijzeNu, speelwijzeGeladen, laadSpeelwijze, gaNaarDraad, speelwijzeBron, speelwijzeAan } from './speelwijze.js?v=20261128t';
 import { speelwijzeVan, stijlVoorPlan, dekking, principeVoorThema, rodeDraad } from './speelwijze-logica.js?v=20261127p';
 import { htmlDraadKaart, htmlDekking, htmlPrincipeChip } from './speelwijze-html.js?v=20261127p';
 
@@ -67,6 +67,7 @@ function alleenLezen(){ return vanClub() || !werkwijzeToestaat('seizoensplan', S
 /* [20261116h] De speelwijze die bij een plan hoort: de momentopname in het plan (params.speelstijl), en bij een plan
    van vóór de speelwijze de huidige (dan stuurt hij de themavolgorde niet, maar staat het principe wel bij elk blok). */
 function swVanPlan(plan){
+  if (!speelwijzeAan()) return null;    /* [20261127s] module uit: geen principe bij de blokken */
   const snap = plan?.params?.speelstijl;
   return snap ? speelwijzeVan(snap, leeftijdVanCategorie(S.team?.categorie)) : speelwijzeNu();
 }

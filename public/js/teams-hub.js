@@ -105,7 +105,7 @@ export function htmlHub(updInfo){
       tegel('videos',           'Video\u2019s', 'training-video'),
       ...(onderdeelAan('trainingsmodule') ? [tegel('trainingsmodule',  'Training maken', 'training-plan')] : []),
       ...(onderdeelAan('seizoensplan') ? [tegel('seizoensplan',     'Seizoen',      'planning-month')] : []),
-      tegel('speelwijze',       'Speelwijze',   'football-speelwijze'),   /* [20261116h] de rode draad door seizoen, training en wedstrijd */
+      ...(modAan('speelwijze') ? [tegel('speelwijze', 'Speelwijze', 'football-speelwijze')] : []),   /* [20261116h] de rode draad door seizoen, training en wedstrijd */
     ]],
     ['Presentie', [
       tegel('presentietraining','Aanwezig training', 'training-cones'),
