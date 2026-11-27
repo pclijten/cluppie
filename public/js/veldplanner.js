@@ -1602,6 +1602,7 @@ html.vp-open{overflow:hidden}
 .vp-ovvak.aan{outline:3px solid #fff;outline-offset:1px;z-index:2}
 .vp-ovvak.botsing{border-color:var(--uit);box-shadow:0 0 0 2px var(--uit)}
 .vp-ovveldnaam{position:absolute;transform:translate(-50%,-50%);font-size:var(--t-2xs);font-weight:800;color:#fff;background:rgba(0,0,0,.62);padding:1px 7px;border-radius:var(--r-pill);white-space:nowrap;pointer-events:none}
+@media (max-width:1099px){.vp-ovkkkaart{display:none}}
 .vp-ovkkkaart{position:absolute;z-index:3;background:rgba(15,18,24,.86);color:#fff;border-radius:8px;padding:4px 6px;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.4);max-width:260px}
 .vp-ovkkkaart small{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.05em;opacity:.75;margin-bottom:2px}
 .vp-ovkkkaart div{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:3px}
