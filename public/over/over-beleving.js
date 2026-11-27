@@ -110,12 +110,6 @@ if (gsap && ScrollTrigger && !rustig) {
     scrollTrigger: { trigger: '.scorebord', start: 'top 85%', once: true },
   });
 
-  /* ---------- prijzen komen omhoog ---------- */
-  gsap.from('.prijs', {
-    y: 50, opacity: 0, duration: 0.8, stagger: 0.1, ease: 'power3.out',
-    scrollTrigger: { trigger: '.prijzen', start: 'top 85%', once: true },
-  });
-
   /* ---------- de cirkel: een Zdog-bal rolt mee met het zaterdag-verhaal ---------- */
   const rond = document.querySelector('.rond');
   if (rond && Zdog) {
@@ -225,7 +219,7 @@ if (gsap && ScrollTrigger && !rustig) {
 
   /* ---------- kaarten die meebewegen met de muis (alleen met een echte muis) ---------- */
   if (VanillaTilt && matchMedia('(hover: hover) and (pointer: fine)').matches) {
-    VanillaTilt.init(document.querySelectorAll('.rail > li, .vorm__veld, .veldkaart, .kies__kaart, .prijs'), {
+    VanillaTilt.init(document.querySelectorAll('.rail > li, .vorm__veld, .veldkaart, .kies__kaart'), {
       max: 6, speed: 600, perspective: 1100, glare: true, 'max-glare': 0.12, scale: 1.01, gyroscope: false,
     });
   }
