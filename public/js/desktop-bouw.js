@@ -8,21 +8,23 @@
    eigen teams opent desktop.js in de gewone teamschermen.
    Tekent in een eigen view (#view-dkbouw) binnen #app.
 =============================================================== */
-import { S, $, esc, isBeheerder, toon, terugView } from './state.js?v=20261127z';
-import { BOUWEN, bouwVanCategorie } from './config.js?v=20261127z';
+import { S, $, esc, isBeheerder, toon, terugView } from './state.js?v=20261128a';
+import { BOUWEN, bouwVanCategorie } from './config.js?v=20261128a';
 import { ico } from './icons.js?v=20261127b';
-import { analyseWedstrijd } from './analyse.js?v=20261127z';
-import { laadBouwData, zetBouwContext, presentiePctTeam, presentiePctWedstrijdTeam, uitslagenTeam, modalNieuweUitleningVanuitBouw, splitsUitleningen, leenKaartInfo } from './bouw-hub.js?v=20261127z';
-import { trekUitleningIn, definitiefOverzetten, wijzigUitlening } from './teams-spelers.js?v=20261127z';
-import { htmlMeekijk } from './desktop-schermen.js?v=20261127z';
-import { rondeStatusTeam } from './evaluatierondes.js?v=20261127z';
-import { isSelectieBouw, htmlRadarBlok, htmlSelectieTegel, htmlSelectieScherm, selectieKlik, selectieInvoer } from './selectie-bouw.js?v=20261127z';
+import { analyseWedstrijd } from './analyse.js?v=20261128a';
+import { laadBouwData, zetBouwContext, presentiePctTeam, presentiePctWedstrijdTeam, uitslagenTeam, modalNieuweUitleningVanuitBouw, splitsUitleningen, leenKaartInfo } from './bouw-hub.js?v=20261128a';
+import { trekUitleningIn, definitiefOverzetten, wijzigUitlening } from './teams-spelers.js?v=20261128a';
+import { htmlMeekijk } from './desktop-schermen.js?v=20261128a';
+import { rondeStatusTeam } from './evaluatierondes.js?v=20261128a';
+import { isSelectieBouw, htmlRadarBlok, htmlSelectieTegel, htmlSelectieScherm, selectieKlik, selectieInvoer } from './selectie-bouw.js?v=20261128a';
 /* [20261116n] Trainingen van de week: blok op het dashboard + eigen scherm 'tr' */
-import { zorgVoorTrainingen, htmlDashBlok, htmlTrainingenScherm, trainingenKlik } from './bouw-trainingen.js?v=20261127z';
+import { zorgVoorTrainingen, htmlDashBlok, htmlTrainingenScherm, trainingenKlik } from './bouw-trainingen.js?v=20261128a';
+/* [20261125b] Evaluatieronde: blok op het dashboard + eigen scherm 'ev' (voortgang, scores, inzichten) */
+import { htmlRondeDashBlok, htmlRondeScherm, roKlik } from './ronde-overzicht.js?v=20261128az';
 
 const cache = new Map();          // 'clubId|bouw' → context uit laadBouwData
 const bezig = new Map();          // lopende laadacties
-let huidig = null;                // { clubId, bouw, scherm:'dash'|'tr'|'uit'|'sel'|'evs'|'evw'|'stat', teamId, keuze:{} }
+let huidig = null;                // { clubId, bouw, scherm:'dash'|'tr'|'ev'|'uit'|'sel'|'evs'|'evw'|'stat', teamId, keuze:{} }
 let herteken = () => {};
 
 export function zetHerteken(f){ herteken = f || (() => {}); }
@@ -89,7 +91,7 @@ terugView('dkbouw', () => {
     huidig.scherm = 'dash'; huidig.teamId = null; huidig.keuze = {};
     teken(); window.scrollTo(0, 0); return true;
   }
-  import('./teams.js?v=20261127z').then(m => { m.renderTeams(); toon('teams'); });
+  import('./teams.js?v=20261128a').then(m => { m.renderTeams(); toon('teams'); });
   return true;
 });
 
@@ -110,6 +112,10 @@ function teken(){
     else if (huidig.scherm === 'tr') html = `<div class="dk-scherm">${kop('Trainingen', knop('Dashboard', 'naardash'))}
       <div class="dkb-body btr-body"><h1 class="dk-groot">Trainingen <span class="dk-omlijnd" style="display:inline">${esc(bouwNaamVan(ctx.bouw))}</span></h1>
         ${htmlTrainingenScherm(ctx, 'dk')}</div></div>`;
+    else if (huidig.scherm === 'ev'){ ctx._roUid = S.user?.uid || '';
+      html = `<div class="dk-scherm">${kop('Evaluatieronde', knop('Dashboard', 'naardash'))}
+      <div class="dkb-body ro-body"><h1 class="dk-groot">Evaluatieronde <span class="dk-omlijnd" style="display:inline">${esc(bouwNaamVan(ctx.bouw))}</span></h1>
+        ${htmlRondeScherm(ctx, 'dk')}</div></div>`; }
     else if (huidig.scherm === 'uit') html = htmlUitleningen(ctx);
     else if (huidig.scherm === 'selmaken') html = isSelectieBouw(ctx) ? htmlSelectieScherm(ctx, kop('Selectie maken', knop('Dashboard', 'naardash'))) : htmlDashboard(ctx);
     else {
@@ -176,6 +182,7 @@ function htmlDashboard(ctx){
     <div class="dkb-body${sel ? ' sbw-dash' : ''}">
       <div class="dkb-hallo"><h1 class="dk-groot">${esc(bouwNaamVan(ctx.bouw))} <span class="dk-omlijnd" style="display:inline">${esc(clubNaamVan(ctx.clubId))}</span></h1>
         <div class="dk-pills"><span class="dk-pill">${teams.length} teams<span class="sep" aria-hidden="true"></span>${spelers} spelers</span>${trPct != null ? `<span class="dk-pill groen">Opkomst training ${trPct}%</span>` : ''}<button class="dk-pill" data-bk="ververs">Verversen</button><button class="dk-pill" data-bk="weekbrief">Weekbrief</button></div></div>
+      ${htmlRondeDashBlok(ctx, 'dk')}
       ${htmlDashBlok(ctx, 'dk')}
       <div class="dk-blok dkb-half"><h3>${ico('football-match', 18)}Vorige uitslagen<span>laatst bekend</span></h3>
         ${rij.map(r => { const l = r.u?.laatste; const kl = l ? (l.voor > l.tegen ? 'groen' : l.voor < l.tegen ? 'rood' : '') : '';
@@ -244,11 +251,16 @@ async function klik(e){
     herteken: () => teken(),
     naarScherm: () => { huidig.scherm = 'tr'; huidig.teamId = null; huidig.keuze = {}; teken(); window.scrollTo(0, 0); },
   })) return;
+  /* [20261125b] evaluatieronde: tabs, team kiezen, speler uitklappen, naar het scherm */
+  if (huidig && e.target.closest('[data-ro]') && roKlik(e, { ctx: cache.get(huidig.clubId + '|' + huidig.bouw) }, {
+    herteken: () => teken(),
+    naarScherm: () => { huidig.scherm = 'ev'; huidig.teamId = null; huidig.keuze = {}; teken(); window.scrollTo(0, 0); },
+  })) return;
   const b = e.target.closest('[data-bk], [data-dk]'); if (!b || !huidig) return;
   const ctx = cache.get(huidig.clubId + '|' + huidig.bouw);
   const a = b.dataset.bk, id = b.dataset.id;
   if (a === 'ververs'){ await laadBouw(huidig.clubId, huidig.bouw, true); teken(); return; }
-  if (a === 'weekbrief'){ import('./club-weekbrief.js?v=20261127z').then(m => m.openWeekbrief(ctx?.teams || [], bouwNaamVan(huidig.bouw))); return; }
+  if (a === 'weekbrief'){ import('./club-weekbrief.js?v=20261128a').then(m => m.openWeekbrief(ctx?.teams || [], bouwNaamVan(huidig.bouw))); return; }
   if (a === 'naaruit'){ huidig.scherm = 'uit'; teken(); return; }
   if (a === 'selmaken'){ huidig.scherm = 'selmaken'; teken(); window.scrollTo(0, 0); return; }
   if (a === 'naardash'){ huidig.scherm = 'dash'; teken(); window.scrollTo(0, 0); return; }
