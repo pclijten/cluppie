@@ -5,7 +5,7 @@
    - wat er in de openbare kopie mag (clubTv/{id} en clubTv/{id}/schermen/{sid}): geen bedragen, geen notities.
    De Cloud Function functions/kantine-tv.js bouwt hetzelfde programma (zelfde velden) elke tien minuten.
    Getest in tests/clubscherm.test.mjs. */
-import { plaatjeOk, veiligeLink } from './toernooi-logica.js?v=20261130e';
+import { plaatjeOk, veiligeLink } from './toernooi-logica.js?v=20261130g';
 
 export const MAX_ITEMS = 40, MAX_PROGRAMMA = 120;
 export const PAKKETTEN = { hoofd: 'Hoofdsponsor', sponsor: 'Sponsor', vriend: 'Vriend van de club' };
