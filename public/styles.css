@@ -10493,3 +10493,6 @@ p.cp-let{margin:0;font-size:var(--t-sm)}
   html.desk .dk-na-videos .tv-lijst .video-rij .acties{grid-area:acties;padding:var(--space-sm) var(--space-sm) 0 0}
   html.desk .dk-na-videos .tv-lijst .video-rij .acties .rij-kamer-t{display:none}
 }
+/* Club › Video's (beheerlijst): iets groter beeld, zonder afspeelknop zodat de duur leesbaar blijft */
+.video-rij.vsort .thumb{width:96px;height:54px}
+.video-rij.vsort .thumb .vt-play{display:none}

@@ -8,19 +8,19 @@
    eigen teams opent desktop.js in de gewone teamschermen.
    Tekent in een eigen view (#view-dkbouw) binnen #app.
 =============================================================== */
-import { S, $, esc, isBeheerder, toon, terugView } from './state.js?v=20261129e';
-import { BOUWEN, bouwVanCategorie } from './config.js?v=20261129e';
+import { S, $, esc, isBeheerder, toon, terugView } from './state.js?v=20261129f';
+import { BOUWEN, bouwVanCategorie } from './config.js?v=20261129f';
 import { ico } from './icons.js?v=20261127b';
-import { analyseWedstrijd } from './analyse.js?v=20261129e';
-import { laadBouwData, zetBouwContext, presentiePctTeam, presentiePctWedstrijdTeam, uitslagenTeam, modalNieuweUitleningVanuitBouw, splitsUitleningen, leenKaartInfo } from './bouw-hub.js?v=20261129e';
-import { trekUitleningIn, definitiefOverzetten, wijzigUitlening } from './teams-spelers.js?v=20261129e';
-import { htmlMeekijk } from './desktop-schermen.js?v=20261129e';
-import { rondeStatusTeam } from './evaluatierondes.js?v=20261129e';
-import { isSelectieBouw, htmlRadarBlok, htmlSelectieTegel, htmlSelectieScherm, selectieKlik, selectieInvoer } from './selectie-bouw.js?v=20261129e';
+import { analyseWedstrijd } from './analyse.js?v=20261129f';
+import { laadBouwData, zetBouwContext, presentiePctTeam, presentiePctWedstrijdTeam, uitslagenTeam, modalNieuweUitleningVanuitBouw, splitsUitleningen, leenKaartInfo } from './bouw-hub.js?v=20261129f';
+import { trekUitleningIn, definitiefOverzetten, wijzigUitlening } from './teams-spelers.js?v=20261129f';
+import { htmlMeekijk } from './desktop-schermen.js?v=20261129f';
+import { rondeStatusTeam } from './evaluatierondes.js?v=20261129f';
+import { isSelectieBouw, htmlRadarBlok, htmlSelectieTegel, htmlSelectieScherm, selectieKlik, selectieInvoer } from './selectie-bouw.js?v=20261129f';
 /* [20261116n] Trainingen van de week: blok op het dashboard + eigen scherm 'tr' */
-import { zorgVoorTrainingen, htmlDashBlok, htmlTrainingenScherm, trainingenKlik } from './bouw-trainingen.js?v=20261129e';
+import { zorgVoorTrainingen, htmlDashBlok, htmlTrainingenScherm, trainingenKlik } from './bouw-trainingen.js?v=20261129f';
 /* [20261125b] Evaluatieronde: blok op het dashboard + eigen scherm 'ev' (voortgang, scores, inzichten) */
-import { htmlRondeDashBlok, htmlRondeScherm, roKlik } from './ronde-overzicht.js?v=20261129ez';
+import { htmlRondeDashBlok, htmlRondeScherm, roKlik } from './ronde-overzicht.js?v=20261129fz';
 
 const cache = new Map();          // 'clubId|bouw' → context uit laadBouwData
 const bezig = new Map();          // lopende laadacties
@@ -91,7 +91,7 @@ terugView('dkbouw', () => {
     huidig.scherm = 'dash'; huidig.teamId = null; huidig.keuze = {};
     teken(); window.scrollTo(0, 0); return true;
   }
-  import('./teams.js?v=20261129e').then(m => { m.renderTeams(); toon('teams'); });
+  import('./teams.js?v=20261129f').then(m => { m.renderTeams(); toon('teams'); });
   return true;
 });
 
@@ -260,7 +260,7 @@ async function klik(e){
   const ctx = cache.get(huidig.clubId + '|' + huidig.bouw);
   const a = b.dataset.bk, id = b.dataset.id;
   if (a === 'ververs'){ await laadBouw(huidig.clubId, huidig.bouw, true); teken(); return; }
-  if (a === 'weekbrief'){ import('./club-weekbrief.js?v=20261129e').then(m => m.openWeekbrief(ctx?.teams || [], bouwNaamVan(huidig.bouw))); return; }
+  if (a === 'weekbrief'){ import('./club-weekbrief.js?v=20261129f').then(m => m.openWeekbrief(ctx?.teams || [], bouwNaamVan(huidig.bouw))); return; }
   if (a === 'naaruit'){ huidig.scherm = 'uit'; teken(); return; }
   if (a === 'selmaken'){ huidig.scherm = 'selmaken'; teken(); window.scrollTo(0, 0); return; }
   if (a === 'naardash'){ huidig.scherm = 'dash'; teken(); window.scrollTo(0, 0); return; }

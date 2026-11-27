@@ -1,4 +1,9 @@
 [
+  { "datum": "2026-11-27", "titel": "Video's met voorbeeldbeeld en duur", "punten": [
+    "Bij Video's zie je nu per video een echt beeld uit de video in plaats van een zwart vlak, met de lengte rechtsonder.",
+    "Titels die nog een bestandsnaam waren, zoals 01-aan-de-slag, lees je nu als Aan de slag.",
+    "Op de laptop staan de video's als grote kaarten naast elkaar."
+  ] },
   { "datum": "2026-11-27", "titel": "Straks bij de evaluatieronde: je hele team in één overzicht", "punten": [
     "Nu verandert er nog niets: dit zie je pas als de club een evaluatieronde start, zoals de winterevaluatie. Op je teampagina staat dan de knop Overzicht, met al je spelers onder elkaar en jouw scores per domein, in kleur.",
     "Een speler vergeten? Die staat bovenaan met Nog niet beoordeeld. Mist een beoordeling nog criteria, dan zie je dat ook. Tik op de speler om hem meteen in te vullen; na het opslaan kom je terug in het overzicht.",
