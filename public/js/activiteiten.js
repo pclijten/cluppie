@@ -24,17 +24,17 @@
    Rekenwerk, export en import: activiteiten-logica.js (getest). Sjablonen: activiteit-sjablonen.js. */
 import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, deleteField, query, where, onSnapshot,
   serverTimestamp, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261129g';
+import { S, esc, meld, isPlatformBeheerder } from './state.js?v=20261129h';
 import { ico } from './icons.js?v=20261127b';
 import { SJABLONEN, sjabloonVan } from './activiteit-sjablonen.js?v=20261125w';
 import * as L from './activiteiten-logica.js?v=20261127n';
 import * as D from './draaiboek-logica.js?v=20261127n';
 import { docxBestanden } from './draaiboek-docx.js?v=20261127b';
-import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261129g';
-import * as TN from './activiteit-toernooi.js?v=20261129g';
+import { datumVeld, koppelDatumkiezer, sluitDatumkiezer } from './datumkiezer.js?v=20261129h';
+import * as TN from './activiteit-toernooi.js?v=20261129h';
 import { schoonToernooi } from './toernooi-logica.js?v=20261127v';
-import * as CS from './clubschermen.js?v=20261129g';
-import * as VB from './vrijwilligers.js?v=20261129g';
+import * as CS from './clubschermen.js?v=20261129h';
+import * as VB from './vrijwilligers.js?v=20261129h';
 
 let A = null;
 const vandaag = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -521,7 +521,7 @@ function htmlMensen(){
   const a = A.act, leden = L.gesorteerd(a.comite, (x, y) => String(x.naam).localeCompare(String(y.naam), 'nl'));
   const open = id => L.gesorteerd(a.taken).filter(t => t.eigenaar === id && t.status !== 'klaar').length;
   const vrij = mensenVanClub().filter(p => !a.comite?.[p.id]);
-  return `<div class="ac-paneel"><h3>Comité</h3>${leden.map(l => `<div class="ac-rij"><span class="ac-groei"><b>${esc(l.naam)}</b> ${l.uid ? '' : '<small class="ac-zacht">(geen account)</small>'}</span>
+  return `<div class="ac-paneel"><h3>Comité</h3>${leden.map(l => `<div class="ac-rij"><span class="ac-groei ac-lid"><b>${esc(l.naam)}</b> ${l.uid ? '' : '<small class="ac-zacht">(geen account)</small>'}</span>
       <select class="ac-in smal" data-veld="comite.${esc(l.id)}.rol">${opt('', 'Rol…')}${(a.rollen || []).map(r => opt(r, r, l.rol === r)).join('')}${l.rol && !(a.rollen || []).includes(l.rol) ? opt(l.rol, l.rol, true) : ''}</select>
       <small class="ac-zacht">${open(l.id)} open</small>
       <a class="knop klein licht" href="${esc(waLink(L.takenTekst(a, l.id, vandaag())))}" target="_blank" rel="noopener" title="Takenlijst via WhatsApp">${ico('action-whatsapp', 16)}</a>
@@ -984,7 +984,7 @@ async function klik(e){
     case 'kopieer': return kopieKlembord(b.dataset.tekst);
     case 'teams-alle': return zet({ teams: (S.clubTeams || []).filter(x => x && x.id && !x.gearchiveerd).map(x => x.id).slice(0, L.MAX.teams) });
     case 'teams-geen': return zet({ teams: [] });
-    case 'veldplanner': return import('./veldplanner.js?v=20261129g').then(m => m.openVeldplanner(A.clubId));
+    case 'veldplanner': return import('./veldplanner.js?v=20261129h').then(m => m.openVeldplanner(A.clubId));
     case 'aflasten': return vensterAflasten();
     case 'aflasten-ja': return aflasten();
     case 'bericht-plaats': return plaatsBericht(id);
@@ -1220,6 +1220,8 @@ textarea.ac-in{resize:vertical}
 .ac-in.smal{width:auto;max-width:180px}.ac-in.getal{width:76px}.ac-in.geld,.geld{width:100px;text-align:right}.ac-in.vet{font-weight:600}
 .ac-rij .ac-in.ac-groei{width:auto;flex:1 1 120px}
 .ac-rij select.ac-in.smal{flex:1 1 140px}
+/* [20261129h] comité: de naam houdt zijn ruimte; op de telefoon schuiven rol en knoppen naar de regel eronder */
+.ac-rij .ac-lid{flex:1 1 150px;min-width:150px}
 .ac-acties{display:flex;gap:var(--space-xs);flex-wrap:wrap;align-items:center}
 .ac-balkje{display:flex;gap:var(--space-xs);flex-wrap:wrap;align-items:center}
 .ac-schakel{display:inline-flex;background:var(--card);border-radius:var(--r-pill);padding:3px;border:1.5px solid var(--hair)}
