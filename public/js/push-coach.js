@@ -3,7 +3,7 @@
    de clubbeheerder een bericht plaatst met het vinkje "Stuur een pushmelding" (functions/bericht-push.js).
    Zelfde opslag en dezelfde worker als de teamkamer (js/kamer-push.js, sw.js). */
 import { staat, zetAan, zetUit, vernieuw } from './kamer-push.js?v=20261126z';
-import { esc } from './state.js?v=20261128k';
+import { esc } from './state.js?v=20261128m';
 
 const TEKST = {
   beginscherm: 'Op de iPhone kan dit pas als Cluppie op je beginscherm staat. Tik in Safari op <b>Deel</b> (het vierkantje met de pijl omhoog) en kies <b>Zet op beginscherm</b>. Open Cluppie daarna vanaf je beginscherm en zet hier meldingen aan.',

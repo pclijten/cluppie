@@ -18,7 +18,7 @@
    zonder dat de coach alle tabbladen hoeft te sluiten.
    ================================================================ */
 
-const CACHE_VERSIE = 'cluppie-v20261128k';
+const CACHE_VERSIE = 'cluppie-v20261128m';
 
 /* Minimale schil die we bij installatie alvast klaarzetten. De overige
    bestanden (JS-modules, iconen, fonts van gstatic) worden vanzelf
@@ -70,7 +70,7 @@ const NAV_WACHT_MS = 6000;
 
 /* [20261127a] App-icoon per club (js/app-icoon.js): na het inloggen legt de app een manifest en
    iconen met het clublogo in de cache 'appicoon-club'. Die gaan voor op manifest.webmanifest en
-   icons/club-*.png; zonder club staat er niets in en komt het gewone Cluppie-bestand van de site. */
+   icons/club-*.png (teamkamer: kamer.webmanifest en icons/kamer-*.png); zonder club staat er niets in en komt het gewone Cluppie-bestand van de site. */
 const APP_CACHE = 'appicoon-club';
 function appIcoonPad(req){
   if (req.method !== 'GET') return null;
@@ -79,7 +79,7 @@ function appIcoonPad(req){
   const basis = new URL('./', self.registration.scope).pathname;
   if (!url.pathname.startsWith(basis)) return null;
   const pad = url.pathname.slice(basis.length);
-  return (pad === 'manifest.webmanifest' || /^icons\/club-(192|512)(-maskable)?\.png$/.test(pad)) ? pad : null;
+  return (pad === 'manifest.webmanifest' || pad === 'kamer.webmanifest' || /^icons\/(club|kamer)-(192|512)(-maskable)?\.png$/.test(pad)) ? pad : null;
 }
 async function uitAppCache(req, pad){
   try {

@@ -193,6 +193,13 @@ function kamerSpelers(spelers, verborgen, namen){
 }
 const spelerSleutel = (p) => (spelerActief(p) ? JSON.stringify([voornaam(p.naam), p.nummer ?? null]) : 'geen');
 
+/* Alleen een eigen pad (icons/…) of een klein data-plaatje (het logo is al verkleind tot ±90 kB). */
+function kamerLogo(l){
+  const x = typeof l === 'string' ? l.trim() : '';
+  if (/^icons\/[A-Za-z0-9._-]+$/.test(x) && !/^icons\/icon-/.test(x)) return x;
+  if (x.length <= 160000 && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(x)) return x;
+  return '';
+}
 /* ---------- het hoofddocument teamkamer/{teamId} ---------- */
 function kamerDoc(team, club, spelers, verborgen, platform){
   const mag = opties(team, club, platform), i = inst(team, mag);
@@ -202,6 +209,9 @@ function kamerDoc(team, club, spelers, verborgen, platform){
     aan: true,
     teamNaam: str(team.naam, 60),
     clubNaam: str((club && club.naam) || (team.eigenClub && team.eigenClub.naam), 80),
+    /* [20261127b] logo en afkorting van de club: het app-icoon van de teamkamer op het beginscherm (js/app-icoon.js) */
+    clubLogo: kamerLogo(club && club.instellingen && club.instellingen.identiteit && club.instellingen.identiteit.logo),
+    clubAfk: str(club && club.instellingen && club.instellingen.identiteit && club.instellingen.identiteit.afkorting, 20),
     club: team.club || null,
     mag,                                   /* wat de eindbaas toestaat: de rules en de pagina van ouders lezen dit */
     namen: i.namen, uitslag: i.uitslag, live: i.live,

@@ -16,6 +16,13 @@ export const APP_CACHE = 'appicoon-club';          // geen 'cluppie-'-voorvoegse
 const LS_IOS = 'cluppieAppIcoonIos';               // { sig, url } — het iOS-icoon, zodat het bij opstart direct klopt
 const LS_SIG = 'cluppieAppIcoonSig';               // handtekening van wat er nu in de cache staat
 
+/* [20261127b] Twee apps op dezelfde site: de trainersapp (index.html) en de teamkamer voor ouders
+   (kamer.html). Elk een eigen manifest en eigen iconen, zodat ze naast elkaar kunnen staan. */
+export const SOORTEN = {
+  app:   { manifest: 'manifest.webmanifest', icoon: 'club',  ls: '' },
+  kamer: { manifest: 'kamer.webmanifest',    icoon: 'kamer', ls: 'Kamer' },
+};
+
 /* ---------- pure logica (getest in tests/app-icoon.test.mjs) ---------- */
 
 /* Naam onder het icoon: de afkorting van de club (bv. ASV'33), anders de clubnaam als die kort
@@ -29,8 +36,9 @@ export function korteNaam(naam, afkorting){
 
 /* Het manifest per club. Zelfde start_url/scope als public/manifest.webmanifest (en geen eigen id),
    zodat het dezelfde app blijft: Chrome kan een bestaande installatie dan bijwerken. */
-export function maakManifest(naam, afkorting){
-  const n = schoon(naam);
+export function maakManifest(naam, afkorting, soort = 'app'){
+  const n = schoon(naam), kort = korteNaam(n, afkorting);
+  if (soort === 'kamer') return maakKamerManifest(n, kort);
   const ic = (s, p) => ({ src: `icons/club-${s}${p === 'maskable' ? '-maskable' : ''}.png`, sizes: `${s}x${s}`, type: 'image/png', purpose: p });
   return {
     name: n ? `${n} · Cluppie` : 'Cluppie — Coach je team',
@@ -40,6 +48,25 @@ export function maakManifest(naam, afkorting){
     scope: '.',
     display: 'standalone',
     orientation: 'any',
+    background_color: '#0e1116',
+    theme_color: '#0e1116',
+    icons: [ic(192, 'any'), ic(512, 'any'), ic(192, 'maskable'), ic(512, 'maskable')],
+  };
+}
+/* De teamkamer: zelfde id/start_url/scope als public/kamer.webmanifest. Onder het icoon "ASV'33 Team",
+   zodat een trainer met beide apps ze uit elkaar houdt (te lang: alleen de clubnaam). */
+function maakKamerManifest(n, kort){
+  const ic = (s, p) => ({ src: `icons/kamer-${s}${p === 'maskable' ? '-maskable' : ''}.png`, sizes: `${s}x${s}`, type: 'image/png', purpose: p });
+  const team = kort !== 'Cluppie' && (kort + ' Team').length <= 14 ? kort + ' Team' : (kort === 'Cluppie' ? 'Teamkamer' : kort);
+  return {
+    id: 'kamer.html',
+    name: n ? `Teamkamer · ${n}` : 'Teamkamer · Cluppie',
+    short_name: team,
+    description: 'De teamkamer van je team: trainingen, wedstrijden, mededelingen en polls.',
+    start_url: 'kamer.html',
+    scope: 'kamer.html',
+    display: 'standalone',
+    orientation: 'portrait',
     background_color: '#0e1116',
     theme_color: '#0e1116',
     icons: [ic(192, 'any'), ic(512, 'any'), ic(192, 'maskable'), ic(512, 'maskable')],
@@ -89,11 +116,11 @@ const alsBlob = cv => new Promise((ok, fout) => cv.toBlob(b => b ? ok(b) : fout(
 
 /* ---------- in de pagina zetten ---------- */
 
-function manifestLink(){
+function manifestLink(soort){
   const l = document.querySelector('link[rel="manifest"]');
-  /* alleen de trainersapp (index.html); de teamkamer heeft een eigen manifest */
-  if (!l) return null;
-  try { return new URL(l.href, location.href).pathname.endsWith('/manifest.webmanifest') ? l : null; } catch { return null; }
+  /* alleen op de pagina van die app (index.html of kamer.html) */
+  if (!l || !SOORTEN[soort]) return null;
+  try { return new URL(l.href, location.href).pathname.endsWith('/' + SOORTEN[soort].manifest) ? l : null; } catch { return null; }
 }
 function zetIos(url, titel){
   let l = document.querySelector('link[rel="apple-touch-icon"]');
@@ -105,55 +132,62 @@ function zetIos(url, titel){
   m.setAttribute('content', titel || 'Cluppie');
 }
 /* Laat Chrome het manifest opnieuw ophalen (een andere href; sw.js kijkt alleen naar het pad). */
-function herlaadManifest(l, sig){
+function herlaadManifest(l, sig, soort){
   if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) return;
-  l.setAttribute('href', 'manifest.webmanifest' + (sig ? '?c=' + sig : ''));
+  l.setAttribute('href', SOORTEN[soort].manifest + (sig ? '?c=' + sig : ''));
 }
 
 let _bezig = null;
 /* Zet het app-icoon op het logo van deze club; zonder logo terug naar Cluppie. Faalt stil. */
-export function zetAppIcoon(merk){
-  const l = manifestLink();
+export function zetAppIcoon(merk, soort = 'app'){
+  const l = manifestLink(soort);
   if (!l) return Promise.resolve(false);
-  const klaar = (_bezig || Promise.resolve()).then(() => doe(l, merk || {})).catch(e => { console.warn('[app-icoon]', e); return false; });
+  const klaar = (_bezig || Promise.resolve()).then(() => doe(l, merk || {}, soort)).catch(e => { console.warn('[app-icoon]', e); return false; });
   _bezig = klaar;
   return klaar;
 }
-async function doe(l, { clubId, naam, logo, afkorting }){
+async function doe(l, { clubId, naam, logo, afkorting }, soort){
+  const S = SOORTEN[soort], lsIos = LS_IOS + S.ls, lsSig = LS_SIG + S.ls;
   /* geen eigen logo (of het Cluppie-logo zelf): het gewone Cluppie-icoon */
-  if (!clubId || !logo || /^icons\/icon-/.test(logo)) return wis(l);
+  if (!clubId || !logo || /^icons\/icon-/.test(logo)) return wis(l, soort);
   const sig = handtekening(clubId, naam, logo, afkorting);
-  const titel = korteNaam(naam, afkorting);
+  const titel = maakManifest(naam, afkorting, soort).short_name;
   let ios = null;
-  try { ios = JSON.parse(localStorage.getItem(LS_IOS) || 'null'); } catch {}
+  try { ios = JSON.parse(localStorage.getItem(lsIos) || 'null'); } catch {}
   if (ios && ios.sig === sig) zetIos(ios.url, titel);
   let inCache = false;
-  try { inCache = localStorage.getItem(LS_SIG) === sig; } catch {}
-  if (inCache && ios && ios.sig === sig){ herlaadManifest(l, sig); return true; }
+  try { inCache = localStorage.getItem(lsSig) === sig; } catch {}
+  if (inCache && ios && ios.sig === sig){ herlaadManifest(l, sig, soort); return true; }
 
   const img = await laadPlaatje(logo);
   const iosUrl = teken(img, 180, VULLING.ios, false).toDataURL('image/png');
   zetIos(iosUrl, titel);
-  try { localStorage.setItem(LS_IOS, JSON.stringify({ sig, url: iosUrl })); } catch {}
+  try { localStorage.setItem(lsIos, JSON.stringify({ sig, url: iosUrl })); } catch {}
 
   if ('caches' in self){
     const c = await caches.open(APP_CACHE);
     const png = { 'Content-Type': 'image/png', 'Cache-Control': 'no-cache' };
     for (const maat of [192, 512]){
-      await c.put(`icons/club-${maat}.png`, new Response(await alsBlob(teken(img, maat, VULLING.any, true)), { headers: png }));
-      await c.put(`icons/club-${maat}-maskable.png`, new Response(await alsBlob(teken(img, maat, VULLING.maskable, false)), { headers: png }));
+      await c.put(`icons/${S.icoon}-${maat}.png`, new Response(await alsBlob(teken(img, maat, VULLING.any, true)), { headers: png }));
+      await c.put(`icons/${S.icoon}-${maat}-maskable.png`, new Response(await alsBlob(teken(img, maat, VULLING.maskable, false)), { headers: png }));
     }
-    await c.put('manifest.webmanifest', new Response(JSON.stringify(maakManifest(naam, afkorting)), { headers: { 'Content-Type': 'application/manifest+json', 'Cache-Control': 'no-cache' } }));
-    try { localStorage.setItem(LS_SIG, sig); } catch {}
-    herlaadManifest(l, sig);
+    await c.put(S.manifest, new Response(JSON.stringify(maakManifest(naam, afkorting, soort)), { headers: { 'Content-Type': 'application/manifest+json', 'Cache-Control': 'no-cache' } }));
+    try { localStorage.setItem(lsSig, sig); } catch {}
+    herlaadManifest(l, sig, soort);
   }
   return true;
 }
-async function wis(l){
-  zetIos('', 'Cluppie');
+async function wis(l, soort){
+  const S = SOORTEN[soort];
+  zetIos('', soort === 'kamer' ? 'Teamkamer' : 'Cluppie');
   let had = false;
-  try { had = !!localStorage.getItem(LS_SIG); localStorage.removeItem(LS_SIG); localStorage.removeItem(LS_IOS); } catch {}
-  if ('caches' in self){ try { had = (await caches.delete(APP_CACHE)) || had; } catch {} }
-  if (had) herlaadManifest(l, '0');
+  try { had = !!localStorage.getItem(LS_SIG + S.ls); localStorage.removeItem(LS_SIG + S.ls); localStorage.removeItem(LS_IOS + S.ls); } catch {}
+  if ('caches' in self){
+    try {
+      const c = await caches.open(APP_CACHE);
+      for (const k of [S.manifest, ...[192, 512].flatMap(m => [`icons/${S.icoon}-${m}.png`, `icons/${S.icoon}-${m}-maskable.png`])]) had = (await c.delete(k)) || had;
+    } catch {}
+  }
+  if (had) herlaadManifest(l, '0', soort);
   return false;
 }

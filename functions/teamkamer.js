@@ -157,14 +157,19 @@ const kamerSpeler = onDocumentWritten({ document: 'teams/{teamId}/spelers/{spele
   await bouwKamer(db, teamId, { agenda: false });
 });
 const ALLES = { uitslag: true, live: true, opstelling: true, opstellingAltijd: true };
-/* [eindbaas] de eindbaas zet een mogelijkheid aan of uit, of de club verandert van naam of plaats: alle teamkamers van die club opnieuw */
-const clubSleutel = (c) => JSON.stringify(c ? [c.platformModules?.teamkamer === true, c.platformModules?.teamkamerOpties || null, c.naam || '', c.instellingen?.locatie || null] : 'geen');
+/* [eindbaas] de eindbaas zet een mogelijkheid aan of uit, of de club verandert van naam, plaats, logo of afkorting: alle teamkamers van die club opnieuw */
+const clubSleutel = (c) => JSON.stringify(c ? [c.platformModules?.teamkamer === true, c.platformModules?.teamkamerOpties || null, c.naam || '', c.instellingen?.locatie || null, c.instellingen?.identiteit?.logo || '', c.instellingen?.identiteit?.afkorting || ''] : 'geen');
 const kamerClub = onDocumentWritten({ document: 'clubs/{clubId}', region: REGIO }, async (event) => {
   const voor = event.data.before.data(), na = event.data.after.data();
-  if (clubSleutel(voor) === clubSleutel(na)) return;
+  const zelfde = clubSleutel(voor) === clubSleutel(na);
+  /* [20261127b] teamkamers van voor het app-icoon hebben nog geen clubLogo: die bij de eerstvolgende
+     wijziging van de club alsnog opbouwen (daarna staat het veld er en gebeurt dit niet meer) */
+  if (zelfde && !na?.instellingen?.identiteit?.logo) return;
   const db = getFirestore();
   const kamers = await db.collection('teamkamer').where('club', '==', event.params.clubId).get();
-  for (const k of kamers.docs){ try { await bouwKamer(db, k.id); } catch (e){ logger.warn('[kamerClub] team ' + k.id, e.message || e); } }
+  for (const k of kamers.docs){
+    if (zelfde && (k.get('clubLogo') !== undefined || k.get('aan') !== true)) continue;
+    try { await bouwKamer(db, k.id); } catch (e){ logger.warn('[kamerClub] team ' + k.id, e.message || e); } }
 });
 const platformSleutel = (p) => JSON.stringify(p ? [p.teamkamerLos === true, p.teamkamerLosOpties || null] : 'geen');
 const kamerPlatform = onDocumentWritten({ document: 'platform/{docId}', region: REGIO }, async (event) => {

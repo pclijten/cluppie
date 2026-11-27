@@ -47,6 +47,10 @@ const AUTH_FOUT = { 'auth/invalid-credential': 'E-mailadres of wachtwoord klopt 
   'auth/invalid-email': 'Dit e-mailadres klopt niet.', 'auth/too-many-requests': 'Te veel pogingen. Probeer het later opnieuw.',
   'auth/network-request-failed': 'Geen verbinding. Probeer het opnieuw.' };
 
+/* [20261127b] het logo van de club als app-icoon van de teamkamer op het beginscherm (js/app-icoon.js) */
+function appIcoon(k){
+  import('./app-icoon.js?v=20261128m').then(m => m.zetAppIcoon({ clubId: k.club || 'los', naam: k.clubNaam || '', logo: k.clubLogo || '', afkorting: k.clubAfk || '' }, 'kamer')).catch(() => {});
+}
 function toast(tekst){
   document.querySelectorAll('.tk-toast').forEach(x => x.remove());
   const t = document.createElement('div'); t.className = 'tk-toast'; t.setAttribute('role', 'status'); t.textContent = tekst;
@@ -641,6 +645,7 @@ function openKamer(teamId, lid){
   const mis = () => { stopSubs(); zet({ scherm: 'geen', dicht: true }); };
   A.subs.push(onSnapshot(doc(basis, 'kamerleden', A.user.uid), s => { if (!s.exists()) mis(); else { A.lid = s.data(); teken(); } }, mis));
   A.subs.push(onSnapshot(basis, s => { const k = s.data(); if (!k || k.aan !== true) return mis(); A.kamer = k;
+    appIcoon(k);
     /* [20261126v] de eerste keer op dit toestel: wat er al stond telt niet als nieuw */
     if (!A.videoGezien && !bewaar.get('tkVideo:' + teamId) && A.tab !== 'videos'){ videosGezien(); A.videoNieuwVanaf = A.videoGezien; }
     hulpSync(); teken(); weerHalen(); }, mis));
