@@ -271,3 +271,66 @@ export function vlakUitHoeken(a, b){
   const d = meterTussen(a, b);
   return { lat: (a.lat + b.lat) / 2, lon: (a.lon + b.lon) / 2, b: Math.abs(d.x), h: Math.abs(d.y) };
 }
+
+/* ---------- tijd typen [20261127v] ----------
+   Wat iemand in het Van/Tot-vakje typt: "17:30", "17.30", "17u30", "1730", "930", "9" of "17".
+   Uit: minuten na middernacht, of null als het geen tijd is. */
+export function leesTijd(s){
+  const t = String(s ?? '').trim().toLowerCase().replace(/\s+/g, '').replace(/uur$/, '');
+  let u, m;
+  let r = /^(\d{1,2})[:.,hu](\d{1,2})?$/.exec(t);
+  if (r){ u = +r[1]; m = r[2] === undefined ? 0 : r[2].length === 1 ? +r[2] * 10 : +r[2]; }
+  else if (/^\d{1,4}$/.test(t)){
+    if (t.length <= 2){ u = +t; m = 0; }
+    else { u = +t.slice(0, t.length - 2); m = +t.slice(-2); }
+  } else return null;
+  if (!(u >= 0 && u <= 24 && m >= 0 && m < 60) || (u === 24 && m > 0)) return null;
+  return u * 60 + m;
+}
+
+/* ---------- overzicht: wie is waar op een moment [20261127v] ---------- */
+/* Trainingen die op dag `dag` om minuut `t` bezig zijn. */
+export const opMoment = (rooster, dag, t) => rooster.filter(b => b.dag === dag && b.start <= t && t < b.eind);
+/* In welke fase zit een team in de kleedkamer om minuut t? 'voor' (omkleden), 'training' (spullen liggen er),
+   'na' (douchen), of null (kleedkamer niet van dit team). */
+export function kleedFase(b, t){
+  if (t < b.start - KK_VOOR || t >= b.eind + KK_NA) return null;
+  return t < b.start ? 'voor' : t < b.eind ? 'training' : 'na';
+}
+/* Per kleedkamer wie hem om minuut t heeft. Uit: { kkId: { blok, fase } } (bij dubbel: de eerste). */
+export function kleedkamersOpMoment(rooster, dag, t){
+  const uit = {};
+  for (const b of [...rooster].filter(x => x.dag === dag).sort((a, c) => a.start - c.start)){
+    const f = kleedFase(b, t); if (!f) continue;
+    for (const k of b.kk || []) if (!uit[k]) uit[k] = { blok: b, fase: f };
+  }
+  return uit;
+}
+/* Drukte door de dag, voor de balk onder het overzicht: per stap het deel van alle velden dat
+   bezet is (0–1) en het aantal kleedkamers in gebruik. */
+export function drukte(rooster, inst, { dag, van, tot, stap = 5, velden = 1 }){
+  const dagB = rooster.filter(b => b.dag === dag), uit = [];
+  for (let t = van; t < tot; t += stap){
+    let veld = 0; const kk = new Set();
+    for (const b of dagB){
+      if (b.start <= t && t < b.eind) veld += deelVan(vakUit(vakkenVan(inst?.[b.veld]), b.vak));
+      if (kleedFase(b, t)) (b.kk || []).forEach(k => kk.add(k));
+    }
+    uit.push({ t, veld: Math.min(1, veld / Math.max(1, velden)), kk: kk.size });
+  }
+  return uit;
+}
+/* Welke van de vier kwarten van een veld zijn om minuut t (en het kwartier erna) vrij? Uit: vak-ids. */
+export function vrijeKwarten(rooster, inst, { dag, veld, t, duur = 15 }){
+  return ['av', 'aa', 'bv', 'ba'].filter(id => vakVrij(rooster, inst, { dag, veld, vak: id, start: t, eind: t + duur }));
+}
+/* Het bereik van de tijdlijnbalk voor een dag: van een kwartier voor de eerste training tot 20 minuten
+   na de laatste, op hele uren. Zonder trainingen 16:00–22:00. */
+export function dagBereik(rooster, dag){
+  const d = rooster.filter(b => b.dag === dag);
+  if (!d.length) return [16 * 60, 22 * 60];
+  const van = Math.min(...d.map(b => b.start - KK_VOOR)), tot = Math.max(...d.map(b => b.eind + KK_NA));
+  return [Math.max(0, Math.floor(van / 60) * 60), Math.min(24 * 60, Math.ceil(tot / 60) * 60)];
+}
+/* Ligt punt (fx, fy) (fractie van het veld) in vak k? */
+export const inVak = (k, fx, fy) => fx >= k.x - EPS && fx <= k.x + k.w + EPS && fy >= k.y - EPS && fy <= k.y + k.h + EPS;

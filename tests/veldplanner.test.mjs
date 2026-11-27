@@ -123,3 +123,25 @@ console.log(`veldplanner: ${n} controles geslaagd`);
   const d = V.meterTussen(a, b); ok2(Math.abs(d.x - 40) < .01 && Math.abs(d.y - 20) < .01);
   console.log(`veldplanner kaart: ${m} controles geslaagd`);
 }
+
+/* overzicht en tijd typen [20261127v] */
+{
+  let m = 0; const g = (a, b, t) => { assert.deepEqual(a, b, t); m++; };
+  for (const [in_, uit] of [['17:30', 1050], ['17.30', 1050], ['17u30', 1050], ['1730', 1050], ['930', 570], ['9', 540], ['17', 1020],
+    ['7:5', 470], [' 18:15 ', 1095], ['18 uur', 1080], ['24:00', 1440], ['24:15', null], ['25', null], ['17:75', null], ['abc', null], ['', null], ['12345', null]])
+    g(V.leesTijd(in_), uit, `leesTijd(${JSON.stringify(in_)})`);
+  const r = [
+    { id: 'x1', team: 't1', dag: 1, start: 1080, eind: 1155, veld: 'v1', vak: 'av', kk: ['k1'] },
+    { id: 'x2', team: 't2', dag: 1, start: 1110, eind: 1200, veld: 'v1', vak: 'b', kk: ['k2'] },
+    { id: 'x3', team: 't3', dag: 2, start: 1080, eind: 1170, veld: 'v1', vak: 'h', kk: ['k1'] },
+  ];
+  g(V.opMoment(r, 1, 1080).map(b => b.id), ['x1']); g(V.opMoment(r, 1, 1155).map(b => b.id), ['x2'], 'einde telt niet mee');
+  g([1064, 1065, 1100, 1160, 1175].map(t => V.kleedFase(r[0], t)), [null, 'voor', 'training', 'na', null]);
+  const kk = V.kleedkamersOpMoment(r, 1, 1100); g(Object.keys(kk).sort(), ['k1', 'k2']); g(kk.k2.fase, 'voor');
+  const d = V.drukte(r, {}, { dag: 1, van: 1080, tot: 1200, stap: 30, velden: 2 });
+  g(d.map(x => x.veld), [.125, .375, .375, .25]); g(d.map(x => x.kk), [1, 2, 2, 2]);
+  g(V.vrijeKwarten(r, {}, { dag: 1, veld: 'v1', t: 1120 }), ['aa']);
+  g(V.dagBereik(r, 1), [1020, 1260]); g(V.dagBereik(r, 5), [960, 1320]);
+  g(V.inVak({ x: .5, y: 0, w: .5, h: .5 }, .7, .2), true); g(V.inVak({ x: .5, y: 0, w: .5, h: .5 }, .2, .2), false);
+  console.log(`veldplanner overzicht: ${m} controles geslaagd`);
+}

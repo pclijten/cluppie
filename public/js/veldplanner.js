@@ -30,14 +30,15 @@
    eigen vakken weggooien. De velden zelf (id, naam) komen wel uit de veldkaart.
    Rekenwerk in veldplanner-logica.js (getest). */
 import { db, doc, getDoc, setDoc } from './firebase.js?v=20261011g';
-import { S, esc, meld } from './state.js?v=20261129n';
+import { S, esc, meld } from './state.js?v=20261129v';
 import { ico } from './icons.js?v=20261127b';
-import { bouwVanTeam } from './bouw-indeling.js?v=20261129n';
-import { momentenVanTeam } from './trainingsmomenten.js?v=20261129n';
+import { bouwVanTeam } from './bouw-indeling.js?v=20261129v';
+import { momentenVanTeam } from './trainingsmomenten.js?v=20261129v';
 import { NODIG, MAAT_NAAM, KK_VOOR, KK_NA, MAX_EIGEN, naarMin, naarTijd, rondKwartier,
   vakkenVan, vakUit, deelVan, deelTekst, meters, banenVan, stukken, maatVanCategorie, duurVanCategorie,
   zoekVrijVak, vrijeKleedkamers, stapel, controleer, nogInTePlannen, schoonRooster, schoonKleedkamers, schoonVak,
-  kleedkamersVoorstel, SOORTEN, MAX_OBJECTEN, schoonObjecten, meterTussen, verschuif, vlakUitHoeken } from './veldplanner-logica.js?v=20261124v';
+  kleedkamersVoorstel, SOORTEN, MAX_OBJECTEN, schoonObjecten, meterTussen, verschuif, vlakUitHoeken,
+  leesTijd, opMoment, kleedkamersOpMoment, drukte, vrijeKwarten, dagBereik, inVak, vakkenOverlap } from './veldplanner-logica.js?v=20261129v';
 
 const DAGEN = ['', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag', 'Zondag'];
 const DAGK = ['', 'ma', 'di', 'wo', 'do', 'vr', 'za', 'zo'];
@@ -82,6 +83,7 @@ export async function openVeldplanner(clubId){
 export function sluitVeldplanner(){
   if (!P) return;
   if (P.bewaar){ clearTimeout(P.bewaar); bewaarNu(); }
+  ovStop(); clearInterval(P.ov?.klok);
   P.el.classList.remove('toon'); P.el.innerHTML = '';
   document.documentElement.classList.remove('vp-open');
   P = null;
@@ -97,7 +99,7 @@ function laag(){
       e.stopPropagation();
       if (P.venster) sluitVenster(); else if (P.objSel){ P.objSel = null; tekenKaartZij(); P.kaart?.tekenLagen(); } else if (P.sel){ P.sel = null; teken(); } else sluitVeldplanner();
     }, true);
-    window.addEventListener('resize', () => { if (P && !P.venster && P.weergave !== 'kaart') teken(); });
+    window.addEventListener('resize', () => { if (P && !P.venster && P.weergave === 'tijdlijn') teken(); });
   }
   el.classList.add('toon');
   document.documentElement.classList.add('vp-open');
@@ -198,12 +200,12 @@ function teken(){
       <div class="vp-titel"><small>${esc(S.club?.naam || 'Club')}</small><h1>Veldplanner</h1></div>
       <span class="vp-concept">Concept · nog niet naar de teams</span><span class="vp-staat" aria-live="polite">${esc(staatTekst())}</span>
       <div class="vp-acties">
-        <div class="segment vp-segment" role="group" aria-label="Weergave"><button type="button" data-weergave="tijdlijn" aria-pressed="${P.weergave === 'tijdlijn'}">Tijdlijn</button><button type="button" data-weergave="kaart" aria-pressed="${P.weergave === 'kaart'}">Kaart</button></div>
+        <div class="segment vp-segment" role="group" aria-label="Weergave"><button type="button" data-weergave="tijdlijn" aria-pressed="${P.weergave === 'tijdlijn'}">Tijdlijn</button><button type="button" data-weergave="overzicht" aria-pressed="${P.weergave === 'overzicht'}">Overzicht</button><button type="button" data-weergave="kaart" aria-pressed="${P.weergave === 'kaart'}">Kaart</button></div>
         <button type="button" class="knop licht klein" data-vp="ongedaan" ${P.hist.length ? '' : 'disabled'}>Ongedaan</button>
         <button type="button" class="knop licht klein" data-vp="kleedkamers">Kleedkamers (${P.inst.kleedkamers.length})</button>
       </div>
     </header>
-    ${P.weergave === 'kaart' ? htmlKaart() : P.velden.length ? `${htmlDagen(c)}
+    ${P.weergave === 'kaart' ? htmlKaart() : P.weergave === 'overzicht' && P.velden.length ? htmlOverzicht(c) : P.velden.length ? `${htmlDagen(c)}
     <div class="vp-grid">
       ${htmlZijbalk()}
       <section class="vp-paneel vp-tl" aria-label="Tijdlijn ${DAGEN[P.dag]}">
@@ -218,6 +220,7 @@ function teken(){
   const app = P.el.querySelector('.vp-app'); if (app) app.scrollTop = scrollT;
   koppel();
   if (P.weergave === 'kaart') maakKaart();
+  if (P.weergave === 'overzicht' && P.velden.length) koppelOverzicht();
 }
 function htmlGeenVelden(){
   return `<div class="vp-leeg"><h2>Eerst de velden</h2><p>De Veldplanner gebruikt de velden van jullie eigen sportpark. Teken ze eerst in bij Sportparken; daarna verschijnen ze hier vanzelf.</p>
@@ -314,8 +317,8 @@ function htmlDetail(){
     <div class="vp-velden2">
       <label>Dag<select class="invoer" data-veldin="dag">${[1, 2, 3, 4, 5, 6, 7].map(d => `<option value="${d}" ${d === b.dag ? 'selected' : ''}>${DAGEN[d]}</option>`).join('')}</select></label>
       <label>Veld<select class="invoer" data-veldin="veld">${P.velden.map(v => `<option value="${esc(v.id)}" ${v.id === b.veld ? 'selected' : ''}>${esc(v.naam)}</option>`).join('')}</select></label>
-      <label>Van<input class="invoer" type="time" step="900" data-veldin="start" value="${naarTijd(b.start)}"></label>
-      <label>Tot<input class="invoer" type="time" step="900" data-veldin="eind" value="${naarTijd(b.eind)}"></label>
+      <label>Van<input class="invoer" type="text" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="uu:mm" data-veldin="start" data-tijd value="${naarTijd(b.start)}" title="Typ bijv. 1730 of 17:30. Pijltje omhoog of omlaag: een kwartier verder of terug."></label>
+      <label>Tot<input class="invoer" type="text" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="uu:mm" data-veldin="eind" data-tijd value="${naarTijd(b.eind)}" title="Typ bijv. 1845 of 18:45. Pijltje omhoog of omlaag: een kwartier verder of terug."></label>
       <label class="breed">Deel van het veld<select class="invoer" data-veldin="vak">${vakken.map(k => `<option value="${esc(k.id)}" ${k.id === b.vak ? 'selected' : ''}>${esc(k.naam)} (${k.eigen ? meters(k) : deelTekst(deelVan(k))})</option>`).join('')}</select></label>
     </div>
     ${P.inst.kleedkamers.length ? `<span class="vp-label">Kleedkamer</span><div class="vp-chips">${P.inst.kleedkamers.map(k => {
@@ -346,11 +349,11 @@ function plaats(b, veld, start){
     || (vakkenVan(instVan(veld)).some(k => k.id === b.vak) ? b.vak : 'h');
   return { veld, start, eind: start + duur, vak };
 }
-function nieuwBlok(teamId, veld, start){
+function nieuwBlok(teamId, veld, start, voorkeur){
   const t = teamVan(teamId);
   const b = { id: nieuwId(), team: teamId, dag: P.dag, start, eind: start + t.duur, veld, vak: 'h', kk: [] };
   const zelfde = P.blokken.find(x => x.team === teamId && x.dag === P.dag);
-  b.vak = zoekVrijVak(P.blokken, instVan(veld), { dag: b.dag, veld, start, eind: b.eind, nodig: NODIG[t.maat] }) || zoekVrijVak(P.blokken, instVan(veld), { dag: b.dag, veld, start, eind: b.eind, nodig: 0 }) || 'h';
+  b.vak = zoekVrijVak(P.blokken, instVan(veld), { dag: b.dag, veld, start, eind: b.eind, nodig: NODIG[t.maat], voorkeur }) || zoekVrijVak(P.blokken, instVan(veld), { dag: b.dag, veld, start, eind: b.eind, nodig: 0 }) || 'h';
   const kk = vrijeKleedkamers(P.blokken, P.inst.kleedkamers, b)[0]; if (kk) b.kk = [kk];
   bewaarStap(); P.blokken.push(b); P.sel = b.id; planBewaar(); teken(); focusBlok(b.id);
   meld(`${t.naam} staat op ${DAGEN[b.dag].toLowerCase()} op ${plekTekst(b)} om ${naarTijd(b.start)}.${zelfde ? ' Let op: dit team traint die dag al.' : ''}`);
@@ -386,10 +389,10 @@ function koppel(){
     if (a === 'kleedkamers') return vensterKleedkamers();
     if (a === 'deselect'){ P.sel = null; return teken(); }
     if (a === 'weg') return weg(P.sel);
-    if (a === 'sportpark'){ const c = P.clubId; sluitVeldplanner(); return import('./veldkaart.js?v=20261129n').then(m => m.openSportparkBeheer(c)); }
+    if (a === 'sportpark'){ const c = P.clubId; sluitVeldplanner(); return import('./veldkaart.js?v=20261129v').then(m => m.openSportparkBeheer(c)); }
   });
-  el.querySelectorAll('[data-weergave]').forEach(k => k.onclick = () => { P.weergave = k.dataset.weergave; P.sel = null; P.objSel = null; teken(); });
-  el.querySelectorAll('[data-dag]').forEach(k => k.onclick = () => { P.dag = +k.dataset.dag; P.sel = null; teken(); });
+  el.querySelectorAll('[data-weergave]').forEach(k => k.onclick = () => { ovStop(); P.weergave = k.dataset.weergave; P.sel = null; P.objSel = null; teken(); });
+  el.querySelectorAll('[data-dag]').forEach(k => k.onclick = () => { P.dag = +k.dataset.dag; P.sel = null; if (P.ov){ ovStop(); P.ov.t = null; P.ov.live = false; } teken(); });
   el.querySelectorAll('[data-licht]').forEach(k => k.onclick = () => {
     bewaarStap(); const id = k.dataset.licht; P.inst.velden[id] = { ...instVan(id), licht: !lichtVan(id) }; P.instGewijzigd = true; planBewaar(); teken();
   });
@@ -406,10 +409,30 @@ function koppel(){
     if (s === 'dag') verzet(b, { dag: +v }, true);
     else if (s === 'veld') verzet(b, plaats(b, v, b.start), true);
     else if (s === 'vak') verzet(b, { vak: v }, true);
-    else if (s === 'start'){ const m = naarMin(v); if (m != null) verzet(b, { start: m, eind: m + (b.eind - b.start) }, true); }
-    else if (s === 'eind'){ const m = naarMin(v); if (m != null && m > b.start) verzet(b, { eind: m }, true); }
+    else if (s === 'start' || s === 'eind'){   /* [20261127v] gewoon typen: 1730, 17:30, 17.30, 9 */
+      const m = leesTijd(v), oud = s === 'start' ? b.start : b.eind;
+      if (m == null){ k.value = naarTijd(oud); return meld('Dat is geen tijd. Typ bijvoorbeeld 1730 of 17:30.'); }
+      if (m === oud){ k.value = naarTijd(oud); return; }
+      if (s === 'start'){
+        if (m < 6 * 60 || m + (b.eind - b.start) > 24 * 60){ k.value = naarTijd(oud); return meld('Een training kan tussen 06:00 en 24:00.'); }
+        verzet(b, { start: m, eind: m + (b.eind - b.start) }, true);
+      } else {
+        if (m <= b.start){ k.value = naarTijd(oud); return meld(`De training begint om ${naarTijd(b.start)}; de eindtijd moet later zijn.`); }
+        verzet(b, { eind: m }, true);
+      }
+    }
     if (s === 'dag'){ P.dag = b.dag; teken(); }
   });
+  el.querySelectorAll('[data-tijd]').forEach(k => k.addEventListener('keydown', e => {
+    const terug = () => { const n = P?.el.querySelector(`[data-veldin="${k.dataset.veldin}"]`); if (n && n !== k){ n.focus(); n.select(); } };
+    if (e.key === 'Enter'){ e.preventDefault(); k.dispatchEvent(new Event('change')); terug(); }
+    else if (e.key === 'ArrowUp' || e.key === 'ArrowDown'){
+      e.preventDefault();
+      const m = leesTijd(k.value); if (m == null) return;
+      k.value = naarTijd(Math.max(0, Math.min(24 * 60, e.key === 'ArrowUp' ? Math.floor(m / 15) * 15 + 15 : Math.ceil(m / 15) * 15 - 15)));
+      k.dispatchEvent(new Event('change')); terug();
+    }
+  }));
   el.querySelectorAll('.vp-blok:not(.vervolg)').forEach(k => {
     k.addEventListener('pointerdown', e => sleepBlok(e, k));
     k.addEventListener('keydown', e => toetsBlok(e, k.dataset.id));
@@ -608,7 +631,7 @@ function raak(k, x, y){
 }
 async function maakKaart(){
   const el = P.el.querySelector('#vpKaart'); if (!el) return;
-  const { Kaart } = await import('./veldkaart.js?v=20261129n');
+  const { Kaart } = await import('./veldkaart.js?v=20261129v');
   if (!P || !el.isConnected) return;
   const pos = P.kaartPos || { lat: P.park.lat, lon: P.park.lon, z: Math.min(19, P.park.zoom || 18) };
   const rel = e => { const r = el.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
@@ -669,6 +692,290 @@ function voegObject(o){
   tekenKaartZij(); P.kaart?.tekenLagen();
   P.el.querySelector('#vpONaam')?.select();
   meld(`${SOORTEN[o.soort].naam} getekend. Geef het eventueel een naam.`);
+}
+
+/* ---------- overzicht: het park op één moment, met een tijdlijnbalk [20261127v] ----------
+   Kies een dag, sleep door de tijd of druk op afspelen: op de luchtfoto (of, zonder ingetekende velden,
+   op een schema) zie je welk team op welk deel van welk veld staat en in welke kleedkamer het zit.
+   Filters dimmen wat niet past, zodat je de rest van het park blijft zien. Rechts: wie er nu is, wie
+   straks komt en per kleedkamer of het team zich omkleedt, traint of doucht. Tik een team aan om het te
+   wijzigen; met "Vrije plekken" zie je waar nog ruimte is en plan je daar meteen een team in.
+   Alleen lezen en tekenen; wijzigen gaat via dezelfde functies als de tijdlijn. */
+const FASE = { voor: 'omkleden', training: 'traint', na: 'douchen' };
+const SNEL = [2.5, 5, 10, 20], SNELN = ['½×', '1×', '2×', '4×'];      // minuten per seconde
+const nuMin = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
+function ovStart(){
+  if (!P.ov) P.ov = { t: null, spelen: false, snel: 1, bouw: [], team: '', veld: '', kk: '', vrij: false, live: false, raf: 0, klok: 0, getekend: null };
+  return P.ov;
+}
+function ovBeginT(van, tot){
+  const nu = nuMin();
+  if (P.dag === vandaagDag() && nu >= van && nu <= tot) return nu;
+  const d = P.blokken.filter(b => b.dag === P.dag).sort((a, b) => a.start - b.start);
+  return d.length ? d[0].start + 5 : van;
+}
+function ovPast(b){
+  const o = P.ov, t = teamVan(b.team);
+  return (!o.bouw.length || o.bouw.includes(t.bouw)) && (!o.team || b.team === o.team) && (!o.veld || b.veld === o.veld) && (!o.kk || (b.kk || []).includes(o.kk));
+}
+const ovFilterAan = () => { const o = P.ov; return !!(o.bouw.length || o.team || o.veld || o.kk); };
+const heeftGeo = () => P.park?.lat != null && (P.park.velden || []).some(v => v.lat != null && v.lengte);
+const kkPlek = () => {
+  const o = P.inst.objecten.find(x => x.soort === 'kleedkamers'); if (o) return o;
+  return (P.park?.plekken || []).find(x => x.soort === 'kleedkamer' && x.lat != null) || null;
+};
+const kkLijst = b => (b.kk || []).map(kkKort).join(', ');
+const I_SPEEL = '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z" fill="currentColor"/></svg>';
+const I_PAUZE = '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4.5h4.5v15H6zM13.5 4.5H18v15h-4.5z" fill="currentColor"/></svg>';
+
+function htmlOverzicht(c){
+  const o = ovStart();
+  [o.van, o.tot] = dagBereik(P.blokken, P.dag);
+  if (o.t == null || o.t < o.van || o.t > o.tot) o.t = ovBeginT(o.van, o.tot);
+  o.getekend = Math.floor(o.t);
+  const ids = [...new Set(P.blokken.map(b => b.team))];
+  if (o.team && !ids.includes(o.team)) ids.push(o.team);
+  const teams = ids.map(teamVan).sort((a, b) => a.naam.localeCompare(b.naam, 'nl', { numeric: true }));
+  const sel = (soort, leeg, lijst) => `<select class="invoer vp-fsel${o[soort] ? ' aan' : ''}" data-ovf="${soort}" aria-label="${leeg}"><option value="">${leeg}</option>${lijst.map(([id, naam]) => `<option value="${esc(id)}" ${o[soort] === id ? 'selected' : ''}>${esc(naam)}</option>`).join('')}</select>`;
+  return `${htmlDagen(c)}
+  <div class="vp-ovgrid">
+    <section class="vp-paneel vp-ovpaneel" aria-label="Overzicht ${DAGEN[P.dag]}">
+      <div class="vp-ovkop">
+        <div class="vp-ovklok"><small>${DAGEN[P.dag]}</small><b data-ovklok>${naarTijd(o.getekend)}</b></div>
+        <div class="vp-ovfilters" role="group" aria-label="Filters">
+          ${['onder', 'midden', 'boven'].map(b => `<button type="button" class="vp-fchip b-${b}${o.bouw.includes(b) ? ' aan' : ''}" data-ovbouw="${b}" aria-pressed="${o.bouw.includes(b)}"><i></i>${BOUW[b]}</button>`).join('')}
+          ${sel('team', 'Alle teams', teams.map(t => [t.id, t.naam]))}
+          ${P.velden.length > 1 ? sel('veld', 'Alle velden', P.velden.map(v => [v.id, v.naam])) : ''}
+          ${P.inst.kleedkamers.length ? sel('kk', 'Alle kleedkamers', P.inst.kleedkamers.map(k => [k.id, k.naam])) : ''}
+          <button type="button" class="vp-fchip vrij${o.vrij ? ' aan' : ''}" data-ovvrij aria-pressed="${o.vrij}" title="Toon waar op dit moment nog een kwart veld vrij is">Vrije plekken</button>
+          ${ovFilterAan() ? '<button type="button" class="vp-fwis" data-ovwis>Wis filters</button>' : ''}
+        </div>
+      </div>
+      ${heeftGeo() ? '<div id="vpOvKaart" class="vk-kaart vp-kaart vp-ovkaart"></div>' : `<div class="vp-ovschema" data-ovschema>${htmlSchema()}</div>`}
+      ${htmlTijdbalk()}
+    </section>
+    <aside class="vp-rechts">${P.sel && blok(P.sel) ? htmlDetail() : ''}<section class="vp-paneel vp-ovnu" data-ovnulijst aria-live="polite">${htmlOvNu()}</section></aside>
+  </div>`;
+}
+function htmlTijdbalk(){
+  const o = P.ov, span = Math.max(60, o.tot - o.van);
+  const d = drukte(P.blokken, P.inst.velden, { dag: P.dag, van: o.van, tot: o.tot, stap: 5, velden: P.velden.length });
+  const nKk = P.inst.kleedkamers.length;
+  const balken = d.map((x, i) => x.veld ? `<rect x="${i * 5 + .4}" y="${(1 - x.veld) * 36}" width="4.2" height="${x.veld * 36}"/>` : '').join('');
+  const lijn = nKk ? d.map((x, i) => `${i ? 'L' : 'M'}${i * 5 + 2.5} ${(1 - Math.min(1, x.kk / nKk)) * 36}`).join('') : '';
+  const sporen = ovFilterAan() ? P.blokken.filter(b => b.dag === P.dag && ovPast(b))
+    .map(b => `<rect class="b-${teamVan(b.team).bouw}" x="${b.start - o.van}" y="39" width="${b.eind - b.start}" height="5"/>`).join('') : '';
+  const uren = []; for (let m = Math.ceil(o.van / 60) * 60; m <= o.tot; m += 60) uren.push(m);
+  return `<div class="vp-tijdbalk">
+    <div class="vp-tbknoppen">
+      <button type="button" class="vp-speel" data-ovspeel aria-label="${o.spelen ? 'Pauzeren' : 'Afspelen'}">${o.spelen ? I_PAUZE : I_SPEEL}</button>
+      <button type="button" class="vp-tbknop" data-ovsnel aria-label="Afspeelsnelheid ${SNELN[o.snel]}" title="Afspeelsnelheid">${SNELN[o.snel]}</button>
+      <button type="button" class="vp-tbknop${o.live ? ' aan' : ''}" data-ovnu aria-pressed="${o.live}" title="Spring naar vandaag, nu">Nu</button>
+    </div>
+    <div class="vp-tbspoor">
+      <svg class="vp-drukte" viewBox="0 0 ${span} 44" preserveAspectRatio="none" aria-hidden="true">
+        ${uren.map(m => `<line x1="${m - o.van}" x2="${m - o.van}" y1="0" y2="36" class="uur" vector-effect="non-scaling-stroke"/>`).join('')}
+        <g class="balk">${balken}</g>${lijn ? `<path class="kkl" d="${lijn}" vector-effect="non-scaling-stroke"/>` : ''}<g class="spoor">${sporen}</g></svg>
+      <input type="range" class="vp-schuif" data-ovschuif min="${o.van}" max="${o.tot}" step="1" value="${Math.floor(o.t)}" aria-label="Tijdstip" aria-valuetext="${naarTijd(Math.floor(o.t))}">
+      <div class="vp-tburen" aria-hidden="true">${uren.map(m => `<span style="left:${(m - o.van) / span * 100}%">${naarTijd(m)}</span>`).join('')}</div>
+    </div>
+  </div>
+  <p class="vp-zacht vp-tbuitleg"><span class="vp-tbleg balk"></span>bezetting van de velden${nKk ? '<span class="vp-tbleg kkl"></span>kleedkamers in gebruik' : ''}${ovFilterAan() ? '<span class="vp-tbleg spoor"></span>wat aan je filter voldoet' : ''}. Sleep, gebruik de pijltjes of druk op afspelen.</p>`;
+}
+/* Wat er op één veld staat om minuut t. Het veld is een doos van 100% × 100%; vakken als percentages.
+   `hoek` draait de tekst terug zodat hij op de luchtfoto recht staat. */
+function htmlVeldInhoud(veldId, hoek, t, px = 300){
+  const vakken = vakkenVan(instVan(veldId)), o = P.ov, rot = hoek ? ` style="transform:rotate(${-hoek}deg)"` : '';
+  const pos = k => `left:${k.x * 100}%;top:${k.y * 100}%;width:${k.w * 100}%;height:${k.h * 100}%`;
+  const nu = opMoment(P.blokken, P.dag, t).filter(b => b.veld === veldId);
+  let h = '';
+  if (o.vrij) for (const id of vrijeKwarten(P.blokken, instVan(veldId), { dag: P.dag, veld: veldId, t }))
+    h += `<div class="vp-ovvak vrij" style="${pos(vakUit(vakken, id))}"><span${rot}>vrij</span></div>`;
+  for (const b of P.blokken.filter(x => x.dag === P.dag && x.veld === veldId && x.start > t && x.start <= t + 20)){
+    const k = vakUit(vakken, b.vak);
+    if (nu.some(x => vakkenOverlap(vakUit(vakken, x.vak), k))) continue;
+    h += `<div class="vp-ovvak straks b-${teamVan(b.team).bouw}${ovPast(b) ? '' : ' dim'}" style="${pos(k)}"><span${rot}><b>${esc(teamVan(b.team).naam)}</b><small>om ${naarTijd(b.start)}</small></span></div>`;
+  }
+  for (const b of nu){
+    const t2 = teamVan(b.team), kk = kkLijst(b);
+    const k = vakUit(vakken, b.vak), ruim = k.w * px >= 84;   /* op een klein vak alleen de naam */
+    h += `<div class="vp-ovvak b-${t2.bouw}${ovPast(b) ? '' : ' dim'}${P.sel === b.id ? ' aan' : ''}${P.status?.[b.id] === 'botsing' ? ' botsing' : ''}" data-ovblok="${b.id}" style="${pos(k)}">
+      <span${rot}><b>${esc(t2.naam)}</b>${ruim ? `<small>${kk ? `kk ${esc(kk)} · ` : ''}tot ${naarTijd(b.eind)}</small>` : kk ? `<small>kk ${esc(kk)}</small>` : ''}</span></div>`;
+  }
+  return h;
+}
+function htmlSchema(){
+  const t = Math.floor(P.ov.t), o = P.ov;
+  return P.velden.map(v => `<div class="vp-schemaveld${o.veld && o.veld !== v.id ? ' dim' : ''}"><b>${esc(v.naam)}</b>
+    <div class="vp-schemagras" data-schemaveld="${esc(v.id)}"><div class="vp-schemalijn"></div>${htmlVeldInhoud(v.id, 0, t)}</div></div>`).join('')
+    + '<p class="vp-zacht vp-schemauitleg">Teken de velden in bij Sportparken, dan zie je dit op de luchtfoto van jullie eigen park.</p>';
+}
+function lagenOverzicht(k){
+  const o = P.ov, t = Math.floor(o.t), uit = [], namen = [];
+  for (const v of P.park?.velden || []){
+    if (v.lat == null) continue;
+    const p = k.px(v.lat, v.lon);
+    if (!v.lengte){
+      const n = opMoment(P.blokken, P.dag, t).filter(b => b.veld === v.id).length;
+      uit.push(`<div class="vk-stip" style="left:${p.x}px;top:${p.y}px"><span>${esc(v.naam || 'Veld')}${n ? ` · ${n} ${n === 1 ? 'team' : 'teams'}` : ''}</span></div>`); continue;
+    }
+    const w = k.m2px(v.lengte), hoek = v.hoek || 0;
+    uit.push(`<div class="vk-veld vp-ovveld${o.veld && o.veld !== v.id ? ' dim' : ''}" style="left:${p.x}px;top:${p.y}px;width:${w}px;height:${k.m2px(v.breedte)}px;--fs:${Math.max(10, Math.min(15, w / 11))}px;transform:translate(-50%,-50%) rotate(${hoek}deg)">
+      <i class="vk-l-rand"></i><i class="vk-l-mid"></i><i class="vk-l-cirkel"></i>${htmlVeldInhoud(v.id, hoek, t, w)}</div>`);
+    /* naam net buiten de bovenrand (in de draairichting van het veld), na de velden zodat niets hem afdekt */
+    const r = k.m2px(v.breedte) / 2 + 11, a = hoek * Math.PI / 180;
+    namen.push(`<span class="vp-ovveldnaam" style="left:${p.x + Math.sin(a) * r}px;top:${p.y - Math.cos(a) * r}px">${esc(v.naam || 'Veld')}</span>`);
+  }
+  uit.push(...namen);
+  const plek = kkPlek();
+  if (plek && P.inst.kleedkamers.length){
+    const p = k.px(plek.lat, plek.lon), kk = kleedkamersOpMoment(P.blokken, P.dag, t);
+    uit.push(`<div class="vp-ovkkkaart" style="left:${p.x}px;top:${p.y}px"><small>Kleedkamers</small><div>${P.inst.kleedkamers.slice(0, 16).map(x => {
+      const z = kk[x.id], b = z && teamVan(z.blok.team), dim = (o.kk && o.kk !== x.id) || (z && !ovPast(z.blok));
+      return `<span class="${z ? `f-${z.fase} b-${b.bouw}` : 'vrij'}${dim ? ' dim' : ''}" title="${esc(x.naam)}"><b>${esc(kkKort(x.id))}</b>${z ? esc(b.naam) : ''}</span>`; }).join('')}</div></div>`);
+  }
+  return uit.join('');
+}
+function htmlOvNu(){
+  const o = P.ov, t = Math.floor(o.t), alle = opMoment(P.blokken, P.dag, t);
+  const vi = id => P.velden.findIndex(v => v.id === id);
+  const nu = alle.filter(ovPast).sort((a, b) => vi(a.veld) - vi(b.veld) || a.start - b.start);
+  const straks = P.blokken.filter(b => b.dag === P.dag && b.start > t && b.start <= t + 30 && ovPast(b)).sort((a, b) => a.start - b.start);
+  const kk = kleedkamersOpMoment(P.blokken, P.dag, t), nKk = P.inst.kleedkamers.length;
+  const regel = (b, sub) => { const tm = teamVan(b.team), k = kkLijst(b);
+    return `<button type="button" class="vp-ovregel b-${tm.bouw}${P.sel === b.id ? ' aan' : ''}" data-kies="${b.id}"><i></i><span><b>${esc(tm.naam)}</b><small>${esc(plekTekst(b))} · ${sub}</small></span>${k ? `<em>kk ${esc(k)}</em>` : ''}</button>`; };
+  const tot = z => z.fase === 'voor' ? `tot ${naarTijd(z.blok.start)}` : z.fase === 'training' ? `terug ${naarTijd(z.blok.eind)}` : `vrij ${naarTijd(z.blok.eind + KK_NA)}`;
+  return `<div class="vp-paneel-kop"><h2>Om ${naarTijd(t)}</h2><span class="vp-zacht">${DAGEN[P.dag].toLowerCase()}</span></div>
+    <div class="vp-tellers${nKk ? ' drie' : ''}"><div><b>${alle.length}</b><small>${alle.length === 1 ? 'team' : 'teams'} bezig</small></div>
+      <div><b>${new Set(alle.map(b => b.veld)).size}/${P.velden.length}</b><small>velden bezet</small></div>
+      ${nKk ? `<div><b>${Object.keys(kk).length}/${nKk}</b><small>kleedkamers</small></div>` : ''}</div>
+    ${nu.length ? nu.map(b => regel(b, `nog ${b.eind - t} min`)).join('')
+      : `<p class="vp-zacht">${alle.length ? 'Geen team dat aan je filter voldoet.' : 'Op dit moment traint er niemand.'}</p>`}
+    ${straks.length ? `<h3 class="vp-ovh3">Straks</h3>${straks.map(b => regel(b, `om ${naarTijd(b.start)} (over ${b.start - t} min)`)).join('')}` : ''}
+    ${nKk ? `<h3 class="vp-ovh3">Kleedkamers</h3><div class="vp-ovkks">${P.inst.kleedkamers.map(x => {
+      const z = kk[x.id], b = z && teamVan(z.blok.team), dim = (o.kk && o.kk !== x.id) || (z && !ovPast(z.blok));
+      return `<button type="button" class="vp-ovkkt ${z ? `f-${z.fase} b-${b.bouw}` : 'vrij'}${dim ? ' dim' : ''}" ${z ? `data-kies="${z.blok.id}"` : 'disabled'} aria-label="${esc(x.naam)}: ${z ? `${esc(b.naam)}, ${FASE[z.fase]}` : 'vrij'}">
+        <b>${esc(kkKort(x.id))}</b><span>${z ? esc(b.naam) : 'vrij'}</span><small>${z ? `${FASE[z.fase]} · ${tot(z)}` : '&nbsp;'}</small></button>`; }).join('')}</div>
+      <p class="vp-zacht vp-ovleg"><span class="f-voor"></span>omkleden <span class="f-training"></span>traint <span class="f-na"></span>douchen</p>` : ''}`;
+}
+
+/* tekenen op een nieuw moment, zonder de hele planner opnieuw op te bouwen */
+function ovMoment(forceer){
+  const o = P?.ov; if (!o) return;
+  const m = Math.floor(o.t);
+  if (!forceer && m === o.getekend) return;
+  o.getekend = m;
+  const kl = P.el.querySelector('[data-ovklok]'); if (kl) kl.textContent = naarTijd(m);
+  const s = P.el.querySelector('[data-ovschuif]'); if (s){ s.value = m; s.setAttribute('aria-valuetext', naarTijd(m)); }
+  P.ovKaart?.tekenLagen();
+  const sc = P.el.querySelector('[data-ovschema]'); if (sc) sc.innerHTML = htmlSchema();
+  const lijst = P.el.querySelector('[data-ovnulijst]');
+  if (lijst){ lijst.innerHTML = htmlOvNu(); koppelKies(lijst); }
+}
+function ovKnoppen(){
+  const o = P?.ov; if (!o) return;
+  const k = P.el.querySelector('[data-ovspeel]');
+  if (k){ k.innerHTML = o.spelen ? I_PAUZE : I_SPEEL; k.setAttribute('aria-label', o.spelen ? 'Pauzeren' : 'Afspelen'); }
+  const n = P.el.querySelector('[data-ovnu]'); if (n){ n.classList.toggle('aan', o.live); n.setAttribute('aria-pressed', o.live); }
+}
+function ovSpeel(){
+  const o = P.ov;
+  if (o.spelen) return ovStop();
+  if (o.t >= o.tot) o.t = o.van;
+  o.spelen = true; o.live = false;
+  let vorig = performance.now();
+  const stap = nu => {
+    if (!P || P.ov !== o || !o.spelen) return;
+    o.t = Math.min(o.tot, o.t + Math.min(250, nu - vorig) / 1000 * SNEL[o.snel]); vorig = nu;
+    ovMoment();
+    if (o.t >= o.tot) return ovStop();
+    o.raf = requestAnimationFrame(stap);
+  };
+  o.raf = requestAnimationFrame(stap);
+  ovKnoppen();
+}
+function ovStop(){
+  const o = P?.ov; if (!o) return;
+  o.spelen = false; cancelAnimationFrame(o.raf);
+  ovKnoppen();
+}
+function ovNu(){
+  const o = P.ov; ovStop();
+  const dag = vandaagDag(), nu = nuMin(), [van, tot] = dagBereik(P.blokken, dag);
+  o.live = true;
+  clearInterval(o.klok);
+  o.klok = setInterval(() => { if (!P || P.ov !== o){ clearInterval(o.klok); return; }
+    if (o.live && !o.spelen && P.weergave === 'overzicht'){ o.t = Math.max(o.van, Math.min(o.tot, nuMin())); ovMoment(); } }, 20000);
+  if (nu < van || nu > tot) meld(nu < van ? `Vandaag begint de eerste training om ${naarTijd(van + KK_VOOR)}.` : 'Vandaag is er na dit tijdstip geen training meer.');
+  o.t = Math.max(van, Math.min(tot, nu));
+  if (P.dag !== dag){ P.dag = dag; P.sel = null; teken(); } else { ovMoment(true); ovKnoppen(); }
+}
+function ovTik(ll){
+  for (const v of P.park?.velden || []){
+    if (v.lat == null || !v.lengte) continue;
+    const d = meterTussen({ lat: v.lat, lon: v.lon }, ll), h = (v.hoek || 0) * Math.PI / 180;
+    const fx = (d.x * Math.cos(h) + d.y * Math.sin(h)) / v.lengte + .5, fy = (-d.x * Math.sin(h) + d.y * Math.cos(h)) / v.breedte + .5;
+    if (fx >= 0 && fx <= 1 && fy >= 0 && fy <= 1) return ovKiesPlek(v.id, fx, fy);
+  }
+  if (P.sel){ P.sel = null; teken(); }
+}
+function ovKiesPlek(veldId, fx, fy){
+  const t = Math.floor(P.ov.t), vakken = vakkenVan(instVan(veldId));
+  const hier = opMoment(P.blokken, P.dag, t).filter(b => b.veld === veldId && inVak(vakUit(vakken, b.vak), fx, fy))
+    .sort((a, b) => deelVan(vakUit(vakken, a.vak)) - deelVan(vakUit(vakken, b.vak)));
+  if (hier.length){ ovStop(); P.sel = hier[0].id; return teken(); }
+  if (P.ov.vrij){
+    const q = (fx < .5 ? 'a' : 'b') + (fy < .5 ? 'v' : 'a');
+    if (vrijeKwarten(P.blokken, instVan(veldId), { dag: P.dag, veld: veldId, t }).includes(q)){ ovStop(); return vensterPlanHier(veldId, q, Math.max(6 * 60, Math.floor(t / 15) * 15)); }
+  }
+  if (P.sel){ P.sel = null; teken(); }
+}
+function vensterPlanHier(veldId, vak, start){
+  const nog = nogInTePlannen(P.teams, P.blokken).map(x => x.t), rest = P.teams.filter(t => !nog.includes(t));
+  const knop = t => `<button type="button" class="vp-plankeuze b-${t.bouw}" data-plan="${esc(t.id)}"><b>${esc(t.naam)}</b><small>${MAAT_NAAM[t.maat]} · ${t.duur} min</small></button>`;
+  const k = vakUit(vakkenVan(instVan(veldId)), vak);
+  const v = venster(`<h2>Plan hier een team</h2>
+    <p class="vp-zacht">${esc(veldVan(veldId).naam)} ${esc(k.kort)}, ${DAGEN[P.dag].toLowerCase()} vanaf ${naarTijd(start)}. Heeft het team meer ruimte nodig, dan zoeken we het passende vak op dit veld.</p>
+    ${nog.length ? `<span class="vp-label">Nog in te plannen</span><div class="vp-planlijst">${nog.map(knop).join('')}</div>` : '<p class="vp-klaar">Alle teams staan al in het rooster.</p>'}
+    ${rest.length ? `<details class="vp-planmeer"><summary>Ander team (${rest.length})</summary><div class="vp-planlijst">${rest.map(knop).join('')}</div></details>` : ''}
+    <div class="vp-voet"><button type="button" class="knop licht" data-dicht>Annuleren</button></div>`);
+  v.querySelector('[data-dicht]').onclick = sluitVenster;
+  v.querySelectorAll('[data-plan]').forEach(x => x.onclick = () => { sluitVenster(); nieuwBlok(x.dataset.plan, veldId, start, vak); });
+  v.querySelector('[data-plan]')?.focus();
+}
+function koppelKies(el){
+  el.querySelectorAll('[data-kies]').forEach(k => k.onclick = () => { ovStop(); P.sel = k.dataset.kies; teken(); });
+}
+async function koppelOverzicht(){
+  const el = P.el, o = P.ov;
+  koppelKies(el.querySelector('[data-ovnulijst]'));
+  el.querySelectorAll('[data-ovbouw]').forEach(k => k.onclick = () => {
+    const b = k.dataset.ovbouw; o.bouw = o.bouw.includes(b) ? o.bouw.filter(x => x !== b) : [...o.bouw, b]; teken(); });
+  el.querySelectorAll('[data-ovf]').forEach(k => k.onchange = () => { o[k.dataset.ovf] = k.value; teken(); });
+  el.querySelector('[data-ovvrij]')?.addEventListener('click', () => { o.vrij = !o.vrij; teken(); });
+  el.querySelector('[data-ovwis]')?.addEventListener('click', () => { Object.assign(o, { bouw: [], team: '', veld: '', kk: '' }); teken(); });
+  el.querySelector('[data-ovspeel]').onclick = ovSpeel;
+  el.querySelector('[data-ovsnel]').onclick = e => { o.snel = (o.snel + 1) % SNEL.length; e.currentTarget.textContent = SNELN[o.snel]; e.currentTarget.setAttribute('aria-label', `Afspeelsnelheid ${SNELN[o.snel]}`); };
+  el.querySelector('[data-ovnu]').onclick = ovNu;
+  const s = el.querySelector('[data-ovschuif]');
+  s.addEventListener('input', () => { if (o.spelen) ovStop(); o.live = false; ovKnoppen(); o.t = +s.value; ovMoment(); });
+  s.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'k'){ e.preventDefault(); ovSpeel(); } });
+  const sc = el.querySelector('[data-ovschema]');
+  if (sc) sc.addEventListener('click', e => {
+    const g = e.target.closest('[data-schemaveld]'); if (!g) return;
+    const r = g.getBoundingClientRect();
+    ovKiesPlek(g.dataset.schemaveld, (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
+  });
+  const kaartEl = el.querySelector('#vpOvKaart'); if (!kaartEl) return;
+  const { Kaart } = await import('./veldkaart.js?v=20261129v');
+  if (!P || !kaartEl.isConnected) return;
+  const pos = P.kaartPos || { lat: P.park.lat, lon: P.park.lon, z: Math.min(19, P.park.zoom || 18) };
+  const k = new Kaart(kaartEl, { lat: pos.lat, lon: pos.lon, z: pos.z, interactief: true, lagen: lagenOverzicht, onTik: ovTik });
+  P.ovKaart = k;
+  const bewaarPos = () => { P.kaartPos = { lat: k.lat, lon: k.lon, z: k.z }; };
+  kaartEl.addEventListener('pointerup', bewaarPos); kaartEl.addEventListener('wheel', bewaarPos, { passive: true });
+  kaartEl.addEventListener('click', e => { if (e.target.closest('[data-vk-z]')) bewaarPos(); });
+  if (!P.kaartPos) k.pasIn((P.park.velden || []).filter(v => v.lat != null).flatMap(v => { const r = (v.lengte || 20) / 2; return [verschuif(v, -r, -r), verschuif(v, r, r)]; }), 30);
 }
 
 /* ---------- vensters ---------- */
@@ -941,6 +1248,103 @@ html.vp-open{overflow:hidden}
 .vp-iveld .ivak-m{font-size:9px;fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.5);stroke-width:1.5px;pointer-events:none}
 .vp-iveld .igreep{fill:#fff;stroke:#cc2620;stroke-width:2;cursor:nwse-resize}
 .vp-iveld .ivak-nieuw{fill:rgba(204,38,32,.3);stroke:#fff;stroke-width:2;stroke-dasharray:5 4;pointer-events:none}
+/* overzicht [20261127v] */
+.vp-ovgrid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:var(--space-sm);align-items:start}
+.vp-ovkop{display:flex;align-items:center;gap:var(--space-sm);flex-wrap:wrap;margin-bottom:var(--space-xs)}
+.vp-ovklok{display:flex;flex-direction:column;min-width:86px}
+.vp-ovklok small{font-size:var(--t-2xs);color:var(--ink-2);text-transform:uppercase;letter-spacing:.04em}
+.vp-ovklok b{font-family:var(--font-display);font-size:var(--t-3xl);line-height:1;font-variant-numeric:tabular-nums}
+.vp-ovfilters{display:flex;flex-wrap:wrap;gap:6px;align-items:center;flex:1}
+.vp-fchip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:var(--r-pill);background:var(--surface-2);border:1.5px solid var(--hair);font-size:var(--t-xs);color:var(--ink);min-height:34px}
+.vp-fchip i{width:10px;height:10px;border-radius:3px;background:var(--bc)}
+.vp-fchip.aan{border-color:var(--bc,var(--info));background:color-mix(in srgb,var(--bc,var(--info)) 20%,var(--surface-2));font-weight:600}
+.vp-fchip.vrij{--bc:#22c55e}
+.vp-fsel{width:auto;min-height:34px;padding:4px 8px;font-size:var(--t-xs);background:var(--surface-2);color:var(--ink);border-radius:var(--r-pill);max-width:170px}
+.vp-fsel.aan{border-color:var(--info);font-weight:600}
+.vp-fwis{font-size:var(--t-xs);color:var(--ink-2);text-decoration:underline;padding:4px}
+.vp-ovkaart{height:min(56dvh,560px);min-height:320px}
+.vp-ovveld .vp-ovvak{position:absolute;box-sizing:border-box}
+.vp-ovvak{display:flex;align-items:center;justify-content:center;border-radius:3px;transition:opacity .2s;pointer-events:none}
+.vp-ovvak[data-ovblok]{background:color-mix(in srgb,var(--bc) 55%,transparent);border:2px solid var(--bc);box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
+.vp-ovvak span{display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1.05;white-space:nowrap;color:#fff;background:rgba(0,0,0,.55);border-radius:6px;padding:2px 6px;font-size:var(--fs,12px)}
+.vp-ovvak b{font-family:var(--font-display);text-transform:uppercase;font-size:1.15em;letter-spacing:.02em}
+.vp-ovvak small{font-size:.78em;opacity:.9}
+.vp-ovvak.straks{border:2px dashed var(--bc);background:color-mix(in srgb,var(--bc) 14%,transparent)}
+.vp-ovvak.straks span{background:rgba(0,0,0,.4);opacity:.9}
+.vp-ovvak.vrij{border:2px dashed #4ade80;background:rgba(74,222,128,.18)}
+.vp-ovvak.vrij span{background:rgba(22,101,52,.75);font-size:calc(var(--fs,12px) * .85)}
+.vp-ovvak.dim{opacity:.22}
+.vp-ovvak.aan{outline:3px solid #fff;outline-offset:1px;z-index:2}
+.vp-ovvak.botsing{border-color:var(--uit);box-shadow:0 0 0 2px var(--uit)}
+.vp-ovveldnaam{position:absolute;transform:translate(-50%,-50%);font-size:var(--t-2xs);font-weight:800;color:#fff;background:rgba(0,0,0,.62);padding:1px 7px;border-radius:var(--r-pill);white-space:nowrap;pointer-events:none}
+.vp-ovkkkaart{position:absolute;transform:translate(-50%,-50%);background:rgba(15,18,24,.86);color:#fff;border-radius:8px;padding:4px 6px;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.4);max-width:260px}
+.vp-ovkkkaart small{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.05em;opacity:.75;margin-bottom:2px}
+.vp-ovkkkaart div{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:3px}
+.vp-ovkkkaart span{font-size:9px;font-weight:700;border-radius:4px;padding:1px 4px;display:flex;gap:4px;align-items:center;white-space:nowrap;overflow:hidden;background:rgba(255,255,255,.1)}
+.vp-ovkkkaart span b{font-size:11px;min-width:12px}
+.vp-ovkkkaart span.dim,.vp-ovkkt.dim{opacity:.3}
+.f-voor{--fc:#f59e0b}.f-training{--fc:#3b82c4}.f-na{--fc:#14b8a6}
+.vp-ovkkkaart span[class*="f-"]{background:color-mix(in srgb,var(--fc) 70%,transparent)}
+.vp-ovschema{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--space-sm)}
+.vp-schemaveld b{font-family:var(--font-display);text-transform:uppercase;font-size:var(--t-lg)}
+.vp-schemaveld.dim{opacity:.35}
+.vp-schemagras{position:relative;aspect-ratio:105/68;border-radius:6px;cursor:pointer;margin-top:4px;
+  background:repeating-linear-gradient(90deg,#2e7d3a 0 10%,#2a7335 10% 20%);border:2px solid rgba(255,255,255,.8);--fs:11px}
+.vp-schemalijn{position:absolute;left:50%;top:0;bottom:0;border-left:2px solid rgba(255,255,255,.75)}
+.vp-schemagras .vp-ovvak{position:absolute;box-sizing:border-box}
+.vp-schemauitleg{grid-column:1/-1}
+.vp-tijdbalk{display:flex;gap:var(--space-sm);align-items:flex-start;margin-top:var(--space-sm)}
+.vp-tbknoppen{display:flex;gap:6px;align-items:center;flex-shrink:0;padding-top:4px}
+.vp-speel{width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center}
+.vp-tbknop{min-width:40px;height:34px;padding:0 10px;border-radius:var(--r-pill);background:var(--surface-2);border:1.5px solid var(--hair);font-size:var(--t-xs);font-weight:600;color:var(--ink)}
+.vp-tbknop.aan{border-color:#ef4444;color:#ef4444}
+.vp-tbknop.aan::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:#ef4444;margin-right:5px;vertical-align:1px;animation:vpPuls 1.6s infinite}
+@keyframes vpPuls{50%{opacity:.25}}
+.vp-tbspoor{position:relative;flex:1;min-width:0;height:66px}
+.vp-drukte{position:absolute;left:0;right:0;top:0;width:100%;height:44px;background:var(--surface-2);border-radius:6px}
+.vp-drukte .balk rect{fill:color-mix(in srgb,var(--info) 60%,transparent)}
+.vp-drukte .uur{stroke:var(--hair);stroke-width:1}
+.vp-drukte .kkl{fill:none;stroke:#a78bfa;stroke-width:1.5}
+.vp-drukte .spoor rect{fill:var(--bc)}
+.vp-schuif{position:absolute;left:0;right:0;top:0;width:100%;height:44px;margin:0;background:transparent;-webkit-appearance:none;appearance:none;cursor:pointer}
+.vp-schuif::-webkit-slider-runnable-track{height:44px;background:transparent}
+.vp-schuif::-moz-range-track{height:44px;background:transparent}
+.vp-schuif::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:44px;border-radius:4px;background:transparent;border:3px solid var(--ink);box-shadow:0 0 0 1px var(--card)}
+.vp-schuif::-moz-range-thumb{width:8px;height:38px;border-radius:4px;background:transparent;border:3px solid var(--ink)}
+.vp-schuif:focus-visible{outline:3px solid var(--info);outline-offset:2px;border-radius:6px}
+.vp-tburen{position:absolute;left:0;right:0;top:48px;height:16px;font-size:var(--t-2xs);color:var(--ink-2)}
+.vp-tburen span{position:absolute;transform:translateX(-50%)}
+.vp-tburen span:first-child{transform:none}
+.vp-tburen span:last-child:not(:first-child){transform:translateX(-100%)}
+.vp-tbuitleg{font-size:var(--t-2xs);margin-top:2px}
+.vp-tbleg{display:inline-block;width:12px;height:8px;border-radius:2px;margin:0 4px 0 8px;vertical-align:0}
+.vp-tbleg:first-child{margin-left:0}
+.vp-tbleg.balk{background:color-mix(in srgb,var(--info) 60%,transparent)}.vp-tbleg.kkl{height:2px;background:#a78bfa;vertical-align:3px}.vp-tbleg.spoor{background:linear-gradient(90deg,#3b82c4,#c9922e,#2f9e63)}
+.vp-tellers.drie{grid-template-columns:repeat(3,1fr)}
+.vp-ovregel{display:flex;align-items:center;gap:8px;width:100%;padding:7px 8px;border-radius:var(--r-s);background:var(--surface-2);color:var(--ink);text-align:left;margin-bottom:4px;border:1.5px solid transparent;min-height:44px}
+.vp-ovregel.aan{border-color:var(--info)}
+.vp-ovregel i{width:6px;align-self:stretch;border-radius:3px;background:var(--bc)}
+.vp-ovregel span{flex:1;display:flex;flex-direction:column;min-width:0}
+.vp-ovregel b{font-family:var(--font-display);text-transform:uppercase;font-size:var(--t-md);line-height:1.1}
+.vp-ovregel small{font-size:var(--t-2xs);color:var(--ink-2)}
+.vp-ovregel em{font-style:normal;font-size:var(--t-2xs);font-weight:700;padding:2px 7px;border-radius:var(--r-pill);background:var(--card);white-space:nowrap}
+.vp-ovh3{font-size:var(--t-sm);margin:var(--space-sm) 0 6px}
+.vp-ovkks{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px}
+.vp-ovkkt{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:6px 8px;border-radius:var(--r-s);background:var(--surface-2);color:var(--ink);text-align:left;border:1.5px solid var(--hair);border-left:5px solid var(--fc,var(--hair));min-height:56px}
+.vp-ovkkt b{font-family:var(--font-display);font-size:var(--t-lg);line-height:1}
+.vp-ovkkt span{font-size:var(--t-xs);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.vp-ovkkt small{font-size:var(--t-2xs);color:var(--ink-2)}
+.vp-ovkkt.vrij span{color:var(--ink-2);font-weight:400}
+.vp-ovkkt[class*="f-"]{background:color-mix(in srgb,var(--fc) 14%,var(--surface-2))}
+.vp-ovleg{font-size:var(--t-2xs);margin-top:6px}
+.vp-ovleg span{display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--fc);margin:0 3px 0 6px;vertical-align:-1px}
+.vp-ovleg span:first-child{margin-left:0}
+.vp-planlijst{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px}
+.vp-plankeuze{display:flex;flex-direction:column;align-items:flex-start;padding:8px 10px;border-radius:var(--r-s);color:var(--ink);text-align:left;min-height:44px;
+  background:color-mix(in srgb,var(--bc) 18%,var(--card));border:1.5px solid color-mix(in srgb,var(--bc) 60%,transparent)}
+.vp-plankeuze b{font-family:var(--font-display);text-transform:uppercase;font-size:var(--t-lg);line-height:1}
+.vp-plankeuze small{font-size:var(--t-2xs);color:var(--ink-2)}
+.vp-planmeer summary{cursor:pointer;font-size:var(--t-sm);color:var(--ink-2);margin:var(--space-xs) 0}
 .vp-segment button{padding:6px 12px;border-radius:var(--r-s);font-size:var(--t-sm);color:var(--ink-2);min-height:32px}
 .vp-segment button[aria-pressed="true"]{background:var(--card);color:var(--ink);font-weight:600;box-shadow:var(--shadow)}
 .vp-kaartgrid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:var(--space-sm);align-items:start}
@@ -970,6 +1374,8 @@ html.vp-open{overflow:hidden}
 .vp-oudplek{position:absolute;transform:translate(-50%,-50%);font-size:9px;color:#fff;background:rgba(0,0,0,.4);padding:1px 5px;border-radius:6px;white-space:nowrap;pointer-events:none}
 @media (max-width:1099px){
   .vp-kaartgrid{grid-template-columns:1fr}
+  .vp-ovgrid{grid-template-columns:1fr}
+  .vp-ovkaart{height:min(56dvh,460px)}
   .vp-kaart{height:min(60dvh,480px)}
   .vp-grid{grid-template-columns:1fr}
   .vp-tl{order:1}.vp-rechts{order:2}.vp-zij{order:3}
@@ -982,6 +1388,8 @@ html.vp-open{overflow:hidden}
   .vp-dag{padding:6px}
   .vp-titel h1{font-size:var(--t-2xl)}
   .vp-staat{min-width:0}
+  .vp-ovkop{gap:6px}.vp-fsel{max-width:46%}
+  .vp-tijdbalk{flex-direction:column;align-items:stretch}.vp-tbknoppen{padding-top:0}
 }`;
   document.head.appendChild(s);
 }
