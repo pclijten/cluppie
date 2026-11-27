@@ -8,13 +8,13 @@
    gewone (bewerkbare) teamschermen; andere teams alleen lezen.
    Tekent in een eigen view (#view-mbouw) binnen #app.
 ================================================================= */
-import { S, $, esc, meld, toon, terugView } from './state.js?v=20261128t';
-import { BOUWEN } from './config.js?v=20261128t';
-import { laadBouw, teamRijen, richting } from './desktop-bouw.js?v=20261128t';
-import { zetBouwContext, modalNieuweUitleningVanuitBouw, splitsUitleningen, leenKaartInfo } from './bouw-hub.js?v=20261128t';
-import { trekUitleningIn, wijzigUitlening } from './teams-spelers.js?v=20261128t';
-import { htmlMobielTeam } from './desktop-schermen.js?v=20261128t';
-import { isSelectieBouw, htmlRadarMobiel, htmlSelectieTegelMobiel, htmlSelectieMobiel, selectieKlik, selectieInvoer } from './selectie-bouw.js?v=20261128t';
+import { S, $, esc, meld, toon, terugView } from './state.js?v=20261128w';
+import { BOUWEN } from './config.js?v=20261128w';
+import { laadBouw, teamRijen, richting } from './desktop-bouw.js?v=20261128w';
+import { zetBouwContext, modalNieuweUitleningVanuitBouw, splitsUitleningen, leenKaartInfo } from './bouw-hub.js?v=20261128w';
+import { trekUitleningIn, wijzigUitlening } from './teams-spelers.js?v=20261128w';
+import { htmlMobielTeam } from './desktop-schermen.js?v=20261128w';
+import { isSelectieBouw, htmlRadarMobiel, htmlSelectieTegelMobiel, htmlSelectieMobiel, selectieKlik, selectieInvoer } from './selectie-bouw.js?v=20261128w';
 
 /* Hardware-terug in de bouw-omgeving: precies de ‹-knop bovenin (team → lijst,
    Selectie maken → dashboard, anders terug naar het teamsoverzicht). */
@@ -25,9 +25,9 @@ terugView('mbouw', () => {
   return true;
 });
 /* [20261116n] Trainingen van de week: kaart op het dashboard + tab Training */
-import { zorgVoorTrainingen, htmlDashBlok, htmlTrainingenScherm, trainingenKlik } from './bouw-trainingen.js?v=20261128t';
+import { zorgVoorTrainingen, htmlDashBlok, htmlTrainingenScherm, trainingenKlik } from './bouw-trainingen.js?v=20261128w';
 /* [20261125b] Evaluatieronde: kaart op het dashboard + eigen scherm (voortgang, scores, inzichten) */
-import { htmlRondeDashBlok, htmlRondeScherm, roKlik } from './ronde-overzicht.js?v=20261128tz';
+import { htmlRondeDashBlok, htmlRondeScherm, roKlik } from './ronde-overzicht.js?v=20261128wz';
 
 let st = null;   // { clubId, bouw, tab:'dash'|'teams'|'tr'|'uit'|'selmaken'|'ev', teamId, pag:'sel'|'evs'|'evw'|'stat', keuze:{} }
 let cache = null;
@@ -196,7 +196,7 @@ async function klik(e){
       if (ro?.teamId){ ro.teamId = null; ro.uit = null; ro.trainer = ''; ro.dom = ''; teken(); return; }
       st.tab = 'dash'; teken(); window.scrollTo(0, 0); return;
     }
-    const m = await import('./teams.js?v=20261128t'); m.renderTeams(); toon('teams'); return;
+    const m = await import('./teams.js?v=20261128w'); m.renderTeams(); toon('teams'); return;
   }
   if (a === 'tab'){ st.tab = id; st.teamId = null; st.keuze = {}; teken(); window.scrollTo(0, 0); return; }
   if (a === 'team'){ st.teamId = id; st.pag = 'sel'; st.keuze = {}; teken(); window.scrollTo(0, 0); return; }
@@ -204,7 +204,7 @@ async function klik(e){
   if (a === 'selmaken'){ st.tab = 'selmaken'; st.teamId = null; teken(); window.scrollTo(0, 0); return; }
   if (a === 'speler'){ st.pag = 'evs'; st.keuze = { speler:id }; teken(); return; }
   if (a === 'wedstrijd'){ st.keuze = { wedstrijd:id }; teken(); return; }
-  if (a === 'eigen'){ const m = await import('./teams.js?v=20261128t'); m.openTeam(st.teamId, { sel:'spelers', evs:'spelers', evw:'evaluatie', stat:'stats' }[st.pag] || 'hub'); return; }
+  if (a === 'eigen'){ const m = await import('./teams.js?v=20261128w'); m.openTeam(st.teamId, { sel:'spelers', evs:'spelers', evw:'evaluatie', stat:'stats' }[st.pag] || 'hub'); return; }
   if (a === 'nieuwleen'){ zetBouwContext(cache); modalNieuweUitleningVanuitBouw(() => teken()); return; }
   if (a === 'wijzig-leen'){ const u = cache.uitleningen.find(x => x.id === id); if (!u) return;
     wijzigUitlening(u, st.clubId, nieuw => {
@@ -212,7 +212,7 @@ async function klik(e){
       teken();
     });
     return; }
-  if (a === 'weekbrief'){ import('./club-weekbrief.js?v=20261128t').then(m => m.openWeekbrief(cache.teams || [], huidigeBouw().naam)); return; }
+  if (a === 'weekbrief'){ import('./club-weekbrief.js?v=20261128w').then(m => m.openWeekbrief(cache.teams || [], huidigeBouw().naam)); return; }
   if (a === 'terug-leen'){ const u = cache.uitleningen.find(x => x.id === id); if (!u) return;
     try { if (await trekUitleningIn(u, st.clubId)){ cache.uitleningen = cache.uitleningen.filter(x => x.id !== id); teken(); } }
     catch(err){ meld('Terugzetten mislukt: ' + (err.code || err.message)); }

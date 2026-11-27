@@ -19,12 +19,12 @@
    spelers- of teamgegevens. Spelersnamen staan alleen op het scherm van de
    coach en nooit in de deeltekst. */
 import { db, doc, setDoc, updateDoc, functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, meld, openModal, sluitModal, isBeheerder } from './state.js?v=20261128t';
+import { S, esc, meld, openModal, sluitModal, isBeheerder } from './state.js?v=20261128w';
 import { ico } from './icons.js?v=20261127b';
-import { telGebruik, telNav } from './tracker.js?v=20261128t';
-import { plekHtml, routeUrl, presentieWedstrijd, afwezigTekst, opstellingKlaar, isAfgelast } from './nu-scherm.js?v=20261128t';
-import { htmlPollsBijWedstrijd, openPollVoorWedstrijd, zetDeelOpstelling } from './kamer-beheer.js?v=20261128t';   /* [20261116m] polls bij een wedstrijd */
-import { veldkaartInlineHtml, vulVeldkaarten } from './veldkaart.js?v=20261128t';
+import { telGebruik, telNav } from './tracker.js?v=20261128w';
+import { plekHtml, routeUrl, presentieWedstrijd, afwezigTekst, opstellingKlaar, isAfgelast } from './nu-scherm.js?v=20261128w';
+import { htmlPollsBijWedstrijd, openPollVoorWedstrijd, zetDeelOpstelling } from './kamer-beheer.js?v=20261128w';   /* [20261116m] polls bij een wedstrijd */
+import { veldkaartInlineHtml, vulVeldkaarten } from './veldkaart.js?v=20261128w';
 
 const p2 = n => String(n).padStart(2, '0');
 const DAG_LANG = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'];
@@ -614,7 +614,7 @@ function koppel(body){
     if (adv){
       const id = adv.dataset.vbAdvies;
       sluitModal();
-      const m = await import('./wedstrijd.js?v=20261128t');
+      const m = await import('./wedstrijd.js?v=20261128w');
       m.openWedstrijdMetAdvies(id);
       return;
     }
@@ -622,7 +622,7 @@ function koppel(body){
     if (wd){
       const id = wd.dataset.vbWedstrijd;
       sluitModal();
-      const m = await import('./wedstrijd.js?v=20261128t');
+      const m = await import('./wedstrijd.js?v=20261128w');
       m.openWedstrijd(id);
       return;
     }
