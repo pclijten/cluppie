@@ -47,11 +47,12 @@
      clubnaam   OpenStreetMap Nominatim (alleen de zoektekst, bij Zoek)
    Geen GPS of locatie van de gebruiker. */
 import { db, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, collection, getDocs, query, where, serverTimestamp, storage, sRef, uploadBytes, getDownloadURL } from './firebase.js?v=20261011g';
-import { S, esc, meld, isBeheerder } from './state.js?v=20261129v';
+import { S, esc, meld, isBeheerder } from './state.js?v=20261129x';
 import { ico } from './icons.js?v=20261127b';
-import { telGebruik } from './tracker.js?v=20261129v';
-import { catInfo } from './config.js?v=20261129v';
-import { sportVeld } from './sporten.js?v=20261126g';   /* [20261125z] veld uit het sportprofiel */
+import { telGebruik } from './tracker.js?v=20261129x';
+import { catInfo } from './config.js?v=20261129x';
+import { sportVeld } from './sporten.js?v=20261126g';
+import { aiAan } from './clubconfig.js?v=20261129x';   /* [20261125z] veld uit het sportprofiel */
 const kaartCirkel = () => { const c = sportVeld().kaart?.cirkel; return !c ? '' : c === 18 ? '<i class="vk-l-cirkel"></i>' : `<i class="vk-l-cirkel" style="width:${c}%"></i>`; };
 
 /* ---------- kaartwiskunde (web-mercator, tegels van 256 px) ---------- */
@@ -338,17 +339,52 @@ function koppelZoek(root, onKies){
 /* ==================== KAART (eigen kleine tegelviewer) ==================== */
 const I_MIJ = svgI('<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>', 22);
 const _kaarten = new Set();
+/* [20261127t] Kaartstijl: 'foto' (luchtfoto van PDOK) of 'tekening' (Cluppie tekent het park zelf: gras met
+   maaibanen, lijnen, doelen en de getekende gebouwen). Een keuze per toestel, voor elke kaart tegelijk. */
+const I_TEKEN = svgI('<path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/>', 20);
+const I_LUCHT = svgI('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/><circle cx="16" cy="9" r="1.5"/>', 20);
+export function kaartStijl(){ try { return localStorage.getItem('cluppie-kaartstijl') === 'tekening' ? 'tekening' : 'foto'; } catch { return 'foto'; } }
+export function zetKaartStijl(st){
+  try { localStorage.setItem('cluppie-kaartstijl', st === 'tekening' ? 'tekening' : 'foto'); } catch {}
+  for (const k of [..._kaarten]) if (k.el.isConnected) k.stijlBijwerken(); else k.opruimen();
+}
+/* [20261127t] De omgeving die AI uit de luchtfoto tekende (sportparken/eigen.omgeving.vormen, functions/sportpark-tekening.js):
+   water, bos, gebouwen, paden, parkeren, zand, andere banen, gras en losse bomen, als SVG onder de velden. */
+const OMG_STIJL = { water:'fill="#86c7e6" stroke="#5fa9cf"', bos:'fill="#6fa95d" stroke="#5c9a4b"', gebouw:'fill="#eee6d6" stroke="#b8aa90" filter="url(#vkSchaduw)"',
+  verharding:'fill="#dcd8cf" stroke="#c9c4b8"', parkeren:'fill="#cfcac1" stroke="#b5afa4"', zand:'fill="#efdcab" stroke="#dcc58a"',
+  baan:'fill="#6f9fc2" stroke="#e8eef2"', gras:'fill="#9ccc7c" stroke="#8cbf6c"' };
+const OMG_VOLGORDE = ['gras', 'zand', 'water', 'baan', 'verharding', 'parkeren', 'bos', 'gebouw'];
+function omgevingSvg(k, W, H){
+  const vormen = typeof k.omgeving === 'function' ? k.omgeving() : k.omgeving;
+  if (!Array.isArray(vormen) || !vormen.length) return '';
+  const pt = ([lat, lon]) => { const p = k.px(lat, lon); return `${Math.round(p.x * 10) / 10},${Math.round(p.y * 10) / 10}`; };
+  const uit = [], sw = Math.max(1, k.m2px(1.2));
+  for (const soort of OMG_VOLGORDE) for (const v of vormen){
+    if (v.soort !== soort || !Array.isArray(v.punten)) continue;
+    const d = v.punten.map(pt).join(' ');
+    if (v.lijn) uit.push(`<polyline points="${d}" fill="none" stroke="#dcd8cf" stroke-width="${Math.max(3, k.m2px(3))}" stroke-linecap="round" stroke-linejoin="round"/>`);
+    else uit.push(`<polygon points="${d}" ${OMG_STIJL[soort]} stroke-width="${soort === 'bos' ? sw * 3 : sw}" stroke-linejoin="round"/>`);
+  }
+  for (const v of vormen) if (v.soort === 'boom'){
+    const p = k.px(v.lat, v.lon), r = Math.max(2, k.m2px(v.r || 4));
+    uit.push(`<circle cx="${p.x}" cy="${p.y + r * .25}" r="${r}" fill="rgba(30,60,20,.25)"/><circle cx="${p.x}" cy="${p.y}" r="${r}" fill="#4f8f42"/><circle cx="${p.x - r * .3}" cy="${p.y - r * .3}" r="${r * .45}" fill="#6cad5a"/>`);
+  }
+  return `<svg class="vk-omg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><defs><filter id="vkSchaduw" x="-20%" y="-20%" width="160%" height="160%"><feDropShadow dx="2" dy="3" stdDeviation="1.5" flood-color="#284018" flood-opacity=".3"/></filter></defs>${uit.join('')}</svg>`;
+}
+/* In de tekening krijgt elk veld er strafschopgebieden, doelgebieden en doelen bij. */
+const TEK_LIJNEN = '<i class="vk-t-16 l"></i><i class="vk-t-16 r"></i><i class="vk-t-5 l"></i><i class="vk-t-5 r"></i><i class="vk-t-doel l"></i><i class="vk-t-doel r"></i>';
 export class Kaart {   /* [20261124v] ook gebruikt door de Veldplanner (kaart met eigen tekeningen) */
   constructor(el, o){
     Object.assign(this, { el, lat:o.lat, lon:o.lon, z:o.z || 17, interactief:!!o.interactief, onTik:o.onTik || null,
-      lagen:o.lagen || (() => ''), grijp:o.grijp || null, mij:null, _watch:null });
+      lagen:o.lagen || (() => ''), grijp:o.grijp || null, mij:null, _watch:null, omgeving:o.omgeving || null });
     _kaarten.add(this);
     el.classList.add('vk-kaart');
     el.classList.toggle('vk-vast', !this.interactief);
     el.innerHTML = `<div class="vk-schuif"><div class="vk-tegels"></div><div class="vk-lagen"></div></div>
       ${this.interactief ? `<div class="vk-zoom"><button type="button" data-vk-z="1" aria-label="Inzoomen">+</button><button type="button" data-vk-z="-1" aria-label="Uitzoomen">−</button>
+        <button type="button" class="vk-stijl-knop" data-vk-stijl></button>
         ${o.locatieKnop && navigator.geolocation ? `<button type="button" class="vk-mij-knop" data-vk-mij aria-pressed="false" aria-label="Toon mijn plek">${I_MIJ}</button>` : ''}</div>` : ''}
-      <span class="vk-bron">Luchtfoto: Beeldmateriaal.nl / PDOK</span>`;
+      <span class="vk-bron"></span>`;
     this.schuif = el.querySelector('.vk-schuif');
     this.tegels = el.querySelector('.vk-tegels');
     this.lagenEl = el.querySelector('.vk-lagen');
@@ -359,6 +395,7 @@ export class Kaart {   /* [20261124v] ook gebruikt door de Veldplanner (kaart me
       if (i.dataset.alt && !i.dataset.f){ i.dataset.f = '1'; i.src = i.dataset.alt; }
       else i.style.visibility = 'hidden';   /* geen beeld: liever leeg dan een kapot-icoon */
     }, true);
+    this.stijlBijwerken(true);
     if (this.interactief) this.bindInteractie();
     if (typeof ResizeObserver !== 'undefined'){
       this._ro = new ResizeObserver(() => { if (this.el.isConnected) this.teken(); else this.opruimen(); });
@@ -366,8 +403,19 @@ export class Kaart {   /* [20261124v] ook gebruikt door de Veldplanner (kaart me
     }
     this.teken();
   }
+  stijlBijwerken(eerst){
+    const tek = kaartStijl() === 'tekening', was = this.tek;
+    this.tek = tek;
+    this.el.classList.toggle('vk-tek', tek);
+    this.el.querySelector('.vk-bron').textContent = tek ? 'Tekening: Cluppie' : 'Luchtfoto: Beeldmateriaal.nl / PDOK';
+    const k = this.el.querySelector('[data-vk-stijl]');
+    if (k){ k.innerHTML = tek ? I_LUCHT : I_TEKEN; k.setAttribute('aria-label', tek ? 'Toon de luchtfoto' : 'Toon als tekening'); k.title = tek ? 'Luchtfoto' : 'Tekening'; }
+    if (!eerst && was !== tek) this.teken();
+  }
   bindInteractie(){
     const el = this.el;
+    const sk = el.querySelector('[data-vk-stijl]');
+    if (sk) sk.onclick = e => { e.stopPropagation(); zetKaartStijl(this.tek ? 'foto' : 'tekening'); };
     el.querySelectorAll('[data-vk-z]').forEach(b => b.onclick = e => { e.stopPropagation(); this.zoom(+b.dataset.vkZ); });
     const mijKnop = el.querySelector('[data-vk-mij]');
     if (mijKnop) mijKnop.onclick = e => { e.stopPropagation(); this.wisselLocatie(mijKnop); };
@@ -486,6 +534,7 @@ export class Kaart {   /* [20261124v] ook gebruikt door de Veldplanner (kaart me
     const c = naarPx(this.lat, this.lon, this.z);
     this.x0 = c.x - W / 2; this.y0 = c.y - H / 2;
     const max = 2 ** this.z, t = [];
+    if (this.tek){ this.tegels.innerHTML = omgevingSvg(this, W, H); this.el.style.setProperty('--vk-m', `${this.m2px(1)}px`); this.tekenLagen(); return; }
     for (let tx = Math.floor(this.x0 / TS); tx <= Math.floor((this.x0 + W) / TS); tx++){
       for (let ty = Math.floor(this.y0 / TS); ty <= Math.floor((this.y0 + H) / TS); ty++){
         if (ty < 0 || ty >= max) continue;
@@ -496,7 +545,12 @@ export class Kaart {   /* [20261124v] ook gebruikt door de Veldplanner (kaart me
     this.tegels.innerHTML = t.join('');
     this.tekenLagen();
   }
-  tekenLagen(){ if (this.x0 != null) this.lagenEl.innerHTML = this.lagen(this) + this.mijHtml(); }
+  tekenLagen(){
+    if (this.x0 == null) return;
+    let h = this.lagen(this);
+    if (this.tek && sportVeld().kaart?.cirkel === 18) h = h.replaceAll('<i class="vk-l-rand"></i>', '<i class="vk-l-rand"></i>' + TEK_LIJNEN);   /* doelen en zestienmeters alleen bij voetbal */
+    this.lagenEl.innerHTML = h + this.mijHtml();
+  }
   /* ---- mijn plek (alleen op het toestel, niets wordt opgeslagen) ---- */
   mijHtml(){
     if (!this.mij) return '';
@@ -717,7 +771,7 @@ export async function openVeldkaart(i){
   if (!body.isConnected) return;
   const vak = body.querySelector('[data-vk-kaart]'), onder = body.querySelector('[data-vk-onder]');
   if (b.midden){
-    try { new Kaart(vak, { ...b.midden, z:b.zoom, interactief:true, locatieKnop:true, lagen:wedstrijdLagen(b, false, niveauVanVorm(i.vorm)) }); }
+    try { new Kaart(vak, { ...b.midden, z:b.zoom, interactief:true, locatieKnop:true, omgeving:b.park?.omgeving?.vormen, lagen:wedstrijdLagen(b, false, niveauVanVorm(i.vorm)) }); }
     catch (e){ console.error('[veldkaart] kaart tekenen', e); vak.innerHTML = `<p class="vk-let">${ico('action-warning', 18)}<span>Kaart tekenen mislukt: ${esc(e?.message || 'onbekende fout')}</span></p>`; }
   }
   else if (i.thuis) vak.outerHTML = `<p class="vk-let">${ico('action-info', 18)}<span>Het eigen sportpark staat nog niet op de kaart.${admin ? '' : ' Clubbeheer kan het instellen bij Club → Sportpark.'}</span></p>`;
@@ -768,7 +822,7 @@ export async function vulVeldkaarten(root){
     if (!el.isConnected) continue;
     const vak = el.querySelector('[data-vk-klein]'), onder = el.querySelector('[data-vk-klein-onder]');
     if (!b.midden){ el.remove(); continue; }
-    new Kaart(vak, { ...b.midden, z:b.zoom, lagen:wedstrijdLagen(b, true, niveauVanVorm(i.vorm)) });
+    new Kaart(vak, { ...b.midden, z:b.zoom, omgeving:b.park?.omgeving?.vormen, lagen:wedstrijdLagen(b, true, niveauVanVorm(i.vorm)) });
     const admin = await isClubAdmin(i.club);
     onder.innerHTML = `${bronHtml(i, b, admin)}${veldindelingMist(b) ? fotoOproepHtml() : ''}
       <div class="vk-acties"><button type="button" class="knop vol licht" data-vk="${esc(JSON.stringify(i))}">${I_GROOT}Vergroot de kaart</button></div>
@@ -1126,6 +1180,24 @@ function startNummeren(){
   B.modus = 'nummer'; B.sel = null;
   B.volgende = vrijNummer(1);
 }
+/* ---------- [20261127t] omgeving van het eigen park laten tekenen door AI (functions/sportpark-tekening.js) ---------- */
+async function omgevingTekenen(knop){
+  const b = B;
+  knop.disabled = true; knop.innerHTML = `${ico('action-loading', 20)}AI tekent het park… (± een halve minuut)`;
+  try {
+    const r = await httpsCallable(functions, 'sportparkTekeningAI', { timeout: 180000 })({ clubId: b.club });
+    const snap = await getDoc(parkRef(b.club, 'eigen'));
+    if (B !== b) return;
+    b.park.omgeving = snap.data()?.omgeving || null;
+    if (kaartStijl() !== 'tekening') zetKaartStijl('tekening'); else b.kaart?.teken();
+    meld(`De omgeving is getekend (${r.data?.aantal || 0} vormen). Wissel met de knop op de kaart tussen tekening en luchtfoto.`);
+  } catch (e){
+    console.error('[veldkaart] omgeving tekenen', e);
+    meld(e?.message ? `Tekenen lukte niet: ${e.message}` : 'Tekenen lukte niet. Probeer het zo opnieuw.');
+  }
+  if (B === b && knop.isConnected){ knop.disabled = false; knop.innerHTML = `${I_TEKEN}Omgeving opnieuw tekenen`; }
+}
+
 /* ---------- [20261120g] alle sportparken (eigen + tegenstanders) ---------- */
 async function haalParken(club){
   const snap = await getDocs(collection(db, 'clubs', club, 'sportparken'));
@@ -1239,7 +1311,7 @@ function tekenBeheer(){
         <div class="vk-kaart-groot" data-vk-kaart></div><p class="vk-hint" data-vk-hint></p></div>
       <div class="vk-beheer-zij" data-vk-zij></div></div>`);
   B.kaart = new Kaart(paneel.querySelector('[data-vk-kaart]'), {
-    lat:B.park.lat, lon:B.park.lon, z:B.park.zoom || 17, interactief:true, locatieKnop:true, onTik:tikBeheer, grijp:grijpBeheer,
+    lat:B.park.lat, lon:B.park.lon, z:B.park.zoom || 17, interactief:true, locatieKnop:true, onTik:tikBeheer, grijp:grijpBeheer, omgeving:() => B.park?.omgeving?.vormen,
     lagen:k => veldenLaag(k, B.park.velden, { gekozen:B.sel, greep:true, niveau:B.niveau }) + plekkenLaag(k, B.park.plekken, { gekozen:B.sel, greep:true }),
   });
   paneel.querySelectorAll('[data-vk-niveau]').forEach(b => b.onclick = () => { B.niveau = b.dataset.vkNiveau; B.kaart.tekenLagen(); werkNiveauBij(); });
@@ -1371,6 +1443,7 @@ function tekenZij(){
   zij.innerHTML = `${nummer}${lijst}
     <div class="vk-acties vk-rij">
       <button type="button" class="knop licht" data-vk-osm title="Voetbalvelden uit OpenStreetMap rond het midden van de kaart">${I_HAAL}Velden ophalen</button>
+      ${B.parkId === 'eigen' && B.park.velden.length && (aiAan() || S.club?.platformModules?.ai === true) ? `<button type="button" class="knop licht" data-vk-aiomg title="AI tekent water, bomen, gebouwen en paden rond de velden, voor de kaartstijl Tekening">${I_TEKEN}${B.park.omgeving?.vormen?.length ? 'Omgeving opnieuw tekenen' : 'Omgeving tekenen met AI'}</button>` : ''}
       ${B.park.velden.length ? `<button type="button" class="knop licht${B.modus === 'nummer' ? ' aan' : ''}" data-vk-nummer>${ico('admin-edit', 20)}Nummers aantikken</button>` : ''}</div>
     <div class="vk-acties vk-rij">
       <button type="button" class="knop licht${B.modus === 'plaats' ? ' aan' : ''}" data-vk-nieuw>${ico('action-add', 20)}Veld toevoegen</button>
@@ -1386,6 +1459,7 @@ function tekenZij(){
     tekenZij();
   });
   zij.querySelector('[data-vk-osm]').onclick = e => veldenOphalen(e.currentTarget);
+  zij.querySelector('[data-vk-aiomg]')?.addEventListener('click', e => omgevingTekenen(e.currentTarget));
   zij.querySelector('[data-vk-nummer]')?.addEventListener('click', () => { if (B.modus === 'nummer') B.modus = 'kijk'; else startNummeren(); B.kaart.tekenLagen(); tekenZij(); });
   zij.querySelector('[data-vk-nrklaar]')?.addEventListener('click', () => { B.modus = 'kijk'; tekenZij(); });
   zij.querySelector('[data-vk-nropnieuw]')?.addEventListener('click', () => { if (!confirm('Alle veldnummers wissen en opnieuw beginnen bij Veld 1?')) return; for (const v of B.park.velden) v.naam = '?'; B.volgende = 1; B.sel = null; B.kaart.tekenLagen(); tekenZij(); });

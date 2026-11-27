@@ -20,8 +20,12 @@ export const STANDAARD_VAKKEN = [
 ];
 export const NODIG = { kwart: .25, half: .5, heel: 1 };
 export const MAAT_NAAM = { kwart: 'kwart veld', half: 'half veld', heel: 'heel veld' };
-export const KK_VOOR = 15;                       // kleedkamer open vóór de training
-export const KK_NA = 20;                         // en na de training
+export let KK_VOOR = 15;                         // kleedkamer open vóór de training (standaard, instelbaar per club)
+export let KK_NA = 20;                           // en na de training
+/* [20261127t] De club stelt zelf in hoe lang de kleedkamer voor en na de training van het team is
+   (veldplanner/instellingen.kkVoor en kkNa). Alles hieronder rekent met deze waarden. */
+export const schoonMinuten = (v, std) => { const n = Math.round(Number(v)); return Number.isFinite(n) && n >= 0 && n <= 60 ? n : std; };
+export function zetKleedTijden(voor, na){ KK_VOOR = schoonMinuten(voor, 15); KK_NA = schoonMinuten(na, 20); }
 export const ONDER_TOT = 19 * 60 + 30;           // onderbouw liefst om 19:30 klaar
 export const DONKER = 17 * 60;                   // in de winter om 17:00 donker
 export const MAX_EIGEN = 12;                     // eigen vakken per veld
@@ -334,3 +338,80 @@ export function dagBereik(rooster, dag){
 }
 /* Ligt punt (fx, fy) (fractie van het veld) in vak k? */
 export const inVak = (k, fx, fy) => fx >= k.x - EPS && fx <= k.x + k.w + EPS && fy >= k.y - EPS && fy <= k.y + k.h + EPS;
+
+/* ---------- per team: veldmaat, duur en aantal trainingen [20261127t] ----------
+   veldplanner/instellingen.teams = { teamId: { maat: 'heel'|'half'|'kwart', duur: minuten, per: keer per week } }.
+   Alleen wat de club zelf instelt; zonder instelling rekent de planner het uit de categorie. */
+export function schoonTeamInstellingen(obj){
+  const uit = {};
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return uit;
+  for (const [id, v] of Object.entries(obj).slice(0, 400)){
+    if (!/^[A-Za-z0-9_-]{1,60}$/.test(id) || !v || typeof v !== 'object') continue;
+    const x = {};
+    if (NODIG[v.maat]) x.maat = v.maat;
+    const d = Math.round(Number(v.duur) / 5) * 5; if (d >= 30 && d <= 180) x.duur = d;
+    const p = Math.round(Number(v.per)); if (Number.isFinite(p) && p >= 0 && p <= 7 && v.per !== '' && v.per != null) x.per = p;
+    if (Object.keys(x).length) uit[id] = x;
+  }
+  return uit;
+}
+
+/* ---------- bestaande planning inlezen [20261127t] ----------
+   Tekst uit een PDF, Word- of Excelbestand (of geplakt) → trainingen. Eén training per regel of tabelrij:
+   een dag (of een kopregel met alleen de dag), een tijd ("18:00-19:15", of alleen het begin), een team, een veld,
+   eventueel een deel ("half a", "kwart b voor", "a voor") en kleedkamers ("kk 3", "kleedkamer 2 en 4").
+   ctx: { teams: [{id, naam, duur}], velden: [{id, naam}], kleedkamers: [{id, naam}] }
+   Uit: { gevonden: [{ team, dag, start, eind, veld, vak|null, kk: [], regel }], overgeslagen: [regel] } */
+const DAGWOORD = { maandag: 1, ma: 1, dinsdag: 2, di: 2, woensdag: 3, wo: 3, donderdag: 4, do: 4, vrijdag: 5, vr: 5, zaterdag: 6, za: 6, zondag: 7, zo: 7 };
+const teamSleutel = s => String(s || '').toLowerCase().replace(/[\s_.]+/g, '').replace(/^jo(?=\d)/, 'o').replace(/–/g, '-');
+const kolomSoort = c => { const l = c.toLowerCase();
+  return /^(kleedkamers?|kleedk\.?|kk|kl\.?)$/.test(l) ? 'kk' : /^(veld|velden|veldnr\.?)$/.test(l) ? 'veld' : /^(dag|weekdag)$/.test(l) ? 'dag'
+    : /^(team|teams|elftal)$/.test(l) ? 'team' : /^(tijd|van|tot|begin|eind|start)$/.test(l) ? 'tijd' : /^(deel|veldeel|veldmaat|vak)$/.test(l) ? 'deel' : null; };
+export function leesPlanning(tekst, ctx){
+  const gevonden = [], overgeslagen = [];
+  const teams = (ctx.teams || []).map(t => ({ ...t, sl: teamSleutel(t.naam) })).filter(t => t.sl).sort((a, b) => b.sl.length - a.sl.length);
+  const velden = ctx.velden || [], kks = ctx.kleedkamers || [];
+  let dagNu = null, kolommen = null;
+  for (let ruw of String(tekst || '').replace(/\r/g, '').split('\n')){
+    /* tabel met kopregel (Excel/Word/CSV): losse getallen onder "Kleedkamer" of "Veld" krijgen dat woord erbij */
+    if (ruw.includes('\t')){
+      const cellen = ruw.split('\t').map(c => c.trim()), soorten = cellen.map(kolomSoort);
+      if (soorten.filter(Boolean).length >= 2 && !/\d[:.]\d{2}/.test(ruw)){ kolommen = soorten; continue; }
+      if (kolommen) ruw = cellen.map((c, i) => kolommen[i] === 'kk' && /^\d/.test(c) ? `kk ${c}` : kolommen[i] === 'veld' && /^\d{1,2}\s*[ab]?$/i.test(c) ? `veld ${c}` : kolommen[i] === 'dag' && !c ? '' : c).join('\t');
+    } else kolommen = null;
+    const regel = ruw.replace(/\s+/g, ' ').trim();
+    if (!regel) continue;
+    const laag = regel.toLowerCase();
+    const dagM = laag.match(/\b(maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag|ma|di|wo|do|vr|za|zo)\b\.?/);
+    const tijd = laag.match(/\b(\d{1,2})[:.](\d{2})\s*(?:u(?:ur)?\s*)?(?:-|–|—|tot|t\/m)\s*(\d{1,2})[:.](\d{2})\b/) || laag.match(/\b(\d{1,2})[:.](\d{2})\b/);
+    /* team: woorden van de regel tegen de teamnamen (JO11-2 = O11-2) */
+    const woorden = laag.split(/[\s|,;\t()/]+/).map(teamSleutel).filter(Boolean);
+    const team = teams.find(t => woorden.includes(t.sl)) || teams.find(t => t.sl.length >= 3 && teamSleutel(laag).includes(t.sl));
+    if (dagM && !tijd && !team){ dagNu = DAGWOORD[dagM[1]]; continue; }      // kopregel "Maandag"
+    if (!tijd || !team){ if (tijd || team) overgeslagen.push(regel); continue; }
+    const dag = dagM ? DAGWOORD[dagM[1]] : dagNu;
+    if (!dag){ overgeslagen.push(regel); continue; }
+    const start = +tijd[1] * 60 + +tijd[2];
+    let eind = tijd[3] !== undefined ? +tijd[3] * 60 + +tijd[4] : start + (team.duur || 75);
+    if (!(start >= 6 * 60 && eind > start && eind <= 24 * 60)){ overgeslagen.push(regel); continue; }
+    /* veld: "veld 2", "v2", of de naam van een veld */
+    const vnr = laag.match(/\b(?:veld|v)\s*(\d{1,2})\b/);
+    const veld = (vnr && velden.find(v => (String(v.naam).match(/\d+/) || [])[0] === vnr[1]))
+      || velden.find(v => v.naam && laag.includes(String(v.naam).toLowerCase()));
+    if (!veld){ overgeslagen.push(regel); continue; }
+    /* deel van het veld */
+    let vak = null;
+    const kw = laag.match(/\b(?:kwart\s*)?([ab])\s*[-.]?\s*(voor|achter)\b/);
+    const kw2 = !kw && laag.match(/\bkwart\s*([ab])\b/);
+    if (kw) vak = kw[1] + (kw[2] === 'voor' ? 'v' : 'a');
+    else if (kw2) vak = kw2[1] + 'v';
+    else if (/\bheel\b|\bhele veld\b|\bheel veld\b/.test(laag)) vak = 'h';
+    else { const h = laag.match(/\b(?:half|helft)\s*([ab])\b/) || laag.match(/\b(?:veld|v)\s*\d{1,2}\s*([ab])\b/) || laag.match(/\b\d{1,2}([ab])\b/); if (h) vak = h[1]; }
+    /* kleedkamers: "kk 3", "kleedkamer 2 en 4", "kl. 1" */
+    const kk = [];
+    for (const m of laag.matchAll(/\b(?:kk|kleedkamers?|kleedk\.?|kl\.?)\s*((?:\d{1,2}\s*(?:,|en|&|\/|\+)?\s*)+)/g))
+      for (const n of m[1].match(/\d{1,2}/g) || []){ const k = kks.find(x => (String(x.naam).match(/\d+/) || [])[0] === n); if (k && !kk.includes(k.id)) kk.push(k.id); }
+    gevonden.push({ team: team.id, dag, start, eind, veld: veld.id, vak, kk: kk.slice(0, 4), regel });
+  }
+  return { gevonden, overgeslagen };
+}
