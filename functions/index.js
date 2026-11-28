@@ -1382,7 +1382,7 @@ async function pasAfgelastToe(db, teamId, { inProgramma, afgelast }){
     const kandidaten = bestaand.filter(w => (w.sportlinkWeg === true || wordtWeg.has(w.id)) && w.status !== 'afgelast'
       && !inProgramma.has(String(w.sportlinkCode)) && !afgelast.has(String(w.sportlinkCode)));
     if (kandidaten.length){
-      const aantalSpelers = (await db.collection(`teams/${teamId}/spelers`).get()).size;
+      const aantalSpelers = (await db.collection(`teams/${teamId}/spelers`).get()).docs.filter(d => !(d.data() || {}).gearchiveerd).length;   // gearchiveerde spelers staan nooit in een selectie
       for (const w of kandidaten) if (slh.isLegeWedstrijd(w, aantalSpelers)) weg.add(w.id);
     }
   }
