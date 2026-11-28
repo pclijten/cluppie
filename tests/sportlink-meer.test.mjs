@@ -147,7 +147,7 @@ ok('lege wedstrijd: alleen sync-velden en lege standaardwaarden', () => {
   assert.equal(h.isLegeWedstrijd({ ...leeg, aanvoerders: { 1: 'a' } }, 3), false);
   assert.equal(h.isLegeWedstrijd({ ...leeg, afwezigRedenen: { a: 'ziek' } }, 3), false);
   // [20261130s] velden van de oude ASV'33-sync tellen niet als ingevuld; een uitslag of afgelasting wel
-  const oud = { klasse: '3e klasse', locatie: 'Sportpark', slVeld: '2', plaats: 'Asten', slKleedkamer: '4', seizoen: "2026/'27", slVerzameltijd: '08:15', slCompetitie: 'regulier', slStatus: 'Te spelen' };
+  const oud = { klasse: '3e klasse', locatie: 'Sportpark', slVeld: '2', plaats: 'Asten', slKleedkamer: '4', seizoen: "2026/'27", slVerzameltijd: '08:15', slCompetitie: 'regulier', slStatus: 'Te spelen', slAccommodatie: 'Sportpark', slFormulier: 'x', slAfgelastGemeld: 1 };
   assert.equal(h.isLegeWedstrijd({ ...leeg, ...oud }, 3), true);
   assert.equal(h.isLegeWedstrijd({ ...leeg, ...oud, sportlinkUitslag: { voor: 1, tegen: 0 } }, 3), false);
   assert.equal(h.isLegeWedstrijd({ ...leeg, ...oud, slStatus: 'Afgelast' }, 3), false);
