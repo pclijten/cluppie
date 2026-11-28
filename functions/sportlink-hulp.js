@@ -229,7 +229,9 @@ const LEEG_VELDEN = new Set(['id', 'datum', 'aftrap', 'tegenstander', 'thuis', '
   /* [20261130s] velden die de sync van de oude ASV'33-app schreef; die zijn met de verhuizing meegekomen.
      Zonder deze bleef bij ASV'33 elke oude wedstrijd staan. Een uitslag (sportlinkUitslag) hoort hier niet bij. */
   'klasse', 'locatie', 'slVeld', 'plaats', 'slKleedkamer', 'seizoen', 'slVerzameltijd', 'slVertrektijd', 'slRijders',
-  'slScheidsrechter', 'slKleedkamerScheids', 'slStatus', 'slCompetitie', 'slCompetitieNaam', 'slNv', 'slNs']);
+  'slScheidsrechter', 'slKleedkamerScheids', 'slStatus', 'slCompetitie', 'slCompetitieNaam', 'slNv', 'slNs',
+  /* [20261130t] live nagekeken bij ASV'33 (28-11-2026): deze drie stonden ook op de oude wedstrijden */
+  'slAccommodatie', 'slFormulier', 'slAfgelastGemeld']);
 const leegObj = o => o == null || (typeof o === 'object' && !Array.isArray(o) && !Object.keys(o).length);
 const leegLijst = a => a == null || (Array.isArray(a) && !a.length);
 function isLegeWedstrijd(w, aantalSpelers = 0){
