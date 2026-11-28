@@ -218,6 +218,36 @@ function afgelastPlan({ bestaand = [], inProgramma = null, afgelast = new Map(),
   return uit;
 }
 
+/* [20261130r] Is aan deze wedstrijd nog niets ingevuld? Dan mag de sync hem weggooien zodra hij niet meer in
+   Sportlink staat (team in een andere competitie ingedeeld). Bewust streng: alleen de velden die de sync zelf
+   schrijft en de lege standaardwaarden die de app bij het openen van een wedstrijd invult. Eén onbekend veld
+   (eigen tijden, doel, verslag, uitslag, presentie, …) en de wedstrijd blijft staan.
+     aantalSpelers: aantal spelers in het team; een selectie met minder spelers is door de coach aangepast. */
+const LEEG_VELDEN = new Set(['id', 'datum', 'aftrap', 'tegenstander', 'thuis', 'type', 'bron', 'sportlinkCode', 'competitie',
+  'competitiesoort', 'info', 'sportlinkSync', 'sportlinkWeg', 'format', 'periodes', 'kwartduur', 'formatie', 'kwarten',
+  'aanvoerders', 'goals', 'kaarten', 'selectie', 'leenErbij', 'opzetGedaan']);
+const leegObj = o => o == null || (typeof o === 'object' && !Array.isArray(o) && !Object.keys(o).length);
+const leegLijst = a => a == null || (Array.isArray(a) && !a.length);
+function isLegeWedstrijd(w, aantalSpelers = 0){
+  if (!w || w.bron !== 'sportlink') return false;
+  for (const k of Object.keys(w)) if (!LEEG_VELDEN.has(k)) return false;
+  if (!leegLijst(w.goals) || !leegLijst(w.kaarten) || !leegObj(w.aanvoerders)) return false;
+  if (w.kwarten != null){
+    if (typeof w.kwarten !== 'object' || Array.isArray(w.kwarten)) return false;
+    for (const k of Object.values(w.kwarten)){
+      if (!k || typeof k !== 'object') return false;
+      for (const veld of Object.keys(k)) if (!['lineup', 'events', 'plan', 'correcties', 'klok', 'formatie'].includes(veld)) return false;
+      if (!leegObj(k.lineup) || !leegLijst(k.events) || !leegLijst(k.plan) || !leegObj(k.correcties)) return false;
+      if (k.klok && (k.klok.running || Number(k.klok.base) > 0 || Number(k.klok.start) > 0)) return false;
+    }
+  }
+  if (w.selectie != null){
+    if (!Array.isArray(w.selectie)) return false;
+    if (w.selectie.length && !(aantalSpelers > 0 && w.selectie.length >= aantalSpelers)) return false;
+  }
+  return true;
+}
+
 /* Regel uit het afgelastingen-endpoint → { code, datum, tijd, thuisCode, uitCode, wedstrijd } */
 function afgelastRegel(r){
   const code = schoon(r?.wedstrijdcode, 20);
@@ -335,5 +365,5 @@ module.exports = {
   clubNaamUitTeams, gidsUitRegels, gidsSamenvoegen,
   spelersUitIndeling,
   schoon, netjesPlaats, kleurUitTekst, filterClubgegevens, soortVan, poulesPerTeam, bekerPoule,
-  infoUitRegel, periodeRijen, periodeNummers, clubagendaUit, accommodatieSleutel, accommodatieUit, afgelastPlan, afgelastRegel, inAfgelastVenster,
+  infoUitRegel, periodeRijen, periodeNummers, clubagendaUit, accommodatieSleutel, accommodatieUit, afgelastPlan, isLegeWedstrijd, afgelastRegel, inAfgelastVenster,
 };

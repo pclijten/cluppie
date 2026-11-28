@@ -85,6 +85,14 @@ function zetKlaar(){
   store.set('teams/t13', { club: 'c1', naam: 'O13-1', leden: {} });
   // al bestaande wedstrijd die niet meer in Sportlink staat, en een met opstelling + eigen verzameltijd
   store.set('teams/t11/wedstrijden/sl_1009', { datum: plus(9), bron: 'sportlink', sportlinkCode: '1009', tegenstander: 'Weg FC' });
+  // [20261130r] niet meer in Sportlink: geopend maar leeg (mag weg) en met een opstelling (blijft)
+  const kwart = () => ({ lineup: {}, events: [], plan: [], correcties: {}, klok: { base: 0, running: false, start: 0 }, formatie: '2-1-2' });
+  store.set('teams/t11/spelers/s1', { naam: 'A' }); store.set('teams/t11/spelers/s2', { naam: 'B' });
+  store.set('teams/t11/wedstrijden/sl_1090', { datum: plus(10), bron: 'sportlink', sportlinkCode: '1090', tegenstander: 'Leeg FC', type: 'normaal', thuis: true,
+    format: '6', periodes: 2, kwartduur: 20, formatie: '2-1-2', kwarten: { 1: kwart(), 2: kwart() }, aanvoerders: {}, goals: [], kaarten: [], selectie: ['s1', 's2'], opzetGedaan: true });
+  store.set('teams/t11/wedstrijden/sl_1011', { datum: plus(11), bron: 'sportlink', sportlinkCode: '1011', tegenstander: 'Vol FC',
+    kwarten: { 1: { ...kwart(), lineup: { k: 's1' } } }, selectie: ['s1', 's2'] });
+  store.set('teams/t11/wedstrijden/sl_1012', { datum: plus(12), bron: 'sportlink', sportlinkCode: '1012', tegenstander: 'Afwezig FC', selectie: ['s1'] });
   store.set('teams/t11/wedstrijden/sl_1002', { datum: plus(13), bron: 'sportlink', sportlinkCode: '1002', infoEigen: { verzamel: '08:00' }, formatie: '1-3-3' });
 }
 
@@ -113,8 +121,9 @@ function zetKlaar(){
   ok(w2.info.verzamel === '08:15' && !w2.info.adres, 'thuis: Sportlink-verzameltijd, geen adres opgehaald');
   ok(doc('teams/t11/wedstrijden/sl_1003').competitiesoort === 'oefen', 'oefenwedstrijd herkend');
 
-  const weg = doc('teams/t11/wedstrijden/sl_1009');
-  ok(weg && weg.sportlinkWeg === true, 'verdwenen wedstrijd gemarkeerd, niet verwijderd');
+  ok(!doc('teams/t11/wedstrijden/sl_1009') && !doc('teams/t11/wedstrijden/sl_1090'), 'verdwenen wedstrijd waar niets is ingevuld: verwijderd (ook als hij al eens geopend is)');
+  ok(doc('teams/t11/wedstrijden/sl_1011')?.sportlinkWeg === true, 'verdwenen wedstrijd met opstelling: gemarkeerd, niet verwijderd');
+  ok(doc('teams/t11/wedstrijden/sl_1012')?.sportlinkWeg === true, 'verdwenen wedstrijd met aangepaste selectie: gemarkeerd, niet verwijderd');
 
   const beker = doc('teams/t11/poule/beker');
   ok(beker && beker.poulecode === '905' && beker.stand[0].eigen === true, 'bekerstand geschreven met eigen team gemarkeerd');
@@ -142,7 +151,7 @@ function zetKlaar(){
   aanroepen.length = 0;
   await sync();
   ok(!doc('teams/t11/wedstrijden/sl_1001').status && !doc('teams/t11/wedstrijden/sl_1001').afgelastOp, 'afgelasting ingetrokken → status weg');
-  ok(!doc('teams/t11/wedstrijden/sl_1009').sportlinkWeg, 'wedstrijd weer in Sportlink → markering weg');
+  ok(doc('teams/t11/wedstrijden/sl_1009') && !doc('teams/t11/wedstrijden/sl_1009').sportlinkWeg, 'wedstrijd weer in Sportlink → opnieuw aangemaakt, zonder markering');
   ok(!aanroepen.includes('wedstrijd-accommodatie'), 'accommodatie niet opnieuw opgevraagd (cache)');
   ok(doc('clubs/c1/geheim/_afgelast').rijen.length === 0, 'overzicht leeg');
 
