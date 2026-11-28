@@ -133,6 +133,21 @@ ok('vandaag met `nu`: alleen een wedstrijd die nog moet beginnen', () => {
   const bestaand = [w('sl_5', '2026-10-12', { aftrap: '09:00' }), w('sl_6', '2026-10-12', { aftrap: '14:30' }), w('sl_7', '2026-10-12')];
   assert.deepEqual(h.afgelastPlan({ ...basis, nu: '10:00', bestaand, inProgramma: new Set(['9']), afgelast: new Map() }), [['sl_6', { sportlinkWeg: true }]]);
 });
+ok('lege wedstrijd: alleen sync-velden en lege standaardwaarden', () => {
+  const kw = () => ({ lineup: {}, events: [], plan: [], correcties: {}, klok: { base: 0, running: false, start: 0 }, formatie: '2-1-2' });
+  const leeg = { id: 'sl_1', bron: 'sportlink', sportlinkCode: '1', datum: '2026-12-05', aftrap: '09:00', tegenstander: 'X', thuis: false, type: 'normaal',
+    info: { accommodatie: 'Y' }, format: '6', periodes: 2, kwartduur: 20, formatie: '2-1-2', kwarten: { 1: kw(), 2: kw() }, aanvoerders: {}, goals: [], kaarten: [],
+    selectie: ['a', 'b', 'c'], opzetGedaan: true, sportlinkWeg: true };
+  assert.equal(h.isLegeWedstrijd(leeg, 3), true);
+  assert.equal(h.isLegeWedstrijd({ bron: 'sportlink', datum: '2026-12-05' }), true);
+  assert.equal(h.isLegeWedstrijd({ ...leeg, selectie: ['a', 'b'] }, 3), false);            // speler afgemeld
+  assert.equal(h.isLegeWedstrijd(leeg, 0), false);                                          // aantal spelers onbekend
+  assert.equal(h.isLegeWedstrijd({ ...leeg, kwarten: { 1: { ...kw(), lineup: { k: 'a' } } } }, 3), false);
+  assert.equal(h.isLegeWedstrijd({ ...leeg, infoEigen: { verzamel: '08:00' } }, 3), false);
+  assert.equal(h.isLegeWedstrijd({ ...leeg, aanvoerders: { 1: 'a' } }, 3), false);
+  assert.equal(h.isLegeWedstrijd({ ...leeg, afwezigRedenen: { a: 'ziek' } }, 3), false);
+  assert.equal(h.isLegeWedstrijd({ ...leeg, bron: undefined }, 3), false);                  // eigen wedstrijd van de coach
+});
 ok('programma niet opgehaald → niets als verdwenen markeren', () => {
   assert.deepEqual(h.afgelastPlan({ ...basis, bestaand: [w('sl_2', '2026-10-25')], inProgramma: null, afgelast: new Map() }), []);
 });

@@ -929,7 +929,8 @@ exports.analyseerBeleidsplan = onCall(
    Schrijft (in het formaat dat de app leest):
      clubs/{c}/geheim/_sportlink           → keuzelijst voor de client
      clubs/{c}/geheim/{teamId}             → status: gematcht, laatsteSync, laatsteAantal, laatsteFout, …
-     teams/{t}/wedstrijden/sl_{code}       → merge, dus handmatige velden blijven
+     teams/{t}/wedstrijden/sl_{code}       → merge, dus handmatige velden blijven; een komende wedstrijd die
+                                             uit Sportlink verdwijnt en nog leeg is, wordt verwijderd
      teams/{t}/poule/{stand|uitslagen|programma}  → { rijen:[…] } (Nederlandse veldnamen)
    AVG: alleen club-/wedstrijd-/standdata, geen spelersgegevens.
    =========================================================================== */
@@ -1372,9 +1373,24 @@ async function pasAfgelastToe(db, teamId, { inProgramma, afgelast }){
   const bestaand = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(w => w.bron === 'sportlink' && w.sportlinkCode);
   const nu = new Date().toLocaleTimeString('nl-NL', { timeZone: 'Europe/Amsterdam', hour: '2-digit', minute: '2-digit', hour12: false });
   const plan = slh.afgelastPlan({ bestaand, inProgramma, afgelast, vanaf: vandaag, tot: plusDagen(vandaag, PROGRAMMA_DAGEN - 1), nu });
-  if (!plan.length) return 0;
+  /* [20261130r] Staat een komende wedstrijd niet meer in Sportlink en is er nog niets aan ingevuld? Dan gaat hij weg
+     (Paul, 28-11-2026: team in een andere competitie ingedeeld). Alles waar de coach iets aan deed blijft staan
+     met "Niet in Sportlink". Komt de wedstrijd toch terug in Sportlink, dan maakt de sync hem gewoon opnieuw aan. */
+  const weg = new Set();
+  if (inProgramma){
+    const wordtWeg = new Set(plan.filter(([, p]) => p.sportlinkWeg === true).map(([id]) => id));
+    const kandidaten = bestaand.filter(w => (w.sportlinkWeg === true || wordtWeg.has(w.id)) && w.status !== 'afgelast'
+      && !inProgramma.has(String(w.sportlinkCode)) && !afgelast.has(String(w.sportlinkCode)));
+    if (kandidaten.length){
+      const aantalSpelers = (await db.collection(`teams/${teamId}/spelers`).get()).size;
+      for (const w of kandidaten) if (slh.isLegeWedstrijd(w, aantalSpelers)) weg.add(w.id);
+    }
+  }
+  if (!plan.length && !weg.size) return 0;
   const batch = db.batch();
+  for (const id of weg) batch.delete(db.collection(PADEN.wedstrijden(teamId)).doc(id));
   for (const [id, patch] of plan){
+    if (weg.has(id)) continue;
     const data = {};
     for (const [k, v] of Object.entries(patch)) data[k] = v === null ? FieldValue.delete() : v;
     if (patch.status === 'afgelast') data.afgelastOp = FieldValue.serverTimestamp();
@@ -1382,7 +1398,8 @@ async function pasAfgelastToe(db, teamId, { inProgramma, afgelast }){
     batch.update(db.collection(PADEN.wedstrijden(teamId)).doc(id), data);
   }
   await batch.commit();
-  return plan.length;
+  if (weg.size) console.log(`[sl] team ${teamId}: ${weg.size} lege wedstrijd(en) die niet meer in Sportlink staan verwijderd`);
+  return plan.length + weg.size;
 }
 
 /* Clubscherm "Afgelasten": de komende afgelaste wedstrijden van eigen teams. Alleen clubnamen en tijden. */
