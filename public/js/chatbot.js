@@ -23,16 +23,16 @@
    ============================================================================ */
 
 import { functions, httpsCallable } from './firebase.js?v=20261011g';
-import { S, esc, terugLaag, terugLaagWeg } from './state.js?v=20261130o';
-import { telGebruik } from './tracker.js?v=20261130o';
-import { aiAan } from './clubconfig.js?v=20261130o';
-import { startOnboarding, startOnboardingHoofdstuk, heeftOnboardingHoofdstuk } from './onboarding.js?v=20261130o';
-import { mijnRollen } from './rolkaart.js?v=20261130o';
+import { S, esc, terugLaag, terugLaagWeg } from './state.js?v=20261130p';
+import { telGebruik } from './tracker.js?v=20261130p';
+import { aiAan } from './clubconfig.js?v=20261130p';
+import { startOnboarding, startOnboardingHoofdstuk, heeftOnboardingHoofdstuk } from './onboarding.js?v=20261130p';
+import { mijnRollen } from './rolkaart.js?v=20261130p';
 import { startVragen } from './hulp-rol.js?v=20261122a';
 import { ico } from './icons.js?v=20261127b';
 import { gidsMet, SCHERMEN } from './gidsen-data.js?v=20261130c';
 import { ontleedAntwoord, antwoordHtml, lokaalAntwoord, vragenBijGids } from './chat-antwoord.js?v=20261130c';
-import { gidsOnderdeelAan, schermMag, naarScherm, openGids, htmlStapKaart, pdfUrl, videoUrl, videoKlaar, speelVideo, toonGroot } from './gidsen.js?v=20261130o';
+import { gidsOnderdeelAan, schermMag, naarScherm, openGids, htmlStapKaart, pdfUrl, videoUrl, videoKlaar, speelVideo, toonGroot } from './gidsen.js?v=20261130p';
 
 /* Sessiegeschiedenis — leeft alleen zolang de app open is. */
 let berichten = [];   // [{role:'user'|'assistant', content:'...'}]
@@ -134,7 +134,7 @@ function naarHelp(id, stap){
   if (!S.teamId) return;
   sluitChat();
   if (id) openGids(id, stap); else { S._gids = null; S._gidsStap = null; }
-  import('./teams.js?v=20261130o').then(m => m.zetTeamTab('help'));
+  import('./teams.js?v=20261130p').then(m => m.zetTeamTab('help'));
 }
 function sluitChat(){ document.getElementById('cbAchter')?.classList.remove('open'); terugLaagWeg('chat'); }
 
