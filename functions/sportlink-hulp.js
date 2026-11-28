@@ -225,11 +225,16 @@ function afgelastPlan({ bestaand = [], inProgramma = null, afgelast = new Map(),
      aantalSpelers: aantal spelers in het team; een selectie met minder spelers is door de coach aangepast. */
 const LEEG_VELDEN = new Set(['id', 'datum', 'aftrap', 'tegenstander', 'thuis', 'type', 'bron', 'sportlinkCode', 'competitie',
   'competitiesoort', 'info', 'sportlinkSync', 'sportlinkWeg', 'format', 'periodes', 'kwartduur', 'formatie', 'kwarten',
-  'aanvoerders', 'goals', 'kaarten', 'selectie', 'leenErbij', 'opzetGedaan']);
+  'aanvoerders', 'goals', 'kaarten', 'selectie', 'leenErbij', 'opzetGedaan',
+  /* [20261130s] velden die de sync van de oude ASV'33-app schreef; die zijn met de verhuizing meegekomen.
+     Zonder deze bleef bij ASV'33 elke oude wedstrijd staan. Een uitslag (sportlinkUitslag) hoort hier niet bij. */
+  'klasse', 'locatie', 'slVeld', 'plaats', 'slKleedkamer', 'seizoen', 'slVerzameltijd', 'slVertrektijd', 'slRijders',
+  'slScheidsrechter', 'slKleedkamerScheids', 'slStatus', 'slCompetitie', 'slCompetitieNaam', 'slNv', 'slNs']);
 const leegObj = o => o == null || (typeof o === 'object' && !Array.isArray(o) && !Object.keys(o).length);
 const leegLijst = a => a == null || (Array.isArray(a) && !a.length);
 function isLegeWedstrijd(w, aantalSpelers = 0){
   if (!w || w.bron !== 'sportlink') return false;
+  if (w.status === 'afgelast' || /afgelast/i.test(String(w.slStatus || ''))) return false;   // afgelast blijft altijd staan
   for (const k of Object.keys(w)) if (!LEEG_VELDEN.has(k)) return false;
   if (!leegLijst(w.goals) || !leegLijst(w.kaarten) || !leegObj(w.aanvoerders)) return false;
   if (w.kwarten != null){
