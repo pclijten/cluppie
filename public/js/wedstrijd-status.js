@@ -16,8 +16,10 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 
 export const isAfgelast = w => !!w && w.status === 'afgelast';
 export const isWeg = w => !!w && !isAfgelast(w) && w.sportlinkWeg === true;
-/* Telt mee als komende/eerstvolgende wedstrijd? [20261127] ook een afgelaste: die blijft gewoon staan. */
-export const telMee = w => !!w;
+/* Telt mee als komende/eerstvolgende wedstrijd? [20261127] ook een afgelaste: die blijft gewoon staan.
+   [20261130] Niet: een wedstrijd die niet meer in Sportlink staat (team in een andere competitie ingedeeld).
+   Die blijft in de wedstrijdlijst staan met "Niet in Sportlink", maar is nooit de eerstvolgende. */
+export const telMee = w => !!w && !isWeg(w);
 
 /* "Beker" / "Oefen" vóór de meta-regel. Competitie krijgt niets: dat is de normale situatie. */
 export function soortPill(w){

@@ -10,15 +10,15 @@
      clubs/{id}/seizoensplannen/{planId}/toewijzingen/{teamId}  { planVersie, aantal, overgeslagen, status, door, toegewezenMs }
      trainingen/{id}  — gegenereerd door toewijzen (bron 'seizoensplan', seizoensplanId, teams:[teamId])
    Alle writes merge:true. Rechten zelf staan in de rules; dit scherm toont alleen wat mag. */
-import { S, esc, meld } from './state.js?v=20261130p';
+import { S, esc, meld } from './state.js?v=20261130q';
 /* [20261127s] staat de speelwijze in de clubstandaard uit (Instellingen › AI & modules), dan weegt hij niet mee en verdwijnt hij uit dit scherm */
 const swClub = () => S._modulesStandaard?.speelwijze !== false;
 import { db, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteField, serverTimestamp } from './firebase.js?v=20261011g';
-import { bouwNaam, catLabel, SEIZOEN_FALLBACK, leeftijdVanCategorie, LEERCURVE } from './config.js?v=20261130p';
+import { bouwNaam, catLabel, SEIZOEN_FALLBACK, leeftijdVanCategorie, LEERCURVE } from './config.js?v=20261130q';
 import { BIEB, basisGeladen, laadBasis, vormen, laadBibliotheek } from './bibliotheek.js?v=20261127y';
-import { MODELLEN, ACCENTEN, beschikbareThemas, maandagVan, standaardVrij, weekKalender, seizoenStartJaar } from './seizoensplan-logica.js?v=20261130p';
-import { rechtenVoor, magVoorBouw, teamsVoorPlan, planVoorTeam, trainingDocs, uitrolPlan, spelersVoorPlanner, duurVoorLeeftijd, JEUGDBOUWEN } from './seizoensplan-club.js?v=20261130p';
-import { bestaandeTrainingen, voerUit } from './seizoensplan-trainingen.js?v=20261130p';
+import { MODELLEN, ACCENTEN, beschikbareThemas, maandagVan, standaardVrij, weekKalender, seizoenStartJaar } from './seizoensplan-logica.js?v=20261130q';
+import { rechtenVoor, magVoorBouw, teamsVoorPlan, planVoorTeam, trainingDocs, uitrolPlan, spelersVoorPlanner, duurVoorLeeftijd, JEUGDBOUWEN } from './seizoensplan-club.js?v=20261130q';
+import { bestaandeTrainingen, voerUit } from './seizoensplan-trainingen.js?v=20261130q';
 /* [20261116h] de speelwijze van de club weegt mee in het plan (momentopname in params.speelstijl) */
 import { speelwijzeVan, stijlVoorPlan, dekking, principeVoorThema } from './speelwijze-logica.js?v=20261127p';
 import { htmlDekking, htmlPrincipeChip } from './speelwijze-html.js?v=20261127p';
