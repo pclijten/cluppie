@@ -5,7 +5,7 @@
    bewerken, én het uitlenen van een speler aan een ander team binnen de
    club (thematisch dezelfde "speler"-context, vandaar in één bestand). */
 import { teamsOpId } from './teams-ophalen.js?v=20261011g';
-import { beleidsplanNaam, cfg } from './clubconfig.js?v=20261130o';
+import { beleidsplanNaam, cfg } from './clubconfig.js?v=20261130p';
 import {
   db, collection, doc, addDoc, deleteDoc, updateDoc, setDoc,
   getDoc, getDocs, query, where, deleteField,
@@ -13,38 +13,45 @@ import {
 } from './firebase.js?v=20261011g';
 import {
   S, $, $$, esc, meld, datumNL, speler, uurMin, openModal, sluitModal, modAan, isBeheerder
-} from './state.js?v=20261130o';
+} from './state.js?v=20261130p';
 import {
   niveau, niveauKleur, NIVEAUS, SKILLS, skillDomein,
   LEERCURVE, leercurveRelevant, leercurveThema, snelTag, SNEL_TAGS,
   POSITIE_GROEPEN, SEIZOEN_FALLBACK, AFWEZIG_REDENEN, afwezigRedenInfo,
   wisselReden, isToernooi
-} from './config.js?v=20261130o';
-import { analyseWedstrijd, speeltijdReserve, disciplinaireTijd, telaatTijd, persoonlijkeNoemer } from './analyse.js?v=20261130o';
-import { isBouwCoordinator } from './coordinatoren.js?v=20261130o';
-import { magUitlenen } from './uitleen-rechten.js?v=20261130o';
+} from './config.js?v=20261130p';
+import { analyseWedstrijd, speeltijdReserve, disciplinaireTijd, telaatTijd, persoonlijkeNoemer } from './analyse.js?v=20261130p';
+import { isBouwCoordinator } from './coordinatoren.js?v=20261130p';
+import { magUitlenen } from './uitleen-rechten.js?v=20261130p';
 import { leenOmschrijving, leenActief } from './uitleen-regels.js?v=20261127p';
 import { ico } from './icons.js?v=20261127b';
-import { rondesVoorTeam, rondeSpelers, datumKort } from './evaluatierondes.js?v=20261130o';
+import { rondesVoorTeam, rondeSpelers, datumKort } from './evaluatierondes.js?v=20261130p';
 
-import { toonThemaInfo } from './teams-leerlijn.js?v=20261130o';
-import { telGebruik } from './tracker.js?v=20261130o';
+import { toonThemaInfo } from './teams-leerlijn.js?v=20261130p';
+import { telGebruik } from './tracker.js?v=20261130p';
 import { opkomstVoor, teltMee } from './opkomst.js?v=20260922c';
 /* [20261125b] teamoverzicht van een evaluatieronde: alle spelers in één beeld */
-import { teamModel, htmlTeamOverzicht, roKlik } from './ronde-overzicht.js?v=20261130oz';
-import { heeftElftallen, filterOpElftal, elftalPillen } from './elftallen.js?v=20261130o';
-import { bouwVanTeam, eigenBouwenVanTeam } from './bouw-indeling.js?v=20261130o';
+import { teamModel, htmlTeamOverzicht, roKlik } from './ronde-overzicht.js?v=20261130pz';
+import { heeftElftallen, filterOpElftal, elftalPillen } from './elftallen.js?v=20261130p';
+import { bouwVanTeam, eigenBouwenVanTeam } from './bouw-indeling.js?v=20261130p';
 import { htmlVolledigFormulier, koppelVolledigFormulier, koppelInfo, htmlSamenvatting, htmlNaslagLink, htmlSnelAnker,
-  domeinScores, leeftijdTeam, naslagEersteKeer, htmlSpelerRadar, domeinWaardenEcht } from './beoordeling-volledig.js?v=20261130o';
+  domeinScores, leeftijdTeam, naslagEersteKeer, htmlSpelerRadar, domeinWaardenEcht } from './beoordeling-volledig.js?v=20261130p';
 
 /* Cross-module her-render: teams.js importeert functies van hieruit, dus
    deze module mag teams.js niet statisch terug-importeren (circulaire
    import). Dynamic import() binnen de aanroepende functie is het patroon
    dat de rest van de app ook al gebruikt (zie club.js/wedstrijd.js). */
 async function herrenderTeam(){
-  const m = await import('./teams.js?v=20261130o');
+  const m = await import('./teams.js?v=20261130p');
   m.renderTeam();
 }
+
+/* [20261128] Spelerslijst vernieuwd voor de telefoon: samenvatting bovenaan,
+   rustige privacyregel, en de spelers als één lijst met scheidingslijnen
+   (zelfde opbouw als Teamkamer en het startscherm) i.p.v. losse kaarten. */
+const SLOT_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4.6" y="10.4" width="14.8" height="9.8" rx="2.4"/><path d="M8 10.4V8a4 4 0 0 1 8 0v2.4"/><circle cx="12" cy="15.2" r="1.4" fill="currentColor" stroke="none"/></svg>';
+const PRULLENBAK_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5.4 7.4h13.2"/><path d="M7.4 7.4 8.3 20h7.4l.9-12.6"/><path d="M9.6 4.4h4.8l.6 3H9z"/><path d="M10.6 11v5.4M13.4 11v5.4"/></svg>';
+const spPijl = () => `<span class="sp-pijl" aria-hidden="true">${ico('navigation-forward', 18)}</span>`;
 
 export function htmlSpelers(){
   // laatste snelle beoordeling per speler → kleurstip
@@ -58,6 +65,74 @@ export function htmlSpelers(){
     return ((p?.leerpunten)||[]).filter(l => !l.klaar).length + ((p?._bronLeerpunten)||[]).length;
   };
   const evalAan = modAan('evaluaties');
+  const eigen = S.spelers.filter(p => !p._ingeleend);
+
+  const spelerRij = (p, ingeleend) => {
+    const b = laatsteSnel[p.id];
+    const stip = !evalAan ? ''
+               : b ? `<span class="beoordeel-stip" style="background:${niveauKleur(b.niveau)}" title="Laatste: ${esc(niveau(b.niveau)?.label||'')}"></span>`
+                   : `<span class="beoordeel-stip leeg" title="Nog niet beoordeeld"></span>`;
+    const lp = openLeerpunten(p.id);
+    const heeftNotitie = !!(p.notitie && p.notitie.trim());
+    const pos = meestGespeeldePositie(p);
+    // Subregel onder de naam: positie, herkomst (ingeleend) en/of uitgeleend-aan.
+    // Een uitgeleende speler blijft gewoon opstelbaar bij ons — het label maakt
+    // alleen zichtbaar dat hij ook elders speelt.
+    const subDelen = [];
+    if (pos) subDelen.push(esc(pos));
+    if (ingeleend) subDelen.push((p._gast ? `gast, gekoppeld aan uitleen van ${esc(p._bronTeamNaam||'ander team')}` : `ingeleend van ${esc(p._bronTeamNaam||'ander team')}`) + (p._leen?.soort ? ` · ${esc(leenOmschrijving(p._leen))}` : ''));
+    if (p._uitgeleendAan) subDelen.push(`⇄ ook bij ${esc(p._uitgeleendAan)}` + (p._leningenUit?.[0]?.soort ? ` · ${esc(leenOmschrijving(p._leningenUit[0]))}` : ''));
+    const sub = subDelen.length ? `<span class="sp-sub">${subDelen.join('<span class="sp-punt" aria-hidden="true">·</span>')}</span>` : '';
+    return `
+      <button class="sp-rij" data-open-profiel="${p.id}">
+        <span class="sp-nr${ingeleend ? ' in' : ''}">${esc(p.nummer ?? '·')}</span>
+        <span class="sp-naam"><b>${esc(p.naam)}</b>${sub}</span>
+        <span class="sp-tekens">
+          ${lp ? `<span class="sp-chip" title="${lp} open leerpunt${lp===1?'':'en'}">${lp} leerpunt${lp===1?'':'en'}</span>` : ''}
+          ${heeftNotitie ? `<span class="notitie-vlag" title="Heeft een coach-notitie">!</span>` : ''}
+          ${p._uitgeleendAan ? `<span class="sp-chip klik" data-uitleen-terug="${p._leenIdUit}" title="Terughalen">⇄ terug</span>` : ''}
+          ${stip}
+        </span>
+        ${spPijl()}
+      </button>`;
+  };
+
+  // Samenvatting: alleen wat de coach in één blik wil weten.
+  const beoordeeld = eigen.filter(p => laatsteSnel[p.id]).length;
+  const lpTotaal = eigen.reduce((n, p) => n + openLeerpunten(p.id), 0);
+  const samen = eigen.length ? `
+    <div class="sp-samen">
+      <div><b>${eigen.length}</b><span>in selectie</span></div>
+      ${evalAan ? `<div><b>${beoordeeld}<small>/${eigen.length}</small></b><span>beoordeeld</span></div>
+      <div><b>${lpTotaal}</b><span>open leerpunt${lpTotaal===1?'':'en'}</span></div>` : ''}
+    </div>` : '';
+
+  let lijst = `
+    <h2 class="sp-groepkop">Selectie<span>${eigen.length} speler${eigen.length===1?'':'s'}</span></h2>
+    ${eigen.length
+      ? `<div class="sp-lijst">${eigen.map(p => spelerRij(p, false)).join('')}</div>`
+      : `<div class="kaart leeg">Nog geen spelers.<br>Voeg je selectie toe, naam en rugnummer is genoeg.</div>`}`;
+
+  // Ingeleende spelers (zonder gast-koppeling): draaien volwaardig mee.
+  const in_ = S.spelers.filter(p => p._ingeleend && !p._gast);
+  if (in_.length){
+    lijst += `<h2 class="sp-groepkop">Ingeleend<span>${in_.length}</span></h2>
+      <div class="sp-lijst">${in_.map(p => spelerRij(p, true)).join('')}</div>`;
+  }
+
+  // Gastspelers: nog-te-koppelen placeholders + gekoppelde (echte) gasten.
+  const gasten = S.spelers.filter(p => p._gast);
+  if (gasten.length){
+    lijst += `<h2 class="sp-groepkop">Gastspelers<span>${gasten.length}</span></h2>
+      <div class="sp-lijst">${gasten.map(g => {
+        if (g._gekoppeld) return spelerRij(g, true);   // zelfde rij als 'Ingeleend' → toont ook positie + leerpunten
+        return `<button class="sp-rij" data-open-profiel="${g.id}">
+          <span class="sp-nr gast">${esc(g.nummer ?? '?')}</span>
+          <span class="sp-naam"><b>${esc(g.naam)}</b><span class="sp-sub">gast<span class="sp-punt" aria-hidden="true">·</span>nog te koppelen</span></span>
+          ${spPijl()}
+        </button>`;
+      }).join('')}</div>`;
+  }
 
   return `
     ${evalAan ? `<div class="segment u-mb-md" id="spelersModus" >
@@ -65,83 +140,19 @@ export function htmlSpelers(){
       <button data-modus="snel">${ico('training-favorite', 15)} Snel beoordelen</button>
     </div>` : ''}
 
-    <div class="avg-balk">
-      <span class="slot"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4.6" y="10.4" width="14.8" height="9.8" rx="2.4"/><path d="M8 10.4V8a4 4 0 0 1 8 0v2.4"/><circle cx="12" cy="15.2" r="1.4" fill="currentColor" stroke="none"/></svg></span>
-      <span>Beoordelingen en leerpunten zijn alleen zichtbaar voor coaches van dit team. Spelers en ouders zien deze gegevens niet.</span>
+    ${samen}
+
+    <div class="sp-acties-boven">
+      <button class="knop licht" id="nieuweSpeler">${ico('team-player-add', 18)} Speler toevoegen</button>
+      ${sportlinkGekoppeld() ? `<button class="knop licht" id="spelersSportlink">${ico('football-competition', 18)} Uit Sportlink</button>` : ''}
     </div>
 
-    ${sportlinkGekoppeld() ? `<div class="rij" style="margin-bottom:14px">
-      <button class="knop vol licht" id="nieuweSpeler">+ Speler toevoegen</button>
-      <button class="knop vol licht" id="spelersSportlink">Uit Sportlink</button></div>`
-      : `<button class="knop vol licht u-mb-md" id="nieuweSpeler" >+ Speler toevoegen</button>`}
-    ${(() => {
-      const eigen = S.spelers.filter(p => !p._ingeleend);
-      const spelerRij = (p, ingeleend) => {
-        const b = laatsteSnel[p.id];
-        const stip = !evalAan ? ''
-                   : b ? `<span class="beoordeel-stip" style="background:${niveauKleur(b.niveau)}" title="Laatste: ${esc(niveau(b.niveau)?.label||'')}"></span>`
-                       : `<span class="beoordeel-stip leeg" title="Nog niet beoordeeld"></span>`;
-        const lp = openLeerpunten(p.id);
-        const heeftNotitie = !!(p.notitie && p.notitie.trim());
-        const pos = meestGespeeldePositie(p);
-        // Subregel onder de naam: herkomst (ingeleend), uitgeleend-aan, en/of
-        // positie, subtiel grijs. Een uitgeleende speler blijft gewoon
-        // opstelbaar bij ons — het label maakt alleen zichtbaar dat hij ook
-        // elders speelt, zodat je dat zelf tegen de klok kan houden.
-        const subDelen = [];
-        if (ingeleend) subDelen.push((p._gast ? `gast, gekoppeld aan uitleen van ${esc(p._bronTeamNaam||'ander team')}` : `ingeleend van ${esc(p._bronTeamNaam||'ander team')}`) + (p._leen?.soort ? ` · ${esc(leenOmschrijving(p._leen))}` : ''));
-        if (p._uitgeleendAan) subDelen.push(`⇄ ook bij ${esc(p._uitgeleendAan)}` + (p._leningenUit?.[0]?.soort ? ` · ${esc(leenOmschrijving(p._leningenUit[0]))}` : ''));
-        if (pos) subDelen.push(esc(pos));
-        const sub = subDelen.length
-          ? `<div class="speler-sub">${subDelen.join(', ')}</div>` : '';
-        return `
-        <button class="speler-rij" data-open-profiel="${p.id}">
-          <div class="mini-shirt"${ingeleend?' style="background:var(--ink-2)"':''}>${esc(p.nummer ?? '·')}</div>
-          <div class="n">${esc(p.naam)}${sub}</div>
-          ${lp ? `<span class="chip-info">${lp} leerpunt${lp===1?'':'en'}</span>` : ''}
-          ${heeftNotitie ? `<span class="notitie-vlag" title="Heeft een coach-notitie">!</span>` : ''}
-          ${ingeleend ? `<span class="chip-info u-c-ok" style="background:color-mix(in srgb, var(--ok) 15%, transparent)">ingeleend</span>` : ''}
-          ${p._uitgeleendAan ? `<span class="chip-info" style="cursor:pointer" data-uitleen-terug="${p._leenIdUit}" title="Terughalen">⇄ terug</span>` : ''}
-          ${stip}
-          <span class="pijl">›</span>
-        </button>`;
-      };
+    ${lijst}
 
-      let h = eigen.length
-        ? eigen.map(p => spelerRij(p, false)).join('')
-        : `<div class="kaart leeg">Nog geen spelers.<br>Voeg je selectie toe, naam en rugnummer is genoeg.</div>`;
+    ${S.team?.club ? `<button class="sp-gast-knop" id="nieuweGast">${ico('action-add', 16)} Gastspeler aanmaken</button>` : ''}
 
-      // Ingeleende spelers (zonder gast-koppeling): draaien volwaardig mee.
-      const in_ = S.spelers.filter(p => p._ingeleend && !p._gast);
-      if (in_.length){
-        h += `<div class="sectie-kop">⇄ Ingeleend</div>`;
-        h += in_.map(p => spelerRij(p, true)).join('');
-      }
-
-      // Gastspelers: nog-te-koppelen placeholders + gekoppelde (echte) gasten.
-      const gasten = S.spelers.filter(p => p._gast);
-      if (gasten.length){
-        h += `<div class="sectie-kop"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg> Gastspelers</div>`;
-        h += gasten.map(g => {
-          if (g._gekoppeld) return spelerRij(g, true);   // zelfde rij als 'Ingeleend' → toont ook positie + leerpunten
-          return `<button class="speler-rij" data-open-profiel="${g.id}" style="border-style:dashed">
-            <div class="mini-shirt" style="background:transparent;border:1px dashed var(--ink-2)">${esc(g.nummer ?? '?')}</div>
-            <div class="n">${esc(g.naam)}<div class="u-t-2xs u-zacht" style="font-weight:400">gast<span class="sep" aria-hidden="true"></span>nog te koppelen</div></div>
-            <span class="chip-info u-zacht" style="background:color-mix(in srgb, var(--ink-2) 15%, transparent)">gast</span>
-            <span class="pijl">›</span>
-          </button>`;
-        }).join('');
-      }
-
-      // Gast aanmaken — alleen zinvol binnen een club (uitleen bestaat dan).
-      if (S.team?.club){
-        h += `<button class="knop klein licht u-w-100 u-mt-sm" id="nieuweGast" >+ Gastspeler aanmaken</button>`;
-      }
-      return h;
-    })()}
-
-    <p class="u-t-xs u-zacht u-mt-sm u-lh-ruim">
-      <span class="notitie-vlag inline">!</span> toont een coach-notitie. Het gekleurde stipje toont de laatste snelle beoordeling. Tik op een speler voor het volledige profiel met statistieken, leerlijn en historie.</p>`;
+    <p class="sp-slot">${SLOT_SVG}<span>Beoordelingen, leerpunten en notities zie alleen jij en de andere coaches van dit team. Spelers en ouders zien ze niet.</span></p>
+    ${evalAan ? `<p class="sp-legenda"><span class="beoordeel-stip" style="background:${niveauKleur(4)}"></span> laatste snelle beoordeling<span class="sp-punt" aria-hidden="true">·</span><span class="notitie-vlag inline">!</span> coach-notitie</p>` : ''}`;
 }
 
 /* ==================== BEOORDELINGEN ====================
@@ -474,6 +485,22 @@ function wisselInfoVoorSpeler(w, pid){
   return { label, klasse, reden: redenTekst ? esc(redenTekst) : '' };
 }
 
+/* [20261128] Kop van het spelersprofiel: tactisch-bord-strook (zelfde taal als
+   laadscherm en startscherm) met terugknop, rugnummer, naam en een paar
+   kenmerken. #profielTerug blijft de terugknop (teams.js koppelt hem). */
+function spHeld(p, { meta = '', chips = '', gast = false, ingeleend = false } = {}){
+  const nr = p.nummer != null && p.nummer !== '' ? esc(p.nummer) : (gast ? '?' : '·');
+  return `
+    <div class="sp-held">
+      <button class="sp-held-terug" id="profielTerug" aria-label="Terug naar spelers">${ico('navigation-back', 18)}<span>Spelers</span></button>
+      <div class="sp-held-hoofd">
+        <span class="sp-held-nr${gast ? ' gast' : ingeleend ? ' in' : ''}">${nr}</span>
+        <div class="sp-held-tekst"><h2>${esc(p.naam)}</h2><div class="sp-held-meta">${meta}</div></div>
+      </div>
+      ${chips ? `<div class="sp-held-chips">${chips}</div>` : ''}
+    </div>`;
+}
+
 export function htmlProfiel(){
   const p = speler(S._beoordeelProfiel);
   if (!p) { S._beoordeelProfiel = null; return htmlSpelers(); }
@@ -482,30 +509,25 @@ export function htmlProfiel(){
   if (p._gast && !p._gekoppeld){
     const st = spelerStats(p.id);
     const koppelbaar = (S.uitleningenIn || []).filter(u => !u.adopteertGast);
-    const lijn = p.nummer != null && p.nummer !== '' ? '#'+esc(p.nummer) : '';
-    return `
-      <button class="profiel-terug" id="profielTerug">‹ Terug naar spelers</button>
-      <div class="profiel-top">
-        <div class="pt-shirt" style="background:transparent;border:1px dashed var(--ink-2)">${esc(p.nummer ?? '?')}</div>
-        <div><h2>${esc(p.naam)}</h2><div class="meta">${lijn?lijn+'<span class="sep" aria-hidden="true"></span>':''}gastspeler<span class="sep" aria-hidden="true"></span>nog te koppelen</div></div>
-      </div>
+    return `<div class="sp-profiel">
+      ${spHeld(p, { meta: 'gastspeler<span class="sep" aria-hidden="true"></span>nog te koppelen', gast: true })}
       <div class="leen-strook">
         <span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg></span>
         <span class="tx">Placeholder voor een nog onbekende uitleen. Doet volwaardig mee in opstelling en presentie. Koppel hem zodra bekend is wie het wordt.</span>
       </div>
-      <div class="stat-grid">
-        <div class="stat-box"><div class="v">${st.wedstrijden}</div><div class="l">Wedstr.</div></div>
-        <div class="stat-box"><div class="v">${st.tijd ? uurMin(st.tijd) : '—'}</div><div class="l">Speeltijd</div></div>
-        <div class="stat-box"><div class="v">${st.goals}</div><div class="l">Goals</div></div>
-        <div class="stat-box"><div class="v">${st.opkomst != null ? st.opkomst+'%' : '—'}</div><div class="l">Training</div></div>
-      </div>
+      <div class="kaart sp-seizoen"><div class="sp-cijfers">
+        <div><b>${st.wedstrijden}</b><span>Wedstrijden</span></div>
+        <div><b>${st.tijd ? uurMin(st.tijd) : '—'}</b><span>Speeltijd</span></div>
+        <div><b>${st.goals}</b><span>Goals</span></div>
+        <div><b>${st.opkomst != null ? st.opkomst+'%' : '—'}</b><span>Training</span></div>
+      </div></div>
       <button class="knop vol" data-gast-koppel="${p.id}" style="margin-top:var(--space-2xs)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="17.8" cy="6" r="2.6"/><circle cx="6.2" cy="12" r="2.6"/><circle cx="17.8" cy="18" r="2.6"/><path d="M15.4 7.2 8.6 10.8"/><path d="M8.6 13.2 15.4 16.8"/></svg> Koppel aan ingeleende speler</button>
       <div class="rij u-mt-xs">
         <button class="knop licht klein" data-gast-bewerk="${p.id}">${ico('admin-edit', 16)} Gast bewerken</button>
         <button class="knop gevaar klein" data-gast-weg="${p.id}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5.4 7.4h13.2"/><path d="M7.4 7.4 8.3 20h7.4l.9-12.6"/><path d="M9.6 4.4h4.8l.6 3H9z"/><path d="M10.6 11v5.4M13.4 11v5.4"/></svg> Verwijderen</button>
       </div>
       ${koppelbaar.length ? '' : `<p class="u-t-xs u-zacht u-mt-sm u-lh-ruim">Er staat nog geen uitleen voor jou klaar om aan te koppelen. Zodra een ander team de speler naar jou uitleent, verschijnt die in de koppel-lijst.</p>`}
-    `;
+    </div>`;
   }
 
   const leerlijnAan = modAan('leerlijn');
@@ -519,13 +541,19 @@ export function htmlProfiel(){
   const vol = laatsteVolledig(p.id);
   const eigen = S.beoordelingen.filter(b => b.spelerId === p.id);
 
-  const lijn = p.nummer != null && p.nummer !== '' ? '#'+esc(p.nummer) : '';
-  return `
-    <button class="profiel-terug" id="profielTerug">‹ Terug naar spelers</button>
-    <div class="profiel-top">
-      <div class="pt-shirt"${p._ingeleend?' style="background:var(--ink-2)"':''}>${esc(p.nummer ?? '·')}</div>
-      <div><h2>${esc(p.naam)}</h2><div class="meta">${lijn?lijn+'<span class="sep" aria-hidden="true"></span>':''}${p._ingeleend?`ingeleend van ${esc(p._bronTeamNaam||'ander team')}`:esc(S.team.naam)}</div></div>
-    </div>
+  const pos = meestGespeeldePositie(p);
+  const snelLaatst = S.beoordelingen.find(b => b.spelerId === p.id && b.soort === 'snel');
+  const lpOpen = ((p.leerpunten)||[]).filter(l => !l.klaar).length + ((p._bronLeerpunten)||[]).length;
+  return `<div class="sp-profiel">
+    ${spHeld(p, {
+      meta: p._ingeleend ? `ingeleend van ${esc(p._bronTeamNaam||'ander team')}` : esc(S.team.naam),
+      chips: [
+        pos ? `<span class="sp-held-chip">${ico('football-position', 14)} ${esc(pos)}</span>` : '',
+        evalAan && snelLaatst ? `<span class="sp-held-chip"><span class="beoordeel-stip" style="background:${niveauKleur(snelLaatst.niveau)}"></span> ${esc(niveau(snelLaatst.niveau)?.label || '')}</span>` : '',
+        evalAan && lpOpen ? `<span class="sp-held-chip">${lpOpen} leerpunt${lpOpen===1?'':'en'} open</span>` : '',
+      ].join(''),
+      ingeleend: p._ingeleend,
+    })}
     ${(() => {
       if (p._ingeleend){
         const gastNoot = p._gast ? ' Gekoppeld aan je gastspeler: je opstellingen bleven behouden.' : ' Doet volwaardig mee bij jou.';
@@ -545,8 +573,7 @@ export function htmlProfiel(){
       </div>`;
     })()}
 
-    <div class="avg-balk"><span class="slot"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4.6" y="10.4" width="14.8" height="9.8" rx="2.4"/><path d="M8 10.4V8a4 4 0 0 1 8 0v2.4"/><circle cx="12" cy="15.2" r="1.4" fill="currentColor" stroke="none"/></svg></span>
-      <span>Coach-only. Deel niets uit dit profiel buiten het technisch kader.</span></div>
+    <p class="sp-slot boven">${SLOT_SVG}<span>Alleen voor coaches. Deel niets uit dit profiel buiten het technisch kader.</span></p>
 
     <div class="segment u-mb-md" id="profielTabs" >
       <button data-ptab="overzicht" class="${tab==='overzicht'?'actief':''}">Overzicht</button>
@@ -556,39 +583,43 @@ export function htmlProfiel(){
 
     ${tab === 'overzicht' ? `
       ${ovScopeKop(p)}
-      <div class="stat-grid">
-        <div class="stat-box"><div class="v">${stS.wedstrijden}</div><div class="l">Wedstr.</div></div>
-        <div class="stat-box"><div class="v">${stS.tijd ? uurMin(stS.tijd) : '—'}</div><div class="l">Speeltijd</div>${stS.pctSpeeltijd!=null?`<div class="sub">${stS.pctSpeeltijd}% van speelbaar</div>`:''}</div>
-        <div class="stat-box"><div class="v">${stS.reserve ? uurMin(stS.reserve) : '—'}</div><div class="l">Reserve</div>${stS.pctReserve!=null?`<div class="sub">${stS.pctReserve}% van speelbaar</div>`:''}</div>
-        <div class="stat-box"><div class="v">${stS.goals}</div><div class="l">Goals</div><div class="sub">${stS.assists} assist${stS.assists === 1 ? '' : 's'}</div></div>
+      <div class="kaart sp-seizoen">
+        <div class="sp-cijfers">
+          <div><b>${stS.wedstrijden}</b><span>Wedstrijden</span></div>
+          <div><b>${stS.tijd ? uurMin(stS.tijd) : '—'}</b><span>Speeltijd</span>${stS.pctSpeeltijd!=null?`<small>${stS.pctSpeeltijd}% van speelbaar</small>`:''}</div>
+          <div><b>${stS.reserve ? uurMin(stS.reserve) : '—'}</b><span>Reserve</span>${stS.pctReserve!=null?`<small>${stS.pctReserve}% van speelbaar</small>`:''}</div>
+          <div><b>${stS.goals}</b><span>Goals</span><small>${stS.assists} assist${stS.assists === 1 ? '' : 's'}</small></div>
+        </div>
+        ${stS.pctSpeeltijd != null ? `
+        <div class="sp-balk">
+          <div class="sp-balk-kop">Verhouding speeltijd / bank</div>
+          <div class="speeltijd-split">
+            <div class="veld" style="width:${stS.pctSpeeltijd}%"></div>
+            <div class="bank" style="width:${stS.pctReserve}%"></div>
+          </div>
+          <div class="split-legend">
+            <span><span class="dotje" style="background:var(--ok)"></span> Op het veld<span class="sep" aria-hidden="true"></span>${uurMin(stS.tijd)}</span>
+            <span><span class="dotje" style="background:var(--warn)"></span> Reserve<span class="sep" aria-hidden="true"></span>${uurMin(stS.reserve)}</span>
+          </div>
+        </div>` : ''}
+        ${Object.keys(st.afwPerReden||{}).length ? `
+        <div class="sp-afwezig">
+          <div class="sp-balk-kop">Afwezig bij training</div>
+          <div class="sp-afw-chips">
+          ${Object.entries(st.afwPerReden).sort((a,b)=>b[1]-a[1]).map(([id,n]) => {
+            if (id === 'geen') return `<span>${n}× zonder reden</span>`;
+            const r = AFWEZIG_REDENEN.find(x => x.id === id) || {emoji:'❓',label:'Anders'};
+            return `<span>${r.ico?ico(r.ico,15):r.emoji} ${n}× ${esc(r.label.toLowerCase())}</span>`;
+          }).join('')}
+          </div>
+        </div>` : ''}
       </div>
       ${(heeftElftallen() && ovScopeNu(p) === 'team') ? (() => {
         const e1 = spelerStats(p.id, '1'), e2 = spelerStats(p.id, '2');
         const r = (e, x) => `<div class="elf-split-rij"><span class="elf-pill e${e}">${e}e</span><span>${x.wedstrijden} wedstr.</span><span>${Math.round(x.tijd / 60)} min</span><span>${x.goals} G</span><span>${x.assists} A</span></div>`;
         return `<div class="kaart elf-split"><div class="veldlabel u-mt-0">Per elftal${elftalPillen(p)}</div>${r('1', e1)}${r('2', e2)}</div>`;
       })() : ''}
-      ${stS.pctSpeeltijd != null ? `
-      <div class="kaart" style="margin-top:-2px">
-        <div class="veldlabel u-mt-0">Verhouding speeltijd / bank</div>
-        <div class="speeltijd-split">
-          <div class="veld" style="width:${stS.pctSpeeltijd}%"></div>
-          <div class="bank" style="width:${stS.pctReserve}%"></div>
-        </div>
-        <div class="split-legend">
-          <span><span class="dotje" style="background:var(--ok)"></span> Op het veld<span class="sep" aria-hidden="true"></span>${uurMin(stS.tijd)}</span>
-          <span><span class="dotje" style="background:var(--warn)"></span> Reserve<span class="sep" aria-hidden="true"></span>${uurMin(stS.reserve)}</span>
-        </div>
-      </div>` : ''}
       ${ovPerTeam(p)}
-      ${Object.keys(st.afwPerReden||{}).length ? `
-      <div class="presentie-uitsplitsing" style="margin:-8px 0 var(--space-md)">
-        ${Object.entries(st.afwPerReden).sort((a,b)=>b[1]-a[1]).map(([id,n]) => {
-          if (id === 'geen') return `<span>${n}× zonder reden</span>`;
-          const r = AFWEZIG_REDENEN.find(x => x.id === id) || {emoji:'❓',label:'Anders'};
-          return `<span>${r.ico?ico(r.ico,15):r.emoji} ${n}× ${esc(r.label.toLowerCase())}</span>`;
-        }).join('')}
-      </div>` : ''}
-
       ${htmlVorigeTeams(p)}
       ${(() => {
         const notitie = (p.notitie || '').trim();
@@ -618,18 +649,19 @@ export function htmlProfiel(){
         : `<p class="u-t-sm u-zacht" style="padding:var(--space-xs) 0">Nog geen volledige beoordeling. Maak er één om het ontwikkelprofiel te zien.</p>`}
       </div>
 
-      <div class="fab-rij">
-        <button class="knop fluo klein" style="flex:1" data-snel-speler="${p.id}">${ico('training-favorite', 17)} Snel beoordelen</button>
-        <button class="knop klein" style="flex:1" data-volledig-speler="${p.id}">${ico('training-completed', 17)} Volledige beoordeling</button>
+      <div class="sp-beoordeel">
+        <button class="knop fluo" data-snel-speler="${p.id}">${ico('training-favorite', 18)} Snel beoordelen</button>
+        <button class="knop licht" data-volledig-speler="${p.id}">${ico('training-completed', 18)} Volledig</button>
       </div>` : ''}
 
-      <div class="rij u-mt-2xs">
+      <h2 class="sp-groepkop">Beheer</h2>
+      <div class="sp-lijst sp-menu">
         ${p._ingeleend
-          ? `<button class="knop licht klein" data-leen-overlay="${p.id}">${ico('admin-edit', 16)} Nummer/positie bij jou</button>`
-          : `<button class="knop licht klein" data-bewerk-speler="${p.id}">${ico('admin-edit', 16)} Speler bewerken</button>
-             <button class="knop gevaar klein" data-weg-speler="${p.id}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5.4 7.4h13.2"/><path d="M7.4 7.4 8.3 20h7.4l.9-12.6"/><path d="M9.6 4.4h4.8l.6 3H9z"/><path d="M10.6 11v5.4M13.4 11v5.4"/></svg> Verwijderen</button>`}
+          ? `<button class="sp-menu-rij" data-leen-overlay="${p.id}"><span class="sp-menu-ic">${ico('admin-edit', 18)}</span><span class="sp-naam"><b>Nummer en positie bij jou</b></span>${spPijl()}</button>`
+          : `<button class="sp-menu-rij" data-bewerk-speler="${p.id}"><span class="sp-menu-ic">${ico('admin-edit', 18)}</span><span class="sp-naam"><b>Speler bewerken</b><span class="sp-sub">Naam, rugnummer en voorkeurspositie</span></span>${spPijl()}</button>
+             ${(S.team?.club && magUitlenen({ ...S.team, id: S.teamId })) ? `<button class="sp-menu-rij" data-uitleen-speler="${p.id}"><span class="sp-menu-ic">${ico('football-substitution', 18)}</span><span class="sp-naam"><b>Uitlenen aan ander team</b><span class="sp-sub">Speelt ook mee bij een ander team van de club</span></span>${spPijl()}</button>` : ''}
+             <button class="sp-menu-rij weg" data-weg-speler="${p.id}"><span class="sp-menu-ic">${PRULLENBAK_SVG}</span><span class="sp-naam"><b>Verwijderen uit selectie</b></span>${spPijl()}</button>`}
       </div>
-      ${(!p._ingeleend && S.team?.club && magUitlenen({ ...S.team, id: S.teamId })) ? `<button class="knop klein" style="margin-top:var(--space-2xs);width:100%" data-uitleen-speler="${p.id}">⇄ Uitlenen aan ander team</button>` : ''}
     ` : ''}
 
     ${tab === 'leerlijn' ? htmlLeerlijn(p) : ''}
@@ -680,7 +712,8 @@ export function htmlProfiel(){
             return `<div class="presentie-hist-rij"><span>${datumNL(ses.datum)}</span><span class="phr-status ${afw?'afw':'aanw'}">${statusTxt}</span></div>`;
           }).join('') + (buiten ? `<p class="u-t-xs u-zacht u-lh-ruim" style="padding:var(--space-xs) 0 0">${buiten} training${buiten>1?'en':''} van vóór zijn komst tellen niet mee.</p>` : '');
         })()}
-      </div>` : ''}`;
+      </div>` : ''}
+    </div>`;
 }
 
 // Alleen-lezen leerpunt-item: geen toggle/verwijder-knop (die zou bij een
@@ -1321,16 +1354,15 @@ export async function verwijderLeerpunt(lpId){
   syncLeerpuntenNaarUitlening(p.id, lp);
 }
 
+/* [20261128] Meest gespeeld: elke positie is zelf een knop (tik = overnemen). */
 function meestGespeeldHtml(top){
   if (!top.length) return '';
-  const beste = top[0];
   return `
-    <div class="meest-gespeeld" id="mSpMg">
-      <div class="mg-titel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.2" y="4.6" width="17.6" height="14.8" rx="2.4"/><path d="M12 4.6v14.8"/><circle cx="12" cy="12" r="2.8"/></svg> Meest gespeeld dit seizoen</div>
-      <div class="mg-lijst">
-        ${top.slice(0,4).map((t,i) => `<span class="mg-item${i===0?' mg-top':''}">${esc(t.naam)} <b>${t.n}×</b></span>`).join('')}
+    <div class="sp-mg" id="mSpMg">
+      <div class="sp-mg-kop">${ico('stats-bars', 15)} Meest gespeeld dit seizoen<small>tik om over te nemen</small></div>
+      <div class="sp-mg-lijst">
+        ${top.slice(0,4).map((t,i) => `<button type="button" class="sp-mg-item${i===0?' top':''}" data-mg-pos="${esc(t.naam)}">${esc(t.naam)} <b>${t.n}×</b></button>`).join('')}
       </div>
-      <button type="button" class="mg-knop" id="mSpMgOk" data-pos="${esc(beste.naam)}">Overnemen: ${esc(beste.naam)}</button>
     </div>`;
 }
 
@@ -1415,35 +1447,42 @@ export function modalSpeler(p){
         <input class="invoer" id="mSpNr" value="${esc(p?.nummer ?? '')}" inputmode="numeric" placeholder="7"></div>
     </div>
     <div class="veldgroep" ${achternaamUit() ? 'style="display:none"' : ''}><label>Achternaam</label>
-      <input class="invoer" id="mSpAchter" value="${esc(p?.achternaam||'')}" placeholder="Achternaam" autocomplete="off"></div>
-    <div class="avg-balk" ${achternaamUit() ? 'style="display:none"' : ''}><span class="slot"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4.6" y="10.4" width="14.8" height="9.8" rx="2.4"/><path d="M8 10.4V8a4 4 0 0 1 8 0v2.4"/><circle cx="12" cy="15.2" r="1.4" fill="currentColor" stroke="none"/></svg></span>
-      <span>De achternaam blijft binnen je eigen team en wordt nergens in de app getoond. Leen je deze speler uit, dan ziet de andere coach alleen de voorletter.</span></div>
+      <input class="invoer" id="mSpAchter" value="${esc(p?.achternaam||'')}" placeholder="Achternaam" autocomplete="off">
+      <p class="sp-slot onder">${SLOT_SVG}<span>Blijft binnen je eigen team en wordt nergens in de app getoond. Leen je deze speler uit, dan ziet de andere coach alleen de voorletter.</span></p></div>
     ${bewerken ? `
       <div class="veldgroep">
         <label>Voorkeurspositie</label>
         ${meestGespeeldHtml(topPosities)}
-        <div id="mSpPos">
-          ${POSITIE_GROEPEN.map(g => `
-            <div class="pos-groep">
-              <div class="pos-lijnlabel">${esc(g.naam)}</div>
-              <div class="segment klein-seg wrap">
-                ${g.posities.map(pos => `<button type="button" data-pos="${esc(pos)}" class="${gekozenPositie===pos?'actief':''}">${esc(pos)}</button>`).join('')}
+        <div class="sp-bord" id="mSpPos">
+          ${[...POSITIE_GROEPEN].reverse().map(g => `
+            <div class="sp-bord-lijn">
+              <div class="sp-bord-naam">${esc(g.naam)}</div>
+              <div class="sp-bord-pos">
+                ${g.posities.map(pos => `<button type="button" data-pos="${esc(pos)}" class="${gekozenPositie===pos?'actief':''}" aria-pressed="${gekozenPositie===pos}">${esc(pos)}</button>`).join('')}
               </div>
             </div>`).join('')}
         </div>
+        <p class="sp-bord-keuze" id="mSpPosTekst"></p>
       </div>` : ''}
-    <button class="knop vol" id="mSpOk">${bewerken ? 'Opslaan' : 'Toevoegen'}</button>`);
+    <div class="sp-opslaan"><button class="knop fluo vol" id="mSpOk">${bewerken ? 'Opslaan' : 'Toevoegen'}</button></div>`);
 
   if (bewerken){
     const zetPositie = (pos) => {
       gekozenPositie = pos;
-      $('#mSpPos').querySelectorAll('[data-pos]').forEach(x =>
-        x.classList.toggle('actief', x.dataset.pos === gekozenPositie));
+      $('#mSpPos').querySelectorAll('[data-pos]').forEach(x => {
+        const aan = x.dataset.pos === gekozenPositie;
+        x.classList.toggle('actief', aan); x.setAttribute('aria-pressed', String(aan));
+      });
+      $$('#mSpMg [data-mg-pos]').forEach(x => x.classList.toggle('gekozen', x.dataset.mgPos === gekozenPositie));
+      $('#mSpPosTekst').innerHTML = gekozenPositie
+        ? `Gekozen: <b>${esc(gekozenPositie)}</b>. Tik nog eens om leeg te maken.`
+        : 'Nog geen voorkeurspositie gekozen.';
     };
     $('#mSpPos').querySelectorAll('[data-pos]').forEach(b => b.onclick = () => {
       zetPositie(gekozenPositie === b.dataset.pos ? '' : b.dataset.pos);   // nogmaals tikken = leegmaken
     });
-    if ($('#mSpMgOk')) $('#mSpMgOk').onclick = () => zetPositie($('#mSpMgOk').dataset.pos);
+    $$('#mSpMg [data-mg-pos]').forEach(b => b.onclick = () => zetPositie(b.dataset.mgPos));
+    zetPositie(gekozenPositie);
   }
 
   const ok = async (sluiten) => {
@@ -1576,7 +1615,7 @@ export async function modalUitlenen(spelerId){
      Uitgebreid) en mag alleen door coördinatoren en de clubadmin. */
   const team = { ...S.team, id: S.teamId };
   if (!magUitlenen(team)) return meld('Uitlenen regelt de coördinator van de bouw');
-  const m = await import('./uitleen-form.js?v=20261130o');
+  const m = await import('./uitleen-form.js?v=20261130p');
   m.openUitleenForm({ clubId, vanTeam: team, speler: p });
 }
 
@@ -1584,7 +1623,7 @@ export async function modalUitlenen(spelerId){
 export async function wijzigUitlening(u, clubIdOverride, naOpslaan){
   const clubId = clubIdOverride || S.team?.club;
   if (!clubId || !u) return meld('Uitlening niet gevonden');
-  const m = await import('./uitleen-form.js?v=20261130o');
+  const m = await import('./uitleen-form.js?v=20261130p');
   m.openUitleenForm({ clubId, vanTeam: { id: u.vanTeam, naam: u.vanTeamNaam }, speler: { id: u.spelerId, naam: u.snapshot?.naam || 'Speler' }, bestaand: u, naOpslaan });
 }
 
