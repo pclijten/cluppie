@@ -1370,7 +1370,8 @@ async function pasAfgelastToe(db, teamId, { inProgramma, afgelast }){
   const vandaag = vandaagNL();
   const snap = await db.collection(PADEN.wedstrijden(teamId)).where('datum', '>=', vandaag).get();
   const bestaand = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(w => w.bron === 'sportlink' && w.sportlinkCode);
-  const plan = slh.afgelastPlan({ bestaand, inProgramma, afgelast, vanaf: vandaag, tot: plusDagen(vandaag, PROGRAMMA_DAGEN - 1) });
+  const nu = new Date().toLocaleTimeString('nl-NL', { timeZone: 'Europe/Amsterdam', hour: '2-digit', minute: '2-digit', hour12: false });
+  const plan = slh.afgelastPlan({ bestaand, inProgramma, afgelast, vanaf: vandaag, tot: plusDagen(vandaag, PROGRAMMA_DAGEN - 1), nu });
   if (!plan.length) return 0;
   const batch = db.batch();
   for (const [id, patch] of plan){

@@ -129,6 +129,10 @@ ok('vandaag en buiten het venster: nooit "verdwenen"', () => {
   const bestaand = [w('sl_3', '2026-10-12'), w('sl_4', '2027-03-01')];
   assert.deepEqual(h.afgelastPlan({ ...basis, bestaand, inProgramma: new Set(['9']), afgelast: new Map() }), []);
 });
+ok('vandaag met `nu`: alleen een wedstrijd die nog moet beginnen', () => {
+  const bestaand = [w('sl_5', '2026-10-12', { aftrap: '09:00' }), w('sl_6', '2026-10-12', { aftrap: '14:30' }), w('sl_7', '2026-10-12')];
+  assert.deepEqual(h.afgelastPlan({ ...basis, nu: '10:00', bestaand, inProgramma: new Set(['9']), afgelast: new Map() }), [['sl_6', { sportlinkWeg: true }]]);
+});
 ok('programma niet opgehaald → niets als verdwenen markeren', () => {
   assert.deepEqual(h.afgelastPlan({ ...basis, bestaand: [w('sl_2', '2026-10-25')], inProgramma: null, afgelast: new Map() }), []);
 });
@@ -198,6 +202,8 @@ ok('client: deelbericht zonder spelers, met plek en route', () => {
 ok('client: pills, badges en wat meetelt', () => {
   assert.match(ws.soortPill(wUit), /Beker/); assert.equal(ws.soortPill({ competitiesoort: 'regulier' }), '');
   assert.equal(ws.telMee({ status: 'afgelast' }), true);   // [20261127] afgelast blijft gewoon staan assert.equal(ws.telMee(wUit), true);
+  assert.equal(ws.telMee({ sportlinkWeg: true }), false);   // [20261130] niet meer in Sportlink: nooit de eerstvolgende
+  assert.equal(ws.telMee({ status: 'afgelast', sportlinkWeg: true }), true);
   assert.match(ws.statusBadge({ status: 'afgelast', sportlinkWeg: true }), /Afgelast/);
   assert.match(ws.statusBadge({ sportlinkWeg: true }), /Niet in Sportlink/);
   assert.equal(ws.statusBadge(wUit), '');

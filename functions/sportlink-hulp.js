@@ -193,8 +193,11 @@ function accommodatieUit(antwoord){
                   als programma niet (goed) is opgehaald — dan doen we niets met "verdwenen".
      afgelast:  Map wedstrijdcode → { gemeld? }
      vanaf/tot: alleen wedstrijden met datum > vanaf (morgen en later) en < tot vallen onder "verdwenen".
+     nu:        'HH:MM' (Nederlandse tijd). [20261130] Met `nu` telt ook een wedstrijd van vandaag die nog moet
+                beginnen: een team dat in een andere competitie is ingedeeld hield anders op de speeldag zelf de
+                oude wedstrijd als eerstvolgende. Na de aftrap blijft vandaag buiten schot (uitslag kan nog komen).
    Geeft [[id, patch]] terug; patch-waarde null = veld weghalen. Er wordt nooit iets verwijderd. */
-function afgelastPlan({ bestaand = [], inProgramma = null, afgelast = new Map(), vanaf, tot }){
+function afgelastPlan({ bestaand = [], inProgramma = null, afgelast = new Map(), vanaf, tot, nu = '' }){
   const uit = [];
   for (const w of bestaand){
     const code = String(w.sportlinkCode || '');
@@ -206,7 +209,7 @@ function afgelastPlan({ bestaand = [], inProgramma = null, afgelast = new Map(),
     } else if (inProgramma){
       const kent = inProgramma.has(code);
       if (w.status === 'afgelast' && kent) patch.status = null;            // afgelasting ingetrokken
-      const telt = w.datum && w.datum > vanaf && w.datum < tot;
+      const telt = w.datum && w.datum < tot && (w.datum > vanaf || (!!nu && w.datum === vanaf && !!w.aftrap && w.aftrap > nu));
       if (telt && !kent && w.status !== 'afgelast' && !w.sportlinkWeg) patch.sportlinkWeg = true;
       if (kent && w.sportlinkWeg) patch.sportlinkWeg = null;
     }
